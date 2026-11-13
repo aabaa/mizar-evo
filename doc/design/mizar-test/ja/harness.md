@@ -6031,6 +6031,12 @@ Core/VcSet 全体の不変再実行と [VcSet 全体の snapshot](../../mizar-vc
 
 narrower-loci の正確な source/sidecar identity、変更しない pass/type_elaboration/type_check oracle、唯一の semantic ref と active tag を予約する。一つの immutable source orchestration 内で、記述された登録を既存 checker/Core/VC/kernel/policy 経路で新たに証明し、その局所出力で [declaration checker](../../mizar-checker/ja/type_checker.md#narrower-loci-predicate-declaration-checking) を呼ぶ。共有の記述 type gate と両 formal binding、実際に狭い root 対応、型検査済みの逆順等式本体、pending coherence request 一つを要求する。source・registration/choice/citation・policy・binding・正規化 signature・root 順序/曖昧性・coherence owner の変異は拒否、または正しく変更された pending goal の保持を確認する。caller acceptance・偽造 database・証明成功・新規 VC snapshot は認めない。
 
+## Ordinary overload producer admission
+
+Task278 は ordinary-root smoke を advanced_semantics / overload_resolution で追加受理する。
+最終 checker projection に sealed source handoff と対応する選択段階を保持し、再実行と不正入力を検査する。
+sidecar に trace credit は与えない。
+
 ## Reflection Corpus Boundary
 
 固定 owner contract と §§13.10/20/22.4.8 に従い新しい test-first matrix を作る。仕様例は義務であり実行結果ではない。

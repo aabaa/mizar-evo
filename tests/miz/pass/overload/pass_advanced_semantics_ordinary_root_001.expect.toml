@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_advanced_semantics_ordinary_root_001"
+kind = "pass"
+stage = "advanced_semantics"
+domain = "overload.resolution"
+source = "pass_advanced_semantics_ordinary_root_001.miz"
+expected_outcome = "pass"
+expected_phase = "overload_resolution"
+diagnostic_codes = []
+tags = ["active_advanced_semantics"]
+spec_refs = ["spec.en.19.overload.resolution.distinct_loci"]
+notes = "Task278 source producer/final projection smoke only. This sidecar is not listed as trace evidence and grants no semantic or proof credit."

@@ -1,0 +1,8 @@
+definition
+  let x be set;
+  func OvRoot: ovroot(x) -> set equals x;
+  coherence;
+end;
+
+reserve x for set;
+theorem OvUse: ovroot(x) = x;

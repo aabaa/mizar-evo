@@ -1,6 +1,6 @@
 # Task CHECKER278-OVERLOAD-SELECTION: source overload selection
 Canonical language: English; [Japanese pointer](../ja/CHECKER278-OVERLOAD-SELECTION.md).
-Status: frozen for implementation. Tier: full (new source owner and public producer seam).
+Status: implemented for unary builtin and direct type-template inputs. Tier: full (new source owner and public producer seam).
 Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumer: [runner plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: Tasks249–257,259–264,277 direct roles; prepared MT10-AS. Task279 consumes these roots afterwards.
 Authority: [Task278 and acyclic graph](../../mizar-checker/en/payload_family_decomposition.md#accepted-producer-graph), [queue](../../mizar-checker/en/todo.md), Specs [08](../../../spec/en/08.type_inference.md), [18](../../../spec/en/18.templates.md), [19.1–19.4/19.6](../../../spec/en/19.overload_resolution.md#191-overview); MC-G027.
@@ -18,7 +18,7 @@ No selection-semantic, doc/spec, existing expectation, trace-status, diagnostic,
 Return-type tie-breaks, Task279 refinement, Resolver31 same-return conflicts, and scheme/theorem roles (Gate S1) remain excluded.
 ## Owners and tests
 Selection API/invariants: [overload engine](../../mizar-checker/en/overload_resolution.md#inputs-and-outputs); provenance: [direct template roles](../../mizar-checker/en/source_template.md).
-Artifacts: source_overload.rs, typed_ast.rs, resolved_typed_ast.rs, lib.rs; runner.rs, focused regressions, owner boundary documents and family ledger.
+Artifacts: source_overload.rs, typed_ast.rs, resolved_typed_ast.rs, lib.rs; runner.rs, focused regressions, [owner boundary](../../mizar-checker/en/source_overload.md) and [family ledger](../../../../tests/coverage/overload_selection.tsv).
 Existing native overload/template extraction tests stay unchanged; no Task49 reconciliation fixture is activated.
 New smoke: tests/miz/pass/overload/pass_advanced_semantics_ordinary_root_001.miz with advanced_semantics sidecar.
 Frozen spelling under Specs [10.1](../../../spec/en/10.functors.md#101-overview-and-syntax), [13.2](../../../spec/en/13.term_expression.md#132-functor-applications), [14](../../../spec/en/14.formulas.md):

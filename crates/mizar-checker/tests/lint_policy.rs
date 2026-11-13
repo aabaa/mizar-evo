@@ -106,7 +106,11 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
 
     for path in checker_src_files(&root) {
         let source = read_to_string(&path);
-        let source = if path == root.join("src/registration_resolution.rs")
+        let source = if path == root.join("src/source_overload.rs") {
+            let permitted = "use mizar_syntax::SurfaceNodeKind as K;";
+            assert_eq!(source.matches(permitted).count(), 1);
+            source.replace(permitted, "")
+        } else if path == root.join("src/registration_resolution.rs")
             || path == root.join("src/type_checker.rs")
         {
             let permitted = if path == root.join("src/type_checker.rs") {
@@ -940,6 +944,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_proof_local_declaration.rs")
             || path == Path::new("src/source_redefinition.rs")
             || path == Path::new("src/source_registration.rs")
+            || path == Path::new("src/source_overload.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
             || path == Path::new("src/source_structure_semantics.rs")
@@ -977,6 +982,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_proof_local_declaration;"
                 | "pub mod source_redefinition;"
                 | "pub mod source_registration;"
+                | "pub mod source_overload;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
                 | "pub mod source_structure_semantics;"

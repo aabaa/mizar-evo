@@ -31,6 +31,7 @@ use crate::{
     source_mode_definition::{
         SourceModeDefinitionHandoff, validate_source_mode_definition_absence,
     },
+    source_overload::SourceOverloadHandoff,
     source_predicate_definition::SourcePredicateDefinitionHandoff,
     source_proof_local_declaration::{
         SourceProofLocalBindingHandoff, SourceProofLocalDeclarationHandoff,
@@ -170,6 +171,7 @@ pub struct ResolvedTypedAst {
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
     source_template: Option<SourceTemplateHandoff>,
+    source_overload: Option<SourceOverloadHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
@@ -260,6 +262,10 @@ impl ResolvedTypedAst {
 
     pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
         self.source_term.as_ref()
+    }
+
+    pub const fn source_overload(&self) -> Option<&SourceOverloadHandoff> {
+        self.source_overload.as_ref()
     }
 
     pub const fn source_template(&self) -> Option<&SourceTemplateHandoff> {
@@ -615,6 +621,9 @@ impl ResolvedTypedAst {
         }
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
+        }
+        if let Some(source_overload) = &self.source_overload {
+            output.push_str(&source_overload.debug_text());
         }
         if let Some(source_template) = &self.source_template {
             output.push_str(&source_template.debug_text());
@@ -1682,6 +1691,7 @@ pub enum CandidateSummaryNamespace {
 #[non_exhaustive]
 pub enum ResolvedTypedAstError {
     InvalidSourceTemplate,
+    InvalidSourceOverload,
     InvalidSourceApplication,
     InvalidSourceStructure,
     InvalidSourceSetTerm,
@@ -1792,6 +1802,7 @@ pub enum ResolvedTypedAstError {
 impl fmt::Display for ResolvedTypedAstError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidSourceOverload => formatter.write_str("resolved typed AST source overload handoff is inconsistent"),
             Self::InvalidSourceTemplate => formatter
                 .write_str("resolved typed AST source template handoff is inconsistent"),
             Self::InvalidSourceApplication => formatter
@@ -2020,6 +2031,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
     }
 
     fn assemble(self) -> Result<ResolvedTypedAst, ResolvedTypedAstError> {
+        let source_overload = self.inputs.typed_ast.source_overload().cloned();
+        if let Some(handoff) = &source_overload {
+            handoff
+                .validate_installation(self.inputs.typed_ast)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceOverload)?;
+            if self.inputs.overload_collection != handoff.collection()
+                || self.inputs.template_expansion != handoff.expansion()
+                || self.inputs.viability != handoff.viability()
+                || self.inputs.specificity != handoff.specificity()
+                || self.inputs.overload_selection != handoff.selection()
+            {
+                return Err(ResolvedTypedAstError::InvalidSourceOverload);
+            }
+        }
         let source_id = self.inputs.typed_ast.source_id();
         let module_id = self.inputs.typed_ast.module_id().clone();
         let source_proof_local_binding = self
@@ -3324,6 +3349,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_evidence: self.inputs.typed_ast.source_evidence().cloned(),
             source_term: self.inputs.typed_ast.source_term().cloned(),
             source_template,
+            source_overload,
             source_application,
             source_structure,
             source_set_term,

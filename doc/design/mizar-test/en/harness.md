@@ -6619,6 +6619,13 @@ Activate only `fail_proof_verification_algorithm_ensures_unprovable_001` with un
 
 Reserve the exact narrower-loci source/sidecar identity and unchanged pass/type_elaboration/type_check oracle with its sole semantic reference and sole active tag. In one immutable source orchestration, freshly prove the authored registration through the existing checker/Core/VC/kernel/policy path, then invoke the [declaration checker](../../mizar-checker/en/type_checker.md#narrower-loci-predicate-declaration-checking) with that local output. Require the shared written type gate and both formal bindings, actual strictly narrower root correspondence, typed swapped equality bodies and one pending coherence request. Source, registration/choice/citation, policy, binding, normalized-signature, root-order/ambiguity and coherence-owner mutations must reject or retain the accurately changed pending goal; no caller acceptance, fabricated database, proof success or new VC snapshot is admitted.
 
+## Ordinary overload producer admission
+
+Task278 additionally admits the ordinary-root smoke at advanced_semantics /
+overload_resolution. Its final checker projection must retain the sealed source
+handoff and matching selection stages; deterministic rerun and malformed input
+controls exercise the production route. The sidecar grants no trace credit.
+
 ## Reflection Corpus Boundary
 
 Frozen owner contracts and §§13.10/20/22.4.8 govern new test-first reflection matrices; source examples are obligations, not execution results.

@@ -1,4 +1,77 @@
 use super::*;
+use crate::{expectation::PipelinePhase, staged_model::Stage};
+
+#[test]
+fn checker278_real_ordinary_root_survives_final_projection_and_rerun() {
+    let config = step5c11_config();
+    let case = step5c11_plan()
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::super::STEP5C13_OVERLOAD_IDS[2])
+        .unwrap();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let run = |text: &str| {
+        super::super::source_ordinary_root(
+            &config.workspace_root,
+            case,
+            super::super::formula_statement::step5c8_test_frontend(text),
+        )
+    };
+    let first = run(&text).unwrap();
+    assert_eq!(first, run(&text).unwrap());
+    let renamed = text
+        .replace("ovroot", "renamed_root")
+        .replace("OvRoot", "RenamedRoot");
+    let second = run(&format!(":: alternate source\n{renamed}")).unwrap();
+    assert_eq!(second.resolved_overloads().len(), 1);
+    assert!(second.source_overload().is_some());
+    for invalid in [
+        text.replace("reserve x for set", "reserve x for object"),
+        text.replace("ovroot(x) = x", "ovroot(x,x) = x"),
+    ] {
+        assert!(run(&invalid).is_err(), "{invalid}");
+    }
+}
+
+#[test]
+fn checker278_ordinary_root_admission_and_trace_credit_are_explicit() {
+    let config = step5c11_config();
+    let plan = step5c11_plan();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == super::super::STEP5C13_OVERLOAD_IDS[2])
+        .unwrap();
+    assert!(super::super::step5c13_overload_admitted(
+        &config.workspace_root,
+        case
+    ));
+    for mutation in 0..4 {
+        let mut changed = case.clone();
+        match mutation {
+            0 => changed.expectation.stage = Stage::TypeElaboration,
+            1 => changed.expectation.tags.clear(),
+            2 => changed.expectation.domain.push_str("_other"),
+            _ => changed.expectation.expected_phase = Some(PipelinePhase::TypeCheck),
+        }
+        assert!(!super::super::step5c13_overload_admitted(
+            &config.workspace_root,
+            &changed
+        ));
+    }
+    let trace =
+        std::fs::read_to_string(config.workspace_root.join("tests/coverage/spec_trace.toml"))
+            .unwrap();
+    assert!(
+        !trace.contains(
+            &case
+                .expectation
+                .source
+                .to_string_lossy()
+                .replace(".miz", ".expect.toml")
+        )
+    );
+}
 
 #[test]
 fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
@@ -193,8 +266,8 @@ fn step5c13_real_source_selects_from_both_roots_at_both_sites_by_actual_type() {
     }
     let report = super::super::run_advanced_semantics_corpus(&step5c11_config()).unwrap();
     assert_eq!(report.error_count(), 0, "{:?}", report.diagnostics);
-    assert_eq!(report.results.len(), 11);
-    assert_eq!(report.passed_count(), 11);
+    assert_eq!(report.results.len(), 12);
+    assert_eq!(report.passed_count(), 12);
 }
 
 #[test]

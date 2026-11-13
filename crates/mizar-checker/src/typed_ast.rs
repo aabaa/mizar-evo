@@ -19,6 +19,7 @@ use crate::{
         SourceModeDefinitionHandoff, SourceModeDefinitionProjection,
         validate_source_mode_definition_absence,
     },
+    source_overload::SourceOverloadHandoff,
     source_predicate_definition::{
         SourcePredicateDefinitionHandoff, SourcePredicateDefinitionProjection,
     },
@@ -261,6 +262,7 @@ pub struct TypedAst {
     source_evidence: Option<SourceEvidenceHandoff>,
     source_term: Option<SourcePrimaryTermHandoff>,
     source_template: Option<SourceTemplateHandoff>,
+    source_overload: Option<SourceOverloadHandoff>,
     source_application: Option<SourceFunctorApplicationHandoff>,
     source_structure: Option<SourceStructureHandoff>,
     source_set_term: Option<SourceSetTermHandoff>,
@@ -334,6 +336,7 @@ impl TypedAst {
             source_evidence: None,
             source_term: None,
             source_template: None,
+            source_overload: None,
             source_application: None,
             source_structure: None,
             source_set_term: None,
@@ -429,6 +432,10 @@ impl TypedAst {
 
     pub const fn source_term(&self) -> Option<&SourcePrimaryTermHandoff> {
         self.source_term.as_ref()
+    }
+
+    pub const fn source_overload(&self) -> Option<&SourceOverloadHandoff> {
+        self.source_overload.as_ref()
     }
 
     pub const fn source_template(&self) -> Option<&SourceTemplateHandoff> {
@@ -1214,6 +1221,18 @@ impl TypedAst {
             .validate_installation(self.source_id, &self.module_id, &self.nodes)
             .map_err(|_| TypedAstError::InvalidSourceTerm)?;
         self.source_term = Some(handoff);
+        Ok(self)
+    }
+
+    pub fn with_source_overload(
+        mut self,
+        handoff: SourceOverloadHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self.source_overload.is_some() || handoff.original() != &self {
+            return Err(TypedAstError::InvalidSourceOverload);
+        }
+        self.types = handoff.normalization().type_entries().clone();
+        self.source_overload = Some(handoff);
         Ok(self)
     }
 
@@ -3714,6 +3733,9 @@ impl TypedAst {
         if let Some(source_term) = &self.source_term {
             output.push_str(&source_term.debug_text());
         }
+        if let Some(source_overload) = &self.source_overload {
+            output.push_str(&source_overload.debug_text());
+        }
         if let Some(source_template) = &self.source_template {
             output.push_str(&source_template.debug_text());
         }
@@ -4724,6 +4746,7 @@ pub enum TypedAstError {
     InvalidSourceEvidence,
     InvalidSourceTerm,
     InvalidSourceTemplate,
+    InvalidSourceOverload,
     InvalidSourceApplication,
     InvalidSourceStructure,
     InvalidSourceSetTerm,
@@ -4876,6 +4899,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceTerm => {
                 formatter.write_str("typed AST source primary-term handoff is inconsistent")
+            }
+            Self::InvalidSourceOverload => {
+                formatter.write_str("typed AST source overload handoff is inconsistent")
             }
             Self::InvalidSourceTemplate => {
                 formatter.write_str("typed AST source template handoff is inconsistent")

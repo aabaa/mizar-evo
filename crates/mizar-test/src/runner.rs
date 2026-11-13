@@ -1797,9 +1797,10 @@ fn step5c11_registration_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
 }
 
-const STEP5C13_OVERLOAD_IDS: [&str; 2] = [
+const STEP5C13_OVERLOAD_IDS: [&str; 3] = [
     "pass_advanced_semantics_overload_distinct_loci_001",
     "fail_advanced_semantics_overload_ambiguous_candidates_001",
+    "pass_advanced_semantics_ordinary_root_001",
 ];
 
 const INLINE_CLOSURE_REQUEST_ID: &str = "pass_advanced_semantics_inline_closure_requests_001";
@@ -2810,7 +2811,11 @@ fn is_step5c13_overload_candidate(case: &TestCase) -> bool {
 
 fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
     let negative = case.id.0 == STEP5C13_OVERLOAD_IDS[1];
-    let id = STEP5C13_OVERLOAD_IDS[usize::from(negative)];
+    let id = STEP5C13_OVERLOAD_IDS[if case.id.0 == STEP5C13_OVERLOAD_IDS[2] {
+        2
+    } else {
+        usize::from(negative)
+    }];
     let directory = if negative { "fail" } else { "pass" };
     let path = format!("tests/miz/{directory}/overload/{id}.miz");
     case.id.0 == id
@@ -2858,6 +2863,79 @@ fn step5c13_overload_admitted(root: &Path, case: &TestCase) -> bool {
         && case.expectation.declaration_symbol_payloads.is_empty()
         && case.expectation.snapshots.is_none()
         && case.expectation.tags.as_slice() == ["active_advanced_semantics"]
+}
+
+fn source_ordinary_root(
+    root: &Path,
+    case: &TestCase,
+    output: FrontendRun,
+) -> Result<mizar_checker::resolved_typed_ast::ResolvedTypedAst, String> {
+    use mizar_checker::{
+        cluster_trace::ClusterFactTable,
+        overload_resolution::OverloadResultStatus,
+        resolved_typed_ast::{ResolvedTypedAst, ResolvedTypedAstInputs},
+        source_overload::SourceOverloadHandoff,
+    };
+    let (source, nodes, symbols) = source_registration_inputs(root, case, output)?;
+    let original = source_registration_receiver(&source, nodes)?;
+    let (_, handoff) = SourceOverloadHandoff::from_source(&source, &symbols, &original)?;
+    let installed = original
+        .with_source_overload(handoff.clone())
+        .map_err(|error| error.to_string())?;
+    let final_ast = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+        typed_ast: &installed,
+        cluster_facts: &ClusterFactTable::new(),
+        overload_collection: handoff.collection(),
+        template_expansion: handoff.expansion(),
+        viability: handoff.viability(),
+        specificity: handoff.specificity(),
+        overload_selection: handoff.selection(),
+        expressions: Vec::new(),
+        node_hints: Vec::new(),
+        statement_semantics: None,
+        statement_proofs: None,
+    })
+    .map_err(|error| error.to_string())?;
+    if installed.source_overload() != Some(&handoff)
+        || final_ast.source_overload() != Some(&handoff)
+        || handoff.collection().sites().len() != 1
+        || handoff.collection().candidates().len() != 1
+        || handoff.selection().results().len() != 1
+        || !handoff
+            .selection()
+            .results()
+            .iter()
+            .all(|(_, result)| matches!(result.status, OverloadResultStatus::Resolved { .. }))
+        || final_ast.resolved_overloads().len() != 1
+        || !installed.facts().is_empty()
+        || !installed.initial_obligations().is_empty()
+        || !final_ast.checked_proof_nodes().is_empty()
+        || !final_ast.checked_terminal_goals().is_empty()
+    {
+        return Err("overload.invalid_source_projection".into());
+    }
+    let (_, selected) = handoff.selection().results().iter().next().unwrap();
+    let (_, projected) = final_ast.resolved_overloads().iter().next().unwrap();
+    let OverloadResultStatus::Resolved { root, .. } = selected.status else {
+        return Err("overload.missing_source_root".into());
+    };
+    let source_candidate = handoff.specificity().candidates().get(root).unwrap();
+    if !matches!(projected.status,
+        mizar_checker::resolved_typed_ast::OverloadResolutionStatus::Resolved { root: projected_root, .. }
+        if projected_root == root)
+        || final_ast
+            .viable_candidates()
+            .get(root)
+            .is_none_or(|candidate| {
+                candidate.symbol != source_candidate.symbol
+                    || candidate.ordinary_root != source_candidate.ordinary_root
+                    || candidate.parameters != source_candidate.parameters
+                    || candidate.result != source_candidate.result
+            })
+    {
+        return Err("overload.invalid_projected_root".into());
+    }
+    Ok(final_ast)
 }
 
 fn source_registration_inputs(
@@ -3336,6 +3414,8 @@ fn run_advanced_semantics_case(
             source_native_conversions(root, case, output).map(|_| Vec::new())
         } else if inline_closure_requests_admitted(root, case) {
             source_inline_closure_requests(root, case, output).map(|_| Vec::new())
+        } else if case.id.0 == STEP5C13_OVERLOAD_IDS[2] {
+            source_ordinary_root(root,case,output).map(|_|Vec::new())
         } else if step5c13_overload_admitted(root, case) {
             let (source,nodes,symbols)=source_registration_inputs(root,case,output)?;
             let database=if case.id.0==STEP5C13_OVERLOAD_IDS[1] {
