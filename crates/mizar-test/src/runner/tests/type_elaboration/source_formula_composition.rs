@@ -4870,6 +4870,66 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         validation_mode: ValidationMode::Metadata,
     };
     let plan = build_test_plan(&config).expect("Task257C3 isolation plan");
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C2_CASE)
+        .unwrap();
+    let conditioned = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A does not likes z };";
+    metamorphic_guard::with_source(case, conditioned, || {
+        let frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let symbols = resolver_symbol_collection(&workspace_root, case, ast);
+        assert!(symbols.detail_keys.is_empty());
+        let output = source_condition_formula_composition_output_with_source(
+            ast, symbols.module.clone(), &symbols.env, conditioned,
+        ).unwrap().unwrap();
+        let composition = output.typed_ast.source_condition_formula_composition().unwrap();
+        assert_eq!(composition.edges().len(), 1);
+        assert_eq!(composition.edges().iter().next().unwrap().1.formula().index(), 1);
+        assert_eq!(output.typed_ast.source_atomic_formula().unwrap().predicate_segments().len(), 2);
+        assert!(output.typed_ast.source_predicate_chain_composition().is_none());
+        assert!(source_predicate_chain_composition_output_with_source(
+            ast, symbols.module.clone(), &symbols.env, conditioned,
+        ).is_none(), "conditioned chain cannot select standalone C3");
+        for mutation in 0..3 {
+            assert!(source_condition_formula_composition_output_with_source_and_mutation(
+                ast, symbols.module.clone(), &symbols.env, conditioned, |inputs| {
+                    match mutation {
+                        0 => inputs.composition.edges.push(inputs.composition.edges[0].clone()),
+                        1 => inputs.composition.edges[0].formula = mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(inputs.atomic.predicate_segments[0].site.node().index()),
+                        _ => inputs.atomic.predicate_segments[1].left_edge = inputs.atomic.predicate_segments[0].left_edge,
+                    }
+                },
+            ).unwrap().is_err(), "per-segment association/shared edge mutation {mutation}");
+            let replay = source_condition_formula_composition_output_with_source(
+                ast, symbols.module.clone(), &symbols.env, conditioned,
+            ).unwrap().unwrap();
+            assert_eq!(replay.typed_ast, output.typed_ast);
+            assert_eq!(replay.resolved, output.resolved);
+        }
+        let standalone = source_predicate_chain_composition_output_with_source(
+            &exact_ast, exact_module.clone(), &exact_symbols, TASK257C1_SOURCE,
+        ).unwrap().unwrap();
+        let chain = standalone.typed_ast.source_predicate_chain_composition().unwrap();
+        assert!(output.typed_ast.clone().with_source_predicate_chain_composition(chain.clone()).is_err());
+        assert!(standalone.typed_ast.clone().with_source_condition_formula_composition(composition.clone()).is_err());
+        assert_eq!(output.typed_ast.source_condition_formula_composition(), Some(composition));
+        assert_eq!(standalone.typed_ast.source_predicate_chain_composition(), Some(chain));
+    });
+    let mixed_heads = conditioned.replace(
+        "end; theorem", "pred OtherDef: X knows Y means X = Y; end; theorem",
+    ).replace("does not likes z", "does not knows z");
+    metamorphic_guard::with_source(case, &mixed_heads, || {
+        let frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend.ast.as_ref().unwrap();
+        let symbols = resolver_symbol_collection(&workspace_root, case, ast);
+        assert!(symbols.detail_keys.is_empty());
+        assert!(source_condition_formula_composition_output_with_source(
+            ast, symbols.module, &symbols.env, &mixed_heads,
+        ).unwrap().is_err(), "broader local predicate profile stays excluded");
+    });
     let mut selected = Vec::new();
     for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
         let frontend = run_frontend(&workspace_root, case, ordinal)

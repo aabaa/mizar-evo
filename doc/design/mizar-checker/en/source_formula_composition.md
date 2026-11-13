@@ -33,6 +33,8 @@ The existing C2 transaction also admits normal variable-reference Comprehension/
 
 Condition-local Enumeration roots with optional Normal Set wrappers use the metadata forest and Primary profile owned by [Set transport](source_set_term.md#variable-reference-condition-enumeration-roots). C2 checks every such root against its condition’s associated builtin atom and SetTerm edge, authenticating the ordered direct Normal TermExpression operand slot, exact range and sole effective outer child. Every transparent wrapper/TermExpression/child link, normal punctuation leaf and boundary anchor is replayed. Missing, disconnected or recovered wrappers and unassociated roots remain excluded; nested Enumeration elements retain their existing lower guarantees.
 
+Each predicate condition associates with its whole Atomic chain root; segment rows create no separate C2 associations. Conditioned C3 rows and C2/C3 co-installation remain excluded.
+
 ## Variable-reference predicate-chain associations
 The existing C3 producer and Typed/Resolved replay also validate normal variable-reference dependencies with binary heads sharing one recorded current-module predicate identity and unchanged Equality/Membership or singleton siblings. Every actual multi-segment chain contributes its complete source-ordered adjacent-pair census and all negative-segment rows; conjunction ordinals count adjacency, while negation ordinals count only negative segments per formula. Singleton calls have no C rows and at least one chain is required. Lower IDs/fingerprints and ownership stay with the validated lower producers; this adds no fresh source/type certification, inference or proof authority. The reference-empty numeric profile below retains its exact rules.
 

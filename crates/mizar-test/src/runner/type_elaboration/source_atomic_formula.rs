@@ -1425,81 +1425,89 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
         let predicate = matches!(formula.kind, SurfaceNodeKind::PredicateApplication);
         let children = structural_child_ids(ast, formula);
-        let mut predicate_head = None;
+        let mut predicate_heads_written = Vec::new();
         let operands = if predicate {
-            let [segment_id] = children.as_slice() else {
-                return Err("condition predicate is not singleton".into());
-            };
-            let segment = ast.node(*segment_id).ok_or("missing condition segment")?;
-            if !matches!(segment.kind, SurfaceNodeKind::PredicateSegment) {
-                return Err("invalid condition segment".into());
+            if children.is_empty() {
+                return Err("condition predicate has no segments".into());
             }
-            let (left, head_id, right, polarity) = match segment.children.as_slice() {
-                [left, head, right] => (
-                    *left,
-                    *head,
-                    *right,
-                    SourcePredicateSegmentPolarityInput::Positive,
-                ),
-                [left, verb, not, head, right]
-                    if ast
-                        .node(*verb)
-                        .and_then(|node| node.token_text())
-                        .is_some_and(|text| matches!(text, "does" | "do"))
-                        && ast.node(*not).and_then(|node| node.token_text()) == Some("not") =>
-                {
-                    let verb_node = ast.node(*verb).ok_or("missing negation verb")?;
-                    let not_node = ast.node(*not).ok_or("missing negation not")?;
-                    insert_kind(
-                        &mut predicate_kinds,
-                        verb.index(),
-                        "source.formula.atomic.predicate-negation-verb",
-                    )?;
-                    insert_kind(
-                        &mut predicate_kinds,
-                        not.index(),
-                        "source.formula.atomic.predicate-negation-not",
-                    )?;
-                    (
-                        *left,
-                        *head,
-                        *right,
-                        SourcePredicateSegmentPolarityInput::Negative {
-                            verb_site: surface_site(*verb),
-                            verb_range: verb_node.range,
-                            verb_spelling: surface_text(ast, verb_node),
-                            verb_recovery: SourceAtomicFormulaRecovery::Normal,
-                            not_site: surface_site(*not),
-                            not_range: not_node.range,
-                            not_spelling: surface_text(ast, not_node),
-                            not_recovery: SourceAtomicFormulaRecovery::Normal,
-                        },
-                    )
+            let mut operands = Vec::new();
+            for (ordinal, segment_id) in children.iter().enumerate() {
+                let segment = ast.node(*segment_id).ok_or("missing condition segment")?;
+                if !matches!(segment.kind, SurfaceNodeKind::PredicateSegment) {
+                    return Err("invalid condition segment".into());
                 }
-                _ => return Err("unsupported condition predicate children".into()),
-            };
-            let head = ast.node(head_id).ok_or("missing condition head")?;
-            if !matches!(head.kind, SurfaceNodeKind::PredicateHead) {
-                return Err("invalid condition head".into());
+                let (left, written) = if ordinal == 0 {
+                    let (left, written) = segment
+                        .children
+                        .split_first()
+                        .ok_or("missing first predicate operand")?;
+                    (Some(*left), written)
+                } else {
+                    (None, segment.children.as_slice())
+                };
+                let (head_id, right, polarity) = match written {
+                    [head, right] => (*head, *right, SourcePredicateSegmentPolarityInput::Positive),
+                    [verb, not, head, right]
+                        if ast
+                            .node(*verb)
+                            .and_then(|node| node.token_text())
+                            .is_some_and(|text| matches!(text, "does" | "do"))
+                            && ast.node(*not).and_then(|node| node.token_text()) == Some("not") =>
+                    {
+                        let verb_node = ast.node(*verb).ok_or("missing negation verb")?;
+                        let not_node = ast.node(*not).ok_or("missing negation not")?;
+                        insert_kind(
+                            &mut predicate_kinds,
+                            verb.index(),
+                            "source.formula.atomic.predicate-negation-verb",
+                        )?;
+                        insert_kind(
+                            &mut predicate_kinds,
+                            not.index(),
+                            "source.formula.atomic.predicate-negation-not",
+                        )?;
+                        (
+                            *head,
+                            *right,
+                            SourcePredicateSegmentPolarityInput::Negative {
+                                verb_site: surface_site(*verb),
+                                verb_range: verb_node.range,
+                                verb_spelling: surface_text(ast, verb_node),
+                                verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                                not_site: surface_site(*not),
+                                not_range: not_node.range,
+                                not_spelling: surface_text(ast, not_node),
+                                not_recovery: SourceAtomicFormulaRecovery::Normal,
+                            },
+                        )
+                    }
+                    _ => return Err("unsupported condition predicate children".into()),
+                };
+                let head = ast.node(head_id).ok_or("missing condition head")?;
+                if !matches!(head.kind, SurfaceNodeKind::PredicateHead) {
+                    return Err("invalid condition head".into());
+                }
+                insert_kind(
+                    &mut predicate_kinds,
+                    segment_id.index(),
+                    "source.formula.atomic.predicate-segment",
+                )?;
+                insert_kind(
+                    &mut predicate_kinds,
+                    head_id.index(),
+                    "source.formula.atomic.predicate-head",
+                )?;
+                predicate_heads_written.push((*segment_id, head_id, polarity));
+                operands.extend(left);
+                operands.push(right);
             }
-            insert_kind(
-                &mut predicate_kinds,
-                segment_id.index(),
-                "source.formula.atomic.predicate-segment",
-            )?;
-            insert_kind(
-                &mut predicate_kinds,
-                head_id.index(),
-                "source.formula.atomic.predicate-head",
-            )?;
-            predicate_head = Some((*segment_id, head_id, polarity));
-            vec![left, right]
+            operands
         } else {
             children
         };
-        let [left, right] = operands.as_slice() else {
+        if operands.len() < 2 || !predicate && operands.len() != 2 {
             return Err("membership formula does not have two operands".to_owned());
-        };
+        }
         let target = |operand| -> Result<SourceAtomicTermTarget, String> {
             let wrapper = ast
                 .node(operand)
@@ -1526,8 +1534,11 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 _ => Err("membership operand has an unsupported term shape".to_owned()),
             }
         };
-        let left = target(*left)?;
-        let right = target(*right)?;
+        let targets = operands
+            .iter()
+            .map(|operand| target(*operand))
+            .collect::<Result<Vec<_>, _>>()?;
+        let left = targets[0];
         let context = if scoped {
             let SourceAtomicTermTarget::Primary(id) = left else {
                 return Err("scoped atom needs a Primary left operand".into());
@@ -1541,7 +1552,10 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             BindingContextId::new(0)
         };
         let comparison = !predicate && direct_token_texts(ast, formula) != ["in"];
-        if let Some((segment_id, head_id, polarity)) = predicate_head {
+        let mut request_ordinal = 0;
+        for (ordinal, (segment_id, head_id, polarity)) in
+            predicate_heads_written.into_iter().enumerate()
+        {
             let head = SourcePredicateHeadId::new(predicate_heads.len());
             let segment = ast.node(segment_id).ok_or("missing predicate segment")?;
             let head_node = ast.node(head_id).ok_or("missing predicate head")?;
@@ -1557,7 +1571,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             });
             predicate_segments.push(SourcePredicateSegmentInput {
                 formula: formula_key,
-                ordinal: 0,
+                ordinal,
                 site: surface_site(segment_id),
                 source_range: segment.range,
                 context,
@@ -1565,8 +1579,8 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 spelling: surface_text(ast, segment),
                 head,
                 polarity,
-                left_edge: SourceAtomicEdgeId::new(edges.len()),
-                right_edge: SourceAtomicEdgeId::new(edges.len() + 1),
+                left_edge: SourceAtomicEdgeId::new(edges.len() + ordinal),
+                right_edge: SourceAtomicEdgeId::new(edges.len() + ordinal + 1),
             });
             for (ordinal, entry) in symbols
                 .symbols()
@@ -1583,13 +1597,14 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 });
                 requests.push(SourceAtomicRequestInput {
                     formula: formula_key,
-                    ordinal,
+                    ordinal: request_ordinal,
                     kind: SourceAtomicRequestKind::PredicateCandidateSignature,
                     edge: None,
                     candidate: Some(candidate),
                     type_site: None,
                     attribute: None,
                 });
+                request_ordinal += 1;
             }
         }
         if let Some((_, groups)) = condition_atoms.iter().find(|(site, _)| *site == formula_id) {
@@ -1625,28 +1640,27 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 SourceAtomicFormulaKind::Membership
             },
         });
-        edges.extend([
+        let operand_count = targets.len();
+        edges.extend(targets.into_iter().enumerate().map(|(ordinal, target)| {
             edge(
                 formula_key,
-                0,
+                ordinal,
                 if predicate {
-                    SourceAtomicEdgeRole::PredicateLeftArgument
-                } else {
+                    if ordinal == 0 {
+                        SourceAtomicEdgeRole::PredicateLeftArgument
+                    } else if ordinal + 1 == operand_count {
+                        SourceAtomicEdgeRole::PredicateRightArgument
+                    } else {
+                        SourceAtomicEdgeRole::PredicateChainBoundary
+                    }
+                } else if ordinal == 0 {
                     SourceAtomicEdgeRole::BuiltinLeftOperand
-                },
-                left,
-            ),
-            edge(
-                formula_key,
-                1,
-                if predicate {
-                    SourceAtomicEdgeRole::PredicateRightArgument
                 } else {
                     SourceAtomicEdgeRole::BuiltinRightOperand
                 },
-                right,
-            ),
-        ]);
+                target,
+            )
+        }));
         for (request_ordinal, edge_ordinal) in (if predicate {
             0..0
         } else if comparison {

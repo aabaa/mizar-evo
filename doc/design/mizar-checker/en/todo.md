@@ -664,7 +664,8 @@ unchecked row below is one future nonempty logical task and one commit.
       - [x] **Task 257C3 implementation:** implement only the frozen
         predicate-chain composition after fresh post-documentation preflight.
       - [x] Freeze [whole-chain predicate condition associations](../../task_contracts/en/CHECKER257C-SCOPED-PREDICATE-CHAIN-CONDITIONS.md); C3 condition rows and C2/C3 co-installation remain separate.
-      - [ ] Implement only the frozen whole-chain C2 condition associations after fresh preflight.
+      - [x] Implement the frozen whole-chain C2 condition associations; conditioned C3 rows and C2/C3 co-installation remain deferred.
+      - [ ] Freeze conditioned-chain C3 conjunction/segment-negation rows; keep C2/C3 co-installation separately deferred.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
   - [x] [Native quantified statements and Let guards](../../task_contracts/en/CHECKER258-NATIVE-LET-STATEMENTS.md); consumes the genuine B5 source/context/type pair.

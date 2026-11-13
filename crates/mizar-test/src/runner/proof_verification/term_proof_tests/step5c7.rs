@@ -192,7 +192,8 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
     use mizar_checker::{
         binding_env::{BindingContextId, BindingContextLayer, BindingContextOwner, BindingId},
         source_atomic_formula::{
-            SourceAtomicFormulaKind, SourceAtomicRequestKind, SourcePredicateSegmentPolarityInput,
+            SourceAtomicEdgeRole, SourceAtomicFormulaKind, SourceAtomicFormulaRecovery,
+            SourceAtomicRequestKind, SourceAtomicTermTarget, SourcePredicateSegmentPolarityInput,
         },
         source_set_term::{
             SourceSetGeneratorId, SourceSetRequestKind, SourceSetTermKind, SourceSetTypeOwner,
@@ -219,8 +220,20 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
     let likes = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; ";
     let relation = ":: alpha/layout\ndefinition\n let parcel, needle be object; pred Rel: parcel knows needle means parcel = needle; end;\n";
     let positive = "{ z where z is set : z likes A }";
+    let positive_chain = "{ z where z is set : z likes A likes z }";
+    let positive_three_segment_chain = "{ z where z is set : z likes A likes z likes A }";
+    let positive_long_chain = "{ z where z is set : z likes A likes z likes A likes z }";
     let negative = "{ z where z is set : z does not likes A }";
-    let cases = [
+    let does_not_first = "{ z where z is set : z does not likes A likes z likes A }";
+    let does_not_middle = "{ z where z is set : z likes A does not likes z likes A }";
+    let does_not_last = "{ z where z is set : z likes A likes z does not likes A }";
+    let do_not_first =
+        "{ point where point is set : point do not knows item knows point knows item }";
+    let do_not_middle =
+        "{ point where point is set : point knows item do not knows point knows item }";
+    let do_not_last =
+        "{ point where point is set : point knows item knows point do not knows item }";
+    let cases = vec![
         (
             "positive header",
             format!("{likes}theorem T: for A being set holds A in {positive};"),
@@ -285,6 +298,96 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
             "unused outer quantifier and proof Let",
             format!(
                 "{likes}theorem T: for A, spare being set holds A in {positive} proof let A, spare be set; thus A in {positive}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "positive two-segment chain header",
+            format!("{likes}theorem T: for A being set holds A in {positive_chain};"),
+            1,
+            1,
+        ),
+        (
+            "positive three-segment chain proof with shadowed binding",
+            format!(
+                "{likes}theorem T: for A being set holds A = A proof let A be set; thus A in {positive_three_segment_chain}; end;"
+            ),
+            1,
+            1,
+        ),
+        (
+            "positive four-segment chain header and proof with shadowed binding",
+            format!(
+                "{likes}theorem T: for A being set holds A in {positive_long_chain} proof let A be set; thus A in {positive_long_chain}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "does not first chain segment in header",
+            format!("{likes}theorem T: for A being set holds A in {does_not_first};"),
+            1,
+            1,
+        ),
+        (
+            "does not middle chain segment in proof",
+            format!(
+                "{likes}theorem T: for A being set holds A = A proof let A be set; thus A in {does_not_middle}; end;"
+            ),
+            1,
+            1,
+        ),
+        (
+            "does not last chain segment in both with shadowed binding",
+            format!(
+                "{likes}theorem T: for A being set holds A in {does_not_last} proof let A be set; thus A in {does_not_last}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "do not first chain segment in alpha/layout header",
+            format!("{relation}theorem T: for item being set holds item in {do_not_first};"),
+            1,
+            1,
+        ),
+        (
+            "do not middle chain segment in proof",
+            format!(
+                "{relation}theorem T: for item being set holds item = item proof let item be set; thus item in {do_not_middle}; end;"
+            ),
+            1,
+            1,
+        ),
+        (
+            "do not last chain segment in both with shadowed binding",
+            format!(
+                "{relation}theorem T: for item being set holds item in {do_not_last} proof let item be set; thus item in {do_not_last}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "mixed disjoint chain then singleton",
+            format!(
+                "{likes}theorem T: for A being set holds A in {positive_chain} & A in {{ w where w is set : w does not likes A }};"
+            ),
+            2,
+            2,
+        ),
+        (
+            "mixed disjoint singleton then chain",
+            format!(
+                "{likes}theorem T: for A being set holds A in {{ w where w is set : w does not likes A }} & A in {positive_chain};"
+            ),
+            2,
+            2,
+        ),
+        (
+            "unused declarations with four-segment chain",
+            format!(
+                "{likes}theorem T: for A, spare being set holds A in {positive_long_chain} proof let A, spare be set; thus A in {positive_long_chain}; end;"
             ),
             2,
             2,
@@ -651,6 +754,21 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
             .collect::<Vec<_>>();
         expected_atoms
             .sort_by_key(|view| (view.range().start, view.range().end, view.id().index()));
+        let mut expected_segments = Vec::new();
+        for formula in &expected_atoms {
+            if formula.kind() != &mizar_syntax::SurfaceNodeKind::PredicateApplication {
+                continue;
+            }
+            let mut ordinal = 0;
+            for child in &ast.node(formula.id()).unwrap().children {
+                if ast.node(*child).unwrap().kind == mizar_syntax::SurfaceNodeKind::PredicateSegment
+                {
+                    expected_segments.push((formula.id(), *child, ordinal));
+                    ordinal += 1;
+                }
+            }
+            assert!(ordinal > 0, "{label}: predicate root has written segments");
+        }
         assert_eq!(
             atomic.formulas().len(),
             expected_atoms.len(),
@@ -705,17 +823,17 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
         }
         assert_eq!(
             atomic.predicate_heads().len(),
-            expected_sets,
+            expected_segments.len(),
             "{label}: predicate heads"
         );
         assert_eq!(
             atomic.predicate_segments().len(),
-            expected_sets,
+            expected_segments.len(),
             "{label}: predicate segments"
         );
         assert_eq!(
             atomic.candidates().len(),
-            expected_sets,
+            expected_segments.len(),
             "{label}: predicate candidates"
         );
         let declared = symbols
@@ -729,9 +847,50 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
             1,
             "{label}: one source predicate definition"
         );
-        for (ordinal, (candidate_id, candidate)) in atomic.candidates().iter().enumerate() {
+        for (ordinal, ((root_site, segment_site, segment_ordinal), (candidate_id, candidate))) in
+            expected_segments
+                .iter()
+                .zip(atomic.candidates().iter())
+                .enumerate()
+        {
             let (head_id, head) = atomic.predicate_heads().iter().nth(ordinal).unwrap();
+            let (segment_id, segment) = atomic.predicate_segments().iter().nth(ordinal).unwrap();
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == root_site.index())
+                .expect("source predicate root has one Atomic formula")
+                .0;
+            let segment_node = ast.node(*segment_site).unwrap();
+            let head_site = segment_node
+                .children
+                .iter()
+                .copied()
+                .find(|child| {
+                    ast.node(*child).unwrap().kind == mizar_syntax::SurfaceNodeKind::PredicateHead
+                })
+                .expect("source segment has a written head");
             assert_eq!(candidate_id.index(), ordinal, "{label}: dense candidate id");
+            assert_eq!(segment_id.index(), ordinal, "{label}: dense segment id");
+            assert_eq!(
+                segment.formula(),
+                formula_id,
+                "{label}: segment root formula"
+            );
+            assert_eq!(
+                *segment_ordinal,
+                segment.ordinal(),
+                "{label}: local segment order"
+            );
+            assert_eq!(segment.site().node().index(), segment_site.index());
+            assert_eq!(segment.source_range(), segment_node.range);
+            assert_eq!(
+                segment.spelling(),
+                &source[segment_node.range.start..segment_node.range.end],
+                "{label}: exact segment source"
+            );
+            assert_eq!(segment.recovery(), SourceAtomicFormulaRecovery::Normal);
+            assert_eq!(segment.context(), expected_context(*segment_site));
             assert_eq!(
                 candidate.head(),
                 head_id,
@@ -748,30 +907,27 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                 declared[0].contribution(),
                 "{label}: candidate contribution"
             );
-            let segment = atomic
-                .predicate_segments()
-                .get(mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(ordinal))
-                .unwrap();
+            assert_eq!(head.formula(), formula_id, "{label}: head root formula");
+            assert_eq!(head.site().node().index(), head_site.index());
+            let head_node = ast.node(head_site).unwrap();
+            assert_eq!(head.source_range(), head_node.range);
             assert_eq!(
-                segment.formula(),
-                head.formula(),
-                "{label}: segment formula"
+                head.spelling(),
+                &source[head_node.range.start..head_node.range.end],
+                "{label}: exact predicate head source"
+            );
+            assert_eq!(head.context(), expected_context(head_site));
+            assert_eq!(head.left_arity(), 1, "{label}: binary predicate left arity");
+            assert_eq!(
+                head.right_arity(),
+                1,
+                "{label}: binary predicate right arity"
             );
             assert_eq!(segment.head(), head_id, "{label}: segment head");
             assert_eq!(
                 segment.context(),
                 head.context(),
                 "{label}: segment context"
-            );
-            let segment_view = ast
-                .node_views()
-                .find(|view| view.id().index() == segment.site().node().index())
-                .unwrap();
-            let segment_node = ast.node(segment_view.id()).unwrap();
-            assert_eq!(
-                segment.source_range(),
-                segment_node.range,
-                "{label}: segment source range"
             );
             let tokens = segment_node
                 .children
@@ -793,7 +949,7 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                     .unwrap();
                 let (not, _) = tokens.iter().find(|(_, token)| *token == "not").unwrap();
                 assert!(
-                    matches!(segment.polarity(), SourcePredicateSegmentPolarityInput::Negative { verb_site, verb_spelling, not_site, not_spelling, .. } if verb_site.node().index() == verb.index() && verb_spelling == verb_text && not_site.node().index() == not.index() && not_spelling == "not"),
+                    matches!(segment.polarity(), SourcePredicateSegmentPolarityInput::Negative { verb_site, verb_range, verb_spelling, verb_recovery, not_site, not_range, not_spelling, not_recovery } if verb_site.node().index() == verb.index() && *verb_range == ast.node(*verb).unwrap().range && verb_spelling == verb_text && *verb_recovery == SourceAtomicFormulaRecovery::Normal && not_site.node().index() == not.index() && *not_range == ast.node(*not).unwrap().range && not_spelling == "not" && *not_recovery == SourceAtomicFormulaRecovery::Normal),
                     "{label}: actual polarity sites"
                 );
             } else {
@@ -806,9 +962,191 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                 );
             }
         }
+
+        let mut expected_edge_count = 0;
+        for formula_site in expected_atoms.iter().filter(|formula| {
+            formula.kind() == &mizar_syntax::SurfaceNodeKind::PredicateApplication
+        }) {
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == formula_site.id().index())
+                .expect("predicate root Atomic row")
+                .0;
+            let formula_segments = expected_segments
+                .iter()
+                .filter(|(root_site, _, _)| *root_site == formula_site.id())
+                .collect::<Vec<_>>();
+            let mut operand_sites = Vec::new();
+            for (ordinal, (_, segment_site, _)) in formula_segments.iter().enumerate() {
+                let written_terms = ast
+                    .node(*segment_site)
+                    .unwrap()
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|child| {
+                        ast.node(*child).unwrap().kind
+                            == mizar_syntax::SurfaceNodeKind::TermExpression
+                    })
+                    .collect::<Vec<_>>();
+                if ordinal == 0 {
+                    assert_eq!(
+                        written_terms.len(),
+                        2,
+                        "{label}: first segment owns left and right operands"
+                    );
+                    operand_sites.extend(written_terms);
+                } else {
+                    assert_eq!(
+                        written_terms.len(),
+                        1,
+                        "{label}: continuation owns only its written right operand"
+                    );
+                    operand_sites.push(written_terms[0]);
+                }
+            }
+            assert_eq!(
+                operand_sites.len(),
+                formula_segments.len() + 1,
+                "{label}: chain edge/operand census"
+            );
+            let actual_edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == formula_id)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                actual_edges.len(),
+                operand_sites.len(),
+                "{label}: chain edges"
+            );
+            expected_edge_count += operand_sites.len();
+            for (ordinal, ((_, edge), term_site)) in
+                actual_edges.iter().zip(&operand_sites).enumerate()
+            {
+                let role = if ordinal == 0 {
+                    SourceAtomicEdgeRole::PredicateLeftArgument
+                } else if ordinal + 1 == operand_sites.len() {
+                    SourceAtomicEdgeRole::PredicateRightArgument
+                } else {
+                    SourceAtomicEdgeRole::PredicateChainBoundary
+                };
+                let source_term = ast.node(*term_site).unwrap();
+                let reference_sites = source_term
+                    .children
+                    .iter()
+                    .copied()
+                    .filter(|child| {
+                        ast.node(*child).unwrap().kind
+                            == mizar_syntax::SurfaceNodeKind::TermReference
+                    })
+                    .collect::<Vec<_>>();
+                let [reference_site] = reference_sites.as_slice() else {
+                    panic!("{label}: written chain operand has one TermReference")
+                };
+                let primary_id = primary
+                    .terms()
+                    .iter()
+                    .find(|(_, term)| term.site().node().index() == reference_site.index())
+                    .expect("written chain operand has one Primary row")
+                    .0;
+                assert_eq!(edge.ordinal(), ordinal, "{label}: dense chain edge ordinal");
+                assert_eq!(edge.role(), role, "{label}: written chain edge role");
+                assert_eq!(
+                    edge.target(),
+                    SourceAtomicTermTarget::Primary(primary_id),
+                    "{label}: chain edge follows its source operand"
+                );
+            }
+        }
+        for membership in &memberships {
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == membership.id().index())
+                .expect("Membership root Atomic row")
+                .0;
+            let membership_node = ast.node(membership.id()).unwrap();
+            let written_terms = membership_node
+                .children
+                .iter()
+                .copied()
+                .filter(|child| {
+                    ast.node(*child).unwrap().kind == mizar_syntax::SurfaceNodeKind::TermExpression
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                written_terms.len(),
+                2,
+                "{label}: Membership has two written operands"
+            );
+            let set_site = written_sets
+                .iter()
+                .find(|set_view| {
+                    ast.node(written_terms[1]).unwrap().range.start <= set_view.range().start
+                        && set_view.range().end <= ast.node(written_terms[1]).unwrap().range.end
+                })
+                .expect("Membership right operand is its source comprehension")
+                .id();
+            let set_id = set
+                .terms()
+                .iter()
+                .find(|(_, term)| term.site().node().index() == set_site.index())
+                .expect("Membership comprehension has one Set row")
+                .0;
+            let left_term = ast.node(written_terms[0]).unwrap();
+            let left_references = left_term
+                .children
+                .iter()
+                .copied()
+                .filter(|child| {
+                    ast.node(*child).unwrap().kind == mizar_syntax::SurfaceNodeKind::TermReference
+                })
+                .collect::<Vec<_>>();
+            let [left_reference] = left_references.as_slice() else {
+                panic!("{label}: Membership left operand has one TermReference")
+            };
+            let left_primary = primary
+                .terms()
+                .iter()
+                .find(|(_, term)| term.site().node().index() == left_reference.index())
+                .expect("Membership left operand has one Primary row")
+                .0;
+            let actual_edges = atomic
+                .edges()
+                .iter()
+                .filter(|(_, edge)| edge.formula() == formula_id)
+                .collect::<Vec<_>>();
+            assert_eq!(actual_edges.len(), 2, "{label}: Membership edge count");
+            expected_edge_count += 2;
+            assert_eq!(actual_edges[0].1.ordinal(), 0);
+            assert_eq!(
+                actual_edges[0].1.role(),
+                SourceAtomicEdgeRole::BuiltinLeftOperand
+            );
+            assert_eq!(
+                actual_edges[0].1.target(),
+                SourceAtomicTermTarget::Primary(left_primary)
+            );
+            assert_eq!(actual_edges[1].1.ordinal(), 1);
+            assert_eq!(
+                actual_edges[1].1.role(),
+                SourceAtomicEdgeRole::BuiltinRightOperand
+            );
+            assert_eq!(
+                actual_edges[1].1.target(),
+                SourceAtomicTermTarget::SetTerm(set_id)
+            );
+        }
+        assert_eq!(
+            atomic.edges().len(),
+            expected_edge_count,
+            "{label}: complete source edge census"
+        );
         assert_eq!(
             atomic.requests().len(),
-            expected_memberships + expected_sets,
+            expected_memberships + expected_segments.len(),
             "{label}: complete unresolved Atomic requests"
         );
         assert_eq!(
@@ -819,9 +1157,74 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                     |(_, row)| row.kind() == SourceAtomicRequestKind::PredicateCandidateSignature
                 )
                 .count(),
-            expected_sets,
+            expected_segments.len(),
             "{label}: candidate requests"
         );
+        for (candidate_ordinal, (root_site, _, segment_ordinal)) in
+            expected_segments.iter().enumerate()
+        {
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == root_site.index())
+                .expect("predicate root request owner")
+                .0;
+            let candidate_id =
+                mizar_checker::source_atomic_formula::SourcePredicateCandidateId::new(
+                    candidate_ordinal,
+                );
+            let requests = atomic
+                .requests()
+                .iter()
+                .filter(|(_, request)| request.formula() == formula_id)
+                .collect::<Vec<_>>();
+            let request = requests
+                .iter()
+                .find(|(_, request)| request.candidate() == Some(candidate_id))
+                .expect("each written segment has one unresolved candidate request")
+                .1;
+            assert_eq!(request.ordinal(), *segment_ordinal);
+            assert_eq!(
+                request.kind(),
+                SourceAtomicRequestKind::PredicateCandidateSignature
+            );
+            assert_eq!(request.edge(), None);
+            assert_eq!(request.type_site(), None);
+            assert_eq!(request.attribute(), None);
+        }
+        for membership in &memberships {
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == membership.id().index())
+                .expect("Membership request owner")
+                .0;
+            let requests = atomic
+                .requests()
+                .iter()
+                .filter(|(_, request)| request.formula() == formula_id)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                requests.len(),
+                1,
+                "{label}: one unanswered Membership request"
+            );
+            let (edge_id, edge) = atomic
+                .edges()
+                .iter()
+                .find(|(_, edge)| edge.formula() == formula_id && edge.ordinal() == 1)
+                .unwrap();
+            assert_eq!(requests[0].1.ordinal(), 0);
+            assert_eq!(
+                requests[0].1.kind(),
+                SourceAtomicRequestKind::OperandExpectedType
+            );
+            assert_eq!(requests[0].1.edge(), Some(edge_id));
+            assert_eq!(edge.role(), SourceAtomicEdgeRole::BuiltinRightOperand);
+            assert_eq!(requests[0].1.candidate(), None);
+            assert_eq!(requests[0].1.type_site(), None);
+            assert_eq!(requests[0].1.attribute(), None);
+        }
 
         let route = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(&ast, module.clone(), &symbols.env, &source)
             .unwrap_or_else(|| panic!("{label}: native scoped C2 route missing"))
@@ -882,6 +1285,31 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                 formula_id,
                 "{label}: paired condition/atom association"
             );
+            let whole_root = atomic.formulas().get(formula_id).unwrap();
+            assert_eq!(whole_root.site().node().index(), atom.index());
+            let root_segments = atomic
+                .predicate_segments()
+                .iter()
+                .filter(|(_, segment)| segment.formula() == formula_id)
+                .map(|(_, segment)| segment.site().node().index())
+                .collect::<Vec<_>>();
+            if !root_segments.is_empty() {
+                assert!(
+                    root_segments.iter().all(|site| *site != atom.index()),
+                    "{label}: C2 points to the whole chain root"
+                );
+                let source_segment_count = ast
+                    .node(*atom)
+                    .unwrap()
+                    .children
+                    .iter()
+                    .filter(|child| {
+                        ast.node(**child).unwrap().kind
+                            == mizar_syntax::SurfaceNodeKind::PredicateSegment
+                    })
+                    .count();
+                assert_eq!(root_segments.len(), source_segment_count);
+            }
         }
         assert_eq!(
             route.typed_ast.source_term(),
@@ -921,7 +1349,7 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
             ]),
             "{label}: existing coverage boundary"
         );
-        if case_index == 0 {
+        if case_index == 0 || label == "positive two-segment chain header" {
             let pristine = route.typed_ast.clone();
             assert!(
                 route
@@ -1032,25 +1460,28 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                     &changed,
                 ).is_some_and(|result| result.is_err()), "{reason}: native profile refusal was lost");
             };
-            reject_profile(
-                source.replace(": z likes A", ": (z likes A)"),
-                "grouped condition",
-            );
+            let grouped_condition = if source.contains(": z likes A likes z") {
+                source.replace(": z likes A likes z", ": (z likes A likes z)")
+            } else {
+                source.replace(": z likes A", ": (z likes A)")
+            };
+            reject_profile(grouped_condition, "grouped condition");
             reject_profile(
                 source.replace(": z likes A", ": z likes A & z likes A"),
                 "compound condition",
             );
-            reject_profile(
-                source.replace(": z likes A", ": z likes A likes z"),
-                "chained condition",
-            );
-            reject_profile(
+            let wrapped_source = if source.contains(": z likes A likes z") {
+                source.replace(
+                    "in { z where z is set : z likes A likes z }",
+                    "in ({ z where z is set : z likes A likes z })",
+                )
+            } else {
                 source.replace(
                     "in { z where z is set : z likes A }",
                     "in ({ z where z is set : z likes A })",
-                ),
-                "wrapped comprehension",
-            );
+                )
+            };
+            reject_profile(wrapped_source, "wrapped comprehension");
             reject_profile(
                 source.replace("z is set", "z is object"),
                 "Object generator",
@@ -1067,7 +1498,7 @@ fn step5c7_native_predicate_condition_uses_scoped_context() {
                 "nested comprehension",
             );
         }
-        if label == "mixed disjoint conditions" {
+        if label.starts_with("mixed disjoint") {
             let cross_pair = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source_and_mutation(
                 &ast,
                 module.clone(),

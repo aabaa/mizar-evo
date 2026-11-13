@@ -1859,7 +1859,7 @@ fn is_authenticated_condition_container(
         return false;
     };
     if formula.kind == SourceAtomicFormulaKind::PredicateApplication {
-        // Only the paired bare singleton predicate extends the builtin route.
+        // Only a paired bare predicate authenticates nested condition ownership.
         if formula.recovery != SourceAtomicFormulaRecovery::Normal
             || formula.context != set_term.context()
             || effective_formula_range != formula.source_range
@@ -1893,42 +1893,15 @@ fn is_authenticated_condition_container(
         {
             return false;
         }
-        let mut segments = input
+        let segments = input
             .predicate_segments
             .iter()
             .filter(|row| row.formula == formula_id);
-        let Some(segment) = segments.next() else {
-            return false;
-        };
-        if segments.next().is_some() || segment.source_range != formula.source_range {
-            return false;
-        }
-        let Some(head) = input.predicate_heads.get(segment.head.index()) else {
-            return false;
-        };
         let Some(atom_node) = arena.node(formula.site.node()) else {
             return false;
         };
-        let Some(segment_node) = arena.node(segment.site.node()) else {
-            return false;
-        };
-        let (left, actual_head, right) = match (&segment.polarity, segment_node.children.as_slice())
-        {
-            (SourcePredicateSegmentPolarityInput::Positive, [left, head, right]) => {
-                (left, head, right)
-            }
-            (
-                SourcePredicateSegmentPolarityInput::Negative {
-                    verb_site,
-                    not_site,
-                    ..
-                },
-                [left, verb, not, head, right],
-            ) if *verb == verb_site.node() && *not == not_site.node() => (left, head, right),
-            _ => return false,
-        };
-        if atom_node.children.as_slice() != [segment.site.node()]
-            || *actual_head != head.site.node()
+        if atom_node.children.is_empty()
+            || atom_node.children.len() != segments.clone().count()
             || !set_terms.conditions().iter().any(|(_, condition)| {
                 condition.term() == set_term_id
                     && condition.recovery() == SourceSetTermRecovery::Normal
@@ -1942,26 +1915,87 @@ fn is_authenticated_condition_container(
         {
             return false;
         }
-        for (expression, edge) in [(*left, segment.left_edge), (*right, segment.right_edge)] {
-            let Some(expression) = arena.node(expression) else {
+        let mut previous_right = None;
+        let mut predicate_identity = None;
+        for (ordinal, (segment, actual_segment)) in segments.zip(&atom_node.children).enumerate() {
+            let Some(head) = input.predicate_heads.get(segment.head.index()) else {
                 return false;
             };
-            let Some(edge) = input.edges.get(edge.index()) else {
+            let Some(segment_node) = arena.node(*actual_segment) else {
                 return false;
             };
-            let SourceAtomicTermTarget::Primary(id) = edge.target else {
-                return false;
-            };
-            let Some(primary) = primary_terms.terms().get(id) else {
-                return false;
-            };
-            if expression.kind.as_str() != "TermExpression"
-                || expression.recovery != NodeRecoveryState::Normal
-                || expression.anchor != SourceAnchor::Range(primary.source_range())
-                || expression.children.as_slice() != [primary.site().node()]
+            if *actual_segment != segment.site.node()
+                || atom_node.children.len() == 1 && segment.source_range != formula.source_range
+                || previous_right.is_some_and(|edge| edge != segment.left_edge)
             {
                 return false;
             }
+            if atom_node.children.len() > 1 {
+                let mut candidates = input
+                    .candidates
+                    .iter()
+                    .filter(|row| row.head == segment.head);
+                let Some(candidate) = candidates.next() else {
+                    return false;
+                };
+                let identity = (&candidate.symbol, candidate.contribution);
+                if candidates.next().is_some()
+                    || candidate.symbol.module() != &input.module_id
+                    || predicate_identity.is_some_and(|previous| previous != identity)
+                {
+                    return false;
+                }
+                predicate_identity = Some(identity);
+            }
+            let (left, children) = if ordinal == 0 {
+                let Some((left, children)) = segment_node.children.split_first() else {
+                    return false;
+                };
+                (Some(*left), children)
+            } else {
+                (None, segment_node.children.as_slice())
+            };
+            let (actual_head, right) = match (&segment.polarity, children) {
+                (SourcePredicateSegmentPolarityInput::Positive, [head, right]) => (head, right),
+                (
+                    SourcePredicateSegmentPolarityInput::Negative {
+                        verb_site,
+                        not_site,
+                        ..
+                    },
+                    [verb, not, head, right],
+                ) if *verb == verb_site.node() && *not == not_site.node() => (head, right),
+                _ => return false,
+            };
+            if *actual_head != head.site.node() {
+                return false;
+            }
+            for (expression, edge) in left
+                .map(|left| (left, segment.left_edge))
+                .into_iter()
+                .chain(std::iter::once((*right, segment.right_edge)))
+            {
+                let Some(expression) = arena.node(expression) else {
+                    return false;
+                };
+                let Some(edge) = input.edges.get(edge.index()) else {
+                    return false;
+                };
+                let SourceAtomicTermTarget::Primary(id) = edge.target else {
+                    return false;
+                };
+                let Some(primary) = primary_terms.terms().get(id) else {
+                    return false;
+                };
+                if expression.kind.as_str() != "TermExpression"
+                    || expression.recovery != NodeRecoveryState::Normal
+                    || expression.anchor != SourceAnchor::Range(primary.source_range())
+                    || expression.children.as_slice() != [primary.site().node()]
+                {
+                    return false;
+                }
+            }
+            previous_right = Some(segment.right_edge);
         }
         return true;
     }
