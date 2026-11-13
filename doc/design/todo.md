@@ -814,8 +814,8 @@ permit; each source-integration slice waits for its actual upstream outputs.
    [Unpublished theorem witness projection](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md) binds genuine original identity and same-call checked context/payload; trusted staging/publication and reuse remain open.
    [Same-result theorem used-axioms status](./task_contracts/en/PROOF-SOURCE-THEOREM-USED-AXIOMS-STATUS.md) retains genuine reference metadata with the original conservative slice; full imported-FQN recording, publication and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
-   (VC 60); design can start, general source integration waits for authentic
-   formula/context/substitution/provenance producers. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
+   (VC 60); design frozen, implementation deferred until authentic
+   formula/context/substitution/provenance producers exist. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
 3. [ ] [By/built-in acceptance and witness publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
    (Proof 23 / Artifact 25). ATP acceptance follows item 1; built-in acceptance
    follows item 2. Each witness requires a matching accepted result; distinct

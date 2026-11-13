@@ -588,7 +588,7 @@ corruption requirements in
 nonempty logical task and one commit; no shared empty infrastructure task is
 authorized.
 
-60. **Built-in formula/substitution evidence candidates.** [ ]
+60. **Built-in formula/substitution evidence candidates.** [ ] — Design frozen; implementation deferred.
     - [PREATP-FORMULA-EVIDENCE](../../task_contracts/en/PREATP-FORMULA-EVIDENCE.md);
       source integration waits for authentic formula/context/provenance producers.
 

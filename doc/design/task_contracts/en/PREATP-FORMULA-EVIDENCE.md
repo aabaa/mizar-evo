@@ -1,6 +1,6 @@
 # Task PREATP-FORMULA-EVIDENCE: kernel-checkable built-in discharge candidates
 Canonical language: English; [Japanese pointer](../ja/PREATP-FORMULA-EVIDENCE.md).
-Status: planned; source integration is dependency-blocked. Tier: full gates.
+Status: design frozen under owner decision DR-3 (2026-11-14, freeze-only dispatch); implementation deferred until the producer dependencies below exist. Tier: full gates.
 Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md), task 60.
 Consumers: [Proof plan](../../mizar-proof/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Authority: [§21.7.1](../../../spec/en/21.source_code_annotation_and_atp.md#2171-minimum-kernel-architecture-and-de-bruijn-criterion),
@@ -12,7 +12,7 @@ Dependencies: VC tasks 12/25/27-29 and authentic source-derived VC, context,
 formula, substitution and provenance producers for the selected discharge slice.
 Equality slices also require ATPK-KERNEL-EQUALITY-INSTANCES; unsupported
 trace/computation classes retain their existing producer dependencies.
-Readiness: candidate design can start; task 63 supplies only bounded original-source direct-premise association. General source integration remains blocked; no route starts from markers alone.
+Readiness: source integration is dependency-blocked; task 63 supplies only bounded original-source direct-premise association. No route starts from markers alone.
 
 Scope: convert supported deterministic discharge steps into the existing
 formula/substitution handoff for the original VC and unchanged local context.
@@ -27,6 +27,9 @@ invented facts/substitutions, new kernel formats/primitives, SAT in VC,
 lower-stage producer relocation, protected .miz/expectation or policy changes.
 Owner details: [handoff mapping](../../mizar-vc/en/kernel_evidence_handoff.md#input-mapping),
 [discharge records](../../mizar-vc/en/discharge.md#evidence-and-explanations).
+Supported discharge classes are fixed by these owner mappings and records.
+Open/deferred: per-class candidate shapes not fixed there remain undecided;
+this freeze does not authorize their design or implementation.
 Tests: real supported direct-premise and propositional-tautology VCs yield
 candidates accepted by the existing kernel. Cover absent premises/payloads,
 unsupported traces, marker-only/preserved status, wrong VC/context/polarity,
