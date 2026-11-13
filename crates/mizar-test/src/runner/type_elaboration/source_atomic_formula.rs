@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use mizar_checker::{
-    binding_env::{BindingContextId, BindingEnv, BindingId},
+    binding_env::{BindingContextId, BindingContextOwner, BindingEnv, BindingId},
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
@@ -30,7 +30,7 @@ use mizar_checker::{
 };
 use mizar_resolve::{
     env::{SymbolEnv, SymbolKind},
-    resolved_ast::{ModuleId, SymbolId},
+    resolved_ast::{ModuleId, SurfaceResolvedArena, SymbolId},
 };
 use mizar_session::{SourceAnchor, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
@@ -1265,8 +1265,36 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
     scope: &mizar_resolve::names::ResolvedVariableScope,
     binding_env: &BindingEnv,
 ) -> Result<TypedAst, String> {
-    let arena = membership_typed_arena(ast)?;
-    let primary = membership_primary_terms(ast, module, scope, binding_env, &arena)?;
+    let scoped = ast.node_views().any(|view| {
+        view.kind() == &SurfaceNodeKind::SetComprehension
+            && ast.node_views().any(|inner| {
+                inner.kind() == &SurfaceNodeKind::PredicateApplication
+                    && view.range().start <= inner.range().start
+                    && inner.range().end <= view.range().end
+            })
+    });
+    let mut arena = membership_typed_arena(ast)?;
+    if scoped {
+        let source = SurfaceResolvedArena::lower(ast, module).map_err(|error| error.to_string())?;
+        let authentic = mizar_checker::type_checker::SourceVariableSemanticsChecker::source_theorem_binding_env(
+            &source, symbols, scope,
+        )?;
+        if binding_env != &authentic {
+            return Err("membership scoped binding environment mismatch".into());
+        }
+        let nodes = arena
+            .iter()
+            .zip(ast.node_views())
+            .map(|((_, node), surface)| {
+                source
+                    .resolved_node_for(surface.id())
+                    .map(|resolved| node.clone().with_resolved_node(resolved))
+                    .ok_or_else(|| "membership scoped resolved link missing".to_owned())
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
+    }
+    let primary = membership_primary_terms(ast, module, symbols, scope, binding_env, &arena)?;
     let roots = ast
         .nodes()
         .iter()
@@ -1323,24 +1351,42 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                 cursor = *inner;
             }
             let formula = ast.node(cursor)?;
-            (matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+            ((matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
                 && matches!(direct_token_texts(ast, formula).as_slice(), [operator] if matches!(operator.as_str(), "=" | "<>" | "in")))
+                || scoped && wrappers.is_empty() && matches!(formula.kind, SurfaceNodeKind::PredicateApplication))
             .then_some((cursor, wrappers))
         })
         .collect::<Vec<_>>();
+    if scoped
+        && (condition_atoms.len() != set_handoff.conditions().len()
+            || condition_atoms.iter().any(|(site, _)| {
+                !matches!(
+                    ast.nodes()[site.index()].kind,
+                    SurfaceNodeKind::PredicateApplication
+                )
+            }))
+    {
+        return Err("unsupported scoped predicate condition".into());
+    }
     if !condition_atoms.is_empty() {
         let mut nodes = arena
             .iter()
             .map(|(_, node)| node.clone())
             .collect::<Vec<_>>();
         for (site, wrappers) in &condition_atoms {
-            nodes[site.index()].kind =
+            nodes[site.index()].kind = if matches!(
+                ast.nodes()[site.index()].kind,
+                SurfaceNodeKind::PredicateApplication
+            ) {
+                "source.formula.atomic.predicate"
+            } else {
                 match direct_token_texts(ast, &ast.nodes()[site.index()]).as_slice() {
                     [operator] if operator == "=" => "source.formula.atomic.equality",
                     [operator] if operator == "<>" => "source.formula.atomic.inequality",
                     _ => "source.formula.atomic.membership",
                 }
-                .into();
+            }
+            .into();
             for wrapper in wrappers {
                 nodes[wrapper.index()].kind = "source.formula.atomic.parenthesized".into();
             }
@@ -1351,9 +1397,9 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         .node_views()
         .filter_map(|view| {
             let node = ast.node(view.id())?;
-            (matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                && (direct_token_texts(ast, node) == ["in"]
-                    || condition_atoms.iter().any(|(site, _)| *site == view.id())))
+            ((matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                && direct_token_texts(ast, node) == ["in"])
+                || condition_atoms.iter().any(|(site, _)| *site == view.id()))
             .then_some(view.id())
         })
         .collect::<Vec<_>>();
@@ -1364,6 +1410,10 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
     if formulas.is_empty() {
         return Err("membership source AST has no membership formula".to_owned());
     }
+    let mut predicate_segments = Vec::new();
+    let mut predicate_heads = Vec::new();
+    let mut candidates = Vec::new();
+    let mut predicate_kinds = BTreeMap::new();
     let mut atomic_formulas = Vec::with_capacity(formulas.len());
     let mut wrappers = Vec::new();
     let mut edges = Vec::with_capacity(formulas.len() * 2);
@@ -1372,8 +1422,82 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         let formula = ast
             .node(formula_id)
             .ok_or_else(|| "membership formula disappeared".to_owned())?;
+        let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
+        let predicate = matches!(formula.kind, SurfaceNodeKind::PredicateApplication);
         let children = structural_child_ids(ast, formula);
-        let [left, right] = children.as_slice() else {
+        let mut predicate_head = None;
+        let operands = if predicate {
+            let [segment_id] = children.as_slice() else {
+                return Err("condition predicate is not singleton".into());
+            };
+            let segment = ast.node(*segment_id).ok_or("missing condition segment")?;
+            if !matches!(segment.kind, SurfaceNodeKind::PredicateSegment) {
+                return Err("invalid condition segment".into());
+            }
+            let (left, head_id, right, polarity) = match segment.children.as_slice() {
+                [left, head, right] => (
+                    *left,
+                    *head,
+                    *right,
+                    SourcePredicateSegmentPolarityInput::Positive,
+                ),
+                [left, verb, not, head, right]
+                    if ast
+                        .node(*verb)
+                        .and_then(|node| node.token_text())
+                        .is_some_and(|text| matches!(text, "does" | "do"))
+                        && ast.node(*not).and_then(|node| node.token_text()) == Some("not") =>
+                {
+                    let verb_node = ast.node(*verb).ok_or("missing negation verb")?;
+                    let not_node = ast.node(*not).ok_or("missing negation not")?;
+                    insert_kind(
+                        &mut predicate_kinds,
+                        verb.index(),
+                        "source.formula.atomic.predicate-negation-verb",
+                    )?;
+                    insert_kind(
+                        &mut predicate_kinds,
+                        not.index(),
+                        "source.formula.atomic.predicate-negation-not",
+                    )?;
+                    (
+                        *left,
+                        *head,
+                        *right,
+                        SourcePredicateSegmentPolarityInput::Negative {
+                            verb_site: surface_site(*verb),
+                            verb_range: verb_node.range,
+                            verb_spelling: surface_text(ast, verb_node),
+                            verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                            not_site: surface_site(*not),
+                            not_range: not_node.range,
+                            not_spelling: surface_text(ast, not_node),
+                            not_recovery: SourceAtomicFormulaRecovery::Normal,
+                        },
+                    )
+                }
+                _ => return Err("unsupported condition predicate children".into()),
+            };
+            let head = ast.node(head_id).ok_or("missing condition head")?;
+            if !matches!(head.kind, SurfaceNodeKind::PredicateHead) {
+                return Err("invalid condition head".into());
+            }
+            insert_kind(
+                &mut predicate_kinds,
+                segment_id.index(),
+                "source.formula.atomic.predicate-segment",
+            )?;
+            insert_kind(
+                &mut predicate_kinds,
+                head_id.index(),
+                "source.formula.atomic.predicate-head",
+            )?;
+            predicate_head = Some((*segment_id, head_id, polarity));
+            vec![left, right]
+        } else {
+            children
+        };
+        let [left, right] = operands.as_slice() else {
             return Err("membership formula does not have two operands".to_owned());
         };
         let target = |operand| -> Result<SourceAtomicTermTarget, String> {
@@ -1404,8 +1528,70 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
         };
         let left = target(*left)?;
         let right = target(*right)?;
-        let formula_key = SourceAtomicFormulaId::new(formula_ordinal);
-        let comparison = direct_token_texts(ast, formula) != ["in"];
+        let context = if scoped {
+            let SourceAtomicTermTarget::Primary(id) = left else {
+                return Err("scoped atom needs a Primary left operand".into());
+            };
+            primary
+                .terms()
+                .get(id)
+                .ok_or("missing scoped operand")?
+                .context()
+        } else {
+            BindingContextId::new(0)
+        };
+        let comparison = !predicate && direct_token_texts(ast, formula) != ["in"];
+        if let Some((segment_id, head_id, polarity)) = predicate_head {
+            let head = SourcePredicateHeadId::new(predicate_heads.len());
+            let segment = ast.node(segment_id).ok_or("missing predicate segment")?;
+            let head_node = ast.node(head_id).ok_or("missing predicate head")?;
+            predicate_heads.push(SourcePredicateHeadInput {
+                formula: formula_key,
+                site: surface_site(head_id),
+                source_range: head_node.range,
+                context,
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: surface_text(ast, head_node),
+                left_arity: 1,
+                right_arity: 1,
+            });
+            predicate_segments.push(SourcePredicateSegmentInput {
+                formula: formula_key,
+                ordinal: 0,
+                site: surface_site(segment_id),
+                source_range: segment.range,
+                context,
+                recovery: SourceAtomicFormulaRecovery::Normal,
+                spelling: surface_text(ast, segment),
+                head,
+                polarity,
+                left_edge: SourceAtomicEdgeId::new(edges.len()),
+                right_edge: SourceAtomicEdgeId::new(edges.len() + 1),
+            });
+            for (ordinal, entry) in symbols
+                .symbols()
+                .iter()
+                .filter(|entry| entry.kind() == SymbolKind::Predicate)
+                .enumerate()
+            {
+                let candidate = SourcePredicateCandidateId::new(candidates.len());
+                candidates.push(SourcePredicateCandidateInput {
+                    head,
+                    ordinal,
+                    symbol: entry.symbol().clone(),
+                    contribution: entry.contribution(),
+                });
+                requests.push(SourceAtomicRequestInput {
+                    formula: formula_key,
+                    ordinal,
+                    kind: SourceAtomicRequestKind::PredicateCandidateSignature,
+                    edge: None,
+                    candidate: Some(candidate),
+                    type_site: None,
+                    attribute: None,
+                });
+            }
+        }
         if let Some((_, groups)) = condition_atoms.iter().find(|(site, _)| *site == formula_id) {
             for (ordinal, site) in groups.iter().copied().enumerate() {
                 let group = ast
@@ -1416,7 +1602,7 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
                     ordinal,
                     site: surface_site(site),
                     source_range: group.range,
-                    context: BindingContextId::new(0),
+                    context,
                     recovery: SourceAtomicFormulaRecovery::Normal,
                     spelling: surface_text(ast, group),
                 });
@@ -1426,10 +1612,12 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             site: surface_site(formula_id),
             source_range: formula.range,
             source_ordinal: formula_ordinal,
-            context: BindingContextId::new(0),
+            context,
             recovery: SourceAtomicFormulaRecovery::Normal,
             spelling: surface_text(ast, formula),
-            kind: if comparison && direct_token_texts(ast, formula) == ["<>"] {
+            kind: if predicate {
+                SourceAtomicFormulaKind::PredicateApplication
+            } else if comparison && direct_token_texts(ast, formula) == ["<>"] {
                 SourceAtomicFormulaKind::Inequality
             } else if comparison {
                 SourceAtomicFormulaKind::Equality
@@ -1441,17 +1629,33 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             edge(
                 formula_key,
                 0,
-                SourceAtomicEdgeRole::BuiltinLeftOperand,
+                if predicate {
+                    SourceAtomicEdgeRole::PredicateLeftArgument
+                } else {
+                    SourceAtomicEdgeRole::BuiltinLeftOperand
+                },
                 left,
             ),
             edge(
                 formula_key,
                 1,
-                SourceAtomicEdgeRole::BuiltinRightOperand,
+                if predicate {
+                    SourceAtomicEdgeRole::PredicateRightArgument
+                } else {
+                    SourceAtomicEdgeRole::BuiltinRightOperand
+                },
                 right,
             ),
         ]);
-        for (request_ordinal, edge_ordinal) in (if comparison { 0..2 } else { 1..2 }).enumerate() {
+        for (request_ordinal, edge_ordinal) in (if predicate {
+            0..0
+        } else if comparison {
+            0..2
+        } else {
+            1..2
+        })
+        .enumerate()
+        {
             requests.push(SourceAtomicRequestInput {
                 formula: formula_key,
                 ordinal: request_ordinal,
@@ -1463,15 +1667,25 @@ pub(in crate::runner) fn step5c7_membership_typed_ast(
             });
         }
     }
+    if scoped {
+        let mut nodes = arena
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect::<Vec<_>>();
+        for (index, kind) in predicate_kinds {
+            nodes[index].kind = kind.into();
+        }
+        arena = TypedArena::try_new(arena.root(), nodes).map_err(|error| error.to_string())?;
+    }
     let handoff = SourceAtomicFormulaProducer::build(
         SourceAtomicFormulaHandoffInput {
             source_id: ast.source_id,
             module_id: module.clone(),
             formulas: atomic_formulas,
             wrappers,
-            predicate_segments: Vec::new(),
-            predicate_heads: Vec::new(),
-            candidates: Vec::new(),
+            predicate_segments,
+            predicate_heads,
+            candidates,
             type_sites: Vec::new(),
             attributes: Vec::new(),
             edges,
@@ -1576,7 +1790,7 @@ pub(in crate::runner) fn step5c8_formula_typed_ast(
         )
         .map_err(|error| error.to_string())?
     } else {
-        membership_primary_terms(ast, module, scope, binding_env, &source_arena)?
+        membership_primary_terms(ast, module, symbols, scope, binding_env, &source_arena)?
     };
     let mut sets = None;
     if proof_organization {
@@ -1963,6 +2177,7 @@ fn membership_restore_arena(
 fn membership_primary_terms(
     ast: &SurfaceAst,
     module: &ModuleId,
+    symbols: &SymbolEnv,
     scope: &mizar_resolve::names::ResolvedVariableScope,
     binding_env: &BindingEnv,
     arena: &TypedArena,
@@ -1973,7 +2188,23 @@ fn membership_primary_terms(
         .node_views()
         .flat_map(|view| view.children().iter().map(move |child| (*child, view.id())))
         .collect::<BTreeMap<_, _>>();
+    let scoped = binding_env.contexts().iter().any(|(_, context)| {
+        matches!(
+            context.owner,
+            BindingContextOwner::SourceComprehension { .. }
+        )
+    });
     for reference in scope.references() {
+        let context = if scoped {
+            binding_env
+                .contexts()
+                .iter()
+                .find(|(_, context)| context.lexical_scope.as_ref() == Some(reference.scope()))
+                .map(|(id, _)| id)
+                .ok_or("membership Primary lexical context missing")?
+        } else {
+            BindingContextId::new(0)
+        };
         let mut cursor = reference.node();
         let mut groups = Vec::new();
         while let Some(parent) = parents.get(&cursor) {
@@ -1999,7 +2230,7 @@ fn membership_primary_terms(
                 site: surface_site(site),
                 source_range: node.range,
                 source_ordinal: id.index(),
-                context: BindingContextId::new(0),
+                context,
                 recovery: SourcePrimaryTermRecovery::Normal,
                 spelling: surface_text(ast, node),
                 kind: SourcePrimaryTermKind::Parenthesized,
@@ -2013,7 +2244,7 @@ fn membership_primary_terms(
             site: surface_site(reference.node()),
             source_range: reference.range(),
             source_ordinal: leaf.index(),
-            context: BindingContextId::new(0),
+            context,
             recovery: SourcePrimaryTermRecovery::Normal,
             spelling: reference.spelling().to_owned(),
             kind: SourcePrimaryTermKind::VariableReference,
@@ -2026,18 +2257,26 @@ fn membership_primary_terms(
             role: SourcePrimaryTermReferenceRole::Variable,
         });
     }
-    SourcePrimaryTermProducer::build_from_occurrences(
-        SourcePrimaryTermHandoffInput {
-            source_id: ast.source_id,
-            module_id: module.clone(),
-            terms,
-            references,
-            numeric_type_requests: Vec::new(),
-        },
-        binding_env,
-        arena,
-        scope,
-    )
+    let input = SourcePrimaryTermHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        terms,
+        references,
+        numeric_type_requests: Vec::new(),
+    };
+    if scoped {
+        let source = SurfaceResolvedArena::lower(ast, module).map_err(|error| error.to_string())?;
+        SourcePrimaryTermProducer::build_from_scoped_theorem_occurrences(
+            input,
+            binding_env,
+            arena,
+            &source,
+            symbols,
+            scope,
+        )
+    } else {
+        SourcePrimaryTermProducer::build_from_occurrences(input, binding_env, arena, scope)
+    }
     .map_err(|error| error.to_string())
 }
 

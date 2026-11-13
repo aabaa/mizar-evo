@@ -188,6 +188,928 @@ fn step5c7_citation_results_cannot_be_substituted() {
 }
 
 #[test]
+fn step5c7_native_predicate_condition_uses_scoped_context() {
+    use mizar_checker::{
+        binding_env::{BindingContextId, BindingContextLayer, BindingContextOwner, BindingId},
+        source_atomic_formula::{
+            SourceAtomicFormulaKind, SourceAtomicRequestKind, SourcePredicateSegmentPolarityInput,
+        },
+        source_set_term::{
+            SourceSetGeneratorId, SourceSetRequestKind, SourceSetTermKind, SourceSetTypeOwner,
+        },
+        source_term::{
+            SourcePrimaryTermKind, SourcePrimaryTermRecovery, SourcePrimaryTermReferenceRole,
+            SourcePrimaryTermRole,
+        },
+        type_checker::SourceVariableSemanticsChecker,
+    };
+    use mizar_resolve::{
+        names::{SourceVariableScopeInput, SourceVariableScopeResolver},
+        resolved_ast::SurfaceResolvedArena,
+    };
+
+    let config = config();
+    let root = &config.workspace_root;
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == STEP5C7_PROOF_CASES[0].0)
+        .unwrap();
+    let likes = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; ";
+    let relation = ":: alpha/layout\ndefinition\n let parcel, needle be object; pred Rel: parcel knows needle means parcel = needle; end;\n";
+    let positive = "{ z where z is set : z likes A }";
+    let negative = "{ z where z is set : z does not likes A }";
+    let cases = [
+        (
+            "positive header",
+            format!("{likes}theorem T: for A being set holds A in {positive};"),
+            1,
+            1,
+        ),
+        (
+            "positive proof",
+            format!(
+                "{likes}theorem T: for A being set holds A = A proof let A be set; thus A in {positive}; end;"
+            ),
+            1,
+            1,
+        ),
+        (
+            "positive both and shadowed proof binding",
+            format!(
+                "{likes}theorem T: for A being set holds A in {positive} proof let A be set; thus A in {positive}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "does not header",
+            format!("{likes}theorem T: for A being set holds A in {negative};"),
+            1,
+            1,
+        ),
+        (
+            "does not proof",
+            format!(
+                "{likes}theorem T: for A being set holds A = A proof let A be set; thus A in {negative}; end;"
+            ),
+            1,
+            1,
+        ),
+        (
+            "does not both and shadowed proof binding",
+            format!(
+                "{likes}theorem T: for A being set holds A in {negative} proof let A be set; thus A in {negative}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "mixed disjoint conditions",
+            format!(
+                "{likes}theorem T: for A being set holds A in {positive} & A in {{ w where w is set : w does not likes A }};"
+            ),
+            2,
+            2,
+        ),
+        (
+            "do not alpha/layout and shadowed proof binding",
+            format!(
+                "{relation}theorem T: for item being set holds item in {{ point where point is set : point do not knows item }} proof\nlet item be set; thus item in {{ point where point is set : point do not knows item }}; end;"
+            ),
+            2,
+            2,
+        ),
+        (
+            "unused outer quantifier and proof Let",
+            format!(
+                "{likes}theorem T: for A, spare being set holds A in {positive} proof let A, spare be set; thus A in {positive}; end;"
+            ),
+            2,
+            2,
+        ),
+    ];
+    for (case_index, (label, source, expected_sets, expected_memberships)) in
+        cases.into_iter().enumerate()
+    {
+        let ast = parse(&source);
+        let ast_before = ast.clone();
+        let symbols = resolver_symbol_collection(root, case, &ast);
+        assert!(
+            symbols.detail_keys.is_empty(),
+            "{label}: {:?}",
+            symbols.detail_keys
+        );
+        let module = &symbols.module;
+        let resolved = SurfaceResolvedArena::lower(&ast, module).unwrap();
+        let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, module, &symbols.env),
+        )
+        .unwrap_or_else(|error| panic!("{label}: {error:?}"));
+        let scope_before = scope.clone();
+        let bindings = SourceVariableSemanticsChecker::source_theorem_binding_env(
+            &resolved,
+            &symbols.env,
+            &scope,
+        )
+        .unwrap_or_else(|error| panic!("{label}: {error}"));
+        let bindings_before = bindings.clone();
+        let (scopes, parents) =
+            mizar_resolve::symbols::source_proof_scope_maps(&resolved, &symbols.env, &scope)
+                .unwrap_or_else(|error| panic!("{label}: {error}"));
+        let mut boundaries = scopes
+            .iter()
+            .filter(|(id, local)| {
+                parents
+                    .get(id)
+                    .is_none_or(|parent| scopes.get(parent) != Some(local))
+            })
+            .collect::<Vec<_>>();
+        boundaries.sort_by_key(|(_, local)| (local.path().len(), local.path()));
+        let expected_context = |site| {
+            let local = scopes.get(&site).expect("source local scope");
+            BindingContextId::new(
+                boundaries
+                    .iter()
+                    .position(|(_, boundary)| *boundary == local)
+                    .expect("source scope boundary"),
+            )
+        };
+        assert_eq!(
+            bindings.contexts().len(),
+            boundaries.len(),
+            "{label}: complete contexts"
+        );
+        assert_eq!(
+            bindings.bindings().len(),
+            scope.bindings().len(),
+            "{label}: complete declarations"
+        );
+        for (index, (surface, local)) in boundaries.iter().enumerate() {
+            let view = ast.node_view(**surface).unwrap();
+            let row = bindings
+                .contexts()
+                .get(BindingContextId::new(index))
+                .unwrap();
+            let (owner, layer) = match view.kind() {
+                mizar_syntax::SurfaceNodeKind::QuantifiedFormula(_) => (
+                    BindingContextOwner::SourceFormula {
+                        source_range: view.range(),
+                    },
+                    BindingContextLayer::Expression,
+                ),
+                mizar_syntax::SurfaceNodeKind::ProofBlock => (
+                    BindingContextOwner::SourceStatement {
+                        source_range: view.range(),
+                    },
+                    BindingContextLayer::Proof,
+                ),
+                mizar_syntax::SurfaceNodeKind::DefinitionBlockItem => (
+                    BindingContextOwner::SourceStatement {
+                        source_range: view.range(),
+                    },
+                    BindingContextLayer::Declaration,
+                ),
+                mizar_syntax::SurfaceNodeKind::SetComprehension => (
+                    BindingContextOwner::SourceComprehension {
+                        source_range: view.range(),
+                    },
+                    BindingContextLayer::Expression,
+                ),
+                _ if index == 0 => (BindingContextOwner::Module, BindingContextLayer::Module),
+                kind => panic!("{label}: unexpected context owner {kind:?}"),
+            };
+            assert_eq!(
+                row.id,
+                BindingContextId::new(index),
+                "{label}: dense context ID"
+            );
+            assert_eq!(row.owner, owner, "{label}: actual context owner");
+            assert_eq!(row.layer, layer, "{label}: actual context layer");
+            let own = scope
+                .bindings()
+                .iter()
+                .filter(|binding| binding.scope() == *local)
+                .map(|binding| BindingId::new(binding.id().index()))
+                .collect::<Vec<_>>();
+            let visible = scope
+                .bindings()
+                .iter()
+                .filter(|binding| local.path().starts_with(binding.scope().path()))
+                .map(|binding| BindingId::new(binding.id().index()))
+                .collect::<Vec<_>>();
+            assert_eq!(row.bindings, own, "{label}: complete local declarations");
+            assert_eq!(
+                row.visible_bindings, visible,
+                "{label}: complete visible declarations"
+            );
+        }
+        if label == "unused outer quantifier and proof Let" {
+            assert_eq!(
+                scope
+                    .bindings()
+                    .iter()
+                    .filter(|binding| binding.spelling() == "spare")
+                    .count(),
+                2,
+                "unused declarations remain in scope census"
+            );
+        }
+        let mut written_sets = ast
+            .node_views()
+            .filter(|view| view.kind() == &mizar_syntax::SurfaceNodeKind::SetComprehension)
+            .collect::<Vec<_>>();
+        written_sets.sort_by_key(|view| (view.range().start, view.range().end, view.id().index()));
+        assert_eq!(
+            written_sets.len(),
+            expected_sets,
+            "{label}: literal comprehension roots"
+        );
+        let mut memberships = ast
+            .node_views()
+            .filter(|view| {
+                let node = ast.node(view.id()).unwrap();
+                matches!(
+                    node.kind,
+                    mizar_syntax::SurfaceNodeKind::BuiltinPredicateApplication
+                ) && node
+                    .children
+                    .iter()
+                    .filter_map(|child| ast.node(*child).unwrap().token_text())
+                    .collect::<Vec<_>>()
+                    == ["in"]
+            })
+            .collect::<Vec<_>>();
+        memberships.sort_by_key(|view| (view.range().start, view.range().end, view.id().index()));
+        assert_eq!(
+            memberships.len(),
+            expected_memberships,
+            "{label}: literal Membership roots"
+        );
+        let condition_sites = written_sets
+            .iter()
+            .map(|view| {
+                ast.node(view.id())
+                    .unwrap()
+                    .children
+                    .iter()
+                    .copied()
+                    .find(|child| {
+                        matches!(
+                            ast.node(*child).unwrap().kind,
+                            mizar_syntax::SurfaceNodeKind::FormulaExpression
+                        )
+                    })
+                    .expect("literal comprehension condition")
+            })
+            .collect::<Vec<_>>();
+
+        let typed = super::super::super::type_elaboration::step5c7_membership_typed_ast(
+            &ast,
+            module,
+            &symbols.env,
+            &scope,
+            &bindings,
+        )
+        .unwrap_or_else(|error| panic!("{label}: {error}"));
+        let primary = typed.source_term().unwrap();
+        let set = typed.source_set_term().unwrap();
+        let atomic = typed.source_atomic_formula().unwrap();
+        assert_eq!(
+            primary.references().len(),
+            scope.references().len(),
+            "{label}: complete Primary references"
+        );
+        assert_eq!(
+            primary.terms().len(),
+            scope.references().len(),
+            "{label}: complete Primary rows"
+        );
+        let mut references = scope.references().iter().collect::<Vec<_>>();
+        references.sort_by_key(|reference| (reference.range().start, reference.range().end));
+        for (ordinal, actual) in references.iter().enumerate() {
+            let (id, term) = primary.terms().iter().nth(ordinal).unwrap();
+            assert_eq!(id.index(), ordinal, "{label}: dense Primary id");
+            assert_eq!(term.source_ordinal(), ordinal, "{label}: Primary ordinal");
+            assert_eq!(
+                term.site().node().index(),
+                actual.node().index(),
+                "{label}: Primary source site"
+            );
+            assert_eq!(
+                term.source_range(),
+                actual.range(),
+                "{label}: Primary source range"
+            );
+            assert_eq!(
+                term.spelling(),
+                actual.spelling(),
+                "{label}: Primary spelling"
+            );
+            assert_eq!(
+                term.kind(),
+                SourcePrimaryTermKind::VariableReference,
+                "{label}: Primary kind"
+            );
+            assert_eq!(
+                term.role(),
+                SourcePrimaryTermRole::Value,
+                "{label}: Primary role"
+            );
+            assert_eq!(
+                term.recovery(),
+                SourcePrimaryTermRecovery::Normal,
+                "{label}: Primary recovery"
+            );
+            assert!(term.parent().is_none(), "{label}: bare Primary parent");
+            assert_eq!(
+                term.context(),
+                expected_context(actual.node()),
+                "{label}: Primary lexical context"
+            );
+            let (reference_id, row) = primary.references().iter().nth(ordinal).unwrap();
+            assert_eq!(reference_id.index(), ordinal, "{label}: dense reference id");
+            assert_eq!(row.term(), id, "{label}: reference/term link");
+            assert_eq!(
+                row.binding().index(),
+                actual.binding().index(),
+                "{label}: resolver winner"
+            );
+            assert_eq!(
+                row.lexical_scope(),
+                Some(actual.scope()),
+                "{label}: reference lexical scope"
+            );
+            assert_eq!(
+                row.use_ordinal(),
+                actual.ordinal(),
+                "{label}: reference ordinal"
+            );
+            assert_eq!(
+                row.role(),
+                SourcePrimaryTermReferenceRole::Variable,
+                "{label}: reference role"
+            );
+        }
+        assert_eq!(
+            set.terms().len(),
+            expected_sets,
+            "{label}: complete Set rows"
+        );
+        assert_eq!(
+            set.generators().len(),
+            expected_sets,
+            "{label}: complete generators"
+        );
+        assert_eq!(
+            set.type_sites().len(),
+            expected_sets,
+            "{label}: complete generator types"
+        );
+        assert_eq!(
+            set.conditions().len(),
+            expected_sets,
+            "{label}: complete conditions"
+        );
+        assert_eq!(
+            set.requests().len(),
+            expected_sets * 2,
+            "{label}: unanswered Set requests"
+        );
+        for (ordinal, view) in written_sets.iter().enumerate() {
+            let (id, term) = set.terms().iter().nth(ordinal).unwrap();
+            assert_eq!(id.index(), ordinal, "{label}: dense Set id");
+            assert_eq!(term.source_ordinal(), ordinal, "{label}: Set ordinal");
+            assert_eq!(
+                term.site().node().index(),
+                view.id().index(),
+                "{label}: Set owner"
+            );
+            assert_eq!(term.kind(), SourceSetTermKind::Comprehension, "{label}");
+            assert_eq!(
+                term.context(),
+                expected_context(view.id()),
+                "{label}: Set context"
+            );
+            let generator_id = SourceSetGeneratorId::new(ordinal);
+            let generator = set.generators().get(generator_id).unwrap();
+            assert_eq!(generator.term(), id, "{label}: generator owner");
+            assert_eq!(generator.ordinal(), 0, "{label}: generator ordinal");
+            assert_eq!(
+                generator.context(),
+                term.context(),
+                "{label}: generator context"
+            );
+            let type_site = set.type_sites().get(generator.type_site()).unwrap();
+            assert_eq!(
+                type_site.owner(),
+                SourceSetTypeOwner::Generator(generator_id),
+                "{label}: generator type owner"
+            );
+            assert_eq!(
+                type_site.context(),
+                term.context(),
+                "{label}: generator type context"
+            );
+            let condition = set
+                .conditions()
+                .get(mizar_checker::source_set_term::SourceSetConditionId::new(
+                    ordinal,
+                ))
+                .unwrap();
+            assert_eq!(condition.term(), id, "{label}: condition owner");
+            assert_eq!(
+                condition.condition_site().node().index(),
+                condition_sites[ordinal].index(),
+                "{label}: condition site"
+            );
+            assert_eq!(
+                condition.spelling(),
+                &source[condition.source_range().start..condition.source_range().end],
+                "{label}: condition spelling"
+            );
+        }
+        assert!(
+            set.requests().iter().all(|(_, request)| matches!(
+                request.kind(),
+                SourceSetRequestKind::GeneratorSethood | SourceSetRequestKind::ResultType
+            )),
+            "{label}: Set requests remain unanswered"
+        );
+
+        let mut expected_atoms = ast
+            .node_views()
+            .filter(|view| {
+                matches!(
+                    view.kind(),
+                    mizar_syntax::SurfaceNodeKind::PredicateApplication
+                ) || memberships
+                    .iter()
+                    .any(|membership| membership.id() == view.id())
+            })
+            .collect::<Vec<_>>();
+        expected_atoms
+            .sort_by_key(|view| (view.range().start, view.range().end, view.id().index()));
+        assert_eq!(
+            atomic.formulas().len(),
+            expected_atoms.len(),
+            "{label}: complete Atomic formula census"
+        );
+        assert_eq!(
+            atomic.formulas().len(),
+            expected_memberships + expected_sets,
+            "{label}: formula rows"
+        );
+        assert_eq!(
+            typed.nodes().len(),
+            ast.node_views().count(),
+            "{label}: complete typed syntax arena"
+        );
+        for (typed_id, node) in typed.nodes().iter() {
+            let surface = ast
+                .node_views()
+                .find(|view| view.id().index() == typed_id.index())
+                .unwrap();
+            assert_eq!(
+                node.resolved_node,
+                resolved.resolved_node_for(surface.id()),
+                "{label}: immutable resolved link"
+            );
+        }
+        for (ordinal, (id, formula)) in atomic.formulas().iter().enumerate() {
+            assert_eq!(id.index(), ordinal, "{label}: dense Atomic id");
+            assert_eq!(formula.source_ordinal(), ordinal, "{label}: Atomic ordinal");
+            assert_eq!(
+                formula.site().node().index(),
+                expected_atoms[ordinal].id().index(),
+                "{label}: Atomic site"
+            );
+            assert_eq!(
+                formula.context(),
+                expected_context(expected_atoms[ordinal].id()),
+                "{label}: Atomic context"
+            );
+            assert_eq!(
+                formula.kind(),
+                if matches!(
+                    expected_atoms[ordinal].kind(),
+                    mizar_syntax::SurfaceNodeKind::PredicateApplication
+                ) {
+                    SourceAtomicFormulaKind::PredicateApplication
+                } else {
+                    SourceAtomicFormulaKind::Membership
+                },
+                "{label}: Atomic kind"
+            );
+        }
+        assert_eq!(
+            atomic.predicate_heads().len(),
+            expected_sets,
+            "{label}: predicate heads"
+        );
+        assert_eq!(
+            atomic.predicate_segments().len(),
+            expected_sets,
+            "{label}: predicate segments"
+        );
+        assert_eq!(
+            atomic.candidates().len(),
+            expected_sets,
+            "{label}: predicate candidates"
+        );
+        let declared = symbols
+            .env
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Predicate)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            declared.len(),
+            1,
+            "{label}: one source predicate definition"
+        );
+        for (ordinal, (candidate_id, candidate)) in atomic.candidates().iter().enumerate() {
+            let (head_id, head) = atomic.predicate_heads().iter().nth(ordinal).unwrap();
+            assert_eq!(candidate_id.index(), ordinal, "{label}: dense candidate id");
+            assert_eq!(
+                candidate.head(),
+                head_id,
+                "{label}: candidate/head association"
+            );
+            assert_eq!(candidate.ordinal(), 0, "{label}: candidate ordinal");
+            assert_eq!(
+                candidate.symbol(),
+                declared[0].symbol(),
+                "{label}: source collector candidate"
+            );
+            assert_eq!(
+                candidate.contribution(),
+                declared[0].contribution(),
+                "{label}: candidate contribution"
+            );
+            let segment = atomic
+                .predicate_segments()
+                .get(mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(ordinal))
+                .unwrap();
+            assert_eq!(
+                segment.formula(),
+                head.formula(),
+                "{label}: segment formula"
+            );
+            assert_eq!(segment.head(), head_id, "{label}: segment head");
+            assert_eq!(
+                segment.context(),
+                head.context(),
+                "{label}: segment context"
+            );
+            let segment_view = ast
+                .node_views()
+                .find(|view| view.id().index() == segment.site().node().index())
+                .unwrap();
+            let segment_node = ast.node(segment_view.id()).unwrap();
+            assert_eq!(
+                segment.source_range(),
+                segment_node.range,
+                "{label}: segment source range"
+            );
+            let tokens = segment_node
+                .children
+                .iter()
+                .filter_map(|child| {
+                    ast.node(*child)
+                        .unwrap()
+                        .token_text()
+                        .map(|text| (*child, text))
+                })
+                .collect::<Vec<_>>();
+            if tokens
+                .iter()
+                .any(|(_, token)| matches!(*token, "does" | "do"))
+            {
+                let (verb, verb_text) = tokens
+                    .iter()
+                    .find(|(_, token)| matches!(*token, "does" | "do"))
+                    .unwrap();
+                let (not, _) = tokens.iter().find(|(_, token)| *token == "not").unwrap();
+                assert!(
+                    matches!(segment.polarity(), SourcePredicateSegmentPolarityInput::Negative { verb_site, verb_spelling, not_site, not_spelling, .. } if verb_site.node().index() == verb.index() && verb_spelling == verb_text && not_site.node().index() == not.index() && not_spelling == "not"),
+                    "{label}: actual polarity sites"
+                );
+            } else {
+                assert!(
+                    matches!(
+                        segment.polarity(),
+                        SourcePredicateSegmentPolarityInput::Positive
+                    ),
+                    "{label}: positive polarity"
+                );
+            }
+        }
+        assert_eq!(
+            atomic.requests().len(),
+            expected_memberships + expected_sets,
+            "{label}: complete unresolved Atomic requests"
+        );
+        assert_eq!(
+            atomic
+                .requests()
+                .iter()
+                .filter(
+                    |(_, row)| row.kind() == SourceAtomicRequestKind::PredicateCandidateSignature
+                )
+                .count(),
+            expected_sets,
+            "{label}: candidate requests"
+        );
+
+        let route = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(&ast, module.clone(), &symbols.env, &source)
+            .unwrap_or_else(|| panic!("{label}: native scoped C2 route missing"))
+            .unwrap_or_else(|error| panic!("{label}: {error}"));
+        let composition = route
+            .typed_ast
+            .source_condition_formula_composition()
+            .unwrap();
+        assert_eq!(
+            composition.edges().len(),
+            expected_sets,
+            "{label}: C2 association census"
+        );
+        for (ordinal, ((condition_id, condition), (edge_id, edge))) in set
+            .conditions()
+            .iter()
+            .zip(composition.edges().iter())
+            .enumerate()
+        {
+            assert_eq!(edge_id.index(), ordinal, "{label}: dense association id");
+            assert_eq!(
+                edge.condition(),
+                condition_id,
+                "{label}: source condition association"
+            );
+            assert_eq!(
+                edge.ordinal(),
+                condition.ordinal(),
+                "{label}: association ordinal"
+            );
+            let wrapper_view = ast
+                .node_views()
+                .find(|view| view.id().index() == condition.condition_site().node().index())
+                .unwrap();
+            let wrapper = ast.node(wrapper_view.id()).unwrap();
+            let condition_children = wrapper
+                .children
+                .iter()
+                .copied()
+                .filter(|child| {
+                    !matches!(
+                        ast.node(*child).unwrap().kind,
+                        mizar_syntax::SurfaceNodeKind::Token(_)
+                    )
+                })
+                .collect::<Vec<_>>();
+            let [atom] = condition_children.as_slice() else {
+                panic!("{label}: singleton source condition")
+            };
+            let formula_id = atomic
+                .formulas()
+                .iter()
+                .find(|(_, formula)| formula.site().node().index() == atom.index())
+                .unwrap()
+                .0;
+            assert_eq!(
+                edge.formula(),
+                formula_id,
+                "{label}: paired condition/atom association"
+            );
+        }
+        assert_eq!(
+            route.typed_ast.source_term(),
+            typed.source_term(),
+            "{label}: Primary install"
+        );
+        assert_eq!(
+            route.typed_ast.source_set_term(),
+            typed.source_set_term(),
+            "{label}: Set install"
+        );
+        assert_eq!(
+            route.typed_ast.source_atomic_formula(),
+            typed.source_atomic_formula(),
+            "{label}: Atomic install"
+        );
+        assert_eq!(
+            route.typed_ast.source_condition_formula_composition(),
+            route.resolved.source_condition_formula_composition(),
+            "{label}: final replay"
+        );
+        assert!(
+            route.resolved.checked_formulas().is_empty()
+                && route.resolved.statement_semantics().is_empty()
+                && route.resolved.checked_proofs().is_empty(),
+            "{label}: no semantic credit"
+        );
+        assert_eq!(
+            super::super::super::type_elaboration::source_formula_composition_transport_detail_keys(
+                &ast,
+                module.clone(),
+                &symbols.env,
+                &source
+            ),
+            Some(vec![
+                "type_elaboration.external_dependency.ast_payload_extraction".to_owned()
+            ]),
+            "{label}: existing coverage boundary"
+        );
+        if case_index == 0 {
+            let pristine = route.typed_ast.clone();
+            assert!(
+                route
+                    .typed_ast
+                    .clone()
+                    .with_source_condition_formula_composition(composition.clone())
+                    .is_err(),
+                "duplicate C2 install"
+            );
+            assert_eq!(route.typed_ast, pristine, "failed install preserves input");
+            let base = mizar_checker::typed_ast::TypedAst::try_new(
+                mizar_checker::typed_ast::TypedAstParts {
+                    source_id: typed.source_id(),
+                    module_id: typed.module_id().clone(),
+                    resolved_root: typed.resolved_root(),
+                    source_context: typed.source_context().cloned(),
+                    source_type: typed.source_type().cloned(),
+                    source_attribute: typed.source_attribute().cloned(),
+                    nodes: typed.nodes().clone(),
+                    contexts: typed.contexts().clone(),
+                    types: typed.types().clone(),
+                    facts: typed.facts().clone(),
+                    coercions: typed.coercions().clone(),
+                    initial_obligations: typed.initial_obligations().clone(),
+                    diagnostics: typed.diagnostics().clone(),
+                },
+            )
+            .unwrap()
+            .with_source_term(primary.clone())
+            .unwrap();
+            let application = route.typed_ast.source_application().unwrap().clone();
+            let install_application_first = base
+                .clone()
+                .with_source_application(application.clone())
+                .unwrap()
+                .with_source_set_term(set.clone())
+                .unwrap()
+                .with_source_atomic_formula(atomic.clone())
+                .unwrap()
+                .with_source_condition_formula_composition(composition.clone())
+                .unwrap();
+            let install_set_first = base
+                .with_source_set_term(set.clone())
+                .unwrap()
+                .with_source_application(application)
+                .unwrap()
+                .with_source_atomic_formula(atomic.clone())
+                .unwrap()
+                .with_source_condition_formula_composition(composition.clone())
+                .unwrap();
+            assert_eq!(
+                install_application_first.source_condition_formula_composition(),
+                Some(composition),
+                "application-first install"
+            );
+            assert_eq!(
+                install_set_first.source_condition_formula_composition(),
+                Some(composition),
+                "Set-first install"
+            );
+            let final_application_first =
+                super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &install_application_first,
+                    vec![],
+                )
+                .unwrap();
+            let final_set_first =
+                super::super::super::type_elaboration::assemble_empty_resolved_typed_ast(
+                    &install_set_first,
+                    vec![],
+                )
+                .unwrap();
+            assert_eq!(
+                final_application_first.source_condition_formula_composition(),
+                Some(composition)
+            );
+            assert_eq!(
+                final_set_first.source_condition_formula_composition(),
+                Some(composition)
+            );
+            let replay = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(&ast, module.clone(), &symbols.env, &source).unwrap().unwrap();
+            assert_eq!(
+                route.typed_ast, replay.typed_ast,
+                "deterministic Typed replay"
+            );
+            assert_eq!(
+                route.resolved, replay.resolved,
+                "deterministic final replay"
+            );
+            let appended = format!("{source} theorem U: for A being set holds A = A;");
+            let gap_token = source.replacen("end; theorem", "end;;theorem", 1);
+            let wrong = source.replace("LikesDef", "OtherDef");
+            for changed in [&appended, &gap_token, &wrong] {
+                assert!(super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(&ast, module.clone(), &symbols.env, changed).is_some_and(|result| result.is_err()), "source mismatch was accepted: {changed}");
+            }
+            let reject_profile = |changed: String, reason: &str| {
+                let changed_ast = parse(&changed);
+                let changed_symbols = resolver_symbol_collection(root, case, &changed_ast);
+                assert!(
+                    changed_symbols.detail_keys.is_empty(),
+                    "{reason}: {:?}",
+                    changed_symbols.detail_keys
+                );
+                assert!(super::super::super::type_elaboration::source_condition_formula_composition_output_with_source(
+                    &changed_ast,
+                    changed_symbols.module,
+                    &changed_symbols.env,
+                    &changed,
+                ).is_some_and(|result| result.is_err()), "{reason}: native profile refusal was lost");
+            };
+            reject_profile(
+                source.replace(": z likes A", ": (z likes A)"),
+                "grouped condition",
+            );
+            reject_profile(
+                source.replace(": z likes A", ": z likes A & z likes A"),
+                "compound condition",
+            );
+            reject_profile(
+                source.replace(": z likes A", ": z likes A likes z"),
+                "chained condition",
+            );
+            reject_profile(
+                source.replace(
+                    "in { z where z is set : z likes A }",
+                    "in ({ z where z is set : z likes A })",
+                ),
+                "wrapped comprehension",
+            );
+            reject_profile(
+                source.replace("z is set", "z is object"),
+                "Object generator",
+            );
+            reject_profile(
+                source.replace("z where z is set", "z where z is set, w is set"),
+                "multiple generators",
+            );
+            reject_profile(
+                source.replace(
+                    "z where z is set",
+                    "{ z where z is set : z likes A } where z is set",
+                ),
+                "nested comprehension",
+            );
+        }
+        if label == "mixed disjoint conditions" {
+            let cross_pair = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source_and_mutation(
+                &ast,
+                module.clone(),
+                &symbols.env,
+                &source,
+                |inputs| inputs.composition.edges[0].formula = inputs.composition.edges[1].formula,
+            );
+            assert!(
+                cross_pair.is_some_and(|result| result.is_err()),
+                "cross-pair C2 association was admitted"
+            );
+        }
+        if label == "does not header" {
+            let disconnected = super::super::super::type_elaboration::source_condition_formula_composition_output_with_source_and_mutation(
+                &ast,
+                module.clone(),
+                &symbols.env,
+                &source,
+                |inputs| {
+                    let segment_site = inputs.atomic.predicate_segments[0].site.clone();
+                    if let SourcePredicateSegmentPolarityInput::Negative { verb_site, .. } =
+                        &mut inputs.atomic.predicate_segments[0].polarity
+                    {
+                        *verb_site = segment_site;
+                    }
+                },
+            );
+            assert!(
+                disconnected.is_some_and(|result| result.is_err()),
+                "disconnected negative polarity was admitted"
+            );
+        }
+        assert_eq!(ast, ast_before, "{label}: AST purity");
+        assert_eq!(scope, scope_before, "{label}: scope purity");
+        assert_eq!(
+            bindings, bindings_before,
+            "{label}: acquired binding purity"
+        );
+    }
+}
+
+#[test]
 fn step5c7_native_condition_composition_replays_source_membership() {
     use mizar_checker::{
         source_application::{

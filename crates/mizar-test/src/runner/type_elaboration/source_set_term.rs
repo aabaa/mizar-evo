@@ -3195,6 +3195,90 @@ pub(super) fn step5c7_set_output(
         }
     }
     normalize_extracted_tables(ast, &mut extracted);
+    let scoped = binding_env.contexts().iter().any(|(_, context)| {
+        matches!(
+            context.owner,
+            mizar_checker::binding_env::BindingContextOwner::SourceComprehension { .. }
+        )
+    });
+    let contexts = extracted
+        .terms
+        .iter()
+        .enumerate()
+        .map(|(index, term)| {
+            if !scoped {
+                return Ok(extracted.context);
+            }
+            let id = SourceSetTermId::new(index);
+            let node = &ast.nodes()[term.node];
+            let rhs = parents[term.node].ok_or("scoped comprehension RHS missing")?;
+            let outer = parents[rhs].ok_or("scoped comprehension Membership missing")?;
+            let generators = extracted
+                .generators
+                .iter()
+                .filter(|row| row.term == id)
+                .collect::<Vec<_>>();
+            let [generator] = generators.as_slice() else {
+                return Err("scoped comprehension needs one generator".to_owned());
+            };
+            let children = structural_child_ids(ast, node);
+            let mapper = children
+                .first()
+                .and_then(|id| ast.node(*id))
+                .ok_or("scoped mapper missing")?;
+            let mapper_children = structural_child_ids(ast, mapper);
+            if term.kind != SourceSetTermKind::Comprehension
+                || extracted.wrappers.iter().any(|row| row.term == id)
+                || extracted.type_sites[generator.type_site.index()].head
+                    != SourceSetTypeHead::BuiltinSet
+                || extracted
+                    .conditions
+                    .iter()
+                    .filter(|row| row.term == id)
+                    .count()
+                    != 1
+                || !matches!(mapper.kind, SurfaceNodeKind::TermExpression)
+                || mapper_children.len() != 1
+                || !matches!(
+                    ast.nodes()[mapper_children[0].index()].kind,
+                    SurfaceNodeKind::TermReference
+                )
+                || !matches!(ast.nodes()[rhs].kind, SurfaceNodeKind::TermExpression)
+                || structural_child_ids(ast, &ast.nodes()[rhs])
+                    .iter()
+                    .map(|id| id.index())
+                    .collect::<Vec<_>>()
+                    != [term.node]
+                || !matches!(
+                    ast.nodes()[outer].kind,
+                    SurfaceNodeKind::BuiltinPredicateApplication
+                )
+                || direct_token_texts(ast, &ast.nodes()[outer]) != ["in"]
+                || structural_child_ids(ast, &ast.nodes()[outer])
+                    .last()
+                    .map(|id| id.index())
+                    != Some(rhs)
+            {
+                return Err("unsupported scoped predicate comprehension".to_owned());
+            }
+            binding_env
+                .contexts()
+                .iter()
+                .find(|(_, context)| {
+                    context.owner
+                        == mizar_checker::binding_env::BindingContextOwner::SourceComprehension {
+                            source_range: node.range,
+                        }
+                })
+                .map(|(id, _)| id)
+                .ok_or_else(|| "scoped comprehension owner missing".to_owned())
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let generator_contexts = extracted
+        .generators
+        .iter()
+        .map(|row| contexts[row.term.index()])
+        .collect::<Vec<_>>();
     build_output(
         ast,
         module,
@@ -3207,7 +3291,19 @@ pub(super) fn step5c7_set_output(
             structure: None,
         }),
         None,
-        |_| {},
+        |input| {
+            for (row, context) in input.terms.iter_mut().zip(&contexts) {
+                row.context = *context;
+            }
+            for row in &mut input.generators {
+                row.context = contexts[row.term.index()];
+            }
+            for row in &mut input.type_sites {
+                if let SourceSetTypeOwner::Generator(id) = row.owner {
+                    row.context = generator_contexts[id.index()];
+                }
+            }
+        },
     )
 }
 

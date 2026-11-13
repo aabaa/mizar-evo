@@ -10,12 +10,14 @@ use mizar_checker::{
     resolved_typed_ast::{
         ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
     },
+    source_application::{SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer},
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
         SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
         SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
         SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
-        SourceAtomicTermTarget,
+        SourceAtomicTermTarget, SourcePredicateCandidateInput, SourcePredicateHeadInput,
+        SourcePredicateSegmentInput,
     },
     source_composite_formula::{
         SourceBinderTypeHead, SourceBinderTypeSiteId, SourceBinderTypeSiteInput,
@@ -48,8 +50,10 @@ use mizar_checker::{
 };
 use mizar_resolve::{
     env::SymbolEnv,
-    names::{LocalTermBinding, LocalTermScope},
-    resolved_ast::ModuleId,
+    names::{
+        LocalTermBinding, LocalTermScope, SourceVariableScopeInput, SourceVariableScopeResolver,
+    },
+    resolved_ast::{ModuleId, SurfaceResolvedArena},
 };
 use mizar_session::SourceAnchor;
 use mizar_syntax::{SurfaceAst, SurfaceNodeKind};
@@ -465,12 +469,101 @@ fn source_condition_formula_composition_output_with_mutation_impl(
     source_text: &str,
     mutate: impl FnOnce(&mut SourceConditionFormulaCompositionRouteInputs),
 ) -> Option<Result<SourceFormulaCompositionRouteOutput, String>> {
+    let scoped_predicate = ast.nodes().iter().any(|comprehension| {
+        matches!(comprehension.kind, SurfaceNodeKind::SetComprehension)
+            && ast.nodes().iter().any(|condition| {
+                matches!(condition.kind, SurfaceNodeKind::PredicateApplication)
+                    && comprehension.range.start <= condition.range.start
+                    && condition.range.end <= comprehension.range.end
+            })
+    });
+    if scoped_predicate {
+        return Some((|| {
+            let source_matches = || -> Option<()> {
+                ast.canonical_bytes()?;
+                let preprocessed = mizar_lexer::preprocess_source_for_lexing(source_text);
+                if !preprocessed.diagnostics.is_empty() {
+                    return None;
+                }
+                let raw = mizar_lexer::scan_raw(&preprocessed.lexical_text).ok()?;
+                let lexical = mizar_lexer::build_lexical_environment(&[], &[]).ok()?;
+                let locals = mizar_lexer::collect_local_lexical_declarations(
+                    &raw,
+                    mizar_lexer::ModuleId::new(module.path().as_str()),
+                );
+                let scopes = mizar_lexer::build_scope_skeleton(&raw);
+                let tokens = mizar_lexer::disambiguate_with_local_declarations(
+                    &raw,
+                    &lexical,
+                    &locals,
+                    &mizar_lexer::ParserLexContext::general(),
+                    &scopes,
+                );
+                if !tokens.diagnostics().is_empty()
+                    || tokens.tokens().len() != ast.token_nodes().len()
+                {
+                    return None;
+                }
+                for (actual, supplied) in tokens.tokens().iter().zip(ast.token_views()) {
+                    let token = supplied.as_token()?;
+                    let kind = match actual.kind() {
+                        mizar_lexer::TokenKind::Identifier => {
+                            mizar_syntax::SurfaceTokenKind::Identifier
+                        }
+                        mizar_lexer::TokenKind::ReservedWord => {
+                            mizar_syntax::SurfaceTokenKind::ReservedWord
+                        }
+                        mizar_lexer::TokenKind::ReservedSymbol => {
+                            mizar_syntax::SurfaceTokenKind::ReservedSymbol
+                        }
+                        mizar_lexer::TokenKind::Numeral => mizar_syntax::SurfaceTokenKind::Numeral,
+                        mizar_lexer::TokenKind::UserSymbol => {
+                            mizar_syntax::SurfaceTokenKind::UserSymbol
+                        }
+                        _ => return None,
+                    };
+                    let ranges = preprocessed
+                        .preprocess_map
+                        .source_ranges_for_lexical(actual.span())?;
+                    let [range] = ranges.as_slice() else {
+                        return None;
+                    };
+                    if supplied.range().source_id != ast.source_id
+                        || supplied.range().start != range.start
+                        || supplied.range().end != range.end
+                        || token.kind != kind
+                        || token.text.as_ref() != actual.lexeme()
+                        || source_text.get(range.start..range.end) != Some(actual.lexeme())
+                    {
+                        return None;
+                    }
+                }
+                Some(())
+            };
+            if source_matches().is_none() {
+                return Err("Task257C2 source text mismatch".to_owned());
+            }
+            let source =
+                SurfaceResolvedArena::lower(ast, &module).map_err(|error| format!("{error:?}"))?;
+            let scope = SourceVariableScopeResolver::resolve_proof_occurrences(
+                SourceVariableScopeInput::new(ast, &module, symbols),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            let bindings = mizar_checker::type_checker::SourceVariableSemanticsChecker::source_theorem_binding_env(
+                &source, symbols, &scope,
+            )?;
+            let lower = super::source_atomic_formula::step5c7_membership_typed_ast(
+                ast, &module, symbols, &scope, &bindings,
+            )?;
+            build_task_257c2_output(ast, module, symbols, lower, bindings, mutate)
+        })());
+    }
     let lower = conditioned_source_set_term_output(ast, module.clone(), symbols, source_text)?;
-    Some(
-        lower.and_then(|lower| {
-            build_task_257c2_output(ast, module, symbols, lower.typed_ast, mutate)
-        }),
-    )
+    Some(lower.and_then(|lower| {
+        let bindings = super::checker_handoff::source_module_binding_env(ast, module.clone())
+            .map_err(|error| error.to_string())?;
+        build_task_257c2_output(ast, module, symbols, lower.typed_ast, bindings, mutate)
+    }))
 }
 
 fn build_task_257c2_output(
@@ -478,63 +571,210 @@ fn build_task_257c2_output(
     module: ModuleId,
     symbols: &SymbolEnv,
     lower: TypedAst,
+    binding_env: BindingEnv,
     mutate: impl FnOnce(&mut SourceConditionFormulaCompositionRouteInputs),
 ) -> Result<SourceFormulaCompositionRouteOutput, String> {
     if symbols.module_id() != &module {
         return Err("Task257C2 symbol module mismatch".to_owned());
     }
-    let equality_nodes = ast
-        .nodes()
-        .iter()
-        .enumerate()
-        .filter(|(_, node)| {
-            matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-                && node.range.start == 177
-                && node.range.end == 182
-        })
-        .map(|(index, _)| index)
-        .collect::<Vec<_>>();
-    let [equality_node] = equality_nodes.as_slice() else {
-        return Err("Task257C2 requires one exact inner equality".to_owned());
-    };
-    let mut nodes = lower
-        .nodes()
-        .iter()
-        .map(|(_, node)| node.clone())
-        .collect::<Vec<_>>();
-    let equality = nodes
-        .get_mut(*equality_node)
-        .ok_or_else(|| "Task257C2 equality arena node disappeared".to_owned())?;
-    equality.kind = "source.formula.atomic.equality".into();
-    equality.recovery = NodeRecoveryState::Normal;
-    let arena =
-        TypedArena::try_new(lower.nodes().root(), nodes).map_err(|error| error.to_string())?;
-
     let primary = lower
         .source_term()
         .cloned()
         .ok_or_else(|| "Task257C2 lost Task252 handoff".to_owned())?;
-    let application = lower
-        .source_application()
-        .cloned()
-        .ok_or_else(|| "Task257C2 lost Task253 handoff".to_owned())?;
     let set = lower
         .source_set_term()
         .cloned()
         .ok_or_else(|| "Task257C2 lost Task255 handoff".to_owned())?;
-    let binding_env = super::checker_handoff::source_module_binding_env(ast, module.clone())
-        .map_err(|error| error.to_string())?;
+    let (arena, application, atomic_input, composition_edges) =
+        if let Some(atomic) = lower.source_atomic_formula() {
+            if !atomic.wrappers().is_empty()
+                || !atomic.type_sites().is_empty()
+                || !atomic.attributes().is_empty()
+            {
+                return Err("Task257C2 scoped predicate profile changed".to_owned());
+            }
+            let arena = lower.nodes().clone();
+            let application = SourceFunctorApplicationProducer::build(
+                SourceFunctorApplicationHandoffInput {
+                    source_id: ast.source_id,
+                    module_id: module.clone(),
+                    applications: Vec::new(),
+                    wrappers: Vec::new(),
+                    candidates: Vec::new(),
+                    arguments: Vec::new(),
+                    type_requests: Vec::new(),
+                },
+                symbols,
+                &binding_env,
+                &primary,
+                &arena,
+            )
+            .map_err(|error| error.to_string())?;
+            let atomic_input = SourceAtomicFormulaHandoffInput {
+                source_id: ast.source_id,
+                module_id: module.clone(),
+                formulas: atomic
+                    .formulas()
+                    .iter()
+                    .map(|(_, row)| SourceAtomicFormulaInput {
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        source_ordinal: row.source_ordinal(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().to_owned(),
+                        kind: row.kind(),
+                    })
+                    .collect(),
+                wrappers: Vec::new(),
+                predicate_segments: atomic
+                    .predicate_segments()
+                    .iter()
+                    .map(|(_, row)| SourcePredicateSegmentInput {
+                        formula: row.formula(),
+                        ordinal: row.ordinal(),
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().to_owned(),
+                        head: row.head(),
+                        polarity: row.polarity().clone(),
+                        left_edge: row.left_edge(),
+                        right_edge: row.right_edge(),
+                    })
+                    .collect(),
+                predicate_heads: atomic
+                    .predicate_heads()
+                    .iter()
+                    .map(|(_, row)| SourcePredicateHeadInput {
+                        formula: row.formula(),
+                        site: row.site().clone(),
+                        source_range: row.source_range(),
+                        context: row.context(),
+                        recovery: row.recovery(),
+                        spelling: row.spelling().to_owned(),
+                        left_arity: row.left_arity(),
+                        right_arity: row.right_arity(),
+                    })
+                    .collect(),
+                candidates: atomic
+                    .candidates()
+                    .iter()
+                    .map(|(_, row)| SourcePredicateCandidateInput {
+                        head: row.head(),
+                        ordinal: row.ordinal(),
+                        symbol: row.symbol().clone(),
+                        contribution: row.contribution(),
+                    })
+                    .collect(),
+                type_sites: Vec::new(),
+                attributes: Vec::new(),
+                edges: atomic
+                    .edges()
+                    .iter()
+                    .map(|(_, row)| SourceAtomicEdgeInput {
+                        formula: row.formula(),
+                        ordinal: row.ordinal(),
+                        role: row.role(),
+                        target: row.target(),
+                    })
+                    .collect(),
+                requests: atomic
+                    .requests()
+                    .iter()
+                    .map(|(_, row)| SourceAtomicRequestInput {
+                        formula: row.formula(),
+                        ordinal: row.ordinal(),
+                        kind: row.kind(),
+                        edge: row.edge(),
+                        candidate: row.candidate(),
+                        type_site: row.type_site(),
+                        attribute: row.attribute(),
+                    })
+                    .collect(),
+            };
+            let composition_edges = set
+                .conditions()
+                .iter()
+                .map(|(condition_id, condition)| {
+                    let condition_node = ast
+                        .nodes()
+                        .get(condition.condition_site().node().index())
+                        .ok_or_else(|| "Task257C2 condition site disappeared".to_owned())?;
+                    let children = super::source_ast::structural_child_ids(ast, condition_node);
+                    let [child] = children.as_slice() else {
+                        return Err("Task257C2 condition is not a bare atom".to_owned());
+                    };
+                    let formulas = atomic
+                        .formulas()
+                        .iter()
+                        .filter(|(_, formula)| {
+                            formula.site().node().index() == child.index()
+                                && formula.source_range() == condition.source_range()
+                        })
+                        .map(|(id, _)| id)
+                        .collect::<Vec<_>>();
+                    let [formula] = formulas.as_slice() else {
+                        return Err("Task257C2 condition has no unique atom".to_owned());
+                    };
+                    Ok(SourceConditionFormulaEdgeInput {
+                        condition: condition_id,
+                        ordinal: condition.ordinal(),
+                        formula: *formula,
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            (arena, application, atomic_input, composition_edges)
+        } else {
+            let equality_nodes = ast
+                .nodes()
+                .iter()
+                .enumerate()
+                .filter(|(_, node)| {
+                    matches!(node.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+                        && node.range.start == 177
+                        && node.range.end == 182
+                })
+                .map(|(index, _)| index)
+                .collect::<Vec<_>>();
+            let [equality_node] = equality_nodes.as_slice() else {
+                return Err("Task257C2 requires one exact inner equality".to_owned());
+            };
+            let mut nodes = lower
+                .nodes()
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<_>>();
+            let equality = nodes
+                .get_mut(*equality_node)
+                .ok_or_else(|| "Task257C2 equality arena node disappeared".to_owned())?;
+            equality.kind = "source.formula.atomic.equality".into();
+            equality.recovery = NodeRecoveryState::Normal;
+            let arena = TypedArena::try_new(lower.nodes().root(), nodes)
+                .map_err(|error| error.to_string())?;
+            let application = lower
+                .source_application()
+                .cloned()
+                .ok_or_else(|| "Task257C2 lost Task253 handoff".to_owned())?;
+            (
+                arena,
+                application,
+                conditioned_equality_input(ast, module.clone(), *equality_node)?,
+                vec![SourceConditionFormulaEdgeInput {
+                    condition: SourceSetConditionId::new(0),
+                    ordinal: 0,
+                    formula: SourceAtomicFormulaId::new(0),
+                }],
+            )
+        };
     let mut inputs = SourceConditionFormulaCompositionRouteInputs {
         arena,
-        atomic: conditioned_equality_input(ast, module.clone(), *equality_node)?,
+        atomic: atomic_input,
         composition: SourceConditionFormulaCompositionHandoffInput {
             source_id: ast.source_id,
             module_id: module.clone(),
-            edges: vec![SourceConditionFormulaEdgeInput {
-                condition: SourceSetConditionId::new(0),
-                ordinal: 0,
-                formula: SourceAtomicFormulaId::new(0),
-            }],
+            edges: composition_edges,
         },
     };
     mutate(&mut inputs);
@@ -562,7 +802,7 @@ fn build_task_257c2_output(
     let typed_ast = TypedAst::try_new(TypedAstParts {
         source_id: ast.source_id,
         module_id: module,
-        resolved_root: None,
+        resolved_root: lower.resolved_root(),
         source_context: None,
         source_type: None,
         source_attribute: None,
