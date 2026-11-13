@@ -13,13 +13,16 @@ A dispatch comes from Muse, or from the user acting in that role (including a
 request ending with "Codex agent を使い、AGENTS.md のワークフローに従って、
 完了まで進めてください。"). It invokes the full workflow, including sub-agent
 review and delegation, for one unit: a single task contract, which may bundle
-three to five identical-shape slices.
+three to five identical-shape slices. A unit whose contract is not yet frozen
+covers both the freeze and the implementation: commit the freeze first, then
+the implementation; the pair is one changed task.
 
 A dispatch carries:
 
 - the task contract path (or task id and scope for a chat-specified change)
   and its authority paths;
-- the gate tier, when already decided;
+- the gate tier, when already decided; a full tier for a further slice of a
+  family with a full-tier predecessor names the pattern criterion it fails;
 - verification state: last full-success revision and outstanding changed-task
   count;
 - `push: yes|no`;
@@ -77,7 +80,24 @@ and give each sub-agent a self-contained [review packet](doc/design/autonomous_c
 with a clear write scope and no pre-stated conclusion. A sub-agent serves one
 review phase or implementation packet, is closed after integration, and never
 spawns sub-agents. Each review phase gets at most two re-reviews; then the
-parent decides. Keep the parent context small.
+parent decides. Keep the parent context small:
+
+- `AGENTS.md` is already in context; do not print it. Locate protocol
+  sections with `rg -n '^##'` and read only those the tier needs.
+- Locate with `rg -n`, then read at most about 150 lines per range; cap each
+  tool output at about 4,000 tokens.
+- Delegate source inventories across more than two files to an inventory
+  sub-agent, and production changes beyond about 150 lines to an
+  implementation sub-agent; the parent integrates.
+- Give a test sub-agent the contract's complete test matrix in its first
+  packet; later messages carry only findings or packet corrections. Split a
+  matrix of more than six cases into two parallel packets with disjoint
+  files or appended modules.
+- A specification review that passed on the frozen contract is not repeated
+  before implementation unless the contract changed.
+- Wait for sub-agents with `wait_agent` and a timeout of at least 300 seconds,
+  and for a long command with one blocking wait on its process; never loop
+  `sleep` and log `tail`.
 
 Run read-only commands (`rg`, `sed`, `cat`, `git diff/status/log`) inside the
 sandbox. Request escalation only for a command that failed there for a
@@ -99,10 +119,19 @@ cargo test -p mizar-test --test lint_policy
 cargo test
 ```
 
+The Rust toolchain is on `PATH` in the default rustup homes. Do not search for
+it or override `CARGO_HOME` or `RUSTUP_HOME`; if `cargo --version` fails,
+stop and report it. Keep `CARGO_BUILD_JOBS=4`: more jobs do not shorten
+builds here, because the `mizar-test` library test target dominates them.
+Parent and sub-agents share `target/`, where Cargo serializes builds; do not
+start a build whose result is not needed yet.
+
 Follow the protocol's [Verification Cadence](doc/design/autonomous_crate_development.md#verification-cadence).
 Every changed task runs fmt, Clippy, both `lint_policy` suites, the owner test
 group, and a short end-to-end check for executable changes; pattern slices run
-the narrower "Pattern gates" set. Full `cargo test` runs only on a named
+the narrower "Pattern gates" set. A documentation-only commit, including a
+contract freeze, runs both `lint_policy` suites and the link/fragment checks,
+not fmt or Clippy. Full `cargo test` runs only on a named
 cadence trigger (including any push and the tenth outstanding task); record
 the trigger. A full failure stops feature work until it is repaired.
 

@@ -44,6 +44,14 @@ settings; `AGENTS.md` owns the dispatch fields and the final-response form.
   revision, outstanding changed-task count) between runs. It requests a push
   once per ten changed tasks, on the task whose full `cargo test` the
   [Verification Cadence](#verification-cadence) requires.
+- The orchestrator sizes ceremony to the change before dispatching: it applies
+  [Gate Tiering](#gate-tiering), names the failing pattern criterion when it
+  declares a further family slice full tier, and bundles three to five open
+  identical-shape slices into one dispatch.
+- A slice whose contract is not yet frozen is dispatched once for both freeze
+  and implementation. The parent commits the freeze, then the implementation;
+  the pair counts as one changed task. A separate freeze-only dispatch is
+  reserved for a freeze that needs an orchestrator or user decision.
 - The parent owns only the dispatched unit and remains "the parent" for
   sub-agents, reviews, verification, and commits. It never selects another
   task; it commits, reports, and ends the run.
@@ -374,6 +382,9 @@ The contract must identify:
   instead of copies of those sections
 - `doc/design/spec_coverage_audit.md` impact when there is one
 - required review roles, verification commands, and exit criteria
+- the test matrix: each case's input shape and expected outcome, and a case
+  cap; a sufficiency finding beyond the cap names the specification clause or
+  `.miz` test that requires the extra case
 
 A family contract owns an ordered list of pattern-tier slices (see Gate
 Tiering) that share one producer/test pattern: one `<task-id>`, one EN/JA
@@ -513,8 +524,9 @@ small:
   source, test, or log file; read logs through failure markers or `tail`.
 - Delegate broad inventories to a deterministic-inventory sub-agent that
   returns conclusions, not file dumps.
-- Wait on a background long test with one blocking wait on its process, not
-  repeated log polling.
+- Wait on a background long test with one blocking wait on its process, and
+  on sub-agents with one long blocking wait, not repeated sleeps or log
+  polling; every poll re-sends the whole parent context.
 
 ## Volume And Scope Review
 
@@ -680,6 +692,14 @@ coverage/semantic credit; production Rust behavior, diagnostics, parser
 recovery, or public API of a semantic authority; soundness or fail-closed
 boundaries; or activation of a previously inactive case. When the tier is
 ambiguous, the task is full-gate.
+
+A frozen-doc prerequisite runs in the same dispatch as its implementation
+(see [Dispatch Boundary](#dispatch-boundary)). The freeze commit follows the
+specification/test-intent review of the contract and the documentation
+checks; that review is the task's step-2 review and is not repeated before
+implementation unless the contract changes. The sufficiency, precision,
+volume, and final reviews run once, over the whole task diff including the
+contract.
 
 ### Pattern gates (bounded repeat of a reviewed family)
 
@@ -959,6 +979,7 @@ and effort without repeated confirmation, using these routes and
 |---|---|---|
 | Deterministic inventory, counts/hashes, link/manifest checks | `gpt-6-luna` | `low`–`medium` |
 | Frozen-contract local implementation, compaction, focused verification, first-pass review | `gpt-6-luna` | `xhigh` |
+| Test implementation from a contract-fixed test matrix | `gpt-6-luna` | `high`; `xhigh` only after a sufficiency finding attributed to effort |
 | Cross-module implementation, precision review, escalated findings | `gpt-6.1-sol` | `high` |
 | Additional analysis of difficult semantics, soundness, or trust boundaries | `gpt-6-astra` | `high`; `xhigh` with measured gain |
 
