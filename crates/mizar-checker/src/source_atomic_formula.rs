@@ -1900,10 +1900,7 @@ fn is_authenticated_condition_container(
         let Some(segment) = segments.next() else {
             return false;
         };
-        if segments.next().is_some()
-            || segment.polarity != SourcePredicateSegmentPolarityInput::Positive
-            || segment.source_range != formula.source_range
-        {
+        if segments.next().is_some() || segment.source_range != formula.source_range {
             return false;
         }
         let Some(head) = input.predicate_heads.get(segment.head.index()) else {
@@ -1915,8 +1912,20 @@ fn is_authenticated_condition_container(
         let Some(segment_node) = arena.node(segment.site.node()) else {
             return false;
         };
-        let [left, actual_head, right] = segment_node.children.as_slice() else {
-            return false;
+        let (left, actual_head, right) = match (&segment.polarity, segment_node.children.as_slice())
+        {
+            (SourcePredicateSegmentPolarityInput::Positive, [left, head, right]) => {
+                (left, head, right)
+            }
+            (
+                SourcePredicateSegmentPolarityInput::Negative {
+                    verb_site,
+                    not_site,
+                    ..
+                },
+                [left, verb, not, head, right],
+            ) if *verb == verb_site.node() && *not == not_site.node() => (left, head, right),
+            _ => return false,
         };
         if atom_node.children.as_slice() != [segment.site.node()]
             || *actual_head != head.site.node()

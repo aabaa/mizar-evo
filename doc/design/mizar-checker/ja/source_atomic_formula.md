@@ -96,16 +96,18 @@ Normal recovery、Membership context と等しい direct parent を認証する�
 containment で隠せる。全 dependency row と右 operand の未解決 request 1件を保持し、
 equal-context 経路の規則は維持する。Installation は BindingEnv を持たず、不変 row、
 完全な lower fingerprint と物理 shape を再検査するが、新たな字句環境認証を主張しない。
-bare Normal positive singleton binary predicate conditionも、先行Normal Membershipと
+bare Normal positive/negative singleton binary predicate conditionも、先行Normal Membershipと
 実際のowner Comprehensionを指すBuiltinRightOperand edgeが同じtransactionにある場合だけ、
 nested ownershipを許す。Set出現は他のComprehension行を含まない独立したwrapperなしの
 Normal rootを要求し、disjoint rootの併存は許す。Set conditionの正確なrange/spellingと
 唯一のatom child、そのatomの唯一の実segment、順序付きleft TermExpression / actual head /
-right TermExpressionを認証する。各Normal expressionはPrimaryの正確なrangeと唯一の実Primary
+right TermExpressionを認証する。negative segmentはleft / verb / not / head / rightの順序で、
+実verb/not nodeと記録済みpolarity siteの一致を要求する。token検証は既存segment/polarity
+validatorが保持する。各Normal expressionはPrimaryの正確なrangeと唯一の実Primary
 childを持つ。provenance、context、candidate、role、未解決requestのownershipは既存のAtomic
 validatorが保持する。buildとimmutable installationは既存context bridgeの下で完全な下位
 fingerprintと物理chainを再検査する。対のMembershipがない独立predicate-plus-Set、legacy、
-negative、chained、compound、wrapped predicate条件とnested/wrapped Comprehensionは除外する。
+chained、compound、wrapped predicate条件とnested/wrapped Comprehensionは除外する。
 runner adoption、formation、capture、sethood、applicability、truth、acceptanceは保留し、
 requestは未回答のままとする。
 

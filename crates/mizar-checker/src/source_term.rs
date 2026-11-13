@@ -4000,6 +4000,11 @@ mod tests {
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; definition let X,Y be set; pred OtherDef: X knows Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
             ("theorem T: for A being set holds A in { z where z is set : z in A }; definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end;", 1, 0, vec![], None),
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A = A; definition let X,Y be set; pred OtherDef: X knows Y means X = Y; end; theorem U: for A being set holds A in { z where z is set : z in A };", 1, 0, vec![], None),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z does not likes A };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A = A proof let A be set; thus A in { z where z is set : z does not likes A }; end;", 1, 3, vec![0,0,1,2,2,1], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z does not likes A } proof let A be set; thus A in { z where z is set : z does not likes A }; end;", 2, 4, vec![0,1,1,0,2,3,3,2], Some(true)),
+            (":: alpha/layout\ndefinition\n let parcel, needle be object; pred Rel: parcel knows needle means parcel = needle; end;\ntheorem T: for item being set holds item in { point where point is set : point do not knows item };", 1, 2, vec![0,1,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A } & A in { w where w is set : w does not likes A };", 2, 3, vec![0,1,1,0,0,2,2,0], Some(true)),
         ].into_iter().enumerate() {
         let directory = std::env::temp_dir().join(format!(
             "native-comprehension-contexts-{}-{case}",
@@ -4278,7 +4283,7 @@ mod tests {
             assert_eq!(reference.use_ordinal(), actual.ordinal());
         }
         assert_eq!(consume(input.clone(), &bindings), Ok(handoff.clone()));
-        if (19..=22).contains(&case) {
+        if (19..=22).contains(&case) || text.contains(" does not ") || text.contains(" do not ") {
             use crate::source_application::{SourceFunctorApplicationHandoffInput, SourceFunctorApplicationProducer};
             use crate::source_atomic_formula::*;
             use crate::source_formula_composition::*;
@@ -4376,6 +4381,21 @@ mod tests {
                     assert!(!retagged.contains(&index));
                     retagged.push(index);
                     nodes[index].kind = key.into();
+                    if view.kind() == &SurfaceNodeKind::PredicateSegment {
+                        for child in view.children() {
+                            let token = ast.node_view(*child).unwrap();
+                            let spelling = &text[token.range().start..token.range().end];
+                            let token_key = match spelling {
+                                "does" | "do" => "source.formula.atomic.predicate-negation-verb",
+                                "not" => "source.formula.atomic.predicate-negation-not",
+                                _ => continue,
+                            };
+                            let token_index = site(token).node().index();
+                            assert!(!retagged.contains(&token_index));
+                            retagged.push(token_index);
+                            nodes[token_index].kind = token_key.into();
+                        }
+                    }
                 }
             }
             for comprehension in &comprehensions {
@@ -4452,6 +4472,7 @@ mod tests {
                 attributes: Vec::new(), edges: Vec::new(), requests: Vec::new(),
             };
             let mut physical_mutations = Vec::new();
+            let mut typed_replay_mutations = Vec::new();
             for (pair, comprehension) in comprehensions.iter().copied().enumerate() {
                 let conditions = comprehension.child_views().filter(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).collect::<Vec<_>>();
                 let [condition] = conditions.as_slice() else { panic!("one actual condition"); };
@@ -4461,8 +4482,12 @@ mod tests {
                 let [segment_id] = formula.children() else { panic!("singleton predicate condition"); };
                 let segment = ast.node_view(*segment_id).unwrap();
                 assert_eq!(segment.kind(), &SurfaceNodeKind::PredicateSegment);
-                let [left, head, right] = segment.children() else { panic!("positive binary segment"); };
-                let head = ast.node_view(*head).unwrap();
+                let (left, head_id, right, polarity_sites) = match segment.children() {
+                    [left, head, right] => (*left, *head, *right, None),
+                    [left, verb, not, head, right] => (*left, *head, *right, Some((*verb, *not))),
+                    children => panic!("singleton binary segment children: {children:?}"),
+                };
+                let head = ast.node_view(head_id).unwrap();
                 assert_eq!(head.kind(), &SurfaceNodeKind::PredicateHead);
                 let head_text = &text[head.range().start..head.range().end];
                 assert_eq!(head_text, pattern_text[1]);
@@ -4470,7 +4495,7 @@ mod tests {
                 let context = expected_context(scopes.get(&formula.id()).unwrap());
                 assert_eq!(bindings.contexts().get(context).unwrap().owner, BindingContextOwner::SourceComprehension { source_range: comprehension.range() });
                 let operands = [left, right].map(|expression| {
-                    let expression = ast.node_view(*expression).unwrap();
+                    let expression = ast.node_view(expression).unwrap();
                     assert_eq!(expression.kind(), &SurfaceNodeKind::TermExpression);
                     let [leaf] = expression.children() else { panic!("direct Primary operand"); };
                     let ordinal = leaves.iter().position(|view| view.id() == *leaf).unwrap();
@@ -4484,6 +4509,22 @@ mod tests {
                 for (view, key) in [(formula, "source.formula.atomic.predicate"), (segment, "source.formula.atomic.predicate-segment"), (head, "source.formula.atomic.predicate-head")] {
                     nodes[resolved.resolved_node_for(view.id()).unwrap().index()].kind = key.into();
                 }
+                let negative_polarity = polarity_sites.map(|(verb, not)| {
+                    let verb = ast.node_view(verb).unwrap();
+                    let not = ast.node_view(not).unwrap();
+                    for (view, key) in [(verb, "source.formula.atomic.predicate-negation-verb"), (not, "source.formula.atomic.predicate-negation-not")] {
+                        nodes[resolved.resolved_node_for(view.id()).unwrap().index()].kind = key.into();
+                    }
+                    SourcePredicateSegmentPolarityInput::Negative {
+                        verb_site: node(resolved.resolved_node_for(verb.id()).unwrap().index()),
+                        verb_range: verb.range(), verb_spelling: text[verb.range().start..verb.range().end].to_owned(),
+                        verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                        not_site: node(resolved.resolved_node_for(not.id()).unwrap().index()),
+                        not_range: not.range(), not_spelling: text[not.range().start..not.range().end].to_owned(),
+                        not_recovery: SourceAtomicFormulaRecovery::Normal,
+                    }
+                }).unwrap_or(SourcePredicateSegmentPolarityInput::Positive);
+                let negative = matches!(negative_polarity, SourcePredicateSegmentPolarityInput::Negative { .. });
                 let atomic_arena = TypedArena::try_new(arena.root(), nodes).unwrap();
                 let atomic_input = SourceAtomicFormulaHandoffInput {
                     source_id: ast.source_id, module_id: input.module_id.clone(),
@@ -4495,7 +4536,7 @@ mod tests {
                     predicate_segments: vec![SourcePredicateSegmentInput {
                         formula: SourceAtomicFormulaId::new(0), ordinal: 0, site: node(resolved.resolved_node_for(segment.id()).unwrap().index()),
                         source_range: segment.range(), context, recovery: SourceAtomicFormulaRecovery::Normal, spelling: text[segment.range().start..segment.range().end].to_owned(),
-                        head: SourcePredicateHeadId::new(0), polarity: SourcePredicateSegmentPolarityInput::Positive,
+                        head: SourcePredicateHeadId::new(0), polarity: negative_polarity.clone(),
                         left_edge: SourceAtomicEdgeId::new(0), right_edge: SourceAtomicEdgeId::new(1),
                     }],
                     predicate_heads: vec![SourcePredicateHeadInput {
@@ -4673,7 +4714,12 @@ mod tests {
                 overlap.requests.extend(nested.requests);
                 // EN13.4.2/EN14.2: transport the actual predicate guard without
                 // claiming applicability, sethood, formation or truth.
-                let combined = build_outer(overlap.clone()).expect("paired original predicate condition");
+                let paired = build_outer(overlap.clone());
+                if negative {
+                    assert!(SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &set_arena).is_ok(), "genuine negative lower Atomic succeeds before paired ownership");
+                    assert!(paired.is_ok(), "genuine negative paired Atomic owner should authenticate actual condition children and polarity sites: {paired:?}");
+                }
+                let combined = paired.expect("paired original predicate condition");
                 assert_eq!((combined.source_id(), combined.module_id(), combined.primary_term_fingerprint(), combined.set_term_fingerprint()), (ast.source_id, &input.module_id, handoff.debug_text().as_str(), Some(set.debug_text().as_str())));
                 assert!(combined.application_fingerprint().is_none() && combined.structure_fingerprint().is_none());
                 assert_eq!((combined.formulas().len(), combined.predicate_segments().len(), combined.predicate_heads().len(), combined.candidates().len(), combined.edges().len(), combined.requests().len()), (2, 1, 1, 1, 4, 2));
@@ -4684,7 +4730,7 @@ mod tests {
                 }
                 let (id, row) = combined.predicate_segments().iter().next().unwrap();
                 assert_eq!((id, row.formula(), row.ordinal(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling()), (SourcePredicateSegmentId::new(0), SourceAtomicFormulaId::new(1), 0, &atomic_input.predicate_segments[0].site, segment.range(), context, SourceAtomicFormulaRecovery::Normal, atomic_input.predicate_segments[0].spelling.as_str()));
-                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &SourcePredicateSegmentPolarityInput::Positive, SourceAtomicEdgeId::new(2), SourceAtomicEdgeId::new(3)));
+                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &atomic_input.predicate_segments[0].polarity, SourceAtomicEdgeId::new(2), SourceAtomicEdgeId::new(3)));
                 let (id, row) = combined.predicate_heads().iter().next().unwrap();
                 assert_eq!((id, row.formula(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling(), row.left_arity(), row.right_arity()), (SourcePredicateHeadId::new(0), SourceAtomicFormulaId::new(1), &atomic_input.predicate_heads[0].site, head.range(), context, SourceAtomicFormulaRecovery::Normal, head_text, 1, 1));
                 let (id, row) = combined.candidates().iter().next().unwrap();
@@ -4821,7 +4867,73 @@ mod tests {
                 let atom_node = atomic_input.formulas[0].site.node();
                 let segment_node = atomic_input.predicate_segments[0].site.node();
                 let head_node = atomic_input.predicate_heads[0].site.node();
-                let [left_node, right_node] = [left, right].map(|id| resolved.resolved_node_for(*id).unwrap());
+                let [left_node, right_node] = [left, right].map(|id| resolved.resolved_node_for(id).unwrap());
+                if negative {
+                    let [_, verb_id, not_id, _, _] = segment.children() else { unreachable!() };
+                    let verb_node = node(resolved.resolved_node_for(*verb_id).unwrap().index()).node();
+                    let not_node = node(resolved.resolved_node_for(*not_id).unwrap().index()).node();
+                    for mutation in 0..8 {
+                        let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                        match mutation {
+                            0 => { nodes[segment_node.index()].children.remove(1); }
+                            1 => { nodes[segment_node.index()].children.remove(2); }
+                            2 => nodes[segment_node.index()].children.insert(2, verb_node),
+                            3 => nodes[segment_node.index()].children.swap(1, 2),
+                            4 => nodes[segment_node.index()].children[1] = node(resolved.resolved_node_for(excluded[0].id()).unwrap().index()).node(),
+                            5 => nodes[not_node.index()].recovery = NodeRecoveryState::Recovered,
+                            6 => nodes[condition_node.index()].children[0] = segment_node,
+                            _ => nodes[condition_node.index()].children.push(head_node),
+                        }
+                        let candidate_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                        let lower = SourceAtomicFormulaProducer::build(atomic_input.clone(), &bindings, &symbols, &handoff, None, None, None, &candidate_arena);
+                        if mutation != 5 {
+                            assert!(lower.is_ok(), "negative physical control retains valid lower Atomic metadata: {mutation}");
+                        } else {
+                            assert!(lower.is_err(), "recovered token node fails the existing Atomic recovery validator");
+                        }
+                        if mutation >= 6 {
+                            assert_eq!(SourceSetTermProducer::build(set_input.clone(), &bindings, &handoff, None, None, &candidate_arena), Ok(set.clone()));
+                            typed_replay_mutations.push(candidate_arena.clone());
+                        }
+                        assert!(SourceAtomicFormulaProducer::build(overlap.clone(), &bindings, &symbols, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "negative paired physical mutation {mutation}");
+                        assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &candidate_arena).is_err(), "negative paired installation replay mutation {mutation}");
+                        physical_mutations.push(candidate_arena);
+                    }
+                    // The recorded token sites are valid TypedArena metadata, but
+                    // reusing unrelated source nodes must not authenticate the AST children.
+                    let SourcePredicateSegmentPolarityInput::Negative {
+                        verb_range, verb_spelling, not_range, not_spelling, ..
+                    } = &atomic_input.predicate_segments[0].polarity else { unreachable!() };
+                    let unrelated_tokens = ast.node_views().filter(|view| {
+                        declaration.range().start <= view.range().start
+                            && view.range().end <= declaration.range().end
+                            && matches!(view.kind(), SurfaceNodeKind::Token(_))
+                    }).collect::<Vec<_>>();
+                    assert!(unrelated_tokens.len() >= 2, "the local definition has unrelated real source tokens");
+                    let unrelated_views = [unrelated_tokens[0], unrelated_tokens[1]];
+                    let unrelated_sites = unrelated_views.map(|view| node(resolved.resolved_node_for(view.id()).unwrap().index()));
+                    let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    nodes[unrelated_sites[0].node().index()].kind = "source.formula.atomic.predicate-negation-verb".into();
+                    nodes[unrelated_sites[0].node().index()].anchor = SourceAnchor::Range(*verb_range);
+                    nodes[unrelated_sites[1].node().index()].kind = "source.formula.atomic.predicate-negation-not".into();
+                    nodes[unrelated_sites[1].node().index()].anchor = SourceAnchor::Range(*not_range);
+                    let unrelated_arena = TypedArena::try_new(set_arena.root(), nodes).unwrap();
+                    let mut unrelated_input = atomic_input.clone();
+                    unrelated_input.predicate_segments[0].polarity = SourcePredicateSegmentPolarityInput::Negative {
+                        verb_site: unrelated_sites[0].clone(), verb_range: *verb_range, verb_spelling: verb_spelling.clone(), verb_recovery: SourceAtomicFormulaRecovery::Normal,
+                        not_site: unrelated_sites[1].clone(), not_range: *not_range, not_spelling: not_spelling.clone(), not_recovery: SourceAtomicFormulaRecovery::Normal,
+                    };
+                    assert!(SourceAtomicFormulaProducer::build(unrelated_input.clone(), &bindings, &symbols, &handoff, None, None, None, &unrelated_arena).is_ok(), "unrelated sites carry otherwise valid negative token metadata");
+                    let mut unrelated_overlap = overlap.clone();
+                    unrelated_overlap.predicate_segments[0].polarity = unrelated_input.predicate_segments[0].polarity.clone();
+                    assert!(SourceAtomicFormulaProducer::build(unrelated_overlap, &bindings, &symbols, &handoff, None, None, Some(&set), &unrelated_arena).is_err(), "paired Atomic authenticates actual source token children, not unrelated token reuse");
+                    let mut installation_nodes = unrelated_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
+                    installation_nodes[segment_node.index()].children[1] = unrelated_sites[0].node();
+                    installation_nodes[segment_node.index()].children[2] = unrelated_sites[1].node();
+                    let installation_arena = TypedArena::try_new(set_arena.root(), installation_nodes).unwrap();
+                    assert!(combined.validate_installation(ast.source_id, &input.module_id, &handoff, None, None, Some(&set), &installation_arena).is_err(), "installation reauthenticates physical negative-token ownership");
+                    physical_mutations.push(installation_arena);
+                }
                 for mutation in 0..20 {
                     let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
                     match mutation {
@@ -4833,8 +4945,8 @@ mod tests {
                         5 => nodes[atom_node.index()].children[0] = head_node,
                         6 => nodes[segment_node.index()].children.clear(),
                         7 => nodes[segment_node.index()].children.push(head_node),
-                        8 => nodes[segment_node.index()].children.swap(0, 2),
-                        9 => nodes[segment_node.index()].children[1] = handoff.terms().get(operands[0]).unwrap().site().node(),
+                        8 => nodes[segment_node.index()].children.swap(0, if negative { 3 } else { 2 }),
+                        9 => nodes[segment_node.index()].children[if negative { 3 } else { 1 }] = handoff.terms().get(operands[0]).unwrap().site().node(),
                         10 => nodes[segment_node.index()].children[0] = handoff.terms().get(operands[0]).unwrap().site().node(),
                         11 => nodes[left_node.index()].children.clear(),
                         12 => nodes[right_node.index()].children.push(handoff.terms().get(operands[0]).unwrap().site().node()),
@@ -4842,7 +4954,7 @@ mod tests {
                         14 => nodes[left_node.index()].anchor = SourceAnchor::Range(segment.range()),
                         15 => nodes[right_node.index()].recovery = NodeRecoveryState::Recovered,
                         16 => nodes[left_node.index()].kind = "ParenthesizedTerm".into(),
-                        17 => nodes[segment_node.index()].children[2] = node(left_node.index()).node(),
+                        17 => nodes[segment_node.index()].children[if negative { 4 } else { 2 }] = node(left_node.index()).node(),
                         18 => nodes[head_node.index()].recovery = NodeRecoveryState::Recovered,
                         _ => nodes[condition_node.index()].recovery = NodeRecoveryState::Recovered,
                     }
@@ -4880,7 +4992,32 @@ mod tests {
                 assert_eq!((row.site(), row.source_range(), row.source_ordinal(), row.context(), row.recovery(), row.spelling(), row.kind()), (&atomic_input.formulas[0].site, formula.range(), 0, context, SourceAtomicFormulaRecovery::Normal, atomic_input.formulas[0].spelling.as_str(), SourceAtomicFormulaKind::PredicateApplication));
                 let row = atomic.predicate_segments().get(SourcePredicateSegmentId::new(0)).unwrap();
                 assert_eq!((row.formula(), row.ordinal(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling()), (SourceAtomicFormulaId::new(0), 0, &atomic_input.predicate_segments[0].site, segment.range(), context, SourceAtomicFormulaRecovery::Normal, atomic_input.predicate_segments[0].spelling.as_str()));
-                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &SourcePredicateSegmentPolarityInput::Positive, SourceAtomicEdgeId::new(0), SourceAtomicEdgeId::new(1)));
+                assert_eq!((row.head(), row.polarity(), row.left_edge(), row.right_edge()), (SourcePredicateHeadId::new(0), &atomic_input.predicate_segments[0].polarity, SourceAtomicEdgeId::new(0), SourceAtomicEdgeId::new(1)));
+                if negative {
+                    for mutation in 0..9 {
+                        let mut candidate = atomic_input.clone();
+                        if mutation == 0 {
+                            candidate.predicate_segments[0].polarity = SourcePredicateSegmentPolarityInput::Positive;
+                        } else {
+                            let SourcePredicateSegmentPolarityInput::Negative {
+                                verb_site, verb_range, verb_spelling, verb_recovery,
+                                not_site, not_range, not_spelling, not_recovery,
+                            } = &mut candidate.predicate_segments[0].polarity else { unreachable!() };
+                            match mutation {
+                                1 => *verb_site = candidate.predicate_heads[0].site.clone(),
+                                2 => verb_range.start += 1,
+                                3 => *verb_spelling = "is".into(),
+                                4 => *verb_recovery = SourceAtomicFormulaRecovery::Degraded,
+                                5 => *not_site = verb_site.clone(),
+                                6 => not_range.start += 1,
+                                7 => *not_spelling = "non".into(),
+                                _ => *not_recovery = SourceAtomicFormulaRecovery::Degraded,
+                            }
+                        }
+                        assert!(build(candidate).is_err(), "genuine negative polarity metadata mutation {case}/{mutation}");
+                        assert_eq!(build(atomic_input.clone()), Ok(atomic.clone()));
+                    }
+                }
                 let row = atomic.predicate_heads().get(SourcePredicateHeadId::new(0)).unwrap();
                 assert_eq!((row.formula(), row.site(), row.source_range(), row.context(), row.recovery(), row.spelling(), row.left_arity(), row.right_arity()), (SourceAtomicFormulaId::new(0), &atomic_input.predicate_heads[0].site, head.range(), context, SourceAtomicFormulaRecovery::Normal, head_text, 1, 1));
                 let row = atomic.candidates().get(SourcePredicateCandidateId::new(0)).unwrap();
@@ -5007,6 +5144,13 @@ mod tests {
                 assert_eq!(build_condition(condition_input.clone(), &set_arena), Ok(composition.clone()));
                 assert_eq!(composition.validate_installation(ast.source_id, &input.module_id, &handoff, &application, &set, &aggregate, &set_arena), Ok(()));
             }
+            for candidate_arena in typed_replay_mutations {
+                let typed_before_atomic = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), candidate_arena)
+                    .with_source_term(handoff.clone()).unwrap()
+                    .with_source_application(application.clone()).unwrap()
+                    .with_source_set_term(set.clone()).unwrap();
+                assert!(typed_before_atomic.with_source_atomic_formula(aggregate.clone()).is_err(), "Typed installation replays negative condition ownership");
+            }
             let base = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone()).with_source_term(handoff.clone()).unwrap();
             for missing in [base.clone().with_source_application(application.clone()).unwrap(), base.clone().with_source_application(application.clone()).unwrap().with_source_set_term(set.clone()).unwrap(), base.clone().with_source_set_term(set.clone()).unwrap().with_source_atomic_formula(aggregate.clone()).unwrap()] {
                 assert!(matches!(missing.with_source_condition_formula_composition(composition.clone()), Err(TypedAstError::InvalidSourceConditionFormulaComposition)));
@@ -5018,11 +5162,15 @@ mod tests {
                     .with_source_condition_formula_composition(composition.clone()).expect("genuine C2 Typed installation");
                 assert_eq!((typed.source_term(), typed.source_application(), typed.source_set_term(), typed.source_atomic_formula(), typed.source_condition_formula_composition()), (Some(&handoff), Some(&application), Some(&set), Some(&aggregate), Some(&composition)));
                 assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty() && typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+                assert!(typed.source_predicate_chain_composition().is_none(), "a singleton polarity emits no C3 chain");
                 assert_eq!(typed.nodes(), &set_arena);
+                assert_eq!(typed.clone(), typed);
                 assert_eq!(typed.clone().debug_text(), typed.debug_text());
                 assert!(matches!(typed.clone().with_source_condition_formula_composition(composition.clone()), Err(TypedAstError::InvalidSourceConditionFormulaComposition)));
                 let final_ast = task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()).expect("genuine C2 final assembly");
                 assert_eq!((final_ast.source_term(), final_ast.source_application(), final_ast.source_set_term(), final_ast.source_atomic_formula(), final_ast.source_condition_formula_composition()), (Some(&handoff), Some(&application), Some(&set), Some(&aggregate), Some(&composition)));
+                assert!(final_ast.source_predicate_chain_composition().is_none(), "final singleton polarity emits no C3 chain");
+                assert_eq!(final_ast.clone(), final_ast);
                 assert_eq!(final_ast.clone().debug_text(), final_ast.debug_text());
                 assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast.clone()));
                 if let Some((previous, previous_final)) = &installed { assert_eq!((&typed, &final_ast), (previous, previous_final)); }

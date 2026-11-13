@@ -104,18 +104,20 @@ routes retain their existing rules. Installation has no BindingEnv: it rechecks
 immutable rows, complete lower fingerprints and physical shape without claiming
 fresh lexical-environment authentication.
 
-A bare Normal positive singleton binary predicate condition also admits nested
+A bare Normal positive or negative singleton binary predicate condition admits nested
 ownership only with its earlier Normal Membership and BuiltinRightOperand edge
 to the exact owning Comprehension. That Set occurrence must be an independent
 unwrapped Normal root containing no other Comprehension row; disjoint roots may
 coexist. Authenticate the exact Set condition range/spelling and sole atom child,
 the atom's sole actual segment, and its ordered left TermExpression / actual
-head / right TermExpression children. Each Normal expression has the exact
+head / right TermExpression children; negative segments instead require left / verb /
+not / head / right, with the actual verb and not nodes matching the recorded polarity
+sites. Existing segment/polarity validators retain token validation. Each Normal expression has the exact
 Primary range and sole actual Primary child. General Atomic validators retain
 provenance, context, candidate, role and unresolved-request ownership. Build and
 immutable installation recheck this physical chain with complete lower
 fingerprints under the existing context bridge above. Isolated predicate-plus-Set
-without the paired Membership, legacy, negative, chained, compound or wrapped
+without the paired Membership, legacy, chained, compound or wrapped
 predicate conditions and nested/wrapped Comprehensions remain excluded;
 runner adoption, formation, capture, sethood, applicability, truth and acceptance
 remain deferred; requests remain unanswered.
