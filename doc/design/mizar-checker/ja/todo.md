@@ -623,7 +623,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       - [x] [C2/C3 co-installation](../../task_contracts/ja/CHECKER257C-C2-C3-COINSTALLATION.md)をfreeze。
       - [x] frozen C2/C3 co-installationを実装。
       - [x] Freeze [native C2/C3 co-installation](../../task_contracts/ja/CHECKER257C-NATIVE-C2-C3-COINSTALLATION.md).
-      - [ ] Implement the frozen native C2/C3 co-installation.
+      - [x] Implement the frozen native C2/C3 co-installation.
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
   - [x] **Task 258A:** exact reserved-variable equality theorem owner、

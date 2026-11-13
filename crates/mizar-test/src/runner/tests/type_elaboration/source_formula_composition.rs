@@ -4882,9 +4882,17 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         let singleton_ast = singleton_frontend.ast.as_ref().unwrap();
         let singleton_symbols = resolver_symbol_collection(&workspace_root, case, singleton_ast);
         assert!(singleton_symbols.detail_keys.is_empty());
-        source_condition_formula_composition_output_with_source(
+        let output = source_condition_formula_composition_output_with_source(
+            singleton_ast, singleton_symbols.module.clone(), &singleton_symbols.env, &singleton,
+        ).expect("singleton C2 selector").expect("singleton C2 route remains valid");
+        assert!(output.typed_ast.source_condition_formula_composition().is_some());
+        assert!(output.typed_ast.source_predicate_chain_composition().is_none());
+        let replay = source_condition_formula_composition_output_with_source(
             singleton_ast, singleton_symbols.module, &singleton_symbols.env, &singleton,
-        ).expect("singleton C2 selector").expect("singleton C2 route remains valid")
+        ).unwrap().unwrap();
+        assert_eq!(replay.typed_ast, output.typed_ast);
+        assert_eq!(replay.resolved, output.resolved);
+        output
     });
     metamorphic_guard::with_source(case, conditioned, || {
         let frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
@@ -4899,7 +4907,8 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         assert_eq!(composition.edges().len(), 1);
         assert_eq!(composition.edges().iter().next().unwrap().1.formula().index(), 1);
         assert_eq!(output.typed_ast.source_atomic_formula().unwrap().predicate_segments().len(), 2);
-        assert!(output.typed_ast.source_predicate_chain_composition().is_none());
+        let conditioned_chain = output.typed_ast.source_predicate_chain_composition()
+            .expect("native conditioned route co-installs C3 after C2").clone();
 
         // Exercise the conditioned C3 consumer directly from the genuine C2
         // transaction. Keep the expected rows literal so producer output is
@@ -4931,9 +4940,11 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
                 segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
             }],
         );
-        let conditioned_chain = mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+        let independently_built_chain = mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
             valid_rows.clone(), primary, application, set, atomic, composition, arena,
         ).expect("conditioned C3 consumes the genuine C2 transaction");
+        assert_eq!(conditioned_chain, independently_built_chain,
+            "native acquisition matches the independently specified C3 rows");
         let conjunction_rows = conditioned_chain.conjunctions().iter().collect::<Vec<_>>();
         let [(_, conjunction)] = conjunction_rows.as_slice() else {
             panic!("conditioned C3 has one conjunction row");
@@ -5045,11 +5056,7 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             && lower_only_typed.source_predicate_chain_composition().is_none(),
             "refused conditioned C3 installation preserves the lower-only state");
 
-        let coinstalled = output.typed_ast.clone()
-            .with_source_predicate_chain_composition(conditioned_chain.clone())
-            .expect("C2-first installation accepts its authenticated conditioned C3");
-        assert_eq!(coinstalled.source_condition_formula_composition(), Some(composition));
-        assert_eq!(coinstalled.source_predicate_chain_composition(), Some(&conditioned_chain));
+        let coinstalled = output.typed_ast.clone();
         assert!(coinstalled.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
             "duplicate C3 installation is refused");
         assert!(coinstalled.clone().with_source_condition_formula_composition(composition.clone()).is_err(),
@@ -5064,8 +5071,8 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         assert!(foreign_c2_state.source_condition_formula_composition().is_some());
         assert!(foreign_c2_state.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
             "a conditioned C3 receipt cannot replace or pair with a foreign installed C2");
-        assert!(foreign_c2_state.source_predicate_chain_composition().is_none(),
-            "refused foreign C2 pairing preserves the singleton C2 state");
+        assert_eq!(foreign_c2_state, singleton_output.typed_ast,
+            "refused foreign C2 pairing preserves the complete singleton input");
         assert_eq!(output.typed_ast.source_condition_formula_composition(), Some(composition),
             "co-installation and refusal attempts preserve the original C2 state");
 
@@ -5093,6 +5100,12 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             &exact_ast, exact_module.clone(), &exact_symbols, TASK257C1_SOURCE,
         ).unwrap().unwrap();
         let chain = standalone.typed_ast.source_predicate_chain_composition().unwrap();
+        assert!(standalone.typed_ast.source_condition_formula_composition().is_none());
+        let standalone_replay = source_predicate_chain_composition_output_with_source(
+            &exact_ast, exact_module.clone(), &exact_symbols, TASK257C1_SOURCE,
+        ).unwrap().unwrap();
+        assert_eq!(standalone_replay.typed_ast, standalone.typed_ast);
+        assert_eq!(standalone_replay.resolved, standalone.resolved);
         assert!(output.typed_ast.clone().with_source_predicate_chain_composition(chain.clone()).is_err());
         assert!(standalone.typed_ast.clone().with_source_condition_formula_composition(composition.clone()).is_err());
         assert_eq!(output.typed_ast.source_condition_formula_composition(), Some(composition));
@@ -5239,4 +5252,179 @@ fn task257b1_handoff(
         .typed_ast
         .source_formula_composition()
         .expect("Task 257B1 handoff")
+}
+
+#[test]
+fn task257c_native_conditioned_chain_coinstallation_positive_matrix() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("mizar-test crate below workspace")
+        .to_path_buf();
+    let tests_root = workspace_root.join("tests");
+    let config = DiscoveryConfig {
+        workspace_root: workspace_root.clone(),
+        tests_root: tests_root.clone(),
+        manifest_path: tests_root.join("coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    };
+    let plan = build_test_plan(&config).expect("Task257C native composition plan");
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == TASK257C2_CASE)
+        .expect("native conditioned-comprehension case active");
+    let prefix = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; ";
+    let single = |condition: &str| {
+        format!(
+            "{prefix}theorem T: for A being set holds A in {{ z where z is set : {condition} }};"
+        )
+    };
+    // Literal IDs follow written outer Membership/condition order. Each outer
+    // Membership owns two edges before its condition's written operand edges.
+    let cases = [
+        (single("z likes A likes z"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
+        (single("z likes A does not likes z likes A"), vec![(1,0,0,1,3),(1,1,1,2,4)], vec![(1,0,1)], vec![0,1,1,0,1,0]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A does not likes z }} & A in {{ w where w is set : w do not likes A likes w }};"), vec![(1,0,0,1,3),(3,0,2,3,8)], vec![(1,0,1),(3,0,2)], vec![0,1,1,0,1,0,2,2,0,2]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A likes z }} proof let A,Q be set; thus A in {{ w where w is set : w likes A does not likes w }}; end;"), vec![(1,0,0,1,3),(3,0,2,3,8)], vec![(3,0,3)], vec![0,1,1,0,1,2,4,4,2,4]),
+        (":: alpha/layout\ndefinition\n let P,R be set;\n pred Renamed: P relates R means P = R;\n end;\n theorem RenamedTheorem: for B being set holds B in { item where item is set : item relates B relates item };\n".to_owned(), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1]),
+        (format!("{prefix}theorem T: for A being set holds A in {{ z where z is set : z likes A likes z }} & A in {{ w where w is set : w does not likes A }};"), vec![(1,0,0,1,3)], vec![], vec![0,1,1,0,1,0,2,2,0]),
+    ];
+
+    for (case_index, (source, expected_pairs, expected_negative_segments, winners)) in
+        cases.into_iter().enumerate()
+    {
+        let label = format!("native positive matrix case {}", case_index + 1);
+        metamorphic_guard::with_source(case, &source, || {
+            let frontend = run_frontend(&workspace_root, case, ordinal)
+                .unwrap_or_else(|error| panic!("{label} frontend failed: {error}"));
+            assert!(
+                frontend.diagnostics.is_empty(),
+                "{label} frontend diagnostics"
+            );
+            let ast = frontend.ast.as_ref().expect("native source AST");
+            let symbols = resolver_symbol_collection(&workspace_root, case, ast);
+            assert!(symbols.detail_keys.is_empty(), "{label} resolver details");
+
+            let output = source_condition_formula_composition_output_with_source(
+                ast,
+                symbols.module.clone(),
+                &symbols.env,
+                &source,
+            )
+            .unwrap_or_else(|| panic!("{label} native C2/C3 route not selected"))
+            .unwrap_or_else(|error| panic!("{label} native C2/C3 route failed: {error}"));
+            let replay = source_condition_formula_composition_output_with_source(
+                ast,
+                symbols.module,
+                &symbols.env,
+                &source,
+            )
+            .unwrap_or_else(|| panic!("{label} replay route not selected"))
+            .unwrap_or_else(|error| panic!("{label} replay failed: {error}"));
+
+            let typed = &output.typed_ast;
+            let primary = typed.source_term().expect("native Primary product");
+            let application = typed
+                .source_application()
+                .expect("native Application product");
+            let set = typed.source_set_term().expect("native Set product");
+            let atomic = typed
+                .source_atomic_formula()
+                .expect("native Atomic product");
+            let c2 = typed
+                .source_condition_formula_composition()
+                .expect("native C2 product");
+            let c3 = typed
+                .source_predicate_chain_composition()
+                .expect("native conditioned C3 product");
+            assert!(!primary.terms().is_empty(), "{label} Primary rows");
+            assert!(
+                application.applications().is_empty(),
+                "{label} genuine empty Application"
+            );
+            assert!(!set.conditions().is_empty(), "{label} Set condition rows");
+            assert_eq!(
+                primary
+                    .references()
+                    .iter()
+                    .map(|(_, row)| row.binding().index())
+                    .collect::<Vec<_>>(),
+                winners,
+                "{label} literal lexical winners including shadowing/unused declaration"
+            );
+            assert_eq!(
+                c2.edges()
+                    .iter()
+                    .map(|(id, row)| (
+                        id.index(),
+                        row.condition().index(),
+                        row.ordinal(),
+                        row.formula().index()
+                    ))
+                    .collect::<Vec<_>>(),
+                if set.conditions().len() == 1 {
+                    vec![(0, 0, 0, 1)]
+                } else {
+                    vec![(0, 0, 0, 1), (1, 1, 0, 3)]
+                },
+                "{label} complete C2 rows"
+            );
+            let actual_pairs = c3
+                .conjunctions()
+                .iter()
+                .map(|(_, row)| {
+                    (
+                        row.formula().index(),
+                        row.ordinal(),
+                        row.left_segment().index(),
+                        row.right_segment().index(),
+                        row.boundary().index(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            let actual_negative_segments = c3
+                .negations()
+                .iter()
+                .map(|(_, row)| (row.formula().index(), row.ordinal(), row.segment().index()))
+                .collect::<Vec<_>>();
+            assert_eq!(
+                actual_pairs, expected_pairs,
+                "{label} ordered adjacent-segment rows"
+            );
+            assert_eq!(
+                actual_negative_segments, expected_negative_segments,
+                "{label} negative-segment census"
+            );
+
+            assert!(typed.contexts().is_empty() && typed.types().is_empty());
+            assert!(typed.facts().is_empty() && typed.coercions().is_empty());
+            assert!(typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+            assert_eq!(output.resolved.source_term(), Some(primary));
+            assert_eq!(output.resolved.source_application(), Some(application));
+            assert_eq!(output.resolved.source_set_term(), Some(set));
+            assert_eq!(output.resolved.source_atomic_formula(), Some(atomic));
+            assert_eq!(
+                output.resolved.source_condition_formula_composition(),
+                Some(c2)
+            );
+            assert_eq!(
+                output.resolved.source_predicate_chain_composition(),
+                Some(c3)
+            );
+            assert!(output.resolved.expr_metadata().is_empty());
+            assert!(output.resolved.diagnostics().is_empty());
+            assert!(output.resolved.checked_formulas().is_empty());
+            assert!(output.resolved.statement_semantics().is_empty());
+            assert!(output.resolved.checked_proofs().is_empty());
+            assert_eq!(
+                replay.typed_ast, output.typed_ast,
+                "{label} deterministic typed replay"
+            );
+            assert_eq!(
+                replay.resolved, output.resolved,
+                "{label} deterministic final replay"
+            );
+        });
+    }
 }

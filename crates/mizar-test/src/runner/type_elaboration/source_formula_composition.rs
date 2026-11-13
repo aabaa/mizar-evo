@@ -17,7 +17,7 @@ use mizar_checker::{
         SourceAtomicFormulaInput, SourceAtomicFormulaKind, SourceAtomicFormulaProducer,
         SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
         SourceAtomicTermTarget, SourcePredicateCandidateInput, SourcePredicateHeadInput,
-        SourcePredicateSegmentInput,
+        SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
     source_composite_formula::{
         SourceBinderTypeHead, SourceBinderTypeSiteId, SourceBinderTypeSiteInput,
@@ -799,7 +799,69 @@ fn build_task_257c2_output(
     )
     .map_err(|error| error.to_string())?;
 
-    let typed_ast = TypedAst::try_new(TypedAstParts {
+    let mut chain_input = SourcePredicateChainCompositionHandoffInput {
+        source_id: ast.source_id,
+        module_id: module.clone(),
+        conjunctions: Vec::new(),
+        negations: Vec::new(),
+    };
+    for (formula, _) in atomic.formulas().iter() {
+        let segments = atomic
+            .predicate_segments()
+            .iter()
+            .filter(|(_, segment)| segment.formula() == formula)
+            .collect::<Vec<_>>();
+        if segments.len() < 2 {
+            continue;
+        }
+        for (ordinal, pair) in segments.windows(2).enumerate() {
+            chain_input
+                .conjunctions
+                .push(SourcePredicateChainConjunctionInput {
+                    formula,
+                    ordinal,
+                    left_segment: pair[0].0,
+                    right_segment: pair[1].0,
+                    boundary: pair[1].1.left_edge(),
+                });
+        }
+        for (ordinal, (segment, _)) in segments
+            .iter()
+            .filter(|(_, row)| {
+                matches!(
+                    row.polarity(),
+                    SourcePredicateSegmentPolarityInput::Negative { .. }
+                )
+            })
+            .enumerate()
+        {
+            chain_input
+                .negations
+                .push(SourcePredicateChainNegationInput {
+                    formula,
+                    ordinal,
+                    segment: *segment,
+                });
+        }
+    }
+    let chain = if chain_input.conjunctions.is_empty() {
+        None
+    } else {
+        Some(
+            SourcePredicateChainCompositionProducer::build_conditioned(
+                chain_input,
+                &primary,
+                &application,
+                &set,
+                &atomic,
+                &composition,
+                &inputs.arena,
+            )
+            .map_err(|error| error.to_string())?,
+        )
+    };
+
+    let mut typed_ast = TypedAst::try_new(TypedAstParts {
         source_id: ast.source_id,
         module_id: module,
         resolved_root: lower.resolved_root(),
@@ -825,6 +887,11 @@ fn build_task_257c2_output(
     .map_err(|error| error.to_string())?
     .with_source_condition_formula_composition(composition)
     .map_err(|error| error.to_string())?;
+    if let Some(chain) = chain {
+        typed_ast = typed_ast
+            .with_source_predicate_chain_composition(chain)
+            .map_err(|error| error.to_string())?;
+    }
     let node_hints = typed_ast
         .nodes()
         .iter()
@@ -844,6 +911,8 @@ fn build_task_257c2_output(
         || typed_ast.source_application() != resolved.source_application()
         || typed_ast.source_set_term() != resolved.source_set_term()
         || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
+        || typed_ast.source_predicate_chain_composition()
+            != resolved.source_predicate_chain_composition()
         || typed_ast.source_composite_formula().is_some()
         || typed_ast.source_formula_composition().is_some()
         || !typed_ast.types().is_empty()
