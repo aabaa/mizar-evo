@@ -2,4 +2,4 @@ slice	family	predecessor	status	note
 standalone-c3	Task257C	Task257C1	implemented	full-tier conjunction and segment-negation baseline
 whole-chain-c2	Task257C	Task257C3	implemented	7e93e5dfc whole-chain predicate condition associations
 conditioned-chain-c3	Task257C	standalone-c3/whole-chain-c2	implemented	CHECKER257C-CONDITIONED-CHAIN-C3-ROWS; C2 receipt retained without co-installation
-c2-c3-co-installation	Task257C	conditioned-chain-c3	deferred	separate freeze required for reciprocal slot policy
+c2-c3-co-installation	Task257C	conditioned-chain-c3	frozen	CHECKER257C-C2-C3-COINSTALLATION; C2-first exact receipt co-installation
