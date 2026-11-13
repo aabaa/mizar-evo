@@ -1,34 +1,33 @@
 # Task ATPK-PREMISE-RANKING: deterministic premise ranking
 Canonical language: English; [Japanese pointer](../ja/ATPK-PREMISE-RANKING.md).
-Status: planned. Tier: full. Owner: [atp plan](../../mizar-atp/en/00.crate_plan.md); consumers: [VC plan](../../mizar-vc/en/00.crate_plan.md) (selected-input assembly), [resolve plan](../../mizar-resolve/en/00.crate_plan.md) (unresolved citations), [artifact plan](../../mizar-artifact/en/00.crate_plan.md) (`missing_facts.json`), [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: an index of the facts visible at a goal (module summaries and imports); [VC-owned pretranslation assembly and tests](../../mizar-vc/en/vc_ir.md#planned-pretranslation-selection-assembly) for integration.
-Readiness: Ranking over authenticated inputs can start; ATP37 owns structured local ordering. Complete integration is blocked on authentic visible-fact/source/formula/budget inputs, VC selection assembly and suggestion artifacts.
-Authority: specification §22.4.4, §21.4.1 (`max_axioms` pruning), §23.5.2 (`missing_facts.json`, `ranking` field); [architecture 09](../../architecture/en/09.atp_interface_protocol.md).
-Gap: `test_gap` and `source_drift`; full visible-fact ranking and pruning integration remain absent.
+Status: planned. Tier: full. Owner: [ATP plan](../../mizar-atp/en/00.crate_plan.md), task 31; prerequisite: [ATP37](ATP-STRUCTURED-LOCAL-RANKING.md).
+Consumers: [VC](../../mizar-vc/en/00.crate_plan.md), [resolve](../../mizar-resolve/en/00.crate_plan.md), [artifact](../../mizar-artifact/en/00.crate_plan.md), [test](../../mizar-test/en/00.crate_plan.md).
+Authority: specification §22.4.4, §21.4.1 (`max_axioms`), §22.4.5 (E0321), §23.5.2 (suggestion result shape); [architecture](../../architecture/en/09.atp_interface_protocol.md).
+Gap: source_drift/test_gap; bounded ranking can start; complete integration remains blocked on visible-fact inputs, VC assembly and artifacts.
+
+## Definitions
+Authenticated inputs: existing producers' immutable normalized AtpProblem, structured source projections/registrations, and policy/configuration records carrying original identities and provenance for goals, facts, labels, budgets and configuration; never reconstruct payloads from text, hashes or opaque bytes.
+Ranking: deterministic integer `symbol-overlap-v1`, sharing more goal symbols raises relevance, rare symbols weigh more relative to supplied candidates, one total deterministic tie-break; record configuration with every result, reuse ATP37 scoring.
+Bounded slice: S1–S4 only, as functions over authenticated inputs.
+Deferred integration: D1–D4 are out of scope; no placeholders or bounded-exit dependencies.
 
 ## Scope
-
-Implement the `symbol-overlap-v1` ranking: relevance grows with the goal
-symbols a fact shares, weighting rare symbols more, with a total deterministic
-tie-break. Use it to prune assembled facts under `max_axioms`, to rank library
-facts for lemma suggestions of failed or open obligations (with the optional
-retry), and to rank labels for unresolved citations by spelling similarity and goal relevance. Record the configuration
-name with every ranked result.
-
-## Forbidden
-
-Accepting a source proof using an uncited fact; learned ranking (a later
-configuration); nondeterministic scores; changing proof acceptance. A
-configured diagnostic retry may add suggested candidates, but the source
-citation is required before acceptance.
+S1: ranking core shared by S2–S4; reuse AtpProblem::rank_axioms() wherever it supplies the order.
+S2: prune assembled facts to exactly the top authenticated `max_axioms` budget when exceeded; otherwise unchanged; caller-supplied authenticated failed pruned attempt returns E0321 outcome value.
+S3: ranked suggestions for failed/open obligations; optional authenticated retry failure leaves hints, success classifies a suggestion with the resolving candidate first; classification never changes proof acceptance.
+S4: rank authenticated existing labels for an unresolved reference using both spelling similarity and goal relevance, deterministically.
+D1: visible-fact index/producer from summaries/imports deferred.
+D2: VC selection assembly and live verifier/ATP wiring deferred.
+D3: missing_facts.json, diagnostic note/help/hint text and IDE fixes deferred.
+D4: complete-integration exit deferred, not done.
+Forbidden: uncited source-proof acceptance, learned configurations, nondeterministic scores/orders, proof-acceptance changes, doc/spec or .miz expectation edits.
+Stop: if S1–S4 requires D1–D4, report the exact missing piece; if a required term lacks a dispatch/contract/spec definition, report it rather than inventing one.
 
 ## Tests and exit
-
-Fixed goals and fact sets with expected orders, tie-breaks, pruning at the
-budget, suggestion lists with and without retry, retry success that cannot
-accept an unchanged source proof, and unresolved-citation
-candidates ranked by both similarity and relevance. Include failed pruning with E0321; failed retry as hints versus successful retry as a suggestion, with the resolving candidate first in the artifact and matching IDE fix. Corrupt visible-fact, source-provenance and configuration identities must fail closed. Require independent specification, test-sufficiency,
-implementation, volume/scope, and consistency reviews; `cargo fmt --check`,
-`cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.
-Exit: every ranking use in §22.4.4 is served by the recorded configuration,
-and no accepted source proof gains an uncited fact.
+P1 rare-symbol order; P2 total tie-break/repeatability; P3 over-budget pruning; P4 unchanged within budget; P5 failed pruning E0321.
+P6 suggestions without retry; P7 failed retry hints; P8 successful retry/resolving-first/unchanged-proof refusal; P9 spelling and relevance.
+R1 corrupt visible-fact identity; R2 corrupt source provenance; R3 unknown/corrupt configuration; R4 missing goal/candidate payload; R5 uncited-proof refusal.
+The full test matrix is fixed by dispatch run `2026-11-14-atp31-premise-ranking-bounded-r2` and recorded in that dispatch (the run record); 14 categories, cap 24, no splits.
+E1 bounded exit: S1–S4 over authenticated inputs pass the matrix; every result records `symbol-overlap-v1`; corrupt identities fail closed without ranking; no accepted proof gains an uncited fact; D1–D4 remain deferred, not done.
+Deferred complete-integration exit: every ranking use in §22.4.4 is served by the recorded configuration, and no accepted source proof gains an uncited fact.
+Verification/reviews: follow full-tier AGENTS.md and protocol cadence, including specification, sufficiency, implementation, volume and consistency reviews.
