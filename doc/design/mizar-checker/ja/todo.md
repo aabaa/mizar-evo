@@ -618,6 +618,9 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
         conjunction/segment-negation compositionをseparately freeze。
       - [x] **Task 257C3 implementation:** fresh post-documentation
         preflight後にfrozen predicate-chain compositionだけを実装。
+      - [x] [conditioned-chain C3 rows](../../task_contracts/ja/CHECKER257C-CONDITIONED-CHAIN-C3-ROWS.md)をfreeze。
+      - [ ] frozen conditioned-chain C3 rowsを実装。
+      - [ ] C2/C3 co-installationは後続で別途freeze。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
   - [x] **Task 258A:** exact reserved-variable equality theorem owner、
