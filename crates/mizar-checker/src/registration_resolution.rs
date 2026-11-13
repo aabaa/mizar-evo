@@ -54,6 +54,7 @@ pub struct SourceRegistrationCheck<'a> {
     bindings: BindingEnv,
     owners: Vec<(TypedNodeId, SymbolId, &'static str)>,
     validations: Vec<RegistrationValidationInput>,
+    correctness: Vec<(TypedSiteRef, InitialObligationId, SourceAnchor)>,
     choice_terms: Option<crate::source_set_term::SourceSetTermHandoff>,
     choice_gates: Option<ExistentialGateOutput>,
 }
@@ -83,6 +84,10 @@ impl SourceRegistrationCheck<'_> {
         &self.validations
     }
 
+    pub(crate) fn correctness(&self) -> &[(TypedSiteRef, InitialObligationId, SourceAnchor)] {
+        &self.correctness
+    }
+
     pub const fn choice_terms(&self) -> Option<&crate::source_set_term::SourceSetTermHandoff> {
         self.choice_terms.as_ref()
     }
@@ -103,7 +108,7 @@ pub fn check_source_registration_intake<'a>(
     nodes: &'a TypedArena,
     symbols: &SymbolEnv,
 ) -> Result<SourceRegistrationCheck<'a>, String> {
-    check_source_registration_profile(source, nodes, symbols, false)
+    check_source_registration_profile(source, nodes, symbols, false, false)
 }
 
 /// Authenticates the local attributed-set existence proof and its independent choices.
@@ -112,7 +117,15 @@ pub fn check_source_existential_registration_proof<'a>(
     nodes: &'a TypedArena,
     symbols: &SymbolEnv,
 ) -> Result<SourceRegistrationCheck<'a>, String> {
-    check_source_registration_profile(source, nodes, symbols, true)
+    check_source_registration_profile(source, nodes, symbols, true, false)
+}
+
+pub(crate) fn check_source_registration_sequence<'a>(
+    source: &SurfaceResolvedArena,
+    nodes: &'a TypedArena,
+    symbols: &SymbolEnv,
+) -> Result<SourceRegistrationCheck<'a>, String> {
+    check_source_registration_profile(source, nodes, symbols, false, true)
 }
 
 fn check_source_registration_profile<'a>(
@@ -120,6 +133,7 @@ fn check_source_registration_profile<'a>(
     nodes: &'a TypedArena,
     symbols: &SymbolEnv,
     source_proof: bool,
+    sequence: bool,
 ) -> Result<SourceRegistrationCheck<'a>, String> {
     let invalid = || "registration.source_intake_invalid".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
@@ -156,6 +170,7 @@ fn check_source_registration_profile<'a>(
     let mut intake = SourceRegistrationIntake {
         source,
         symbols,
+        sequence,
         contexts: BindingContextTable::new(),
         bindings: BindingTable::new(),
         parameters: BTreeMap::new(),
@@ -597,12 +612,22 @@ fn check_source_registration_profile<'a>(
             return Err(invalid());
         }
     }
-    if !(registrations.len() == 1 || source_proof && registrations.len() == 3)
+    if !(registrations.len() == 1
+        || source_proof && registrations.len() == 3
+        || sequence && !registrations.is_empty())
         || registrations.len() != symbols.registrations().len()
     {
         return Err(invalid());
     }
+    if sequence
+        && registrations
+            .windows(2)
+            .any(|pair| intake.range(pair[0]).end > intake.range(pair[1]).start)
+    {
+        return Err(invalid());
+    }
     let mut validations = Vec::new();
+    let mut correctness_sites = Vec::new();
     let mut required_types = Vec::new();
     for registration in registrations {
         let entry = symbols
@@ -624,6 +649,10 @@ fn check_source_registration_profile<'a>(
                 _ => "coherence",
             },
         )?;
+        correctness_sites.push((
+            intake.site(correctness),
+            intake.node(correctness).origin().anchor().clone(),
+        ));
         let mut referenced = Vec::new();
         let mut guards = Vec::new();
         let mut operands = Vec::new();
@@ -843,6 +872,14 @@ fn check_source_registration_profile<'a>(
     })
     .map_err(|_| invalid())?;
     let mut type_sites = std::collections::BTreeSet::new();
+    if sequence {
+        type_sites.extend(intake.formulas.iter().flat_map(|formula| {
+            formula
+                .expected_types
+                .iter()
+                .map(|row| row.expected.site.clone())
+        }));
+    }
     for term in intake.terms.values_mut() {
         for (role, ty) in [
             ("registration.result", &mut term.result_type),
@@ -894,6 +931,17 @@ fn check_source_registration_profile<'a>(
     {
         return Err(invalid());
     }
+    let correctness = database
+        .pending()
+        .iter()
+        .zip(correctness_sites)
+        .map(|(pending, (site, anchor))| {
+            let [id] = pending.obligations() else {
+                return Err(invalid());
+            };
+            Ok((site, *id, anchor))
+        })
+        .collect::<Result<Vec<_>, String>>()?;
     let (choice_terms, choice_gates) = if let Some(input) = choice_input {
         use crate::source_term::{SourcePrimaryTermHandoffInput, SourcePrimaryTermProducer};
         let mut projected = nodes
@@ -1010,6 +1058,7 @@ fn check_source_registration_profile<'a>(
         bindings: binding_env,
         owners,
         validations,
+        correctness,
         choice_terms,
         choice_gates,
     })
@@ -1018,6 +1067,7 @@ fn check_source_registration_profile<'a>(
 struct SourceRegistrationIntake<'a> {
     source: &'a SurfaceResolvedArena,
     symbols: &'a SymbolEnv,
+    sequence: bool,
     contexts: BindingContextTable,
     bindings: BindingTable,
     parameters: BTreeMap<ResolvedNodeId, (BindingId, ResolvedNodeId, ResolvedNodeId)>,
@@ -1684,7 +1734,7 @@ impl SourceRegistrationIntake<'_> {
             .get(&symbol)
             .ok_or("registration.attribute_definition")?;
         let expected = self.set_type(domain)?;
-        if self.symbols.registrations().len() == 3 {
+        if self.sequence || self.symbols.registrations().len() == 3 {
             if !self.formulas.iter().any(|formula| {
                 formula
                     .expected_types

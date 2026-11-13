@@ -2911,6 +2911,33 @@ fn source_registration_inputs(
     Ok((source, nodes, symbols.env))
 }
 
+fn source_registration_receiver(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    nodes: mizar_checker::typed_ast::TypedArena,
+) -> Result<mizar_checker::typed_ast::TypedAst, String> {
+    use mizar_checker::typed_ast::{TypedAst, TypedAstParts};
+    let mut original = TypedAst::try_new(TypedAstParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        resolved_root: Some(source.arena().root()),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        nodes,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|error| error.to_string())?;
+    original
+        .install_source_nodes(source)
+        .map_err(|error| error.to_string())?;
+    Ok(original)
+}
+
 fn source_registration_intake(
     root: &Path,
     case: &TestCase,
@@ -2927,11 +2954,35 @@ fn source_registration_intake(
     };
     use mizar_checker::typed_ast::{InitialObligationKind, InitialObligationStatus};
     let (source, nodes, symbols) = source_registration_inputs(root, case, output)?;
-    let check = mizar_checker::registration_resolution::check_source_registration_intake(
-        &source, &nodes, &symbols,
+    if symbols.registrations().len() != 1 {
+        return Err("registration.source_intake_invalid".into());
+    }
+    let original = std::sync::Arc::new(source_registration_receiver(&source, nodes)?);
+    let handoff = mizar_checker::source_registration::SourceRegistrationHandoff::build(
+        std::sync::Arc::clone(&original),
+        &source,
+        &symbols,
     )?;
-    let database = check.database();
-    let inference = check.inference();
+    let installed = original
+        .as_ref()
+        .clone()
+        .with_source_registration(handoff.clone())
+        .map_err(|error| error.to_string())?;
+    let final_ast = type_elaboration::assemble_empty_resolved_typed_ast(&installed, Vec::new())?;
+    if installed.source_registration() != Some(&handoff)
+        || final_ast.source_registration() != Some(&handoff)
+        || installed.initial_obligations() != handoff.database().initial_obligations()
+        || !installed.facts().is_empty()
+        || !installed.coercions().is_empty()
+        || !final_ast.cluster_facts().is_empty()
+        || !final_ast.checked_proof_nodes().is_empty()
+        || !final_ast.checked_terminal_goals().is_empty()
+    {
+        return Err("registration.invalid_installed_intake".into());
+    }
+    let nodes = original.nodes();
+    let database = handoff.database();
+    let inference = handoff.inference();
     if database.module_id() != source.module()
         || database.pending().is_empty()
         || database.pending().len() != symbols.registrations().iter().count()
@@ -2967,7 +3018,7 @@ fn source_registration_intake(
     {
         return Err("registration.invalid_pending_output".into());
     }
-    Ok(check.into_outputs())
+    Ok((database.clone(), inference.clone()))
 }
 
 fn validate_step5c11_registration_inventory(

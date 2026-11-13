@@ -39,6 +39,7 @@ use crate::{
     },
     source_property_implementation::SourcePropertyImplementationHandoff,
     source_redefinition::SourceRedefinitionHandoff,
+    source_registration::SourceRegistrationHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -180,6 +181,7 @@ pub struct ResolvedTypedAst {
     source_structure_definition: Option<SourceStructureDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_redefinition: Option<Box<SourceRedefinitionHandoff>>,
+    source_registration: Option<Box<SourceRegistrationHandoff>>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_nested_fraenkel_capture_identity: Option<InstalledSourceNestedFraenkelCaptureIdentity>,
@@ -286,6 +288,13 @@ impl ResolvedTypedAst {
 
     pub const fn source_redefinition(&self) -> Option<&SourceRedefinitionHandoff> {
         match self.source_redefinition.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub const fn source_registration(&self) -> Option<&SourceRegistrationHandoff> {
+        match self.source_registration.as_ref() {
             Some(handoff) => Some(handoff),
             None => None,
         }
@@ -1684,6 +1693,7 @@ pub enum ResolvedTypedAstError {
     InvalidSourceStructureDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceRedefinition,
+    InvalidSourceRegistration,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceNestedFraenkelCaptureIdentity,
@@ -1805,6 +1815,7 @@ impl fmt::Display for ResolvedTypedAstError {
             Self::InvalidSourceStructureDefinition => formatter.write_str(
                 "resolved typed AST source structure-definition handoff is inconsistent",
             ),
+            Self::InvalidSourceRegistration => formatter.write_str("resolved typed AST source registration handoff is inconsistent"),
             Self::InvalidSourceRedefinition => formatter.write_str("resolved typed AST source redefinition handoff is inconsistent"),
             Self::InvalidSourcePredicateDefinition => formatter
                 .write_str("resolved typed AST source predicate-definition handoff is inconsistent"),
@@ -2653,6 +2664,20 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 .validate_installation(self.inputs.typed_ast)
                 .map_err(|_| ResolvedTypedAstError::InvalidSourceRedefinition)?;
         }
+        let source_registration = self
+            .inputs
+            .typed_ast
+            .source_registration()
+            .cloned()
+            .map(Box::new);
+        if let Some(handoff) = &source_registration {
+            if !source_nested_fraenkel_capture_identity_inputs_are_syntax_only(&self.inputs) {
+                return Err(ResolvedTypedAstError::InvalidSourceRegistration);
+            }
+            handoff
+                .validate_installation(self.inputs.typed_ast)
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceRegistration)?;
+        }
         let source_predicate_definition =
             self.inputs.typed_ast.source_predicate_definition().cloned();
         let source_mode_definition = self.inputs.typed_ast.source_mode_definition().cloned();
@@ -3310,6 +3335,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             source_structure_definition,
             source_predicate_definition,
             source_redefinition,
+            source_registration,
             source_composite_formula,
             source_formula_composition,
             source_nested_fraenkel_capture_identity,

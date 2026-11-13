@@ -939,6 +939,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
             || path == Path::new("src/source_statement.rs")
             || path == Path::new("src/source_proof_local_declaration.rs")
             || path == Path::new("src/source_redefinition.rs")
+            || path == Path::new("src/source_registration.rs")
             || path == Path::new("src/source_structure.rs")
             || path == Path::new("src/source_structure_definition.rs")
             || path == Path::new("src/source_structure_semantics.rs")
@@ -975,6 +976,7 @@ fn public_checker_api_is_documented(root: &Path, path: &Path, line: &str) -> boo
                 | "pub mod source_statement;"
                 | "pub mod source_proof_local_declaration;"
                 | "pub mod source_redefinition;"
+                | "pub mod source_registration;"
                 | "pub mod source_structure;"
                 | "pub mod source_structure_definition;"
                 | "pub mod source_structure_semantics;"

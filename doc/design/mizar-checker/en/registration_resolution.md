@@ -11,6 +11,11 @@ This bounded profile admits one registration per source and at most one set para
 Reduction terms additionally admit transparent parentheses and singleton enumeration with an actual checked element.
 Enumeration has builtin set type; grouping contributes no semantic size, while the singleton contributes one node.
 
+`source_registration::SourceRegistrationHandoff` reuses this extraction for multiple source-ordered items,
+retaining kind-applicable validations and each correctness site, pending InitialObligationId and original anchor.
+It installs only pending obligation intake plus the immutable handoff through TypedAst and ResolvedTypedAst;
+MT10-AS consumes the final handoff. The legacy single-item and source-proof profiles retain their boundaries.
+
 > Canonical language: English. Japanese companion:
 > [../ja/registration_resolution.md](../ja/registration_resolution.md).
 

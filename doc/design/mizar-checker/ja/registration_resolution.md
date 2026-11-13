@@ -11,6 +11,11 @@ Core の目標生成、証明、受理状態の伝達は別の責務に留める
 簡約項では透過的な括弧と、実際の要素を型検査した単元集合の列挙も扱う。
 列挙の型は builtin set とし、括弧は意味上のサイズに含めず、単元集合は 1 ノード分を加える。
 
+`source_registration::SourceRegistrationHandoff` は同じ抽出処理を複数のソース順の項目に適用し、
+種類ごとの validation、correctness site、保留中の InitialObligationId と元の anchor を保持する。
+TypedAst と ResolvedTypedAst には保留 obligation の intake と不変 handoff だけを導入し、
+MT10-AS が最終 handoff を消費する。既存の単一項目と source-proof 経路の境界は維持する。
+
 > 正本は英語です。英語版:
 > [../en/registration_resolution.md](../en/registration_resolution.md)。
 

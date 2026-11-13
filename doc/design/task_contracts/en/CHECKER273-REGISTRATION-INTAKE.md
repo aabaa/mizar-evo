@@ -1,6 +1,6 @@
 # Task CHECKER273-REGISTRATION-INTAKE: registration intake producer
 Canonical language: English; [Japanese pointer](../ja/CHECKER273-REGISTRATION-INTAKE.md).
-Status: frozen for implementation. Tier: full (new owner module and public producer seam).
+Status: implemented within the bounded operand profile. Tier: full (new owner module and public producer seam).
 Owner: [checker plan](../../mizar-checker/en/00.crate_plan.md); consumer: [runner plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: Tasks249–272; prepared MT10-AS consumer. Task274 remains blocked-reserved.
 Authority: [producer row and shared contract](../../mizar-checker/en/payload_family_decomposition.md#producer-contract-shared-by-tasks-248-264-and-269-279), [Task273](../../mizar-checker/en/todo.md), Specs [07.8](../../../spec/en/07.modes.md#78-correctness-conditions), [16.6.3](../../../spec/en/16.theorems_and_proofs.md#1663-cluster-registration-obligations), [17.2–17.6](../../../spec/en/17.clusters_and_registrations.md#172-registration-blocks).
@@ -42,4 +42,4 @@ Cap: 24 categories; these 15 categories retain the dispatch matrix. Guard/patter
 Independent contract/spec/test-intent review precedes freeze; test sufficiency, implementation precision, volume and source/document consistency follow.
 Run fmt, workspace all-target/all-feature Clippy with -D warnings, both lint_policy suites (including links/fragments), checker registration owners and runner registration owners.
 Run short advanced-semantics CLI checks; existing proof registration owners guard shared extraction. Heavy evidence/cache/resolver obligations are unchanged.
-Full cargo test follows protocol cadence; no full trigger for this unit. Exit requires all frozen cases, final MT10-AS consumption, nine gates and score at least90.
+Full cargo test follows protocol cadence. Exit requires all frozen cases, final MT10-AS consumption, nine gates and score at least90.

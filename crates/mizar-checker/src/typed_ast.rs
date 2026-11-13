@@ -31,6 +31,7 @@ use crate::{
         SourcePropertyImplementationHandoff, SourcePropertyImplementationProjection,
     },
     source_redefinition::SourceRedefinitionHandoff,
+    source_registration::SourceRegistrationHandoff,
     source_set_term::SourceSetTermHandoff,
     source_statement::{
         SourceStatementHandoff, SourceStatementReferenceHandoff, SourceStatementWitnessHandoff,
@@ -271,6 +272,7 @@ pub struct TypedAst {
     source_structure_definition: Option<SourceStructureDefinitionHandoff>,
     source_predicate_definition: Option<SourcePredicateDefinitionHandoff>,
     source_redefinition: Option<Box<SourceRedefinitionHandoff>>,
+    source_registration: Option<Box<SourceRegistrationHandoff>>,
     source_composite_formula: Option<SourceCompositeFormulaHandoff>,
     source_formula_composition: Option<SourceFormulaCompositionHandoff>,
     source_nested_fraenkel_capture_identity: Option<InstalledSourceNestedFraenkelCaptureIdentity>,
@@ -343,6 +345,7 @@ impl TypedAst {
             source_structure_definition: None,
             source_predicate_definition: None,
             source_redefinition: None,
+            source_registration: None,
             source_composite_formula: None,
             source_formula_composition: None,
             source_nested_fraenkel_capture_identity: None,
@@ -468,6 +471,28 @@ impl TypedAst {
             .map_err(|_| TypedAstError::InvalidSourceRedefinition)?;
         candidate.source_redefinition = Some(Box::new(handoff));
         Ok(candidate)
+    }
+
+    pub const fn source_registration(&self) -> Option<&SourceRegistrationHandoff> {
+        match self.source_registration.as_ref() {
+            Some(handoff) => Some(handoff),
+            None => None,
+        }
+    }
+
+    pub fn with_source_registration(
+        mut self,
+        handoff: SourceRegistrationHandoff,
+    ) -> Result<Self, TypedAstError> {
+        if self != *handoff.original() {
+            return Err(TypedAstError::InvalidSourceRegistration);
+        }
+        handoff
+            .validate_intake()
+            .map_err(|_| TypedAstError::InvalidSourceRegistration)?;
+        self.initial_obligations = handoff.database().initial_obligations().clone();
+        self.source_registration = Some(Box::new(handoff));
+        Ok(self)
     }
 
     pub const fn source_predicate_definition(&self) -> Option<&SourcePredicateDefinitionHandoff> {
@@ -4710,6 +4735,7 @@ pub enum TypedAstError {
     InvalidSourceStructureDefinition,
     InvalidSourcePredicateDefinition,
     InvalidSourceRedefinition,
+    InvalidSourceRegistration,
     InvalidSourceCompositeFormula,
     InvalidSourceFormulaComposition,
     InvalidSourceNestedFraenkelCaptureIdentity,
@@ -4879,6 +4905,9 @@ impl fmt::Display for TypedAstError {
             }
             Self::InvalidSourceStructureDefinition => {
                 formatter.write_str("typed AST source structure-definition handoff is inconsistent")
+            }
+            Self::InvalidSourceRegistration => {
+                formatter.write_str("typed AST source registration handoff is inconsistent")
             }
             Self::InvalidSourceRedefinition => {
                 formatter.write_str("typed AST source redefinition handoff is inconsistent")
