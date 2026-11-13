@@ -37,7 +37,9 @@ An outer orchestrator (Muse, or the user acting in that role) dispatches one
 unit per run to the parent agent (Codex): a single task contract, which may
 bundle identical-shape slices. This section overrides every other clause of
 this protocol on task selection, continuation, push timing, and parent
-settings; `AGENTS.md` owns the dispatch fields and the final-response form.
+settings; `AGENTS.md` owns the dispatch fields and the final-response form,
+and [codex_dispatch_template.md](./codex_dispatch_template.md) is the
+orchestrator's fill-in form.
 
 - The orchestrator owns task selection, cross-task sequencing, continuation,
   and push timing, and carries the verification state (last full-success

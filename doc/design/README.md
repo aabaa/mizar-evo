@@ -3,6 +3,8 @@
 > Implementation order across crates: [todo.md](./todo.md).
 > Crate-wide autonomous development protocol:
 > [autonomous_crate_development.md](./autonomous_crate_development.md).
+> Outer-orchestrator dispatch form:
+> [codex_dispatch_template.md](./codex_dispatch_template.md).
 
 This directory contains implementation-facing design documents. English
 documents are canonical; Japanese companions are provided where a language-pair
