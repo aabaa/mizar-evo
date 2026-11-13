@@ -671,6 +671,7 @@ unchecked row below is one future nonempty logical task and one commit.
       - [x] Implement the frozen C2/C3 co-installation.
       - [x] Freeze [native C2/C3 co-installation](../../task_contracts/en/CHECKER257C-NATIVE-C2-C3-COINSTALLATION.md).
       - [x] Implement the frozen native C2/C3 co-installation.
+      - [ ] Freeze and implement [transparent predicate-condition parentheses](../../task_contracts/en/CHECKER257C-GROUPED-PREDICATE-CONDITIONS.md); singleton/whole-chain wrappers only, no compound conditions or semantic credit.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
   - [x] [Native quantified statements and Let guards](../../task_contracts/en/CHECKER258-NATIVE-LET-STATEMENTS.md); consumes the genuine B5 source/context/type pair.
