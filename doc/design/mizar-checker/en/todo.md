@@ -668,6 +668,7 @@ unchecked row below is one future nonempty logical task and one commit.
       - [x] Freeze [conditioned-chain C3 conjunction/segment-negation rows](../../task_contracts/en/CHECKER257C-CONDITIONED-CHAIN-C3-ROWS.md).
       - [x] Implement the frozen conditioned-chain C3 rows.
       - [x] Freeze [C2/C3 co-installation](../../task_contracts/en/CHECKER257C-C2-C3-COINSTALLATION.md).
+      - [x] Implement the frozen C2/C3 co-installation.
 - [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
   - [x] [Native quantified statements and Let guards](../../task_contracts/en/CHECKER258-NATIVE-LET-STATEMENTS.md); consumes the genuine B5 source/context/type pair.

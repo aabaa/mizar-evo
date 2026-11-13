@@ -1,5 +1,7 @@
 # Resolved Typed AST
 
+C2/C3 slot方針は[composition owner](source_formula_composition.md#変数参照predicate-chainの関連付け)に従う。
+
 `source_proof_local_binding()` は [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-境界) を保持する。
 assembly は独立に replay し、他の source family payload との混在を拒否する。
 

@@ -3022,10 +3022,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             .source_predicate_chain_composition()
             .cloned();
         if let Some(source_predicate_chain_composition) = &source_predicate_chain_composition {
-            if source_composite_formula.is_some()
-                || source_formula_composition.is_some()
-                || source_condition_formula_composition.is_some()
-            {
+            if source_composite_formula.is_some() || source_formula_composition.is_some() {
                 return Err(ResolvedTypedAstError::InvalidSourcePredicateChainComposition);
             }
             let source_term = self
@@ -3043,6 +3040,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     source_term,
                     source_atomic_formula,
                     source_application.as_ref().zip(source_set_term.as_ref()),
+                    source_condition_formula_composition.as_ref(),
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;

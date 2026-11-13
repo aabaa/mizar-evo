@@ -281,6 +281,7 @@ impl SourcePredicateChainCompositionHandoff {
         output
     }
 
+    #[allow(clippy::too_many_arguments)] // Rationale: replay authenticates the installed C2 and every retained lower dependency together.
     pub(crate) fn validate_installation(
         &self,
         source_id: SourceId,
@@ -288,9 +289,11 @@ impl SourcePredicateChainCompositionHandoff {
         primary_terms: &SourcePrimaryTermHandoff,
         atomic_formulas: &SourceAtomicFormulaHandoff,
         lower: Option<(&SourceFunctorApplicationHandoff, &SourceSetTermHandoff)>,
+        conditions: Option<&SourceConditionFormulaCompositionHandoff>,
         arena: &TypedArena,
     ) -> Result<(), SourcePredicateChainCompositionError> {
-        if self.source_id != source_id
+        if self.conditions.as_ref() != conditions
+            || self.source_id != source_id
             || &self.module_id != module_id
             || self.primary_term_fingerprint.is_empty()
             || self.atomic_formula_fingerprint.is_empty()
@@ -1032,6 +1035,7 @@ impl SourcePredicateChainCompositionProducer {
             primary_terms,
             atomic_formulas,
             Some((applications, set_terms)),
+            Some(conditions),
             arena,
         )?;
         Ok(handoff)

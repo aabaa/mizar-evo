@@ -621,6 +621,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       - [x] [conditioned-chain C3 rows](../../task_contracts/ja/CHECKER257C-CONDITIONED-CHAIN-C3-ROWS.md)をfreeze。
       - [x] frozen conditioned-chain C3 rowsを実装。
       - [x] [C2/C3 co-installation](../../task_contracts/ja/CHECKER257C-C2-C3-COINSTALLATION.md)をfreeze。
+      - [x] frozen C2/C3 co-installationを実装。
 - [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
   - [x] **Task 258A:** exact reserved-variable equality theorem owner、

@@ -2133,7 +2133,6 @@ impl TypedAst {
             || self.source_predicate_chain_composition.is_some()
             || self.source_composite_formula.is_some()
             || self.source_formula_composition.is_some()
-            || self.source_condition_formula_composition.is_some()
             || self.source_statement.is_some()
         {
             return Err(TypedAstError::InvalidSourcePredicateChainComposition);
@@ -2155,6 +2154,7 @@ impl TypedAst {
                 self.source_application
                     .as_ref()
                     .zip(self.source_set_term.as_ref()),
+                self.source_condition_formula_composition.as_ref(),
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourcePredicateChainComposition)?;

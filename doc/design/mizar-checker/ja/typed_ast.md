@@ -1,5 +1,7 @@
 # mizar-checker: TypedAst
 
+C2/C3 slot方針は[composition owner](source_formula_composition.md#変数参照predicate-chainの関連付け)に従う。
+
 native proof-local binding は `source_proof_local_binding()` と
 `with_source_proof_local_binding` を使う。fresh receiver の境界は
 [proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-境界) が所有する。

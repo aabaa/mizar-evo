@@ -1,5 +1,7 @@
 # Resolved Typed AST
 
+C2/C3 slot policy follows the [composition owner](source_formula_composition.md#variable-reference-predicate-chain-associations).
+
 `source_proof_local_binding()` retains the [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
 Assembly independently replays it and excludes other source-family payloads.
 

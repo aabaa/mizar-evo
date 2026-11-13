@@ -5020,7 +5020,7 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             valid_rows.clone(), primary, application, set, atomic, composition, &changed_owner_arena,
         ).is_err(), "C3 refuses a C2 receipt after its physical condition owner changes");
 
-        let c3_typed = mizar_checker::typed_ast::TypedAst::try_new(mizar_checker::typed_ast::TypedAstParts {
+        let lower_only_typed = mizar_checker::typed_ast::TypedAst::try_new(mizar_checker::typed_ast::TypedAstParts {
             source_id: output.typed_ast.source_id(),
             module_id: output.typed_ast.module_id().clone(),
             resolved_root: None,
@@ -5038,29 +5038,48 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
             .with_source_term(primary.clone()).unwrap()
             .with_source_application(application.clone()).unwrap()
             .with_source_set_term(set.clone()).unwrap()
-            .with_source_atomic_formula(atomic.clone()).unwrap()
-            .with_source_predicate_chain_composition(conditioned_chain.clone()).unwrap();
-        assert!(c3_typed.source_condition_formula_composition().is_none(),
-            "the C2 receipt remains a C3 dependency, not an installed C2 slot");
-        assert!(c3_typed.clone().with_source_condition_formula_composition(composition.clone()).is_err(),
-            "C3-first installation rejects reciprocal C2 installation");
-        assert!(output.typed_ast.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
-            "C2-first installation rejects reciprocal C3 installation");
+            .with_source_atomic_formula(atomic.clone()).unwrap();
+        assert!(lower_only_typed.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
+            "conditioned C3 cannot be installed without its matching C2");
+        assert!(lower_only_typed.source_condition_formula_composition().is_none()
+            && lower_only_typed.source_predicate_chain_composition().is_none(),
+            "refused conditioned C3 installation preserves the lower-only state");
+
+        let coinstalled = output.typed_ast.clone()
+            .with_source_predicate_chain_composition(conditioned_chain.clone())
+            .expect("C2-first installation accepts its authenticated conditioned C3");
+        assert_eq!(coinstalled.source_condition_formula_composition(), Some(composition));
+        assert_eq!(coinstalled.source_predicate_chain_composition(), Some(&conditioned_chain));
+        assert!(coinstalled.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
+            "duplicate C3 installation is refused");
+        assert!(coinstalled.clone().with_source_condition_formula_composition(composition.clone()).is_err(),
+            "duplicate C2 installation is refused after co-installation");
+        assert_eq!(coinstalled.source_condition_formula_composition(), Some(composition),
+            "duplicate installation attempts preserve the co-installed C2");
+        assert_eq!(coinstalled.source_predicate_chain_composition(), Some(&conditioned_chain),
+            "duplicate installation attempts preserve the co-installed C3");
+        assert!(lower_only_typed.clone().with_source_condition_formula_composition(composition.clone()).is_ok(),
+            "C2-first installation remains available on the lower-only typed input");
+        let foreign_c2_state = singleton_output.typed_ast.clone();
+        assert!(foreign_c2_state.source_condition_formula_composition().is_some());
+        assert!(foreign_c2_state.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
+            "a conditioned C3 receipt cannot replace or pair with a foreign installed C2");
+        assert!(foreign_c2_state.source_predicate_chain_composition().is_none(),
+            "refused foreign C2 pairing preserves the singleton C2 state");
         assert_eq!(output.typed_ast.source_condition_formula_composition(), Some(composition),
-            "failed reciprocal installation preserves the original C2 state");
-        assert_eq!(c3_typed.source_predicate_chain_composition(), Some(&conditioned_chain),
-            "failed reciprocal installation preserves the original C3 state");
+            "co-installation and refusal attempts preserve the original C2 state");
 
         assert!(source_predicate_chain_composition_output_with_source(
             ast, symbols.module.clone(), &symbols.env, conditioned,
         ).is_none(), "conditioned chain cannot select standalone C3");
-        for mutation in 0..3 {
+        for mutation in 0..4 {
             assert!(source_condition_formula_composition_output_with_source_and_mutation(
                 ast, symbols.module.clone(), &symbols.env, conditioned, |inputs| {
                     match mutation {
                         0 => inputs.composition.edges.push(inputs.composition.edges[0].clone()),
                         1 => inputs.composition.edges[0].formula = mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(inputs.atomic.predicate_segments[0].site.node().index()),
-                        _ => inputs.atomic.predicate_segments[1].left_edge = inputs.atomic.predicate_segments[0].left_edge,
+                        2 => inputs.atomic.predicate_segments[1].left_edge = inputs.atomic.predicate_segments[0].left_edge,
+                        _ => inputs.composition.edges.clear(),
                     }
                 },
             ).unwrap().is_err(), "per-segment association/shared edge mutation {mutation}");

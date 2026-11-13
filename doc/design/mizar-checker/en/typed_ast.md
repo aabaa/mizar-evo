@@ -1,5 +1,7 @@
 # mizar-checker: TypedAst
 
+C2/C3 slot policy follows the [composition owner](source_formula_composition.md#variable-reference-predicate-chain-associations).
+
 Native proof-local bindings use `source_proof_local_binding()` and
 `with_source_proof_local_binding`; the fresh receiver boundary is owned by
 [the proof-local module](./source_proof_local_declaration.md#native-proof-local-binding-boundary).

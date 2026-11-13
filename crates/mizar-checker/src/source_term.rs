@@ -3964,7 +3964,11 @@ mod tests {
         };
         use mizar_session::{DiskSourceLoader, Edition, SourceInput, SourceOriginInput};
 
-        let mut previous_chain_dependencies = None;
+        let mut previous_chain_dependencies: Option<(
+            crate::source_application::SourceFunctorApplicationHandoff,
+            crate::source_set_term::SourceSetTermHandoff,
+            crate::source_formula_composition::SourceConditionFormulaCompositionHandoff,
+        )> = None;
         // Literal reference winners include unused declarations and lexical shadowing.
         for (case, (text, comp_count, binding_count, winners, primary)) in [
             ("theorem T: for A being set holds A in { A where z is object : z in A } proof let A be set; thus A in { A where z is object : z in A }; end;", 2, 4, vec![0,0,1,0,2,2,3,2], Some(true)),
@@ -5326,28 +5330,28 @@ mod tests {
                     assert_eq!((id.index(), actual.formula(), actual.ordinal(), actual.segment()),
                         (expected_id, expected.formula, expected.ordinal, expected.segment), "AST-derived dense C3 negation row, case {case}");
                 }
-                assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, None, &set_arena),
+                assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, None, Some(&composition), &set_arena),
                     Err(SourcePredicateChainCompositionError::DependencyMismatch), "conditioned C3 replay requires both Application and Set, case {case}");
 
-                if let Some((previous_application, previous_set)) = &previous_chain_dependencies {
+                if let Some((previous_application, previous_set, _)) = &previous_chain_dependencies {
                     for lower in [(previous_application, &set), (&application, previous_set)] {
-                        assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, Some(lower), &set_arena),
+                        assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, Some(lower), Some(&composition), &set_arena),
                             Err(SourcePredicateChainCompositionError::DependencyMismatch), "conditioned C3 replay refuses mismatched lower dependencies, case {case}");
                     }
                 }
-                previous_chain_dependencies = Some((application.clone(), set.clone()));
-
                 let typed = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
                     .with_source_term(handoff.clone()).unwrap()
                     .with_source_application(application.clone()).unwrap()
                     .with_source_set_term(set.clone()).unwrap()
                     .with_source_atomic_formula(aggregate.clone()).unwrap()
+                    .with_source_condition_formula_composition(composition.clone())
+                    .unwrap_or_else(|error| panic!("conditioned C2 co-installation, case {case}: {error:?}"))
                     .with_source_predicate_chain_composition(chain.clone())
                     .unwrap_or_else(|error| panic!("conditioned C3 Typed replay, case {case}: {error:?}"));
                 assert_eq!(typed.source_predicate_chain_composition(), Some(&chain));
                 assert_eq!((typed.source_term(), typed.source_application(), typed.source_set_term(), typed.source_atomic_formula()),
                     (Some(&handoff), Some(&application), Some(&set), Some(&aggregate)), "conditioned C3 retains lower products, case {case}");
-                assert!(typed.source_condition_formula_composition().is_none(), "C2 receipt is retained inside C3 but is not installed, case {case}");
+                assert_eq!(typed.source_condition_formula_composition(), Some(&composition), "conditioned C2 is co-installed with C3, case {case}");
                 assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty() && typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
                 assert_eq!(typed.clone(), typed);
                 assert_eq!(typed.clone().debug_text(), typed.debug_text());
@@ -5356,10 +5360,43 @@ mod tests {
                 assert_eq!(final_ast.source_predicate_chain_composition(), Some(&chain));
                 assert_eq!((final_ast.source_term(), final_ast.source_application(), final_ast.source_set_term(), final_ast.source_atomic_formula()),
                     (Some(&handoff), Some(&application), Some(&set), Some(&aggregate)), "final conditioned C3 retains lower products, case {case}");
-                assert!(final_ast.source_condition_formula_composition().is_none());
+                assert_eq!(final_ast.source_condition_formula_composition(), Some(&composition));
                 assert_eq!(final_ast.clone(), final_ast);
                 assert_eq!(final_ast.clone().debug_text(), final_ast.debug_text());
                 assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast.clone()));
+
+                let mut injected_without_c2 = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
+                    .with_source_term(handoff.clone()).unwrap()
+                    .with_source_application(application.clone()).unwrap()
+                    .with_source_set_term(set.clone()).unwrap()
+                    .with_source_atomic_formula(aggregate.clone()).unwrap();
+                injected_without_c2.inject_source_predicate_chain_composition_for_test(chain.clone());
+                let injected_without_c2_before = injected_without_c2.clone();
+                assert!(task269gcu_resolved_result_with_inputs(&injected_without_c2, Vec::new(), Vec::new()).is_err(),
+                    "final replay refuses test-injected conditioned C3 without installed C2, case {case}");
+                assert_eq!(injected_without_c2, injected_without_c2_before, "failed final replay leaves injected Typed state unchanged, case {case}");
+
+                let mut injected_without_application = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
+                    .with_source_term(handoff.clone()).unwrap()
+                    .with_source_set_term(set.clone()).unwrap()
+                    .with_source_atomic_formula(aggregate.clone()).unwrap();
+                injected_without_application.inject_source_condition_formula_composition_for_test(composition.clone());
+                injected_without_application.inject_source_predicate_chain_composition_for_test(chain.clone());
+                let injected_without_application_before = injected_without_application.clone();
+                assert!(task269gcu_resolved_result_with_inputs(&injected_without_application, Vec::new(), Vec::new()).is_err(),
+                    "final replay refuses conditioned C3 with missing Application, case {case}");
+                assert_eq!(injected_without_application, injected_without_application_before,
+                    "failed missing-Application replay leaves Typed state unchanged, case {case}");
+
+                if let Some((_, _, conflicting_composition)) = &previous_chain_dependencies {
+                    let mut injected_conflict = typed.clone();
+                    injected_conflict.inject_source_condition_formula_composition_for_test(conflicting_composition.clone());
+                    let injected_conflict_before = injected_conflict.clone();
+                    assert!(task269gcu_resolved_result_with_inputs(&injected_conflict, Vec::new(), Vec::new()).is_err(),
+                        "final replay refuses a test-injected conflicting C2/C3 pair, case {case}");
+                    assert_eq!(injected_conflict, injected_conflict_before, "failed conflicting final replay leaves Typed state unchanged, case {case}");
+                }
+                previous_chain_dependencies = Some((application.clone(), set.clone(), composition.clone()));
             }
             assert_eq!((composition.source_id(), composition.module_id()), (ast.source_id, &input.module_id));
             assert_eq!((composition.primary_term_fingerprint(), composition.application_fingerprint(), composition.set_term_fingerprint(), composition.atomic_formula_fingerprint()), (handoff.debug_text().as_str(), application.debug_text().as_str(), set.debug_text().as_str(), aggregate.debug_text().as_str()));
