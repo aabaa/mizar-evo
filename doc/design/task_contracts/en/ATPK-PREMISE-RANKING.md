@@ -1,6 +1,6 @@
 # Task ATPK-PREMISE-RANKING: deterministic premise ranking
 Canonical language: English; [Japanese pointer](../ja/ATPK-PREMISE-RANKING.md).
-Status: planned. Tier: full. Owner: [ATP plan](../../mizar-atp/en/00.crate_plan.md), task 31; prerequisite: [ATP37](ATP-STRUCTURED-LOCAL-RANKING.md).
+Status: S1–S3 implemented within authenticated inputs; S4 and D1–D4 deferred. Tier: full. Owner: [ATP plan](../../mizar-atp/en/00.crate_plan.md), task 31; prerequisite: [ATP37](ATP-STRUCTURED-LOCAL-RANKING.md).
 Consumers: [VC](../../mizar-vc/en/00.crate_plan.md), [resolve](../../mizar-resolve/en/00.crate_plan.md), [artifact](../../mizar-artifact/en/00.crate_plan.md), [test](../../mizar-test/en/00.crate_plan.md).
 Authority: specification §22.4.4, §21.4.1 (`max_axioms`), §22.4.5 (E0321), §23.5.2 (suggestion result shape); [architecture](../../architecture/en/09.atp_interface_protocol.md).
 Gap: source_drift/test_gap; bounded ranking can start; complete integration remains blocked on visible-fact inputs, VC assembly and artifacts.

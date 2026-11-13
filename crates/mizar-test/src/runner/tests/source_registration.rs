@@ -1917,6 +1917,354 @@ fn source_registration_discharge_metadata_binds_same_call_original_handoff_and_p
     }
 }
 
+#[cfg(test)]
+mod premise_ranking_suggestions {
+    use super::*;
+    use mizar_atp::{
+        backend::{
+            BackendCancellationToken, BackendCandidateEvidence, BackendCandidatePayload,
+            BackendCommand, BackendIoMode, BackendKind, BackendObservation, BackendObservedResult,
+            BackendProfile, BackendProfileId, BackendResourceLimits, BackendRunId, BackendRunInput,
+            BackendRunStatus, EncodedBackendProblem, classify_backend_observation, run_backend,
+        },
+        problem::{
+            AtpFormula, AtpPayload, AtpProblem, AtpProblemParts, AtpProvenance, ConcreteFormat,
+        },
+        translator::translate_source_existential_registration,
+    };
+    use mizar_vc::vc_ir::VcStatus;
+    use std::{
+        path::PathBuf,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
+
+    static RUN_ID: AtomicUsize = AtomicUsize::new(0);
+
+    fn registered_problem(multiple: bool, format: ConcreteFormat) -> AtpProblem {
+        let case = if multiple {
+            step5c13_registration_case()
+        } else {
+            step5c3_registration_case()
+        };
+        let text = std::fs::read_to_string(case.source_path).unwrap();
+        registered_problem_from_text(multiple, &text, format)
+    }
+
+    fn registered_problem_from_text(
+        multiple: bool,
+        text: &str,
+        format: ConcreteFormat,
+    ) -> AtpProblem {
+        let (core, _, vcs) = source_candidate_core_and_vcs(multiple, text);
+        let vc = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.status == VcStatus::NeedsAtp)
+            .unwrap();
+        translate_source_existential_registration(
+            &core,
+            &vcs,
+            vc.id,
+            source_candidate_profile("premise-ranking-suggestions", format),
+        )
+        .unwrap()
+    }
+
+    fn attempted(original: &AtpProblem, rows: Vec<AtpFormula>) -> AtpProblem {
+        AtpProblem::try_new(AtpProblemParts {
+            vc_id: original.vc_id(),
+            target_binding: original.target_binding().clone(),
+            logic_profile: original.logic_profile().clone(),
+            expected_result: original.expected_result(),
+            declarations: original.declarations().to_vec(),
+            axioms: rows,
+            conjecture: original.conjecture().clone(),
+            type_context: original.type_context().clone(),
+            properties: original.properties().to_vec(),
+            symbol_map: original.symbol_map().to_vec(),
+            provenance: original.provenance().to_vec(),
+            diagnostics: original.diagnostics().to_vec(),
+        })
+        .unwrap()
+    }
+
+    fn retry_problem(original: &AtpProblem, subset: &AtpProblem) -> AtpProblem {
+        let (_, ranked) = original.rank_axioms().unwrap();
+        let next = ranked
+            .into_iter()
+            .find(|row| !subset.axioms().contains(row))
+            .unwrap();
+        let mut axioms = subset.axioms().to_vec();
+        axioms.push(next.clone());
+        attempted(original, axioms)
+    }
+
+    fn backend_result(
+        problem: &AtpProblem,
+        format: ConcreteFormat,
+        failed: bool,
+    ) -> mizar_atp::backend::BackendRunResult {
+        let encoded = EncodedBackendProblem::encode(problem, format).unwrap();
+        let sequence = RUN_ID.fetch_add(1, Ordering::Relaxed);
+        let command = BackendCommand::new(
+            PathBuf::from("/bin/sh"),
+            vec![
+                "-c".to_owned(),
+                if failed {
+                    "cat >/dev/null; exit 1"
+                } else {
+                    "cat >/dev/null; exit 0"
+                }
+                .to_owned(),
+            ],
+        )
+        .unwrap();
+        let input = BackendRunInput::new(
+            BackendRunId::new(format!("premise-ranking-{sequence}")).unwrap(),
+            encoded,
+            BackendProfile::new(
+                BackendProfileId::new("premise-ranking-test").unwrap(),
+                BackendKind::new("mock-shell").unwrap(),
+                format,
+            ),
+            command,
+            BackendResourceLimits::new(),
+            BackendIoMode::Stdin,
+            BackendCancellationToken::new(),
+        );
+        let result = run_backend(input);
+        assert_eq!(
+            result.status(),
+            if failed {
+                BackendRunStatus::Error
+            } else {
+                BackendRunStatus::Unknown
+            }
+        );
+        if failed {
+            return result;
+        }
+        let encoded = result.encoded_problem();
+        let candidate = BackendCandidateEvidence::new(
+            "ranking-test-candidate",
+            BackendCandidatePayload::FormulaSubstitutionBytes(b"source-candidate".to_vec()),
+            encoded.target_binding().clone(),
+            encoded.input_hash(),
+            encoded.provenance_hash(),
+            encoded.formula_labels().to_vec(),
+            encoded.symbol_bindings().to_vec(),
+        )
+        .unwrap();
+        classify_backend_observation(
+            result,
+            BackendObservation::new(BackendObservedResult::Unsat)
+                .with_candidate_evidence(candidate),
+        )
+    }
+
+    #[test]
+    fn suggestions_without_retry_and_failed_retry_are_ranked_for_both_encodings() {
+        for multiple in [false, true] {
+            for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                let original = registered_problem(multiple, format);
+                let (_, ranking) = original.rank_axioms().unwrap();
+                let attempted = attempted(&original, vec![ranking[0].clone()]);
+                let (configuration, suggested, resolving) = original
+                    .suggest_axioms(&attempted, "symbol-overlap-v1", None, None)
+                    .unwrap();
+                assert_eq!(configuration, "symbol-overlap-v1");
+                assert_eq!(suggested, ranking[1..].to_vec());
+                assert!(resolving.is_none());
+
+                let retried = retry_problem(&original, &attempted);
+                let failed = backend_result(&retried, format, true);
+                let (_, still_suggested, no_resolution) = original
+                    .suggest_axioms(&attempted, "symbol-overlap-v1", None, Some(&failed))
+                    .unwrap();
+                assert_eq!(still_suggested, suggested);
+                assert!(no_resolution.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn successful_retry_classifies_first_ranked_absent_candidate_without_changing_source_problem() {
+        for multiple in [false, true] {
+            for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+                let original = registered_problem(multiple, format);
+                let (_, ranking) = original.rank_axioms().unwrap();
+                let attempted = attempted(&original, vec![ranking[0].clone()]);
+                let retried = retry_problem(&original, &attempted);
+                let proved = backend_result(&retried, format, false);
+                assert_eq!(proved.status(), BackendRunStatus::Proved);
+                let (configuration, suggested, resolving) = original
+                    .suggest_axioms(&attempted, "symbol-overlap-v1", None, Some(&proved))
+                    .unwrap();
+                assert_eq!(configuration, "symbol-overlap-v1");
+                assert_eq!(suggested, ranking[1..].to_vec());
+                assert_eq!(resolving, Some(ranking[1]));
+                // Reclassification replaces observations even when the Proved status remains.
+                let inconsistent = classify_backend_observation(
+                    proved,
+                    BackendObservation::new(BackendObservedResult::Sat),
+                );
+                assert_eq!(inconsistent.status(), BackendRunStatus::Proved);
+                assert!(original
+                    .suggest_axioms(&attempted, "symbol-overlap-v1", None, Some(&inconsistent))
+                    .is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn altered_candidate_identity_provenance_or_configuration_fails_closed() {
+        let original = registered_problem(true, ConcreteFormat::Tptp);
+        let (_, ranked) = original.rank_axioms().unwrap();
+        let base = attempted(&original, vec![ranked[0].clone()]);
+
+        let mut changed_id = base.axioms().to_vec();
+        let row = &changed_id[0];
+        changed_id[0] = AtpFormula::new(
+            mizar_atp::problem::AtpFormulaId::new(row.id().index() + 1000),
+            row.formula().unwrap().clone(),
+            row.provenance(),
+        );
+        let bad_identity = attempted(&original, changed_id);
+        assert!(
+            original
+                .suggest_axioms(&bad_identity, "symbol-overlap-v1", None, None)
+                .is_err()
+        );
+
+        let mut provenance = original.provenance().to_vec();
+        let first = provenance[0].clone();
+        provenance[0] = AtpProvenance::new(
+            first.id(),
+            first.source().clone(),
+            AtpPayload::new("tampered-payload"),
+        );
+        let bad_provenance = AtpProblem::try_new(AtpProblemParts {
+            vc_id: base.vc_id(),
+            target_binding: base.target_binding().clone(),
+            logic_profile: base.logic_profile().clone(),
+            expected_result: base.expected_result(),
+            declarations: base.declarations().to_vec(),
+            axioms: base.axioms().to_vec(),
+            conjecture: base.conjecture().clone(),
+            type_context: base.type_context().clone(),
+            properties: base.properties().to_vec(),
+            symbol_map: base.symbol_map().to_vec(),
+            provenance,
+            diagnostics: base.diagnostics().to_vec(),
+        })
+        .unwrap();
+        assert!(
+            original
+                .suggest_axioms(&bad_provenance, "symbol-overlap-v1", None, None)
+                .is_err()
+        );
+        assert!(
+            original
+                .suggest_axioms(&base, "unknown-ranking", None, None)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn suggestions_do_not_change_source_proof_acceptance_inputs() {
+        use mizar_checker::registration_resolution::{
+            check_source_existential_registration_proof, check_source_registration_intake,
+        };
+        use mizar_session::SourceAnchor;
+
+        let source = std::fs::read_to_string(step5c3_registration_case().source_path).unwrap();
+        let registration_end = source
+            .find("\ndefinition\n")
+            .expect("following theorem definition");
+        let cited = &source[..registration_end];
+        let uncited = cited.replace(" by WMDef", "         ");
+        let (cited_source, cited_nodes, cited_symbols) =
+            step5c3_registration_inputs(cited).unwrap();
+        let (source, nodes, symbols) = step5c3_registration_inputs(&uncited).unwrap();
+        let cited_intake =
+            check_source_registration_intake(&cited_source, &cited_nodes, &cited_symbols).unwrap();
+        let intake = check_source_registration_intake(&source, &nodes, &symbols).unwrap();
+        let [cited_registration] = cited_intake.validations() else {
+            panic!("one authenticated registration")
+        };
+        let [registration] = intake.validations() else {
+            panic!("one authenticated registration")
+        };
+        assert_eq!(registration.source_range(), cited_registration.source_range());
+        assert_eq!(registration.pattern(), cited_registration.pattern());
+        assert_eq!(registration.parameters(), cited_registration.parameters());
+        assert_eq!(registration.assumptions(), cited_registration.assumptions());
+        assert_eq!(
+            registration.referenced_symbols(),
+            cited_registration.referenced_symbols()
+        );
+        // Preserve the checked definitions, registration target and conclusion. Token
+        // removal shifts composite arena IDs, so compare anchored nodes and child edges.
+        // Uncited proofs stop before the normalized ATP producer.
+        assert_eq!(source.module(), cited_source.module());
+        let citation_start = cited.find(" by WMDef").expect("source citation");
+        let before_citation = |arena: &mizar_resolve::resolved_ast::SurfaceResolvedArena| {
+            arena
+                .arena()
+                .iter()
+                .filter(|(_, node)| {
+                    matches!(node.origin().anchor(), SourceAnchor::Range(range)
+                        if range.end <= citation_start)
+                })
+                .map(|(_, node)| {
+                    (
+                        node.kind().clone(),
+                        node.origin().anchor().clone(),
+                        node.recovery(),
+                        node.resolution(),
+                        node.reference_key(),
+                        node.children()
+                            .iter()
+                            .map(|id| {
+                                let child = arena.arena().node(*id).unwrap();
+                                (child.kind().clone(), child.origin().anchor().clone())
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let checked_prefix = before_citation(&cited_source);
+        assert!(!checked_prefix.is_empty());
+        assert_eq!(before_citation(&source), checked_prefix);
+        assert_eq!(
+            check_source_existential_registration_proof(&source, &nodes, &symbols)
+                .unwrap_err(),
+            "registration.source_existential_proof_invalid"
+        );
+
+        let original = registered_problem_from_text(false, cited, ConcreteFormat::Tptp);
+        let attempted = attempted(&original, Vec::new());
+        let (_, suggestions, _) = original
+            .suggest_axioms(&attempted, "symbol-overlap-v1", None, None)
+            .unwrap();
+        let suggested = *suggestions.first().expect("a ranked absent candidate");
+        let retried = retry_problem(&original, &attempted);
+        let proved_retry = backend_result(&retried, ConcreteFormat::Tptp, false);
+        let (_, suggestions_after, resolving) = original
+            .suggest_axioms(&attempted, "symbol-overlap-v1", None, Some(&proved_retry))
+            .unwrap();
+        assert_eq!(suggestions_after, suggestions);
+        assert_eq!(resolving, Some(suggested));
+        assert_eq!(
+            check_source_existential_registration_proof(&source, &nodes, &symbols)
+                .unwrap_err(),
+            "registration.source_existential_proof_invalid",
+            "retry classification does not admit the unchanged uncited source proof"
+        );
+    }
+}
+
 #[test]
 fn source_registration_discharge_metadata_keeps_real_negative_errors_and_no_association() {
     use mizar_atp::problem::ConcreteFormat;

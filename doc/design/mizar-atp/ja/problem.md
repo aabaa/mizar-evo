@@ -169,7 +169,13 @@ backend-reported proof order は semantic identity から除外する。
 
 `AtpProblem::rank_axioms()` は `Result<(&'static str, Vec<&AtpFormula>), String>` として設定 `symbol-overlap-v1` と元の全 axiom の順位を返す。構造化 goal/candidate tree の named predicate/function を重複なしで集め、入れ子・零引数 function を含める。variable・binder・sort・equality・論理演算子は除外し、tree 不足は text/hash から復元せず error とする。
 候補 N 件で共有 symbol ごとに N-df(s)+1 を足す。df(s) はその symbol を含む候補数で、反復で増やさない。u128 の和を降順、同点は一意の formula ID 昇順に並べる。希少性は入力集合内だけを表し、元 row の provenance と不変 input 対応を保って conjecture 追加・前提削除を行わない。
-未検証 candidate-production の前提部分であり、source projection は既存の真正な入力を使う。library facts・実 budget/citation・刈り込み・提案/retry・未解決 label・公開・証明受理は担当の依存待ちに留める。library 全体の希少性や source-currentness receipt は得られない。
+未検証 candidate-production の前提部分であり、source projection は既存の真正な入力を使う。library fact 生成・実 budget/citation 組立・live 刈り込み/retry・未解決 label・公開・証明受理は担当の依存待ちに留める。library 全体の希少性や source-currentness receipt は得られない。
+
+### Bounded pruning and suggestions
+
+`prune_axioms(&self, hint: &ProofHint, configuration: &str, outcome: Option<&BackendRunResult>) -> Result<(&'static str, Self, Option<&'static str>), String>` は渡された hint の明示的 `max_axioms` と `symbol-overlap-v1` を要求する。超過時は上位の元 axiom を予算数だけ残し `AtpProblemParts` で再構築し、予算内は変更のない clone を返す。一致する刈り込み attempt が失敗した場合だけ `Some("E0321")` を返す。
+`suggest_axioms(&self, attempted: &Self, configuration: &str, outcome: Option<&BackendRunResult>, retry: Option<&BackendRunResult>)` は設定、順位付きの未使用の元 axiom 参照、任意の解決候補参照を返す。元 pool と attempted subset の axiom 以外の全 field、および各 attempted row の元 row との完全一致を要求する。初回 outcome は失敗に限り、省略は open goal を表す。任意 retry は未使用の最上位候補を一つだけ追加した入力に限り、成功はその元参照の suggestion、失敗は hint のままとする。
+全 outcome を、選択した不変入力に対する記録済み format の新しい `EncodedBackendProblem::encode` の完全な結果と比較する。成功分類はUnsat 観測と対応する formula/substitution candidate metadata も要求する。tree 不在、candidate/provenance 対応の変更、未知設定は fail closed とする。backend 実行・証明受理は行わず、提案の citation は source に記入する必要がある。visible-fact 生成、VC/live-attempt 接続、artifact、未解決 label producer は `ATPK-PREMISE-RANKING` の後続範囲に留める。
 
 ## Observed Ground Terms
 `AtpProblem::observed_ground_terms(&self) -> Result<BTreeSet<&AtpTerm>, AtpProblemError>` は既存の変数を含まない term subtree への参照を返し、既存 AtpTerm Ord（function 名、再帰 argument）で重複排除・整列する。新 type/field/clone/identity/正規化/profile を作らない。

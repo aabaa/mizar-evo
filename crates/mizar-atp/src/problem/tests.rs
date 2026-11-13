@@ -1,4 +1,10 @@
 use super::*;
+use crate::backend::{
+    BackendCancellationToken, BackendCommand, BackendIoMode, BackendKind, BackendProfile,
+    BackendProfileId, BackendResourceLimits, BackendRunId, BackendRunInput, BackendRunResult,
+    EncodedBackendProblem, run_backend,
+};
+use mizar_vc::vc_ir::ProofHint;
 
 #[test]
 fn constructs_minimal_problem_and_renders_unsat_contract() {
@@ -1086,6 +1092,158 @@ fn profile_with_soft_types(soft_types: SoftTypeStrategy) -> LogicProfile {
         BTreeSet::from([ConcreteFormat::Tptp]),
     )
     .expect("profile")
+}
+
+#[test]
+fn prune_axioms_keeps_exactly_the_ranked_budget_and_preserves_problem_binding() {
+    let problem = later_high_rank_pruning_problem();
+    let original = &problem;
+
+    let (_, ranked) = problem.rank_axioms().expect("ranked candidate pool");
+    assert_eq!(
+        ranked
+            .iter()
+            .map(|row| row.id().index())
+            .collect::<Vec<_>>(),
+        vec![3, 1]
+    );
+
+    let (configuration, selected, diagnostic) = problem
+        .prune_axioms(&proof_hint(Some(1)), "symbol-overlap-v1", None)
+        .expect("pruned problem");
+
+    assert_eq!(configuration, "symbol-overlap-v1");
+    assert_eq!(
+        selected
+            .axioms()
+            .iter()
+            .map(|row| row.id().index())
+            .collect::<Vec<_>>(),
+        vec![3]
+    );
+    assert_eq!(diagnostic, None);
+    assert_eq!(selected.vc_id(), original.vc_id());
+    assert_eq!(selected.target_binding(), original.target_binding());
+    assert_eq!(selected.logic_profile(), original.logic_profile());
+    assert_eq!(selected.expected_result(), original.expected_result());
+    assert_eq!(selected.declarations(), original.declarations());
+    assert_eq!(selected.conjecture, original.conjecture);
+    assert_eq!(selected.type_context(), original.type_context());
+    assert_eq!(selected.properties(), original.properties());
+    assert_eq!(selected.symbol_map(), original.symbol_map());
+    assert_eq!(selected.provenance, original.provenance);
+    assert_eq!(selected.diagnostics, original.diagnostics);
+}
+
+#[test]
+fn prune_axioms_returns_an_unchanged_clone_at_and_under_budget() {
+    let problem = populated_problem(false);
+
+    for budget in [2, 3] {
+        let (configuration, selected, diagnostic) = problem
+            .prune_axioms(&proof_hint(Some(budget)), "symbol-overlap-v1", None)
+            .expect("problem within the axiom budget");
+
+        assert_eq!(configuration, "symbol-overlap-v1");
+        assert_eq!(selected, problem);
+        assert_eq!(diagnostic, None);
+    }
+}
+
+#[test]
+fn failed_pruned_backend_run_reports_axiom_budget_diagnostic() {
+    let problem = populated_problem(false);
+    let (_, selected, _) = problem
+        .prune_axioms(&proof_hint(Some(1)), "symbol-overlap-v1", None)
+        .expect("pruned problem");
+    let outcome = failed_backend_result(&selected);
+
+    assert_ne!(outcome.status(), crate::backend::BackendRunStatus::Proved);
+    let (_, _, diagnostic) = problem
+        .prune_axioms(&proof_hint(Some(1)), "symbol-overlap-v1", Some(&outcome))
+        .expect("authenticated failed pruned outcome");
+    assert_eq!(diagnostic, Some("E0321"));
+}
+
+#[test]
+fn prune_and_suggestion_fail_closed_on_missing_goal_or_candidate_formula() {
+    let problem = populated_problem(false);
+    let hint = proof_hint(Some(1));
+
+    let mut missing_goal = problem.clone();
+    missing_goal.conjecture.formula = None;
+    assert!(
+        missing_goal
+            .prune_axioms(&hint, "symbol-overlap-v1", None)
+            .is_err()
+    );
+    assert!(
+        missing_goal
+            .suggest_axioms(&missing_goal, "symbol-overlap-v1", None, None)
+            .is_err()
+    );
+
+    let mut missing_candidate = problem.clone();
+    missing_candidate.axioms[0].formula = None;
+    assert!(
+        missing_candidate
+            .prune_axioms(&hint, "symbol-overlap-v1", None)
+            .is_err()
+    );
+    assert!(
+        missing_candidate
+            .suggest_axioms(&missing_candidate, "symbol-overlap-v1", None, None)
+            .is_err()
+    );
+}
+
+fn proof_hint(max_axioms: Option<u32>) -> ProofHint {
+    ProofHint {
+        citations: Vec::new(),
+        unfold_requests: Vec::new(),
+        premise_restrictions: Vec::new(),
+        solver: None,
+        max_axioms,
+        timeout: None,
+        computation: None,
+        provenance: Vec::new(),
+    }
+}
+
+fn failed_backend_result(problem: &AtpProblem) -> BackendRunResult {
+    let encoded = EncodedBackendProblem::encode(problem, ConcreteFormat::Tptp)
+        .expect("encode selected problem");
+    let profile = BackendProfile::new(
+        BackendProfileId::new("problem-pruning-test-profile").expect("profile id"),
+        BackendKind::new("problem-pruning-test-backend").expect("backend kind"),
+        ConcreteFormat::Tptp,
+    );
+    let command = BackendCommand::new("/bin/sh", vec!["-c".to_owned(), "exit 1".to_owned()])
+        .expect("test command");
+    run_backend(BackendRunInput::new(
+        BackendRunId::new("problem-pruning-failed-run").expect("run id"),
+        encoded,
+        profile,
+        command,
+        BackendResourceLimits::new(),
+        BackendIoMode::Stdin,
+        BackendCancellationToken::new(),
+    ))
+}
+
+fn later_high_rank_pruning_problem() -> AtpProblem {
+    let mut parts = populated_parts(false);
+    parts.axioms[0] = AtpFormula::new(
+        AtpFormulaId::new(1),
+        AtpFormulaTree::True,
+        AtpProvenanceId::new(2),
+    );
+    parts.axioms[1] = AtpFormula::new(
+        AtpFormulaId::new(3),
+        atom("P", vec![constant("a")]),
+        AtpProvenanceId::new(2),
+    );
+    AtpProblem::try_new(parts).expect("pruning fixture with distinct relevance")
 }
 
 fn profile_first_order() -> LogicProfile {

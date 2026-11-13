@@ -433,6 +433,153 @@ impl AtpProblem {
         ))
     }
 
+    pub fn prune_axioms(
+        &self,
+        hint: &mizar_vc::vc_ir::ProofHint,
+        configuration: &str,
+        outcome: Option<&crate::backend::BackendRunResult>,
+    ) -> Result<(&'static str, Self, Option<&'static str>), String> {
+        let (ranking, ranked) = self.rank_axioms()?;
+        if configuration != ranking {
+            return Err("unknown premise ranking configuration".to_owned());
+        }
+        let budget = hint
+            .max_axioms
+            .ok_or_else(|| "missing authenticated max_axioms budget".to_owned())?
+            as usize;
+        let pruned = self.axioms.len() > budget;
+        let selected = if pruned {
+            Self::try_new(AtpProblemParts {
+                vc_id: self.vc_id,
+                target_binding: self.target_binding.clone(),
+                logic_profile: self.logic_profile.clone(),
+                expected_result: self.expected_result,
+                declarations: self.declarations.clone(),
+                axioms: ranked.into_iter().take(budget).cloned().collect(),
+                conjecture: self.conjecture.clone(),
+                type_context: self.type_context.clone(),
+                properties: self.properties.clone(),
+                symbol_map: self.symbol_map.clone(),
+                provenance: self.provenance.clone(),
+                diagnostics: self.diagnostics.clone(),
+            })
+            .map_err(|error| error.to_string())?
+        } else {
+            self.clone()
+        };
+        let failed = outcome
+            .map(|result| {
+                selected
+                    .validate_ranking_outcome(result)
+                    .map(|proved| !proved)
+            })
+            .transpose()?
+            .unwrap_or(false);
+        Ok((ranking, selected, (pruned && failed).then_some("E0321")))
+    }
+
+    pub fn suggest_axioms<'a>(
+        &'a self,
+        attempted: &Self,
+        configuration: &str,
+        outcome: Option<&crate::backend::BackendRunResult>,
+        retry: Option<&crate::backend::BackendRunResult>,
+    ) -> Result<(&'static str, Vec<&'a AtpFormula>, Option<&'a AtpFormula>), String> {
+        let (ranking, ranked) = self.rank_axioms()?;
+        if configuration != ranking {
+            return Err("unknown premise ranking configuration".to_owned());
+        }
+        if self.vc_id != attempted.vc_id
+            || self.target_binding != attempted.target_binding
+            || self.logic_profile != attempted.logic_profile
+            || self.expected_result != attempted.expected_result
+            || self.declarations != attempted.declarations
+            || self.conjecture != attempted.conjecture
+            || self.type_context != attempted.type_context
+            || self.properties != attempted.properties
+            || self.symbol_map != attempted.symbol_map
+            || self.provenance != attempted.provenance
+            || self.diagnostics != attempted.diagnostics
+            || attempted
+                .axioms
+                .iter()
+                .any(|row| !self.axioms.contains(row))
+        {
+            return Err("attempted problem does not match the original candidate pool".to_owned());
+        }
+        if let Some(result) = outcome
+            && attempted.validate_ranking_outcome(result)?
+        {
+            return Err("lemma suggestions require a failed or open obligation".to_owned());
+        }
+        let candidates = ranked
+            .into_iter()
+            .filter(|row| !attempted.axioms.contains(row))
+            .collect::<Vec<_>>();
+        let mut suggestion = None;
+        if let Some(result) = retry {
+            let first = candidates
+                .first()
+                .ok_or_else(|| "retry requires an absent original candidate".to_owned())?;
+            let mut axioms = attempted.axioms.clone();
+            axioms.push((*first).clone());
+            let retried = Self::try_new(AtpProblemParts {
+                vc_id: self.vc_id,
+                target_binding: self.target_binding.clone(),
+                logic_profile: self.logic_profile.clone(),
+                expected_result: self.expected_result,
+                declarations: self.declarations.clone(),
+                axioms,
+                conjecture: self.conjecture.clone(),
+                type_context: self.type_context.clone(),
+                properties: self.properties.clone(),
+                symbol_map: self.symbol_map.clone(),
+                provenance: self.provenance.clone(),
+                diagnostics: self.diagnostics.clone(),
+            })
+            .map_err(|error| error.to_string())?;
+            if retried.validate_ranking_outcome(result)? {
+                suggestion = Some(*first);
+            }
+        }
+        Ok((ranking, candidates, suggestion))
+    }
+
+    fn validate_ranking_outcome(
+        &self,
+        outcome: &crate::backend::BackendRunResult,
+    ) -> Result<bool, String> {
+        use crate::backend::{BackendObservedResult, BackendRunStatus, EncodedBackendProblem};
+        let encoded =
+            EncodedBackendProblem::encode(self, outcome.encoded_problem().concrete_format())?;
+        if encoded != *outcome.encoded_problem() {
+            return Err("backend outcome does not match the complete encoded problem".to_owned());
+        }
+        match outcome.status() {
+            BackendRunStatus::Proved => {
+                let candidate = outcome
+                    .candidate_evidence()
+                    .ok_or_else(|| "proved retry is missing candidate evidence".to_owned())?;
+                if outcome.observed_result() != Some(BackendObservedResult::Unsat)
+                    || !candidate.payload().is_formula_substitution_candidate()
+                    || candidate.target_binding() != encoded.target_binding()
+                    || candidate.encoded_problem_hash() != encoded.input_hash()
+                    || candidate.provenance_hash() != encoded.provenance_hash()
+                    || candidate.formula_label_refs() != encoded.formula_labels()
+                    || candidate.symbol_binding_refs() != encoded.symbol_bindings()
+                {
+                    return Err("proved retry has inconsistent backend evidence".to_owned());
+                }
+                Ok(true)
+            }
+            BackendRunStatus::Counterexample
+            | BackendRunStatus::Timeout
+            | BackendRunStatus::Unknown
+            | BackendRunStatus::Error
+            | BackendRunStatus::Cancelled => Ok(false),
+        }
+    }
+
     pub fn observed_ground_terms(&self) -> Result<BTreeSet<&AtpTerm>, AtpProblemError> {
         fn term<'a>(node: &'a AtpTerm, observed: &mut BTreeSet<&'a AtpTerm>) -> bool {
             match node {
