@@ -208,6 +208,7 @@ pub struct SourcePredicateChainCompositionHandoff {
     atomic_formula_fingerprint: String,
     conjunctions: SourcePredicateChainConjunctionTable,
     negations: SourcePredicateChainNegationTable,
+    conditions: Option<SourceConditionFormulaCompositionHandoff>,
 }
 
 impl SourcePredicateChainCompositionHandoff {
@@ -286,6 +287,7 @@ impl SourcePredicateChainCompositionHandoff {
         module_id: &ModuleId,
         primary_terms: &SourcePrimaryTermHandoff,
         atomic_formulas: &SourceAtomicFormulaHandoff,
+        lower: Option<(&SourceFunctorApplicationHandoff, &SourceSetTermHandoff)>,
         arena: &TypedArena,
     ) -> Result<(), SourcePredicateChainCompositionError> {
         if self.source_id != source_id
@@ -297,6 +299,24 @@ impl SourcePredicateChainCompositionHandoff {
         {
             return Err(SourcePredicateChainCompositionError::DependencyMismatch);
         }
+        let lower = if let Some(conditions) = &self.conditions {
+            let (applications, set_terms) =
+                lower.ok_or(SourcePredicateChainCompositionError::DependencyMismatch)?;
+            conditions
+                .validate_installation(
+                    source_id,
+                    module_id,
+                    primary_terms,
+                    applications,
+                    set_terms,
+                    atomic_formulas,
+                    arena,
+                )
+                .map_err(|_| SourcePredicateChainCompositionError::DependencyMismatch)?;
+            Some((applications, set_terms))
+        } else {
+            None
+        };
         validate_predicate_chain_transaction(
             &SourcePredicateChainCompositionHandoffInput {
                 source_id: self.source_id,
@@ -306,6 +326,7 @@ impl SourcePredicateChainCompositionHandoff {
             },
             primary_terms,
             atomic_formulas,
+            lower,
             arena,
         )
     }
@@ -961,7 +982,7 @@ impl SourcePredicateChainCompositionProducer {
         atomic_formulas: &SourceAtomicFormulaHandoff,
         arena: &TypedArena,
     ) -> Result<SourcePredicateChainCompositionHandoff, SourcePredicateChainCompositionError> {
-        validate_predicate_chain_transaction(&input, primary_terms, atomic_formulas, arena)?;
+        validate_predicate_chain_transaction(&input, primary_terms, atomic_formulas, None, arena)?;
         let primary_term_fingerprint = primary_terms.debug_text();
         let atomic_formula_fingerprint = atomic_formulas.debug_text();
         if primary_term_fingerprint.is_empty() || atomic_formula_fingerprint.is_empty() {
@@ -978,7 +999,42 @@ impl SourcePredicateChainCompositionProducer {
             negations: SourcePredicateChainNegationTable {
                 rows: input.negations.into_iter().map(Into::into).collect(),
             },
+            conditions: None,
         })
+    }
+
+    /// Build chain rows authenticated by a complete condition association receipt.
+    pub fn build_conditioned(
+        input: SourcePredicateChainCompositionHandoffInput,
+        primary_terms: &SourcePrimaryTermHandoff,
+        applications: &SourceFunctorApplicationHandoff,
+        set_terms: &SourceSetTermHandoff,
+        atomic_formulas: &SourceAtomicFormulaHandoff,
+        conditions: &SourceConditionFormulaCompositionHandoff,
+        arena: &TypedArena,
+    ) -> Result<SourcePredicateChainCompositionHandoff, SourcePredicateChainCompositionError> {
+        let handoff = SourcePredicateChainCompositionHandoff {
+            source_id: input.source_id,
+            module_id: input.module_id,
+            primary_term_fingerprint: primary_terms.debug_text(),
+            atomic_formula_fingerprint: atomic_formulas.debug_text(),
+            conjunctions: SourcePredicateChainConjunctionTable {
+                rows: input.conjunctions.into_iter().map(Into::into).collect(),
+            },
+            negations: SourcePredicateChainNegationTable {
+                rows: input.negations.into_iter().map(Into::into).collect(),
+            },
+            conditions: Some(conditions.clone()),
+        };
+        handoff.validate_installation(
+            handoff.source_id,
+            &handoff.module_id,
+            primary_terms,
+            atomic_formulas,
+            Some((applications, set_terms)),
+            arena,
+        )?;
+        Ok(handoff)
     }
 }
 
@@ -1093,6 +1149,7 @@ fn validate_predicate_chain_transaction(
     input: &SourcePredicateChainCompositionHandoffInput,
     primary_terms: &SourcePrimaryTermHandoff,
     atomic_formulas: &SourceAtomicFormulaHandoff,
+    lower: Option<(&SourceFunctorApplicationHandoff, &SourceSetTermHandoff)>,
     arena: &TypedArena,
 ) -> Result<(), SourcePredicateChainCompositionError> {
     if input.source_id != primary_terms.source_id()
@@ -1110,9 +1167,9 @@ fn validate_predicate_chain_transaction(
             input.source_id,
             &input.module_id,
             primary_terms,
+            lower.map(|(applications, _)| applications),
             None,
-            None,
-            None,
+            lower.map(|(_, set_terms)| set_terms),
             arena,
         )
         .map_err(|_| SourcePredicateChainCompositionError::DependencyMismatch)?;
@@ -1148,7 +1205,11 @@ fn validate_predicate_chain_transaction(
             || atomic_formulas
                 .edges()
                 .iter()
-                .any(|(_, edge)| !matches!(edge.target(), SourceAtomicTermTarget::Primary(_)))
+                .any(|(_, edge)| match edge.target() {
+                    SourceAtomicTermTarget::Primary(_) => false,
+                    SourceAtomicTermTarget::SetTerm(_) => lower.is_none(),
+                    _ => true,
+                })
             || atomic_formulas.predicate_heads().len() != atomic_formulas.predicate_segments().len()
             || atomic_formulas.candidates().len() != atomic_formulas.predicate_heads().len()
         {

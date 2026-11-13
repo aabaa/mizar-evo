@@ -2152,6 +2152,9 @@ impl TypedAst {
                 &self.module_id,
                 source_term,
                 source_atomic_formula,
+                self.source_application
+                    .as_ref()
+                    .zip(self.source_set_term.as_ref()),
                 &self.nodes,
             )
             .map_err(|_| TypedAstError::InvalidSourcePredicateChainComposition)?;

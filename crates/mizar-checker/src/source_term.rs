@@ -3964,6 +3964,7 @@ mod tests {
         };
         use mizar_session::{DiskSourceLoader, Edition, SourceInput, SourceOriginInput};
 
+        let mut previous_chain_dependencies = None;
         // Literal reference winners include unused declarations and lexical shadowing.
         for (case, (text, comp_count, binding_count, winners, primary)) in [
             ("theorem T: for A being set holds A in { A where z is object : z in A } proof let A be set; thus A in { A where z is object : z in A }; end;", 2, 4, vec![0,0,1,0,2,2,3,2], Some(true)),
@@ -4019,6 +4020,10 @@ mod tests {
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A } & A in { w where w is set : w likes A do not likes w likes A };", 2, 3, vec![0,1,1,0,0,2,2,0,2,0], Some(true)),
             ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A likes z } & A in { w where w is set : w does not likes A };", 2, 3, vec![0,1,1,0,1,0,2,2,0], Some(true)),
             (":: alpha/layout\ndefinition\n let parcel, needle be object; pred Rel: parcel knows needle means parcel = needle; end;\ntheorem T: for item being\tset holds item in { point where point is set : point knows item do not knows point knows item };", 1, 2, vec![0,1,1,0,1,0], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A likes z } & A in { w where w is set : w likes A likes w };", 2, 3, vec![0,1,1,0,1,0,2,2,0,2], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z does not likes A likes z };", 1, 2, vec![0,1,1,0,1], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A do not likes z };", 1, 2, vec![0,1,1,0,1], Some(true)),
+            ("definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end;\n:: alpha/layout\ntheorem T: for parcel being\tset holds parcel in { point where point is set : point likes parcel likes point } & parcel in { needle where needle is set : needle does not likes parcel };", 2, 3, vec![0,1,1,0,1,0,2,2,0], Some(true)),
         ].into_iter().enumerate() {
         let directory = std::env::temp_dir().join(format!(
             "native-comprehension-contexts-{}-{case}",
@@ -5234,6 +5239,128 @@ mod tests {
             let composition_pristine = (application_input.clone(), aggregate_input.clone(), condition_input.clone(), application.clone(), aggregate.clone(), set.clone(), handoff.clone(), set_arena.clone(), bindings.clone());
             let build_condition = |candidate, arena: &TypedArena| SourceConditionFormulaCompositionProducer::build(candidate, &handoff, &application, &set, &aggregate, arena);
             let composition = build_condition(condition_input.clone(), &set_arena).unwrap_or_else(|error| panic!("genuine complete scoped predicate C2 case {case}, all four lower replays passed: {error:?}"));
+            let c3_matrix_case = text.contains("holds A in { z where z is set : z likes A likes z };")
+                || text.contains("holds A in { z where z is set : z likes A likes z likes A };")
+                || text.contains("holds A in { z where z is set : z likes A likes z } & A in { w where w is set : w likes A likes w };")
+                || text.contains("holds A in { z where z is set : z does not likes A likes z };")
+                || text.contains("holds A in { z where z is set : z likes A do not likes z };")
+                || text.contains("holds A in { z where z is set : z likes A does not likes z likes A };")
+                || text.contains("proof let A be set; thus A in { z where z is set : z do not likes A likes z does not likes A }; end;")
+                || text.contains("for parcel being\tset holds parcel in { point where point is set : point likes parcel likes point } & parcel in { needle where needle is set : needle does not likes parcel };");
+            if c3_matrix_case {
+                let mut chain_input = SourcePredicateChainCompositionHandoffInput {
+                    source_id: ast.source_id,
+                    module_id: input.module_id.clone(),
+                    conjunctions: Vec::new(),
+                    negations: Vec::new(),
+                };
+                let mut segment_base = 0;
+                for (pair, comprehension) in comprehensions.iter().enumerate() {
+                    let condition = comprehension.child_views().find(|view| view.kind() == &SurfaceNodeKind::FormulaExpression).unwrap();
+                    let [atom] = condition.children() else { panic!("actual condition atom"); };
+                    let atom = ast.node_view(*atom).unwrap();
+                    let segments = atom.children().iter().map(|id| ast.node_view(*id).unwrap()).collect::<Vec<_>>();
+                    let formula = SourceAtomicFormulaId::new(2 * pair + 1);
+                    for ordinal in 0..segments.len().saturating_sub(1) {
+                        let edge_base = segment_base + 3 * pair;
+                        chain_input.conjunctions.push(SourcePredicateChainConjunctionInput {
+                            formula,
+                            ordinal,
+                            left_segment: SourcePredicateSegmentId::new(segment_base + ordinal),
+                            right_segment: SourcePredicateSegmentId::new(segment_base + ordinal + 1),
+                            boundary: SourceAtomicEdgeId::new(edge_base + 3 + ordinal),
+                        });
+                    }
+                    if segments.len() > 1 {
+                        let mut negative_ordinal = 0;
+                        for (ordinal, segment) in segments.iter().enumerate() {
+                            let negative = match segment.children() {
+                                [_, _, _] | [_, _] => false,
+                                [_, verb, not, _, _] => {
+                                    let verb = ast.node_view(*verb).unwrap();
+                                    let not = ast.node_view(*not).unwrap();
+                                    assert!(matches!(&text[verb.range().start..verb.range().end], "does" | "do"));
+                                    assert_eq!(&text[not.range().start..not.range().end], "not");
+                                    true
+                                }
+                                [verb, not, _, _] => {
+                                    let verb = ast.node_view(*verb).unwrap();
+                                    let not = ast.node_view(*not).unwrap();
+                                    assert!(matches!(&text[verb.range().start..verb.range().end], "does" | "do"));
+                                    assert_eq!(&text[not.range().start..not.range().end], "not");
+                                    true
+                                }
+                                children => panic!("unexpected written predicate segment shape: {children:?}"),
+                            };
+                            if negative {
+                                chain_input.negations.push(SourcePredicateChainNegationInput {
+                                    formula,
+                                    ordinal: negative_ordinal,
+                                    segment: SourcePredicateSegmentId::new(segment_base + ordinal),
+                                });
+                                negative_ordinal += 1;
+                            }
+                        }
+                    }
+                    segment_base += segments.len();
+                }
+                let chain = SourcePredicateChainCompositionProducer::build_conditioned(
+                    chain_input.clone(),
+                    &handoff,
+                    &application,
+                    &set,
+                    &aggregate,
+                    &composition,
+                    &set_arena,
+                ).unwrap_or_else(|error| panic!("genuine conditioned C3 case {case}: {error:?}"));
+                assert_eq!(SourcePredicateChainCompositionProducer::build_conditioned(
+                    chain_input.clone(), &handoff, &application, &set, &aggregate, &composition, &set_arena,
+                ), Ok(chain.clone()), "deterministic conditioned C3 build, case {case}");
+                assert_eq!(chain.conjunctions().len(), chain_input.conjunctions.len());
+                for (expected_id, ((id, actual), expected)) in chain.conjunctions().iter().zip(&chain_input.conjunctions).enumerate() {
+                    assert_eq!((id.index(), actual.formula(), actual.ordinal(), actual.left_segment(), actual.right_segment(), actual.boundary()),
+                        (expected_id, expected.formula, expected.ordinal, expected.left_segment, expected.right_segment, expected.boundary), "AST-derived dense C3 conjunction row, case {case}");
+                }
+                assert_eq!(chain.negations().len(), chain_input.negations.len());
+                for (expected_id, ((id, actual), expected)) in chain.negations().iter().zip(&chain_input.negations).enumerate() {
+                    assert_eq!((id.index(), actual.formula(), actual.ordinal(), actual.segment()),
+                        (expected_id, expected.formula, expected.ordinal, expected.segment), "AST-derived dense C3 negation row, case {case}");
+                }
+                assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, None, &set_arena),
+                    Err(SourcePredicateChainCompositionError::DependencyMismatch), "conditioned C3 replay requires both Application and Set, case {case}");
+
+                if let Some((previous_application, previous_set)) = &previous_chain_dependencies {
+                    for lower in [(previous_application, &set), (&application, previous_set)] {
+                        assert_eq!(chain.validate_installation(ast.source_id, &input.module_id, &handoff, &aggregate, Some(lower), &set_arena),
+                            Err(SourcePredicateChainCompositionError::DependencyMismatch), "conditioned C3 replay refuses mismatched lower dependencies, case {case}");
+                    }
+                }
+                previous_chain_dependencies = Some((application.clone(), set.clone()));
+
+                let typed = task269gcu_empty_typed_for(ast.source_id, input.module_id.clone(), set_arena.clone())
+                    .with_source_term(handoff.clone()).unwrap()
+                    .with_source_application(application.clone()).unwrap()
+                    .with_source_set_term(set.clone()).unwrap()
+                    .with_source_atomic_formula(aggregate.clone()).unwrap()
+                    .with_source_predicate_chain_composition(chain.clone())
+                    .unwrap_or_else(|error| panic!("conditioned C3 Typed replay, case {case}: {error:?}"));
+                assert_eq!(typed.source_predicate_chain_composition(), Some(&chain));
+                assert_eq!((typed.source_term(), typed.source_application(), typed.source_set_term(), typed.source_atomic_formula()),
+                    (Some(&handoff), Some(&application), Some(&set), Some(&aggregate)), "conditioned C3 retains lower products, case {case}");
+                assert!(typed.source_condition_formula_composition().is_none(), "C2 receipt is retained inside C3 but is not installed, case {case}");
+                assert!(typed.types().is_empty() && typed.facts().is_empty() && typed.coercions().is_empty() && typed.initial_obligations().is_empty() && typed.diagnostics().is_empty());
+                assert_eq!(typed.clone(), typed);
+                assert_eq!(typed.clone().debug_text(), typed.debug_text());
+                let final_ast = task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new())
+                    .unwrap_or_else(|error| panic!("conditioned C3 final replay, case {case}: {error:?}"));
+                assert_eq!(final_ast.source_predicate_chain_composition(), Some(&chain));
+                assert_eq!((final_ast.source_term(), final_ast.source_application(), final_ast.source_set_term(), final_ast.source_atomic_formula()),
+                    (Some(&handoff), Some(&application), Some(&set), Some(&aggregate)), "final conditioned C3 retains lower products, case {case}");
+                assert!(final_ast.source_condition_formula_composition().is_none());
+                assert_eq!(final_ast.clone(), final_ast);
+                assert_eq!(final_ast.clone().debug_text(), final_ast.debug_text());
+                assert_eq!(task269gcu_resolved_result_with_inputs(&typed, Vec::new(), Vec::new()), Ok(final_ast.clone()));
+            }
             assert_eq!((composition.source_id(), composition.module_id()), (ast.source_id, &input.module_id));
             assert_eq!((composition.primary_term_fingerprint(), composition.application_fingerprint(), composition.set_term_fingerprint(), composition.atomic_formula_fingerprint()), (handoff.debug_text().as_str(), application.debug_text().as_str(), set.debug_text().as_str(), aggregate.debug_text().as_str()));
             assert_eq!(composition.edges().len(), comp_count);

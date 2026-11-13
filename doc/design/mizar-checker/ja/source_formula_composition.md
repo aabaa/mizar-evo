@@ -32,10 +32,12 @@ composition検証は同じ局所bindingを選び、元のcontext、scope、ordin
 
 条件内の任意のNormal Set wrapperを持つEnumeration rootは[Set transport](source_set_term.md#変数参照条件のenumeration-root)が所有するmetadata forestとPrimary profileを使う。C2は各rootを所有条件の関連付け済みbuiltin atomとSetTerm edgeに照合し、順序付き直下Normal TermExpression operand slot、同一範囲、唯一の実効最外childを認証する。透明な各wrapper/TermExpression/child連鎖、normalな括弧token leafと境界anchorを再生する。欠落・切断・recovered wrapperと未関連rootは除外し、入れ子Enumeration要素は既存lower保証を維持する。
 
-各predicate conditionはAtomic chain root全体へ関連付け、segmentごとのC2関連付けを作らない。条件付きC3 rowとC2/C3 co-installationは引き続き除外する。
+各predicate conditionはAtomic chain root全体へ関連付け、segmentごとのC2関連付けを作らない。
 
 ## 変数参照predicate-chainの関連付け
 既存C3 producerとTyped/Resolved replayは、normalな変数参照依存、記録済みの同一module述語identityを共有するbinary head、変更しないEquality/Membership・singleton siblingも検証する。各multi-segment chainはsource順の全隣接pairと全negative segment rowを持つ。conjunction ordinalは隣接順、negation ordinalはformulaごとのnegative segment順である。singletonにC rowは付けず、少なくとも一つのchainを要求する。lower ID/fingerprintと所有は検証済みlower producerに残し、新たなsource/type認証・推論・proof権限を与えない。参照なしnumeric profileは以下の正確な規則を保つ。
+
+条件付きchainでは`SourcePredicateChainCompositionProducer::build_conditioned(input, primary, applications, sets, atomic, conditions, arena)`が完全なC2 receiptを認証してからSet operand edgeを受け入れる。C3はreceiptをprivateに保持し、Typed/final replayでinstalled Primary/Application/Set/Atomicと物理的所有を再検証する。少なくとも一つのchainを要求し、negative singleton siblingにはC3 rowを付けない。C2 slotは空で、C2/C3 co-installationは両順序で拒否し、native route選択はC2をpublishする。既存standalone構築とdebug出力は変更しない。
 
 ## Task257C3 の相対ソース位置
 

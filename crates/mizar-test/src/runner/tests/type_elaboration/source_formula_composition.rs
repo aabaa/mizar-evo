@@ -4875,6 +4875,17 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         .find(|(_, case)| case.id.0 == TASK257C2_CASE)
         .unwrap();
     let conditioned = "definition let X,Y be set; pred LikesDef: X likes Y means X = Y; end; theorem T: for A being set holds A in { z where z is set : z likes A does not likes z };";
+    let singleton = conditioned.replace("z likes A does not likes z", "z likes A");
+    let singleton_output = metamorphic_guard::with_source(case, &singleton, || {
+        let singleton_frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
+        assert!(singleton_frontend.diagnostics.is_empty());
+        let singleton_ast = singleton_frontend.ast.as_ref().unwrap();
+        let singleton_symbols = resolver_symbol_collection(&workspace_root, case, singleton_ast);
+        assert!(singleton_symbols.detail_keys.is_empty());
+        source_condition_formula_composition_output_with_source(
+            singleton_ast, singleton_symbols.module, &singleton_symbols.env, &singleton,
+        ).expect("singleton C2 selector").expect("singleton C2 route remains valid")
+    });
     metamorphic_guard::with_source(case, conditioned, || {
         let frontend = run_frontend(&workspace_root, case, ordinal).unwrap();
         assert!(frontend.diagnostics.is_empty());
@@ -4889,6 +4900,157 @@ fn task257c3_selector_is_exclusive_and_precedes_legacy_formula_routes() {
         assert_eq!(composition.edges().iter().next().unwrap().1.formula().index(), 1);
         assert_eq!(output.typed_ast.source_atomic_formula().unwrap().predicate_segments().len(), 2);
         assert!(output.typed_ast.source_predicate_chain_composition().is_none());
+
+        // Exercise the conditioned C3 consumer directly from the genuine C2
+        // transaction. Keep the expected rows literal so producer output is
+        // not its own oracle.
+        let primary = output.typed_ast.source_term().unwrap();
+        let application = output.typed_ast.source_application().unwrap();
+        let set = output.typed_ast.source_set_term().unwrap();
+        let atomic = output.typed_ast.source_atomic_formula().unwrap();
+        let arena = output.typed_ast.nodes();
+        let conditioned_rows = |conjunctions, negations| {
+            mizar_checker::source_formula_composition::SourcePredicateChainCompositionHandoffInput {
+                source_id: output.typed_ast.source_id(),
+                module_id: output.typed_ast.module_id().clone(),
+                conjunctions,
+                negations,
+            }
+        };
+        let valid_rows = conditioned_rows(
+            vec![mizar_checker::source_formula_composition::SourcePredicateChainConjunctionInput {
+                formula: mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1),
+                ordinal: 0,
+                left_segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(0),
+                right_segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
+                boundary: mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(3),
+            }],
+            vec![mizar_checker::source_formula_composition::SourcePredicateChainNegationInput {
+                formula: mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1),
+                ordinal: 0,
+                segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
+            }],
+        );
+        let conditioned_chain = mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            valid_rows.clone(), primary, application, set, atomic, composition, arena,
+        ).expect("conditioned C3 consumes the genuine C2 transaction");
+        let conjunction_rows = conditioned_chain.conjunctions().iter().collect::<Vec<_>>();
+        let [(_, conjunction)] = conjunction_rows.as_slice() else {
+            panic!("conditioned C3 has one conjunction row");
+        };
+        assert_eq!(
+            (conjunction.formula().index(), conjunction.ordinal(), conjunction.left_segment().index(), conjunction.right_segment().index(), conjunction.boundary().index()),
+            (1, 0, 0, 1, 3),
+        );
+        let negation_rows = conditioned_chain.negations().iter().collect::<Vec<_>>();
+        let [(_, negation)] = negation_rows.as_slice() else {
+            panic!("conditioned C3 has one segment-negation row");
+        };
+        assert_eq!((negation.formula().index(), negation.ordinal(), negation.segment().index()), (1, 0, 1));
+
+        let wrong_formula_pair = conditioned_rows(
+            vec![mizar_checker::source_formula_composition::SourcePredicateChainConjunctionInput {
+                formula: mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(0),
+                ordinal: 0,
+                left_segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(0),
+                right_segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(1),
+                boundary: mizar_checker::source_atomic_formula::SourceAtomicEdgeId::new(3),
+            }],
+            valid_rows.negations.clone(),
+        );
+        assert!(mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            wrong_formula_pair, primary, application, set, atomic, composition, arena,
+        ).is_err(), "C3 refuses a pair row attached to another atomic formula");
+
+        let c3_without_c2 = mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build(
+            valid_rows.clone(), primary, atomic, arena,
+        );
+        assert!(c3_without_c2.is_err(), "conditioned C3 cannot use the standalone builder");
+
+        let positive_segment_negation = conditioned_rows(
+            valid_rows.conjunctions.clone(),
+            vec![mizar_checker::source_formula_composition::SourcePredicateChainNegationInput {
+                formula: mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(1),
+                ordinal: 0,
+                segment: mizar_checker::source_atomic_formula::SourcePredicateSegmentId::new(0),
+            }],
+        );
+        assert!(mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            positive_segment_negation, primary, application, set, atomic, composition, arena,
+        ).is_err(), "negative row cannot target a positive segment");
+
+        let singleton_atomic = singleton_output.typed_ast.source_atomic_formula().unwrap();
+        assert_eq!(singleton_atomic.predicate_segments().len(), 1);
+        let singleton_rows = mizar_checker::source_formula_composition::SourcePredicateChainCompositionHandoffInput {
+            source_id: singleton_output.typed_ast.source_id(),
+            module_id: singleton_output.typed_ast.module_id().clone(),
+            conjunctions: Vec::new(),
+            negations: Vec::new(),
+        };
+        assert!(mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            singleton_rows,
+            singleton_output.typed_ast.source_term().unwrap(),
+            singleton_output.typed_ast.source_application().unwrap(),
+            singleton_output.typed_ast.source_set_term().unwrap(),
+            singleton_atomic,
+            singleton_output.typed_ast.source_condition_formula_composition().unwrap(),
+            singleton_output.typed_ast.nodes(),
+        ).is_err(), "singleton-only conditioned input preserves C2 and refuses C3");
+        assert!(mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            valid_rows.clone(),
+            primary,
+            application,
+            set,
+            atomic,
+            singleton_output.typed_ast.source_condition_formula_composition().unwrap(),
+            arena,
+        ).is_err(), "C3 refuses a C2 receipt from a different physical condition owner");
+
+        let mut changed_owner_nodes = arena.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+        let condition_owner = set.conditions().iter().next().unwrap().1.condition_site().node().index();
+        let owner_node = changed_owner_nodes.get_mut(condition_owner)
+            .expect("condition owner is present in the typed arena");
+        let mizar_session::SourceAnchor::Range(owner_range) = &mut owner_node.anchor else {
+            panic!("condition owner uses a physical source range");
+        };
+        owner_range.start += 1;
+        let changed_owner_arena = mizar_checker::typed_ast::TypedArena::try_new(arena.root(), changed_owner_nodes)
+            .expect("changed physical condition owner remains structurally valid");
+        assert!(mizar_checker::source_formula_composition::SourcePredicateChainCompositionProducer::build_conditioned(
+            valid_rows.clone(), primary, application, set, atomic, composition, &changed_owner_arena,
+        ).is_err(), "C3 refuses a C2 receipt after its physical condition owner changes");
+
+        let c3_typed = mizar_checker::typed_ast::TypedAst::try_new(mizar_checker::typed_ast::TypedAstParts {
+            source_id: output.typed_ast.source_id(),
+            module_id: output.typed_ast.module_id().clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: arena.clone(),
+            contexts: mizar_checker::typed_ast::LocalTypeContextTable::new(),
+            types: mizar_checker::typed_ast::TypeTable::new(),
+            facts: mizar_checker::typed_ast::TypeFactTable::new(),
+            coercions: mizar_checker::typed_ast::CoercionTable::new(),
+            initial_obligations: mizar_checker::typed_ast::InitialObligationTable::new(),
+            diagnostics: mizar_checker::typed_ast::TypeDiagnosticTable::new(),
+        }).unwrap()
+            .with_source_term(primary.clone()).unwrap()
+            .with_source_application(application.clone()).unwrap()
+            .with_source_set_term(set.clone()).unwrap()
+            .with_source_atomic_formula(atomic.clone()).unwrap()
+            .with_source_predicate_chain_composition(conditioned_chain.clone()).unwrap();
+        assert!(c3_typed.source_condition_formula_composition().is_none(),
+            "the C2 receipt remains a C3 dependency, not an installed C2 slot");
+        assert!(c3_typed.clone().with_source_condition_formula_composition(composition.clone()).is_err(),
+            "C3-first installation rejects reciprocal C2 installation");
+        assert!(output.typed_ast.clone().with_source_predicate_chain_composition(conditioned_chain.clone()).is_err(),
+            "C2-first installation rejects reciprocal C3 installation");
+        assert_eq!(output.typed_ast.source_condition_formula_composition(), Some(composition),
+            "failed reciprocal installation preserves the original C2 state");
+        assert_eq!(c3_typed.source_predicate_chain_composition(), Some(&conditioned_chain),
+            "failed reciprocal installation preserves the original C3 state");
+
         assert!(source_predicate_chain_composition_output_with_source(
             ast, symbols.module.clone(), &symbols.env, conditioned,
         ).is_none(), "conditioned chain cannot select standalone C3");

@@ -3042,6 +3042,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     &module_id,
                     source_term,
                     source_atomic_formula,
+                    source_application.as_ref().zip(source_set_term.as_ref()),
                     self.inputs.typed_ast.nodes(),
                 )
                 .map_err(|_| ResolvedTypedAstError::InvalidSourcePredicateChainComposition)?;
