@@ -1369,3 +1369,9 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 2026-11-14 オーナー承認の追記: mizar-checker lib テスト
 `task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic` を本項目に追加し、同じ既定スタックの受け入れ条件を3テストに適用する。
+
+2026-11-14 オーナー承認の追記 (option (b)): 全バイナリを列挙し、異常終了したバイナリ内の全テストを個別実行する。次のテストを追加し、対象全体に同じ既定スタックの受け入れ条件を適用する:
+- `runner::proof_verification::term_proof_tests::source_empty::source_empty_enumeration_witness_original_capture_retains_lower`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b6_native_connective_composition_preserves_installed_replay`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b7_native_quantifier_composition_preserves_installed_replay`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task258_native_let_statements_preserve_source_intent_and_installed_replay`.

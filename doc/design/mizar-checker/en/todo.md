@@ -1443,3 +1443,9 @@ Contract: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/en/CHECKER-STACK-DEPTH-
 
 2026-11-14 owner amendment: add mizar-checker lib test
 `task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic` to this item; apply the same default-stack acceptance to all three tests.
+
+2026-11-14 owner amendment (option (b)): enumerate every binary and isolate every test in aborting binaries; add the following tests, with the same default-stack acceptance for the complete target set:
+- `runner::proof_verification::term_proof_tests::source_empty::source_empty_enumeration_witness_original_capture_retains_lower`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b6_native_connective_composition_preserves_installed_replay`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b7_native_quantifier_composition_preserves_installed_replay`.
+- `runner::proof_verification::term_proof_tests::source_theorem_scoped::task258_native_let_statements_preserve_source_intent_and_installed_replay`.
