@@ -1366,3 +1366,6 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
   一部として両テストが既定スタックで合格すること。バックログ項目
   (オーナー指示、2026-11-14)。Sequential Execution Plan のクリティカル
   パスには載せない。
+
+2026-11-14 オーナー承認の追記: mizar-checker lib テスト
+`task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic` を本項目に追加し、同じ既定スタックの受け入れ条件を3テストに適用する。

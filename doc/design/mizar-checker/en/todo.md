@@ -1440,3 +1440,6 @@ Contract: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/en/CHECKER-STACK-DEPTH-
   both named tests passing at the default stack as part of that run.
   Backlog item (owner directive, 2026-11-14); not on the Sequential
   Execution Plan's critical path.
+
+2026-11-14 owner amendment: add mizar-checker lib test
+`task258b3m2b2b2b_combined_ownership_hybrids_and_all_family_orders_are_atomic` to this item; apply the same default-stack acceptance to all three tests.
