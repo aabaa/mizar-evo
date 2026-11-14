@@ -126,7 +126,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
      マークされ、current として黙って提供されない。
    - 依存: 5、6、`mizar-ir` task 13。仕様: `snapshot.md`。
 
-8. **仕様: `diagnostics.md`。** [ ]
+8. **仕様: `diagnostics.md`。** [x]
+   - 完了: [LSP-DIAGNOSTIC-PUBLICATION-DESIGN](../../task_contracts/ja/LSP-DIAGNOSTIC-PUBLICATION-DESIGN.md); [英語仕様](../en/diagnostics.md)、[日本語仕様](diagnostics.md)。
    - 診断公開の仕様を執筆する（英語と日本語、コードなし）:
      `BuildDiagnosticIndex` からの公開、range 変換、未保存テキストの
      オーバーレイ診断（CLI/artifact へ決して出さない規則の再掲）、

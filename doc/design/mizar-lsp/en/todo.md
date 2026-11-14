@@ -126,7 +126,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
      marked, never silently served as current.
    - Deps: 5, 6, `mizar-ir` task 13. Spec: `snapshot.md`.
 
-8. **Spec: `diagnostics.md`.** [ ]
+8. **Spec: `diagnostics.md`.** [x]
+   - Completed: [LSP-DIAGNOSTIC-PUBLICATION-DESIGN](../../task_contracts/en/LSP-DIAGNOSTIC-PUBLICATION-DESIGN.md); [English specification](diagnostics.md), [Japanese specification](../ja/diagnostics.md).
    - Write the diagnostic-publication spec (English and Japanese, no
      code): publication from `BuildDiagnosticIndex`, range conversion,
      overlay diagnostics for unsaved text (restating the
