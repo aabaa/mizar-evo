@@ -11,7 +11,7 @@ Read the immutable `BuildDiagnosticIndex` associated with the selected `LspSnaps
 
 Validate current delivery using the original [snapshot association](snapshot.md#source-association); never combine an old index with new maps or relabel old ranges as current-buffer ranges.
 
-Full-snapshot publication and stale reads follow the [snapshot freshness boundary](snapshot.md#freshness-and-replacement). The coherent completed build and manifest-backed producer remain deferred; `ArtifactCommitted`, frontend completion or an index alone cannot establish this boundary.
+Full-snapshot publication and stale reads follow the [snapshot freshness boundary](snapshot.md#freshness-and-replacement). The genuine coherent manifest-backed producer landed in `27e55711e`; downstream registry/IR-retention/atomic activation is frozen by `LSP-SNAPSHOT-REGISTRY-ACTIVATION`; `ArtifactCommitted`, frontend completion or an index alone cannot establish this boundary.
 
 ## Range conversion
 
@@ -35,7 +35,7 @@ The existing explicit native frontend path groups notifications by URI in ordere
 
 ## Implementation boundary
 
-Task8 defines publication only. Task7's full registry, task9's implementation and task10's scheduling remain open. The coherent full-snapshot producer is still deferred by the snapshot owner; the existing native frontend path supplies neither semantic metadata nor that producer. No new transport payload, diagnostic allocation or producer behavior is introduced.
+Task8 defines publication only. Task7's full registry, task9's implementation and task10's scheduling remain open. The coherent full-snapshot producer landed in `27e55711e`; the registry/IR-retention/atomic-activation unit is frozen separately, and the existing native frontend path remains syntax-only. No new transport payload, diagnostic allocation or producer behavior is introduced.
 
 ## Test design
 

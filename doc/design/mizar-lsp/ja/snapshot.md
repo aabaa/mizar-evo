@@ -30,7 +30,7 @@ current な syntax-only overlay は完全 artifact より前に存在できる�
 
 保持された artifact read は編集後も stale_artifact として残せる。元の source association と明示的 stale status を保持し、unsafe edit と、target を検証できない current-buffer 配送を抑止する。read-only な stale range は元の retained source と明示的 stale status に結び付けたまま使え、current-buffer range として付け替えない。producer work や current map が無いだけで診断を clear しない。publication/conversion の詳細は task8、scheduling/cancellation は task10 が所有する。
 
-完全 LspSnapshot は [internal03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md#lsp-スナップショットの公開) の coherent completed build 境界と元 manifest-backed metadata を必要とする。manifest を先に読み、一つの完全 immutable set を保持してから handler-visible snapshot を atomic に置換する。ArtifactCommitted のみ、Frontend 完了、診断 index ではこの境界を確立しない。現 Driver event enum に coherent SnapshotPublished producer はなく、完全 snapshot の構築/起動は担当 owner の真正な境界と payload がそろうまで保留する。
+完全 LspSnapshot は [internal03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md#lsp-スナップショットの公開) の coherent completed build 境界と元 manifest-backed metadata を必要とする。manifest を先に読み、一つの完全 immutable set を保持してから handler-visible snapshot を atomic に置換する。ArtifactCommitted のみ、Frontend 完了、診断 index ではこの境界を確立しない。Driver の真正な coherent SnapshotPublished producer は `27e55711e` で実装され、`LSP-SNAPSHOT-REGISTRY-ACTIVATION` が後続 registry・IR retention・atomic activation の単位を凍結する。
 
 ## Currentness and retention
 

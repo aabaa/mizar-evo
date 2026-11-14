@@ -11,7 +11,7 @@ LSP は [spec §22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#22
 
 元の [snapshot association](snapshot.md#source-association) により current 配送を検証する。旧 index と新 map を混ぜず、旧 range を current-buffer range に付け替えない。
 
-完全 snapshot の公開と stale read は [snapshot freshness 境界](snapshot.md#freshness-and-replacement) に従う。coherent completed build と manifest-backed producer は保留のままであり、`ArtifactCommitted`、frontend 完了、index 単独ではこの境界を確立しない。
+完全 snapshot の公開と stale read は [snapshot freshness 境界](snapshot.md#freshness-and-replacement) に従う。真正な coherent manifest-backed producer は `27e55711e` で実装され、後続 registry/IR-retention/atomic activation は `LSP-SNAPSHOT-REGISTRY-ACTIVATION` が凍結する。`ArtifactCommitted`、frontend 完了、index 単独ではこの境界を確立しない。
 
 ## Range conversion
 
@@ -35,7 +35,7 @@ source の診断を選択するときは aggregator の [canonical record order]
 
 ## Implementation boundary
 
-task8 は公開設計だけを定める。task7 の完全 registry、task9 の実装、task10 の scheduling は未完了のままである。coherent な完全 snapshot producer は snapshot owner の定めどおり保留し、既存 native frontend path は semantic metadata もその producer も供給しない。新 transport payload、診断割当、producer 動作を導入しない。
+task8 は公開設計だけを定める。task7 の完全 registry、task9 の実装、task10 の scheduling は未完了のままである。coherent な完全 snapshot producer は `27e55711e` で実装され、registry/IR-retention/atomic-activation の単位は別途凍結する。既存 native frontend path は syntax-only のままとする。新 transport payload、診断割当、producer 動作を導入しない。
 
 ## Test design
 
