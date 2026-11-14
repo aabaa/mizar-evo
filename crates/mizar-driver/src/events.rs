@@ -3,6 +3,7 @@ use mizar_build::{
     task_graph::PipelinePhase,
 };
 use mizar_session::{BuildSessionId, BuildSnapshotId};
+use std::sync::Arc;
 
 use crate::{
     registry::{PhaseServiceAvailability, PhaseStatus},
@@ -74,11 +75,16 @@ pub enum BuildEventKind {
     ArtifactBoundary {
         committed: OwnerRecordRef,
     },
+    SnapshotPublished {
+        snapshot: Arc<SnapshotPublication>,
+    },
     PublicationSuppressed,
     SessionFinished {
         outcome: BuildSessionOutcome,
     },
 }
+
+pub use crate::frontend_adapter::SnapshotPublication;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -285,6 +291,17 @@ impl BuildEventLog {
             });
         }
         let identity_key = event.identity.key();
+        if let BuildEventKind::SnapshotPublished { snapshot } = &event.kind
+            && identity_key.snapshot != Some(snapshot.captured.snapshot().id)
+        {
+            return Err(BuildEventError::IdentityMismatch {
+                expected: BuildEventIdentityKey {
+                    snapshot: Some(snapshot.captured.snapshot().id),
+                    ..identity_key
+                },
+                actual: identity_key,
+            });
+        }
         let mut next_identity = self.identity;
         if let Some(expected) = self.identity {
             if expected.lane != identity_key.lane || expected.generation != identity_key.generation
@@ -439,6 +456,7 @@ fn event_tie_key(kind: &BuildEventKind) -> String {
                 committed.owner, committed.identity
             )
         }
+        BuildEventKind::SnapshotPublished { .. } => "09-snapshot-published".to_owned(),
         BuildEventKind::PublicationSuppressed => "10-publication-suppressed".to_owned(),
         BuildEventKind::SessionFinished { outcome } => format!("11-session-finished-{outcome:?}"),
     }
@@ -454,6 +472,7 @@ fn is_current_payload(kind: &BuildEventKind) -> bool {
         BuildEventKind::PhaseReady { .. }
             | BuildEventKind::DiagnosticsReady { .. }
             | BuildEventKind::ArtifactBoundary { .. }
+            | BuildEventKind::SnapshotPublished { .. }
     )
 }
 
@@ -469,6 +488,7 @@ fn event_kind_name(kind: &BuildEventKind) -> &'static str {
         BuildEventKind::PhaseReady { .. } => "PhaseReady",
         BuildEventKind::DiagnosticsReady { .. } => "DiagnosticsReady",
         BuildEventKind::ArtifactBoundary { .. } => "ArtifactBoundary",
+        BuildEventKind::SnapshotPublished { .. } => "SnapshotPublished",
         BuildEventKind::PublicationSuppressed => "PublicationSuppressed",
         BuildEventKind::SessionFinished { .. } => "SessionFinished",
     }

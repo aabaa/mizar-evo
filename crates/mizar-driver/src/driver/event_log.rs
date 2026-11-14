@@ -24,6 +24,7 @@ pub(super) struct DriverEventDetails<'a> {
         String,
         &'a mizar_artifact::manifest::ManifestCommit,
     )],
+    pub(super) snapshot_publication: Option<&'a std::sync::Arc<crate::events::SnapshotPublication>>,
 }
 
 pub(super) fn submission_events(
@@ -129,6 +130,15 @@ pub(super) fn submission_events(
                 },
             ));
         }
+        if let Some(snapshot) = details.snapshot_publication {
+            events.push(BuildEvent::new(
+                identity.clone(),
+                BuildEventOrderKey::new(70, 1),
+                BuildEventKind::SnapshotPublished {
+                    snapshot: std::sync::Arc::clone(snapshot),
+                },
+            ));
+        }
     }
 
     if matches!(publication, PublicationDecision::Suppressed(_)) {
@@ -203,6 +213,7 @@ pub(super) fn suppress_watch_replay_events(
                 | BuildEventKind::PhaseReady { .. }
                 | BuildEventKind::DiagnosticsReady { .. }
                 | BuildEventKind::ArtifactBoundary { .. }
+                | BuildEventKind::SnapshotPublished { .. }
         ) {
             continue;
         }

@@ -68,7 +68,216 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
     .stable_hash()
 }
 
+/// One complete manifest-backed build; retained data grants no currentness authority.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotPublication {
+    pub(crate) captured: crate::request::CapturedSnapshot,
+    pub(crate) diagnostics: mizar_diagnostics::aggregator::BuildDiagnosticIndex,
+    pub(crate) manifests: Vec<mizar_artifact::manifest::PublishedManifestRead>,
+    pub(crate) artifacts: Vec<Arc<mizar_artifact::verified_artifact::VerifiedArtifact>>,
+    pub(crate) development_artifacts: Vec<mizar_artifact::store::PublishedArtifactRead>,
+}
+
+impl SnapshotPublication {
+    pub fn captured(&self) -> &crate::request::CapturedSnapshot {
+        &self.captured
+    }
+
+    pub fn diagnostics(&self) -> &mizar_diagnostics::aggregator::BuildDiagnosticIndex {
+        &self.diagnostics
+    }
+
+    pub fn manifests(&self) -> &[mizar_artifact::manifest::PublishedManifestRead] {
+        &self.manifests
+    }
+
+    /// Original typed outputs, including expression, export and explanation metadata.
+    pub fn artifacts(&self) -> &[Arc<mizar_artifact::verified_artifact::VerifiedArtifact>] {
+        &self.artifacts
+    }
+
+    /// Resolved manifest development entries, including optional missing-facts payloads.
+    pub fn development_artifacts(&self) -> &[mizar_artifact::store::PublishedArtifactRead] {
+        &self.development_artifacts
+    }
+}
+
 impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Resolves a complete original cohort after Driver has filtered fresh owner handoffs.
+    pub(crate) fn complete_snapshot_publication(
+        self,
+        graph: &mizar_build::task_graph::TaskGraph,
+        run: &crate::driver::DriverSchedulerRun,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+    ) -> Option<crate::events::SnapshotPublication> {
+        use mizar_artifact::{
+            manifest::{ManifestFileReadOptions, read_manifest_file},
+            store::{
+                CanonicalHashDomain, HashClass, PublishedArtifactPath,
+                PublishedArtifactReadOptions, artifact_hash_domain, read_published_artifact,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact_hash_excluded_paths,
+                verified_artifact_json,
+            },
+        };
+        let captured = self.captured?;
+        if captured.snapshot() != self.snapshot {
+            return None;
+        }
+        captured.native_sources()?;
+        publisher.validate_current_snapshot(self.snapshot.id).ok()?;
+        let modules = self
+            .module_index
+            .modules
+            .iter()
+            .filter(|entry| matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. }))
+            .collect::<Vec<_>>();
+        if modules.is_empty()
+            || modules.len() != self.snapshot.source_versions.len()
+            || graph.tasks().iter().any(|task| {
+                !run.task_states.iter().any(|state| {
+                    state.task_id == task.id
+                        && matches!(
+                            state.state,
+                            mizar_build::scheduler::TaskState::Completed
+                                | mizar_build::scheduler::TaskState::CacheHit
+                        )
+                })
+            })
+        {
+            return None;
+        }
+        let mut manifests = Vec::new();
+        let mut artifacts = Vec::new();
+        let mut development_artifacts = Vec::new();
+        for module in modules {
+            let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+                version.package_id == module.package_id && version.module_path == module.module_path
+            }))?;
+            let task = unique(graph.tasks().iter().filter(|task| {
+                task.kind == mizar_build::task_graph::TaskKind::ArtifactCommit
+                    && task.phases == [PipelinePhase::ArtifactCommit]
+                    && task.unit
+                        == (WorkUnit::Module {
+                            module: module.module.clone(),
+                        })
+            }))?;
+            let [result] = run.phase_results.get(&task.id)?.as_slice() else {
+                return None;
+            };
+            let commit = result.artifact_commit.as_ref()?;
+            let [output] = result.output_refs.as_slice() else {
+                return None;
+            };
+            if result.status != PhaseStatus::Complete || !result.diagnostics.is_empty() {
+                return None;
+            }
+            let package = unique(
+                self.build_plan
+                    .packages
+                    .iter()
+                    .filter(|package| package.package_id == module.package_id),
+            )?;
+            let PackagePlanSource::Workspace { root, .. } = &package.source else {
+                return None;
+            };
+            let root = PathBuf::from(self.snapshot.workspace_root.as_str())
+                .join(root)
+                .join(&commit.manifest().artifact_root);
+            let manifest = read_manifest_file(
+                &root,
+                ManifestFileReadOptions {
+                    validate_references: true,
+                    validate_witness_files: true,
+                    validate_development_artifacts: true,
+                    expected_manifest_hash: Some(commit.write().artifact_hash),
+                },
+            )
+            .ok()?;
+            if manifest.manifest != *commit.manifest() {
+                return None;
+            }
+            let [entry] = manifest.manifest.modules.as_slice() else {
+                return None;
+            };
+            let handle = publisher
+                .storage()
+                .typed_handle::<mizar_artifact::verified_artifact::VerifiedArtifact>(
+                    output,
+                    &OutputKind::new("SourceTheoremArtifactData"),
+                )
+                .ok()?;
+            publisher
+                .validate_current_output(self.snapshot.id, output)
+                .ok()?;
+            let artifact = publisher.storage().get(&handle).ok()?;
+            let value = verified_artifact_json(&artifact).ok()?;
+            if entry.module != artifact.module
+                || artifact.module.package_id != version.package_id.as_str()
+                || artifact.module.module_path != version.module_path.as_str()
+                || artifact.source_hash != version.source_hash
+                || artifact.source_file != version.normalized_path.as_str()
+                || artifact.schema_version != entry.artifact_hash.schema_version
+                || artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version)
+                    .hash(&value, &artifact_hash_excluded_paths())
+                    != entry.artifact_hash.digest
+            {
+                return None;
+            }
+            for entry in &manifest.manifest.development_artifacts {
+                let (hash, class) = match (&entry.artifact_hash, &entry.diagnostic_hash) {
+                    (Some(hash), None) => (hash, HashClass::Artifact),
+                    (None, Some(hash)) => (hash, HashClass::Diagnostic),
+                    _ => return None,
+                };
+                let path = PublishedArtifactPath::new(&entry.path).ok()?;
+                let domain =
+                    CanonicalHashDomain::new(class, &hash.schema_family, hash.schema_version);
+                let read =
+                    read_published_artifact(&root, &path, PublishedArtifactReadOptions::default())
+                        .ok()?;
+                if domain.hash(&read.value, &[]) != hash.digest {
+                    return None;
+                }
+                development_artifacts.push(read);
+            }
+            if artifact
+                .diagnostics
+                .iter()
+                .filter_map(|diagnostic| diagnostic.explanation_ref.as_ref())
+                .any(|reference| {
+                    !manifest
+                        .manifest
+                        .development_artifacts
+                        .iter()
+                        .any(|entry| entry.diagnostic_hash.as_ref() == Some(reference))
+                })
+            {
+                return None;
+            }
+            artifacts.push(artifact);
+            manifests.push(manifest);
+        }
+        let diagnostics = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
+            self.snapshot.id,
+            run.phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| result.diagnostics.iter().cloned())
+                .collect(),
+        )
+        .ok()?;
+        publisher.validate_current_snapshot(self.snapshot.id).ok()?;
+        Some(crate::events::SnapshotPublication {
+            captured: captured.clone(),
+            diagnostics,
+            manifests,
+            artifacts,
+            development_artifacts,
+        })
+    }
+
     /// Explicitly compares protected native capture with Build's package config content profile.
     pub fn validate_native_config_content(self) -> Result<(), String> {
         let captured = self
@@ -12758,6 +12967,312 @@ pub fn native_theorem_candidate_check_from_storage_bytes(
 }
 
 #[cfg(test)]
+mod snapshot_test_support {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+        },
+    };
+
+    use mizar_atp::problem::{
+        ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
+        QuantifierPolicy, SoftTypeStrategy,
+    };
+    use mizar_build::{
+        module_index::{ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage},
+        planner::{
+            DependencySelection, PlanRequest, WorkspacePackage, lockfile_content_hash,
+            parse_lockfile, parse_package_manifest, produce_build_plan,
+            workspace_config_content_hash,
+        },
+        task_graph::{
+            EvidenceCandidateId, ModuleDependencyOverlay, VcOrderKey, VcTaskDescriptor,
+            VcTaskDescriptorId,
+        },
+    };
+    use mizar_ir::{
+        identity::{OutputKind, PipelinePhase, SnapshotHandleRegistry, WorkUnit},
+        publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+        storage::IrStorageService,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_session::{
+        DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+        SnapshotRegistry, SourceInput, SourceOriginInput, ToolchainInfo, WorkspaceRoot,
+        normalize_path,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+
+    use crate::{
+        driver::{BuildSubmission, DriverSubmitInput},
+        events::SnapshotPublication,
+        registry::{PhaseRegistry, PhaseRegistryBuilder, SourceLoadInputs},
+        request::{
+            BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
+            BuildRequestGeneration, BuildRequestOrigin, BuildSession, BuildTargets,
+            DependencyInputSet, SourceInputSet, VerifierConfigInput,
+        },
+    };
+
+    static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
+
+    pub(super) struct Fixture {
+        pub(super) root: PathBuf,
+        pub(super) ids: InMemorySessionIdAllocator,
+        pub(super) snapshots: SnapshotRegistry<InMemorySessionIdAllocator>,
+    }
+
+    impl Fixture {
+        pub(super) fn new() -> Self {
+            let sequence = NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed);
+            let root = std::env::temp_dir().join(format!(
+                "mizar-driver-coherent-snapshot-{}-{sequence}",
+                std::process::id()
+            ));
+            fs::create_dir_all(root.join("alpha/src")).unwrap();
+            fs::create_dir(root.join("alpha/artifacts")).unwrap();
+            for (module, theorem) in [("main", "Main"), ("leaf", "Leaf")] {
+                fs::write(
+                    root.join(format!("alpha/src/{module}.miz")),
+                    format!(
+                        "theorem {theorem}: for X being set holds X = X proof let X be set; thus X = X; end;"
+                    ),
+                )
+                .unwrap();
+            }
+            Self {
+                root,
+                ids: InMemorySessionIdAllocator::new(),
+                snapshots: SnapshotRegistry::new(),
+            }
+        }
+
+        pub(super) fn prepare(
+            &self,
+            generation: u64,
+        ) -> (
+            BuildSession,
+            DriverSubmitInput<StaticSourceLayout>,
+            Arc<PhaseOutputPublisher>,
+        ) {
+            let workspace_root = WorkspaceRoot::new(self.root.to_string_lossy().into_owned());
+            let mut input = DriverSubmitInput::new(
+                PlanRequest {
+                    workspace_root: workspace_root.clone(),
+                    dependency_selection: DependencySelection::Normal,
+                    toolchain: ToolchainInfo::new("mizar-evo-test"),
+                },
+                vec![WorkspacePackage {
+                    member_path: "alpha".into(),
+                    manifest: parse_package_manifest(
+                        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+                    )
+                    .unwrap(),
+                }],
+                parse_lockfile(
+                    "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n",
+                )
+                .unwrap(),
+                StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                    package_id: PackageId::new("alpha"),
+                    files: ["main", "leaf"]
+                        .map(|module| {
+                            WorkspaceSourceFile::new(
+                                format!("src/{module}.miz"),
+                                format!("{module}.miz"),
+                            )
+                        })
+                        .to_vec(),
+                }]),
+            );
+            input.dependency_overlay = ModuleDependencyOverlay::complete(Vec::new());
+            input.vc_descriptors = ["main", "leaf"]
+                .map(|module| {
+                    VcTaskDescriptor::new(
+                        VcTaskDescriptorId::new(format!("snapshot-{module}")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new(module)),
+                        VcOrderKey::new("00000000000000000000"),
+                        vec![],
+                        vec![EvidenceCandidateId::new("native-reflexivity")],
+                    )
+                })
+                .to_vec();
+            let plan = produce_build_plan(
+                input.plan_request.clone(),
+                input.workspace_packages.clone(),
+                input.lockfile.clone(),
+            )
+            .unwrap();
+            let draft = BuildRequestDraft {
+                lane: BuildLaneId::new(1),
+                origin: BuildRequestOrigin::Batch(BatchRequest {
+                    invocation: BatchInvocation::default(),
+                }),
+                generation: BuildRequestGeneration::new(generation),
+                workspace_root,
+                profile: BuildProfile::new("check"),
+                targets: BuildTargets::default(),
+                source_inputs: SourceInputSet::default(),
+                dependency_inputs: DependencyInputSet::new(
+                    vec![],
+                    lockfile_content_hash(&plan.lockfile),
+                    plan.toolchain.clone(),
+                ),
+                verifier_config: VerifierConfigInput::new(workspace_config_content_hash(
+                    &plan.verifier_config,
+                    &plan.build_config,
+                )),
+            };
+            let package_root = self.root.join("alpha");
+            let descriptors = ["main", "leaf"].map(|module| {
+                let path = format!("src/{module}.miz");
+                (
+                    DiskSourceLoader::new(&package_root),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new(module),
+                        normalized_path: normalize_path(&package_root, Path::new(&path)).unwrap(),
+                        edition: Edition::new("2025"),
+                        origin: SourceOriginInput::Disk { path: path.into() },
+                    },
+                )
+            });
+            let session = draft
+                .capture_sources(&self.ids, &self.snapshots, descriptors.to_vec())
+                .unwrap();
+            let publisher = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::new()),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            publisher.register_current_snapshot(session.captured().snapshot().id);
+            for module in ["main", "leaf"] {
+                for (phase, kind) in [
+                    ("SourceLoad", "SourceUnit"),
+                    ("Frontend", "FrontendOutput"),
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                    ("KernelCheck", "SourceTheoremCandidateCheck"),
+                    ("KernelCheck", "SourceTheoremCandidateWitnessFile"),
+                    ("ArtifactCommit", "SourceTheoremArtifactData"),
+                ] {
+                    publisher.allow_work_unit(AllowedWorkUnit::new(
+                        PipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        WorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                    ));
+                }
+            }
+            (session, input, publisher)
+        }
+
+        pub(super) fn resolve(
+            &self,
+            submission: &BuildSubmission,
+            publisher: &PhaseOutputPublisher,
+        ) -> Option<SnapshotPublication> {
+            SourceLoadInputs {
+                snapshot: submission.session.captured().snapshot(),
+                captured: Some(submission.session.captured()),
+                build_plan: submission.build_plan.as_ref().unwrap(),
+                module_index: submission.module_index.as_ref().unwrap(),
+                allocator: &self.ids,
+            }
+            .complete_snapshot_publication(
+                submission.task_graph.as_ref().unwrap(),
+                submission.scheduler_run.as_ref().unwrap(),
+                publisher,
+            )
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    pub(super) fn registry(commit: bool) -> PhaseRegistry {
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("snapshot-reflexivity"),
+                max_steps: 64,
+            },
+        };
+        let profile = LogicProfile::try_new(
+            "snapshot-native",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        let verifier = VerifierPolicy::default();
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation(
+                GenerationSchemaVersion::new("snapshot-generation-v1"),
+                VcSchemaVersion::new("snapshot-vc-v1"),
+            )
+            .register_source_theorem_vc_discharge(policy.clone())
+            .register_source_theorem_atp_solve(
+                policy.clone(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+            )
+            .unwrap()
+            .register_source_theorem_candidate_check_with_witness_files(
+                policy.clone(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+                verifier.clone(),
+                "proof-witnesses/snapshot".into(),
+            )
+            .unwrap();
+        if commit {
+            builder
+                .register_source_theorem_artifact_commit(
+                    policy,
+                    profile,
+                    ConcreteFormat::Tptp,
+                    verifier,
+                    (
+                        "proof-witnesses/snapshot".into(),
+                        "main.mizir.json".into(),
+                        "artifacts".into(),
+                    ),
+                )
+                .unwrap();
+        }
+        builder.build().unwrap()
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use mizar_frontend::lexing::{LexDiagnosticCode as L, ScopeSkeletonDiagnosticCode as S};
@@ -13159,5 +13674,435 @@ mod tests {
         let mut invalid = first;
         invalid.code = D::SourceLoad;
         assert!(convert_frontend_diagnostics(&source, snapshot, &[invalid]).is_none());
+    }
+}
+
+#[cfg(test)]
+mod snapshot_payload_tests {
+    use super::snapshot_test_support::*;
+    use crate::driver::CompilerDriver;
+    use std::{collections::BTreeSet, fs, sync::Arc};
+
+    fn publish(
+        fixture: &Fixture,
+        generation: u64,
+    ) -> (
+        crate::driver::BuildSubmission,
+        Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+    ) {
+        let (session, input, publisher) = fixture.prepare(generation);
+        let mut driver =
+            CompilerDriver::new(registry(true)).with_output_publisher(publisher.clone());
+        let submission = driver
+            .submit_captured(session, &fixture.ids, &fixture.snapshots, input)
+            .unwrap();
+        (submission, publisher)
+    }
+
+    #[test]
+    fn genuine_multimodule_build_resolves_one_original_complete_payload() {
+        let fixture = Fixture::new();
+        let (submission, publisher) = publish(&fixture, 1);
+        let publication = fixture.resolve(&submission, &publisher).unwrap();
+
+        assert_eq!(publication.manifests().len(), 2);
+        assert_eq!(publication.artifacts().len(), 2);
+        assert_eq!(
+            publication.diagnostics().snapshot(),
+            submission.session.captured().snapshot().id
+        );
+        let manifest = &publication.manifests()[0].manifest;
+        assert_eq!(manifest.modules.len(), 1);
+        assert!(
+            publication
+                .manifests()
+                .iter()
+                .all(|read| read.manifest.modules.len() == 1)
+        );
+        assert_eq!(
+            publication.development_artifacts().len(),
+            publication
+                .manifests()
+                .iter()
+                .map(|read| read.manifest.development_artifacts.len())
+                .sum::<usize>()
+        );
+        assert!(publication.diagnostics().is_empty());
+        assert!(
+            publication
+                .manifests()
+                .iter()
+                .all(|read| read.manifest.development_artifacts.is_empty())
+        );
+        assert!(publication.development_artifacts().is_empty());
+        assert!(
+            publication
+                .artifacts()
+                .iter()
+                .all(|artifact| artifact.diagnostics.is_empty())
+        );
+        let versions = &publication.captured().snapshot().source_versions;
+        let artifacts = publication
+            .artifacts()
+            .iter()
+            .map(|artifact| {
+                let version = versions
+                    .iter()
+                    .find(|version| {
+                        version.package_id.as_str() == artifact.module.package_id.as_str()
+                            && version.module_path.as_str() == artifact.module.module_path.as_str()
+                    })
+                    .unwrap();
+                assert_eq!(
+                    artifact.source_file.as_str(),
+                    version.normalized_path.as_str()
+                );
+                assert_eq!(artifact.source_hash, version.source_hash);
+                assert!(!artifact.expressions.is_empty());
+                assert!(!artifact.exports.is_empty());
+                (
+                    artifact.module.package_id.clone(),
+                    artifact.module.module_path.clone(),
+                )
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(artifacts.len(), 2);
+        let original_outputs = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .filter(|result| result.artifact_commit.is_some())
+            .flat_map(|result| &result.output_refs)
+            .map(|output| {
+                let handle = publisher
+                    .storage()
+                    .typed_handle::<mizar_artifact::verified_artifact::VerifiedArtifact>(
+                        output,
+                        &mizar_ir::identity::OutputKind::new("SourceTheoremArtifactData"),
+                    )
+                    .unwrap();
+                publisher.storage().get(&handle).unwrap()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(original_outputs.len(), 2);
+        assert!(publication.artifacts().iter().all(|artifact| {
+            original_outputs
+                .iter()
+                .any(|original| Arc::ptr_eq(artifact, original))
+        }));
+        let manifest_modules = publication
+            .manifests()
+            .iter()
+            .flat_map(|read| &read.manifest.modules)
+            .map(|entry| {
+                let version = versions
+                    .iter()
+                    .find(|version| {
+                        version.package_id.as_str() == entry.module.package_id.as_str()
+                            && version.module_path.as_str() == entry.module.module_path.as_str()
+                    })
+                    .unwrap();
+                assert_eq!(entry.source_file.as_str(), version.normalized_path.as_str());
+                assert_eq!(entry.source_hash, version.source_hash);
+                (
+                    entry.module.package_id.clone(),
+                    entry.module.module_path.clone(),
+                )
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(manifest_modules, artifacts);
+    }
+
+    #[test]
+    fn missing_manifest_or_member_refuses_complete_payload() {
+        let fixture = Fixture::new();
+        let (submission, publisher) = publish(&fixture, 2);
+        let complete = fixture.resolve(&submission, &publisher).unwrap();
+        let artifact_root = fixture
+            .root
+            .join("alpha")
+            .join(&complete.manifests()[0].manifest.artifact_root);
+        let manifest_path = artifact_root.join(complete.manifests()[0].path.as_str());
+        let manifest_bytes = fs::read(&manifest_path).unwrap();
+
+        fs::remove_file(&manifest_path).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_none());
+        fs::write(&manifest_path, &manifest_bytes).unwrap();
+        let restored = fixture.resolve(&submission, &publisher).unwrap();
+        let member_path =
+            artifact_root.join(&restored.manifests()[0].manifest.modules[0].artifact_file);
+        let member_bytes = fs::read(&member_path).unwrap();
+
+        fs::remove_file(&member_path).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_none());
+        fs::write(&member_path, member_bytes).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_some());
+    }
+
+    #[test]
+    fn changed_manifest_hash_refuses_complete_payload() {
+        let fixture = Fixture::new();
+        let (submission, publisher) = publish(&fixture, 3);
+        let complete = fixture.resolve(&submission, &publisher).unwrap();
+        let manifest_path = fixture
+            .root
+            .join("alpha")
+            .join(&complete.manifests()[0].manifest.artifact_root)
+            .join(complete.manifests()[0].path.as_str());
+        let original = fs::read_to_string(&manifest_path).unwrap();
+        let mut unsupported_schema = original.clone();
+        let key = original.find("\"schema_version\"").unwrap();
+        let colon = original[key..].find(':').unwrap() + key;
+        let start = original[colon..].find('"').unwrap() + colon + 1;
+        let end = original[start..].find('"').unwrap() + start;
+        unsupported_schema.replace_range(start..end, "2.0");
+        fs::write(&manifest_path, unsupported_schema).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_none());
+        fs::write(&manifest_path, &original).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_some());
+
+        let artifact_root = &complete.manifests()[0].manifest.artifact_root;
+        let changed_hash = original.replacen(
+            &format!("\"{artifact_root}\""),
+            &format!("\"x{artifact_root}\""),
+            1,
+        );
+        assert_ne!(changed_hash, original);
+        fs::write(&manifest_path, changed_hash).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_none());
+        fs::write(&manifest_path, original).unwrap();
+        assert!(fixture.resolve(&submission, &publisher).is_some());
+    }
+}
+
+#[cfg(test)]
+mod snapshot_publication_tests {
+    use std::{fs, sync::Arc};
+
+    use crate::{
+        driver::CompilerDriver,
+        events::BuildEventKind,
+        registry::PhaseRegistryBuilder,
+        request::{
+            BuildLaneId, BuildRequestGeneration, BuildSessionOutcome, BuildSessionState,
+            PublicationDecision,
+        },
+    };
+
+    use super::snapshot_test_support::{Fixture, registry};
+
+    fn snapshot_events(
+        driver: &CompilerDriver,
+        session: mizar_session::BuildSessionId,
+    ) -> Vec<Arc<crate::events::SnapshotPublication>> {
+        driver
+            .events(session)
+            .events()
+            .iter()
+            .filter_map(|event| match &event.kind {
+                BuildEventKind::SnapshotPublished { snapshot } => Some(Arc::clone(snapshot)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn current_complete_build_publishes_one_coherent_snapshot_event() {
+        let fixture = Fixture::new();
+        let (session, input, owner) = fixture.prepare(1);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("genuine complete build submits");
+
+        assert_eq!(
+            submission.publication_decision,
+            PublicationDecision::Current
+        );
+        let publications = snapshot_events(&driver, session.id());
+        assert_eq!(publications.len(), 1);
+        let published = &publications[0];
+        assert_eq!(
+            published.captured().snapshot().id,
+            session.captured().snapshot().id
+        );
+        assert!(!published.manifests().is_empty());
+        assert!(!published.artifacts().is_empty());
+        let stream = driver.events(session.id());
+        let published_event_index = stream
+            .events()
+            .iter()
+            .position(|event| matches!(&event.kind, BuildEventKind::SnapshotPublished { .. }))
+            .expect("the coherent publication event is present");
+        let published_event = &stream.events()[published_event_index];
+        assert_eq!(published_event.identity.session, session.id());
+        assert_eq!(published_event.identity.lane, BuildLaneId::new(1));
+        assert_eq!(
+            published_event.identity.generation,
+            BuildRequestGeneration::new(1)
+        );
+        assert_eq!(
+            published_event.identity.snapshot,
+            Some(session.captured().snapshot().id)
+        );
+        assert_eq!(
+            published_event.identity.publication,
+            submission.publication_decision
+        );
+        let finished_event_index = stream
+            .events()
+            .iter()
+            .position(|event| matches!(&event.kind, BuildEventKind::SessionFinished { .. }))
+            .expect("the terminal event is present");
+        assert!(published_event_index < finished_event_index);
+        let resolved = fixture
+            .resolve(&submission, &owner)
+            .expect("the same genuine completed outputs resolve coherently");
+        assert_eq!(published.as_ref(), &resolved);
+    }
+
+    #[test]
+    fn stale_captured_build_does_not_emit_a_current_snapshot_event() {
+        let fixture = Fixture::new();
+        let (stale_session, input, owner) = fixture.prepare(1);
+        fs::write(
+            fixture.root.join("alpha/src/main.miz"),
+            "theorem NewMain: for X being set holds X = X proof let X be set; thus X = X; end;",
+        )
+        .unwrap();
+        let (newer_session, _, _) = fixture.prepare(2);
+        assert_ne!(
+            stale_session.captured().snapshot().id,
+            newer_session.captured().snapshot().id
+        );
+        owner
+            .replace_current_snapshot(
+                stale_session.captured().snapshot().id,
+                newer_session.captured().snapshot().id,
+            )
+            .expect("the publisher accepts the captured snapshot replacement");
+        assert!(
+            owner
+                .validate_current_snapshot(stale_session.captured().snapshot().id)
+                .is_err()
+        );
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
+        let submission = driver
+            .submit_captured(
+                stale_session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("a stale captured request still records its build result");
+
+        assert!(snapshot_events(&driver, stale_session.id()).is_empty());
+        assert_ne!(
+            submission.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+        );
+    }
+
+    #[test]
+    fn incomplete_frontend_and_artifact_inputs_do_not_emit_snapshot_events() {
+        let fixture = Fixture::new();
+        let (session, input, owner) = fixture.prepare(1);
+        let mut driver = CompilerDriver::new(registry(false)).with_output_publisher(owner.clone());
+        let (submission, index) = driver
+            .submit_captured_with_native_diagnostic_index(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("partial genuine pipeline submits");
+        assert!(snapshot_events(&driver, session.id()).is_empty());
+        assert!(
+            index.is_some(),
+            "diagnostic index is a genuine partial output"
+        );
+        assert!(fixture.resolve(&submission, &owner).is_none());
+
+        let fixture = Fixture::new();
+        fs::write(
+            fixture.root.join("alpha/src/leaf.miz"),
+            "theorem Leaf: this is definitely not valid Mizar.",
+        )
+        .unwrap();
+        let (session, input, owner) = fixture.prepare(1);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
+        let submission = driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("partial artifact build with a malformed module submits");
+        let stream = driver.events(session.id());
+        assert!(snapshot_events(&driver, session.id()).is_empty());
+        assert!(
+            stream
+                .events()
+                .iter()
+                .any(|event| { matches!(&event.kind, BuildEventKind::ArtifactBoundary { .. }) })
+        );
+        assert_ne!(
+            submission.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+        );
+
+        let fixture = Fixture::new();
+        let (session, input, owner) = fixture.prepare(1);
+        let mut builder = PhaseRegistryBuilder::new();
+        builder.register_source_load().register_frontend(vec![]);
+        let registry = builder.build().expect("frontend-only registry is valid");
+        let mut driver = CompilerDriver::new(registry).with_output_publisher(owner);
+        driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("genuine frontend-only pipeline submits");
+        assert!(snapshot_events(&driver, session.id()).is_empty());
+    }
+
+    #[test]
+    fn retained_snapshot_payload_stays_unchanged_after_current_replacement() {
+        let fixture = Fixture::new();
+        let (session, input, owner) = fixture.prepare(1);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
+        driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("genuine complete build submits");
+        let retained = snapshot_events(&driver, session.id())
+            .into_iter()
+            .next()
+            .expect("completed current build retains its publication");
+        let before = retained.as_ref().clone();
+        fs::write(
+            fixture.root.join("alpha/src/main.miz"),
+            "theorem NewMain: for X being set holds X = X proof let X be set; thus X = X; end;",
+        )
+        .unwrap();
+        let (replacement, _, _) = fixture.prepare(2);
+        assert_ne!(
+            session.captured().snapshot().id,
+            replacement.captured().snapshot().id
+        );
+        owner
+            .replace_current_snapshot(
+                session.captured().snapshot().id,
+                replacement.captured().snapshot().id,
+            )
+            .expect("the publisher accepts a subsequent snapshot replacement");
+
+        assert!(
+            owner
+                .validate_current_snapshot(session.captured().snapshot().id)
+                .is_err()
+        );
+        assert_eq!(retained.as_ref(), &before);
+        let replay = snapshot_events(&driver, session.id());
+        assert!(Arc::ptr_eq(&retained, &replay[0]));
+        assert_eq!(
+            retained.captured().snapshot().id,
+            session.captured().snapshot().id
+        );
     }
 }

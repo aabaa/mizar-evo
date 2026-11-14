@@ -87,6 +87,7 @@ Event kinds are grouped as follows:
 | `PhaseReady` | a real phase owner reports a completed/recoverable/blocking/fatal/cancelled phase result | phase owner via registry |
 | `DiagnosticsReady` | diagnostics owner has records or batches ready for consumers | `mizar-diagnostics` |
 | `ArtifactBoundary` | artifact owner reports an actual committed artifact/projection handoff | artifact owner |
+| `SnapshotPublished` | one complete immutable manifest-backed package cohort is available | Driver coherence + existing owners |
 | `PublicationSuppressed` | an obsolete session produced a result that cannot become current | request publication guard |
 | `SessionFinished` | session reached a terminal outcome | `mizar-driver` session lifecycle |
 
@@ -99,13 +100,15 @@ owner inputs observed at the scheduler-selected registry dispatch callback, and
 `OwnerReadinessGap` is for missing diagnostics, artifact, producer-output, or
 protocol bridge seams.
 
-The internal architecture sketch includes a `SnapshotPublished(BuildSnapshotId)`
-event. In `mizar-driver`, positive snapshot publication is represented by
-events whose `publication` field is `Current` after the combined request guard
-passes. The LSP bridge, not the driver event stream, owns editor snapshot
-publication and protocol conversion. If an implementation chooses to expose a
-named `SnapshotPublished` event in D-010, it must be a protocol-agnostic alias
-for a `Current` publication decision, not a separate freshness authority.
+`SnapshotPublished` carries an `Arc<SnapshotPublication>` with the original captured
+source association, aggregated diagnostic index, validated module manifests, original
+typed artifact Arcs and resolved development payloads. Artifact metadata supplies
+expression, symbol and explanation data and optional missing-facts references; Driver
+constructs no LSP indexes. The [complete-build boundary](driver.md#artifact-boundary)
+emits it once before SessionFinished. It aliases the existing `Current` decision,
+introduces no freshness authority and is removed on suppressed watch replay.
+Retained payloads remain immutable historical data; LSP owns registry retention,
+editor validation, index construction, atomic activation and protocol conversion.
 
 ## Freshness And Suppression
 

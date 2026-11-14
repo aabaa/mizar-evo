@@ -1740,7 +1740,7 @@ impl CompilerDriver {
         let publication_decision = self.lanes.publication_decision(snapshots, &session);
         let mut artifact_commits = Vec::new();
         for (task_id, results) in &mut driver_scheduler_run.phase_results {
-            for result in results {
+            for (result_index, result) in results.iter_mut().enumerate() {
                 if result.artifact_commit.is_none() {
                     continue;
                 }
@@ -1787,12 +1787,42 @@ impl CompilerDriver {
                     result.artifact_commit = None;
                     continue;
                 };
-                // The private dispatcher retained only the same concrete owner's fresh handoff.
-                if let Some(commit) = &result.artifact_commit {
-                    artifact_commits.push((order, work_unit, commit));
-                }
+                artifact_commits.push((order, work_unit, task_id.clone(), result_index));
             }
         }
+        let snapshot_publication = self
+            .output_publisher
+            .as_ref()
+            .filter(|_| {
+                publication_decision == PublicationDecision::Current
+                    && outcome == BuildSessionOutcome::Succeeded
+            })
+            .and_then(|publisher| {
+                crate::registry::SourceLoadInputs {
+                    snapshot: &session.captured.snapshot,
+                    captured: Some(&session.captured),
+                    build_plan: &build_plan,
+                    module_index: &module_index,
+                    allocator,
+                }
+                .complete_snapshot_publication(&task_graph, &driver_scheduler_run, publisher)
+                .filter(|_| {
+                    self.lanes.publication_decision(snapshots, &session)
+                        == PublicationDecision::Current
+                })
+                .map(Arc::new)
+            });
+        // Borrow the same-call owner handoffs only after mutation and complete assembly.
+        let artifact_commits = artifact_commits
+            .into_iter()
+            .map(|(order, work_unit, task_id, result_index)| {
+                let commit = driver_scheduler_run.phase_results[&task_id][result_index]
+                    .artifact_commit
+                    .as_ref()
+                    .expect("eligible same-call artifact handoff remains stored");
+                (order, work_unit, commit)
+            })
+            .collect::<Vec<_>>();
         let events = submission_events(
             &session,
             publication_decision,
@@ -1803,6 +1833,7 @@ impl CompilerDriver {
                 scheduler_events: &driver_scheduler_run.events,
                 scheduler_task_states: &driver_scheduler_run.task_states,
                 artifact_commits: &artifact_commits,
+                snapshot_publication: snapshot_publication.as_ref(),
             },
         );
         for (_, handle, owner) in &cached_sources {

@@ -79,6 +79,7 @@ event kind は次のグループに分かれる:
 | `PhaseReady` | real phase owner が completed / recoverable / blocking / fatal / cancelled phase result を報告した | registry 経由の phase owner |
 | `DiagnosticsReady` | diagnostics owner が consumer 用 record または batch を用意した | `mizar-diagnostics` |
 | `ArtifactBoundary` | artifact owner が actual committed artifact / projection handoff を報告した | artifact owner |
+| `SnapshotPublished` | 完全で不変の manifest-backed package cohort が利用可能 | Driver coherence と既存 owner |
 | `PublicationSuppressed` | obsolete session の result が current になれない | request publication guard |
 | `SessionFinished` | session が terminal outcome に到達した | `mizar-driver` session lifecycle |
 
@@ -90,12 +91,12 @@ scheduler-selected registry dispatch callback で観測された missing owner i
 `OwnerReadinessGap` は missing diagnostics、artifact、producer-output、protocol bridge seam
 用である。
 
-internal architecture sketch には `SnapshotPublished(BuildSnapshotId)` event が含まれる。
-`mizar-driver` では、positive snapshot publication は combined request guard 通過後に
-`publication` field が `Current` である event として表現される。editor snapshot publication と
-protocol conversion は LSP bridge の所有であり、driver event stream の所有ではない。D-010 の
-implementation が named `SnapshotPublished` event を公開する場合、それは独立した freshness
-authority ではなく、protocol-agnostic な `Current` publication decision の alias でなければならない。
+`SnapshotPublished` は `Arc<SnapshotPublication>` で元の captured source association、集約済み
+diagnostic index、検証済み module manifest、元の typed artifact Arc と解決済み development payload を保持する。
+artifact metadata が expression・symbol・explanation data と任意の missing-facts 参照を供給し、Driver は LSP index を作らない。
+[完全 build 境界](driver.md#artifact-boundary)で SessionFinished より前に一度 emit する。
+既存 `Current` decision の alias であり、新たな freshness authority を持たず、suppressed watch replay から除かれる。
+保持 payload は不変の履歴データであり、registry retention、editor 検証、index 構築、atomic activation と protocol conversion は LSP が所有する。
 
 ## Freshness と Suppression
 

@@ -340,6 +340,9 @@ fn human_event(event: &BuildEvent) -> String {
             committed.identity
         ),
         BuildEventKind::PublicationSuppressed => "publication_suppressed".to_owned(),
+        BuildEventKind::SnapshotPublished { snapshot } => {
+            format!("snapshot_published modules={}", snapshot.artifacts().len())
+        }
         BuildEventKind::SessionFinished { outcome } => {
             format!("session_finished outcome={}", outcome_name(*outcome))
         }
@@ -432,6 +435,11 @@ fn json_event(event: &BuildEvent) -> String {
         BuildEventKind::PublicationSuppressed => {
             json_base_event("publication_suppressed", publication, String::new())
         }
+        BuildEventKind::SnapshotPublished { snapshot } => json_base_event(
+            "snapshot_published",
+            publication,
+            format!(",\"modules\":{}", snapshot.artifacts().len()),
+        ),
         BuildEventKind::SessionFinished { outcome } => json_base_event(
             "session_finished",
             publication,
