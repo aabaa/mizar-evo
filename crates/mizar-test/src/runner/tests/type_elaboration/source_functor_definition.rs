@@ -2127,7 +2127,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
     assert_eq!(active_type_consumer_counts, [273, 273, 273, 260, 273, 273]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (633, 545)
+        (635, 545)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -2137,7 +2137,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
                 _ => (pass, fail),
             }
         }),
-        (359, 274)
+        (361, 274)
     );
     assert_eq!(
         (
