@@ -158,7 +158,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 ### Wave C: metadata features
 
-12. **Spec: `metadata.md`.** [ ]
+12. **Spec: `metadata.md`.** [x]
+    - Completed: [LSP-METADATA-READER-DESIGN](../../task_contracts/en/LSP-METADATA-READER-DESIGN.md); [English specification](metadata.md), [Japanese specification](../ja/metadata.md).
     - Write the metadata-reader spec (English and Japanese, no code):
       reading `VerifiedArtifact` expression metadata and module summaries
       for IDE features, freshness rules, and the no-raw-IR boundary.

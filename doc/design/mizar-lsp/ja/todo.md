@@ -158,7 +158,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 ### 第 C 波: メタデータ機能
 
-12. **仕様: `metadata.md`。** [ ]
+12. **仕様: `metadata.md`。** [x]
+    - 完了: [LSP-METADATA-READER-DESIGN](../../task_contracts/ja/LSP-METADATA-READER-DESIGN.md)、[英語仕様](../en/metadata.md)、[日本語仕様](metadata.md)。
     - メタデータリーダーの仕様を執筆する（英語と日本語、コードなし）:
       IDE 機能のための `VerifiedArtifact` 式メタデータとモジュール
       summary の読み込み、鮮度の規則、生 IR 禁止の境界。
