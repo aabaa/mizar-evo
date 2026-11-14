@@ -32,6 +32,8 @@ module を要求する mixed production responsibility は見つからなかっ�
 helper extraction は、paired module spec が具体的な helper boundary を定義するまで
 deferred のままである。
 
+private translator test child の認証済み extraction fixture と独立 kernel-check helper は、guarded backend matrix 用に `cfg(all(test, unix))` で crate 内に再公開する。
+
 ## Layout Result
 
 次の private `cfg(test)` child module が unit-test suite を所有する:

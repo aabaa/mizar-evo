@@ -34,6 +34,8 @@ production responsibility requiring a new public module was found. Production
 helper extraction remains deferred until a paired module spec defines a
 concrete helper boundary.
 
+The private translator test child reexports its authenticated extraction fixture and independent kernel-check helper within the crate under `cfg(all(test, unix))` for the guarded backend matrix.
+
 ## Layout Result
 
 The following private `cfg(test)` child modules now own the unit-test suites:

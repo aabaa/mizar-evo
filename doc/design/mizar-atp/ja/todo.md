@@ -22,7 +22,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
-| backend | `backend.md`（task 13） | `src/backend.rs` | [x] generic runner と mock classification 完了。real adapter / extraction は deferred |
+| backend | `backend.md`（task 13） | `src/backend.rs` | [x] generic runner、mock classification、guarded [Vampire extraction](evidence.md) 完了 |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [x] task-18 no-early-stop source 完了。proof policy、real extraction、kernel check、witness/cache/artifact handoff は deferred |
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
@@ -67,9 +67,7 @@ trusted ATP payload として生成しない。
 現在の gate 状態: `mizar-kernel` task 23-28 と `mizar-vc` task 24-25 により、
 generic runner path については満たされている。task 1-14 は spec-backed な
 problem、translation、encoding、generic backend-runner slice だけを構築してよい。
-task 15 の実装は deferred のままだが、DR-1 が対訳 [extraction spec](evidence.md) と
-Vampire guarded route を凍結し、ATP-G-015 の文書上の再開条件を満たした。
-[実装契約](../../task_contracts/ja/ATPK-BACKEND-EXTRACTION.md) は実行ファイル provisioning 後に dispatch できる。proof policy、witness publication、cache promotion はそれぞれ専用 crate/task まで
+guarded Vampire 4.9 FOF route は対訳 [extraction owner](evidence.md) に従い実装済み。現在の ATP-G-015/016 状態は [crate plan](00.crate_plan.md) に記録し、下の task-15/16 deferred gate 記録は過去のログとして保持する。proof policy、witness publication、cache promotion はそれぞれ専用 crate/task まで
 deferred のままである。`mizar-proof` は現在 workspace crate だが、ATP/proof integration は
 引き続き `external_dependency_gap` であり、ここで local proof-policy placeholder を追加する
 理由にはならない。

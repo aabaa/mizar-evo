@@ -1,7 +1,7 @@
 # Vampire の evidence extraction
 
 正本言語: English; [英語 companion](../en/evidence.md)。
-状態: owner decision DR-1（2026-11-14）により、最初の backend を Vampire とする設計を凍結する。実装は provisioning 後の別 dispatch とする。ATP-G-015 の文書上の再開条件は満たすが、この凍結で adapter、output parser、新 candidate schema は実装しない。
+状態: guarded Vampire 4.9 extraction を `backend::run_vampire_backend` に実装。candidate は既存の kernel-checked finder だけから生成する。凍結済み契約は設計記録として保持する。
 根拠: [仕様 §21.7.1–§21.7.5](../../../spec/en/21.source_code_annotation_and_atp.md#217-atp-integration)、[architecture 10](../../architecture/ja/10.atp_backend_integration.md#具体例探索による根拠の生成)、[backend contract](backend.md)。
 
 ## Guarded route と入力
@@ -9,11 +9,15 @@
 この route の backend は Vampire のみとする。既存の [generic runner](../en/backend.md#process-model)、[profile/command](../en/backend.md#backend-profile-and-command)、version probe、private stdin/file input、stream capture、policy timeout/resource limit、exit/stream fingerprint、private-temp cleanup を使う。daemon、library linking、shell interpretation、fallback backend は導入しない。
 translator が encoded problem から生成する、宣言 profile 用の既存 deterministic [TPTP FOF encoding](tptp_encoder.md) だけを送る。source text、追加 premise、premise set の拡大、backend 固有の入力追加を禁止する。生成する全 record を encoded-problem hash に束縛し、元の target、formula-label、symbol-binding、provenance metadata を保持する。
 
+guarded API は既存 run input、元 structured problem と VC/kernel handoff、変更しない optional finder limit を受け取る。引数は `--mode vampire --input_syntax tptp --proof tptp --output_axiom_names on`、environment allowlist は空、同一 executable への絶対 command/probe path と `--version` probe を要求する。
+
 ## Extraction と advisory mapping
 
 extraction は、完了した一回の実行の captured output を既存の [result-classification](../en/backend.md#result-classification) 入力と任意の advisory used-premise report に写す。何も受理せず、trusted evidence を生成しない。stdout から取るのは SZS status、使用したと報告された encoded-problem formula name、backend identity/version と再現用 metadata のみとする。stderr とその他の output は診断専用である。
 advisory report は、使用したと報告された input formula name の集合である。集合全体を encoded problem の formula label と symbol binding を通じて元の premise に対応付け、label 順を決定的にし重複を除く。finder には実際の premise label だけを渡す。conjecture label は premise ではない。report は探索を狭めるだけで、formula、substitution、追加 premise、trusted `used_axioms` を供給しない。
 proof object、TSTP trace、inference step、proof 内の substitution は candidate payload に入れない。advisory set 用に input-name reference を読むことは trace の evidence への変換ではなく、proof 内容はすべて診断専用のままである。
+
+SZS Proof block 内の axiom-role input record の `file(input,name)` annotation だけを advisory name とし、conjecture-role record は除外する。formula と inference annotation は opaque のまま扱う。
 
 ## Finder handoff と信頼境界
 

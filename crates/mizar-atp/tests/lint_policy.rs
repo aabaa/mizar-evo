@@ -552,6 +552,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "encode_local_variable_reflexivity_names",
             "encode_local_variable_transitivity_names",
             "run_backend",
+            "run_vampire_backend",
             "screen_source_registration_candidate",
             "select_local_variable_transitivity_names",
             "source_registration_ground_term_correspondence",

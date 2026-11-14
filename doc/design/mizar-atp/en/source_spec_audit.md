@@ -237,6 +237,7 @@ Literal top-level public items:
 Public entry functions:
 
 - `run_backend`
+- `run_vampire_backend`
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
 - `encode_local_variable_reflexivity_names`
@@ -252,7 +253,7 @@ Public entry functions:
 | Existing genuine source candidates are screened with explicit bounded admission counts and one untrusted SAT query. | [backend owner](./backend.md#source-candidate-sat-screening). | `source_candidate_sat_screen_*` and exact static service/API inventories. | Implemented bounded query only; fresh acceptance remains consumer-owned. |
 | Existing source-observed ground choices are paired by original VC producer references with original parsed Kernel terms. | [backend owner](./backend.md#source-ground-term-correspondence); source query. | `source_ground_term_correspondence_*` and exact backend static seam inventories. | Implemented existing-term association only; generic source extraction remains deferred. |
 | The generic backend runner uses deterministic command fingerprints, explicit stdin/private-file input delivery, version probes, resource limits, timeout/cancellation/crash handling, stream capture, and private temp cleanup. | `run_backend`, `BackendRunInput`, `BackendRunResult`, command/resource/capture helpers. | command fingerprint, stdin/private-file, version probe, timeout/cancellation/crash, drain-safe capture, temp cleanup, and unsupported-limit tests. | Implemented for generic direct-spawn and mock backend routes. |
-| `Proved` is candidate-evidence-only and requires matching `Unsat` plus formula/substitution candidate payload; backend proof method, resolution trace, backend log, unsat core, and SMT proof object are never trusted. | `classify_backend_observation`, `BackendCandidateEvidence`, `BackendCandidatePayload`, status validation. | mock proved, prohibited payload, counterexample/unknown/error, truncation, and metadata mismatch tests. | Implemented for mock classification; real extraction remains external. |
+| `Proved` is candidate-evidence-only and requires matching `Unsat` plus formula/substitution candidate payload; backend proof method, resolution trace, backend log, unsat core, and SMT proof object are never trusted. | `classify_backend_observation`, `BackendCandidateEvidence`, `BackendCandidatePayload`, status validation. | mock proved, prohibited payload, counterexample/unknown/error, truncation, and metadata mismatch tests. | Implemented for mock classification and the guarded [Vampire extraction](evidence.md) route; downstream acceptance remains external. |
 | Stable run metadata is reproducibility metadata and stays outside trusted acceptance and candidate hashes. | `BackendRunMetadata`, `BackendRunResult::metadata`. | task-19 metadata projection tests. | Implemented. |
 | Public enums are downstream forward-compatible. | `#[non_exhaustive]` on public enums. | `atp_public_enums_are_non_exhaustive_and_documented`. | Guarded by task 22. |
 

@@ -1867,3 +1867,391 @@ fn structured_source_body_refuses_constructor_order_arity_and_unsupported_shapes
         &forward, &reversed, &binder, &ground, &mut None
     ));
 }
+
+#[cfg(test)]
+mod vampire_extraction_refusal_tests {
+    use super::*;
+
+    fn fixture() -> (
+        AtpProblem,
+        mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    ) {
+        crate::translator::backend_extraction_fixture()
+    }
+
+    fn pinned_path() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.tools/provers/vampire-4.9/vampire")
+            .canonicalize()
+            .expect("provisioned Vampire 4.9")
+    }
+
+    fn real_completed_run(problem: &AtpProblem, run_id: &str) -> BackendRunResult {
+        let executable = pinned_path();
+        let command = BackendCommand::new(
+            executable.clone(),
+            [
+                "--mode",
+                "vampire",
+                "--input_syntax",
+                "tptp",
+                "--proof",
+                "tptp",
+                "--output_axiom_names",
+                "on",
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        )
+        .expect("pinned command");
+        let profile = BackendProfile::new(
+            BackendProfileId::new("guarded-vampire-test").expect("profile id"),
+            BackendKind::new("vampire").expect("backend kind"),
+            ConcreteFormat::Tptp,
+        )
+        .with_version_probe(
+            BackendVersionProbe::new(
+                executable,
+                vec!["--version".to_owned()],
+                Duration::from_secs(5),
+            )
+            .expect("version probe"),
+        );
+        let encoded = EncodedBackendProblem::encode(problem, ConcreteFormat::Tptp)
+            .expect("genuine TPTP encoding");
+        let input = BackendRunInput::new(
+            BackendRunId::new(run_id).expect("run id"),
+            encoded,
+            profile,
+            command,
+            BackendResourceLimits::new().with_wall_timeout(Duration::from_secs(20)),
+            BackendIoMode::PrivateProblemFile,
+            BackendCancellationToken::new(),
+        );
+        let result = run_backend_inner(input, true);
+        assert_eq!(result.termination(), BackendTermination::Exited);
+        assert!(result.child_reaped());
+        assert!(result.version_record().is_some_and(pinned_vampire_version));
+        result
+    }
+
+    fn replace_output(result: &mut BackendRunResult, output: &[u8]) {
+        result.stdout = BackendStreamCapture {
+            retained: output.to_vec(),
+            hash: hash_with_seed(0),
+            total_bytes: output.len() as u64,
+            truncated: false,
+            incomplete: false,
+        };
+        result.status = BackendRunStatus::Unknown;
+        result.observed_result = None;
+        result.candidate_evidence = None;
+        result.diagnostics.clear();
+    }
+
+    #[test]
+    fn real_completed_run_rejects_missing_or_malformed_szs_status() {
+        let (problem, handoff) = fixture();
+        let completed = real_completed_run(&problem, "vampire-negative-status");
+        for malformed in [
+            b"".as_slice(),
+            b"% SZS status Theorem\n% SZS status Unsatisfiable\n".as_slice(),
+            b"% SZS status Theorem\n% SZS output start Proof\n".as_slice(),
+            b"% SZS status Theorem\n% SZS output start Proof\nfof(step,axiom,p,file(unknown)).\n% SZS output end Proof\n".as_slice(),
+            b"% SZS status Theorem\n% SZS output start Proof\nfof(step,axiom,p,file(,ax_0)).\n% SZS output end Proof\n".as_slice(),
+            b"% SZS status Theorem\n% SZS output start Proof\nfof(step,axiom,p,file(invalid name,ax_0)).\n% SZS output end Proof\n".as_slice(),
+        ] {
+            let mut run = completed.clone();
+            replace_output(&mut run, malformed);
+            let refused = extract_vampire_evidence(run, &problem, &handoff, Some([1, 2, 0, 2]));
+            assert_ne!(refused.status(), BackendRunStatus::Proved);
+            assert!(refused.candidate_evidence().is_none());
+            assert!(has_diag(&refused, "vampire_output_malformed"));
+        }
+        for stream in [true, false] {
+            for incomplete in [true, false] {
+                let mut run = completed.clone();
+                replace_output(&mut run, b"% SZS status Theorem\n");
+                let capture = if stream {
+                    &mut run.stdout
+                } else {
+                    &mut run.stderr
+                };
+                capture.incomplete = incomplete;
+                capture.truncated = !incomplete;
+                let refused = extract_vampire_evidence(run, &problem, &handoff, Some([1, 2, 0, 2]));
+                assert_eq!(refused.status(), BackendRunStatus::Error);
+                assert!(refused.candidate_evidence().is_none());
+                assert!(has_diag(&refused, "vampire_extraction_rejected"));
+            }
+        }
+    }
+
+    #[test]
+    fn unknown_advisory_label_discards_the_whole_report_and_finds_all_premises() {
+        let (problem, handoff) = fixture();
+        let completed = real_completed_run(&problem, "vampire-negative-advisory");
+        let mut run = completed;
+        replace_output(
+            &mut run,
+            b"% SZS status Theorem\n% SZS output start Proof\nfof(step, axiom, $false, file(unknown, ax_0)).\nfof(other, axiom, $false, file(unknown, ax_unknown)).\n% SZS output end Proof\n",
+        );
+        let repeated = run.clone();
+        let extracted = extract_vampire_evidence(run, &problem, &handoff, Some([1, 2, 0, 2]));
+        let repeated = extract_vampire_evidence(repeated, &problem, &handoff, Some([1, 2, 0, 2]));
+        assert_eq!(
+            extracted.candidate_evidence(),
+            repeated.candidate_evidence()
+        );
+        assert_eq!(extracted.status(), BackendRunStatus::Proved);
+        assert!(has_diag(&extracted, "vampire_advisory_discarded"));
+        let candidate = extracted.candidate_evidence().expect("fallback candidate");
+        crate::translator::assert_kernel_accepts_instance_candidate(candidate, &handoff);
+        assert_eq!(
+            candidate.formula_label_refs(),
+            extracted.encoded_problem().formula_labels()
+        );
+    }
+
+    #[test]
+    fn no_advisory_uses_all_premises_and_proof_trace_cannot_supply_payload() {
+        let (problem, handoff) = fixture();
+        let completed = real_completed_run(&problem, "vampire-negative-proof-payload");
+        let mut run = completed;
+        let offered = b"% SZS status Theorem\n% SZS output start Proof\nfof(step, plain, q(a), inference(resolution, [], [axiom])).\n% SZS output end Proof\n";
+        replace_output(&mut run, offered);
+        assert!(
+            parse_vampire_stdout(std::str::from_utf8(offered).unwrap())
+                .unwrap()
+                .1
+                .is_none()
+        );
+        assert!(
+            crate::instance_finder::find_instance_evidence(
+                &problem,
+                run.encoded_problem(),
+                &handoff,
+                Some([1, 2, 0, 2]),
+                Some(&[]),
+            )
+            .expect("empty advisory cannot prove this goal")
+            .is_none()
+        );
+        let extracted = extract_vampire_evidence(run, &problem, &handoff, Some([1, 2, 0, 2]));
+        let candidate = extracted.candidate_evidence().expect("finder candidate");
+        let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+            panic!("finder must provide explicit formula/substitution bytes")
+        };
+        assert_ne!(bytes.as_slice(), offered);
+        crate::translator::assert_kernel_accepts_instance_candidate(candidate, &handoff);
+    }
+
+    #[test]
+    fn proof_claims_cannot_supply_context_polarity_or_import_bindings() {
+        let (problem, handoff) = fixture();
+        let completed = real_completed_run(&problem, "vampire-negative-inferred-context");
+        let mut baseline = completed.clone();
+        replace_output(&mut baseline, b"% SZS status Theorem\n");
+        let baseline = extract_vampire_evidence(baseline, &problem, &handoff, Some([1, 2, 0, 2]));
+        let mut run = completed;
+        replace_output(
+            &mut run,
+            b"% SZS status Theorem\n% SZS output start Proof\nfof(step, plain, imported_fact, inference(substitution, [polarity(changed), context(foreign), import(projection)], [])).\n% SZS output end Proof\n",
+        );
+        let extracted = extract_vampire_evidence(run, &problem, &handoff, Some([1, 2, 0, 2]));
+        assert_eq!(extracted.status(), BackendRunStatus::Proved);
+        assert_eq!(
+            extracted.candidate_evidence(),
+            baseline.candidate_evidence()
+        );
+        crate::translator::assert_kernel_accepts_instance_candidate(
+            extracted
+                .candidate_evidence()
+                .expect("original finder candidate"),
+            &handoff,
+        );
+    }
+
+    #[test]
+    fn timeout_and_nonzero_exit_keep_generic_failure_and_clean_temp_files() {
+        let _guard = private_temp_guard();
+        let (problem, handoff) = fixture();
+        let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp)
+            .expect("genuine encoding");
+        let dir = TestDir::new();
+        for (name, body, timeout, expected) in [
+            (
+                "timeout",
+                "if [ \"$1\" = --version ]; then echo 'Vampire 4.9'; exit 0; fi\nprintf '%s\\n' \"$2\" >&2\nwhile :; do :; done\n",
+                Duration::from_millis(250),
+                BackendRunStatus::Timeout,
+            ),
+            (
+                "nonzero",
+                "if [ \"$1\" = --version ]; then echo 'Vampire 4.9'; exit 0; fi\nprintf '%s\\n' \"$2\" >&2\nexit 9\n",
+                Duration::from_secs(2),
+                BackendRunStatus::Error,
+            ),
+            (
+                "crash",
+                "if [ \"$1\" = --version ]; then echo 'Vampire 4.9'; exit 0; fi\nprintf '%s\\n' \"$2\" >&2\nkill -TERM $$\n",
+                Duration::from_secs(2),
+                BackendRunStatus::Error,
+            ),
+        ] {
+            let script = dir.executable(name, &format!("#!/bin/sh\n{body}"), true);
+            let command =
+                BackendCommand::new(script.clone(), vec!["--mode".to_owned()]).expect("command");
+            let profile = BackendProfile::new(
+                BackendProfileId::new(format!("vampire-failure-{name}")).expect("profile"),
+                BackendKind::new("vampire").expect("kind"),
+                ConcreteFormat::Tptp,
+            )
+            .with_version_probe(
+                BackendVersionProbe::new(
+                    script,
+                    vec!["--version".to_owned()],
+                    Duration::from_secs(1),
+                )
+                .expect("probe"),
+            );
+            let input = BackendRunInput::new(
+                BackendRunId::new(format!("failure-{name}")).expect("run id"),
+                encoded.clone(),
+                profile,
+                command,
+                BackendResourceLimits::new().with_wall_timeout(timeout),
+                BackendIoMode::PrivateProblemFile,
+                BackendCancellationToken::new(),
+            );
+            let result = run_backend_inner(input, true);
+            assert_eq!(result.status(), expected);
+            let refused = extract_vampire_evidence(result, &problem, &handoff, Some([1, 2, 0, 2]));
+            assert_eq!(refused.status(), expected);
+            assert!(refused.candidate_evidence().is_none());
+            assert_private_problem_path_cleaned(&refused);
+        }
+    }
+
+    #[test]
+    fn bare_executable_names_are_rejected_before_probe_or_solve() {
+        let (problem, handoff) = fixture();
+        let dir = TestDir::new();
+        let name = format!(
+            "{}-vampire",
+            dir.path().file_name().unwrap().to_str().unwrap()
+        );
+        let alias = PathBuf::from(&name);
+        std::os::unix::fs::symlink(pinned_path(), &alias).expect("local pinned-binary alias");
+        for bare_probe in [false, true] {
+            let command = BackendCommand::new(
+                if bare_probe {
+                    pinned_path()
+                } else {
+                    alias.clone()
+                },
+                [
+                    "--mode",
+                    "vampire",
+                    "--input_syntax",
+                    "tptp",
+                    "--proof",
+                    "tptp",
+                    "--output_axiom_names",
+                    "on",
+                ]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            )
+            .expect("command");
+            let profile = BackendProfile::new(
+                BackendProfileId::new("bare-vampire").unwrap(),
+                BackendKind::new("vampire").unwrap(),
+                ConcreteFormat::Tptp,
+            )
+            .with_version_probe(
+                BackendVersionProbe::new(
+                    if bare_probe {
+                        alias.clone()
+                    } else {
+                        pinned_path()
+                    },
+                    vec!["--version".to_owned()],
+                    Duration::from_secs(1),
+                )
+                .unwrap(),
+            );
+            let input = BackendRunInput::new(
+                BackendRunId::new("bare-vampire").unwrap(),
+                EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).unwrap(),
+                profile,
+                command,
+                BackendResourceLimits::new(),
+                BackendIoMode::Stdin,
+                BackendCancellationToken::new(),
+            );
+            let refused = run_vampire_backend(input, &problem, &handoff, Some([1, 2, 0, 2]));
+            // Clean before assertions, including a failed regression.
+            if !has_diag(&refused, "vampire_guarded_input_rejected") {
+                std::fs::remove_file(&alias).unwrap();
+                panic!("bare command/probe must fail the guard: {refused:?}");
+            }
+            assert!(refused.version_record().is_none());
+            assert!(refused.candidate_evidence().is_none());
+        }
+        std::fs::remove_file(alias).unwrap();
+    }
+
+    #[test]
+    fn version_mismatch_stops_before_solve_or_fallback() {
+        let _guard = private_temp_guard();
+        let (problem, _) = fixture();
+        let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp)
+            .expect("genuine encoding");
+        let dir = TestDir::new();
+        let marker = dir.path().join("solve-ran");
+        let script = dir.executable(
+            "mismatched-vampire",
+            &format!(
+                "#!/bin/sh\nif [ \"$1\" = --version ]; then echo 'Vampire 4.8'; exit 0; fi\ntouch '{}'\n",
+                marker.display()
+            ),
+            true,
+        );
+        let command =
+            BackendCommand::new(script.clone(), vec!["--mode".to_owned()]).expect("command");
+        let profile = BackendProfile::new(
+            BackendProfileId::new("vampire-version-mismatch").expect("profile"),
+            BackendKind::new("vampire").expect("kind"),
+            ConcreteFormat::Tptp,
+        )
+        .with_version_probe(
+            BackendVersionProbe::new(script, vec!["--version".to_owned()], Duration::from_secs(5))
+                .expect("probe"),
+        );
+        let input = BackendRunInput::new(
+            BackendRunId::new("vampire-mismatch").expect("run id"),
+            encoded,
+            profile,
+            command,
+            BackendResourceLimits::new(),
+            BackendIoMode::Stdin,
+            BackendCancellationToken::new(),
+        );
+        let refused = run_backend_inner(input, true);
+        assert_eq!(refused.status(), BackendRunStatus::Error);
+        assert_eq!(refused.termination(), BackendTermination::NotStarted);
+        assert!(
+            has_diag(&refused, "vampire_version_mismatch"),
+            "probe: {:?}; diagnostics: {:?}",
+            refused.version_record(),
+            refused.diagnostics()
+        );
+        assert!(
+            !marker.exists(),
+            "the solver command must not run after mismatch"
+        );
+    }
+}

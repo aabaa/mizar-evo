@@ -22,7 +22,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
-| backend | `backend.md` (task 13) | `src/backend.rs` | [x] generic runner and mock classification complete; real adapters/extraction deferred |
+| backend | `backend.md` (task 13) | `src/backend.rs` | [x] generic runner, mock classification and guarded [Vampire extraction](evidence.md) complete |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [x] task-18 no-early-stop source complete; proof policy, real extraction, kernel checks, witness/cache/artifact handoff deferred |
 
 `mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
@@ -68,7 +68,7 @@ payload.
 Current gate status: satisfied for the generic runner path by `mizar-kernel`
 tasks 23-28 and `mizar-vc` tasks 24-25. Tasks 1-14 may build only the
 spec-backed problem, translation, encoding, and generic backend-runner slices.
-Task 15 remains implementation-deferred; DR-1 freezes the paired [extraction spec](evidence.md) and Vampire guarded route, satisfying ATP-G-015's documentary reopening condition. The [implementation contract](../../task_contracts/en/ATPK-BACKEND-EXTRACTION.md) is dispatchable after executable provisioning. Proof policy, witness publication, and
+The guarded Vampire 4.9 FOF route is implemented under the paired [extraction owner](evidence.md); current ATP-G-015/016 status is in the [crate plan](00.crate_plan.md). Historical task-15/16 deferred gate records below remain frozen. Proof policy, witness publication, and
 cache promotion remain deferred to their own crates/tasks. `mizar-proof` is now
 a workspace crate, but ATP/proof integration remains an
 `external_dependency_gap`, not a reason to add local proof-policy placeholders

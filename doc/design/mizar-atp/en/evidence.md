@@ -1,7 +1,7 @@
 # Vampire Evidence Extraction
 
 Canonical language: English; [Japanese companion](../ja/evidence.md).
-Status: design frozen under owner decision DR-1 (2026-11-14), first backend Vampire; implementation is a separate dispatch after provisioning. ATP-G-015's documentary reopening condition is met; no adapter, output parser or new candidate schema is implemented by this freeze.
+Status: guarded Vampire 4.9 extraction implemented in `backend::run_vampire_backend`; candidates come only from the existing kernel-checked finder. The frozen contract remains the design record.
 Authority: [specification §21.7.1–§21.7.5](../../../spec/en/21.source_code_annotation_and_atp.md#217-atp-integration), [architecture 10](../../architecture/en/10.atp_backend_integration.md#evidence-extraction-by-instance-finding), and [backend contract](backend.md).
 
 ## Guarded route and input
@@ -9,10 +9,12 @@ Authority: [specification §21.7.1–§21.7.5](../../../spec/en/21.source_code_a
 Vampire is the only backend in this route. Use the existing [generic runner](backend.md#process-model), [profile/command](backend.md#backend-profile-and-command), version probes, private stdin/file input, captured streams, policy timeout/resource limits, exit/stream fingerprints and private-temp cleanup. No daemon, library linking, shell interpretation or fallback backend is introduced.
 Send only the existing deterministic [TPTP FOF encoding](tptp_encoder.md) for the declared profile, produced by the translator from the encoded problem. No source text, extra premises, widened premise set or backend-specific input additions are allowed. Bind every produced record to the encoded-problem hash; retain the original target, formula-label, symbol-binding and provenance metadata.
 
+The guarded API takes the existing run input, original structured problem and VC/kernel handoff, and unchanged optional finder limits. It requires `--mode vampire --input_syntax tptp --proof tptp --output_axiom_names on`, an empty environment allowlist, and absolute command/probe paths to the same executable with a `--version` probe.
+
 ## Extraction and advisory mapping
 
 Extraction maps one completed run's captured output to the existing [result-classification](backend.md#result-classification) input and an optional advisory used-premise report. It accepts nothing and produces no trusted evidence. From stdout take only the SZS status, reported encoded-problem formula names, and backend identity/version or reproducibility metadata; stderr and remaining output are diagnostic only.
-An advisory report is the set of input formula names reported as used. Resolve the entire set through the encoded problem's formula labels and symbol bindings to original premises, in deterministic label order with duplicates removed. Pass only actual premise labels to the finder; conjecture labels are not premises. The report may narrow search but cannot supply formulas, substitutions, additional premises or trusted `used_axioms`.
+An advisory report is the set of input formula names reported as used: read `file(input,name)` annotations only on axiom-role input records inside the SZS Proof block; conjecture-role records are excluded. Formulas and inference annotations stay opaque. Resolve the entire set through the encoded problem's formula labels and symbol bindings to original premises, in deterministic label order with duplicates removed. Pass only actual premise labels to the finder; conjecture labels are not premises. The report may narrow search but cannot supply formulas, substitutions, additional premises or trusted `used_axioms`.
 Proof objects, TSTP traces, inference steps and substitutions inside proofs never enter a candidate payload. Reading input-name references for the advisory set does not translate a trace into evidence; all proof content remains diagnostic.
 
 ## Finder handoff and trust

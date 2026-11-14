@@ -2653,6 +2653,47 @@ fn finder_problem(
     )
 }
 
+#[cfg(unix)]
+pub(crate) fn backend_extraction_fixture() -> (AtpProblem, VcKernelEvidenceHandoff) {
+    use mizar_kernel::formula_evidence::Formula;
+
+    let x = AtpTerm::Variable("x".into());
+    let a = AtpTerm::Function {
+        function: "a".into(),
+        arguments: Vec::new(),
+    };
+    let p_x = AtpFormulaTree::Atom(AtpAtom::new("p", vec![x.clone()]));
+    let q_x = AtpFormulaTree::Atom(AtpAtom::new("q", vec![x]));
+    let p_a = AtpFormulaTree::Atom(AtpAtom::new("p", vec![a.clone()]));
+    let q_a = AtpFormulaTree::Atom(AtpAtom::new("q", vec![a]));
+    finder_problem(
+        (
+            AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new("x", None)],
+                body: Box::new(AtpFormulaTree::Implies(Box::new(p_x), Box::new(q_x))),
+            },
+            kernel_or(vec![
+                Formula::Not(Box::new(kernel_atom(1, vec![kernel_var(1)]))),
+                kernel_atom(2, vec![kernel_var(1)]),
+            ]),
+        ),
+        Some((p_a.clone(), kernel_atom(1, vec![kernel_const(4)]))),
+        (q_a, kernel_atom(2, vec![kernel_const(4)])),
+        vec![
+            finder_symbol(0, 1, 1),
+            finder_symbol(1, 1, 2),
+            finder_symbol(2, 2, 4),
+        ],
+        vec![1],
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+            declaration_projection("x", "x", AtpDeclarationKind::GeneratedBinder, 0),
+        ],
+    )
+}
+
 fn reprofile_finder_problem(problem: &AtpProblem, format: ConcreteFormat) -> AtpProblem {
     let profile = LogicProfile::try_new(
         match format {
@@ -2815,7 +2856,7 @@ fn finder_parse_context(
     context
 }
 
-fn assert_kernel_accepts_instance_candidate(
+pub(crate) fn assert_kernel_accepts_instance_candidate(
     candidate: &crate::instance_finder::CandidateKernelEvidence,
     handoff: &VcKernelEvidenceHandoff,
 ) {
@@ -2905,4 +2946,326 @@ fn assert_kernel_accepts_instance_candidate(
         mizar_kernel::checker::KernelCheckStatus::Accepted,
         "{checked:?}"
     );
+}
+
+#[test]
+fn guarded_vampire_extracts_only_reported_axioms_and_kernel_checks_candidate() {
+    use crate::backend::{BackendCandidatePayload, BackendObservedResult, BackendRunStatus};
+
+    let p = AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new()));
+    let q = AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new()));
+    let (problem, handoff) = finder_problem(
+        (p.clone(), kernel_atom(1, Vec::new())),
+        Some((q, kernel_atom(2, Vec::new()))),
+        (p, kernel_atom(1, Vec::new())),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let encoded = crate::backend::EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp)
+        .expect("translator-produced FOF");
+    let result = run_guarded_vampire_fixture(
+        "translator-vampire-positive",
+        &problem,
+        &handoff,
+        Some([1, 1, 0, 2]),
+    );
+
+    // Without advisory narrowing both ground premises exceed this exact budget.
+    assert!(
+        crate::instance_finder::find_instance_evidence(
+            &problem,
+            &encoded,
+            &handoff,
+            Some([1, 1, 0, 2]),
+            None,
+        )
+        .expect("all-premise comparison")
+        .is_none()
+    );
+    assert_eq!(result.status(), BackendRunStatus::Proved, "{result:?}");
+    assert_eq!(result.observed_result(), Some(BackendObservedResult::Unsat));
+    let stdout = std::str::from_utf8(result.stdout().retained_bytes()).expect("Vampire stdout");
+    assert!(stdout.contains("SZS status Theorem"), "{stdout}");
+    assert!(stdout.contains(",ax_0)"), "{stdout}");
+    assert!(!stdout.contains(",ax_1)"), "{stdout}");
+
+    let candidate = result.candidate_evidence().expect("finder candidate");
+    assert_eq!(candidate.target_binding(), encoded.target_binding());
+    assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+    assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+    assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+    assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+    assert!(matches!(
+        candidate.payload(),
+        BackendCandidatePayload::FormulaSubstitutionBytes(bytes) if !bytes.is_empty()
+    ));
+    assert_kernel_accepts_instance_candidate(candidate, &handoff);
+}
+
+#[test]
+fn guarded_vampire_probe_metadata_and_repeated_extraction_are_deterministic() {
+    use crate::backend::BackendRunStatus;
+
+    let p = AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new()));
+    let q = AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new()));
+    let (problem, handoff) = finder_problem(
+        (p.clone(), kernel_atom(1, Vec::new())),
+        Some((q, kernel_atom(2, Vec::new()))),
+        (p, kernel_atom(1, Vec::new())),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let first = run_guarded_vampire_fixture(
+        "translator-vampire-determinism-a",
+        &problem,
+        &handoff,
+        Some([1, 1, 0, 2]),
+    );
+    let second = run_guarded_vampire_fixture(
+        "translator-vampire-determinism-b",
+        &problem,
+        &handoff,
+        Some([1, 1, 0, 2]),
+    );
+
+    assert_eq!(first.status(), BackendRunStatus::Proved, "{first:?}");
+    assert_eq!(second.status(), BackendRunStatus::Proved, "{second:?}");
+    let first_meta = first.metadata();
+    let second_meta = second.metadata();
+    let first_version = first_meta.version_record().expect("version probe");
+    let second_version = second_meta.version_record().expect("version probe");
+    assert!(first_version.success());
+    assert!(
+        first_version
+            .parsed_version()
+            .is_some_and(|version| version.starts_with("Vampire 4.9"))
+    );
+    assert_eq!(
+        first_version.parsed_version(),
+        second_version.parsed_version()
+    );
+    assert_eq!(
+        first_meta.semantic_executable_id(),
+        second_meta.semantic_executable_id()
+    );
+    assert_eq!(
+        first_meta.command_fingerprint(),
+        second_meta.command_fingerprint()
+    );
+    assert_eq!(
+        first_meta.args(),
+        [
+            "--mode",
+            "vampire",
+            "--input_syntax",
+            "tptp",
+            "--proof",
+            "tptp",
+            "--output_axiom_names",
+            "on",
+        ]
+    );
+    let first_candidate = first.candidate_evidence().expect("first candidate");
+    let second_candidate = second.candidate_evidence().expect("second candidate");
+    assert_eq!(
+        first_candidate.candidate_id(),
+        second_candidate.candidate_id()
+    );
+    assert_eq!(first_candidate, second_candidate);
+    assert_kernel_accepts_instance_candidate(first_candidate, &handoff);
+    assert_kernel_accepts_instance_candidate(second_candidate, &handoff);
+}
+
+#[test]
+fn guarded_vampire_equality_advisory_uses_named_equality_instances() {
+    use crate::backend::{BackendCandidatePayload, BackendRunStatus};
+    use mizar_kernel::clause::Term;
+
+    let a = AtpTerm::Function {
+        function: "a".into(),
+        arguments: Vec::new(),
+    };
+    let b = AtpTerm::Function {
+        function: "b".into(),
+        arguments: Vec::new(),
+    };
+    let c = AtpTerm::Function {
+        function: "c".into(),
+        arguments: Vec::new(),
+    };
+    let fa = AtpTerm::Function {
+        function: "f".into(),
+        arguments: vec![a.clone()],
+    };
+    let fb = AtpTerm::Function {
+        function: "f".into(),
+        arguments: vec![b.clone()],
+    };
+    let equality = |left, right| {
+        mizar_kernel::formula_evidence::Formula::Atom(mizar_kernel::clause::Atom::new(
+            mizar_kernel::clause::SymbolKey::new(mizar_kernel::clause::SymbolKind::Equality, 3),
+            vec![left, right],
+        ))
+    };
+    let function = |id, argument| Term::Application {
+        symbol: mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::FunctorPredicate,
+            id,
+        ),
+        arguments: vec![argument],
+    };
+    let const_ = |id| Term::Application {
+        symbol: mizar_kernel::clause::SymbolKey::new(
+            mizar_kernel::clause::SymbolKind::FunctorPredicate,
+            id,
+        ),
+        arguments: Vec::new(),
+    };
+    let (problem, handoff) = finder_problem(
+        (
+            AtpFormulaTree::Equality {
+                left: b.clone(),
+                right: a.clone(),
+            },
+            equality(const_(5), const_(4)),
+        ),
+        Some((
+            AtpFormulaTree::Equality {
+                left: c.clone(),
+                right: fa.clone(),
+            },
+            equality(const_(7), function(6, const_(4))),
+        )),
+        (
+            AtpFormulaTree::Equality { left: fb, right: c },
+            equality(function(6, const_(5)), const_(7)),
+        ),
+        vec![
+            finder_symbol(0, 2, 4),
+            finder_symbol(1, 2, 5),
+            finder_symbol(2, 2, 6),
+            finder_symbol(3, 2, 7),
+            finder_symbol(4, 3, 3),
+        ],
+        Vec::new(),
+        vec![
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+            declaration_projection("b", "b", AtpDeclarationKind::Function, 0),
+            declaration_projection("c", "c", AtpDeclarationKind::Function, 0),
+            declaration_projection("f", "f", AtpDeclarationKind::Function, 1),
+        ],
+    );
+    let result = run_guarded_vampire_fixture(
+        "translator-vampire-equality",
+        &problem,
+        &handoff,
+        Some([5, 2, 1_000, 1_000]),
+    );
+    assert_eq!(result.status(), BackendRunStatus::Proved, "{result:?}");
+    let candidate = result.candidate_evidence().expect("equality candidate");
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+        panic!("expected formula evidence payload")
+    };
+    let parsed = mizar_kernel::formula_evidence::parse_formula_evidence(
+        bytes,
+        &finder_parse_context(&handoff),
+    )
+    .expect("parse equality candidate");
+    assert!(!parsed.equality_instances().is_empty());
+    assert_kernel_accepts_instance_candidate(candidate, &handoff);
+}
+
+#[test]
+fn guarded_vampire_preserves_literal_finder_limits() {
+    use crate::backend::{BackendObservedResult, BackendRunStatus};
+
+    let p = AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new()));
+    let q = AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new()));
+    let (problem, handoff) = finder_problem(
+        (p.clone(), kernel_atom(1, Vec::new())),
+        Some((q, kernel_atom(2, Vec::new()))),
+        (p, kernel_atom(1, Vec::new())),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let result = run_guarded_vampire_fixture(
+        "translator-vampire-literal-limits",
+        &problem,
+        &handoff,
+        Some([0, 0, 0, 0]),
+    );
+    assert_eq!(result.observed_result(), Some(BackendObservedResult::Unsat));
+    assert!(result.candidate_evidence().is_none());
+    assert_eq!(result.status(), BackendRunStatus::Unknown);
+}
+
+fn run_guarded_vampire_fixture(
+    run_id: &str,
+    problem: &AtpProblem,
+    handoff: &VcKernelEvidenceHandoff,
+    limits: Option<[u64; 4]>,
+) -> crate::backend::BackendRunResult {
+    use crate::backend::{
+        BackendCommand, BackendIoMode, BackendKind, BackendProfile, BackendProfileId,
+        BackendResourceLimits, BackendRunId, BackendRunInput, BackendVersionProbe,
+        EncodedBackendProblem,
+    };
+    use std::{path::PathBuf, time::Duration};
+
+    let executable =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tools/provers/vampire-4.9/vampire");
+    let encoded = EncodedBackendProblem::encode(problem, ConcreteFormat::Tptp)
+        .expect("translator-produced FOF input");
+    let command = BackendCommand::new(
+        &executable,
+        [
+            "--mode",
+            "vampire",
+            "--input_syntax",
+            "tptp",
+            "--proof",
+            "tptp",
+            "--output_axiom_names",
+            "on",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect(),
+    )
+    .expect("guarded Vampire command");
+    let profile = BackendProfile::new(
+        BackendProfileId::new("translator-vampire-4.9").expect("profile id"),
+        BackendKind::new("vampire").expect("backend kind"),
+        ConcreteFormat::Tptp,
+    )
+    .with_version_probe(
+        BackendVersionProbe::new(
+            &executable,
+            vec!["--version".to_owned()],
+            Duration::from_secs(10),
+        )
+        .expect("version probe"),
+    );
+    let input = BackendRunInput::new(
+        BackendRunId::new(run_id).expect("run id"),
+        encoded,
+        profile,
+        command,
+        BackendResourceLimits::new(),
+        BackendIoMode::PrivateProblemFile,
+        Default::default(),
+    );
+    crate::backend::run_vampire_backend(input, problem, handoff, limits)
 }

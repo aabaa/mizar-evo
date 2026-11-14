@@ -11,7 +11,7 @@ metadata、backend version recording、timeout/cancellation の graceful handlin
 backend-result classification を所有する。
 
 backend module は引き続き evidence producer boundary である。proof acceptance、
-Kernel checking/acceptance API 呼び出し、witness publication、portfolio winner selection、
+witness publication、portfolio winner selection、
 cache update、backend proof method、log、unsat core、SMT proof object、TSTP trace、
 resolution trace を trusted acceptance material に変えることは行わない。generic process runner は SAT を実行せず、下記の別の限定 source query が既存 SAT service を untrusted 候補の検査にだけ用いる。
 
@@ -23,12 +23,7 @@ Rust source、process spawn、real backend integration、backend proof language 
 からの formula/substitution candidate extraction、kernel 呼び出し、artifact witness publication、
 portfolio、proof policy は追加しない。
 
-task-14 source は、ここで記述する generic process runner と mock backend fixture を実装する。
-task 15 は first real-backend route を再評価し、`external_dependency_gap` / `deferred` として
-記録した。`mizar-atp` が real backend output を kernel-owned formula/substitution candidate
-payload に parse するには、paired evidence-extraction spec がまだ必要である。広い
-classification fixture と polarity validation は task 16 に残る。ただし task 14 は invalid な
-`Proved` result を表現不能にする constructor と invariant を公開してよい。
+task-14 source は generic process runner と mock backend fixture を実装する。guarded Vampire FOF route は、別の [extraction owner](evidence.md) に従い、その runner と既存の kernel-checked instance finder を使う。他 backend route と下流 acceptance は deferred のままである。
 
 ## 入力と出力
 
@@ -300,10 +295,7 @@ provenance mapping が成功するときだけ `Counterexample` にしてよい�
 `Error` である。`unknown`、timeout、cancellation、malformed output、parse failure、
 unsupported observed status、polarity mismatch は決して `Proved` ではない。
 
-Task 14 はこれらの invariant check と mock classification を公開してよい。task 15 は paired
-extraction spec と guarded backend route が存在するまで、最初の real backend extractor を deferred
-として記録する。task 16 もその route が存在するまで deferred のままであり、その後に
-real-backend-style output に対する full outcome と polarity classification fixture を追加してよい。
+Task 14 は invariant check と mock classification を公開する。実 Vampire SZS classification と advisory extraction は [evidence.md](evidence.md) に従い、proof acceptance は下流に残す。
 
 ## candidate evidence boundary
 
@@ -409,14 +401,7 @@ extraction spec が formula/substitution evidence へ mapping するまで diagn
 - resolved `source_drift`: task 14 は generic process runner、mock classification seam、
   deterministic run metadata、private input handling、drain-safe capture、fail-closed process
   status を実装する。
-- `external_dependency_gap` / `deferred`: real backend output を kernel が parse できる
-  formula/substitution candidate bytes/ref に変換する paired `mizar-atp` evidence-extraction
-  spec または source module がなく、supported architecture-10 backend executable も
-  verification environment に存在しないため、task 15 はまだ first concrete backend adapter を
-  追加できない。
-- `external_dependency_gap` / `deferred`: task 16 full real-output result classification と
-  polarity fixture は task-15 extraction route に依存する。その route が存在するまで、task 14 の
-  mock classification invariant が唯一の実装済み classifier surface である。
+- guarded Vampire FOF extraction/classification 解決済み: [evidence.md](evidence.md) が実装済み task-15/16 route を所有する。他 backend と format は deferred のままである。
 - `external_dependency_gap`: proof policy、winner selection、proof witness publication、cache
   promotion、artifact projection、backend availability は task 13 の外にある。
 

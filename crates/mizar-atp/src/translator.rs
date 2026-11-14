@@ -2324,3 +2324,6 @@ fn hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, unix))]
+pub(crate) use tests::{assert_kernel_accepts_instance_candidate, backend_extraction_fixture};

@@ -1,12 +1,13 @@
-//! Generic backend child-process runner and mock classification boundary.
+//! Backend child-process runner, guarded Vampire extraction and classification boundary.
 //!
 //! This module implements the task-14 runner specified in
 //! [backend.md](../../../doc/design/mizar-atp/en/backend.md). It launches
 //! untrusted backend processes, records deterministic run metadata, and offers
-//! a mock classification seam and bounded source candidate transport and SAT screening. It does not parse
-//! real backend proof languages, extract backend candidate evidence, invoke kernel checking,
-//! accept proofs, publish witnesses, or trust backend proof
-//! objects, logs, unsat cores, traces, or used-axiom reports.
+//! classification and bounded source candidate transport and SAT screening.
+//! Guarded Vampire extraction delegates candidate production and checking to
+//! the existing instance finder. It does not translate backend proofs, accept
+//! proofs, publish witnesses, or trust backend proof objects, logs, unsat cores,
+//! traces, or used-axiom reports.
 
 use crate::problem::{AtpProblemId, AtpTargetBinding, ConcreteFormat, ExpectedBackendResult};
 use mizar_session::Hash;
@@ -2272,7 +2273,339 @@ impl fmt::Display for BackendConfigError {
 
 impl Error for BackendConfigError {}
 
+/// Runs only the provisioned Vampire 4.9 with genuine deterministic FOF input.
+///
+/// The command must use `--mode vampire --input_syntax tptp --proof tptp
+/// --output_axiom_names on`, an empty environment allowlist, and a same-binary
+/// `--version` probe. Limits and the original kernel handoff pass unchanged to
+/// the instance finder. A returned `Proved` remains a candidate classification.
+pub fn run_vampire_backend(
+    input: BackendRunInput,
+    problem: &crate::problem::AtpProblem,
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    limits: Option<[u64; 4]>,
+) -> BackendRunResult {
+    let pinned = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../.tools/provers/vampire-4.9/vampire")
+        .canonicalize();
+    let configured = input.command.executable.canonicalize();
+    let valid_command = pinned.is_ok()
+        && pinned.as_ref().ok() == configured.as_ref().ok()
+        && input.command.args
+            == [
+                "--mode",
+                "vampire",
+                "--input_syntax",
+                "tptp",
+                "--proof",
+                "tptp",
+                "--output_axiom_names",
+                "on",
+            ]
+        && input.command.environment.vars.is_empty()
+        && input.command.executable.is_absolute()
+        && input.profile.backend_kind.as_str() == "vampire"
+        && input.profile.concrete_format == ConcreteFormat::Tptp
+        && input.profile.version_probe.as_ref().is_some_and(|probe| {
+            probe.executable.canonicalize().as_ref().ok() == pinned.as_ref().ok()
+                && probe.args == ["--version"]
+                && probe.executable.is_absolute()
+        });
+    if !valid_command
+        || problem.logic_profile().fragment() != crate::problem::LogicFragment::Fof
+        || input.encoded_problem.concrete_format() != ConcreteFormat::Tptp
+        || !EncodedBackendProblem::encode(problem, ConcreteFormat::Tptp)
+            .is_ok_and(|encoded| encoded == input.encoded_problem)
+    {
+        return base_result(
+            &input,
+            BaseResultParts {
+                command_fingerprint: command_fingerprint(&input),
+                version_record: None,
+                status: BackendRunStatus::Error,
+                termination: BackendTermination::NotStarted,
+                exit_status: None,
+                stdout: empty_capture("stdout"),
+                stderr: empty_capture("stderr"),
+                elapsed: Duration::ZERO,
+                child_reaped: false,
+                diagnostics: vec![BackendDiagnostic::new(
+                    "vampire_guarded_input_rejected",
+                    "guarded extraction requires the pinned executable, command, probe and genuine FOF encoding",
+                )],
+            },
+        );
+    }
+    extract_vampire_evidence(run_backend_inner(input, true), problem, handoff, limits)
+}
+
+fn pinned_vampire_version(record: &BackendVersionRecord) -> bool {
+    record.success
+        && !record.stdout.truncated()
+        && !record.stderr.truncated()
+        && !record.stdout.incomplete()
+        && !record.stderr.incomplete()
+        && std::str::from_utf8(record.stdout.retained_bytes())
+            .ok()
+            .and_then(|text| text.lines().next())
+            .and_then(|line| line.strip_prefix("Vampire 4.9"))
+            .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with(' '))
+}
+
+fn extract_vampire_evidence(
+    mut result: BackendRunResult,
+    problem: &crate::problem::AtpProblem,
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    limits: Option<[u64; 4]>,
+) -> BackendRunResult {
+    // A failed run is never handed to the finder, even if a retained prefix
+    // looks successful. Stderr is never an extraction input.
+    if result.status != BackendRunStatus::Unknown {
+        return result;
+    }
+    if result.termination != BackendTermination::Exited
+        || !result.child_reaped
+        || !result.exit_status.is_some_and(BackendExitStatus::success)
+        || result.stdout.truncated()
+        || result.stderr.truncated()
+        || result.stdout.incomplete()
+        || result.stderr.incomplete()
+    {
+        result.status = BackendRunStatus::Error;
+        result.with_diagnostic(
+            "vampire_extraction_rejected",
+            "backend process or output-capture checks failed",
+        );
+        return result;
+    }
+    let parsed = std::str::from_utf8(result.stdout.retained_bytes())
+        .map_err(|_| "stdout is not UTF-8")
+        .and_then(parse_vampire_stdout);
+    let (observed, mut report) = match parsed {
+        Ok(parsed) => parsed,
+        Err(message) => {
+            result.with_diagnostic("vampire_output_malformed", message);
+            return classify_backend_observation(
+                result,
+                BackendObservation::new(BackendObservedResult::Malformed),
+            );
+        }
+    };
+    let mut observation = BackendObservation::new(observed);
+    if observed == BackendObservedResult::Unsat
+        && result.encoded_problem.expected_result() == ExpectedBackendResult::Unsat
+    {
+        // Only actual premise labels may restrict the finder. An unmappable
+        // report is discarded whole, preserving the all-premise fallback.
+        let labels =
+            crate::tptp_encoder::encode_tptp(problem, crate::tptp_encoder::TptpDialect::Fof)
+                .expect("guarded caller checked the genuine encoding");
+        if report.as_ref().is_some_and(|names| {
+            names.iter().any(|name| {
+                !labels.formula_labels().iter().any(|row| {
+                    row.label() == name
+                        && matches!(row.item(), crate::tptp_encoder::TptpFormulaItem::Axiom(_))
+                })
+            })
+        }) {
+            report = None;
+            result.with_diagnostic("vampire_advisory_discarded", "used-input report contains an unknown or non-premise label; searching all encoded premises");
+        }
+        match crate::instance_finder::find_instance_evidence(
+            problem,
+            &result.encoded_problem,
+            handoff,
+            limits,
+            report.as_deref(),
+        ) {
+            Ok(Some(candidate)) => observation = observation.with_candidate_evidence(candidate),
+            Ok(None) => {}
+            Err(message) => {
+                result.status = BackendRunStatus::Error;
+                result.with_diagnostic("vampire_finder_rejected", message);
+            }
+        }
+    }
+    classify_backend_observation(result, observation)
+}
+
+// Read only SZS status and names in input-source annotations. Formula bodies,
+// inference steps and substitutions are opaque and cannot become evidence.
+fn parse_vampire_stdout(
+    text: &str,
+) -> Result<(BackendObservedResult, Option<Vec<String>>), &'static str> {
+    let mut status = None;
+    let mut proof = false;
+    let mut seen_proof = false;
+    let mut record = String::new();
+    let mut names = std::collections::BTreeSet::new();
+    let mut reported = false;
+    for line in text.lines().map(str::trim) {
+        if let Some(value) = line.strip_prefix("% SZS status") {
+            let mut tokens = value.split_whitespace();
+            let token = tokens.next().ok_or("missing SZS status")?;
+            if status.is_some()
+                || !value.starts_with(' ')
+                || !token.bytes().all(|byte| byte.is_ascii_alphabetic())
+                || tokens.next().is_some_and(|token| token != "for")
+            {
+                return Err("malformed or duplicate SZS status");
+            }
+            status = Some(match token {
+                "Theorem" | "Unsatisfiable" | "ContradictoryAxioms" => BackendObservedResult::Unsat,
+                "Satisfiable" => BackendObservedResult::Sat,
+                "CounterSatisfiable" => BackendObservedResult::CounterSatisfiable,
+                "Unknown" | "GaveUp" | "Timeout" | "ResourceOut" => BackendObservedResult::Unknown,
+                _ => BackendObservedResult::Unsupported,
+            });
+        } else if let Some(suffix) = line.strip_prefix("% SZS output start Proof") {
+            if (!suffix.is_empty() && suffix != " for" && !suffix.starts_with(" for "))
+                || proof
+                || seen_proof
+            {
+                return Err("duplicate proof report");
+            }
+            proof = true;
+            seen_proof = true;
+        } else if let Some(suffix) = line.strip_prefix("% SZS output end Proof") {
+            if (!suffix.is_empty() && suffix != " for" && !suffix.starts_with(" for "))
+                || !proof
+                || !record.is_empty()
+            {
+                return Err("incomplete proof report");
+            }
+            proof = false;
+        } else if proof && !line.is_empty() && !line.starts_with('%') {
+            record.push_str(line);
+            record.push('\n');
+            if line.ends_with(".") {
+                let open = record.find('(').ok_or("malformed input report")?;
+                if !matches!(record[..open].trim(), "fof" | "cnf") {
+                    return Err("unsupported input report record");
+                }
+                let body = record[open + 1..]
+                    .trim()
+                    .strip_suffix('.')
+                    .and_then(|body| body.trim().strip_suffix(')'))
+                    .ok_or("malformed input report")?;
+                let fields = vampire_record_fields(body)?;
+                if fields.len() < 3 {
+                    return Err("malformed input report");
+                }
+                if fields[1].trim() == "axiom"
+                    && let Some(source) = fields.get(3)
+                    && source.trim().starts_with("file")
+                {
+                    let args = source
+                        .trim()
+                        .strip_prefix("file(")
+                        .ok_or("malformed input-name annotation")?;
+                    let args = args
+                        .strip_suffix(')')
+                        .ok_or("malformed input-name annotation")?;
+                    let args = vampire_record_fields(args)?;
+                    if args.len() != 2 {
+                        return Err("malformed input-name annotation");
+                    }
+                    let file = args[0].trim();
+                    let quoted_file = file
+                        .strip_prefix('\'')
+                        .and_then(|file| file.strip_suffix('\''))
+                        .is_some_and(|body| {
+                            let mut escaped = false;
+                            for c in body.chars() {
+                                if escaped {
+                                    if !matches!(c, '\'' | '\\') {
+                                        return false;
+                                    }
+                                    escaped = false;
+                                } else if c == '\\' {
+                                    escaped = true;
+                                } else if c == '\'' || c.is_control() {
+                                    return false;
+                                }
+                            }
+                            !escaped
+                        });
+                    let plain_file = file.starts_with(|c: char| c.is_ascii_lowercase())
+                        && file.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_');
+                    if !quoted_file && !plain_file {
+                        return Err("malformed input-file annotation");
+                    }
+                    let name = args[1].trim();
+                    if name.is_empty()
+                        || !name
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+                    {
+                        return Err("malformed input name");
+                    }
+                    names.insert(name.to_owned());
+                    reported = true;
+                }
+                record.clear();
+            }
+        }
+    }
+    if proof || !record.is_empty() {
+        return Err("incomplete proof report");
+    }
+    Ok((
+        status.ok_or("missing SZS status")?,
+        reported.then(|| names.into_iter().collect()),
+    ))
+}
+
+// Structural splitting is needed only to locate input-source fields. It does
+// not interpret a formula or any backend proof inference.
+fn vampire_record_fields(text: &str) -> Result<Vec<&str>, &'static str> {
+    let mut fields = Vec::new();
+    let mut stack = Vec::new();
+    let mut quoted = false;
+    let mut escaped = false;
+    let mut start = 0;
+    for (offset, character) in text.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if quoted && character == '\\' {
+            escaped = true;
+            continue;
+        }
+        if character == '\'' {
+            quoted = !quoted;
+            continue;
+        }
+        if quoted {
+            continue;
+        }
+        match character {
+            '(' | '[' => stack.push(character),
+            ')' | ']' => {
+                if stack.pop() != Some(if character == ')' { '(' } else { '[' }) {
+                    return Err("unbalanced input report");
+                }
+            }
+            ',' if stack.is_empty() => {
+                fields.push(&text[start..offset]);
+                start = offset + 1;
+            }
+            _ => {}
+        }
+    }
+    if quoted || escaped || !stack.is_empty() {
+        return Err("incomplete input report");
+    }
+    fields.push(&text[start..]);
+    Ok(fields)
+}
+
 pub fn run_backend(input: BackendRunInput) -> BackendRunResult {
+    run_backend_inner(input, false)
+}
+
+fn run_backend_inner(input: BackendRunInput, require_vampire_version: bool) -> BackendRunResult {
     let command_fingerprint = command_fingerprint(&input);
     let mut diagnostics = input.resource_limits.unsupported_limit_diagnostics();
     if input.resource_limits.has_required_unsupported_limits() {
@@ -2357,6 +2690,28 @@ pub fn run_backend(input: BackendRunInput) -> BackendRunResult {
         }
         None => None,
     };
+
+    if require_vampire_version && !version_record.as_ref().is_some_and(pinned_vampire_version) {
+        diagnostics.push(BackendDiagnostic::new(
+            "vampire_version_mismatch",
+            "guarded extraction requires a complete Vampire 4.9 version probe before solving",
+        ));
+        return base_result(
+            &input,
+            BaseResultParts {
+                command_fingerprint,
+                version_record,
+                status: BackendRunStatus::Error,
+                termination: BackendTermination::NotStarted,
+                exit_status: None,
+                stdout: empty_capture("stdout"),
+                stderr: empty_capture("stderr"),
+                elapsed: Duration::ZERO,
+                child_reaped: false,
+                diagnostics,
+            },
+        );
+    }
 
     let temp_problem = if input.io_mode == BackendIoMode::PrivateProblemFile {
         match PrivateProblemFile::create(input.encoded_problem.input_text()) {

@@ -12,7 +12,7 @@ timeout/cancellation handling, and policy-neutral backend-result
 classification.
 
 The backend module is still an evidence producer boundary. It does not accept
-proofs, invoke Kernel checking/acceptance APIs, publish witnesses, select
+proofs, publish witnesses, select
 portfolio winners, update caches, or turn backend proof methods, logs, unsat
 cores, SMT proof objects, TSTP traces, or resolution traces into trusted
 acceptance material. The generic process runner does not run SAT; the separate bounded source query below invokes existing SAT services only to screen untrusted candidates.
@@ -26,14 +26,7 @@ processes, integrate a real backend, parse backend proof languages, extract
 formula/substitution candidates from a real backend, call the kernel, publish
 artifact witnesses, run a portfolio, or implement proof policy.
 
-Task-14 source implements the generic process runner and mock backend fixtures
-described here. Task 15 re-evaluated the first real-backend route and recorded
-it as `external_dependency_gap` / `deferred`: `mizar-atp` still needs a paired
-evidence-extraction spec before it can parse real backend output into
-kernel-owned formula/substitution candidate payloads. Broad classification
-fixtures and polarity validation remain task-16 work, although task 14 may
-expose constructors and invariants that make invalid `Proved` results
-unrepresentable.
+Task-14 source implements the generic process runner and mock backend fixtures. The guarded Vampire FOF route uses that runner and the existing kernel-checked instance finder, under the separate [extraction owner](evidence.md). Other backend routes and downstream acceptance remain deferred.
 
 ## Inputs And Output
 
@@ -355,11 +348,7 @@ with a missing-evidence diagnostic, never `Proved`. If the backend reports
 `Unknown` or `Error`. `unknown`, timeout, cancellation, malformed output, parse
 failure, unsupported observed status, and polarity mismatch are never `Proved`.
 
-Task 14 may expose these invariant checks and mock classifications. Task 15
-records the first real backend extractor as deferred until a paired extraction
-spec and guarded backend route exist. Task 16 likewise remains deferred until
-that route exists; it may then add full outcome and polarity classification
-fixtures for real backend-style outputs.
+Task 14 exposes invariant checks and mock classifications. Real Vampire SZS classification and advisory extraction follow [evidence.md](evidence.md); proof acceptance stays downstream.
 
 ## Candidate Evidence Boundary
 
@@ -462,15 +451,7 @@ evidence.
 - resolved `source_drift`: task 14 implements the generic process runner, mock
   classification seam, deterministic run metadata, private input handling,
   drain-safe capture, and fail-closed process statuses.
-- `external_dependency_gap` / `deferred`: task 15 cannot add the first concrete
-  backend adapter yet because no paired `mizar-atp` evidence-extraction spec or
-  source module defines how real backend output becomes kernel-parseable
-  formula/substitution candidate bytes/refs, and the supported architecture-10
-  backend executables were not available in the verification environment.
-- `external_dependency_gap` / `deferred`: task 16 full real-output result
-  classification and polarity fixtures depend on the task-15 extraction route;
-  task 14's mock classification invariants remain the only implemented
-  classifier surface until that route exists.
+- resolved guarded Vampire FOF extraction/classification: [evidence.md](evidence.md) owns the implemented task-15/16 route; other backends and formats remain deferred.
 - `external_dependency_gap`: proof policy, winner selection, proof witness
   publication, cache promotion, artifact projection, and backend availability
   are outside task 13.

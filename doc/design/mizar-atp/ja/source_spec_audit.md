@@ -234,6 +234,7 @@ literal top-level public item:
 Public entry functions:
 
 - `run_backend`
+- `run_vampire_backend`
 - `classify_backend_observation`
 - `encode_closed_choice_reflexivity_names`
 - `encode_local_variable_reflexivity_names`
@@ -249,7 +250,7 @@ Public entry functions:
 | 元の実 source candidate を明示 admission count と一回の untrusted SAT query で検査する。 | [backend owner](./backend.md#source-candidate-sat-screening)。 | `source_candidate_sat_screen_*` と正確な service/API inventory。 | 限定 query だけを実装。fresh 受理は consumer の責務である。 |
 | 既存 source 観測 ground choice を元 VC producer ref により元 parsed Kernel 項へ対応させる。 | [backend owner](./backend.md#source-ground-term-correspondence)、source query。 | `source_ground_term_correspondence_*` と正確な backend static seam inventory。 | 既存項の対応だけを実装。一般 source extraction は deferred のままとする。 |
 | Generic backend runner は deterministic command fingerprint、explicit stdin/private-file input delivery、version probe、resource limit、timeout/cancellation/crash handling、stream capture、private temp cleanup を使う。 | `run_backend`、`BackendRunInput`、`BackendRunResult`、command/resource/capture helper。 | command fingerprint、stdin/private-file、version probe、timeout/cancellation/crash、drain-safe capture、temp cleanup、unsupported-limit tests。 | generic direct-spawn と mock backend route 向けに実装済み。 |
-| `Proved` は candidate-evidence-only であり、matching `Unsat` と formula/substitution candidate payload を要求する。backend proof method、resolution trace、backend log、unsat core、SMT proof object は trusted ではない。 | `classify_backend_observation`、`BackendCandidateEvidence`、`BackendCandidatePayload`、status validation。 | mock proved、prohibited payload、counterexample/unknown/error、truncation、metadata mismatch tests。 | mock classification 向けに実装済み。real extraction は external のまま。 |
+| `Proved` は candidate-evidence-only であり、matching `Unsat` と formula/substitution candidate payload を要求する。backend proof method、resolution trace、backend log、unsat core、SMT proof object は trusted ではない。 | `classify_backend_observation`、`BackendCandidateEvidence`、`BackendCandidatePayload`、status validation。 | mock proved、prohibited payload、counterexample/unknown/error、truncation、metadata mismatch tests。 | mock classification と guarded [Vampire extraction](evidence.md) route 向けに実装済み。下流 acceptance は external のまま。 |
 | Stable run metadata は reproducibility metadata であり、trusted acceptance と candidate hash の外に残る。 | `BackendRunMetadata`、`BackendRunResult::metadata`。 | task-19 metadata projection tests。 | 実装済み。 |
 | Public enum は downstream forward-compatible である。 | public enum の `#[non_exhaustive]`。 | `atp_public_enums_are_non_exhaustive_and_documented`。 | task 22 で guard 済み。 |
 
