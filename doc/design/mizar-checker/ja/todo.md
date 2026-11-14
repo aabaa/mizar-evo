@@ -1349,7 +1349,7 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 契約: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/ja/CHECKER-STACK-DEPTH-FIX.md)。
 
-- [ ] 既定のテストスレッドスタックでオーバーフローするテストを根本修正し、
+- [x] 既定のテストスレッドスタックでオーバーフローするテストを根本修正し、
   拡大スタックの暫定措置を不要にする:
   `task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic`
   (mizar-checker の lib テスト) と

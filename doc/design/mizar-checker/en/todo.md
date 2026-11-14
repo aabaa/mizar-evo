@@ -1422,7 +1422,7 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 
 Contract: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/en/CHECKER-STACK-DEPTH-FIX.md).
 
-- [ ] Root-fix the tests that overflow the default test-thread stack,
+- [x] Root-fix the tests that overflow the default test-thread stack,
   so the enlarged-stack accommodation is no longer needed for them:
   `task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic`
   (mizar-checker lib tests) and

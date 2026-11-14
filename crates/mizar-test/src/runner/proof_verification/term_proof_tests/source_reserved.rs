@@ -684,113 +684,117 @@ fn source_reserved_statement_original_capture_preserves_installation_boundary() 
             Ok(installed.clone())
         );
     }
-    let collection = OverloadCollectionOutput::collect([], []);
-    let expansion = TemplateExpansionOutput::expand(&collection);
-    let viability = CandidateViabilityOutput::filter(&expansion, []);
-    let graphs = SpecificityGraphOutput::build(&viability, []);
-    let selection = OverloadSelectionOutput::resolve(&graphs, []);
-    let cluster_facts = ClusterFactTable::new();
-    let mut final_baseline = None;
-    for control in [
-        "canonical",
-        "metadata",
-        "canonical",
-        "hint",
-        "canonical",
-        "semantics",
-        "canonical",
-        "proofs",
-        "canonical",
-    ] {
-        let replayed = base
-            .clone()
-            .with_source_statement_from_original(&source, &symbols, &scope)
-            .unwrap();
-        assert_eq!(replayed, installed);
-        let handoff = replayed.source_statement().unwrap();
-        let (formula_id, formula) = inference.formulas().iter().next().unwrap();
-        let owner = handoff.checked_owner();
-        let expressions = if control == "metadata" {
-            vec![ExpressionMetadataInput {
-                expr: ExprId::new("extra"),
-                typed_site: formula.site.clone(),
-                local_context: None,
-                cluster_facts: Vec::new(),
-            }]
-        } else {
-            Vec::new()
-        };
-        let node_hints = if control == "hint" {
-            vec![ResolvedNodeKindHint {
-                typed_node: TypedNodeId::new(theorem.id().index()),
-                kind: ResolvedNodeKindHintKind::ResolvedUse {
-                    symbol: handoff.owners().iter().next().unwrap().1.symbol().clone(),
-                },
-            }]
-        } else {
-            Vec::new()
-        };
-        let result = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
-            typed_ast: &replayed,
-            cluster_facts: &cluster_facts,
-            overload_collection: &collection,
-            template_expansion: &expansion,
-            viability: &viability,
-            specificity: &graphs,
-            overload_selection: &selection,
-            expressions,
-            node_hints,
-            statement_semantics: (control == "semantics").then_some(StatementSemanticInputs {
-                owner: handoff.checked_owner(),
-                binding_env: handoff.binding_env(),
-                term_formula: &inference,
-                rows: vec![StatementSemanticInput {
-                    owner: owner.symbol().clone(),
-                    owner_node: TypedNodeId::new(theorem.id().index()),
-                    formula: formula_id,
-                    formula_node: formula.site.node(),
-                }],
-            }),
-            statement_proofs: (control == "proofs").then_some(StatementProofInputs {
-                owner,
-                rows: vec![StatementProofIntentInput {
-                    id: StatementProofIntentId::new(0),
-                    source_order: 0,
-                    statement: StatementSemanticId::new(0),
-                    source_id: source.source_id(),
-                    module_id: module.clone(),
-                    owner: owner.symbol().clone(),
-                    owner_node: TypedNodeId::new(theorem.id().index()),
-                    owner_range: owner.source_range(),
-                    owner_origin: owner.origin().clone(),
-                    owner_visibility: owner.visibility(),
-                    owner_export_status: owner.export_status(),
-                    formula: formula_id,
-                    formula_site: formula.site.clone(),
-                    formula_node: formula.site.node(),
-                    formula_range: formula.source_range,
-                    recovery: NodeRecoveryState::Normal,
-                    policy: TheoremPolicyIntent::Unmodified,
-                    justification: TheoremJustificationIntent::Omitted,
-                }],
-            }),
-        });
-        if control == "canonical" {
-            let resolved = result.map_err(|error| error.to_string())?;
-            assert_eq!(resolved.source_statement(), replayed.source_statement());
-            assert!(
-                resolved.checked_formulas().is_empty()
-                    && resolved.statement_semantics().is_empty()
-                    && resolved.checked_proofs().is_empty()
-            );
-            if let Some(baseline) = &final_baseline {
-                assert_eq!(&resolved, baseline);
+    let verify_final_assembly: Box<dyn FnOnce() -> Result<(), String> + '_> = Box::new(|| {
+        let collection = OverloadCollectionOutput::collect([], []);
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(&expansion, []);
+        let graphs = SpecificityGraphOutput::build(&viability, []);
+        let selection = OverloadSelectionOutput::resolve(&graphs, []);
+        let cluster_facts = ClusterFactTable::new();
+        let mut final_baseline = None;
+        for control in [
+            "canonical",
+            "metadata",
+            "canonical",
+            "hint",
+            "canonical",
+            "semantics",
+            "canonical",
+            "proofs",
+            "canonical",
+        ] {
+            let replayed = base
+                .clone()
+                .with_source_statement_from_original(&source, &symbols, &scope)
+                .unwrap();
+            assert_eq!(replayed, installed);
+            let handoff = replayed.source_statement().unwrap();
+            let (formula_id, formula) = inference.formulas().iter().next().unwrap();
+            let owner = handoff.checked_owner();
+            let expressions = if control == "metadata" {
+                vec![ExpressionMetadataInput {
+                    expr: ExprId::new("extra"),
+                    typed_site: formula.site.clone(),
+                    local_context: None,
+                    cluster_facts: Vec::new(),
+                }]
+            } else {
+                Vec::new()
+            };
+            let node_hints = if control == "hint" {
+                vec![ResolvedNodeKindHint {
+                    typed_node: TypedNodeId::new(theorem.id().index()),
+                    kind: ResolvedNodeKindHintKind::ResolvedUse {
+                        symbol: handoff.owners().iter().next().unwrap().1.symbol().clone(),
+                    },
+                }]
+            } else {
+                Vec::new()
+            };
+            let result = ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+                typed_ast: &replayed,
+                cluster_facts: &cluster_facts,
+                overload_collection: &collection,
+                template_expansion: &expansion,
+                viability: &viability,
+                specificity: &graphs,
+                overload_selection: &selection,
+                expressions,
+                node_hints,
+                statement_semantics: (control == "semantics").then_some(StatementSemanticInputs {
+                    owner: handoff.checked_owner(),
+                    binding_env: handoff.binding_env(),
+                    term_formula: &inference,
+                    rows: vec![StatementSemanticInput {
+                        owner: owner.symbol().clone(),
+                        owner_node: TypedNodeId::new(theorem.id().index()),
+                        formula: formula_id,
+                        formula_node: formula.site.node(),
+                    }],
+                }),
+                statement_proofs: (control == "proofs").then_some(StatementProofInputs {
+                    owner,
+                    rows: vec![StatementProofIntentInput {
+                        id: StatementProofIntentId::new(0),
+                        source_order: 0,
+                        statement: StatementSemanticId::new(0),
+                        source_id: source.source_id(),
+                        module_id: module.clone(),
+                        owner: owner.symbol().clone(),
+                        owner_node: TypedNodeId::new(theorem.id().index()),
+                        owner_range: owner.source_range(),
+                        owner_origin: owner.origin().clone(),
+                        owner_visibility: owner.visibility(),
+                        owner_export_status: owner.export_status(),
+                        formula: formula_id,
+                        formula_site: formula.site.clone(),
+                        formula_node: formula.site.node(),
+                        formula_range: formula.source_range,
+                        recovery: NodeRecoveryState::Normal,
+                        policy: TheoremPolicyIntent::Unmodified,
+                        justification: TheoremJustificationIntent::Omitted,
+                    }],
+                }),
+            });
+            if control == "canonical" {
+                let resolved = result.map_err(|error| error.to_string())?;
+                assert_eq!(resolved.source_statement(), replayed.source_statement());
+                assert!(
+                    resolved.checked_formulas().is_empty()
+                        && resolved.statement_semantics().is_empty()
+                        && resolved.checked_proofs().is_empty()
+                );
+                if let Some(baseline) = &final_baseline {
+                    assert_eq!(&resolved, baseline);
+                }
+                final_baseline = Some(resolved);
+            } else {
+                assert!(result.is_err(), "final accepted {control}");
             }
-            final_baseline = Some(resolved);
-        } else {
-            assert!(result.is_err(), "final accepted {control}");
         }
-    }
+        Ok(())
+    });
+    verify_final_assembly()?;
     assert_eq!(
         (
             quantified_source,

@@ -1050,384 +1050,397 @@ fn task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic
         )
         .expect("combined install");
     let typed_debug = typed.debug_text();
-    assert_eq!(typed.source_application(), Some(&fixture.application));
-    assert_eq!(typed.source_statement(), Some(&statement));
-    assert_eq!(typed.source_statement_witnesses(), Some(&witnesses));
-    assert_eq!(
-        base.clone()
-            .with_source_application(fixture.application.clone())
-            .expect("application first")
-            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        base.clone()
-            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        typed
-            .clone()
-            .with_source_application(fixture.application.clone()),
-        Err(TypedAstError::InvalidSourceApplication)
-    );
-    assert_eq!(
-        typed.clone().with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
 
-    let b1a = B3M2B2B1AFixture::new(205);
-    let b1a_statement = b1a.statement();
-    let b1a_witnesses = b1a
-        .witnesses(&b1a_statement, b1a.witness_input())
-        .expect("B1A witnesses");
-    assert_eq!(
-        base.clone().with_source_application_statement_witnesses(
-            b1a.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        base.clone().with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            b1a_statement.clone(),
-            b1a_witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    let b1a_typed = b1a
-        .empty_typed()
-        .with_source_application_statement_witnesses(
-            b1a.application.clone(),
-            b1a_statement.clone(),
-            b1a_witnesses.clone(),
-        )
-        .expect("independent B1A");
-    let b1a_debug = b1a_typed.debug_text();
-    assert_eq!(
-        b1a.empty_typed()
-            .with_source_application_statement_witnesses(
-                b1a.application.clone(),
-                b1a.statement(),
-                b1a.witnesses(&b1a.statement(), b1a.witness_input())
-                    .expect("B1A replay witnesses"),
-            )
-            .expect("B1A replay")
-            .debug_text(),
-        b1a_debug
-    );
-    assert_eq!(
-        b1a_typed.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement),
-        "installed B1A then B1B1"
-    );
-
-    let b3 = B3Fixture::new(205);
-    let b3_statement = b3.statement();
-    let b3_witnesses = b3
-        .witnesses(&b3_statement, b3.witness_input())
-        .expect("B3 witnesses");
-    let b3_installed = b3
-        .empty_typed()
-        .with_source_statement_witnesses(b3_statement.clone(), b3_witnesses.clone())
-        .expect("B3 installed");
-    let b3n = B3NFixture::new(205);
-    let b3n_statement = b3n.statement();
-    let b3n_witnesses = b3n
-        .witnesses(&b3n_statement, b3n.witness_input())
-        .expect("B3N witnesses");
-    let b3n_installed = b3n
-        .empty_typed()
-        .with_source_statement_witnesses(b3n_statement.clone(), b3n_witnesses.clone())
-        .expect("B3N installed");
-    let b3m1 = B3M1Fixture::new(205);
-    let b3m1_statement = b3m1.statement();
-    let b3m1_witnesses = b3m1
-        .witnesses(&b3m1_statement, b3m1.witness_input())
-        .expect("B3M1 witnesses");
-    let b3m1_installed = b3m1
-        .empty_typed()
-        .with_source_statement_witnesses(b3m1_statement.clone(), b3m1_witnesses.clone())
-        .expect("B3M1 installed");
-    let b3m2a = B3M2AFixture::new(205);
-    let b3m2a_statement = b3m2a.statement();
-    let b3m2a_witnesses = b3m2a
-        .witnesses(&b3m2a_statement, b3m2a.witness_input())
-        .expect("B3M2A witnesses");
-    let b3m2a_installed = b3m2a
-        .empty_typed()
-        .with_source_statement_witnesses(b3m2a_statement.clone(), b3m2a_witnesses.clone())
-        .expect("B3M2A installed");
-    let b3m2b1 = B3M2B1Fixture::new(205);
-    let b3m2b1_statement = b3m2b1.statement();
-    let b3m2b1_witnesses = b3m2b1
-        .witnesses(&b3m2b1_statement, b3m2b1.witness_input())
-        .expect("B3M2B1 witnesses");
-    let b3m2b1_installed = b3m2b1
-        .empty_typed()
-        .with_source_statement_witnesses(b3m2b1_statement.clone(), b3m2b1_witnesses.clone())
-        .expect("B3M2B1 installed");
-    let b3m2b2a = B3M2B2AFixture::new(205);
-    let b3m2b2a_statement = b3m2b2a.statement();
-    let b3m2b2a_witnesses = b3m2b2a
-        .witnesses(&b3m2b2a_statement, b3m2b2a.witness_input())
-        .expect("B3M2B2A witnesses");
-    let b3m2b2a_installed = b3m2b2a
-        .empty_typed()
-        .with_source_statement_witnesses(b3m2b2a_statement.clone(), b3m2b2a_witnesses.clone())
-        .expect("B3M2B2A installed");
-    for (label, legacy_base, legacy_statement, legacy_witnesses, legacy_installed) in [
-        (
-            "B3",
-            b3.empty_typed(),
-            b3_statement,
-            b3_witnesses,
-            b3_installed,
-        ),
-        (
-            "B3N",
-            b3n.empty_typed(),
-            b3n_statement,
-            b3n_witnesses,
-            b3n_installed,
-        ),
-        (
-            "B3M1",
-            b3m1.empty_typed(),
-            b3m1_statement,
-            b3m1_witnesses,
-            b3m1_installed,
-        ),
-        (
-            "B3M2A",
-            b3m2a.empty_typed(),
-            b3m2a_statement,
-            b3m2a_witnesses,
-            b3m2a_installed,
-        ),
-        (
-            "B3M2B1",
-            b3m2b1.empty_typed(),
-            b3m2b1_statement,
-            b3m2b1_witnesses,
-            b3m2b1_installed,
-        ),
-        (
-            "B3M2B2A",
-            b3m2b2a.empty_typed(),
-            b3m2b2a_statement,
-            b3m2b2a_witnesses,
-            b3m2b2a_installed,
-        ),
-    ] {
-        assert_eq!(
-            base.clone()
-                .with_source_statement_witnesses(legacy_statement, legacy_witnesses),
-            Err(TypedAstError::InvalidSourceStatement),
-            "B1B1 base then legacy {label}"
-        );
-        assert_eq!(
-            legacy_base.with_source_application_statement_witnesses(
-                fixture.application.clone(),
-                statement.clone(),
-                witnesses.clone(),
-            ),
-            Err(TypedAstError::InvalidSourceStatement),
-            "legacy {label} base then B1B1"
-        );
-        assert_eq!(
-            legacy_installed.with_source_application_statement_witnesses(
-                fixture.application.clone(),
-                statement.clone(),
-                witnesses.clone(),
-            ),
-            Err(TypedAstError::InvalidSourceStatement),
-            "installed legacy {label} then B1B1"
-        );
+    fn with_fresh_frame(body: impl FnOnce()) {
+        body();
     }
 
-    let b1 = B1Fixture::new(205);
-    let b1_references = b1.references(b1.reference_input()).expect("B1 references");
-    let b1_installed = b1
-        .empty_typed()
-        .with_source_statement_references(b1.statement.clone(), b1_references.clone())
-        .expect("B1 installed");
-    assert_eq!(
-        base.clone()
-            .with_source_statement_references(b1.statement.clone(), b1_references),
-        Err(TypedAstError::InvalidSourceStatement),
-        "B1B1 base then B1"
-    );
-    assert_eq!(
-        b1_installed.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement),
-        "installed B1 then B1B1"
-    );
-    let b2 = B2Fixture::new(205);
-    let b2_statement = b2.build(b2.input()).expect("B2 statement");
-    let b2_installed = b2
-        .empty_typed()
-        .with_source_statement(b2_statement.clone())
-        .expect("B2 installed");
-    assert_eq!(
-        base.clone().with_source_statement(b2_statement),
-        Err(TypedAstError::InvalidSourceStatement),
-        "B1B1 base then B2"
-    );
-    assert_eq!(
-        b2_installed.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement),
-        "installed B2 then B1B1"
-    );
-    let task258a = Fixture::new(205);
-    let task258a_statement = task258a
-        .build(task258a.input())
-        .expect("Task258A statement");
-    let task258a_base = TypedAst::try_new(TypedAstParts {
-        source_id: task258a.source,
-        module_id: task258a.module.clone(),
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: task258a.arena.clone(),
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .expect("Task258A base")
-    .with_source_term(task258a.primary.clone())
-    .expect("Task258A Task252")
-    .with_source_atomic_formula(task258a.atomic.clone())
-    .expect("Task258A Task256");
-    let task258a_installed = task258a_base
-        .clone()
-        .with_source_statement(task258a_statement.clone())
-        .expect("Task258A installed");
-    assert_eq!(
-        base.clone().with_source_statement(task258a_statement),
-        Err(TypedAstError::InvalidSourceStatement),
-        "B1B1 base then Task258A"
-    );
-    assert_eq!(
-        task258a_base.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement),
-        "Task258A base then B1B1"
-    );
-    assert_eq!(
-        task258a_installed.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement.clone(),
-            witnesses.clone(),
-        ),
-        Err(TypedAstError::InvalidSourceStatement),
-        "installed Task258A then B1B1"
-    );
+    with_fresh_frame(|| {
+        assert_eq!(typed.source_application(), Some(&fixture.application));
+        assert_eq!(typed.source_statement(), Some(&statement));
+        assert_eq!(typed.source_statement_witnesses(), Some(&witnesses));
+        assert_eq!(
+            base.clone()
+                .with_source_application(fixture.application.clone())
+                .expect("application first")
+                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone()
+                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            typed
+                .clone()
+                .with_source_application(fixture.application.clone()),
+            Err(TypedAstError::InvalidSourceApplication)
+        );
+        assert_eq!(
+            typed.clone().with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                statement.clone(),
+                witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
 
-    let structures = SourceStructureProducer::build_canonical(
-        SourceStructureHandoffInput {
-            source_id: fixture.source,
-            module_id: fixture.module.clone(),
-            terms: Vec::new(),
-            wrappers: Vec::new(),
-            roots: Vec::new(),
-            members: Vec::new(),
-            field_updates: Vec::new(),
-            edges: Vec::new(),
-            requests: Vec::new(),
-        },
-        &fixture.symbols,
-        &fixture.bindings,
-        &fixture.primary,
-        None,
-        &fixture.arena,
-    )
-    .expect("Task254 empty handoff");
-    let set_terms = SourceSetTermProducer::build(
-        SourceSetTermHandoffInput {
-            source_id: fixture.source,
-            module_id: fixture.module.clone(),
-            terms: Vec::new(),
-            wrappers: Vec::new(),
-            generators: Vec::new(),
-            type_sites: Vec::new(),
-            conditions: Vec::new(),
-            edges: Vec::new(),
-            requests: Vec::new(),
-        },
-        &fixture.bindings,
-        &fixture.primary,
-        None,
-        None,
-        &fixture.arena,
-    )
-    .expect("Task255 empty handoff");
-    assert_eq!(
-        base.clone()
-            .with_source_structure(structures.clone())
-            .expect("Task254 first")
+        let b1a = B3M2B2B1AFixture::new(205);
+        let b1a_statement = b1a.statement();
+        let b1a_witnesses = b1a
+            .witnesses(&b1a_statement, b1a.witness_input())
+            .expect("B1A witnesses");
+        assert_eq!(
+            base.clone().with_source_application_statement_witnesses(
+                b1a.application.clone(),
+                statement.clone(),
+                witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone().with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                b1a_statement.clone(),
+                b1a_witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        let b1a_typed = b1a
+            .empty_typed()
             .with_source_application_statement_witnesses(
+                b1a.application.clone(),
+                b1a_statement.clone(),
+                b1a_witnesses.clone(),
+            )
+            .expect("independent B1A");
+        let b1a_debug = b1a_typed.debug_text();
+        assert_eq!(
+            b1a.empty_typed()
+                .with_source_application_statement_witnesses(
+                    b1a.application.clone(),
+                    b1a.statement(),
+                    b1a.witnesses(&b1a.statement(), b1a.witness_input())
+                        .expect("B1A replay witnesses"),
+                )
+                .expect("B1A replay")
+                .debug_text(),
+            b1a_debug
+        );
+        assert_eq!(
+            b1a_typed.with_source_application_statement_witnesses(
                 fixture.application.clone(),
                 statement.clone(),
                 witnesses.clone(),
             ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        base.clone()
-            .with_source_set_term(set_terms.clone())
-            .expect("Task255 first")
-            .with_source_application_statement_witnesses(
+            Err(TypedAstError::InvalidSourceStatement),
+            "installed B1A then B1B1"
+        );
+    });
+
+    with_fresh_frame(|| {
+        let b3 = B3Fixture::new(205);
+        let b3_statement = b3.statement();
+        let b3_witnesses = b3
+            .witnesses(&b3_statement, b3.witness_input())
+            .expect("B3 witnesses");
+        let b3_installed = b3
+            .empty_typed()
+            .with_source_statement_witnesses(b3_statement.clone(), b3_witnesses.clone())
+            .expect("B3 installed");
+        let b3n = B3NFixture::new(205);
+        let b3n_statement = b3n.statement();
+        let b3n_witnesses = b3n
+            .witnesses(&b3n_statement, b3n.witness_input())
+            .expect("B3N witnesses");
+        let b3n_installed = b3n
+            .empty_typed()
+            .with_source_statement_witnesses(b3n_statement.clone(), b3n_witnesses.clone())
+            .expect("B3N installed");
+        let b3m1 = B3M1Fixture::new(205);
+        let b3m1_statement = b3m1.statement();
+        let b3m1_witnesses = b3m1
+            .witnesses(&b3m1_statement, b3m1.witness_input())
+            .expect("B3M1 witnesses");
+        let b3m1_installed = b3m1
+            .empty_typed()
+            .with_source_statement_witnesses(b3m1_statement.clone(), b3m1_witnesses.clone())
+            .expect("B3M1 installed");
+        let b3m2a = B3M2AFixture::new(205);
+        let b3m2a_statement = b3m2a.statement();
+        let b3m2a_witnesses = b3m2a
+            .witnesses(&b3m2a_statement, b3m2a.witness_input())
+            .expect("B3M2A witnesses");
+        let b3m2a_installed = b3m2a
+            .empty_typed()
+            .with_source_statement_witnesses(b3m2a_statement.clone(), b3m2a_witnesses.clone())
+            .expect("B3M2A installed");
+        let b3m2b1 = B3M2B1Fixture::new(205);
+        let b3m2b1_statement = b3m2b1.statement();
+        let b3m2b1_witnesses = b3m2b1
+            .witnesses(&b3m2b1_statement, b3m2b1.witness_input())
+            .expect("B3M2B1 witnesses");
+        let b3m2b1_installed = b3m2b1
+            .empty_typed()
+            .with_source_statement_witnesses(b3m2b1_statement.clone(), b3m2b1_witnesses.clone())
+            .expect("B3M2B1 installed");
+        let b3m2b2a = B3M2B2AFixture::new(205);
+        let b3m2b2a_statement = b3m2b2a.statement();
+        let b3m2b2a_witnesses = b3m2b2a
+            .witnesses(&b3m2b2a_statement, b3m2b2a.witness_input())
+            .expect("B3M2B2A witnesses");
+        let b3m2b2a_installed = b3m2b2a
+            .empty_typed()
+            .with_source_statement_witnesses(b3m2b2a_statement.clone(), b3m2b2a_witnesses.clone())
+            .expect("B3M2B2A installed");
+        for (label, legacy_base, legacy_statement, legacy_witnesses, legacy_installed) in [
+            (
+                "B3",
+                b3.empty_typed(),
+                b3_statement,
+                b3_witnesses,
+                b3_installed,
+            ),
+            (
+                "B3N",
+                b3n.empty_typed(),
+                b3n_statement,
+                b3n_witnesses,
+                b3n_installed,
+            ),
+            (
+                "B3M1",
+                b3m1.empty_typed(),
+                b3m1_statement,
+                b3m1_witnesses,
+                b3m1_installed,
+            ),
+            (
+                "B3M2A",
+                b3m2a.empty_typed(),
+                b3m2a_statement,
+                b3m2a_witnesses,
+                b3m2a_installed,
+            ),
+            (
+                "B3M2B1",
+                b3m2b1.empty_typed(),
+                b3m2b1_statement,
+                b3m2b1_witnesses,
+                b3m2b1_installed,
+            ),
+            (
+                "B3M2B2A",
+                b3m2b2a.empty_typed(),
+                b3m2b2a_statement,
+                b3m2b2a_witnesses,
+                b3m2b2a_installed,
+            ),
+        ] {
+            assert_eq!(
+                base.clone()
+                    .with_source_statement_witnesses(legacy_statement, legacy_witnesses),
+                Err(TypedAstError::InvalidSourceStatement),
+                "B1B1 base then legacy {label}"
+            );
+            assert_eq!(
+                legacy_base.with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    statement.clone(),
+                    witnesses.clone(),
+                ),
+                Err(TypedAstError::InvalidSourceStatement),
+                "legacy {label} base then B1B1"
+            );
+            assert_eq!(
+                legacy_installed.with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    statement.clone(),
+                    witnesses.clone(),
+                ),
+                Err(TypedAstError::InvalidSourceStatement),
+                "installed legacy {label} then B1B1"
+            );
+        }
+    });
+
+    with_fresh_frame(|| {
+        let b1 = B1Fixture::new(205);
+        let b1_references = b1.references(b1.reference_input()).expect("B1 references");
+        let b1_installed = b1
+            .empty_typed()
+            .with_source_statement_references(b1.statement.clone(), b1_references.clone())
+            .expect("B1 installed");
+        assert_eq!(
+            base.clone()
+                .with_source_statement_references(b1.statement.clone(), b1_references),
+            Err(TypedAstError::InvalidSourceStatement),
+            "B1B1 base then B1"
+        );
+        assert_eq!(
+            b1_installed.with_source_application_statement_witnesses(
                 fixture.application.clone(),
                 statement.clone(),
                 witnesses.clone(),
             ),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        typed.clone().with_source_structure(structures),
-        Err(TypedAstError::InvalidSourceStructure)
-    );
-    assert_eq!(
-        typed.clone().with_source_set_term(set_terms),
-        Err(TypedAstError::InvalidSourceSetTerm)
-    );
-    assert_eq!(typed.debug_text(), typed_debug);
-    assert_eq!(
-        base.with_source_application_statement_witnesses(
-            fixture.application.clone(),
-            statement,
-            witnesses,
+            Err(TypedAstError::InvalidSourceStatement),
+            "installed B1 then B1B1"
+        );
+        let b2 = B2Fixture::new(205);
+        let b2_statement = b2.build(b2.input()).expect("B2 statement");
+        let b2_installed = b2
+            .empty_typed()
+            .with_source_statement(b2_statement.clone())
+            .expect("B2 installed");
+        assert_eq!(
+            base.clone().with_source_statement(b2_statement),
+            Err(TypedAstError::InvalidSourceStatement),
+            "B1B1 base then B2"
+        );
+        assert_eq!(
+            b2_installed.with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                statement.clone(),
+                witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement),
+            "installed B2 then B1B1"
+        );
+        let task258a = Fixture::new(205);
+        let task258a_statement = task258a
+            .build(task258a.input())
+            .expect("Task258A statement");
+        let task258a_base = TypedAst::try_new(TypedAstParts {
+            source_id: task258a.source,
+            module_id: task258a.module.clone(),
+            resolved_root: None,
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: task258a.arena.clone(),
+            contexts: LocalTypeContextTable::new(),
+            types: TypeTable::new(),
+            facts: TypeFactTable::new(),
+            coercions: CoercionTable::new(),
+            initial_obligations: InitialObligationTable::new(),
+            diagnostics: TypeDiagnosticTable::new(),
+        })
+        .expect("Task258A base")
+        .with_source_term(task258a.primary.clone())
+        .expect("Task258A Task252")
+        .with_source_atomic_formula(task258a.atomic.clone())
+        .expect("Task258A Task256");
+        let task258a_installed = task258a_base
+            .clone()
+            .with_source_statement(task258a_statement.clone())
+            .expect("Task258A installed");
+        assert_eq!(
+            base.clone().with_source_statement(task258a_statement),
+            Err(TypedAstError::InvalidSourceStatement),
+            "B1B1 base then Task258A"
+        );
+        assert_eq!(
+            task258a_base.with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                statement.clone(),
+                witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement),
+            "Task258A base then B1B1"
+        );
+        assert_eq!(
+            task258a_installed.with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                statement.clone(),
+                witnesses.clone(),
+            ),
+            Err(TypedAstError::InvalidSourceStatement),
+            "installed Task258A then B1B1"
+        );
+    });
+
+    with_fresh_frame(|| {
+        let structures = SourceStructureProducer::build_canonical(
+            SourceStructureHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: Vec::new(),
+                wrappers: Vec::new(),
+                roots: Vec::new(),
+                members: Vec::new(),
+                field_updates: Vec::new(),
+                edges: Vec::new(),
+                requests: Vec::new(),
+            },
+            &fixture.symbols,
+            &fixture.bindings,
+            &fixture.primary,
+            None,
+            &fixture.arena,
         )
-        .expect("atomic replay")
-        .debug_text(),
-        typed_debug
-    );
+        .expect("Task254 empty handoff");
+        let set_terms = SourceSetTermProducer::build(
+            SourceSetTermHandoffInput {
+                source_id: fixture.source,
+                module_id: fixture.module.clone(),
+                terms: Vec::new(),
+                wrappers: Vec::new(),
+                generators: Vec::new(),
+                type_sites: Vec::new(),
+                conditions: Vec::new(),
+                edges: Vec::new(),
+                requests: Vec::new(),
+            },
+            &fixture.bindings,
+            &fixture.primary,
+            None,
+            None,
+            &fixture.arena,
+        )
+        .expect("Task255 empty handoff");
+        assert_eq!(
+            base.clone()
+                .with_source_structure(structures.clone())
+                .expect("Task254 first")
+                .with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    statement.clone(),
+                    witnesses.clone(),
+                ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            base.clone()
+                .with_source_set_term(set_terms.clone())
+                .expect("Task255 first")
+                .with_source_application_statement_witnesses(
+                    fixture.application.clone(),
+                    statement.clone(),
+                    witnesses.clone(),
+                ),
+            Err(TypedAstError::InvalidSourceStatement)
+        );
+        assert_eq!(
+            typed.clone().with_source_structure(structures),
+            Err(TypedAstError::InvalidSourceStructure)
+        );
+        assert_eq!(
+            typed.clone().with_source_set_term(set_terms),
+            Err(TypedAstError::InvalidSourceSetTerm)
+        );
+        assert_eq!(typed.debug_text(), typed_debug);
+        assert_eq!(
+            base.with_source_application_statement_witnesses(
+                fixture.application.clone(),
+                statement,
+                witnesses,
+            )
+            .expect("atomic replay")
+            .debug_text(),
+            typed_debug
+        );
+    });
 }
 
 #[test]
