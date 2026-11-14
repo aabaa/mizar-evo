@@ -67,22 +67,20 @@ trusted ATP payload として生成しない。
 現在の gate 状態: `mizar-kernel` task 23-28 と `mizar-vc` task 24-25 により、
 generic runner path については満たされている。task 1-14 は spec-backed な
 problem、translation、encoding、generic backend-runner slice だけを構築してよい。
-task 15 は first real backend adapter と evidence extractor を、paired extraction spec と
-guarded supported backend route が存在するまで `external_dependency_gap` / `deferred` として
-記録する。proof policy、witness publication、cache promotion はそれぞれ専用 crate/task まで
+task 15 の実装は deferred のままだが、DR-1 が対訳 [extraction spec](evidence.md) と
+Vampire guarded route を凍結し、ATP-G-015 の文書上の再開条件を満たした。
+[実装契約](../../task_contracts/ja/ATPK-BACKEND-EXTRACTION.md) は実行ファイル provisioning 後に dispatch できる。proof policy、witness publication、cache promotion はそれぞれ専用 crate/task まで
 deferred のままである。`mizar-proof` は現在 workspace crate だが、ATP/proof integration は
 引き続き `external_dependency_gap` であり、ここで local proof-policy placeholder を追加する
 理由にはならない。
 
 ## 解決済みおよび保留中の決定
 
-- **最初のバックエンドと evidence route: task-15 gate 後も deferred。**
-  kernel formula/substitution evidence schema と VC handoff は利用可能になったが、
-  concrete backend output を kernel が parse できる formula/substitution candidate
-  bytes または ref に変換する paired `evidence.md` extractor spec と source module が
-  この crate にはまだない。task-15 verification environment では architecture-10 supported
-  backend binary も利用できなかった。この extraction route が仕様化されるまで、
-  real adapter、backend-output parser、placeholder candidate schema を追加しない。
+- **最初のバックエンドと evidence route: 設計凍結、実装 deferred。**
+  DR-1（2026-11-14）で Vampire を選択し、対訳 [evidence.md](evidence.md) が
+  extraction、finder 専用 candidate payload、guarded provisioning route を固定する。
+  adapter、output parser、新 candidate schema は未実装であり、別の実装 dispatch 前に
+  pinned executable を provision する。
 - **evidence schema ownership: `mizar-kernel` task 23-25 に従う。** この crate は
   kernel 所有のスキーマ型に対して candidate evidence を構築する。kernel がこの
   crate に依存することは決してない。
@@ -341,17 +339,11 @@ deferred のままである。`mizar-proof` は現在 workspace crate だが、A
       `mizar-kernel` の構造検証を通り、kernel checking まで untrusted のままである。
     - 依存: 10 または 12（選んだバックエンドに応じて）、14、
       `mizar-kernel` task 25-28。仕様: `backend.md`。
-    - Gate result: deferred。`mizar-kernel` task 25-28 と `mizar-vc` handoff は
-      存在するが、real backend output を kernel-owned formula/substitution candidate
-      payload に変換する paired evidence-extraction spec / source module が
-      `mizar-atp` に存在しない。supported architecture-10 backend executable
-      (`vampire`, `eprover`, `cvc5`, `z3`) は task-15 environment で見つからず、
-      backend-available integration fixture は skip され、adapter を検証できない。
-      real adapter、backend-specific parser、fake candidate schema、kernel call、
-      proof-policy hook、witness/cache output、trusted backend proof material は追加しない。
-      English/Japanese `evidence.md` spec（または同等の backend-specific extraction spec）が
-      candidate payload/ref contract を定義し、supported backend route を guarded integration
-      test で利用できるようになった後にだけ、この task を再開する。
+    - Gate result: DR-1（2026-11-14）で設計を凍結し、最初の backend を Vampire とした。
+      対訳 [extraction spec](evidence.md) と guarded route が ATP-G-015 の文書上の
+      再開条件を満たす。[実装](../../task_contracts/ja/ATPK-BACKEND-EXTRACTION.md) は
+      provisioning まで deferred で、adapter、parser、新 candidate schema は未実装。
+      ATP-G-016 の real-output fixture は実装側の作業として残る。
 
 16. **結果分類と極性検証。** [x] deferred / external_dependency_gap
     - バックエンドの結果を分類する（proved、反例、タイムアウト、

@@ -1,4 +1,5 @@
 /target/
+.tools/
 /crates/*/target/
 
 # Publication work is usually local, but keep the Bialystok 2026 deck tracked.

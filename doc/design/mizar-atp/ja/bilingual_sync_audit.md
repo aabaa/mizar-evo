@@ -45,6 +45,7 @@ task name は英語のままでもよい。同期規則は semantic なもので
 |---|---|---|
 | `00.crate_plan.md` | Crate responsibility、authority order、design/source inventory、known gap、task 29 までの task decomposition、hard gate、verification expectation。 | 同期済み。 |
 | `crate_exit_report.md` | task 29 までの task ledger、hard gate、quality score 94/100、score breakdown、review result、ATP-CLOSEOUT gap、task-29 verification、未実行 proof/cache/extraction command の理由、next-phase handoff。 | 同期済み。 |
+| `evidence.md` | DR-1 設計凍結、Vampire 専用 guarded FOF route、advisory mapping、finder 専用 payload、失敗/決定性、実行ファイル provisioning、保留する所有範囲。 | 同期済み。 |
 | `instance_finder.md` | Backend-free deterministic search, explicit policy bounds, local provenance binding, kernel screening and deferred backend/publication paths. | Synchronized. |
 | `problem.md` | Backend-neutral `AtpProblem` data shape、logic profile、formula/provenance/type-guard ownership、deterministic identity、禁止される trusted material、planned tests、public enum inventory。 | 同期済み。 |
 | `translator.md` | explicit `VcIr` / kernel-handoff projection input、declaration/formula materialization、unsupported premise class の fail-closed handling、task-29 F1/F2/F6 consumer boundary、proof-hint non-pruning、deterministic ordering、planned tests、public enum inventory。 | 同期済み。 |

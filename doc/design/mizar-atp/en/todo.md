@@ -68,9 +68,7 @@ payload.
 Current gate status: satisfied for the generic runner path by `mizar-kernel`
 tasks 23-28 and `mizar-vc` tasks 24-25. Tasks 1-14 may build only the
 spec-backed problem, translation, encoding, and generic backend-runner slices.
-Task 15 records the first real backend adapter and evidence extractor as
-`external_dependency_gap` / `deferred` until a paired extraction spec and a
-guarded supported backend route exist. Proof policy, witness publication, and
+Task 15 remains implementation-deferred; DR-1 freezes the paired [extraction spec](evidence.md) and Vampire guarded route, satisfying ATP-G-015's documentary reopening condition. The [implementation contract](../../task_contracts/en/ATPK-BACKEND-EXTRACTION.md) is dispatchable after executable provisioning. Proof policy, witness publication, and
 cache promotion remain deferred to their own crates/tasks. `mizar-proof` is now
 a workspace crate, but ATP/proof integration remains an
 `external_dependency_gap`, not a reason to add local proof-policy placeholders
@@ -78,14 +76,11 @@ here.
 
 ## Resolved And Open Decisions
 
-- **First backend and evidence route: still deferred after the task-15 gate.**
-  The kernel formula/substitution evidence schema and VC handoff are available,
-  but this crate still lacks a paired `evidence.md` extractor spec and source
-  module defining how a concrete backend output becomes kernel-parseable
-  formula/substitution candidate bytes or refs. The architecture-10 supported
-  backend binaries were not available in the task-15 verification environment.
-  Do not add a real adapter, backend-output parser, or placeholder candidate
-  schema until that extraction route is specified.
+- **First backend and evidence route: design frozen, implementation deferred.**
+  DR-1 (2026-11-14) selects Vampire; paired [evidence.md](evidence.md) fixes
+  extraction, finder-only candidate payloads and the guarded provisioning route.
+  No adapter, output parser or new candidate schema is implemented; provision
+  the pinned executable before the separate implementation dispatch.
 - **Evidence schema ownership: follows `mizar-kernel` tasks 23-25.** This
   crate constructs candidate evidence against kernel-owned schema types; the
   kernel never depends on this crate.
@@ -369,19 +364,11 @@ Keep `cargo test -p mizar-atp` green after each task (see
       remains untrusted until kernel checking.
     - Deps: 10 or 12 (per chosen backend), 14, `mizar-kernel` tasks 25-28.
       Spec: `backend.md`.
-    - Gate result: deferred. `mizar-kernel` tasks 25-28 and the `mizar-vc`
-      handoff are present, but `mizar-atp` has no paired evidence-extraction
-      spec/source module for translating real backend output into
-      kernel-owned formula/substitution candidate payloads. The supported
-      architecture-10 backend executables (`vampire`, `eprover`, `cvc5`, `z3`)
-      were not found in the task-15 environment, so a backend-available
-      integration fixture would be skipped and could not validate an adapter.
-      No real adapter, backend-specific parser, fake candidate schema, kernel
-      call, proof-policy hook, witness/cache output, or trusted backend proof
-      material is added. Reopen this task only after an English/Japanese
-      `evidence.md` spec (or equivalent backend-specific extraction spec)
-      defines the candidate payload/ref contract and a supported backend route
-      is available for guarded integration tests.
+    - Gate result: design frozen by DR-1 (2026-11-14), first backend Vampire.
+      Paired [extraction specs](evidence.md) and guarded route meet ATP-G-015's
+      documentary reopening condition. [Implementation](../../task_contracts/en/ATPK-BACKEND-EXTRACTION.md)
+      remains deferred until provisioning; no adapter, parser or new candidate
+      schema exists. ATP-G-016 real-output fixtures remain implementation work.
 
 16. **Result classification and polarity validation.** [x] deferred / external_dependency_gap
     - Classify backend outcomes (proved, counterexample, timeout, unknown,

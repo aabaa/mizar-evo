@@ -1720,6 +1720,7 @@ fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
         "backend.md",
         "bilingual_sync_audit.md",
         "crate_exit_report.md",
+        "evidence.md",
         "instance_finder.md",
         "module_boundary_audit.md",
         "portfolio.md",
