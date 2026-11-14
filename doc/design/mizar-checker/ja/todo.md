@@ -1344,3 +1344,23 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 - [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/ja/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).
 
 - [x] [Algorithm ordinary occurrence intake](../../task_contracts/ja/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).
+
+## Checker test stack-depth follow-up
+
+- [ ] 既定のテストスレッドスタックでオーバーフローするテストを根本修正し、
+  拡大スタックの暫定措置を不要にする:
+  `task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+  (mizar-checker の lib テスト) と
+  `source_reserved_statement_original_capture_preserves_installation_boundary`
+  (mizar-test の runner テスト)。両テストとも既定スタックではスタック
+  オーバーフローで異常終了し (run 22 の full テストゲートで観測、
+  2026-11-14)、`RUST_MIN_STACK=16777216` を設定した場合にのみ合格する。
+  この設定は、run 9 で適用された拡大スタック前例を拡張するオーナー承認
+  済みの暫定措置 (2026-11-14) であり、根本修正ではない。根本修正は、
+  テストの主張を弱めることなくスタック深度を削減すること (例: スタック
+  常駐のフィクスチャやフレームの縮小、大規模構造のヒープ割り当て、再帰の
+  再構成、combined テストの分割)。受け入れ条件: `RUST_MIN_STACK` を
+  設定しない状態で full の `cargo test --locked` が合格し、その実行の
+  一部として両テストが既定スタックで合格すること。バックログ項目
+  (オーナー指示、2026-11-14)。Sequential Execution Plan のクリティカル
+  パスには載せない。

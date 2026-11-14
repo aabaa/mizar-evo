@@ -1417,3 +1417,24 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 - [x] [CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE](../../task_contracts/en/CHECKER-SOURCE-THEOREM-REGISTRATION-CLOSURE.md).
 
 - [x] [Algorithm ordinary occurrence intake](../../task_contracts/en/RESOLVE-CHECKER-ALGORITHM-ORDINARY-OCCURRENCES.md).
+
+## Checker test stack-depth follow-up
+
+- [ ] Root-fix the tests that overflow the default test-thread stack,
+  so the enlarged-stack accommodation is no longer needed for them:
+  `task258b3m2b2b1b1_combined_ownership_hybrids_and_all_family_orders_are_atomic`
+  (mizar-checker lib tests) and
+  `source_reserved_statement_original_capture_preserves_installation_boundary`
+  (mizar-test runner tests). Both abort with a stack overflow at the
+  default stack (observed at the run 22 full-test gate, 2026-11-14) and
+  pass only with `RUST_MIN_STACK=16777216`. That setting is an
+  owner-approved accommodation (2026-11-14) extending the enlarged-stack
+  precedent applied at run 9; it is a workaround, not a fix. A root fix
+  reduces the tests' stack depth, for example by shrinking
+  stack-resident fixtures or frames, heap-allocating large structures,
+  restructuring recursion, or splitting the combined test into smaller
+  tests, without weakening what the tests assert. Acceptance: the full
+  `cargo test --locked` suite passes with no `RUST_MIN_STACK` set, with
+  both named tests passing at the default stack as part of that run.
+  Backlog item (owner directive, 2026-11-14); not on the Sequential
+  Execution Plan's critical path.
