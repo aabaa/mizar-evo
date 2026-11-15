@@ -166,45 +166,63 @@ fn index_with_fix(
     fix: FixSuggestion,
     explanation: Option<ExplanationHandle>,
 ) -> BuildDiagnosticIndex {
+    index_with_fixes(
+        fixture,
+        primary_source,
+        primary_text,
+        vec![vec![fix]],
+        explanation,
+    )
+}
+
+fn index_with_fixes(
+    fixture: &RegistryFixture,
+    primary_source: mizar_session::SourceId,
+    primary_text: &str,
+    diagnostic_fixes: Vec<Vec<FixSuggestion>>,
+    explanation: Option<ExplanationHandle>,
+) -> BuildDiagnosticIndex {
     let (selected, _) = fixture
         .server
         .lsp_snapshot(&fixture.driver, &fixture.snapshots)
         .expect("published snapshot");
     let snapshot = selected.publication().captured().snapshot().id;
     let start = primary_text.find("theorem").unwrap_or(0);
-    let span = DiagnosticSpan::new(
-        SourceRange {
-            source_id: primary_source,
-            start,
-            end: start + "theorem".len(),
-        },
-        DiagnosticSpanRole::Primary,
-        None,
-        SpanFreshness::Current,
-        None,
-    )
-    .unwrap();
-    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
-        source_snapshot: snapshot,
-        code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
-        phase: PipelinePhase::Parser,
-        category: FailureCategory::ParseError,
-        stable_detail_key: "task38_deferred_action".to_owned(),
-        message: "test diagnostic".to_owned(),
-        primary_location: DiagnosticPrimaryLocation::Span(span),
-        secondary_spans: vec![],
-        notes: vec![],
-        details: DiagnosticDetails::new(),
-        fixes: vec![fix],
-        explanation,
-    })
-    .unwrap();
     let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
         PipelinePhase::Parser,
         snapshot,
         "task38-typed-consumer-fixture",
     ));
-    sink.emit(draft).unwrap();
+    for (ordinal, fixes) in diagnostic_fixes.into_iter().enumerate() {
+        let span = DiagnosticSpan::new(
+            SourceRange {
+                source_id: primary_source,
+                start: start + ordinal,
+                end: start + "theorem".len(),
+            },
+            DiagnosticSpanRole::Primary,
+            None,
+            SpanFreshness::Current,
+            None,
+        )
+        .unwrap();
+        let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: snapshot,
+            code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+            phase: PipelinePhase::Parser,
+            category: FailureCategory::ParseError,
+            stable_detail_key: "task38_deferred_action".to_owned(),
+            message: "test diagnostic".to_owned(),
+            primary_location: DiagnosticPrimaryLocation::Span(span),
+            secondary_spans: vec![],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes,
+            explanation: explanation.clone(),
+        })
+        .unwrap();
+        sink.emit(draft).unwrap();
+    }
     BuildDiagnosticIndex::aggregate(DiagnosticAggregationInput::new(
         snapshot,
         vec![sink.into_batch()],
@@ -638,6 +656,20 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         expected_payload: Some("bounded explanation".to_owned()),
         expected_handle: Some("deferred_backing".to_owned()),
     });
+    let sibling = fix(
+        "sibling_fix",
+        FixSafety::ArtifactAssisted,
+        vec![edit_for(*source_id, text, "theorem", "lemma")],
+        Some(source_version.source_hash),
+        None,
+    );
+    let changed = fix(
+        "artifact_fix",
+        FixSafety::ArtifactAssisted,
+        vec![edit_for(*source_id, text, "theorem", "lemma")],
+        Some(source_version.source_hash),
+        None,
+    );
     let fix = fix(
         "artifact_fix",
         FixSafety::ArtifactAssisted,
@@ -645,14 +677,24 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         Some(source_version.source_hash),
         None,
     );
-    let index = index_with_fix(
+    let index = index_with_fixes(
         &fixture,
         *source_id,
         text,
-        fix.clone(),
+        vec![vec![fix.clone(), sibling.clone()], vec![fix.clone()]],
         Some(handle.clone()),
     );
-    let record = &index.records()[0];
+    assert_eq!(index.records().len(), 2);
+    let record = index
+        .records()
+        .iter()
+        .find(|record| record.fixes().len() == 2)
+        .unwrap();
+    let other_record = index
+        .records()
+        .iter()
+        .find(|record| record.fixes().len() == 1)
+        .unwrap();
     let good = DeferredFixRegistration {
         text_hash_domain: Some(TEXT_HASH_DOMAIN.to_owned()),
         artifacts: vec![
@@ -683,6 +725,40 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         &good_context,
         record,
         &fix,
+        publication.captured()
+    ));
+
+    // Sharing the exact explanation handle does not share fix authority.
+    assert!(!validate_deferred_fix(
+        &good_context,
+        other_record,
+        &fix,
+        publication.captured()
+    ));
+    assert!(!validate_deferred_fix(
+        &good_context,
+        record,
+        &sibling,
+        publication.captured()
+    ));
+    let changed_index = index_with_fixes(
+        &fixture,
+        *source_id,
+        text,
+        vec![vec![changed.clone(), sibling], vec![fix.clone()]],
+        Some(handle.clone()),
+    );
+    let changed_record = changed_index
+        .records()
+        .iter()
+        .find(|record| record.fixes().len() == 2)
+        .unwrap();
+    assert_eq!(changed_record.handle(), record.handle());
+    assert_eq!(changed.id(), fix.id());
+    assert!(!validate_deferred_fix(
+        &good_context,
+        changed_record,
+        &changed,
         publication.captured()
     ));
 
@@ -849,10 +925,11 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         publication.captured()
     ));
 
-    for (wrong_source, wrong_path, wrong_hash) in [
-        (true, false, false),
-        (false, true, false),
-        (false, false, true),
+    for (wrong_source, wrong_path, wrong_class, wrong_digest) in [
+        (true, false, false, false),
+        (false, true, false, false),
+        (false, false, true, false),
+        (false, false, false, true),
     ] {
         let mut wrong = DeferredFixRegistration {
             text_hash_domain: Some(TEXT_HASH_DOMAIN.to_owned()),
@@ -874,8 +951,13 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         if wrong_path {
             wrong.artifacts[0].path.push_str("-wrong");
         }
-        if wrong_hash {
+        if wrong_class {
             wrong.artifacts[1].hash = second_module.interface_hash.clone();
+        }
+        if wrong_digest {
+            let mut digest = *wrong.artifacts[1].hash.digest.as_bytes();
+            digest[0] ^= 1;
+            wrong.artifacts[1].hash.digest = Hash::from_bytes(digest);
         }
         let wrong_context = DeferredActionContext {
             publication,
