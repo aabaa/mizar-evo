@@ -299,8 +299,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 37. **[Originating native OpenBuffer capture](../../task_contracts/en/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md).** [x]
 
-38. **Deferred code-action consumers.** [ ]
-    - Prerequisite: [validator contract proposal](code_action_validators.md) awaits owner approval; redispatch only after approval, with existing filtering preserved until approved owner validators/execution are available.
+38. **[Deferred code-action consumers](../../task_contracts/en/LSP-DEFERRED-CODE-ACTIONS.md).** [ ]
+    - Prerequisite: [validator contracts](code_action_validators.md), Q1–Q5 A approved; retain filtering wherever authenticated producer backing or execution ownership is unavailable.
     - Audit G4: own artifact/source-hash and explanation/missing-facts validators, then add safe artifact-assisted actions and execution-time command handle revalidation. Preserve filtering until those owner contracts exist; no invented hashes or command encoding.
     - Deps: 17, upstream validators. Spec: [code actions](code_action.md#request-sources-and-conversion).
 

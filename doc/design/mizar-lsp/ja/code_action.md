@@ -33,7 +33,7 @@ server は code action を提示し、提案 edit を自ら適用しない。適
 
 ## Implementation boundary
 
-所有者の承認待ちの hash・provenance・command 選択肢は [validator proposal](code_action_validators.md) が所有し、consumer の有効化を認可しません。
+承認済みの hash・provenance・command 契約は [validator contracts](code_action_validators.md) が所有し、有効化には認証済み producer 登録と validator が必要です。
 
 `src/diagnostics.rs` は既存の metadata/build host を通して公開済み fix を変換する。publication host のない通常の stdio 経路は action を返さない。要求では生きている文書の version と元の source association を使う。primary 診断 range の半開区間の重なりで fix を選び、空 range は非空区間内の点、または一致する点として扱う。
 

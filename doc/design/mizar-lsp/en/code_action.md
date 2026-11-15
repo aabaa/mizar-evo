@@ -33,7 +33,7 @@ The server offers code actions and never applies suggestion edits on its own. Ed
 
 ## Implementation boundary
 
-Pending-owner-approval hash, provenance and command options are owned by the [validator proposal](code_action_validators.md); they authorize no consumer activation.
+Approved hash, provenance and command contracts are owned by the [validator contracts](code_action_validators.md); activation requires their authenticated producer registrations and validators.
 
 `src/diagnostics.rs` converts published fixes through the existing metadata/build host. The ordinary stdio path without a publication host returns no actions. Requests use the live document version and original source association; primary diagnostic ranges select fixes by half-open overlap, with empty ranges treated as points inside a nonempty interval or coincident points.
 
