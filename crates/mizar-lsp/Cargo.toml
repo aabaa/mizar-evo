@@ -24,8 +24,11 @@ mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-driver = { path = "../mizar-driver" }
 mizar-ir = { path = "../mizar-ir" }
 mizar-lexer = { path = "../mizar-lexer" }
+mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 serde_json = "1"
 
 [dev-dependencies]
 mizar-atp = { path = "../mizar-atp" }
+mizar-frontend = { path = "../mizar-frontend" }
+mizar-syntax = { path = "../mizar-syntax" }

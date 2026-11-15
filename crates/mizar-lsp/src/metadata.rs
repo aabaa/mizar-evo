@@ -61,13 +61,31 @@ impl Server {
         let method = message.get("method").and_then(Value::as_str);
         if !matches!(
             method,
-            Some("textDocument/hover" | "textDocument/codeAction" | "codeAction/resolve")
+            Some(
+                "textDocument/hover"
+                    | "textDocument/completion"
+                    | "textDocument/codeAction"
+                    | "codeAction/resolve"
+            )
         ) {
             return self.handle_message(message);
         }
         let mut response = self.handle_message(message.clone())?;
         let resolve = method == Some("codeAction/resolve");
         if response.get("result").is_none() && !(resolve && response["error"]["code"] == -32801) {
+            return Some(response);
+        }
+        if method == Some("textDocument/completion") {
+            let params = &message["params"];
+            response["result"] = json!(self.snapshot_completion(
+                driver,
+                snapshots,
+                params["textDocument"]["uri"].as_str()?,
+                LspPosition {
+                    line: u32::try_from(params["position"]["line"].as_u64()?).ok()?,
+                    character: u32::try_from(params["position"]["character"].as_u64()?).ok()?,
+                }
+            ));
             return Some(response);
         }
         if method != Some("textDocument/hover") {

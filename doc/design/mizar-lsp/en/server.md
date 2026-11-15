@@ -9,7 +9,7 @@ optional response; `document(uri)` borrows its `(i32 version, text)` buffer;
 
 Initialize once with object params containing processId (i32/null), rootUri
 (string/null) and object capabilities. Unknown capabilities/options are ignored.
-Reply with UTF-16 position encoding and openClose/full text sync only. Before
+Reply with UTF-16 position encoding and openClose/full text sync. Before
 initialization, requests get -32002 and notifications are ignored except exit.
 Duplicate initialize and requests after shutdown get -32600; notifications
 after shutdown are ignored except exit. Shutdown/exit accept absent/null params;

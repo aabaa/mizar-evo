@@ -37,6 +37,8 @@ Current hover includes the original mapped LSP range. Stale hover preserves meta
 
 `Server::handle_message_with_metadata` supplies Driver/registry freshness to hover requests; the build bridge uses this route. The ordinary handler validates requests and returns no hover without a metadata host. Executable host/build integration and navigation remain separate.
 
+The same metadata-host route adds published candidates to [completion](completion.md); its ordinary route retains current-buffer syntax fallback.
+
 Reads use already-published inputs and the snapshot owner's established association. This specification does not choose OpenBuffer provenance carriers or unsaved-artifact storage/publication; build scheduling is owned by [build bridge](build_bridge.md).
 
 ## Test design
