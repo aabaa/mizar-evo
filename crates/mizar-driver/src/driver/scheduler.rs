@@ -1090,6 +1090,51 @@ fn dispatch_registry_phase(
             Ok(result) => {
                 let mut result = result.result;
                 let status = result.status;
+
+                let temporary_root = (|| {
+                    let inputs = source_load?;
+                    let service = registry.service_for_phase(*phase).ok()?;
+                    if std::any::Any::type_id(service)
+                        != std::any::TypeId::of::<
+                            crate::frontend_adapter::SourceTheoremArtifactCommitService,
+                        >()
+                    {
+                        return None;
+                    }
+                    let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit
+                    else {
+                        return None;
+                    };
+                    let version = inputs.snapshot.source_versions.iter().find(|version| {
+                        version.package_id == module.package && version.module_path == module.path
+                    })?;
+                    if !matches!(
+                        version.origin,
+                        mizar_session::SourceOrigin::OpenBuffer { .. }
+                    ) {
+                        return None;
+                    }
+                    let package = inputs
+                        .build_plan
+                        .packages
+                        .iter()
+                        .find(|package| package.package_id == module.package)?;
+                    let mizar_build::planner::PackagePlanSource::Workspace { root, .. } =
+                        &package.source
+                    else {
+                        return None;
+                    };
+                    let package_root =
+                        std::path::PathBuf::from(inputs.snapshot.workspace_root.as_str())
+                            .join(root)
+                            .canonicalize()
+                            .ok()?;
+                    let label = mizar_artifact::store::PublishedArtifactPath::new(
+                        &result.artifact_commit.as_ref()?.manifest().artifact_root,
+                    )
+                    .ok()?;
+                    Some((package_root.join(label.as_str()), package_root))
+                })();
                 let valid_outputs = result.output_refs.iter().all(|output| {
                     publisher.is_some_and(|publisher| {
                         (if source_load.is_some_and(|inputs| {
@@ -1115,6 +1160,9 @@ fn dispatch_registry_phase(
                         .iter()
                         .any(|batch| batch.scope().source_snapshot() != task.snapshot)
                 {
+                    if let Some((root, boundary)) = temporary_root {
+                        crate::frontend_adapter::remove_native_artifact_staging(&root, &boundary);
+                    }
                     return SchedulerDispatchOutcome::failed(vec![dispatch_diagnostic(
                         task.task,
                         "invalid_phase_result",
@@ -1177,10 +1225,15 @@ fn dispatch_registry_phase(
                             && output.output_kind() == &kind
                             && output.schema_version() == SchemaVersion::new(1)
                             && publisher
-                                .validate_current_output(task.snapshot, output)
+                                .validate_published_output(task.snapshot, output)
                                 .is_ok()
                     })();
                     if !eligible {
+                        if let Some((root, boundary)) = temporary_root {
+                            crate::frontend_adapter::remove_native_artifact_staging(
+                                &root, &boundary,
+                            );
+                        }
                         result.artifact_commit = None;
                     }
                 }

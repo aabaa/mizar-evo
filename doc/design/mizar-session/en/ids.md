@@ -66,6 +66,8 @@ impl BuildRequestId {
 
 impl SourceId {
     pub fn to_published_schema_string(self) -> Result<String, IdError>;
+    pub fn to_nonportable_provenance_string(self) -> String;
+    pub fn from_nonportable_provenance_str(serialized: &str) -> Result<Self, IdError>;
 }
 
 impl SourceMapId {
@@ -132,6 +134,13 @@ serialized id domain; deserialization must reject any other domain and any
 non-canonical hex spelling. `BuildSnapshotId::fingerprint(self) -> Hash` returns its already-retained digest without rehashing, parsing text or authenticating registry membership/currentness.
 
 Allocator-issued ids may be serialized only in local debug dumps, logs, and development artifacts that are explicitly marked non-portable. Published artifacts and cache keys must use canonical source, dependency, toolchain, and configuration hashes instead.
+
+The owner-approved provenance exception encodes `SourceId` as
+`mizar-session-source-nonportable-v1:<16 lowercase hex digits>` through the
+nonportable provenance methods above. Decoding restores the exact opaque value;
+it authenticates neither the issuing registry nor membership, currentness or
+publication authority. This association is explicitly nonportable and cannot
+replace canonical source hashes or become a stable cache identity.
 
 ## Algorithm / Logic
 

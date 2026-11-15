@@ -470,6 +470,7 @@ fn sample_verified_artifact(
         proof_witnesses: Vec::new(),
         diagnostics: Vec::new(),
         provenance: BuildProvenance {
+            captured_source: None,
             toolchain: "mizar-evo-test".to_owned(),
             language_edition: "2025".to_owned(),
             lockfile_hash: hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 1),

@@ -987,8 +987,10 @@ impl CommittedWitnessPublicationProof {
             },
         )
         .map_err(|error| error.to_string())?;
-        if artifact.schema_version != SchemaVersion::new(1, 1) {
-            return Err("committed source theorem main must use schema 1.1".to_owned());
+        if artifact.schema_version != SchemaVersion::new(1, 1)
+            && artifact.schema_version != SchemaVersion::new(1, 2)
+        {
+            return Err("committed source theorem main must use schema 1.1 or 1.2".to_owned());
         }
         validate_exact_witness_coverage(&artifact.proof_witnesses, &entry.proof_witnesses)
             .map_err(|error| error.to_string())?;

@@ -30,8 +30,8 @@ producer token、diagnostics token、driver session、publication token API を�
 
 `mizar-ir` が所有するもの:
 
-- 射影される source item がすべて、意図した current snapshot の seal 済みで
-  読み取り可能な output から来ていることの検証。
+- 射影される source item がすべて、意図した current snapshot 向けに publish された
+  seal 済みで読み取り可能な output から来ていることの検証。
 - crate-local な projection input record から `mizar-artifact` の安定した
   `VerifiedArtifact` schema shape への変換。real producer crate がより豊かな
   typed record を公開するまでは、その crate-local record は強く型付けされた
@@ -68,6 +68,18 @@ cache hit と rehydrated handle は proof trust や publication authority を昇
 `mizar-ir` の外側が所有する phase 15 が、draft の serialize、manifest publication
 precondition の検証、artifact の commit または rejection を担当する。projection failure は
 seal 済み IR output を変更せず、以前の published manifest を authoritative なままにする。
+
+### Required output の publication eligibility
+
+publisher が対象 snapshot の `current_outputs` または `open_buffer_outputs` のどちらかに
+exact な `(output, storage generation)` root を持つ場合、projection はその required output を
+受け入れる。後者により genuine な `OpenBuffer` / `InternalOnly` output を未 publish draft の
+入力にできるが、その draft や output が current-package artifact になるわけではない。
+物理 handle の検証も別途必要である。
+
+collect 済み output の reseal は旧 generation の root を引き継がない。物理的に有効でも、
+exact root が両方の set に存在しない handle は publisher の `OutputNotPublished` error により
+projection が失敗する。snapshot eligibility とその他すべての currentness 検証も引き続き適用する。
 
 ## 入力
 
@@ -202,6 +214,7 @@ failure condition:
 | missing または unsealed output | projection 失敗。draft を返さない。 |
 | obsolete snapshot の output を current として使用 | projection 失敗。draft を返さない。 |
 | collected または unreadable handle | projection 失敗。draft を返さない。 |
+| 物理的に有効だが exact current-package / OpenBuffer root のどちらにもない output | `OutputNotPublished` で projection 失敗。draft を返さない。 |
 | `mizar-artifact` との schema/version mismatch | projection 失敗。draft を返さない。 |
 | duplicate projected id | projection 失敗。draft を返さない。 |
 | unsorted projected collection | draft validation 前に canonicalize する。 |

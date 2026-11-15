@@ -218,7 +218,7 @@ impl ArtifactProjectionService {
                 });
             }
             self.publisher
-                .validate_current_output(snapshot, output)
+                .validate_published_output(snapshot, output)
                 .map_err(|error| ProjectionError::Publisher {
                     error: Box::new(error),
                 })?;
@@ -897,7 +897,7 @@ mod tests {
         assert_eq!(draft.artifact.statements, expected);
         assert_eq!(
             draft.artifact.schema_version,
-            ArtifactSchemaVersion::new(1, 1)
+            ArtifactSchemaVersion::new(1, 2)
         );
         assert_eq!(draft.required_outputs, vec![handle.output()]);
         assert_eq!(
@@ -1208,7 +1208,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_only_open_output_is_rejected_before_draft_returns() {
+    fn internal_only_open_output_projects_successfully() {
         let snapshot = snapshot(11);
         let publisher = publisher(snapshot);
         let handle = publish_fixture_with(
@@ -1220,20 +1220,16 @@ mod tests {
         );
         let service = ArtifactProjectionService::new(publisher);
 
-        let error = service
+        let draft = service
             .project_module(project_input(snapshot, handle.erase()))
-            .expect_err("open-buffer internal output cannot project");
-        match error {
-            ProjectionError::Publisher { error } => assert!(matches!(
-                *error,
-                PublishError::OutputNotCurrentPackage { snapshot: rejected, .. } if rejected == snapshot
-            )),
-            other => panic!("expected publisher rejection, got {other:?}"),
-        }
+            .expect("open-buffer internal output projects");
+        assert_eq!(draft.snapshot, snapshot);
+        assert_eq!(draft.required_outputs, vec![handle.output()]);
+        assert_eq!(draft.artifact.module, module("main"));
     }
 
     #[test]
-    fn internal_only_reseal_of_collected_current_output_is_rejected() {
+    fn internal_only_reseal_requires_its_own_generation_root() {
         let snapshot = snapshot(15);
         let publisher = publisher(snapshot);
         let old = publish_fixture(&publisher, snapshot, "module");
@@ -1250,15 +1246,51 @@ mod tests {
         );
         assert_eq!(old.output(), resealed_internal.output());
         assert_ne!(old.any().generation(), resealed_internal.any().generation());
-        let service = ArtifactProjectionService::new(publisher);
+        let service = ArtifactProjectionService::new(Arc::clone(&publisher));
+
+        let draft = service
+            .project_module(project_input(snapshot, resealed_internal.erase()))
+            .expect("internal-only reseal has its own published root");
+        assert_eq!(draft.required_outputs, vec![resealed_internal.output()]);
+
+        publisher.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: Vec::new(),
+        });
+        let other_publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::clone(publisher.storage()),
+            Arc::new(crate::identity::SnapshotHandleRegistry::new()),
+        ));
+        other_publisher.register_current_snapshot(snapshot);
+        other_publisher.allow_work_unit(AllowedWorkUnit::new(
+            phase(),
+            output_kind(),
+            WorkUnit::new("module"),
+        ));
+        let unrooted = publish_fixture_with(
+            &other_publisher,
+            snapshot,
+            "module",
+            OutputOrigin::OpenBuffer,
+            PublicationTarget::InternalOnly,
+        );
+        assert_eq!(unrooted.output(), resealed_internal.output());
+        assert_ne!(
+            unrooted.any().generation(),
+            resealed_internal.any().generation()
+        );
+        publisher
+            .storage()
+            .validate_handle(unrooted.any())
+            .expect("physical handle is valid");
 
         let error = service
-            .project_module(project_input(snapshot, resealed_internal.erase()))
-            .expect_err("internal-only reseal must not inherit current root from old generation");
+            .project_module(project_input(snapshot, unrooted.erase()))
+            .expect_err("a new generation cannot inherit either earlier root");
         match error {
             ProjectionError::Publisher { error } => assert!(matches!(
                 *error,
-                PublishError::OutputNotCurrentPackage { snapshot: rejected, .. } if rejected == snapshot
+                PublishError::OutputNotPublished { snapshot: rejected, .. } if rejected == snapshot
             )),
             other => panic!("expected publisher rejection, got {other:?}"),
         }
@@ -1699,6 +1731,14 @@ mod tests {
 
     fn provenance() -> BuildProvenance {
         BuildProvenance {
+            captured_source: Some((
+                mizar_session::SourceId::from_nonportable_provenance_str(
+                    "mizar-session-source-nonportable-v1:0000000000000001",
+                )
+                .expect("fixture source identity"),
+                mizar_session::SourceOrigin::Disk,
+                hash(1),
+            )),
             toolchain: "mizar-2026.1".to_owned(),
             language_edition: "2026".to_owned(),
             lockfile_hash: hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 90),

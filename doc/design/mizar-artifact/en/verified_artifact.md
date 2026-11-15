@@ -44,14 +44,14 @@ later spec explicitly declares forward-compatible minor-version handling.
 
 
 ## Statement-bearing normal profile
-Normal `current_schema_version()` is 1.1; normal default readers support major1/minor0..1. Existing normal1.0 and explicit Builtin2.0 retain their EXACT previous JSON fields, bytes/hash projections, nested witness rules and rejection order. They have an EMPTY in-memory statements vector; any nonempty vector under those legacy versions is rejected, never silently omitted. Only normal1.1 adds REQUIRED `statements` (empty permitted for generic structural data). Normal1.1 still permits only normal Ref2/KernelVerified evidence, never Builtin Ref3; Builtin2.0 remains exact major2/minor0 with its existing Ref2/Ref3 support and NO statements. Do not infer new major/minor profiles, relabel versions/status or fall back after normal failure. A declared expected normal version bounds its own maximum minor: expected1.0 never admits1.1; default expected1.1 admits1.0..1.1. Check version before fields; legacy unknown-field priority stays, old common-field parsing stays in its old order, new statement parsing follows those common fields before whole validation and expected module/hash checks.
+Normal `current_schema_version()` is 1.2; normal default readers support major1/minor0..2. The 2026-11-15 owner decision below supersedes the normal1.1 freeze. Existing normal1.0 and explicit Builtin2.0 retain their EXACT previous JSON fields, bytes/hash projections, nested witness rules and rejection order. They have an EMPTY in-memory statements vector; any nonempty vector under those legacy versions is rejected, never silently omitted. Normal1.1 introduced REQUIRED `statements`; normal1.2 retains it (empty permitted for generic structural data). Normal1.1/1.2 permit only normal Ref2/KernelVerified evidence, never Builtin Ref3; Builtin2.0 remains exact major2/minor0 with its existing Ref2/Ref3 support and NO statements. Do not infer new major/minor profiles, relabel versions/status or fall back after normal failure. A declared expected normal version bounds its own maximum minor: expected1.0 never admits1.1; default expected1.2 admits1.0..1.2; explicit expected1.1 admits1.0..1.1. Check version before fields; legacy unknown-field priority stays, old common-field parsing stays in its old order, new statement parsing follows those common fields before whole validation and expected module/hash checks.
 `StatementMetadata` is the single public row used by `VerifiedArtifact.statements: Vec<StatementMetadata>`, IR projection input/assembly, canonical serializer/validating reader/validator/implementation hashing and real Driver construction. Exact row: `{ "item": string, "source_range": source_range, "elaborated": string, "reserve_binders": [string, ...], "resolved_symbols": { string: string, ... } }`. Item is the producer-owned item FQN; range is the actual represented formula, not the theorem header/whole item. Use existing nonempty-string/range validation, reject duplicate item IDs and duplicate/empty reserve names, nonempty map keys/values and unknown fields/types. Different items may share diagnostic ranges; do not invent a duplicate-range rule or global FQN parser. Preserve reserve-binder order because it can be semantic; canonical map order is BTreeMap. Normalize statement-row order by item. There is no statement-specific proof/status/receipt field.
-Only normal1.1 serializes and includes statements in its stable implementation projection and full Artifact hash; normal1.0/Builtin2.0 projections remain byte-exact. Row item/text/range/reserve order/map content participate; row permutation and map insertion order do not. Interface projection remains existing exports/dependency interfaces: human source statement text/ranges do not independently change dependency interface identity under the SAME enclosing version. Existing CanonicalHashDomain family/classes/version framing and exact local exclusions verified_at/provenance.cache_key remain. No new codec family/schema dispatch abstraction, JSON parser, public profile API or parallel representation. Inline new row parsing/validation/mapping unless a private helper has THREE real consumers; a version predicate may be shared by actual reader/writer/validation/hash consumers.
-Compatibility tests keep old normal1.0 and Builtin2.0 fixtures explicitly on their original version, preserving canonical/hash/error/status/transaction assertions. Only formerly-unsupported normal1.1 sentinel cases become normal1.2 future-version cases to preserve unsupported-version intent; explicit current-version getter assertions advance to1.1 and old hash controls use their fixture actual1.0 domain. Do not move unrelated old fixtures to new current() or rebaseline language/JSON goldens. New normal1.1 tests cover exact fields/read-write/required-field and malformed controls, legacy field refusal/unchanged profiles, item/order/duplicates/reserve/map rules, hash participants/nonparticipants and declared-version bounds. The focused normal_statement_profile_rejects_genuine_builtin_reference regression reuses the existing genuine mizar-test builtin_enclosing_fixture for Kernel-only1.1 positive read/write and Ref3 normal1.1 writer/implementation-hash/reader refusals; keep all prior profile-test bodies unchanged. Existing generic struct literals add only explicit empty statements; no Default or placeholder source row. Builtin statement emission, full source completeness, authoritative publication and currentness remain deferred.
+Normal1.1/1.2 serialize and include statements in their stable implementation projection and full Artifact hash; normal1.0/Builtin2.0 projections remain byte-exact. Row item/text/range/reserve order/map content participate; row permutation and map insertion order do not. Interface projection remains existing exports/dependency interfaces: human source statement text/ranges do not independently change dependency interface identity under the SAME enclosing version. Existing CanonicalHashDomain family/classes/version framing and exact local exclusions verified_at/provenance.cache_key remain. No new codec family/schema dispatch abstraction, JSON parser, public profile API or parallel representation. Inline new row parsing/validation/mapping unless a private helper has THREE real consumers; a version predicate may be shared by actual reader/writer/validation/hash consumers.
+Compatibility tests keep old normal1.0 and Builtin2.0 fixtures explicitly on their original version, preserving canonical/hash/error/status/transaction assertions. Unsupported normal1.2 sentinel cases become normal1.3 future-version cases to preserve unsupported-version intent; explicit current-version getter assertions advance to1.2 and old hash controls use their fixture actual1.0 domain. Do not move unrelated old fixtures to new current() or rebaseline language/JSON goldens. New normal1.1 tests cover exact fields/read-write/required-field and malformed controls, legacy field refusal/unchanged profiles, item/order/duplicates/reserve/map rules, hash participants/nonparticipants and declared-version bounds. The focused normal_statement_profile_rejects_genuine_builtin_reference regression reuses the existing genuine mizar-test builtin_enclosing_fixture for Kernel-only1.1 positive read/write and Ref3 normal1.1 writer/implementation-hash/reader refusals; keep all prior profile-test bodies unchanged. Existing generic struct literals add only explicit empty statements; no Default or placeholder source row. Builtin statement emission, full source completeness, authoritative publication and currentness remain deferred.
 
 ## Explicit built-in enclosing profile
 
-`builtin_verified_artifact_json(&VerifiedArtifact)` and `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` use the existing value/options/types and schema family with enclosing version 2.0, major-exact/minor UpToSupported 0. They return the existing canonical value and validated artifact; canonical_json_bytes supplies bytes. Legacy normal1.0 retains its original bytes and rejection order; the statement-bearing normal1.1 policy advances only the normal current profile.
+`builtin_verified_artifact_json(&VerifiedArtifact)` and `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` use the existing value/options/types and schema family with enclosing version 2.0, major-exact/minor UpToSupported 0. They return the existing canonical value and validated artifact; canonical_json_bytes supplies bytes. Legacy normal1.0 retains its original bytes and rejection order; the normal1.2 policy advances only the normal current profile.
 Keep the same fields and canonical sorting, duplicate checks, obligation/status/fingerprint/policy consistency, expected module/hash checks, field/path/range validation and local metadata exclusions. Enclosing 2.0 permits normal reference 2.0/KernelVerified and explicit reference 3.0/DischargedBuiltin, both only FormulaSubstitutionKernelEvidence; enclosing 1.0 retains normal references only. Never relabel statuses/versions or use failed normal decoding as acceptance. Each accepted obligation still resolves exactly once and every witness references a matching accepted obligation.
 Existing interface/implementation projections and compute/refresh methods use the enclosing version in their unchanged hash domains/framing. Only nested witness serialization dispatch changes for 2.0; full reference content participates in implementation identity, not interface identity. Preserve schema/version/class checks before interpreting fields and never admit arbitrary expected majors. The existing reader body has normal, explicit and manifest-declared consumers; the existing nested writer serves serialization, implementation hashing and validation. Add no parallel representation or two-use pipeline abstraction.
 Three genuine-source families reuse fresh built-in/ATP reference producers for round-trip/mixed classes and normal compatibility; independent hash participant/order/exclusion relations; and invalid envelopes with otherwise-valid manifest hash/coverage controls. Existing normal/profile/transaction semantics remain; only the explicit legacy-fixture/current-version/future-sentinel migration adjustments above are permitted. Caller-owned structural containers do not establish a complete source producer, trusted token, full Proof identity, reuse or publication eligibility; those remain with Proof and phase-15 owners.
@@ -328,8 +328,8 @@ understand how the artifact was produced, but it is not a substitute for
 validating dependency artifacts, source hashes, verifier policy fingerprints, or
 proof witness hashes.
 
-Task 15 finalizes the crate-owned provenance envelope for published verified
-artifacts:
+Task 15 finalized this legacy provenance envelope; normal1.0/1.1 and Builtin2.0
+retain exactly these fields:
 
 ```text
 build_provenance = {
@@ -357,6 +357,35 @@ remain owned by `mizar-cache`. `cache_key` is hash-excluded local/cache
 metadata: it is parsed as a non-empty string or JSON `null`, but it does not
 participate in `interface_hash`, `implementation_hash`, artifact publication
 equivalence, or reproducibility comparisons.
+
+### Captured source provenance (normal1.2)
+
+The 2026-11-15 owner decision requires `BuildProvenance.captured_source` in
+normal1.2, represented in memory by `Option<(SourceId, SourceOrigin, Hash)>`.
+Legacy normal1.0/1.1 and Builtin2.0 require `None` and reject the serialized field;
+their exact fields, bytes, hashes, witness rules and rejection order remain unchanged.
+Normal1.2 requires `Some` and this exact additional envelope (never JSON null):
+
+```text
+"captured_source": {
+  "source_id": "mizar-session-source-nonportable-v1:<16 lowercase hexadecimal digits>",
+  "origin": { "kind": "disk" } | { "kind": "open_buffer", "document_version": integer },
+  "source_hash": source_hash_string
+}
+```
+
+`source_id` round-trips the exact Session identity as explicitly nonportable
+association; decoding grants no registry membership, currentness or publication
+authority. Document version preserves Session's signed 64-bit value. Only Disk
+and OpenBuffer are supported; generated/unknown origins, missing/unknown fields,
+wrong types, malformed identities/hashes and a captured hash unequal to top-level
+`source_hash` are rejected. Producers retain the genuine captured origin, version
+and hash; staging buffer text never turns it into Disk.
+Origin/version/hash participate in stable implementation and full Artifact hashes.
+Only `provenance.captured_source.source_id` joins the local hash exclusions in
+both projections; SourceId never becomes stable cache identity. Interface fields,
+source/dependency validation and witness authority remain unchanged. The normal
+reader rejects future1.3 before fields; expected1.1 refuses1.2.
 
 ## Hash String Domains
 
@@ -435,7 +464,7 @@ stored `interface_hash` and `implementation_hash`, export `source_range`,
 export `documentation_ref`, expression metadata, obligations, proof witness
 paths and byte hashes, diagnostics, `lockfile_hash`, `verifier_config_hash`,
 dependency `implementation_hash`, dependency `artifact_hash`, `toolchain`,
-`language_edition`, `cache_key`, and any future local/cache-only provenance
+`language_edition`, `cache_key`, `captured_source`, and any future local/cache-only provenance
 field.
 
 `implementation_hash` is computed over exactly these stable published fields:
@@ -448,10 +477,12 @@ field.
 - full `proof_witnesses`;
 - full `diagnostics`, including diagnostic ranges and related entries;
 - stable provenance fields: `toolchain`, `language_edition`, `lockfile_hash`,
-  `verifier_config_hash`, and the full `dependency_artifact_hashes` entries.
+  `verifier_config_hash`, the full `dependency_artifact_hashes` entries, and
+  normal1.2 captured origin/version/hash.
 
 `implementation_hash` excludes only `verified_at`, the stored `interface_hash`
-and `implementation_hash` fields themselves, `cache_key`, and any future
+and `implementation_hash` fields themselves, `cache_key`, normal1.2
+`provenance.captured_source.source_id`, and any future
 local/cache-only provenance field.
 
 The interface hash input sorts `exports` by `origin_id`,

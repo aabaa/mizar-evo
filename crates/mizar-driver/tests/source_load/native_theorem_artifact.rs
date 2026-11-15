@@ -491,22 +491,7 @@ fn native_theorem_artifact_draft_preserves_refusals_and_fresh_root() {
                     inputs.snapshot.clone(),
                     inputs.build_plan.clone(),
                 );
-                if case == "buffer" {
-                    assert!(
-                        inputs
-                            .project_native_theorem_artifact_draft(
-                                six,
-                                owner,
-                                id,
-                                (profile.clone(), ConcreteFormat::Tptp),
-                                (&policy, &verifier),
-                                ("proof-witnesses/checked.json", &root)
-                            )
-                            .unwrap()
-                            .is_none()
-                    );
-                    assert!(!root.exists());
-                } else if matches!(case, "bytes" | "link") {
+                if matches!(case, "bytes" | "link") {
                     assert!(expected.is_none());
                     assert!(
                         inputs
@@ -591,6 +576,22 @@ fn native_theorem_artifact_draft_preserves_refusals_and_fresh_root() {
                         .unwrap()
                         .unwrap();
                     assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
+                    if case == "buffer" {
+                        assert_eq!(
+                            actual.artifact.schema_version,
+                            mizar_artifact::store::SchemaVersion::new(1, 2)
+                        );
+                        for parent in six.parent_outputs() {
+                            owner
+                                .validate_published_output(six.snapshot, parent.as_output_ref())
+                                .unwrap();
+                            assert!(
+                                owner
+                                    .validate_current_output(six.snapshot, parent.as_output_ref())
+                                    .is_err()
+                            );
+                        }
+                    }
                     let file_before = fs::read(root.join("proof-witnesses/checked.json")).unwrap();
                     let root_error = fs::create_dir(&root).unwrap_err().to_string();
                     assert_eq!(
@@ -960,6 +961,7 @@ fn native_theorem_artifact_main_matches_real_draft() {
                     [
                         FieldPath::new(["verified_at"]).unwrap(),
                         FieldPath::new(["provenance", "cache_key"]).unwrap(),
+                        FieldPath::new(["provenance", "captured_source", "source_id"]).unwrap(),
                     ]
                 );
                 let expected_root = fixture.root.join("expected-main");
@@ -1199,8 +1201,13 @@ fn native_theorem_artifact_main_preserves_refusals() {
                 fs::create_dir(&root).unwrap();
                 fs::write(root.join("sentinel"), b"keep").unwrap();
                 if open {
-                    assert_eq!(baseline, None);
-                    assert!(!baseline_root.exists());
+                    let (baseline, _) = baseline.unwrap();
+                    assert_eq!(&baseline, expected.as_ref().unwrap().as_ref().unwrap());
+                    assert_eq!(
+                        baseline.artifact.schema_version,
+                        mizar_artifact::store::SchemaVersion::new(1, 2)
+                    );
+                    let root_error = fs::create_dir(&root).unwrap_err().to_string();
                     assert_eq!(
                         inputs
                             .write_native_theorem_artifact_draft(
@@ -1211,9 +1218,16 @@ fn native_theorem_artifact_main_preserves_refusals() {
                                 (&policy, &verifier),
                                 ("proof-witnesses/checked.json", "../invalid", &root),
                             )
-                            .unwrap(),
-                        None
+                            .unwrap_err(),
+                        root_error
                     );
+                    for parent in six.parent_outputs() {
+                        assert!(
+                            owner
+                                .validate_current_output(six.snapshot, parent.as_output_ref())
+                                .is_err()
+                        );
+                    }
                 } else {
                     let (baseline, _) = baseline.unwrap();
                     assert_eq!(&baseline, expected.as_ref().unwrap().as_ref().unwrap());
@@ -2273,8 +2287,31 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                     (&policy, &verifier),
                     ("proof-witnesses/checked.json", &root),
                 );
-                if case == "baseline" {
+                if matches!(case, "baseline" | "buffer") {
                     let (actual, _) = result.unwrap().unwrap();
+                    if case == "buffer" {
+                        assert_eq!(
+                            actual.artifact.schema_version,
+                            mizar_artifact::store::SchemaVersion::new(1, 2)
+                        );
+                        let written_root = root.with_extension("written");
+                        let (written, _, _) = inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                vcs.vcs()[0].id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                (
+                                    "proof-witnesses/checked.json",
+                                    "main.mizir.json",
+                                    &written_root,
+                                ),
+                            )
+                            .unwrap()
+                            .unwrap();
+                        assert_eq!(written, actual);
+                    }
                     assert_eq!(&actual, expected.as_ref().unwrap().as_ref().unwrap());
                     assert_eq!(
                         actual
@@ -2347,23 +2384,6 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                         error
                     );
                     assert!(!absent.exists());
-                } else if case == "buffer" {
-                    assert!(result.unwrap().is_none());
-                    assert!(!root.exists());
-                    assert!(
-                        inputs
-                            .write_native_theorem_artifact_draft(
-                                six,
-                                owner,
-                                vcs.vcs()[0].id,
-                                (profile.clone(), ConcreteFormat::Tptp),
-                                (&policy, &verifier),
-                                ("proof-witnesses/checked.json", "main.json", &root)
-                            )
-                            .unwrap()
-                            .is_none()
-                    );
-                    assert!(!root.exists());
                 } else {
                     assert!(expected.is_none());
                     let error = result.unwrap_err();
@@ -2388,6 +2408,13 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                     owner
                         .validate_published_output(six.snapshot, reference)
                         .unwrap();
+                    if case == "buffer" {
+                        assert!(
+                            owner
+                                .validate_current_output(six.snapshot, reference)
+                                .is_err()
+                        );
+                    }
                 }
                 if case != "buffer" {
                     assert_eq!(six.parent_outputs().len(), 6);
@@ -2619,7 +2646,7 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                         && quantified.inserted_coercions.is_empty()
                 );
 
-                assert_eq!(actual.artifact.schema_version, SchemaVersion::new(1, 1));
+                assert_eq!(actual.artifact.schema_version, SchemaVersion::new(1, 2));
                 let [statement] = actual.artifact.statements.as_slice() else {
                     panic!("one checked theorem statement")
                 };
@@ -3134,8 +3161,31 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                     (&policy, &verifier),
                     ("proof-witnesses/checked.json", &root),
                 );
-                if case == "baseline" {
+                if matches!(case, "baseline" | "buffer") {
                     let (actual, _) = result.unwrap().unwrap();
+                    if case == "buffer" {
+                        assert_eq!(
+                            actual.artifact.schema_version,
+                            mizar_artifact::store::SchemaVersion::new(1, 2)
+                        );
+                        let written_root = root.with_extension("written");
+                        let (written, _, _) = inputs
+                            .write_native_theorem_artifact_draft(
+                                six,
+                                owner,
+                                id,
+                                (profile.clone(), ConcreteFormat::Tptp),
+                                (&policy, &verifier),
+                                (
+                                    "proof-witnesses/checked.json",
+                                    "main.mizir.json",
+                                    &written_root,
+                                ),
+                            )
+                            .unwrap()
+                            .unwrap();
+                        assert_eq!(written, actual);
+                    }
                     let expected = expected.as_ref().unwrap().as_ref().unwrap();
                     let quantified_id = format!(
                         "source.theorem.quantified.{}",
@@ -3312,12 +3362,8 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                     }
                 } else {
                     let lower = result.map(|value| value.is_some());
-                    if case == "buffer" {
-                        assert_eq!(lower, Ok(false));
-                    } else {
-                        assert!(expected.is_none());
-                        assert!(lower.is_err());
-                    }
+                    assert!(expected.is_none());
+                    assert!(lower.is_err());
                     assert_eq!(
                         inputs
                             .write_native_theorem_artifact_draft(
@@ -3338,6 +3384,13 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                     owner
                         .validate_published_output(six.snapshot, reference)
                         .unwrap();
+                    if case == "buffer" {
+                        assert!(
+                            owner
+                                .validate_current_output(six.snapshot, reference)
+                                .is_err()
+                        );
+                    }
                 }
                 if case != "buffer" {
                     for parent in six.parent_outputs() {
@@ -3840,7 +3893,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                 assert_eq!(output.schema_version(), SchemaVersion::new(1));
                 assert_eq!(
                     stored.schema_version,
-                    mizar_artifact::store::SchemaVersion::new(1, 1)
+                    mizar_artifact::store::SchemaVersion::new(1, 2)
                 );
                 assert_eq!(
                     original_outputs
@@ -4017,7 +4070,7 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
             usize::MAX,
             "",
             |fixture, inputs, six, owner, refs, expected, _| {
-                assert_eq!(expected.as_ref().unwrap().is_ok(), case != "buffer");
+                assert!(expected.as_ref().unwrap().is_ok());
                 let before = (
                     six.clone(),
                     inputs.snapshot.clone(),
@@ -4124,7 +4177,7 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                     (&policy, &verifier),
                     (witness, main, &baseline_root),
                 );
-                if case == "repeat" {
+                if matches!(case, "repeat" | "buffer") {
                     owner.allow_work_unit(AllowedWorkUnit::new(
                         IrPipelinePhase::new("ArtifactCommit"),
                         OutputKind::new("SourceTheoremArtifactData"),
@@ -4140,9 +4193,45 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                     (witness, main, &root),
                 );
                 if case == "buffer" {
-                    assert_eq!(lower.unwrap(), None);
-                    assert_eq!(actual.unwrap(), None);
-                    assert!(!root.exists());
+                    let (baseline, baseline_write, _) = lower.unwrap().unwrap();
+                    let (draft, write, commit, _, output) = actual.unwrap().unwrap();
+                    assert_eq!(draft, baseline);
+                    assert_eq!(&draft, expected.as_ref().unwrap().as_ref().unwrap());
+                    assert_eq!(write, baseline_write);
+                    assert_eq!(
+                        draft.artifact.schema_version,
+                        mizar_artifact::store::SchemaVersion::new(1, 2)
+                    );
+                    assert_eq!(
+                        draft.artifact.provenance.captured_source,
+                        Some((
+                            inputs.snapshot.source_versions[0].source_id,
+                            inputs.snapshot.source_versions[0].origin.clone(),
+                            inputs.snapshot.source_versions[0].source_hash,
+                        ))
+                    );
+                    owner
+                        .validate_published_output(six.snapshot, output.any())
+                        .unwrap();
+                    assert!(
+                        owner
+                            .validate_current_output(six.snapshot, output.any())
+                            .is_err()
+                    );
+                    assert_eq!(
+                        read_manifest_file(
+                            &root,
+                            ManifestFileReadOptions {
+                                validate_references: true,
+                                validate_witness_files: true,
+                                expected_manifest_hash: Some(commit.write().artifact_hash),
+                                ..ManifestFileReadOptions::default()
+                            }
+                        )
+                        .unwrap()
+                        .manifest,
+                        *commit.manifest()
+                    );
                 } else if matches!(
                     case,
                     "policy"
@@ -4247,7 +4336,7 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                     (
                         if case == "collected" {
                             0
-                        } else if case == "repeat" {
+                        } else if matches!(case, "repeat" | "buffer") {
                             15
                         } else {
                             14

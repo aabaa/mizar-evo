@@ -33,7 +33,7 @@ driver-session, or publication-token APIs, and it must not depend on
 `mizar-ir` owns:
 
 - validation that every projected source item comes from sealed, readable
-  outputs in the intended current snapshot;
+  outputs published for the intended current snapshot;
 - conversion from crate-local projection input records to the stable
   `mizar-artifact` `VerifiedArtifact` schema shape. Until real producer
   crates expose richer typed records, those crate-local records may directly
@@ -73,6 +73,20 @@ Phase 15, owned outside `mizar-ir`, is responsible for serializing the draft,
 validating manifest publication preconditions, and committing or rejecting the
 artifact. Projection failure leaves sealed IR outputs unchanged and leaves the
 previous published manifest authoritative.
+
+### Required-output publication eligibility
+
+Projection accepts a required output when the publisher has an exact
+`(output, storage generation)` root for it in either the snapshot's
+`current_outputs` set or its `open_buffer_outputs` set. The latter admits a
+genuine `OpenBuffer` / `InternalOnly` output as input to an unpublished draft;
+it does not make that draft or output a current-package artifact. Physical
+handle validation remains a separate required check.
+
+Resealing a collected output does not inherit the old generation's root. A
+physically valid handle whose exact root is absent from both sets fails
+projection with the publisher's `OutputNotPublished` error. Snapshot eligibility
+and all other currentness checks continue to apply.
 
 ## Inputs
 
@@ -218,6 +232,7 @@ Failure conditions include:
 | missing or unsealed output | fail projection; return no draft |
 | output from obsolete snapshot used as current | fail projection; return no draft |
 | collected or unreadable handle | fail projection; return no draft |
+| physically valid output absent from both exact current-package and OpenBuffer roots | fail projection with `OutputNotPublished`; return no draft |
 | schema/version mismatch with `mizar-artifact` | fail projection; return no draft |
 | duplicate projected ids | fail projection; return no draft |
 | unsorted projected collections | canonicalize before draft validation |

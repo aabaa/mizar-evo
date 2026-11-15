@@ -2139,7 +2139,7 @@ fn builtin_enclosing_fixture(multiple: bool) -> (mizar_artifact::verified_artifa
         interface_hash: mizar_session::hash_text("unrefreshed interface"),
         implementation_hash: mizar_session::hash_text("unrefreshed implementation"),
         exports: Vec::new(), statements: Vec::new(), expressions: Vec::new(), obligations, proof_witnesses: references,
-        diagnostics: Vec::new(), provenance: BuildProvenance { toolchain: "structural-test".into(),
+        diagnostics: Vec::new(), provenance: BuildProvenance { captured_source: None, toolchain: "structural-test".into(),
             language_edition: "2026".into(), lockfile_hash: ArtifactHashRef::new(ArtifactHashClass::Artifact,
                 "fixture/lock", SchemaVersion::new(1, 0), mizar_session::hash_text("lock")),
             verifier_config_hash: fingerprint, dependency_artifact_hashes: Vec::new(), cache_key: None },

@@ -42,15 +42,15 @@ malformed、異なる major、新しすぎる minor version を拒否する。
 
 
 ## Statement-bearing normal profile
-通常current_schema_version()は1.1、既定readerはmajor1/minor0..1を許容する。既存通常1.0と明示Builtin2.0は従来JSON field/bytes/hash/下位witness規則/拒否順を完全保持し、メモリstatementsは空のみ、非空は黙って捨てず拒否する。通常1.1だけ必須statements（generic構造データでは空も可）を持ち、通常Ref2/KernelVerifiedだけでBuiltinRef3は不可。Builtin2.0は従来major2/minor0、Ref2/Ref3許容とstatements無しのまま。新major/minor推測・version/status付替え・通常失敗後fallbackは無い。期待通常versionのminorを上限にし、expected1.0は1.1不可、既定expected1.1は1.0..1.1可。versionをfield前に検証し、legacy unknownfield優先と旧共通field読込順を保ち、その後に新statement読込、全体検証/期待module/hashの順にする。
+通常current_schema_version()は1.2、既定readerはmajor1/minor0..2を許容する。2026-11-15 owner判断（後述）が通常1.1 freezeを更新する。既存通常1.0と明示Builtin2.0は従来JSON field/bytes/hash/下位witness規則/拒否順を完全保持し、メモリstatementsは空のみ、非空は黙って捨てず拒否する。通常1.1/1.2は必須statements（generic構造データでは空も可）を持ち、通常Ref2/KernelVerifiedだけでBuiltinRef3は不可。Builtin2.0は従来major2/minor0、Ref2/Ref3許容とstatements無しのまま。新major/minor推測・version/status付替え・通常失敗後fallbackは無い。期待通常versionのminorを上限にし、expected1.0は1.1不可、既定expected1.2は1.0..1.2可、明示expected1.1は1.0..1.1可。versionをfield前に検証し、legacy unknownfield優先と旧共通field読込順を保ち、その後に新statement読込、全体検証/期待module/hashの順にする。
 公開StatementMetadata一種類をVerifiedArtifact.statements:Vec、IR入力/組立、通常serialize/validate-reader/validator/implementation hash、実Driver構築で共有する。正確なrowは `{ "item": string, "source_range": source_range, "elaborated": string, "reserve_binders": [string, ...], "resolved_symbols": { string: string, ... } }`。itemは実owner FQN、rangeは実formulaでheader/全itemでは無い。既存非空文字列/range検証、重複item・重複/空reserve名・空map key/value・未知field/typeを拒否する。別itemの同rangeは禁止せず、新FQN parserを発明しない。reserve順は意味を持ち得るため保持し、mapはBTreeMap、rowはitem順。proof/status/receipt専用fieldは無い。
-通常1.1だけstatementsをserialize/安定implementation投影/全Artifacthashへ含め、旧1.0/Builtin2.0投影はbyte不変。item/text/range/reserve順/map内容は参加し、row順/map挿入順は不参加。interfaceは従来exports/dependencyinterfacesのままで、同enclosingversionの人向けstatement text/rangeを独立した依存identityへ加えない。既存CanonicalHashDomain family/class/versionとverified_at/provenance.cache_key除外を保つ。新codec family/dispatch抽象/JSON parser/公開profileAPI/並列表現は無い。新row parse/validate/mapは実3consumer以上のprivatehelperだけ共有でき、それ以外inline。version predicateは実read/write/validate/hashの3箇所以上で共有可。
-旧通常1.0/Builtin2.0 fixtureを明示的に従来versionへ固定し、bytes/hash/error/status/transaction検証を保つ。旧未対応通常1.1 sentinelだけ通常1.2へ変え未対応拒否意図を保ち、明示current getter期待値は1.1へ、旧hash controlは実fixture1.0domainへ合わせる。無関係fixtureをcurrent()へ移したり言語/JSONgoldenを再baselineしない。新1.1で正確field/roundtrip/必須field/破損、legacyfield拒否/従来profile、item順/重複/reserve/map、hash参加と非参加/宣言version上限を検証。 normal_statement_profile_rejects_genuine_builtin_referenceは既存mizar-testの実builtin_enclosing_fixtureを再利用し、Kernelのみ1.1のread/write成功とRef3の通常1.1 writer/implementation hash/reader拒否を確認する。従来profile test本体は保持する。既存generic literalは明示空statements追加だけ、Default/偽source行は無い。Builtin statement出力/全source完成/権威公開/currentnessは延期。
+通常1.1/1.2はstatementsをserialize/安定implementation投影/全Artifacthashへ含め、旧1.0/Builtin2.0投影はbyte不変。item/text/range/reserve順/map内容は参加し、row順/map挿入順は不参加。interfaceは従来exports/dependencyinterfacesのままで、同enclosingversionの人向けstatement text/rangeを独立した依存identityへ加えない。既存CanonicalHashDomain family/class/versionとverified_at/provenance.cache_key除外を保つ。新codec family/dispatch抽象/JSON parser/公開profileAPI/並列表現は無い。新row parse/validate/mapは実3consumer以上のprivatehelperだけ共有でき、それ以外inline。version predicateは実read/write/validate/hashの3箇所以上で共有可。
+旧通常1.0/Builtin2.0 fixtureを明示的に従来versionへ固定し、bytes/hash/error/status/transaction検証を保つ。未対応通常1.2 sentinelを通常1.3へ変え未対応拒否意図を保ち、明示current getter期待値は1.2へ、旧hash controlは実fixture1.0domainへ合わせる。無関係fixtureをcurrent()へ移したり言語/JSONgoldenを再baselineしない。新1.1で正確field/roundtrip/必須field/破損、legacyfield拒否/従来profile、item順/重複/reserve/map、hash参加と非参加/宣言version上限を検証。 normal_statement_profile_rejects_genuine_builtin_referenceは既存mizar-testの実builtin_enclosing_fixtureを再利用し、Kernelのみ1.1のread/write成功とRef3の通常1.1 writer/implementation hash/reader拒否を確認する。従来profile test本体は保持する。既存generic literalは明示空statements追加だけ、Default/偽source行は無い。Builtin statement出力/全source完成/権威公開/currentnessは延期。
 
 
 ## Explicit built-in enclosing profile
 
-`builtin_verified_artifact_json(&VerifiedArtifact)` と `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` は既存 value/options/type と schema family を使い、上位 version 2.0、major 一致・minor UpToSupported 0 とする。既存 canonical value／検証済み artifact を返し、bytes は canonical_json_bytes を使う。旧通常1.0のbytesと拒否順は不変で、現行通常profileだけ上記statement付き1.1へ進める。
+`builtin_verified_artifact_json(&VerifiedArtifact)` と `read_builtin_verified_artifact(&CanonicalJson, VerifiedArtifactReadOptions)` は既存 value/options/type と schema family を使い、上位 version 2.0、major 一致・minor UpToSupported 0 とする。既存 canonical value／検証済み artifact を返し、bytes は canonical_json_bytes を使う。旧通常1.0のbytesと拒否順は不変で、現行通常profileだけ上記1.2へ進める。
 field、canonical sort、重複検査、obligation/status/fingerprint/policy 整合、expected module/hash、field/path/range 検査、local metadata 除外を保つ。上位2.0は通常 reference2.0/KernelVerified と明示 reference3.0/DischargedBuiltin を許し、いずれも FormulaSubstitutionKernelEvidence だけとする。上位1.0は通常 reference だけを許す。status/version の読み替えや通常 decode 失敗による受理はしない。各 accepted obligation は唯一の witness に対応し、全 witness は一致する accepted obligation を参照する。
 既存 interface/implementation projection と compute/refresh は不変の hash domain/framing に上位 version を使う。2.0の nested witness 直列化だけを切替え、全 reference 内容は implementation identity に含み、interface identity には含めない。field 解釈前の schema/version/class 検査を保ち、任意の expected major を許さない。既存 reader body は通常・明示・manifest 宣言の consumer が使い、既存 nested writer は直列化・implementation hash・検証で使う。並行表現や二用途だけの pipeline abstraction は加えない。
 実 source 三系列で fresh built-in/ATP reference producer を再利用し、round-trip／混在 class／通常互換、独立した hash participant／順序／除外の関係、不正 envelope と他条件が有効な manifest hash／coverage control を確認する。既存normal/profile/transactionの意味を保持し、上記legacyfixture/currentversion/futuresentinelの明示移行調整だけを許す。caller 所有の構造 container は完全 source producer・trusted token・完全 Proof identity・reuse・公開資格を示さず、Proof／phase-15 owner に保留する。
@@ -333,6 +333,29 @@ local/cache metadata である。空でない string または JSON `null` と�
 `interface_hash`、`implementation_hash`、artifact publication equivalence、reproducibility
 comparison には参加しない。
 
+
+### Captured source provenance (normal1.2)
+
+2026-11-15 owner判断により通常1.2の `BuildProvenance.captured_source` を必須とする。
+メモリ表現は `Option<(SourceId, SourceOrigin, Hash)>`。
+旧通常1.0/1.1とBuiltin2.0は `None` のみ、直列化fieldを拒否し、従来field/bytes/hash/witness規則/拒否順を完全保持する。
+通常1.2は `Some` を必須とし、JSON nullは許さず、追加envelopeは次の正確な形とする。
+
+```text
+"captured_source": {
+  "source_id": "mizar-session-source-nonportable-v1:<16 lowercase hexadecimal digits>",
+  "origin": { "kind": "disk" } | { "kind": "open_buffer", "document_version": integer },
+  "source_hash": source_hash_string
+}
+```
+
+`source_id` はSession identityを正確な非portable associationとして往復し、decodeはregistry所属/currentness/公開権限を与えない。
+文書versionはSessionの符号付き64-bit値を保持する。Disk/OpenBufferだけを許し、generated/未知origin、欠落/未知field、型不正、identity/hash不正、top-level `source_hash` と異なるcaptured hashを拒否する。
+producerは実captureのorigin/version/hashを保持し、buffer textのstagingをDiskと記録しない。
+origin/version/hashは安定implementationおよび全Artifact hashへ参加する。
+`provenance.captured_source.source_id` だけを両投影のlocal hash除外へ追加し、SourceIdを安定cache identityにしない。
+interface field、source/dependency検証、witness権威は不変。通常readerはfieldより前にfuture1.3を拒否し、expected1.1は1.2を拒否する。
+
 ## Hash String Domains
 
 `source_hash` は `ModuleSummary` と同じ exact source text hash string を使う。
@@ -406,7 +429,7 @@ artifact-framed preimage text は返さず、task 11 の participation rule も�
 `interface_hash` と `implementation_hash`、export `source_range`、export
 `documentation_ref`、expression metadata、obligation、proof witness path と byte hash、
 diagnostic、`lockfile_hash`、`verifier_config_hash`、dependency `implementation_hash`、
-dependency `artifact_hash`、`toolchain`、`language_edition`、`cache_key`、将来の
+dependency `artifact_hash`、`toolchain`、`language_edition`、`cache_key`、`captured_source`、将来の
 local/cache-only provenance field を除外する。
 
 `implementation_hash` は次の stable published field だけに対して計算される。
@@ -417,11 +440,11 @@ local/cache-only provenance field を除外する。
 - `obligation_fingerprint` とその component fingerprint を含む full `obligations`。
 - full `proof_witnesses`。
 - diagnostic range と related entry を含む full `diagnostics`。
-- stable provenance field: `toolchain`、`language_edition`、`lockfile_hash`、
+- stable provenance field: 通常1.2 captured origin/version/hash、および `toolchain`、`language_edition`、`lockfile_hash`、
   `verifier_config_hash`、full `dependency_artifact_hashes` entry。
 
 `implementation_hash` は `verified_at`、stored `interface_hash` と `implementation_hash`
-field 自身、`cache_key`、将来の local/cache-only provenance field だけを除外する。
+field 自身、`cache_key`、通常1.2の `provenance.captured_source.source_id`、将来の local/cache-only provenance field だけを除外する。
 
 interface hash input は `exports` を `origin_id`、`fully_qualified_name`、`export_kind`、
 `source_range` で sort し、`dependency_artifact_hashes` を module identity で sort したうえで、

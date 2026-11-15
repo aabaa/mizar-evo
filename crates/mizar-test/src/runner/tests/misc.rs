@@ -1136,7 +1136,7 @@ fn normal_statement_profile_rejects_genuine_builtin_reference() {
 fn builtin_enclosing_roundtrip_mixed_and_normal_compatibility() {
     use mizar_artifact::{proof_witness::{ProofStatus, builtin_proof_witness_ref_json, proof_witness_ref_json},
         store::{CanonicalJson, SchemaVersion, canonical_json_bytes}, verified_artifact::*};
-    assert_eq!(current_schema_version(), SchemaVersion::new(1, 1));
+    assert_eq!(current_schema_version(), SchemaVersion::new(1, 2));
     assert!(schema_version_support().check(Some("2.0")).is_err());
     for multiple in [false, true] {
         let (artifact, _) = builtin_enclosing_fixture(multiple);

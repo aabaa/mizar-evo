@@ -68,6 +68,121 @@ pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash 
     .stable_hash()
 }
 
+// Resolve the parent only: following the final entry could delete an external symlink target.
+pub(crate) fn remove_native_artifact_staging(root: &std::path::Path, boundary: &std::path::Path) {
+    let Some(name) = root.file_name() else { return };
+    let parent = root
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or(std::path::Path::new("."));
+    let (Ok(parent), Ok(boundary)) = (parent.canonicalize(), boundary.canonicalize()) else {
+        return;
+    };
+    if !parent.starts_with(&boundary) {
+        return;
+    }
+    let root = parent.join(name);
+    let Ok(metadata) = std::fs::symlink_metadata(&root) else {
+        return;
+    };
+    if metadata.is_dir() && !metadata.file_type().is_symlink() {
+        let _ = std::fs::remove_dir_all(root);
+    } else {
+        let _ = std::fs::remove_file(root);
+    }
+}
+
+struct NativeArtifactStagingCleanup(Option<PathBuf>);
+
+impl NativeArtifactStagingCleanup {
+    fn release(mut self) {
+        self.0 = None;
+    }
+}
+
+impl Drop for NativeArtifactStagingCleanup {
+    fn drop(&mut self) {
+        if let Some(root) = &self.0 {
+            let parent = root.parent().filter(|path| !path.as_os_str().is_empty());
+            remove_native_artifact_staging(root, parent.unwrap_or(std::path::Path::new(".")));
+        }
+    }
+}
+
+#[cfg(test)]
+mod native_artifact_staging_cleanup_tests {
+    use std::{
+        fs,
+        path::PathBuf,
+        sync::atomic::{AtomicU64, Ordering},
+    };
+
+    use super::remove_native_artifact_staging;
+
+    static NEXT_ROOT: AtomicU64 = AtomicU64::new(0);
+
+    fn root() -> PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "mizar-driver-staging-cleanup-{}-{}",
+            std::process::id(),
+            NEXT_ROOT.fetch_add(1, Ordering::Relaxed),
+        ));
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    #[test]
+    fn removes_owned_directory_and_preserves_sibling() {
+        let boundary = root();
+        let owned = boundary.join("staging");
+        let sibling = boundary.join("unrelated");
+        fs::create_dir(&owned).unwrap();
+        fs::write(owned.join("partial"), b"owned").unwrap();
+        fs::write(&sibling, b"keep").unwrap();
+
+        drop(super::NativeArtifactStagingCleanup(Some(owned.clone())));
+
+        assert!(!owned.exists());
+        assert_eq!(fs::read(sibling).unwrap(), b"keep");
+        fs::remove_dir_all(boundary).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn removes_final_symlink_without_following_external_target() {
+        use std::os::unix::fs::symlink;
+
+        let boundary = root();
+        let external = root();
+        let target = external.join("keep");
+        let link = boundary.join("staging");
+        fs::write(&target, b"external").unwrap();
+        symlink(&target, &link).unwrap();
+
+        remove_native_artifact_staging(&link, &boundary);
+
+        assert!(fs::symlink_metadata(&link).is_err());
+        assert_eq!(fs::read(target).unwrap(), b"external");
+        fs::remove_dir_all(boundary).unwrap();
+        fs::remove_dir_all(external).unwrap();
+    }
+
+    #[test]
+    fn refuses_cleanup_when_parent_is_outside_boundary() {
+        let boundary = root();
+        let outside = root();
+        let owned = outside.join("staging");
+        fs::create_dir(&owned).unwrap();
+        fs::write(owned.join("partial"), b"keep").unwrap();
+
+        remove_native_artifact_staging(&owned, &boundary);
+
+        assert_eq!(fs::read(owned.join("partial")).unwrap(), b"keep");
+        fs::remove_dir_all(boundary).unwrap();
+        fs::remove_dir_all(outside).unwrap();
+    }
+}
+
 /// One complete manifest-backed build; retained data grants no currentness authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotPublication {
@@ -155,6 +270,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             let version = unique(self.snapshot.source_versions.iter().filter(|version| {
                 version.package_id == module.package_id && version.module_path == module.module_path
             }))?;
+            self.native_source(version)?;
             let task = unique(graph.tasks().iter().filter(|task| {
                 task.kind == mizar_build::task_graph::TaskKind::ArtifactCommit
                     && task.phases == [PipelinePhase::ArtifactCommit]
@@ -209,13 +325,19 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .ok()?;
             publisher
-                .validate_current_output(self.snapshot.id, output)
+                .validate_published_output(self.snapshot.id, output)
                 .ok()?;
             let artifact = publisher.storage().get(&handle).ok()?;
             let value = verified_artifact_json(&artifact).ok()?;
             if entry.module != artifact.module
                 || artifact.module.package_id != version.package_id.as_str()
                 || artifact.module.module_path != version.module_path.as_str()
+                || artifact.provenance.captured_source
+                    != Some((
+                        version.source_id,
+                        version.origin.clone(),
+                        version.source_hash,
+                    ))
                 || artifact.source_hash != version.source_hash
                 || artifact.source_file != version.normalized_path.as_str()
                 || artifact.schema_version != entry.artifact_hash.schema_version
@@ -5475,9 +5597,6 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let (source, _) = self
             .native_source(version)
             .ok_or_else(|| fail("capture binding failed"))?;
-        if !matches!(version.origin, SourceOrigin::Disk) {
-            return no_draft;
-        }
         self.validate_native_lock_content()?;
         self.validate_native_config_content()?;
         if input.identities().input_hash() != source_input_hash(version)
@@ -5507,7 +5626,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_current_output(input.snapshot, parent)
+                .validate_published_output(input.snapshot, parent)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -6335,10 +6454,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .validate_published_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
         std::fs::create_dir(staging.1).map_err(|error| error.to_string())?;
+        let cleanup = NativeArtifactStagingCleanup(
+            matches!(version.origin, SourceOrigin::OpenBuffer { .. })
+                .then(|| staging.1.to_path_buf()),
+        );
         let domain = artifact_hash_domain(
             reference.witness_artifact_hash.schema_family.clone(),
             reference.witness_artifact_hash.schema_version,
@@ -6446,6 +6569,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 proof_witnesses: vec![reference],
                 diagnostics: Vec::new(),
                 provenance: BuildProvenance {
+                    captured_source: Some((
+                        version.source_id,
+                        version.origin.clone(),
+                        version.source_hash,
+                    )),
                     toolchain: self.snapshot.toolchain.identity().to_owned(),
                     language_edition: version.edition.as_str().to_owned(),
                     lockfile_hash,
@@ -6460,9 +6588,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .validate_published_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
+        cleanup.release();
         Ok(Some((draft, staged)))
     }
 
@@ -6510,6 +6639,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         else {
             return Ok(None);
         };
+        let cleanup = NativeArtifactStagingCleanup(
+            matches!(
+                draft.artifact.provenance.captured_source.as_ref(),
+                Some((_, SourceOrigin::OpenBuffer { .. }, _))
+            )
+            .then(|| staging.2.to_path_buf()),
+        );
         let path = PublishedArtifactPath::new(staging.1).map_err(|error| error.to_string())?;
         if !path.as_str().ends_with(".mizir.json") {
             return Err("native theorem artifact main requires a .mizir.json main path".to_owned());
@@ -6533,7 +6669,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .validate_published_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
         let written = write_published_artifact(staging.2, &path, &value, &domain, &excluded)
@@ -6566,9 +6702,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_current_output(input.snapshot, parent.as_output_ref())
+                .validate_published_output(input.snapshot, parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
         }
+        cleanup.release();
         Ok(Some((draft, written, staged)))
     }
 
@@ -6625,6 +6762,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         else {
             return Ok(None);
         };
+        let cleanup = NativeArtifactStagingCleanup(
+            matches!(
+                draft.artifact.provenance.captured_source.as_ref(),
+                Some((_, SourceOrigin::OpenBuffer { .. }, _))
+            )
+            .then(|| staging.2.to_path_buf()),
+        );
         let fail = |detail| format!("native theorem artifact manifest {detail}");
         let package = self
             .build_plan
@@ -6672,7 +6816,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     let parent = parent.as_output_ref();
                     storage.validate_handle(parent).is_ok()
                         && publisher
-                            .validate_current_output(input.snapshot, parent)
+                            .validate_published_output(input.snapshot, parent)
                             .is_ok()
                 })
         };
@@ -6680,6 +6824,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err(fail("currentness validation failed"));
         }
         let artifact = &draft.artifact;
+        let open_buffer = matches!(
+            artifact.provenance.captured_source.as_ref(),
+            Some((_, SourceOrigin::OpenBuffer { .. }, _))
+        );
         let entry = ModuleArtifactEntry {
             module: artifact.module.clone(),
             source_file: artifact.source_file.clone(),
@@ -6850,13 +6998,22 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     digest: input.identities().input_hash(),
                 }],
                 side_tables: IrSideTables::default(),
-                origin: OutputOrigin::PackageSource,
-                target: PublicationTarget::CurrentPackage,
+                origin: if open_buffer {
+                    OutputOrigin::OpenBuffer
+                } else {
+                    OutputOrigin::PackageSource
+                },
+                target: if open_buffer {
+                    PublicationTarget::InternalOnly
+                } else {
+                    PublicationTarget::CurrentPackage
+                },
             })
             .map_err(|error| error.to_string())?;
         if !freshness(Some(guard.as_str())) {
             return Err(fail("currentness validation failed"));
         }
+        cleanup.release();
         Ok(Some((
             draft,
             main_write,
@@ -9799,7 +9956,7 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             .is_err()
             || [vc_parent, kernel].iter().any(|parent| {
                 publisher
-                    .validate_current_output(input.snapshot, parent.as_output_ref())
+                    .validate_published_output(input.snapshot, parent.as_output_ref())
                     .is_err()
             })
         {
@@ -9844,7 +10001,18 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>();
-        let root = parent.join(format!("{snapshot_hex}-{source_hex}"));
+        let root = parent.join(match &version.origin {
+            SourceOrigin::OpenBuffer {
+                version: document_version,
+            } => format!(
+                "{snapshot_hex}-{source_hex}-open-{}-{document_version}",
+                version
+                    .source_id
+                    .to_nonportable_provenance_string()
+                    .replace(':', "-")
+            ),
+            _ => format!("{snapshot_hex}-{source_hex}"),
+        });
         let kernel_hex = kernel
             .as_output_ref()
             .content_hash()
@@ -9853,7 +10021,7 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>();
         let witness_path = format!("{prefix}/{kernel_hex}.json");
-        match inputs.commit_native_theorem_artifact_manifest(
+        let result = inputs.commit_native_theorem_artifact_manifest(
             &input,
             &publisher,
             vc.id,
@@ -9863,7 +10031,8 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             ),
             (&self.check.candidate.policy, &self.check.verifier_policy),
             (&witness_path, &self.main_path, &root),
-        ) {
+        );
+        match result {
             Ok(Some((_, _, commit, _, handle))) => PhaseResult {
                 output_refs: vec![handle.erase()],
                 artifact_commit: Some(commit),
@@ -12982,7 +13151,10 @@ mod snapshot_test_support {
         QuantifierPolicy, SoftTypeStrategy,
     };
     use mizar_build::{
-        module_index::{ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage},
+        module_index::{
+            ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage,
+            build_module_index,
+        },
         planner::{
             DependencySelection, PlanRequest, WorkspacePackage, lockfile_content_hash,
             parse_lockfile, parse_package_manifest, produce_build_plan,
@@ -13061,6 +13233,18 @@ mod snapshot_test_support {
             DriverSubmitInput<StaticSourceLayout>,
             Arc<PhaseOutputPublisher>,
         ) {
+            self.prepare_with_open_buffers(generation, &[])
+        }
+
+        pub(super) fn prepare_with_open_buffers(
+            &self,
+            generation: u64,
+            open_buffers: &[(&str, i64)],
+        ) -> (
+            BuildSession,
+            DriverSubmitInput<StaticSourceLayout>,
+            Arc<PhaseOutputPublisher>,
+        ) {
             let workspace_root = WorkspaceRoot::new(self.root.to_string_lossy().into_owned());
             let mut input = DriverSubmitInput::new(
                 PlanRequest {
@@ -13109,6 +13293,7 @@ mod snapshot_test_support {
                 input.lockfile.clone(),
             )
             .unwrap();
+            let module_index = build_module_index(&plan, &input.source_layout, &[]).unwrap();
             let draft = BuildRequestDraft {
                 lane: BuildLaneId::new(1),
                 origin: BuildRequestOrigin::Batch(BatchRequest {
@@ -13132,16 +13317,35 @@ mod snapshot_test_support {
             let package_root = self.root.join("alpha");
             let descriptors = ["main", "leaf"].map(|module| {
                 let path = format!("src/{module}.miz");
-                (
-                    DiskSourceLoader::new(&package_root),
+                let loader = DiskSourceLoader::new(&package_root);
+                let source_input = if let Some((_, version)) =
+                    open_buffers.iter().find(|(name, _)| *name == module)
+                {
+                    let absolute_path = package_root.join(&path);
+                    let text: Arc<str> = fs::read_to_string(&absolute_path).unwrap().into();
+                    module_index
+                        .native_open_buffer_input(
+                            &plan.workspace_root,
+                            &PackageId::new("alpha"),
+                            &loader,
+                            SourceOriginInput::OpenBuffer {
+                                uri: format!("file://{}", absolute_path.display()),
+                                expected_version: *version,
+                                actual_version: *version,
+                                text,
+                            },
+                        )
+                        .unwrap()
+                } else {
                     SourceInput {
                         package_id: PackageId::new("alpha"),
                         module_path: ModulePath::new(module),
                         normalized_path: normalize_path(&package_root, Path::new(&path)).unwrap(),
                         edition: Edition::new("2025"),
                         origin: SourceOriginInput::Disk { path: path.into() },
-                    },
-                )
+                    }
+                };
+                (loader, source_input)
             });
             let session = draft
                 .capture_sources(&self.ids, &self.snapshots, descriptors.to_vec())
@@ -13880,6 +14084,7 @@ mod snapshot_payload_tests {
 
 #[cfg(test)]
 mod snapshot_publication_tests {
+    use mizar_session::SourceOrigin;
     use std::{fs, sync::Arc};
 
     use crate::{
@@ -13962,6 +14167,222 @@ mod snapshot_publication_tests {
             .resolve(&submission, &owner)
             .expect("the same genuine completed outputs resolve coherently");
         assert_eq!(published.as_ref(), &resolved);
+    }
+
+    #[test]
+    fn genuine_open_buffer_build_publishes_complete_truthful_provenance() {
+        let fixture = Fixture::new();
+        let unrelated = fixture.root.join("alpha/artifacts/unrelated");
+        fs::write(&unrelated, b"keep").unwrap();
+        let (session, input, owner) =
+            fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("genuine OpenBuffer build submits");
+
+        assert_eq!(snapshot_events(&driver, session.id()).len(), 1);
+        let publication = snapshot_events(&driver, session.id()).remove(0);
+        assert!(
+            fixture.resolve(&submission, &owner).is_none(),
+            "ephemeral stages were discarded"
+        );
+        assert_eq!(fs::read(unrelated).unwrap(), b"keep");
+        let versions = &session.captured().snapshot().source_versions;
+        assert_eq!(publication.artifacts().len(), 2);
+        for artifact in publication.artifacts() {
+            let version = versions
+                .iter()
+                .find(|version| {
+                    version.module_path.as_str() == artifact.module.module_path.as_str()
+                })
+                .unwrap();
+            assert!(matches!(
+                version.origin,
+                SourceOrigin::OpenBuffer { version: 7 }
+            ));
+            assert_eq!(artifact.source_hash, version.source_hash);
+            assert_eq!(
+                artifact.provenance.captured_source,
+                Some((
+                    version.source_id,
+                    version.origin.clone(),
+                    version.source_hash
+                ))
+            );
+        }
+    }
+
+    #[test]
+    fn newer_open_buffer_capture_supersedes_older_currentness() {
+        let fixture = Fixture::new();
+        let (older, older_input, owner) =
+            fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
+        let (newer, newer_input, newer_owner) =
+            fixture.prepare_with_open_buffers(2, &[("main", 8), ("leaf", 8)]);
+        assert_eq!(
+            older.captured().snapshot().id,
+            newer.captured().snapshot().id
+        );
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
+        driver
+            .submit_captured(older.clone(), &fixture.ids, &fixture.snapshots, older_input)
+            .unwrap();
+        let retained = snapshot_events(&driver, older.id()).remove(0);
+        driver = driver.with_output_publisher(newer_owner);
+        driver
+            .submit_captured(newer.clone(), &fixture.ids, &fixture.snapshots, newer_input)
+            .unwrap();
+        assert!(
+            driver
+                .validate_current_native_diagnostics(older.id(), &fixture.snapshots)
+                .is_err()
+        );
+        assert!(
+            driver
+                .validate_current_native_diagnostics(newer.id(), &fixture.snapshots)
+                .is_ok()
+        );
+        let current = snapshot_events(&driver, newer.id()).remove(0);
+        for (old, new) in retained.artifacts().iter().zip(current.artifacts()) {
+            assert!(matches!(
+                old.provenance.captured_source,
+                Some((_, SourceOrigin::OpenBuffer { version: 7 }, _))
+            ));
+            assert!(matches!(
+                new.provenance.captured_source,
+                Some((_, SourceOrigin::OpenBuffer { version: 8 }, _))
+            ));
+        }
+    }
+
+    #[test]
+    fn transition_to_disk_publishes_distinct_disk_provenance() {
+        let fixture = Fixture::new();
+        let (buffer, buffer_input, owner) =
+            fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
+        driver
+            .submit_captured(
+                buffer.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                buffer_input,
+            )
+            .expect("genuine OpenBuffer build submits");
+        let buffer_publication = snapshot_events(&driver, buffer.id()).remove(0);
+
+        let (disk, disk_input, disk_owner) = fixture.prepare(2);
+        assert_eq!(
+            buffer.captured().snapshot().id,
+            disk.captured().snapshot().id
+        );
+        driver = driver.with_output_publisher(disk_owner.clone());
+        let disk_submission = driver
+            .submit_captured(disk.clone(), &fixture.ids, &fixture.snapshots, disk_input)
+            .expect("genuine Disk build submits after the editor transition");
+        let disk_publication = fixture.resolve(&disk_submission, &disk_owner).unwrap();
+
+        assert!(
+            driver
+                .validate_current_native_diagnostics(buffer.id(), &fixture.snapshots)
+                .is_err()
+        );
+        assert_eq!(snapshot_events(&driver, disk.id()).len(), 1);
+        for (old, new) in buffer_publication
+            .artifacts()
+            .iter()
+            .zip(disk_publication.artifacts())
+        {
+            let Some((old_id, SourceOrigin::OpenBuffer { .. }, old_hash)) =
+                &old.provenance.captured_source
+            else {
+                panic!("the retained artifact preserves its OpenBuffer provenance")
+            };
+            let Some((new_id, SourceOrigin::Disk, new_hash)) = &new.provenance.captured_source
+            else {
+                panic!("the later artifact records its genuine Disk provenance")
+            };
+            assert_ne!(old_id, new_id);
+            assert_eq!(*old_hash, old.source_hash);
+            assert_eq!(*new_hash, new.source_hash);
+        }
+    }
+
+    #[test]
+    fn mixed_origins_publish_as_one_complete_honest_cohort() {
+        let fixture = Fixture::new();
+        let (session, input, owner) = fixture.prepare_with_open_buffers(1, &[("main", 7)]);
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
+        let _submission = driver
+            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .expect("genuine mixed-origin build submits");
+        assert_eq!(snapshot_events(&driver, session.id()).len(), 1);
+        let publication = snapshot_events(&driver, session.id()).remove(0);
+        assert_eq!(publication.artifacts().len(), 2);
+        for artifact in publication.artifacts() {
+            let Some((source_id, origin, source_hash)) = &artifact.provenance.captured_source
+            else {
+                panic!("every artifact carries its captured source provenance")
+            };
+            assert!(!source_id.to_nonportable_provenance_string().is_empty());
+            assert_eq!(*source_hash, artifact.source_hash);
+            match artifact.module.module_path.as_str() {
+                "main" => assert!(matches!(origin, SourceOrigin::OpenBuffer { version: 7 })),
+                "leaf" => assert!(matches!(origin, SourceOrigin::Disk)),
+                other => panic!("unexpected artifact module {other}"),
+            }
+        }
+    }
+
+    #[test]
+    fn changed_open_buffer_capture_cannot_publish_superseded_snapshot() {
+        let fixture = Fixture::new();
+        let (older, input, owner) =
+            fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
+        fs::write(
+            fixture.root.join("alpha/src/main.miz"),
+            "theorem Changed: for X being set holds X = X proof let X be set; thus X = X; end;",
+        )
+        .unwrap();
+        let (newer, _, _) = fixture.prepare_with_open_buffers(2, &[("main", 8), ("leaf", 8)]);
+        assert_ne!(
+            older.captured().snapshot().id,
+            newer.captured().snapshot().id
+        );
+        owner
+            .replace_current_snapshot(
+                older.captured().snapshot().id,
+                newer.captured().snapshot().id,
+            )
+            .unwrap();
+        let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
+        driver
+            .submit_captured(older.clone(), &fixture.ids, &fixture.snapshots, input)
+            .unwrap();
+        assert!(snapshot_events(&driver, older.id()).is_empty());
+    }
+
+    #[test]
+    fn incomplete_open_buffer_pipeline_never_publishes_partial_cohort() {
+        for missing_commit in [true, false] {
+            let fixture = Fixture::new();
+            if !missing_commit {
+                fs::write(
+                    fixture.root.join("alpha/src/leaf.miz"),
+                    "theorem Leaf: invalid Mizar.",
+                )
+                .unwrap();
+            }
+            let (session, input, owner) =
+                fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
+            let mut driver =
+                CompilerDriver::new(registry(!missing_commit)).with_output_publisher(owner);
+            driver
+                .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+                .unwrap();
+            assert!(snapshot_events(&driver, session.id()).is_empty());
+        }
     }
 
     #[test]

@@ -490,6 +490,7 @@ mod tests {
             proof_witnesses: Vec::new(),
             diagnostics: Vec::new(),
             provenance: BuildProvenance {
+                captured_source: None,
                 toolchain: "mizar-evo-test".to_owned(),
                 language_edition: "2026".to_owned(),
                 lockfile_hash: hash_ref(

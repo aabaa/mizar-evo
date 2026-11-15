@@ -128,6 +128,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 const BUILD_SNAPSHOT_HASH_DOMAIN: &[u8] = b"mizar-session/build-snapshot-id/v1";
 const BUILD_SNAPSHOT_SERIALIZED_PREFIX: &str = "mizar-session-build-snapshot-v1:";
+const SOURCE_NONPORTABLE_PREFIX: &str = "mizar-session-source-nonportable-v1:";
 const FIRST_ALLOCATOR_ID: u64 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
@@ -295,6 +296,30 @@ impl BuildRequestId {
 impl SourceId {
     pub fn to_published_schema_string(self) -> Result<String, IdError> {
         reject_non_persistable_id()
+    }
+
+    /// Encodes exact registry identity for explicitly nonportable provenance.
+    /// This grants no registry membership, currentness, or publication authority.
+    pub fn to_nonportable_provenance_string(self) -> String {
+        let mut encoded = String::from(SOURCE_NONPORTABLE_PREFIX);
+        push_lower_hex(&mut encoded, &self.0.0.to_be_bytes());
+        encoded
+    }
+
+    /// Restores a nonportable identity without authenticating its issuing registry.
+    pub fn from_nonportable_provenance_str(serialized: &str) -> Result<Self, IdError> {
+        let Some(hex) = serialized.strip_prefix(SOURCE_NONPORTABLE_PREFIX) else {
+            return Err(IdError::WrongIdDomain);
+        };
+        if hex.len() != 16 {
+            return Err(IdError::MalformedSerializedId);
+        }
+        let mut bytes = [0; 8];
+        for (index, pair) in hex.as_bytes().as_chunks::<2>().0.iter().enumerate() {
+            bytes[index] =
+                (decode_lower_hex_nibble(pair[0])? << 4) | decode_lower_hex_nibble(pair[1])?;
+        }
+        Ok(Self(OpaqueId(u64::from_be_bytes(bytes))))
     }
 }
 
@@ -627,6 +652,44 @@ mod tests {
         assert_eq!(
             SnapshotLeaseId(OpaqueId(5)).to_published_schema_string(),
             Err(IdError::NonPersistableSerialization)
+        );
+    }
+
+    #[test]
+    fn source_nonportable_provenance_round_trips_exact_identity() {
+        for value in [0, 1, 0x0123_abcd, u64::MAX] {
+            let source = SourceId(OpaqueId(value));
+            let encoded = source.to_nonportable_provenance_string();
+            assert_eq!(
+                SourceId::from_nonportable_provenance_str(&encoded),
+                Ok(source)
+            );
+            assert_eq!(
+                source.to_published_schema_string(),
+                Err(IdError::NonPersistableSerialization)
+            );
+        }
+        assert_eq!(
+            SourceId(OpaqueId(0x0123_abcd)).to_nonportable_provenance_string(),
+            "mizar-session-source-nonportable-v1:000000000123abcd"
+        );
+        for suffix in [
+            "",
+            "1",
+            "00000000000000000",
+            "00000000000000AB",
+            "000000000000000g",
+        ] {
+            assert_eq!(
+                SourceId::from_nonportable_provenance_str(&format!(
+                    "mizar-session-source-nonportable-v1:{suffix}"
+                )),
+                Err(IdError::MalformedSerializedId)
+            );
+        }
+        assert_eq!(
+            SourceId::from_nonportable_provenance_str("mizar-session-source-v1:0000000000000001"),
+            Err(IdError::WrongIdDomain)
         );
     }
 

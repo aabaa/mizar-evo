@@ -4684,6 +4684,11 @@ fn with_native_theorem_artifact_context(
                         verifier_config_hash,
                         dependency_artifact_hashes: vec![],
                         cache_key: None,
+                        captured_source: Some((
+                            snapshot.source_versions[0].source_id,
+                            snapshot.source_versions[0].origin.clone(),
+                            snapshot.source_versions[0].source_hash,
+                        )),
                     },
                 })
                 .map_err(|error| error.to_string()),

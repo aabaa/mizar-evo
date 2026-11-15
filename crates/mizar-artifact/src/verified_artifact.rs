@@ -9,7 +9,7 @@ use std::{
     fmt,
 };
 
-use mizar_session::Hash;
+use mizar_session::{Hash, SourceId, SourceOrigin};
 
 use crate::{
     module_summary::{ModuleSummaryIdentity, SOURCE_HASH_CONSTRUCTION, SourceRangeSummary},
@@ -272,6 +272,9 @@ pub struct BuildProvenance {
     pub dependency_artifact_hashes: Vec<DependencyArtifactHash>,
     /// Optional opaque cache key, excluded from stable hashes.
     pub cache_key: Option<String>,
+    /// Exact nonportable source identity, honest origin, and captured text hash.
+    /// Required by normal 1.2; absent in all legacy profiles.
+    pub captured_source: Option<(SourceId, SourceOrigin, Hash)>,
 }
 
 /// Dependency artifact hashes recorded in provenance.
@@ -348,7 +351,7 @@ pub enum VerifiedArtifactError {
 
 /// Returns the current verified artifact schema version.
 pub const fn current_schema_version() -> SchemaVersion {
-    SchemaVersion::new(1, 1)
+    SchemaVersion::new(1, 2)
 }
 
 /// Returns the supported verified artifact schema-version range.
@@ -367,6 +370,8 @@ pub fn artifact_hash_excluded_paths() -> Vec<FieldPath> {
         FieldPath::new(["verified_at"]).expect("verified_at hash-exclusion path is valid"),
         FieldPath::new(["provenance", "cache_key"])
             .expect("provenance cache_key hash-exclusion path is valid"),
+        FieldPath::new(["provenance", "captured_source", "source_id"])
+            .expect("captured source_id hash-exclusion path is valid"),
     ]
 }
 
@@ -435,7 +440,7 @@ pub(crate) fn read_verified_artifact_for_version(
         "diagnostics",
         "provenance",
     ];
-    if schema_version == SchemaVersion::new(1, 1) {
+    if has_statements(schema_version) {
         allowed.push("statements");
     }
     reject_unknown_fields(fields, &allowed, "$")?;
@@ -479,8 +484,12 @@ pub(crate) fn read_verified_artifact_for_version(
             required_field(fields, "diagnostics", "$")?,
             "$.diagnostics",
         )?,
-        provenance: read_provenance(required_field(fields, "provenance", "$")?, "$.provenance")?,
-        statements: if schema_version == SchemaVersion::new(1, 1) {
+        provenance: read_provenance(
+            required_field(fields, "provenance", "$")?,
+            "$.provenance",
+            schema_version,
+        )?,
+        statements: if has_statements(schema_version) {
             expect_array(required_field(fields, "statements", "$")?, "$.statements")?
                 .iter()
                 .enumerate()
@@ -865,8 +874,9 @@ fn validate_artifact_shape(artifact: &VerifiedArtifact) -> Result<(), VerifiedAr
     )?;
     validate_diagnostics(&artifact.diagnostics, "$.diagnostics")?;
     validate_provenance(&artifact.provenance, "$.provenance")?;
+    validate_captured_source(artifact)?;
     validate_witness_consistency(artifact)?;
-    if artifact.schema_version != SchemaVersion::new(1, 1) && !artifact.statements.is_empty() {
+    if !has_statements(artifact.schema_version) && !artifact.statements.is_empty() {
         return Err(VerifiedArtifactError::InvalidField {
             path: "$.statements".to_owned(),
             reason: "statements require normal schema version 1.1".to_owned(),
@@ -978,7 +988,7 @@ fn verified_artifact_json_unchecked(
         ),
         ("provenance", provenance_json(&artifact.provenance)?),
     ];
-    if artifact.schema_version == SchemaVersion::new(1, 1) {
+    if has_statements(artifact.schema_version) {
         let mut statements = artifact.statements.iter().collect::<Vec<_>>();
         statements.sort_by(|left, right| left.item.cmp(&right.item));
         fields.push((
@@ -1048,7 +1058,8 @@ pub fn interface_hash_input_json(
 pub fn implementation_hash_input_json(
     artifact: &VerifiedArtifact,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
-    if artifact.schema_version != SchemaVersion::new(1, 1) && !artifact.statements.is_empty() {
+    validate_captured_source(artifact)?;
+    if !has_statements(artifact.schema_version) && !artifact.statements.is_empty() {
         return Err(VerifiedArtifactError::InvalidField {
             path: "$.statements".to_owned(),
             reason: "statements require normal schema version 1.1".to_owned(),
@@ -1122,7 +1133,7 @@ pub fn implementation_hash_input_json(
             provenance_implementation_json(&artifact.provenance)?,
         ),
     ];
-    if artifact.schema_version == SchemaVersion::new(1, 1) {
+    if has_statements(artifact.schema_version) {
         let mut statements = artifact.statements.iter().collect::<Vec<_>>();
         statements.sort_by(|left, right| left.item.cmp(&right.item));
         fields.push((
@@ -1460,7 +1471,7 @@ fn diagnostic_related_json(
 }
 
 fn provenance_json(provenance: &BuildProvenance) -> Result<CanonicalJson, VerifiedArtifactError> {
-    json_object([
+    let mut fields = vec![
         ("toolchain", CanonicalJson::string(&provenance.toolchain)),
         (
             "language_edition",
@@ -1487,13 +1498,43 @@ fn provenance_json(provenance: &BuildProvenance) -> Result<CanonicalJson, Verifi
             "cache_key",
             optional_string_json(provenance.cache_key.as_deref()),
         ),
-    ])
+    ];
+    if let Some((source_id, origin, source_hash)) = &provenance.captured_source {
+        let mut captured = vec![
+            (
+                "origin",
+                match origin {
+                    SourceOrigin::Disk => json_object([("kind", CanonicalJson::string("disk"))])?,
+                    SourceOrigin::OpenBuffer { version } => json_object([
+                        ("kind", CanonicalJson::string("open_buffer")),
+                        ("document_version", CanonicalJson::integer(*version)),
+                    ])?,
+                    _ => {
+                        return Err(VerifiedArtifactError::InvalidField {
+                            path: "$.provenance.captured_source.origin".to_owned(),
+                            reason: "requires Disk or OpenBuffer origin".to_owned(),
+                        });
+                    }
+                },
+            ),
+            (
+                "source_hash",
+                CanonicalJson::string(source_hash_string(*source_hash)),
+            ),
+        ];
+        captured.push((
+            "source_id",
+            CanonicalJson::string(source_id.to_nonportable_provenance_string()),
+        ));
+        fields.push(("captured_source", json_object(captured)?));
+    }
+    json_object(fields)
 }
 
 fn provenance_implementation_json(
     provenance: &BuildProvenance,
 ) -> Result<CanonicalJson, VerifiedArtifactError> {
-    json_object([
+    let mut fields = vec![
         ("toolchain", CanonicalJson::string(&provenance.toolchain)),
         (
             "language_edition",
@@ -1516,7 +1557,33 @@ fn provenance_implementation_json(
                     .collect::<Result<Vec<_>, _>>()?,
             ),
         ),
-    ])
+    ];
+    if let Some((_, origin, source_hash)) = &provenance.captured_source {
+        let captured = vec![
+            (
+                "origin",
+                match origin {
+                    SourceOrigin::Disk => json_object([("kind", CanonicalJson::string("disk"))])?,
+                    SourceOrigin::OpenBuffer { version } => json_object([
+                        ("kind", CanonicalJson::string("open_buffer")),
+                        ("document_version", CanonicalJson::integer(*version)),
+                    ])?,
+                    _ => {
+                        return Err(VerifiedArtifactError::InvalidField {
+                            path: "$.provenance.captured_source.origin".to_owned(),
+                            reason: "requires Disk or OpenBuffer origin".to_owned(),
+                        });
+                    }
+                },
+            ),
+            (
+                "source_hash",
+                CanonicalJson::string(source_hash_string(*source_hash)),
+            ),
+        ];
+        fields.push(("captured_source", json_object(captured)?));
+    }
+    json_object(fields)
 }
 
 fn dependency_artifact_hash_json(
@@ -1569,6 +1636,42 @@ fn optional_artifact_hash_json(value: Option<&ArtifactHashRef>) -> CanonicalJson
 
 fn string_array_json(values: &[String]) -> CanonicalJson {
     CanonicalJson::array(values.iter().map(CanonicalJson::string))
+}
+
+fn has_statements(version: SchemaVersion) -> bool {
+    version == SchemaVersion::new(1, 1) || version == SchemaVersion::new(1, 2)
+}
+
+fn validate_captured_source(artifact: &VerifiedArtifact) -> Result<(), VerifiedArtifactError> {
+    let path = "$.provenance.captured_source";
+    match (
+        &artifact.provenance.captured_source,
+        artifact.schema_version == SchemaVersion::new(1, 2),
+    ) {
+        (None, true) => Err(VerifiedArtifactError::MissingField {
+            path: path.to_owned(),
+        }),
+        (Some(_), false) => Err(VerifiedArtifactError::InvalidField {
+            path: path.to_owned(),
+            reason: "captured provenance requires normal schema version 1.2".to_owned(),
+        }),
+        (Some((_, origin, source_hash)), true) => {
+            if !matches!(origin, SourceOrigin::Disk | SourceOrigin::OpenBuffer { .. }) {
+                return Err(VerifiedArtifactError::InvalidField {
+                    path: field_path(path, "origin"),
+                    reason: "requires Disk or OpenBuffer origin".to_owned(),
+                });
+            }
+            if *source_hash != artifact.source_hash {
+                return Err(VerifiedArtifactError::InvalidField {
+                    path: field_path(path, "source_hash"),
+                    reason: "must equal the artifact source_hash".to_owned(),
+                });
+            }
+            Ok(())
+        }
+        (None, false) => Ok(()),
+    }
 }
 
 fn enclosing_version_support(
@@ -2073,20 +2176,21 @@ fn read_related(
 fn read_provenance(
     value: &CanonicalJson,
     path: &str,
+    schema_version: SchemaVersion,
 ) -> Result<BuildProvenance, VerifiedArtifactError> {
     let fields = expect_object(value, path)?;
-    reject_unknown_fields(
-        fields,
-        &[
-            "toolchain",
-            "language_edition",
-            "lockfile_hash",
-            "verifier_config_hash",
-            "dependency_artifact_hashes",
-            "cache_key",
-        ],
-        path,
-    )?;
+    let mut allowed = vec![
+        "toolchain",
+        "language_edition",
+        "lockfile_hash",
+        "verifier_config_hash",
+        "dependency_artifact_hashes",
+        "cache_key",
+    ];
+    if schema_version == SchemaVersion::new(1, 2) {
+        allowed.push("captured_source");
+    }
+    reject_unknown_fields(fields, &allowed, path)?;
     let provenance = BuildProvenance {
         toolchain: read_required_string(fields, "toolchain", path)?,
         language_edition: read_required_string(fields, "language_edition", path)?,
@@ -2107,6 +2211,66 @@ fn read_provenance(
             &field_path(path, "dependency_artifact_hashes"),
         )?,
         cache_key: read_optional_string(fields, "cache_key", path)?,
+        captured_source: if schema_version == SchemaVersion::new(1, 2) {
+            let captured_path = field_path(path, "captured_source");
+            let captured = expect_object(
+                required_field(fields, "captured_source", path)?,
+                &captured_path,
+            )?;
+            reject_unknown_fields(
+                captured,
+                &["source_id", "origin", "source_hash"],
+                &captured_path,
+            )?;
+            let source_id = SourceId::from_nonportable_provenance_str(&read_required_string(
+                captured,
+                "source_id",
+                &captured_path,
+            )?)
+            .map_err(|error| VerifiedArtifactError::InvalidField {
+                path: field_path(&captured_path, "source_id"),
+                reason: error.to_string(),
+            })?;
+            let origin_path = field_path(&captured_path, "origin");
+            let origin = expect_object(
+                required_field(captured, "origin", &captured_path)?,
+                &origin_path,
+            )?;
+            let kind = read_required_string(origin, "kind", &origin_path)?;
+            let origin = match kind.as_str() {
+                "disk" => {
+                    reject_unknown_fields(origin, &["kind"], &origin_path)?;
+                    SourceOrigin::Disk
+                }
+                "open_buffer" => {
+                    reject_unknown_fields(origin, &["kind", "document_version"], &origin_path)?;
+                    let version = required_field(origin, "document_version", &origin_path)?;
+                    let CanonicalJson::Integer(version) = version else {
+                        return Err(VerifiedArtifactError::UnexpectedType {
+                            path: field_path(&origin_path, "document_version"),
+                            expected: "an integer",
+                        });
+                    };
+                    SourceOrigin::OpenBuffer { version: *version }
+                }
+                _ => {
+                    return Err(VerifiedArtifactError::InvalidField {
+                        path: field_path(&origin_path, "kind"),
+                        reason: "requires disk or open_buffer".to_owned(),
+                    });
+                }
+            };
+            Some((
+                source_id,
+                origin,
+                read_source_hash(
+                    required_field(captured, "source_hash", &captured_path)?,
+                    &field_path(&captured_path, "source_hash"),
+                )?,
+            ))
+        } else {
+            None
+        },
     };
     validate_provenance(&provenance, path)?;
     Ok(provenance)

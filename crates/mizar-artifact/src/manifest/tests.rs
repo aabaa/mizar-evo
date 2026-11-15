@@ -1106,6 +1106,7 @@ fn sample_verified_artifact(
             explanation_ref: None,
         }],
         provenance: BuildProvenance {
+            captured_source: None,
             toolchain: "mizar-evo-test".to_owned(),
             language_edition: "2026".to_owned(),
             lockfile_hash: hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 36),

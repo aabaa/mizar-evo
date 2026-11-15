@@ -1524,6 +1524,7 @@ impl CompilerDriver {
         };
 
         let outcome = scheduler_outcome(&scheduler_run);
+
         let dispatch_gap_phases = dispatch_gap_phases(&task_graph, &scheduler_run);
         let status = if matches!(outcome, BuildSessionOutcome::Blocked)
             && !dispatch_gap_phases.is_empty()
@@ -1543,6 +1544,57 @@ impl CompilerDriver {
                 phase_results.remove(task);
             }
         }
+        // OpenBuffer roots live only until the same-call coherent payload has consumed them.
+        // Capture genuine commit roots before stale-output suppression can discard the handoffs.
+        let open_staging_roots =
+            phase_results
+                .iter()
+                .flat_map(|(task_id, results)| {
+                    let task = task_graph.tasks().iter().find(|task| task.id == *task_id);
+                    results
+                        .iter()
+                        .filter_map(|result| {
+                            let commit = result.artifact_commit.as_ref()?;
+                            let mizar_build::task_graph::WorkUnit::Module { module } = &task?.unit
+                            else {
+                                return None;
+                            };
+                            let version = session.captured.snapshot.source_versions.iter().find(
+                                |version| {
+                                    version.package_id == module.package
+                                        && version.module_path == module.path
+                                },
+                            )?;
+                            if !matches!(
+                                version.origin,
+                                mizar_session::SourceOrigin::OpenBuffer { .. }
+                            ) {
+                                return None;
+                            }
+                            let package = build_plan
+                                .packages
+                                .iter()
+                                .find(|package| package.package_id == module.package)?;
+                            let mizar_build::planner::PackagePlanSource::Workspace { root, .. } =
+                                &package.source
+                            else {
+                                return None;
+                            };
+                            let package_root = std::path::PathBuf::from(
+                                session.captured.snapshot.workspace_root.as_str(),
+                            )
+                            .join(root)
+                            .canonicalize()
+                            .ok()?;
+                            let label = mizar_artifact::store::PublishedArtifactPath::new(
+                                &commit.manifest().artifact_root,
+                            )
+                            .ok()?;
+                            Some((package_root.join(label.as_str()), package_root))
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
         let publisher_current = self.output_publisher.as_ref().is_none_or(|publisher| {
             publisher
                 .validate_current_snapshot(session.captured.snapshot.id)
@@ -1773,7 +1825,7 @@ impl CompilerDriver {
                     }
                     let publisher = self.output_publisher.as_ref()?;
                     publisher
-                        .validate_current_output(session.captured.snapshot.id, output)
+                        .validate_published_output(session.captured.snapshot.id, output)
                         .ok()?;
                     publisher.storage().validate_handle(output).ok()?;
                     let finished = driver_scheduler_run.events.iter().find(|event| {
@@ -1812,6 +1864,9 @@ impl CompilerDriver {
                 })
                 .map(Arc::new)
             });
+        for (root, boundary) in open_staging_roots {
+            crate::frontend_adapter::remove_native_artifact_staging(&root, &boundary);
+        }
         // Borrow the same-call owner handoffs only after mutation and complete assembly.
         let artifact_commits = artifact_commits
             .into_iter()

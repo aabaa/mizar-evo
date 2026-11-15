@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use mizar_session::Hash;
+use mizar_session::{Hash, SourceId, SourceOrigin};
 
 use super::{
     ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
@@ -139,7 +139,7 @@ fn public_hash_input_helpers_match_computed_hashes() {
 #[test]
 fn incompatible_version_reads_fail_cleanly() {
     let mut json = sample_json();
-    set_field(&mut json, "schema_version", CanonicalJson::string("1.2"));
+    set_field(&mut json, "schema_version", CanonicalJson::string("1.3"));
 
     assert!(matches!(
         read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
@@ -1290,6 +1290,7 @@ fn sample_artifact() -> VerifiedArtifact {
             },
         ],
         provenance: BuildProvenance {
+            captured_source: None,
             toolchain: "mizar-evo-test".to_owned(),
             language_edition: "2026".to_owned(),
             lockfile_hash: hash_ref(ArtifactHashClass::Artifact, "mizar-build/lockfile", 36),
@@ -1561,7 +1562,7 @@ fn duplicate_array_item(values: &mut Vec<CanonicalJson>, index: usize) {
 
 #[test]
 fn statement_profile_exact_fields_round_trip_and_row_normalization() {
-    assert_eq!(current_schema_version(), SchemaVersion::new(1, 1));
+    assert_eq!(current_schema_version(), SchemaVersion::new(1, 2));
     let artifact = sample_statement_artifact();
     let json = verified_artifact_json(&artifact).unwrap();
     let CanonicalJson::Object(fields) = &json else {
@@ -1923,7 +1924,7 @@ fn statement_version_bounds_and_legacy_field_priority_remain_closed() {
             SchemaVersionError::MinorTooNew { .. }
         ))
     ));
-    for version in ["1.2", "2.1", "3.0"] {
+    for version in ["1.3", "2.1", "3.0"] {
         let mut value = json.clone();
         set_field(&mut value, "schema_version", CanonicalJson::string(version));
         set_field(&mut value, "aaa_unknown", CanonicalJson::Null);
@@ -2138,4 +2139,334 @@ fn legacy_profiles_keep_independently_mapped_bytes_and_hash_projections() {
             domain.hash(&expected, &artifact_hash_excluded_paths())
         );
     }
+}
+
+fn captured_artifact(origin: SourceOrigin) -> VerifiedArtifact {
+    let mut artifact = sample_statement_artifact();
+    artifact.schema_version = SchemaVersion::new(1, 2);
+    artifact.provenance.captured_source = Some((
+        SourceId::from_nonportable_provenance_str(
+            "mizar-session-source-nonportable-v1:0000000000000001",
+        )
+        .unwrap(),
+        origin,
+        artifact.source_hash,
+    ));
+    artifact.refresh_hashes().unwrap();
+    artifact
+}
+
+#[test]
+fn captured_provenance_exact_fields_and_both_origins_round_trip() {
+    for (origin, expected_origin) in [
+        (
+            SourceOrigin::Disk,
+            CanonicalJson::object([("kind", CanonicalJson::string("disk"))]).unwrap(),
+        ),
+        (
+            SourceOrigin::OpenBuffer { version: -7 },
+            CanonicalJson::object([
+                ("kind", CanonicalJson::string("open_buffer")),
+                ("document_version", CanonicalJson::integer(-7)),
+            ])
+            .unwrap(),
+        ),
+    ] {
+        let artifact = captured_artifact(origin);
+        let mut json = verified_artifact_json(&artifact).unwrap();
+        let captured =
+            object_field_mut(object_field_mut(&mut json, "provenance"), "captured_source").clone();
+        let expected = CanonicalJson::object([
+            (
+                "source_id",
+                CanonicalJson::string("mizar-session-source-nonportable-v1:0000000000000001"),
+            ),
+            ("origin", expected_origin.clone()),
+            (
+                "source_hash",
+                CanonicalJson::string(format!("mizar-session/hash-text/v1:{}", "01".repeat(32))),
+            ),
+        ])
+        .unwrap();
+        assert_eq!(captured, expected);
+        assert_eq!(
+            read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap(),
+            artifact
+        );
+        assert_eq!(
+            write_verified_artifact(&artifact).unwrap(),
+            canonical_json_string(&json).into_bytes()
+        );
+        let mut implementation = implementation_hash_input_json(&artifact).unwrap();
+        assert_eq!(
+            object_field_mut(
+                object_field_mut(&mut implementation, "provenance"),
+                "captured_source"
+            )
+            .clone(),
+            CanonicalJson::object([
+                ("origin", expected_origin),
+                (
+                    "source_hash",
+                    CanonicalJson::string(format!(
+                        "mizar-session/hash-text/v1:{}",
+                        "01".repeat(32)
+                    ))
+                ),
+            ])
+            .unwrap(),
+        );
+        assert!(matches!(
+            read_verified_artifact_for_version(
+                &json,
+                VerifiedArtifactReadOptions::default(),
+                SchemaVersion::new(1, 1),
+            ),
+            Err(VerifiedArtifactError::SchemaVersion(
+                SchemaVersionError::MinorTooNew { .. }
+            ))
+        ));
+    }
+}
+
+#[test]
+fn captured_provenance_requires_exact_well_typed_envelopes_and_matching_hash() {
+    let artifact = captured_artifact(SourceOrigin::OpenBuffer { version: 5 });
+    let valid = verified_artifact_json(&artifact).unwrap();
+    for field in ["source_id", "origin", "source_hash"] {
+        let mut json = valid.clone();
+        object_mut(object_field_mut(
+            object_field_mut(&mut json, "provenance"),
+            "captured_source",
+        ))
+        .remove(field);
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::MissingField { path }) if path == format!("$.provenance.captured_source.{field}"))
+        );
+    }
+    let mut missing = valid.clone();
+    object_mut(object_field_mut(&mut missing, "provenance")).remove("captured_source");
+    assert!(
+        matches!(read_verified_artifact(&missing, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::MissingField { path }) if path == "$.provenance.captured_source")
+    );
+    for value in [CanonicalJson::Null, CanonicalJson::array([])] {
+        let mut json = valid.clone();
+        set_field(
+            object_field_mut(&mut json, "provenance"),
+            "captured_source",
+            value,
+        );
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+            Err(VerifiedArtifactError::UnexpectedType { path, .. }) if path == "$.provenance.captured_source")
+        );
+    }
+    let mut missing = artifact.clone();
+    missing.provenance.captured_source = None;
+    assert!(matches!(
+        verified_artifact_json(&missing),
+        Err(VerifiedArtifactError::MissingField { .. })
+    ));
+    assert!(matches!(
+        missing.compute_implementation_hash(),
+        Err(VerifiedArtifactError::MissingField { .. })
+    ));
+    for (field, value) in [
+        ("source_id", CanonicalJson::Null),
+        (
+            "source_id",
+            CanonicalJson::string("mizar-session-source-nonportable-v1:000000000000000A"),
+        ),
+        (
+            "source_id",
+            CanonicalJson::string("mizar-session-source-v1:0000000000000001"),
+        ),
+        ("origin", CanonicalJson::Null),
+        ("source_hash", CanonicalJson::integer(1)),
+        ("source_hash", CanonicalJson::string("bad")),
+        (
+            "source_hash",
+            CanonicalJson::string(format!("mizar-session/hash-text/v1:{}", "02".repeat(32))),
+        ),
+        ("unknown", CanonicalJson::Null),
+    ] {
+        let mut json = valid.clone();
+        set_field(
+            object_field_mut(object_field_mut(&mut json, "provenance"), "captured_source"),
+            field,
+            value,
+        );
+        assert!(
+            read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).is_err(),
+            "{field}"
+        );
+    }
+    for origin in [
+        CanonicalJson::object([("kind", CanonicalJson::string("open_buffer"))]).unwrap(),
+        CanonicalJson::object([
+            ("kind", CanonicalJson::string("open_buffer")),
+            ("document_version", CanonicalJson::string("5")),
+        ])
+        .unwrap(),
+        CanonicalJson::object([
+            ("kind", CanonicalJson::string("disk")),
+            ("document_version", CanonicalJson::integer(5)),
+        ])
+        .unwrap(),
+        CanonicalJson::object([("kind", CanonicalJson::string("generated"))]).unwrap(),
+        CanonicalJson::object([
+            ("kind", CanonicalJson::string("open_buffer")),
+            ("document_version", CanonicalJson::integer(5)),
+            ("unknown", CanonicalJson::Null),
+        ])
+        .unwrap(),
+        CanonicalJson::object([("document_version", CanonicalJson::integer(5))]).unwrap(),
+    ] {
+        let mut json = valid.clone();
+        set_field(
+            object_field_mut(object_field_mut(&mut json, "provenance"), "captured_source"),
+            "origin",
+            origin,
+        );
+        assert!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).is_err());
+    }
+    let mut generated = artifact.clone();
+    generated.provenance.captured_source.as_mut().unwrap().1 = SourceOrigin::Generated {
+        generator: mizar_session::GeneratedSourceKind::new("fixture"),
+    };
+    assert!(matches!(verified_artifact_json(&generated),
+        Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source.origin"));
+    assert!(matches!(generated.compute_implementation_hash(),
+        Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source.origin"));
+    let mut mismatched = artifact.clone();
+    mismatched.provenance.captured_source.as_mut().unwrap().2 = hash(2);
+    assert!(
+        matches!(verified_artifact_json(&mismatched), Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source.source_hash")
+    );
+}
+
+#[test]
+fn captured_provenance_hashes_exclude_identity_and_include_origin_version_and_text() {
+    let original = captured_artifact(SourceOrigin::OpenBuffer { version: 5 });
+    let domain = artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, original.schema_version);
+    let json = verified_artifact_json(&original).unwrap();
+    let artifact_hash = domain.hash(&json, &artifact_hash_excluded_paths());
+    let mut identity = original.clone();
+    identity.provenance.captured_source.as_mut().unwrap().0 =
+        SourceId::from_nonportable_provenance_str(
+            "mizar-session-source-nonportable-v1:0000000000000002",
+        )
+        .unwrap();
+    identity.refresh_hashes().unwrap();
+    let identity_json = verified_artifact_json(&identity).unwrap();
+    assert_ne!(identity_json, json);
+    assert_eq!(identity.interface_hash, original.interface_hash);
+    assert_eq!(identity.implementation_hash, original.implementation_hash);
+    assert_eq!(
+        domain.hash(&identity_json, &artifact_hash_excluded_paths()),
+        artifact_hash
+    );
+    for origin in [SourceOrigin::Disk, SourceOrigin::OpenBuffer { version: 6 }] {
+        let changed = captured_artifact(origin);
+        assert_eq!(changed.interface_hash, original.interface_hash);
+        assert_ne!(changed.implementation_hash, original.implementation_hash);
+        assert_ne!(
+            domain.hash(
+                &verified_artifact_json(&changed).unwrap(),
+                &artifact_hash_excluded_paths()
+            ),
+            artifact_hash
+        );
+    }
+    let mut text = original.clone();
+    text.source_hash = hash(2);
+    text.provenance.captured_source.as_mut().unwrap().2 = text.source_hash;
+    text.refresh_hashes().unwrap();
+    assert_eq!(text.interface_hash, original.interface_hash);
+    assert_ne!(text.implementation_hash, original.implementation_hash);
+    assert_ne!(
+        domain.hash(
+            &verified_artifact_json(&text).unwrap(),
+            &artifact_hash_excluded_paths()
+        ),
+        artifact_hash
+    );
+    let mut stale = json;
+    set_field(
+        object_field_mut(
+            object_field_mut(
+                object_field_mut(&mut stale, "provenance"),
+                "captured_source",
+            ),
+            "origin",
+        ),
+        "document_version",
+        CanonicalJson::integer(6),
+    );
+    assert!(matches!(
+        read_verified_artifact(&stale, VerifiedArtifactReadOptions::default()),
+        Err(VerifiedArtifactError::ImplementationHashMismatch { .. })
+    ));
+}
+
+#[test]
+fn captured_provenance_remains_absent_and_forbidden_in_legacy_profiles() {
+    let mut future = sample_statement_artifact();
+    future.schema_version = SchemaVersion::new(1, 3);
+    assert!(matches!(
+        implementation_hash_input_json(&future),
+        Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.statements"
+    ));
+    let captured = captured_artifact(SourceOrigin::Disk)
+        .provenance
+        .captured_source;
+    for mut artifact in [sample_artifact(), sample_statement_artifact()] {
+        let mut json = verified_artifact_json(&artifact).unwrap();
+        assert!(
+            !object_mut(object_field_mut(&mut json, "provenance")).contains_key("captured_source")
+        );
+        let implementation = implementation_hash_input_json(&artifact).unwrap();
+        let before_hash = artifact.implementation_hash;
+        artifact.provenance.captured_source = captured.clone();
+        assert!(
+            matches!(verified_artifact_json(&artifact), Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source")
+        );
+        assert!(
+            matches!(artifact.compute_implementation_hash(), Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source")
+        );
+        artifact.provenance.captured_source = None;
+        assert_eq!(
+            implementation_hash_input_json(&artifact).unwrap(),
+            implementation
+        );
+        artifact.refresh_hashes().unwrap();
+        assert_eq!(artifact.implementation_hash, before_hash);
+        set_field(
+            object_field_mut(&mut json, "provenance"),
+            "captured_source",
+            CanonicalJson::Null,
+        );
+        assert!(
+            matches!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()), Err(VerifiedArtifactError::UnknownField { path, field }) if path == "$.provenance" && field == "captured_source")
+        );
+    }
+    let mut builtin = sample_artifact();
+    builtin.schema_version = SchemaVersion::new(2, 0);
+    builtin.refresh_hashes().unwrap();
+    let mut json = builtin_verified_artifact_json(&builtin).unwrap();
+    assert!(!object_mut(object_field_mut(&mut json, "provenance")).contains_key("captured_source"));
+    builtin.provenance.captured_source = captured;
+    assert!(
+        matches!(builtin_verified_artifact_json(&builtin), Err(VerifiedArtifactError::InvalidField { path, .. }) if path == "$.provenance.captured_source")
+    );
+    set_field(
+        object_field_mut(&mut json, "provenance"),
+        "captured_source",
+        CanonicalJson::Null,
+    );
+    assert!(
+        matches!(read_builtin_verified_artifact(&json, VerifiedArtifactReadOptions::default()), Err(VerifiedArtifactError::UnknownField { path, field }) if path == "$.provenance" && field == "captured_source")
+    );
 }

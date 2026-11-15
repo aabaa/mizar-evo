@@ -66,6 +66,8 @@ impl BuildRequestId {
 
 impl SourceId {
     pub fn to_published_schema_string(self) -> Result<String, IdError>;
+    pub fn to_nonportable_provenance_string(self) -> String;
+    pub fn from_nonportable_provenance_str(serialized: &str) -> Result<Self, IdError>;
 }
 
 impl SourceMapId {
@@ -132,6 +134,12 @@ ID は意味的な順序を定義しません。
 16 進表記を拒否しなければなりません。 `BuildSnapshotId::fingerprint(self) -> Hash` は保持済み digest を返し、再ハッシュ・文字列解析・registry 所属や現在性の認証は行いません。
 
 アロケータが発行した ID は、ローカルなデバッグダンプ、ログ、および可搬性がないと明示された開発用アーティファクトに限ってシリアライズしてよいものとします。公開アーティファクトとキャッシュキーは、代わりに正準的なソース・依存・ツールチェイン・構成の各ハッシュを用いなければなりません。
+
+所有者が承認した provenance の例外では、上記の非可搬 provenance API により
+`SourceId` を `mizar-session-source-nonportable-v1:<16 lowercase hex digits>`
+としてエンコードします。デコードは不透明な値を正確に復元しますが、発行元
+registry、所属、現在性、公開権限を認証しません。この関連付けは明示的に
+非可搬であり、正準ソースハッシュや安定したキャッシュ同一性の代わりにはなりません。
 
 ## アルゴリズム / ロジック
 
