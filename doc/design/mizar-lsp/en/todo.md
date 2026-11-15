@@ -201,11 +201,12 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Completion: [design contract](../../task_contracts/en/LSP-CODE-ACTION-DESIGN.md),
       [English specification](code_action.md), [Japanese specification](../ja/code_action.md).
 
-17. **Code actions.** [ ]
+17. **Code actions.** [x]
     - Implement code actions from `mizar-diagnostics` fix payloads.
     - Tests: action fixtures per fix kind; edits round-trip through range
       conversion.
     - Deps: 9, 16, `mizar-diagnostics` task 13. Spec: `code_action.md`.
+    - Completion: [conversion contract](../../task_contracts/en/LSP-CODE-ACTIONS.md); unvalidated artifact/command suggestions remain filtered.
 
 18. **Spec: `explain.md`.** [x]
     - Write the explanation-query spec (English and Japanese, no code):

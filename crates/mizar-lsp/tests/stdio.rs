@@ -183,7 +183,7 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     for message in [
         json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
@@ -220,6 +220,84 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
 }
 
 #[test]
+fn stdio_code_action_without_publication_returns_an_empty_list() {
+    let mut process = Process::new(&["lsp".into()], false);
+    let uri = format!("file://{}", process.root.join("src/Unicode.miz").display());
+    let text = fs::read_to_string(process.root.join("src/Unicode.miz")).unwrap();
+    process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{"textDocument":{"codeAction":{"dataSupport":true,"resolveSupport":{"properties":["edit"]}}}}}})));
+    let initialized = process.response();
+    assert_eq!(initialized["id"], 1);
+    assert_eq!(
+        initialized["result"]["capabilities"]["codeActionProvider"]["resolveProvider"],
+        true
+    );
+    for message in [
+        json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":text}}}),
+        json!({"jsonrpc":"2.0","id":2,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},"context":{"diagnostics":[],"only":["quickfix"]}}}),
+        json!({"jsonrpc":"2.0","id":3,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},"context":{"diagnostics":[],"only":["refactor"]}}}),
+        json!({"jsonrpc":"2.0","id":4,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":100}},"context":{"diagnostics":[]}}}),
+        json!({"jsonrpc":"2.0","id":5,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}},"context":{}}}),
+        json!({"jsonrpc":"2.0","id":6,"method":"codeAction/resolve","params":{"title":"unavailable","data":{"publication":"unavailable","snapshot":"s","id":1,"fix":"f","uri":uri,"version":1}}}),
+        json!({"jsonrpc":"2.0","id":7,"method":"shutdown","params":null}),
+        json!({"jsonrpc":"2.0","id":8,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},"context":{"diagnostics":[]}}}),
+    ] {
+        process.send(&frame(message));
+    }
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":2,"result":[]})
+    );
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":3,"result":[]})
+    );
+    assert_eq!(process.response()["error"]["code"], -32602);
+    assert_eq!(process.response()["error"]["code"], -32602);
+    assert_eq!(process.response()["error"]["code"], -32801);
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":7,"result":null})
+    );
+    assert_eq!(process.response()["error"]["code"], -32600);
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"exit"})));
+    let (status, responses, errors) = process.finish();
+    assert_eq!(status.code(), Some(0));
+    assert!(responses.is_empty());
+    assert!(errors.is_empty());
+
+    let mut unsupported = Process::new(&["lsp".into()], false);
+    let uri = format!(
+        "file://{}",
+        unsupported.root.join("src/Unicode.miz").display()
+    );
+    let text = fs::read_to_string(unsupported.root.join("src/Unicode.miz")).unwrap();
+    unsupported.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", unsupported.root.display()),"capabilities":{}}})));
+    assert_eq!(unsupported.response()["id"], 1);
+    for message in [
+        json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":text}}}),
+        json!({"jsonrpc":"2.0","id":2,"method":"textDocument/codeAction","params":{"textDocument":{"uri":uri},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},"context":{"diagnostics":[]}}}),
+        json!({"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}),
+    ] {
+        unsupported.send(&frame(message));
+    }
+    assert_eq!(
+        unsupported.response(),
+        json!({"jsonrpc":"2.0","id":2,"result":[]})
+    );
+    assert_eq!(
+        unsupported.response(),
+        json!({"jsonrpc":"2.0","id":3,"result":null})
+    );
+    unsupported.send(&frame(json!({"jsonrpc":"2.0","method":"exit"})));
+    let (status, responses, errors) = unsupported.finish();
+    assert_eq!(status.code(), Some(0));
+    assert!(responses.is_empty());
+    assert!(errors.is_empty());
+}
+
+#[test]
 fn early_exit_and_fatal_frames_return_one_without_protocol_noise() {
     for bytes in [
         frame(json!({"jsonrpc":"2.0","method":"exit"})),
@@ -250,7 +328,7 @@ fn complete_bad_json_responds_and_continues_to_exit() {
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     process.send(&frame(
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),

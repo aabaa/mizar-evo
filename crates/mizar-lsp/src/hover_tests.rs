@@ -304,3 +304,185 @@ fn no_snapshot_unknown_expression_and_invalid_or_closed_lifecycle_requests_are_g
             .is_none()
     );
 }
+
+fn code_action_request(id: u64, uri: &str) -> Value {
+    json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": "textDocument/codeAction",
+        "params": {
+            "textDocument": {"uri": uri},
+            "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}},
+            "context": {"diagnostics": [], "only": ["quickfix"]}
+        }
+    })
+}
+
+fn code_action_resolve(id: u64, data: Value) -> Value {
+    json!({"jsonrpc":"2.0","id":id,"method":"codeAction/resolve","params":{"title":"old action","kind":"quickfix","data":data}})
+}
+
+#[test]
+fn code_actions_require_a_current_live_publication_and_reject_old_locators() {
+    let mut fixture = RegistryFixture::new();
+    fixture.server.initialized = Some(json!({"capabilities":{"textDocument":{"codeAction":{
+        "dataSupport":true,"resolveSupport":{"properties":["edit"]}
+    }}}}));
+    let uri = fixture.sources[0].2.clone();
+
+    let without_publication = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_request(61, &uri),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(without_publication["result"], json!([]));
+
+    let (_, activated) = fixture.build();
+    assert!(activated);
+    let (original, freshness) = fixture
+        .server
+        .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+        .unwrap();
+    assert_eq!(freshness, crate::server::LspSnapshotFreshness::Current);
+    let snapshot_id = original.publication().captured().snapshot().id;
+    let old_locator = json!({
+        "publication": original.publication_identity(),
+        "snapshot": snapshot_id.to_published_schema_string().unwrap(),
+        "id": 0,
+        "fix": "former-fix",
+        "uri": uri,
+        "version": 1
+    });
+    let current_empty = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_request(62, &uri),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(current_empty["result"], json!([]));
+    let current_unknown = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_resolve(63, old_locator.clone()),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(current_unknown["error"]["code"], -32801);
+
+    fixture.did_close_and_reopen(&uri, 1);
+    assert!(fixture.build().1);
+    let (reopened, freshness) = fixture
+        .server
+        .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+        .unwrap();
+    assert_eq!(freshness, crate::server::LspSnapshotFreshness::Current);
+    assert_eq!(reopened.publication().captured().snapshot().id, snapshot_id);
+    assert_eq!(fixture.server.document(&uri).unwrap().0, 1);
+    assert_ne!(
+        reopened.publication_identity(),
+        original.publication_identity()
+    );
+    assert!(fixture.build().1);
+    let (recaptured, freshness) = fixture
+        .server
+        .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+        .unwrap();
+    assert_eq!(freshness, crate::server::LspSnapshotFreshness::Current);
+    assert_eq!(
+        recaptured.publication().captured().snapshot().id,
+        snapshot_id
+    );
+    assert_ne!(
+        recaptured.publication_identity(),
+        reopened.publication_identity()
+    );
+    let replayed = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_resolve(68, old_locator.clone()),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(replayed["error"]["code"], -32801);
+
+    fixture.did_change_version_only(&uri, 2);
+    assert_eq!(
+        fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .1,
+        crate::server::LspSnapshotFreshness::StaleArtifact
+    );
+    let stale_actions = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_request(64, &uri),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(stale_actions["result"], json!([]));
+    let stale_resolve = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_resolve(65, old_locator.clone()),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(stale_resolve["error"]["code"], -32801);
+
+    fixture.did_close_and_reopen(&uri, 2);
+    assert_eq!(
+        fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .1,
+        crate::server::LspSnapshotFreshness::StaleArtifact
+    );
+    let reopened_resolve = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_resolve(66, old_locator.clone()),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(reopened_resolve["error"]["code"], -32801);
+
+    fixture.did_change_text(
+        &uri,
+        3,
+        format!("   {}", fixture.server.document(&uri).unwrap().1),
+    );
+    let (_, activated) = fixture.build();
+    assert!(activated);
+    let (replacement, freshness) = fixture
+        .server
+        .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+        .unwrap();
+    assert_eq!(freshness, crate::server::LspSnapshotFreshness::Current);
+    assert_ne!(
+        replacement.publication().captured().snapshot().id,
+        snapshot_id
+    );
+    let replacement_resolve = fixture
+        .server
+        .handle_message_with_metadata(
+            code_action_resolve(67, old_locator),
+            &fixture.driver,
+            &fixture.snapshots,
+        )
+        .unwrap();
+    assert_eq!(replacement_resolve["error"]["code"], -32801);
+    assert!(replacement_resolve.get("result").is_none());
+}

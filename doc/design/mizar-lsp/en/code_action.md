@@ -33,10 +33,14 @@ The server offers code actions and never applies suggestion edits on its own. Ed
 
 ## Implementation boundary
 
-Task16 specifies conversion and safety only. Task9 diagnostic publication, task17 code-action implementation and tasks18/19 explanation queries remain separate. No command wire encoding, explanation-query behavior, new action class or public diagnostic code/name/alias is defined here.
+`src/diagnostics.rs` converts published fixes through the existing metadata/build host. The ordinary stdio path without a publication host returns no actions. Requests use the live document version and original source association; primary diagnostic ranges select fixes by half-open overlap, with empty ranges treated as points inside a nonempty interval or coincident points.
+
+The server advertises quickfix resolution. Clients must support code-action data and resolving edits; initial actions contain title/kind/data only. The locator binds an opaque process-local publication identity that is never reused, even when build ID, raw text and document version repeat. `codeAction/resolve` treats data as a locator and reconstructs the action from the current index, returning versioned `edit.documentChanges` only after revalidation. Unavailable or replaced actions fail with ContentModified. Client-supplied edits, commands and diagnostic contents grant no authority.
+
+Local and snapshot-bound suggestions with matching explicit expected text can be offered at all three edit-bearing applicability levels. Informational suggestions, unknown classes and suggestions requiring hash/artifact/command validation unavailable at this boundary are filtered. The opaque hash is not interpreted as a source or artifact hash without an owning validator. No command wire encoding, explanation-query behavior, new action class or public diagnostic code/name/alias is defined here; tasks18/19 remain separate.
 
 These rules consume existing suggestions and snapshot associations independently of parked OpenBuffer artifact provenance/storage, Session SourceId encoding and registry activation decisions. They neither presume nor decide those matters and change no producer, diagnostics, artifact or snapshot behavior.
 
 ## Test design
 
-This design unit changes no code or tests. Task17 retains its action-fixture-per-fix-kind and edit range-conversion round-trip obligations, with dependencies on task9 and `mizar-diagnostics` task13. Task17 and the module remain open; §23.6/SCA-003 credit does not change.
+Task17 tests cover existing fix safety/applicability classes, deferred resolution, versioned multi-source edits, independent raw UTF-16 edit round trips and invalid/stale refusal. Native publication tests cover currentness independently: existing production diagnostics do not yet attach fixes. Framed stdio covers the unavailable-publication path. Unvalidated artifact/command consumers remain deferred; §23.6/SCA-003 credit does not change.

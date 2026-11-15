@@ -11,6 +11,7 @@ use mizar_diagnostics::{
     failure_record::{
         DiagnosticFreshness, DiagnosticPrimaryLocation, DiagnosticSpan, SpanFreshness,
     },
+    fix::{FixApplicability, FixSafety},
     registry::DiagnosticSeverity,
 };
 use mizar_driver::{driver::CompilerDriver, request::CapturedSnapshot};
@@ -45,6 +46,66 @@ impl Server {
                 *freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(current, &selected)
             })
             .map(|_| notifications))
+    }
+
+    pub(crate) fn snapshot_code_actions<A: SessionIdAllocator>(
+        &self,
+        driver: &CompilerDriver,
+        snapshots: &SnapshotRegistry<A>,
+        params: &Value,
+        resolve: bool,
+    ) -> Result<Option<Value>, String> {
+        if !resolve
+            && params["context"]["only"].as_array().is_some_and(|kinds| {
+                !kinds.is_empty() && !kinds.iter().any(|kind| kind == "" || kind == "quickfix")
+            })
+        {
+            return Ok(Some(json!([])));
+        }
+        let capabilities = self
+            .initialization_params()
+            .map(|params| &params["capabilities"]["textDocument"]["codeAction"]);
+        if !capabilities.is_some_and(|capabilities| {
+            capabilities["dataSupport"] == true
+                && capabilities["resolveSupport"]["properties"]
+                    .as_array()
+                    .is_some_and(|properties| properties.iter().any(|property| property == "edit"))
+        }) {
+            return Ok((!resolve).then(|| json!([])));
+        }
+        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        else {
+            return Ok((!resolve).then(|| json!([])));
+        };
+        let uri = if resolve {
+            &params["data"]["uri"]
+        } else {
+            &params["textDocument"]["uri"]
+        };
+        let Some(uri) = uri.as_str() else {
+            return Ok(None);
+        };
+        let mut actions = convert_code_actions(
+            selected.publication().diagnostics(),
+            selected.native_open_buffers().captured(),
+            selected.publication_identity(),
+            uri,
+            (!resolve).then_some(&params["range"]),
+            resolve.then_some(params),
+        )?;
+        if !self
+            .lsp_snapshot(driver, snapshots)
+            .is_some_and(|(current, state)| {
+                state == LspSnapshotFreshness::Current && Arc::ptr_eq(&current, &selected)
+            })
+        {
+            return Ok((!resolve).then(|| json!([])));
+        }
+        Ok(if resolve {
+            (actions.len() == 1).then(|| actions.remove(0))
+        } else {
+            Some(json!(actions))
+        })
     }
 
     /// Validates and serializes the whole batch before writing, then rechecks currentness
@@ -214,6 +275,180 @@ fn convert_index(
             })
         })
         .collect())
+}
+
+// Validate coordinates against the exact raw editor text, including UTF-16 scalar boundaries.
+pub(crate) fn code_action_range(text: &str, range: &Value) -> Option<[(u64, u64); 2]> {
+    let mut endpoints = [(0, 0); 2];
+    for (endpoint, field) in endpoints.iter_mut().zip(["start", "end"]) {
+        *endpoint = (
+            range[field]["line"].as_u64()?,
+            range[field]["character"].as_u64()?,
+        );
+        if endpoint.0 > i32::MAX as u64 || endpoint.1 > i32::MAX as u64 {
+            return None;
+        }
+        let (mut line, mut character) = (0, 0);
+        let mut scalars = text.chars().peekable();
+        loop {
+            if (line, character) == *endpoint {
+                break;
+            }
+            let scalar = scalars.next()?;
+            if scalar == '\r' || scalar == '\n' {
+                if scalar == '\r' && scalars.peek() == Some(&'\n') {
+                    scalars.next();
+                }
+                line += 1;
+                character = 0;
+            } else {
+                character += scalar.len_utf16() as u64;
+            }
+            if (line, character) > *endpoint {
+                return None;
+            }
+        }
+    }
+    (endpoints[0] <= endpoints[1]).then_some(endpoints)
+}
+
+fn convert_code_actions(
+    index: &BuildDiagnosticIndex,
+    captured: &CapturedSnapshot,
+    publication_identity: &str,
+    uri: &str,
+    selection: Option<&Value>,
+    resolve_action: Option<&Value>,
+) -> Result<Vec<Value>, String> {
+    let publications = convert_index(index, captured)?;
+    let Some(publication) = publications
+        .iter()
+        .find(|item| item["params"]["uri"] == uri)
+    else {
+        return Ok(Vec::new());
+    };
+    let sources = captured
+        .native_sources()
+        .ok_or("missing code-action sources")?;
+    let (_, _, input) = sources.iter().find(|(_, _, input)| {
+        matches!(&input.origin, SourceOriginInput::OpenBuffer { uri: original, .. } if original == uri)
+    }).ok_or("missing code-action source")?;
+    let SourceOriginInput::OpenBuffer { text, .. } = &input.origin else {
+        unreachable!()
+    };
+    let selection = selection
+        .map(|range| code_action_range(text, range).ok_or("invalid code-action selection"))
+        .transpose()?;
+    let mut actions = Vec::new();
+    for record in index.records() {
+        let Some(diagnostic) =
+            publication["params"]["diagnostics"]
+                .as_array()
+                .and_then(|diagnostics| {
+                    diagnostics
+                        .iter()
+                        .find(|diagnostic| diagnostic["data"]["id"] == record.handle().id.get())
+                })
+        else {
+            continue;
+        };
+        if let Some([start, end]) = selection {
+            let [primary_start, primary_end] = code_action_range(text, &diagnostic["range"])
+                .ok_or("invalid code-action primary range")?;
+            let overlaps = if start == end {
+                primary_start <= start
+                    && (start < primary_end || start == primary_end && primary_start == primary_end)
+            } else if primary_start == primary_end {
+                start <= primary_start && primary_start < end
+            } else {
+                start < primary_end && primary_start < end
+            };
+            if !overlaps {
+                continue;
+            }
+        }
+        for fix in record.fixes() {
+            if !matches!(
+                fix.applicability(),
+                FixApplicability::MachineApplicable
+                    | FixApplicability::MaybeIncorrect
+                    | FixApplicability::HasPlaceholders
+            ) || !matches!(
+                fix.safety(),
+                FixSafety::LocalTextEdit | FixSafety::SnapshotBound
+            ) || fix.required_text_hash().is_some()
+                || fix
+                    .required_snapshot()
+                    .is_some_and(|snapshot| snapshot != index.snapshot())
+                || fix.safety() == FixSafety::SnapshotBound && fix.required_snapshot().is_none()
+                || fix.edits().is_empty()
+            {
+                continue;
+            }
+            let data = json!({"publication": publication_identity, "snapshot": diagnostic["data"]["snapshot"], "id": record.handle().id.get(),
+                "fix": fix.id().identity(), "uri": uri, "version": publication["params"]["version"]});
+            if resolve_action.is_some_and(|action| action.get("data") != Some(&data)) {
+                continue;
+            }
+            let mut changes: Vec<Value> = Vec::new();
+            let mut valid = true;
+            for edit in fix.edits() {
+                let range = edit.range();
+                let Some((_, loaded, input)) = sources
+                    .iter()
+                    .find(|(_, loaded, _)| loaded.source_id == range.source_id)
+                else {
+                    valid = false;
+                    break;
+                };
+                if edit.expected_text().is_none()
+                    || loaded.line_map.source().get(range.start..range.end) != edit.expected_text()
+                {
+                    valid = false;
+                    break;
+                }
+                let Ok(mapped) = crate::lsp_range_from_open_buffer(
+                    &loaded.line_map,
+                    loaded.loading_map.as_ref(),
+                    &input.origin,
+                    range,
+                ) else {
+                    valid = false;
+                    break;
+                };
+                let SourceOriginInput::OpenBuffer {
+                    uri,
+                    actual_version,
+                    ..
+                } = &input.origin
+                else {
+                    valid = false;
+                    break;
+                };
+                let text_edit = json!({"range":{"start":{"line":mapped.start.line,"character":mapped.start.character},
+                    "end":{"line":mapped.end.line,"character":mapped.end.character}},"newText":edit.replacement()});
+                if let Some(change) = changes
+                    .iter_mut()
+                    .find(|change| change["textDocument"]["uri"] == *uri)
+                {
+                    change["edits"]
+                        .as_array_mut()
+                        .expect("edit array")
+                        .push(text_edit);
+                } else {
+                    changes.push(json!({"textDocument":{"uri":uri,"version":actual_version},"edits":[text_edit]}));
+                }
+            }
+            if valid {
+                let mut action = json!({"title":fix.title(),"kind":"quickfix","data":data});
+                if resolve_action.is_some() {
+                    action["edit"] = json!({"documentChanges":changes});
+                }
+                actions.push(action);
+            }
+        }
+    }
+    Ok(actions)
 }
 
 #[cfg(test)]
@@ -1040,5 +1275,633 @@ mod tests {
             )],
         );
         assert!(convert_index(&wrong_index, &current.captured).is_err());
+    }
+
+    mod code_actions {
+        use super::*;
+        use mizar_diagnostics::fix::{
+            FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
+            FixSuggestionInput,
+        };
+
+        fn suggestion(
+            id: &str,
+            title: &str,
+            applicability: FixApplicability,
+            safety: FixSafety,
+            edits: Vec<FixEdit>,
+        ) -> FixSuggestion {
+            FixSuggestion::new(FixSuggestionInput {
+                id: FixSuggestionId::new(id).unwrap(),
+                producer_key: None,
+                title: title.to_owned(),
+                applicability,
+                safety,
+                edits,
+                command: None,
+                required_snapshot: None,
+                required_text_hash: None,
+            })
+            .unwrap()
+        }
+
+        fn conditioned_suggestion(
+            id: &str,
+            title: &str,
+            safety: FixSafety,
+            edits: Vec<FixEdit>,
+            required_snapshot: Option<BuildSnapshotId>,
+            required_text_hash: Option<Hash>,
+        ) -> FixSuggestion {
+            FixSuggestion::new(FixSuggestionInput {
+                id: FixSuggestionId::new(id).unwrap(),
+                producer_key: None,
+                title: title.to_owned(),
+                applicability: FixApplicability::MachineApplicable,
+                safety,
+                edits,
+                command: None,
+                required_snapshot,
+                required_text_hash,
+            })
+            .unwrap()
+        }
+
+        fn draft_with_fixes(
+            fixture: &CapturedFixture,
+            stable_key: &str,
+            range: SourceRange,
+            fixes: Vec<FixSuggestion>,
+        ) -> DiagnosticDraft {
+            DiagnosticDraft::new(DiagnosticDraftInput {
+                source_snapshot: fixture.snapshot(),
+                code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+                phase: PipelinePhase::Parser,
+                category: FailureCategory::ParseError,
+                stable_detail_key: stable_key.to_owned(),
+                message: format!("diagnostic {stable_key}"),
+                primary_location: DiagnosticPrimaryLocation::Span(span(
+                    SourceAnchor::Range(range),
+                    DiagnosticSpanRole::Primary,
+                    None,
+                    (range.start == range.end).then_some(ZeroWidthSpanIntent::InsertionPoint),
+                )),
+                secondary_spans: vec![],
+                notes: vec![],
+                details: DiagnosticDetails::new(),
+                fixes,
+                explanation: None,
+            })
+            .unwrap()
+        }
+
+        fn action_request(
+            index: &BuildDiagnosticIndex,
+            fixture: &CapturedFixture,
+            range: Value,
+        ) -> Vec<Value> {
+            convert_code_actions(
+                index,
+                &fixture.captured,
+                "publication-a",
+                fixture.uri(0),
+                Some(&range),
+                None,
+            )
+            .unwrap()
+        }
+
+        fn edit(range: SourceRange, replacement: &str, expected: &str) -> FixEdit {
+            FixEdit::new(range, replacement, Some(expected.to_owned())).unwrap()
+        }
+
+        fn client_apply(raw: &str, text_edits: &[Value]) -> String {
+            let mut offsets = text_edits
+                .iter()
+                .map(|edit| {
+                    let [start, end] = ["start", "end"].map(|endpoint| {
+                        let position = &edit["range"][endpoint];
+                        let target = (
+                            position["line"].as_u64().unwrap() as usize,
+                            position["character"].as_u64().unwrap() as usize,
+                        );
+                        let (mut line, mut character, mut offset) = (0, 0, raw.len());
+                        let mut iter = raw.char_indices().peekable();
+                        while let Some((byte, scalar)) = iter.next() {
+                            if (line, character) == target {
+                                offset = byte;
+                                break;
+                            }
+                            if scalar == '\r' || scalar == '\n' {
+                                if scalar == '\r'
+                                    && iter.peek().is_some_and(|(_, next)| *next == '\n')
+                                {
+                                    iter.next();
+                                }
+                                line += 1;
+                                character = 0;
+                            } else {
+                                character += scalar.len_utf16();
+                            }
+                            if (line, character) > target {
+                                break;
+                            }
+                        }
+                        assert_eq!((line, character), target);
+                        offset
+                    });
+                    (start, end, edit["newText"].as_str().unwrap().to_owned())
+                })
+                .collect::<Vec<_>>();
+            offsets.sort_by_key(|(start, _, _)| std::cmp::Reverse(*start));
+            let mut result = raw.to_owned();
+            for (start, end, replacement) in offsets {
+                result.replace_range(start..end, &replacement);
+            }
+            result
+        }
+
+        #[test]
+        fn local_applicability_levels_resolve_in_order_without_mutating_the_capture() {
+            let fixture = CapturedFixture::new(&[("file:///alpha.miz", "abc xyz", 7)]);
+            let b = loaded_range(&fixture, 0, "b");
+            let insert = SourceRange {
+                start: b.end,
+                end: b.end,
+                ..b
+            };
+            let xyz = loaded_range(&fixture, 0, "xyz");
+            let fixes = vec![
+                suggestion(
+                    "a_replace_b",
+                    "Replace b",
+                    FixApplicability::MachineApplicable,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(b, "B", "b")],
+                ),
+                suggestion(
+                    "b_insert_q",
+                    "Insert q",
+                    FixApplicability::MaybeIncorrect,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(insert, "q", "")],
+                ),
+                suggestion(
+                    "c_replace_word",
+                    "Replace word",
+                    FixApplicability::HasPlaceholders,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(xyz, "<name>", "xyz")],
+                ),
+            ];
+            let index = index(
+                fixture.snapshot(),
+                vec![draft_with_fixes(
+                    &fixture,
+                    "ordered",
+                    loaded_range(&fixture, 0, "b"),
+                    fixes,
+                )],
+            );
+            let actions = action_request(
+                &index,
+                &fixture,
+                json!({"start":{"line":0,"character":0},"end":{"line":0,"character":7}}),
+            );
+            assert_eq!(
+                actions
+                    .iter()
+                    .map(|action| action["title"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                ["Replace b", "Insert q", "Replace word"]
+            );
+            assert!(actions.iter().all(|action| action["kind"] == "quickfix"));
+            assert!(
+                actions
+                    .iter()
+                    .all(|action| action.get("edit").is_none() && action.get("command").is_none())
+            );
+            assert_eq!(actions[0]["data"]["fix"], "a_replace_b");
+            assert_eq!(actions[1]["data"]["fix"], "b_insert_q");
+            assert_eq!(actions[2]["data"]["fix"], "c_replace_word");
+            let resolved = convert_code_actions(
+                &index,
+                &fixture.captured,
+                "publication-a",
+                fixture.uri(0),
+                None,
+                Some(&actions[0]),
+            )
+            .unwrap();
+            assert_eq!(resolved.len(), 1);
+            assert_eq!(resolved[0]["data"], actions[0]["data"]);
+            assert!(
+                convert_code_actions(
+                    &index,
+                    &fixture.captured,
+                    "publication-b",
+                    fixture.uri(0),
+                    None,
+                    Some(&actions[0])
+                )
+                .unwrap()
+                .is_empty()
+            );
+            let mut forged = actions[0].clone();
+            forged["title"] = json!("Forged title");
+            forged["edit"] = json!({"changes": {"file:///forged.miz": []}});
+            forged["command"] = json!({"command": "forged", "arguments": []});
+            assert_eq!(
+                convert_code_actions(
+                    &index,
+                    &fixture.captured,
+                    "publication-a",
+                    fixture.uri(0),
+                    None,
+                    Some(&forged)
+                )
+                .unwrap(),
+                resolved
+            );
+            for (field, value) in [
+                ("publication", json!("different")),
+                ("snapshot", json!("foreign")),
+                ("id", json!(u64::MAX)),
+                ("fix", json!("different")),
+                ("uri", json!("file:///different.miz")),
+                ("version", json!(8)),
+            ] {
+                let mut tampered = actions[0].clone();
+                tampered["data"][field] = value;
+                assert!(
+                    convert_code_actions(
+                        &index,
+                        &fixture.captured,
+                        "publication-a",
+                        fixture.uri(0),
+                        None,
+                        Some(&tampered)
+                    )
+                    .unwrap()
+                    .is_empty()
+                );
+            }
+            assert_eq!(
+                resolved[0]["edit"]["documentChanges"][0]["textDocument"]["uri"],
+                fixture.uri(0)
+            );
+            assert_eq!(
+                resolved[0]["edit"]["documentChanges"][0]["textDocument"]["version"],
+                7
+            );
+            assert_eq!(
+                resolved[0]["edit"]["documentChanges"][0]["edits"][0],
+                json!({
+                    "range":{"start":{"line":0,"character":1},"end":{"line":0,"character":2}},"newText":"B"
+                })
+            );
+            let raw = match &fixture.captured.native_sources().unwrap()[0].2.origin {
+                SourceOriginInput::OpenBuffer { text, .. } => text.as_ref(),
+                _ => unreachable!(),
+            };
+            assert_eq!(
+                client_apply(
+                    raw,
+                    resolved[0]["edit"]["documentChanges"][0]["edits"]
+                        .as_array()
+                        .unwrap()
+                ),
+                "aBc xyz"
+            );
+            assert_eq!(loaded_text(&fixture, 0), "abc xyz");
+        }
+
+        #[test]
+        fn snapshot_and_expected_text_preconditions_fail_closed() {
+            let fixture = CapturedFixture::new(&[("file:///alpha.miz", "abc", 3)]);
+            let a = loaded_range(&fixture, 0, "a");
+            let matching_snapshot = conditioned_suggestion(
+                "snapshot_ok",
+                "Snapshot",
+                FixSafety::SnapshotBound,
+                vec![edit(a, "A", "a")],
+                Some(fixture.snapshot()),
+                None,
+            );
+            let wrong_snapshot = conditioned_suggestion(
+                "snapshot_old",
+                "Old snapshot",
+                FixSafety::SnapshotBound,
+                vec![edit(a, "X", "a")],
+                Some(CapturedFixture::new(&[("file:///other.miz", "abc", 1)]).snapshot()),
+                None,
+            );
+            let missing_text = FixEdit::new(a, "M", None).unwrap();
+            let missing_expected = suggestion(
+                "no_expected",
+                "No expected text",
+                FixApplicability::MachineApplicable,
+                FixSafety::LocalTextEdit,
+                vec![missing_text],
+            );
+            let mismatch_expected = suggestion(
+                "wrong_expected",
+                "Wrong expected text",
+                FixApplicability::MachineApplicable,
+                FixSafety::LocalTextEdit,
+                vec![edit(a, "Y", "z")],
+            );
+            let hash_bound = conditioned_suggestion(
+                "hash_bound",
+                "Hash bound",
+                FixSafety::LocalTextEdit,
+                vec![edit(a, "H", "a")],
+                None,
+                Some(Hash::from_bytes([9; Hash::BYTE_LEN])),
+            );
+            let index = index(
+                fixture.snapshot(),
+                vec![draft_with_fixes(
+                    &fixture,
+                    "preconditions",
+                    a,
+                    vec![
+                        matching_snapshot,
+                        wrong_snapshot,
+                        missing_expected,
+                        mismatch_expected,
+                        hash_bound,
+                    ],
+                )],
+            );
+            let actions = action_request(
+                &index,
+                &fixture,
+                json!({"start":{"line":0,"character":0},"end":{"line":0,"character":1}}),
+            );
+            assert_eq!(
+                actions
+                    .iter()
+                    .map(|action| action["data"]["fix"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                ["snapshot_ok"]
+            );
+        }
+
+        #[test]
+        fn artifact_command_and_informational_suggestions_are_not_offered() {
+            let fixture = CapturedFixture::new(&[("file:///alpha.miz", "abc", 1)]);
+            let a = loaded_range(&fixture, 0, "a");
+            let fixes = vec![
+                conditioned_suggestion(
+                    "artifact",
+                    "Artifact action",
+                    FixSafety::ArtifactAssisted,
+                    vec![edit(a, "A", "a")],
+                    None,
+                    Some(Hash::from_bytes([8; Hash::BYTE_LEN])),
+                ),
+                FixSuggestion::new(FixSuggestionInput {
+                    id: FixSuggestionId::new("command").unwrap(),
+                    producer_key: None,
+                    title: "Command action".into(),
+                    applicability: FixApplicability::MaybeIncorrect,
+                    safety: FixSafety::CommandOnly,
+                    edits: vec![],
+                    command: Some(FixCommandRef::new("rerun").unwrap()),
+                    required_snapshot: None,
+                    required_text_hash: None,
+                })
+                .unwrap(),
+                FixSuggestion::informational(
+                    FixSuggestionId::new("info").unwrap(),
+                    "Informational",
+                )
+                .unwrap(),
+            ];
+            let index = index(
+                fixture.snapshot(),
+                vec![draft_with_fixes(&fixture, "filtered", a, fixes)],
+            );
+            assert!(
+                action_request(
+                    &index,
+                    &fixture,
+                    json!({"start":{"line":0,"character":0},"end":{"line":0,"character":1}})
+                )
+                .is_empty()
+            );
+        }
+
+        #[test]
+        fn unicode_line_endings_and_multiple_edits_keep_literal_utf16_positions() {
+            let fixture = CapturedFixture::new(&[
+                ("file:///alpha.miz", "\u{feff}😀e\u{301}\r\nq\rZ", 9),
+                ("file:///beta.miz", "done", 4),
+            ]);
+            let emoji = loaded_range(&fixture, 0, "😀");
+            let combining = loaded_range(&fixture, 0, "e\u{301}");
+            let q = loaded_range(&fixture, 0, "q");
+            let eof = SourceRange {
+                source_id: fixture.source_ids[0],
+                start: loaded_text(&fixture, 0).len(),
+                end: loaded_text(&fixture, 0).len(),
+            };
+            let beta = loaded_range(&fixture, 1, "done");
+            let fixes = vec![suggestion(
+                "multi",
+                "Normalize",
+                FixApplicability::MachineApplicable,
+                FixSafety::LocalTextEdit,
+                vec![
+                    edit(combining, "E", "e\u{301}"),
+                    edit(q, "Q", "q"),
+                    edit(eof, "!", ""),
+                    edit(beta, "DONE", "done"),
+                ],
+            )];
+            let foreign_source_id = loop {
+                let candidate = fixture.ids.next_source_id(fixture.snapshot()).unwrap();
+                if !fixture.source_ids.contains(&candidate) {
+                    break candidate;
+                }
+            };
+            let foreign = SourceRange {
+                source_id: foreign_source_id,
+                ..q
+            };
+            let out_of_bounds = SourceRange {
+                source_id: fixture.source_ids[0],
+                start: loaded_text(&fixture, 0).len(),
+                end: usize::MAX,
+            };
+            let mut fixes = fixes;
+            fixes.extend([
+                suggestion(
+                    "foreign",
+                    "Foreign source",
+                    FixApplicability::MachineApplicable,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(q, "Q", "q"), edit(foreign, "X", "q")],
+                ),
+                suggestion(
+                    "bounds",
+                    "Out of bounds",
+                    FixApplicability::MachineApplicable,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(out_of_bounds, "X", "")],
+                ),
+            ]);
+            let index = index(
+                fixture.snapshot(),
+                vec![draft_with_fixes(&fixture, "unicode", emoji, fixes)],
+            );
+            let actions = action_request(
+                &index,
+                &fixture,
+                json!({"start":{"line":0,"character":0},"end":{"line":2,"character":1}}),
+            );
+            assert_eq!(actions.len(), 1);
+            let resolved = convert_code_actions(
+                &index,
+                &fixture.captured,
+                "publication-a",
+                fixture.uri(0),
+                None,
+                Some(&actions[0]),
+            )
+            .unwrap();
+            let edits = resolved[0]["edit"]["documentChanges"][0]["edits"]
+                .as_array()
+                .unwrap();
+            assert_eq!(
+                edits[0],
+                json!({"range":{"start":{"line":0,"character":3},"end":{"line":0,"character":5}},"newText":"E"})
+            );
+            assert_eq!(
+                edits[1],
+                json!({"range":{"start":{"line":1,"character":0},"end":{"line":1,"character":1}},"newText":"Q"})
+            );
+            assert_eq!(
+                edits[2],
+                json!({"range":{"start":{"line":2,"character":1},"end":{"line":2,"character":1}},"newText":"!"})
+            );
+            let changes = resolved[0]["edit"]["documentChanges"].as_array().unwrap();
+            assert_eq!(changes.len(), 2);
+            assert_eq!(changes[1]["textDocument"]["uri"], fixture.uri(1));
+            assert_eq!(changes[0]["textDocument"]["version"], 9);
+            assert_eq!(changes[1]["textDocument"]["version"], 4);
+            assert_eq!(
+                changes[1]["edits"][0]["range"],
+                json!({
+                    "start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 4}
+                })
+            );
+            assert_eq!(
+                client_apply("done", changes[1]["edits"].as_array().unwrap()),
+                "DONE"
+            );
+            assert_eq!(changes[1]["edits"][0]["newText"], "DONE");
+            let raw = match &fixture.captured.native_sources().unwrap()[0].2.origin {
+                SourceOriginInput::OpenBuffer { text, .. } => text.as_ref(),
+                _ => unreachable!(),
+            };
+            assert_eq!(client_apply(raw, edits), "\u{feff}😀E\r\nQ\rZ!");
+            assert!(
+                code_action_range(
+                    "😀",
+                    &json!({"start":{"line":0,"character":1},"end":{"line":0,"character":2}})
+                )
+                .is_none()
+            );
+            assert!(
+                code_action_range(
+                    "a",
+                    &json!({"start":{"line":0,"character":0},"end":{"line":0,"character":2}})
+                )
+                .is_none()
+            );
+            assert!(
+                code_action_range(
+                    "a",
+                    &json!({"start":{"line":0,"character":0},"end":{"line":0,"character":0}})
+                )
+                .is_some()
+            );
+            assert_eq!(
+                code_action_range(
+                    "a\r\nb\rc\n",
+                    &json!({"start":{"line":2,"character":0},"end":{"line":3,"character":0}})
+                ),
+                Some([(2, 0), (3, 0)])
+            );
+        }
+
+        #[test]
+        fn primary_overlap_and_zero_width_selection_follow_half_open_boundaries() {
+            let fixture = CapturedFixture::new(&[("file:///alpha.miz", "abcdef", 1)]);
+            let bc = loaded_range(&fixture, 0, "bc");
+            let e = loaded_range(&fixture, 0, "e");
+            let point = SourceRange {
+                start: e.start,
+                end: e.start,
+                ..e
+            };
+            let fixes = |id: &str| {
+                vec![suggestion(
+                    id,
+                    id,
+                    FixApplicability::MachineApplicable,
+                    FixSafety::LocalTextEdit,
+                    vec![edit(bc, "BC", "bc")],
+                )]
+            };
+            let index = index(
+                fixture.snapshot(),
+                vec![
+                    draft_with_fixes(&fixture, "span", bc, fixes("span_action")),
+                    draft_with_fixes(&fixture, "point", point, fixes("point_action")),
+                ],
+            );
+            let at_b = action_request(
+                &index,
+                &fixture,
+                json!({"start":{"line":0,"character":1},"end":{"line":0,"character":1}}),
+            );
+            assert_eq!(
+                at_b.iter()
+                    .map(|action| action["data"]["fix"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                ["span_action"]
+            );
+            let coincident = action_request(
+                &index,
+                &fixture,
+                json!({"start":{"line":0,"character":4},"end":{"line":0,"character":4}}),
+            );
+            assert_eq!(
+                coincident
+                    .iter()
+                    .map(|action| action["data"]["fix"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                ["point_action"]
+            );
+            assert!(
+                action_request(
+                    &index,
+                    &fixture,
+                    json!({"start":{"line":0,"character":3},"end":{"line":0,"character":4}})
+                )
+                .is_empty()
+            );
+            assert!(
+                action_request(
+                    &index,
+                    &fixture,
+                    json!({"start":{"line":0,"character":3},"end":{"line":0,"character":3}})
+                )
+                .is_empty()
+            );
+        }
     }
 }

@@ -202,11 +202,12 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 完了: [設計契約](../../task_contracts/ja/LSP-CODE-ACTION-DESIGN.md)、
       [英語仕様](../en/code_action.md)、[日本語仕様](code_action.md)。
 
-17. **code action。** [ ]
+17. **code action。** [x]
     - `mizar-diagnostics` の fix ペイロードから code action を実装する。
     - テスト: fix 種別ごとの action フィクスチャ。編集が range 変換を
       ラウンドトリップする。
     - 依存: 9、16、`mizar-diagnostics` task 13。仕様: `code_action.md`。
+    - 完了: [変換契約](../../task_contracts/ja/LSP-CODE-ACTIONS.md)。未検証の artifact/command 提案は除外したままとする。
 
 18. **仕様: `explain.md`。** [x]
     - explanation クエリの仕様を執筆する（英語と日本語、コードなし）:

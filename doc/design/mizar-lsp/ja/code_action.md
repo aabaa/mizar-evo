@@ -33,10 +33,14 @@ server は code action を提示し、提案 edit を自ら適用しない。適
 
 ## Implementation boundary
 
-task16 は変換と安全性だけを定める。task9 の診断公開、task17 の code-action 実装、tasks18/19 の explanation query は別単位のままである。command の wire encoding、explanation query の挙動、新しい action class、公開 diagnostic code/name/alias はここでは定義しない。
+`src/diagnostics.rs` は既存の metadata/build host を通して公開済み fix を変換する。publication host のない通常の stdio 経路は action を返さない。要求では生きている文書の version と元の source association を使う。primary 診断 range の半開区間の重なりで fix を選び、空 range は非空区間内の点、または一致する点として扱う。
+
+server は quickfix の resolve を通知する。client は code-action data と edit の resolve に対応する必要があり、初回 action は title/kind/data だけを持つ。locator は不透明な process-local publication 識別子に結び付き、build ID、raw text、文書 version が同じでも識別子を再利用しない。`codeAction/resolve` は data を locator として現在の index から action を再構築し、再検証後だけ version 付き `edit.documentChanges` を返す。利用不能または置換済み action は ContentModified で失敗する。client が渡す edit、command、診断内容は権限の根拠にならない。
+
+明示された expected text が一致する local/snapshot-bound 提案は、edit を持つ 3 種の applicability で提示できる。informational 提案、未知の class、この境界で利用できない hash/artifact/command の検証を要する提案は除外する。所有する validator がない限り、不透明な hash を source hash や artifact hash と解釈しない。command の wire encoding、explanation query の挙動、新しい action class、公開 diagnostic code/name/alias は定義せず、tasks18/19 は別単位のままとする。
 
 この規則は、保留中の OpenBuffer artifact provenance/storage、Session SourceId encoding、registry activation の判断から独立して、既存の提案と snapshot association を消費する。それらを前提とも決定ともせず、producer、diagnostics、artifact、snapshot の挙動を変更しない。
 
 ## Test design
 
-この設計単位では code も test も変更しない。fix 種別ごとの action fixture と edit の range 変換 round-trip の検証義務は task17 に残り、task9 と `mizar-diagnostics` task13 に依存する。task17 と module は未完了のままとし、§23.6/SCA-003 の credit は変わらない。
+task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。既存の production 診断はまだ fix を付けないため、native publication test は currentness を独立して検証する。frame 付き stdio では publication が利用できない経路を検証する。未検証の artifact/command consumer は保留のままで、§23.6/SCA-003 の credit は変わらない。

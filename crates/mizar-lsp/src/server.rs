@@ -106,6 +106,10 @@ impl LspSnapshot {
     pub fn outputs(&self) -> &[mizar_ir::storage::AnyPhaseOutputRef] {
         &self.outputs
     }
+
+    pub(crate) fn publication_identity(&self) -> &str {
+        self.retain_owner.as_str()
+    }
 }
 
 impl Drop for LspSnapshot {
@@ -311,17 +315,22 @@ impl Server {
             if outputs.is_empty() {
                 return None;
             }
+            static NEXT_PUBLICATION: std::sync::atomic::AtomicU64 =
+                std::sync::atomic::AtomicU64::new(0);
+            let publication_id = NEXT_PUBLICATION
+                .try_update(
+                    std::sync::atomic::Ordering::Relaxed,
+                    std::sync::atomic::Ordering::Relaxed,
+                    |id| id.checked_add(1),
+                )
+                .ok()?;
             let lease = snapshots
                 .acquire_lease(
                     association.captured.snapshot().id,
                     mizar_session::RetentionReason::PublishedLspSnapshot,
                 )
                 .ok()?;
-            let retain_owner = mizar_ir::storage::RetainOwner::new(format!(
-                "lsp:{:p}:{:?}",
-                std::sync::Arc::as_ptr(snapshots),
-                lease.lease_id
-            ));
+            let retain_owner = mizar_ir::storage::RetainOwner::new(format!("lsp:{publication_id}"));
             let registry = snapshots.clone();
             let mut candidate = LspSnapshot {
                 session: submission.session.id(),
@@ -872,7 +881,7 @@ impl Server {
                     return error(id.clone(), -32602, "Invalid params");
                 }
                 self.initialized = Some(params.clone());
-                json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true,
+                json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true},
                     "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true},
                     "textDocumentSync": {"openClose": true, "change": 1}}})
             } else {
@@ -989,6 +998,65 @@ impl Server {
                             }
                         }
                         json!({"data": data})
+                    }
+                    "textDocument/codeAction" => {
+                        let Some(params) = params.filter(|params| params.is_object()) else {
+                            return error(id.clone(), -32602, "Invalid params");
+                        };
+                        let Some(uri) = params
+                            .pointer("/textDocument/uri")
+                            .and_then(Value::as_str)
+                            .filter(|uri| !uri.is_empty())
+                        else {
+                            return error(id.clone(), -32602, "Invalid params");
+                        };
+                        let range = &params["range"];
+                        let valid = ["start", "end"].iter().all(|endpoint| {
+                            ["line", "character"].iter().all(|field| {
+                                range[endpoint][field]
+                                    .as_u64()
+                                    .is_some_and(|value| value <= i32::MAX as u64)
+                            })
+                        }) && (
+                            range["start"]["line"].as_u64(),
+                            range["start"]["character"].as_u64(),
+                        ) <= (
+                            range["end"]["line"].as_u64(),
+                            range["end"]["character"].as_u64(),
+                        ) && params["context"]["diagnostics"].is_array()
+                            && params["context"].get("only").is_none_or(|only| {
+                                only.as_array()
+                                    .is_some_and(|kinds| kinds.iter().all(Value::is_string))
+                            })
+                            && params["context"]
+                                .get("triggerKind")
+                                .is_none_or(|kind| matches!(kind.as_u64(), Some(1 | 2)))
+                            && self.document(uri).is_none_or(|(_, text)| {
+                                crate::diagnostics::code_action_range(text, range).is_some()
+                            });
+                        if !valid {
+                            return error(id.clone(), -32602, "Invalid params");
+                        }
+                        json!([])
+                    }
+                    "codeAction/resolve" => {
+                        let valid = params.is_some_and(|params| {
+                            let data = &params["data"];
+                            params["title"].is_string()
+                                && ["publication", "snapshot", "fix", "uri"]
+                                    .iter()
+                                    .all(|field| {
+                                        data[field].as_str().is_some_and(|value| !value.is_empty())
+                                    })
+                                && data["id"].as_u64().is_some()
+                                && data["version"]
+                                    .as_i64()
+                                    .is_some_and(|version| i32::try_from(version).is_ok())
+                        });
+                        if !valid {
+                            return error(id.clone(), -32602, "Invalid params");
+                        }
+                        return error(id.clone(), -32801, "Code action is no longer current");
                     }
                     "textDocument/hover" => {
                         let valid = params.is_some_and(|params| {
@@ -1250,7 +1318,7 @@ mod tests {
         assert_eq!(
             response,
             json!({"jsonrpc": "2.0", "id": 7, "result": {
-            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}}}})
+            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}}}})
         );
     }
 
@@ -1907,7 +1975,7 @@ mod tests {
                 server.handle_message(request("initialize", original.clone())),
                 Some(json!({
                     "jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                        "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                        "positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                     }}
                 }))
             );
@@ -2029,7 +2097,7 @@ mod tests {
             vec![
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32602, "message": "Invalid params"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}}),
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": null}),
@@ -2072,7 +2140,7 @@ mod tests {
             server.handle_message(request("initialize", params.clone())),
             Some(
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}})
             )
         );

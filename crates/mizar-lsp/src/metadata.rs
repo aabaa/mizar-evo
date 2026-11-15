@@ -58,11 +58,30 @@ impl Server {
         driver: &CompilerDriver,
         snapshots: &SnapshotRegistry<A>,
     ) -> Option<Value> {
-        if message.get("method").and_then(Value::as_str) != Some("textDocument/hover") {
+        let method = message.get("method").and_then(Value::as_str);
+        if !matches!(
+            method,
+            Some("textDocument/hover" | "textDocument/codeAction" | "codeAction/resolve")
+        ) {
             return self.handle_message(message);
         }
         let mut response = self.handle_message(message.clone())?;
-        if response.get("result").is_none() {
+        let resolve = method == Some("codeAction/resolve");
+        if response.get("result").is_none() && !(resolve && response["error"]["code"] == -32801) {
+            return Some(response);
+        }
+        if method != Some("textDocument/hover") {
+            match self.snapshot_code_actions(driver, snapshots, &message["params"], resolve) {
+                Ok(Some(result)) => {
+                    response.as_object_mut()?.remove("error");
+                    response["result"] = result;
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    response.as_object_mut()?.remove("result");
+                    response["error"] = json!({"code": -32603, "message": error});
+                }
+            }
             return Some(response);
         }
         let params = &message["params"];
