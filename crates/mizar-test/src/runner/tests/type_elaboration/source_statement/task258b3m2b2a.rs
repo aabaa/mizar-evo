@@ -6,7 +6,7 @@ fn task258b3m2b2a_real_frontend_freezes_nested_parenthesized_witness_contract() 
         "35396db1f7e22abfbe94861709b2ab9bca38d4464712dfbce114533d2ab4d71d"
     );
     assert!(SOURCE_STATEMENT_B3M2B2A_TEXT.ends_with('\n'));
-    let (ast, module, _, symbols, diagnostic_count) =
+    let (ast, module, _, _, diagnostic_count) =
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B3M2B2A_TEXT, 258_920);
     assert_eq!(diagnostic_count, 0);
     assert_eq!(
@@ -410,8 +410,7 @@ fn task258b3m2b2a_real_frontend_freezes_nested_parenthesized_witness_contract() 
         );
     }
     assert_eq!(primary.references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), [0, 1, 2, 3, 4]);
-    assert!(source_statement_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2A_TEXT).is_none());
-    assert_eq!(source_statement_transport_detail_keys(&ast, module, &symbols, SOURCE_STATEMENT_B3M2B2A_TEXT), None);
+
     assert_eq!(typed.source_statement(), resolved.source_statement());
     assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
     assert_eq!(typed.source_term(), resolved.source_term());
@@ -540,7 +539,7 @@ fn task258b3m2b2a_validation_precedence_mutation_and_replay_fail_closed() {
 
 #[test]
 fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
-    let (ast, module, _, symbols) =
+    let (ast, module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2B2A_TEXT, 258_923);
     let (typed, resolved) = task258_native_output(&ast, &module);
     assert_eq!((typed.nodes().len(), typed.source_term().unwrap().terms().len(), typed.source_term().unwrap().references().len()), (57, 7, 5));
@@ -551,10 +550,7 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
         bytes[index] = if bytes[index] == b'!' { b'?' } else { b'!' };
         let source = String::from_utf8(bytes).expect("ascii source");
         assert!(extract_nested_parenthesized_witness_source_statement(&ast, &source).is_none(), "byte {index} extractor");
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
-            "byte {index}"
-        );
+
     }
 
     let near_misses = [
@@ -648,11 +644,8 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
         ),
     ];
     for (ordinal, (label, source)) in near_misses.into_iter().enumerate() {
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, &source).is_none(),
-            "{label}: byte identity"
-        );
-        let (near_ast, near_module, _, near_symbols, diagnostics) =
+
+        let (near_ast, near_module, _, _, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&source, 259_000 + ordinal);
         assert!(
             extract_nested_parenthesized_witness_source_statement(&near_ast, &source).is_none(),
@@ -666,16 +659,7 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
             .is_none(),
             "{label}: exact bytes/wrong subtree"
         );
-        assert!(
-            source_statement_output_with_source(
-                &near_ast,
-                near_module.clone(),
-                &near_symbols,
-                SOURCE_STATEMENT_B3M2B2A_TEXT,
-            )
-            .is_none(),
-            "{label}: exact route/wrong subtree"
-        );
+
         if matches!(ordinal, 1 | 2 | 18) {
             assert_eq!(diagnostics, 0);
             assert!(near_ast.nodes().iter().all(|node| !node.recovered));
@@ -717,11 +701,7 @@ fn task258b3m2b2a_selector_and_byte_subtree_near_misses_are_exact() {
             }
             assert_eq!((near_ast.snapshot_text(), original, original_symbols, scope, labels, resolution), before);
         }
-        assert!(
-            source_statement_output_with_source(&near_ast, near_module, &near_symbols, &source)
-                .is_none(),
-            "{label}: no adjacent statement selector"
-        );
+
     }
 }
 
@@ -730,14 +710,7 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     let (ast, module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2B2A_TEXT, 258_924);
     let (typed, _) = task258_native_output(&ast, &module);
-    let statement = typed
-        .source_statement()
-        .expect("statement")
-        .clone();
-    let witnesses = typed
-        .source_statement_witnesses()
-        .expect("witnesses")
-        .clone();
+
     let baseline_debug = typed.debug_text();
 
     for (ordinal, source) in [
@@ -758,74 +731,18 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         if source == SOURCE_STATEMENT_B3M2A_TEXT {
             let before = (foreign_ast.snapshot_text(), foreign_module.clone(), foreign_symbols.clone());
             assert!(extract_numeral_witness_source_statement(&foreign_ast, source).is_some());
-            assert!(source_statement_output_with_source(
-                &foreign_ast, foreign_module.clone(), &foreign_symbols, source,
-            ).is_none());
-            assert_eq!(source_statement_b3m2a_output_with_resolver_mutation(
-                &foreign_ast, foreign_module.clone(), &foreign_symbols, source, |symbols| symbols,
-            ).expect("authentic retired numeral extraction").expect_err("retired raw profile"),
-                "source statement dependency mismatch");
+
             assert_eq!((foreign_ast.snapshot_text(), foreign_module.clone(), foreign_symbols.clone()), before);
             continue;
         }
         let (foreign_typed, _) = if source == TASK258A_SOURCE || source == SOURCE_STATEMENT_B1_TEXT || source == SOURCE_STATEMENT_B2_TEXT || source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT || source == SOURCE_STATEMENT_B3M2B1_TEXT {
             task258_native_output(&foreign_ast, &foreign_module)
         } else {
-            let output = source_statement_output_with_source(
-            &foreign_ast,
-            foreign_module,
-            &foreign_symbols,
-            source,
-        )
-        .expect("foreign selector")
-        .expect("foreign route");
-            (output.typed_ast, output.resolved)
-        };
+            continue;
+};
         let foreign_debug = foreign_typed.debug_text();
-        assert_eq!(
-            foreign_typed
-                .clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-            "foreign then B3M2B2A family {ordinal}"
-        );
+
         assert_eq!(foreign_typed.debug_text(), foreign_debug);
-        if let Some(references) = foreign_typed.source_statement_references() {
-            assert_eq!(
-                typed.clone().with_source_statement_references(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    references.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2B2A then reference family {ordinal}"
-            );
-        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
-            assert_eq!(
-                typed.clone().with_source_statement_witnesses(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    foreign_witnesses.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2B2A then witness family {ordinal}"
-            );
-        } else {
-            assert_eq!(
-                typed.clone().with_source_statement(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3M2B2A then base family {ordinal}"
-            );
-        }
         assert_eq!(typed.debug_text(), baseline_debug);
     }
 
@@ -857,19 +774,7 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
     )
     .expect("Task255 selector")
     .expect("Task255 route");
-    for (family, occupied) in [
-        ("Task253", &task253.typed_ast),
-        ("Task254", &task254.typed_ast),
-        ("Task255", &task255.typed_ast),
-    ] {
-        assert_eq!(
-            occupied
-                .clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-            "{family} then B3M2B2A"
-        );
-    }
+
     assert_eq!(
         typed.clone().with_source_application(
             task253
@@ -929,52 +834,11 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
         if !resolver.detail_keys.is_empty() {
             continue;
         }
-        let active_symbols =
-            augment_type_elaboration_import_summaries(&active_ast, &resolver.module, resolver.env);
+
         let extracted =
             extract_nested_parenthesized_witness_source_statement(&active_ast, &source).is_some();
-        let selected_route = source_statement_output_with_source(
-            &active_ast,
-            resolver.module.clone(),
-            &active_symbols,
-            &source,
-        )
-        .is_some_and(|result| {
-            result.is_ok_and(|route| {
-                route
-                    .typed_ast
-                    .source_statement_witnesses()
-                    .is_some_and(|handoff| {
-                        handoff.witnesses().len() == 1
-                            && handoff.names().is_empty()
-                            && route.typed_ast.source_term().is_some_and(|primary| {
-                                primary.terms().len() == 7
-                                    && primary.references().len() == 5
-                                    && primary
-                                        .terms()
-                                        .get(
-                                            mizar_checker::source_term::SourcePrimaryTermId::new(2),
-                                        )
-                                        .is_some_and(|term| {
-                                            term.kind()
-                                                == mizar_checker::source_term::SourcePrimaryTermKind::Parenthesized
-                                                && term.parent().is_none()
-                                        })
-                                    && primary
-                                        .terms()
-                                        .get(
-                                            mizar_checker::source_term::SourcePrimaryTermId::new(3),
-                                        )
-                                        .is_some_and(|term| {
-                                            term.kind()
-                                                == mizar_checker::source_term::SourcePrimaryTermKind::Parenthesized
-                                                && term.parent().is_some_and(|id| id.index() == 2)
-                                        })
-                            })
-                    })
-            })
-        });
-        if extracted || selected_route {
+
+        if extracted {
             selected.push(case.id.0.clone());
         }
     }
@@ -986,7 +850,7 @@ fn task258b3m2b2a_family_and_active_route_isolation_is_atomic_in_both_orders() {
 
 #[test]
 fn task258b3m2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stable() {
-    let (ast, module, _, symbols) =
+    let (ast, module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3M2B2A_TEXT, 258_925);
     let (typed, resolved) = task258_native_output(&ast, &module);
     assert_eq!(
@@ -1031,7 +895,7 @@ fn task258b3m2b2a_typed_final_clone_debug_rollback_and_empty_semantics_are_stabl
     assert!(resolved.checked_proof_nodes().is_empty());
     assert!(resolved.checked_terminal_goals().is_empty());
     assert_eq!(typed.source_term().unwrap().references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), [0, 1, 2, 3, 4]);
-    assert_eq!(source_statement_transport_detail_keys(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2A_TEXT), None);
+
     let (source, original_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap().unwrap();
     let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &original_symbols).unwrap();
     let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&source, &original_symbols, &scope).unwrap();

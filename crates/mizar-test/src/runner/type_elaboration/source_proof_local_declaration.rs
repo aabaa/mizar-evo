@@ -56,16 +56,6 @@ use super::{
 
 use super::source_reserve::extract_builtin_source_reserve_declarations_after_node_guard;
 
-#[cfg(test)]
-pub(in crate::runner) fn source_proof_local_declaration_output(
-    _ast: &SurfaceAst,
-    _module: ModuleId,
-    _symbols: &SymbolEnv,
-    _source_text: &str,
-) -> Option<()> {
-    None
-}
-
 // WrongLowerFingerprint now supplies genuine foreign origin authority instead of corrupting text.
 fn source_proof_local_binding_receipt(
     ast: &SurfaceAst,

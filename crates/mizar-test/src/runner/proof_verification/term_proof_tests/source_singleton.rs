@@ -1563,8 +1563,7 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
     let target = &cases[0];
     let base = &lowers[0].as_ref().unwrap().2;
     let installed = pairs[0].as_ref().unwrap();
-    let statement = installed.source_statement().unwrap();
-    let witnesses = installed.source_statement_witnesses().unwrap();
+
     assert_eq!(
         installed
             .clone()
@@ -1701,39 +1700,6 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
                 );
                 pristine();
                 continue;
-            }
-            if ["resolved-rootless", "typed-rootless", "rootless"].contains(&control) {
-                let before = receiver.clone();
-                assert!(
-                    receiver
-                        .nodes()
-                        .iter()
-                        .any(|(_, row)| row.kind.as_str() == "TheoremItem")
-                );
-                assert_eq!(
-                    receiver.clone().with_source_statement(statement.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver
-                        .clone()
-                        .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver.clone().with_source_set_term_statement_witnesses(
-                        base.source_set_term().unwrap().clone(),
-                        statement.clone(),
-                        witnesses.clone()
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
             }
             if control != "missing-set" {
                 receiver = receiver

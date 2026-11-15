@@ -32,14 +32,7 @@ use super::{
     SourceStatementB4BRouteInputs, SourceStatementB4BSurfaceMutation, SourceStatementB4CRouteInputs, SourceStatementB4CSurfaceMutation,
     SourceStatementB5AExtraction, SourceStatementB5ASurfaceMutation, SourceStatementB5BExtraction, SourceStatementB5BRouteInputs,
     SourceStatementB5BSurfaceMutation, SourceStatementExtraction,
-    TASK258B3M2B2B3A_TASK256_FIELD_COUNT,
-    TASK258B3M2B2B3A_TASK258_FIELD_COUNT, TASK258B3M2B2B3A_WITNESS_FIELD_COUNT,
-    TASK258B3M2B2B3D_TASK48_FIELD_COUNT, TASK258B3M2B2B3D_TASK252_FIELD_COUNT,
-    TASK258B3M2B2B3D_TASK255_FIELD_COUNT, TASK258B3M2B2B3D_TASK256_FIELD_COUNT,
-    TASK258B3M2B2B3D_TASK258_FIELD_COUNT, TASK258B3M2B2B3D_WITNESS_FIELD_COUNT,
-    TASK258B3M2B2B3E_TASK48_FIELD_COUNT, TASK258B3M2B2B3E_TASK252_FIELD_COUNT,
-    TASK258B3M2B2B3E_TASK255_FIELD_COUNT, TASK258B3M2B2B3E_TASK256_FIELD_COUNT,
-    TASK258B3M2B2B3E_TASK258_FIELD_COUNT, TASK258B3M2B2B3E_WITNESS_FIELD_COUNT,
+    TASK258B3M2B2B3A_TASK256_FIELD_COUNT, TASK258B3M2B2B3D_TASK256_FIELD_COUNT, TASK258B3M2B2B3E_TASK256_FIELD_COUNT,
     extract_ancestor_label_descendant_citation_source_statement,
     extract_application_witness_source_statement, extract_choice_witness_source_statement,
     extract_choice_witness_source_statement_with_surface_mutation,
@@ -62,57 +55,49 @@ use super::{
     extract_structure_update_witness_source_statement,
     extract_wrapped_application_witness_source_statement,
 
-
-     source_statement_b3m2a_output_with_mutation,
-    source_statement_b3m2a_output_with_resolver_mutation,
-    source_statement_b3m2a_resolver_env_for_test, source_statement_b3m2b2b1a_output_with_mutation,
-    source_statement_b3m2b2b1a_output_with_resolver_mutation,
+     source_statement_b3m2a_lower_with_mutation,
+    source_statement_b3m2a_lower_with_resolver_mutation,
+    source_statement_b3m2a_resolver_env_for_test, source_statement_b3m2b2b1a_lower_with_mutation,
+    source_statement_b3m2b2b1a_lower_with_resolver_mutation,
     source_statement_b3m2b2b1a_resolver_env_for_test,
-    source_statement_b3m2b2b1b1_output_with_mutation,
-    source_statement_b3m2b2b1b1_output_with_resolver_mutation,
+    source_statement_b3m2b2b1b1_lower_with_mutation,
+    source_statement_b3m2b2b1b1_lower_with_resolver_mutation,
     source_statement_b3m2b2b1b1_resolver_env_for_test,
-    source_statement_b3m2b2b2a_output_with_mutation,
-    source_statement_b3m2b2b2a_output_with_resolver_mutation,
+    source_statement_b3m2b2b2a_lower_with_mutation,
+    source_statement_b3m2b2b2a_lower_with_resolver_mutation,
     source_statement_b3m2b2b2a_resolver_env_for_test,
-    source_statement_b3m2b2b2b_output_with_mutation,
-    source_statement_b3m2b2b2b_output_with_resolver_mutation,
+    source_statement_b3m2b2b2b_lower_with_mutation,
+    source_statement_b3m2b2b2b_lower_with_resolver_mutation,
     source_statement_b3m2b2b2b_resolver_env_for_test,
-    source_statement_b3m2b2b2c_output_with_mutation,
-    source_statement_b3m2b2b2c_output_with_resolver_mutation,
+    source_statement_b3m2b2b2c_lower_with_mutation,
+    source_statement_b3m2b2b2c_lower_with_resolver_mutation,
     source_statement_b3m2b2b2c_resolver_env_for_test,
-    source_statement_b3m2b2b3a_output_with_mutation,
-    source_statement_b3m2b2b3a_output_with_post_auth_family_mutation,
-    source_statement_b3m2b2b3a_output_with_resolver_mutation,
-    source_statement_b3m2b2b3a_output_with_stage_mutation,
+    source_statement_b3m2b2b3a_lower_with_mutation,
+    source_statement_b3m2b2b3a_lower_with_resolver_mutation,
+    source_statement_b3m2b2b3a_lower_with_stage_mutation,
     source_statement_b3m2b2b3a_resolver_env_for_test,
     source_statement_b3m2b2b3b_resolver_env_for_test,
-    source_statement_b3m2b2b3c_output_with_resolver_mutation,
+    source_statement_b3m2b2b3c_lower_with_resolver_mutation,
     source_statement_b3m2b2b3c_resolver_env_for_test,
-    source_statement_b3m2b2b3d_output_with_lower_stage_mutation,
-    source_statement_b3m2b2b3d_output_with_mutation,
-    source_statement_b3m2b2b3d_output_with_post_auth_family_mutation,
-    source_statement_b3m2b2b3d_output_with_resolver_mutation,
-    source_statement_b3m2b2b3d_output_with_stage_mutation,
+    source_statement_b3m2b2b3d_lower_with_lower_stage_mutation,
+    source_statement_b3m2b2b3d_lower_with_mutation,
+    source_statement_b3m2b2b3d_lower_with_resolver_mutation,
+    source_statement_b3m2b2b3d_lower_with_stage_mutation,
     source_statement_b3m2b2b3d_resolver_env_for_test,
-    source_statement_b3m2b2b3e_output_with_lower_stage_mutation,
-    source_statement_b3m2b2b3e_output_with_mutation,
-    source_statement_b3m2b2b3e_output_with_post_auth_family_mutation,
-    source_statement_b3m2b2b3e_output_with_resolver_mutation,
-    source_statement_b3m2b2b3e_output_with_stage_mutation,
+    source_statement_b3m2b2b3e_lower_with_lower_stage_mutation,
+    source_statement_b3m2b2b3e_lower_with_mutation,
+    source_statement_b3m2b2b3e_lower_with_resolver_mutation,
+    source_statement_b3m2b2b3e_lower_with_stage_mutation,
     source_statement_b3m2b2b3e_resolver_env_for_test,
-    source_statement_b4a_output_with_mutation, source_statement_b4a_output_with_resolver_mutation,
-    source_statement_b4a_resolver_env_for_test, source_statement_b4b_output_with_mutation,
-    source_statement_b4b_output_with_resolver_mutation, source_statement_b4b_resolver_env_for_test,
-    source_statement_b4c_output_with_mutation,
-    source_statement_b4c_output_with_raw_resolver_mutation,
-    source_statement_b4c_output_with_resolver_mutation, source_statement_b4c_resolver_env_for_test,
+    source_statement_b4a_lower_with_mutation,
+    source_statement_b4a_resolver_env_for_test, source_statement_b4b_lower_with_mutation,
+    source_statement_b4b_lower_with_resolver_mutation, source_statement_b4b_resolver_env_for_test,
+    source_statement_b4c_lower_with_mutation,
+    source_statement_b4c_lower_with_raw_resolver_mutation,
+    source_statement_b4c_lower_with_resolver_mutation, source_statement_b4c_resolver_env_for_test,
     source_statement_b5a_resolver_env_for_test,
-    validate_task258b5a_raw_resolver_env, validate_task258b5a_enriched_resolver_env,
-    source_statement_b5b_output_with_mutation,
-    source_statement_b5b_output_with_raw_resolver_mutation,
-    source_statement_b5b_output_with_resolver_mutation, source_statement_b5b_resolver_env_for_test,
-    source_statement_output_with_source, source_statement_resolver_env_for_test,
-    source_statement_transport_detail_keys,
+    source_statement_b5b_lower_with_mutation, source_statement_b5b_resolver_env_for_test,
+    source_statement_resolver_env_for_test,
     task258b4a_surface_profile_with_mutation_for_test,
     task258b4b_surface_profile_with_mutation_for_test,
     task258b4c_surface_profile_with_mutation_for_test,
@@ -374,7 +359,7 @@ fn task258_native_output(
                 let name_id = row.name().expect("native witness forward name link");
                 assert_eq!(name_id.index(), named);
                 let name = handoff.names().get(name_id).expect("native name row");
-                assert_eq!(name.witness().index(), witness_count);
+
                 assert_eq!(name.site().node().index(), witness.children[0].index());
                 assert_eq!(name.source_range(), name_node.range);
                 assert_eq!(name.source_range().source_id, ast.source_id);
@@ -1281,7 +1266,6 @@ fn task258b4c_mutate_raw_resolver(
     )
 }
 
-
 fn statement_env_with_imported_label(symbols: SymbolEnv) -> SymbolEnv {
     let label = symbols
         .labels()
@@ -1366,7 +1350,7 @@ fn task258b3m2b2b1a_lower_inputs(
 ) -> SourceStatementB3M2B2B1ARouteInputs {
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
     let capture = || {
-        source_statement_b3m2b2b1a_output_with_resolver_mutation(
+        source_statement_b3m2b2b1a_lower_with_resolver_mutation(
             ast,
             module.clone(),
             symbols,
@@ -1377,36 +1361,7 @@ fn task258b3m2b2b1a_lower_inputs(
         .expect("authenticated bare lower capture")
     };
     let lower = capture();
-    assert!(
-        source_statement_output_with_source(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-        )
-        .is_none()
-    );
-    assert_eq!(
-        source_statement_b3m2b2b1a_output_with_mutation(
-            ast,
-            module.clone(),
-            symbols,
-            SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-            |_| {},
-        )
-        .expect("authentic bare extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
+
     let application = lower
         .application
         .as_ref()
@@ -1449,48 +1404,6 @@ fn task258b3m2b2b1b1_fixture(
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
     (ast, module, symbols)
-}
-
-fn task258b3m2b2b1b1_assert_retired(
-    ast: &SurfaceAst,
-    module: &mizar_resolve::resolved_ast::ModuleId,
-    symbols: &SymbolEnv,
-) {
-    let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    for _ in 0..2 {
-        assert!(
-            extract_wrapped_application_witness_source_statement(
-                ast,
-                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-            )
-            .is_some()
-        );
-        assert!(
-            source_statement_output_with_source(
-                ast,
-                module.clone(),
-                symbols,
-                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-            )
-            .is_none()
-        );
-        assert_eq!(
-            source_statement_b3m2b2b1b1_output_with_mutation(
-                ast,
-                module.clone(),
-                symbols,
-                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-                |_| {},
-            )
-            .expect("authentic wrapped extraction")
-            .expect_err("retired raw profile"),
-            "source statement dependency mismatch"
-        );
-        assert_eq!(
-            (ast.snapshot_text(), module.clone(), symbols.clone()),
-            before
-        );
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1707,26 +1620,14 @@ fn task258b3m2b2b2_lower_inputs(
     source: &str,
 ) -> SourceStatementB3M2B2B2ARouteInputs {
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    assert!(source_statement_output_with_source(ast, module.clone(), symbols, source).is_none());
-    assert!(source_statement_transport_detail_keys(ast, module.clone(), symbols, source).is_none());
-    let mut captured = None;
-    let capture = |inputs: &mut SourceStatementB3M2B2B2ARouteInputs| captured = Some(inputs.clone());
-    let result = match source {
-        SOURCE_STATEMENT_B3M2B2B2A_TEXT => source_statement_b3m2b2b2a_output_with_mutation(
-            ast, module.clone(), symbols, source, capture,
-        ),
-        SOURCE_STATEMENT_B3M2B2B2B_TEXT => source_statement_b3m2b2b2b_output_with_mutation(
-            ast, module.clone(), symbols, source, capture,
-        ),
-        SOURCE_STATEMENT_B3M2B2B2C_TEXT => source_statement_b3m2b2b2c_output_with_mutation(
-            ast, module.clone(), symbols, source, capture,
-        ),
-        _ => panic!("unowned structure witness shape"),
-    };
-    assert_eq!(result.expect("authentic extraction").expect_err("retired raw admission"),
-        "source statement dependency mismatch");
+    let lower = match source {
+        SOURCE_STATEMENT_B3M2B2B2A_TEXT => source_statement_b3m2b2b2a_lower_with_resolver_mutation(ast, module.clone(), symbols, source, |symbols| symbols),
+        SOURCE_STATEMENT_B3M2B2B2B_TEXT => source_statement_b3m2b2b2b_lower_with_resolver_mutation(ast, module.clone(), symbols, source, |symbols| symbols),
+        SOURCE_STATEMENT_B3M2B2B2C_TEXT => source_statement_b3m2b2b2c_lower_with_resolver_mutation(ast, module.clone(), symbols, source, |symbols| symbols),
+        _ => unreachable!(),
+    }.expect("genuine structure selector").expect("genuine structure lower payload");
     assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone()), before);
-    captured.expect("authenticated lower inputs before retired raw admission")
+    lower
 }
 
 fn task258b3m2b2b2a_lower_inputs(
@@ -1850,27 +1751,9 @@ fn task258b3m2b2b3a_lower_inputs(
 ) {
     let (ast, module, symbols) = task258b3m2b2b3a_fixture(source_ordinal);
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3A_TEXT
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3A_TEXT
-        )
-        .is_none()
-    );
+
     let mut captured = None;
-    assert_eq!(
-        source_statement_b3m2b2b3a_output_with_mutation(
+    let _ = source_statement_b3m2b2b3a_lower_with_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -1878,9 +1761,8 @@ fn task258b3m2b2b3a_lower_inputs(
             |inputs| captured = Some(inputs.clone()),
         )
         .expect("authentic numeric enumeration extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
+        .expect("genuine lower payload");
+
     assert_eq!(
         (ast.snapshot_text(), module.clone(), symbols.clone()),
         before
@@ -1889,7 +1771,7 @@ fn task258b3m2b2b3a_lower_inputs(
         ast,
         module,
         symbols,
-        captured.expect("genuine lower inputs before raw admission"),
+        captured.expect("genuine lower inputs"),
     )
 }
 
@@ -1924,156 +1806,19 @@ fn task258b3m2b2b3c_fixture(
 }
 
 fn task258b3m2b2b3_family_debug(family: usize, ordinal: usize) -> String {
-    let source = match family {
-        0 => SOURCE_STATEMENT_B3M2B2B3A_TEXT,
-        1 => SOURCE_STATEMENT_B3M2B2B3B_TEXT,
-        2 => SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-        3 => SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-        4 => SOURCE_STATEMENT_B3M2B2B3E_TEXT,
+    let debug = match family {
+        0 => format!("{:?}", task258b3m2b2b3a_lower_inputs(ordinal).3),
+        3 => format!("{:?}", task258b3m2b2b3d_lower_inputs(ordinal).3),
+        4 => format!("{:?}", task258b3m2b2b3e_lower_inputs(ordinal).3),
+        1 | 2 => {
+            let source = if family == 1 { SOURCE_STATEMENT_B3M2B2B3B_TEXT } else { SOURCE_STATEMENT_B3M2B2B3C_TEXT };
+            let (ast, module, _, _, diagnostics) = task253_ast_from_source_text_with_diagnostic_count(source, ordinal);
+            assert_eq!(diagnostics, 0);
+            task258_native_output(&ast, &module).0.debug_text()
+        }
         _ => unreachable!(),
     };
-    let (ast, module, _, symbols, diagnostics) =
-        task253_ast_from_source_text_with_diagnostic_count(source, ordinal);
-    assert_eq!(diagnostics, 0);
-    if family == 0 {
-        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-        assert!(extract_set_enumeration_witness_source_statement(&ast, source).is_some());
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, source).is_none()
-        );
-        assert!(
-            source_statement_transport_detail_keys(&ast, module.clone(), &symbols, source)
-                .is_none()
-        );
-        let mut captured = None;
-        let error = source_statement_b3m2b2b3a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            source,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic retired numeric enumeration extraction")
-        .expect_err("retired raw profile");
-        assert_eq!(error, "source statement dependency mismatch");
-        assert_eq!((ast.snapshot_text(), module, symbols), before);
-        return format!(
-            "retired numeric enumeration: {error}; {:?}",
-            captured.expect("genuine lower capture")
-        )
-        .replace(&ordinal.to_string(), "<ordinal>");
-    }
-    if family == 3 {
-        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-        assert!(extract_qua_witness_source_statement(&ast, source).is_some());
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, source).is_none()
-        );
-        assert!(
-            source_statement_transport_detail_keys(&ast, module.clone(), &symbols, source)
-                .is_none()
-        );
-        let error = source_statement_b3m2b2b3d_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            source,
-            |_| {},
-        )
-        .expect("authentic retired Qua extraction")
-        .expect_err("retired raw profile");
-        assert_eq!(error, "source statement dependency mismatch");
-        assert_eq!((ast.snapshot_text(), module, symbols), before);
-        return format!("retired Qua: {error}; {source}");
-    }
-    if family == 4 {
-        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-        assert!(extract_comprehension_witness_source_statement(&ast, source).is_some());
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, source).is_none()
-        );
-        assert!(
-            source_statement_transport_detail_keys(&ast, module.clone(), &symbols, source)
-                .is_none()
-        );
-        let mut captured = None;
-        let error = source_statement_b3m2b2b3e_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            source,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic retired Comprehension extraction")
-        .expect_err("retired raw profile");
-        assert_eq!(error, "source statement dependency mismatch");
-        assert_eq!((ast.snapshot_text(), module, symbols), before);
-        return format!(
-            "retired Comprehension: {error}; {:?}",
-            captured.expect("genuine lower capture")
-        )
-        .replace(&ordinal.to_string(), "<ordinal>");
-    }
-    if family == 1 || family == 2 {
-        let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-        let (typed, resolved) = task258_native_output(&ast, &module);
-        if family == 2 {
-            use mizar_checker::source_set_term::{
-                SourceSetRequestKind, SourceSetTermId, SourceSetTermKind, SourceSetTypeHead,
-                SourceSetTypeOwner, SourceSetTypeRole, SourceSetTypeSiteId,
-            };
-            let (source, native_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(
-                &ast, &module,
-            ).expect("native choice recollection").expect("native choice module");
-            let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&source, &native_symbols)
-                .expect("native choice occurrences");
-            let native_before = (source.clone(), native_symbols.clone(), scope.clone());
-            let (_, _, lower) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(
-                &source, &native_symbols, &scope,
-            ).expect("native choice lower");
-            assert_eq!(typed.source_term(), lower.source_term());
-            assert_eq!(typed.source_set_term(), lower.source_set_term());
-            assert_eq!(typed.source_atomic_formula(), lower.source_atomic_formula());
-            let set = typed.source_set_term().expect("native choice set");
-            let term = set.terms().get(SourceSetTermId::new(0)).expect("native choice term");
-            assert_eq!(term.kind(), SourceSetTermKind::Choice);
-            assert_eq!((set.terms().len(), set.generators().len(), set.type_sites().len(), set.requests().len()), (1, 0, 1, 2));
-            let target = set.type_sites().get(SourceSetTypeSiteId::new(0)).expect("native choice target");
-            assert_eq!(target.head(), SourceSetTypeHead::BuiltinSet);
-            assert_eq!(target.owner(), SourceSetTypeOwner::Term {
-                term: SourceSetTermId::new(0), role: SourceSetTypeRole::ChoiceTarget,
-            });
-            assert_eq!(set.requests().iter().map(|(_, request)| (
-                request.term().index(), request.ordinal(), request.kind(), request.generator(), request.type_site(),
-            )).collect::<Vec<_>>(), [
-                (0, 0, SourceSetRequestKind::ChoiceNonempty, None, Some(SourceSetTypeSiteId::new(0))),
-                (0, 1, SourceSetRequestKind::ResultType, None, None),
-            ]);
-            assert_eq!((source, native_symbols, scope), native_before);
-        }
-        assert_eq!(typed.source_term(), resolved.source_term());
-        assert!(typed.source_set_term().is_some());
-        assert_eq!(typed.source_set_term(), resolved.source_set_term());
-        assert_eq!(typed.source_atomic_formula(), resolved.source_atomic_formula());
-        assert_eq!(typed.source_statement(), resolved.source_statement());
-        assert_eq!(typed.source_statement_witnesses(), resolved.source_statement_witnesses());
-        let witness = typed.source_statement_witnesses().expect("native set witness")
-            .witnesses().iter().next().expect("native witness row").1;
-        assert_eq!(
-            witness.term(),
-            mizar_checker::source_statement::SourceStatementWitnessTermTarget::SetTerm(
-                mizar_checker::source_set_term::SourceSetTermId::new(0),
-            ),
-        );
-        assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone()), before);
-        return typed.debug_text().replace(&ordinal.to_string(), "<ordinal>");
-    }
-    source_statement_output_with_source(&ast, module, &symbols, source)
-        .expect("family selector")
-        .expect("family route")
-        .typed_ast
-        .debug_text()
-        .replace(&ordinal.to_string(), "<ordinal>")
+    debug.replace(&ordinal.to_string(), "<ordinal>")
 }
 
 fn task258b3m2b2b3d_fixture(
@@ -2101,8 +1846,7 @@ fn task258b3m2b2b3d_lower_inputs(
 ) {
     let (ast, module, symbols) = task258b3m2b2b3d_fixture(source_ordinal);
     let mut captured = None;
-    assert_eq!(
-        source_statement_b3m2b2b3d_output_with_mutation(
+    let _ = source_statement_b3m2b2b3d_lower_with_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -2110,14 +1854,13 @@ fn task258b3m2b2b3d_lower_inputs(
             |inputs| captured = Some(inputs.clone()),
         )
         .expect("authentic Qua extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
+        .expect("genuine lower payload");
+
     (
         ast,
         module,
         symbols,
-        captured.expect("genuine lower inputs before raw admission"),
+        captured.expect("genuine lower inputs"),
     )
 }
 
@@ -2146,8 +1889,7 @@ fn task258b3m2b2b3e_lower_inputs(
 ) {
     let (ast, module, symbols) = task258b3m2b2b3e_fixture(source_ordinal);
     let mut captured = None;
-    assert_eq!(
-        source_statement_b3m2b2b3e_output_with_mutation(
+    let _ = source_statement_b3m2b2b3e_lower_with_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -2155,14 +1897,13 @@ fn task258b3m2b2b3e_lower_inputs(
             |inputs| captured = Some(inputs.clone()),
         )
         .expect("authentic Comprehension extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
+        .expect("genuine lower payload");
+
     (
         ast,
         module,
         symbols,
-        captured.expect("genuine lower inputs before raw admission"),
+        captured.expect("genuine lower inputs"),
     )
 }
 
@@ -2178,34 +1919,10 @@ fn task258b4a_output(
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B4A_TEXT, seed);
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
-    let mut captured = None;
-    assert_eq!(
-        source_statement_b4a_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4A_TEXT,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic Task258B4A extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4A_TEXT,
-        )
-        .is_none()
-    );
-    (
-        ast,
-        module,
-        symbols,
-        captured.expect("genuine B4A lower inputs before raw admission"),
-    )
+    let lower = source_statement_b4a_lower_with_mutation(
+        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT, |_| {},
+    ).expect("genuine lower selector").expect("genuine lower payload");
+    (ast, module, symbols, lower)
 }
 
 fn task258b4b_output(
@@ -2220,28 +1937,10 @@ fn task258b4b_output(
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B4B_TEXT, seed);
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
-    let mut captured = None;
-    assert_eq!(
-        source_statement_b4b_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4B_TEXT,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic Task258B4B extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
-    assert!(source_statement_output_with_source(
-        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4B_TEXT,
-    ).is_none());
-    (
-        ast,
-        module,
-        symbols,
-        captured.expect("genuine B4B lower inputs before raw admission"),
-    )
+    let lower = source_statement_b4b_lower_with_mutation(
+        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4B_TEXT, |_| {},
+    ).expect("genuine lower selector").expect("genuine lower payload");
+    (ast, module, symbols, lower)
 }
 
 fn task258b4c_output(
@@ -2256,200 +1955,11 @@ fn task258b4c_output(
         task253_ast_from_source_text_with_diagnostic_count(SOURCE_STATEMENT_B4C_TEXT, seed);
     assert_eq!(diagnostics, 0);
     let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
-    let mut captured = None;
-    assert_eq!(
-        source_statement_b4c_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4C_TEXT,
-            |inputs| captured = Some(inputs.clone()),
-        )
-        .expect("authentic Task258B4C extraction")
-        .expect_err("retired raw profile"),
-        "source statement dependency mismatch"
-    );
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4C_TEXT,
-        )
-        .is_none()
-    );
-    (
-        ast,
-        module,
-        symbols,
-        captured.expect("genuine B4C lower inputs before raw admission"),
-    )
+    let lower = source_statement_b4c_lower_with_mutation(
+        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4C_TEXT, |_| {},
+    ).expect("genuine lower selector").expect("genuine lower payload");
+    (ast, module, symbols, lower)
 }
-
-fn task258_reference_syntax_base(
-    typed: &mizar_checker::typed_ast::TypedAst,
-) -> mizar_checker::typed_ast::TypedAst {
-    mizar_checker::typed_ast::TypedAst::try_new(mizar_checker::typed_ast::TypedAstParts {
-        source_id: typed.source_id(),
-        module_id: typed.module_id().clone(),
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: typed.nodes().clone(),
-        contexts: mizar_checker::typed_ast::LocalTypeContextTable::new(),
-        types: mizar_checker::typed_ast::TypeTable::new(),
-        facts: mizar_checker::typed_ast::TypeFactTable::new(),
-        coercions: mizar_checker::typed_ast::CoercionTable::new(),
-        initial_obligations: mizar_checker::typed_ast::InitialObligationTable::new(),
-        diagnostics: mizar_checker::typed_ast::TypeDiagnosticTable::new(),
-    })
-    .expect("syntax-only typed base")
-    .with_source_term(
-        typed
-            .source_term()
-            .expect("Task252 handoff")
-            .clone(),
-    )
-    .expect("Task252 install")
-    .with_source_atomic_formula(
-        typed
-            .source_atomic_formula()
-            .expect("Task256 handoff")
-            .clone(),
-    )
-    .expect("Task256 install")
-}
-
-
-
-fn task258b5a_binding_env_with_context_recovery(
-    binding_env: &mizar_checker::binding_env::BindingEnv,
-    target: usize,
-) -> mizar_checker::binding_env::BindingEnv {
-    let mut contexts = mizar_checker::binding_env::BindingContextTable::new();
-    for (id, context) in binding_env.contexts().iter() {
-        let inserted = contexts.insert(mizar_checker::binding_env::BindingContextDraft {
-            owner: context.owner.clone(),
-            parent: context.parent,
-            layer: context.layer,
-            lexical_scope: context.lexical_scope.clone(),
-            bindings: context.bindings.clone(),
-            visible_bindings: context.visible_bindings.clone(),
-            recovery: if id.index() == target {
-                mizar_checker::binding_env::BindingContextRecovery::Degraded
-            } else {
-                context.recovery
-            },
-        });
-        assert_eq!(inserted, id);
-    }
-    mizar_checker::binding_env::BindingEnv::try_new(mizar_checker::binding_env::BindingEnvParts {
-        source_id: binding_env.source_id(),
-        module_id: binding_env.module_id().clone(),
-        contexts,
-        bindings: binding_env.bindings().clone(),
-        diagnostics: binding_env.diagnostics().clone(),
-    })
-    .expect("coherent B5A context-recovery mutation")
-}
-
-fn task258b5a_binding_env_with_binding_recovery(
-    binding_env: &mizar_checker::binding_env::BindingEnv,
-) -> mizar_checker::binding_env::BindingEnv {
-    let mut bindings = mizar_checker::binding_env::BindingTable::new();
-    for (id, binding) in binding_env.bindings().iter() {
-        let inserted = bindings.insert(mizar_checker::binding_env::BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: binding.kind,
-            identity: binding.identity.clone(),
-            owner_context: binding.owner_context,
-            declaration_range: binding.declaration_range,
-            visible_after_ordinal: binding.visible_after_ordinal,
-            type_site: binding.type_site.clone(),
-            status: binding.status,
-            captured: binding.captured.clone(),
-            diagnostics: binding.diagnostics.clone(),
-            recovery: mizar_checker::binding_env::BindingRecoveryState::Degraded,
-        });
-        assert_eq!(inserted, id);
-    }
-    mizar_checker::binding_env::BindingEnv::try_new(mizar_checker::binding_env::BindingEnvParts {
-        source_id: binding_env.source_id(),
-        module_id: binding_env.module_id().clone(),
-        contexts: binding_env.contexts().clone(),
-        bindings,
-        diagnostics: binding_env.diagnostics().clone(),
-    })
-    .expect("coherent B5A binding-recovery mutation")
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Task258B5ARawResolverMutation {
-    OwnerOriginSource,
-    OwnerOriginModule,
-    OwnerOriginRange,
-    OwnerOriginPath,
-    OwnerKind,
-    OwnerVisibility,
-    OwnerExport,
-    OwnerSpelling,
-    ContributionModule,
-    ContributionKind,
-    ContributionSource,
-    ContributionAnchor,
-    ContributionSymbolEffects,
-    ContributionDefinitionEffects,
-}
-
-fn task258b5a_mutate_raw_resolver(
-    symbols: SymbolEnv,
-    mutation: Task258B5ARawResolverMutation,
-) -> SymbolEnv {
-    let mapped = match mutation {
-        Task258B5ARawResolverMutation::OwnerOriginSource => {
-            Task258B4CRawResolverMutation::OwnerOriginSource
-        }
-        Task258B5ARawResolverMutation::OwnerOriginModule => {
-            Task258B4CRawResolverMutation::OwnerOriginModule
-        }
-        Task258B5ARawResolverMutation::OwnerOriginRange => {
-            Task258B4CRawResolverMutation::OwnerOriginRange
-        }
-        Task258B5ARawResolverMutation::OwnerOriginPath => {
-            Task258B4CRawResolverMutation::OwnerOriginPath
-        }
-        Task258B5ARawResolverMutation::OwnerKind => Task258B4CRawResolverMutation::OwnerKind,
-        Task258B5ARawResolverMutation::OwnerVisibility => {
-            Task258B4CRawResolverMutation::OwnerVisibility
-        }
-        Task258B5ARawResolverMutation::OwnerExport => Task258B4CRawResolverMutation::OwnerExport,
-        Task258B5ARawResolverMutation::OwnerSpelling => {
-            Task258B4CRawResolverMutation::OwnerSpelling
-        }
-        Task258B5ARawResolverMutation::ContributionModule => {
-            Task258B4CRawResolverMutation::ContributionModule
-        }
-        Task258B5ARawResolverMutation::ContributionKind => {
-            Task258B4CRawResolverMutation::ContributionKind
-        }
-        Task258B5ARawResolverMutation::ContributionSource => {
-            Task258B4CRawResolverMutation::ContributionSource
-        }
-        Task258B5ARawResolverMutation::ContributionAnchor => {
-            Task258B4CRawResolverMutation::ContributionAnchor
-        }
-        Task258B5ARawResolverMutation::ContributionSymbolEffects => {
-            Task258B4CRawResolverMutation::ContributionSymbolEffects
-        }
-        Task258B5ARawResolverMutation::ContributionDefinitionEffects => {
-            Task258B4CRawResolverMutation::ContributionDefinitionEffects
-        }
-    };
-    task258b4c_mutate_raw_resolver(symbols, mapped)
-}
-
-
 
 const SOURCE_STATEMENT_B5B_LOWER_TEXT: &str = concat!(
     "import parser.type_fixtures;\n",
@@ -2725,455 +2235,14 @@ fn task258b5b_exact_env(
             raw.clone(),
         );
     let mut captured = None;
-    let result = source_statement_b5b_output_with_mutation(
+    let result = source_statement_b5b_lower_with_mutation(
         &ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT,
         |inputs| captured = Some(inputs.clone()),
     ).expect("exact B5B lower selector");
-    assert_eq!(result.expect_err("retired raw B5B producer accepted"),
-        mizar_checker::source_statement::SourceStatementError::DependencyMismatch.to_string());
+    result.expect("genuine B5B lower payload");
     (ast, module, raw, enriched, captured.expect("genuine B5B lower inputs"))
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Task258B5BImportMutation {
-    Owner,
-    Range,
-    Spelling,
-    Alias,
-    Resolution,
-    OriginSource,
-    OriginModule,
-    OriginAnchor,
-    OriginPath,
-    ImportEdge,
-    Recovered,
-}
-
-const TASK258B5B_IMPORT_MUTATIONS: &[Task258B5BImportMutation] = &[
-    Task258B5BImportMutation::Owner,
-    Task258B5BImportMutation::Range,
-    Task258B5BImportMutation::Spelling,
-    Task258B5BImportMutation::Alias,
-    Task258B5BImportMutation::Resolution,
-    Task258B5BImportMutation::OriginSource,
-    Task258B5BImportMutation::OriginModule,
-    Task258B5BImportMutation::OriginAnchor,
-    Task258B5BImportMutation::OriginPath,
-    Task258B5BImportMutation::ImportEdge,
-    Task258B5BImportMutation::Recovered,
-];
-
-fn task258b5b_resolver_ast_with_import_mutation(
-    resolver_ast: &mizar_resolve::resolved_ast::ResolvedAst,
-    module: &mizar_resolve::resolved_ast::ModuleId,
-    mutation: Task258B5BImportMutation,
-) -> Result<mizar_resolve::resolved_ast::ResolvedAst, mizar_resolve::resolved_ast::ResolvedAstError>
-{
-    let (import_id, original) = resolver_ast.imports().imports().next().expect("B5B import");
-    let mut owner = original.owner();
-    let mut import_range = original.range();
-    let mut spelling = original.source_spelling().to_owned();
-    let mut alias = original.alias().map(str::to_owned);
-    let mut resolution = original.resolution().clone();
-    let mut origin_source = original.origin().source_id();
-    let mut origin_module = original.origin().module_id().clone();
-    let mut anchor = original.origin().anchor().clone();
-    let mut path = original.origin().structural_path().to_vec();
-    let mut import_edge = original.origin().import_edge();
-    let mut recovered = original.origin().is_recovered();
-    match mutation {
-        Task258B5BImportMutation::Owner => {
-            owner = resolver_ast
-                .nodes()
-                .iter()
-                .find_map(|(id, _)| (id.index() == 30).then_some(id))
-                .expect("B5B import-item node")
-        }
-        Task258B5BImportMutation::Range => import_range.start -= 1,
-        Task258B5BImportMutation::Spelling => spelling.push('!'),
-        Task258B5BImportMutation::Alias => alias = Some("ImportedAlias".to_owned()),
-        Task258B5BImportMutation::Resolution => {
-            resolution = mizar_resolve::resolved_ast::ImportResolution::Resolved(
-                mizar_resolve::resolved_ast::ModuleId::new(
-                    module.package().clone(),
-                    mizar_session::ModulePath::new("parser.wrong_fixture"),
-                ),
-            )
-        }
-        Task258B5BImportMutation::OriginSource => {
-            origin_source = task258b3m2b2b3a_foreign_source_id(origin_source);
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 7, 27));
-        }
-        Task258B5BImportMutation::OriginModule => {
-            origin_module = mizar_resolve::resolved_ast::ModuleId::new(
-                module.package().clone(),
-                mizar_session::ModulePath::new("statement.b5b.import-wrong"),
-            )
-        }
-        Task258B5BImportMutation::OriginAnchor => {
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 6, 27))
-        }
-        Task258B5BImportMutation::OriginPath => path = vec![99],
-        Task258B5BImportMutation::ImportEdge => import_edge = Some(import_id),
-        Task258B5BImportMutation::Recovered => recovered = true,
-    }
-    let mut origin = mizar_resolve::resolved_ast::SemanticOrigin::new(
-        origin_source,
-        origin_module,
-        anchor,
-        path,
-    );
-    if let Some(edge) = import_edge {
-        origin = origin.with_import_edge(edge);
-    }
-    if recovered {
-        origin = origin.recovered();
-    }
-    let mut imports = mizar_resolve::resolved_ast::ResolvedImports::new();
-    imports.push_import(mizar_resolve::resolved_ast::ResolvedImport::new(
-        owner,
-        import_range,
-        spelling,
-        alias,
-        resolution,
-        origin,
-    ));
-    let result = mizar_resolve::resolved_ast::ResolvedAst::try_new(
-        resolver_ast.source_id(),
-        resolver_ast.module_id().clone(),
-        resolver_ast.nodes().clone(),
-        resolver_ast.name_refs().clone(),
-        resolver_ast.label_refs().clone(),
-        imports,
-    );
-    let expected_error = match mutation {
-        Task258B5BImportMutation::OriginSource => Some(mizar_resolve::resolved_ast::ResolvedAstError::OriginSourceMismatch),
-        Task258B5BImportMutation::OriginModule => Some(mizar_resolve::resolved_ast::ResolvedAstError::OriginModuleMismatch),
-        _ => None,
-    };
-    match expected_error {
-        Some(error) => assert_eq!(result, Err(error), "{mutation:?} constructor"),
-        None => assert_ne!(result.as_ref().expect("admitted B5B resolver mutation"), resolver_ast, "{mutation:?} delta"),
-    }
-    result
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Task258B5BResolverNodeMutation {
-    Resolution,
-    ReferenceKey,
-    Linkage,
-}
-
-const TASK258B5B_RESOLVER_NODE_MUTATIONS: &[Task258B5BResolverNodeMutation] = &[
-    Task258B5BResolverNodeMutation::Resolution,
-    Task258B5BResolverNodeMutation::ReferenceKey,
-    Task258B5BResolverNodeMutation::Linkage,
-];
-
-fn task258b5b_resolver_ast_with_node_mutation(
-    resolver_ast: &mizar_resolve::resolved_ast::ResolvedAst,
-    mutation: Task258B5BResolverNodeMutation,
-) -> Result<mizar_resolve::resolved_ast::ResolvedAst, mizar_resolve::resolved_ast::ResolvedAstError>
-{
-    let reference_key = resolver_ast
-        .nodes()
-        .iter()
-        .find_map(|(id, node)| (id.index() == 48).then_some(node.reference_key()))
-        .flatten()
-        .expect("B5B node 48 label key");
-    let import_id = resolver_ast
-        .imports()
-        .imports()
-        .next()
-        .expect("B5B import")
-        .0;
-    let mut builder = mizar_resolve::resolved_ast::ResolvedArenaBuilder::new();
-    let mut ids = Vec::with_capacity(resolver_ast.nodes().len());
-    for (id, node) in resolver_ast.nodes().iter() {
-        let mut resolution = node.resolution();
-        let mut key = node.reference_key();
-        if id.index() == 48 {
-            match mutation {
-                Task258B5BResolverNodeMutation::Resolution => {
-                    resolution = mizar_resolve::resolved_ast::NodeResolutionState::Deferred;
-                }
-                Task258B5BResolverNodeMutation::ReferenceKey => {
-                    key = Some(mizar_resolve::resolved_ast::NodeReferenceKey::Import(
-                        import_id,
-                    ));
-                }
-                Task258B5BResolverNodeMutation::Linkage => {
-                    resolution = mizar_resolve::resolved_ast::NodeResolutionState::NotApplicable;
-                    key = None;
-                }
-            }
-        } else if id.index() == 47 && matches!(mutation, Task258B5BResolverNodeMutation::Linkage) {
-            resolution = mizar_resolve::resolved_ast::NodeResolutionState::Resolved;
-            key = Some(reference_key);
-        }
-        let mut rebuilt = mizar_resolve::resolved_ast::ResolvedNode::new(
-            node.kind().clone(),
-            node.children().to_vec(),
-            node.origin().clone(),
-        )
-        .with_recovery(node.recovery())
-        .with_resolution(resolution);
-        if let Some(key) = key {
-            rebuilt = rebuilt.with_reference_key(key);
-        }
-        let inserted = builder.push(rebuilt).expect("coherent B5B resolver node");
-        assert_eq!(inserted.index(), id.index());
-        ids.push(inserted);
-    }
-    let arena = builder
-        .finish(ids[resolver_ast.nodes().root().index()])
-        .expect("coherent B5B resolver arena mutation");
-    let result = mizar_resolve::resolved_ast::ResolvedAst::try_new(
-        resolver_ast.source_id(),
-        resolver_ast.module_id().clone(),
-        arena,
-        resolver_ast.name_refs().clone(),
-        resolver_ast.label_refs().clone(),
-        resolver_ast.imports().clone(),
-    );
-    let expected_error = match mutation {
-        Task258B5BResolverNodeMutation::Resolution => None,
-        Task258B5BResolverNodeMutation::ReferenceKey => Some(mizar_resolve::resolved_ast::ResolvedAstError::NodeReferenceSiteMismatch {
-            node: resolver_ast.label_refs().iter().next().expect("B5B reference").1.site().node(),
-            key: mizar_resolve::resolved_ast::NodeReferenceKey::Import(import_id),
-        }),
-        Task258B5BResolverNodeMutation::Linkage => Some(mizar_resolve::resolved_ast::ResolvedAstError::NodeReferenceSiteMismatch {
-            node: ids[47], key: reference_key,
-        }),
-    };
-    match expected_error {
-        Some(error) => assert_eq!(result, Err(error), "{mutation:?} constructor"),
-        None => assert_ne!(result.as_ref().expect("admitted B5B resolver mutation"), resolver_ast, "{mutation:?} delta"),
-    }
-    result
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Task258B5BProjectionMutation {
-    OriginPath,
-    Module,
-    Namespace,
-    Spelling,
-    Kind,
-    Visibility,
-    Export,
-    Range,
-    Contribution,
-    OriginSource,
-    OriginModule,
-    OriginAnchor,
-    OriginPathShape,
-    ImportEdge,
-    Recovered,
-}
-
-const TASK258B5B_PROJECTION_MUTATIONS: &[Task258B5BProjectionMutation] = &[
-    Task258B5BProjectionMutation::OriginPath,
-    Task258B5BProjectionMutation::Module,
-    Task258B5BProjectionMutation::Namespace,
-    Task258B5BProjectionMutation::Spelling,
-    Task258B5BProjectionMutation::Kind,
-    Task258B5BProjectionMutation::Visibility,
-    Task258B5BProjectionMutation::Export,
-    Task258B5BProjectionMutation::Range,
-    Task258B5BProjectionMutation::Contribution,
-    Task258B5BProjectionMutation::OriginSource,
-    Task258B5BProjectionMutation::OriginModule,
-    Task258B5BProjectionMutation::OriginAnchor,
-    Task258B5BProjectionMutation::OriginPathShape,
-    Task258B5BProjectionMutation::ImportEdge,
-    Task258B5BProjectionMutation::Recovered,
-];
-
-fn task258b5b_projection_with_mutation(
-    projection: &mizar_resolve::labels::LabelProjection,
-    current_module: &mizar_resolve::resolved_ast::ModuleId,
-    wrong_contribution: mizar_resolve::env::SourceContributionId,
-    import_id: mizar_resolve::resolved_ast::ResolvedImportId,
-    mutation: Task258B5BProjectionMutation,
-) -> mizar_resolve::labels::LabelProjection {
-    let mut origin_path = projection.origin_path().clone();
-    let mut module = projection.module().clone();
-    let mut namespace = projection.namespace().clone();
-    let mut spelling = projection.primary_spelling().to_owned();
-    let mut kind = projection.kind();
-    let mut visibility = projection.visibility();
-    let mut export = projection.export_status();
-    let mut declaration_range = projection.declaration_range();
-    let mut contribution = projection.contribution();
-    let mut origin_source = projection.origin().source_id();
-    let mut origin_module = projection.origin().module_id().clone();
-    let mut anchor = projection.origin().anchor().clone();
-    let mut path = projection.origin().structural_path().to_vec();
-    let mut import_edge = projection.origin().import_edge();
-    let mut recovered = projection.origin().is_recovered();
-    match mutation {
-        Task258B5BProjectionMutation::OriginPath => {
-            origin_path = mizar_resolve::resolved_ast::LabelOriginPath::new("summary:wrong::Ref")
-        }
-        Task258B5BProjectionMutation::Module => {
-            module = mizar_resolve::resolved_ast::ModuleId::new(
-                current_module.package().clone(),
-                mizar_session::ModulePath::new("parser.wrong_fixture"),
-            )
-        }
-        Task258B5BProjectionMutation::Namespace => {
-            namespace = mizar_resolve::env::NamespacePath::new("statement.b5b.wrong")
-        }
-        Task258B5BProjectionMutation::Spelling => spelling.push('!'),
-        Task258B5BProjectionMutation::Kind => {
-            kind = mizar_resolve::resolved_ast::LabelKind::ProofStep
-        }
-        Task258B5BProjectionMutation::Visibility => {
-            visibility = mizar_resolve::env::Visibility::Private
-        }
-        Task258B5BProjectionMutation::Export => {
-            export = mizar_resolve::env::ExportStatus::ReExported
-        }
-        Task258B5BProjectionMutation::Range => declaration_range.start -= 1,
-        Task258B5BProjectionMutation::Contribution => contribution = wrong_contribution,
-        Task258B5BProjectionMutation::OriginSource => {
-            origin_source = task258b3m2b2b3a_foreign_source_id(origin_source);
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 7, 27));
-        }
-        Task258B5BProjectionMutation::OriginModule => origin_module = current_module.clone(),
-        Task258B5BProjectionMutation::OriginAnchor => {
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 6, 27))
-        }
-        Task258B5BProjectionMutation::OriginPathShape => path = vec![1, 1],
-        Task258B5BProjectionMutation::ImportEdge => import_edge = Some(import_id),
-        Task258B5BProjectionMutation::Recovered => recovered = true,
-    }
-    let mut origin = mizar_resolve::resolved_ast::SemanticOrigin::new(
-        origin_source,
-        origin_module,
-        anchor,
-        path,
-    );
-    if let Some(edge) = import_edge {
-        origin = origin.with_import_edge(edge);
-    }
-    if recovered {
-        origin = origin.recovered();
-    }
-    mizar_resolve::labels::LabelProjection::imported(mizar_resolve::labels::LabelProjectionData {
-        origin_path,
-        module,
-        namespace,
-        primary_spelling: spelling,
-        kind,
-        declaration_range,
-        origin,
-        contribution,
-    })
-    .with_visibility(visibility)
-    .with_export_status(export)
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Task258B5BReferenceMutation {
-    Node,
-    Range,
-    Spelling,
-    SourceOrdinal,
-    Scope,
-    Expectation,
-    OriginSource,
-    OriginModule,
-    OriginAnchor,
-    OriginPath,
-    ImportEdge,
-    Recovered,
-}
-
-const TASK258B5B_REFERENCE_MUTATIONS: &[Task258B5BReferenceMutation] = &[
-    Task258B5BReferenceMutation::Node,
-    Task258B5BReferenceMutation::Range,
-    Task258B5BReferenceMutation::Spelling,
-    Task258B5BReferenceMutation::SourceOrdinal,
-    Task258B5BReferenceMutation::Scope,
-    Task258B5BReferenceMutation::Expectation,
-    Task258B5BReferenceMutation::OriginSource,
-    Task258B5BReferenceMutation::OriginModule,
-    Task258B5BReferenceMutation::OriginAnchor,
-    Task258B5BReferenceMutation::OriginPath,
-    Task258B5BReferenceMutation::ImportEdge,
-    Task258B5BReferenceMutation::Recovered,
-];
-
-fn task258b5b_reference_with_mutation(
-    reference: &mizar_resolve::labels::LabelReferenceCandidate,
-    module: &mizar_resolve::resolved_ast::ModuleId,
-    wrong_node: mizar_resolve::resolved_ast::ResolvedNodeId,
-    import_id: mizar_resolve::resolved_ast::ResolvedImportId,
-    mutation: Task258B5BReferenceMutation,
-) -> mizar_resolve::labels::LabelReferenceCandidate {
-    let mut node = reference.site().node();
-    let mut reference_range = reference.site().range();
-    let mut spelling = reference.site().spelling().to_owned();
-    let mut source_ordinal = reference.ordinal();
-    let mut scope = Some(mizar_resolve::labels::LabelScopePath::new(vec![0]));
-    let mut expectation = reference.expectation();
-    let mut origin_source = reference.origin().source_id();
-    let mut origin_module = reference.origin().module_id().clone();
-    let mut anchor = reference.origin().anchor().clone();
-    let mut path = reference.origin().structural_path().to_vec();
-    let mut import_edge = reference.origin().import_edge();
-    let mut recovered = reference.origin().is_recovered();
-    match mutation {
-        Task258B5BReferenceMutation::Node => node = wrong_node,
-        Task258B5BReferenceMutation::Range => reference_range.start -= 1,
-        Task258B5BReferenceMutation::Spelling => spelling.push('!'),
-        Task258B5BReferenceMutation::SourceOrdinal => source_ordinal = 0,
-        Task258B5BReferenceMutation::Scope => {
-            scope = Some(mizar_resolve::labels::LabelScopePath::new(vec![0, 1]))
-        }
-        Task258B5BReferenceMutation::Expectation => {
-            expectation = mizar_resolve::resolved_ast::LabelExpectation::Theorem
-        }
-        Task258B5BReferenceMutation::OriginSource => {
-            origin_source = task258b3m2b2b3a_foreign_source_id(origin_source);
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 136, 139));
-        }
-        Task258B5BReferenceMutation::OriginModule => {
-            origin_module = mizar_resolve::resolved_ast::ModuleId::new(
-                module.package().clone(),
-                mizar_session::ModulePath::new("statement.b5b.reference-wrong"),
-            )
-        }
-        Task258B5BReferenceMutation::OriginAnchor => {
-            anchor = mizar_session::SourceAnchor::Range(range(origin_source, 135, 139))
-        }
-        Task258B5BReferenceMutation::OriginPath => path = vec![47],
-        Task258B5BReferenceMutation::ImportEdge => import_edge = Some(import_id),
-        Task258B5BReferenceMutation::Recovered => recovered = true,
-    }
-    let mut origin = mizar_resolve::resolved_ast::SemanticOrigin::new(
-        origin_source,
-        origin_module,
-        anchor,
-        path,
-    );
-    if let Some(edge) = import_edge {
-        origin = origin.with_import_edge(edge);
-    }
-    if recovered {
-        origin = origin.recovered();
-    }
-    mizar_resolve::labels::LabelReferenceCandidate::unqualified_citation(
-        mizar_resolve::resolved_ast::ReferenceSite::new(node, reference_range, spelling),
-        origin,
-        source_ordinal,
-        scope,
-    )
-    .with_expectation(expectation)
-}
 fn task258_mutated_surface(
     ast: &mizar_syntax::SurfaceAst,
     target: usize,

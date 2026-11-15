@@ -1,5 +1,7 @@
 # Resolved Typed AST
 
+現行 API と履歴 Task 節の境界は [retirement boundary](source_statement.md) に従う。
+
 C2/C3 slot方針は[composition owner](source_formula_composition.md#変数参照predicate-chainの関連付け)に従う。
 
 `source_proof_local_binding()` は [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-境界) を保持する。
@@ -1956,8 +1958,6 @@ native B3M2B1のfinal replayはcanonical baseの実wrapper/child関係とsource-
 二重group witnessのfinal replayはouter 2 → inner 3 → leaf 4 chainと既存immutable statement/witness pairを再検証して保持する。final inputはsyntax-only、semantic/type/context/proof tableは空とし、別のinference payloadを`ResolvedTypedAst`へ複製しない。
 
 original-statement final組込みは限定されたoriginal有限enumeration witness pair（freshな未使用nameは任意）またはbare-set choice witness pair（こちらもfreshな未使用nameは任意）と検証済み全set/primary/statement fingerprintを伴う場合だけ保持SourceSetを認める。そのpairを既存set-aware witness validatorへ渡し、通常source-set clone検証と出力/clone replay中の全immutable pair/setを保つ。application/structure/他auxiliaryの除外、Unknown/default source hint、空semantic/type/context/proof productとproof/Driver境界を変えない。raw-profile allowanceや一般set-witness acceptanceを加えない。
-
-旧B3B/C raw set依存とwitness-final allowanceはCheckerのtest compilationだけに残す。original-source空集合/choice再生と他raw familyを分離して保持し、productionのB3B/C raw handoffやsemantic/proof authorityを残さない。
 
 ## Original-source universal composition
 native source context と composite transport が共存するときは、既存 composite/composition handoff の両方を要求する。fresh な共同検証で、保持した original/context/type/lower 情報から source graph・incoming/body context・実 binder/type application・header/proof の区分を再導出し、期待する handoff 全体と fingerprint を比較する。欠けた companion、整合させた対応の交換、orphan/foreign row を拒否し、immutable clone は完全な pair を保持する。

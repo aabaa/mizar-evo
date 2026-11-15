@@ -380,15 +380,6 @@ impl SourceTypeApplicationHandoff {
         }
         Ok(())
     }
-
-    #[cfg(test)]
-    pub(crate) fn set_structure_member_root_for_test(
-        &mut self,
-        index: usize,
-        root: SourceTypeExpressionId,
-    ) {
-        self.structure_members.entries[index].root = root;
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -13960,15 +13951,20 @@ mod tests {
             fixture.module.clone(),
             task269ct_base_binding_env(fixture.source, fixture.module.clone()),
         );
-        assert_task269sdt_sibling_both_orders!(
-            declaration,
-            inject_source_proof_local_declaration_for_test,
-            with_source_proof_local_declaration,
-            TypedAstError::InvalidSourceProofLocalDeclaration,
+        let mut declaration_first = task269ct_empty_typed(
             fixture.source,
             fixture.module.clone(),
-            empty_arena()
+            fixture.arena.clone(),
         );
+        declaration_first.inject_source_proof_local_declaration_for_test(declaration);
+        let before = declaration_first.clone();
+        assert_eq!(
+            declaration_first
+                .clone()
+                .with_source_proof_local_given_descendant_type(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantType)
+        );
+        assert_eq!(declaration_first, before);
 
         let let_fixture = task269ct_fixture();
         let let_binding = let_fixture.dependency.clone();

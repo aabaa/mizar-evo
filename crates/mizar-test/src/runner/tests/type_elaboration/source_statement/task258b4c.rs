@@ -1,14 +1,7 @@
 #[test]
 fn task258b4c_real_route_publishes_exact_nested_quantifier_statement_root() {
-    use mizar_checker::{
-        source_composite_formula::{
-            SourceCompositeFormulaId, SourceFormulaRootId, SourceFormulaRootOwnership,
-        },
-        source_statement::{
-            SourceStatementCandidateFactKind, SourceStatementContextId,
-            SourceStatementFormulaTarget, SourceStatementId, SourceStatementKind,
-            SourceStatementRecovery, SourceTheoremOwnerId, SourceTheoremRole, SourceTheoremStatus,
-        },
+    use mizar_checker::source_composite_formula::{
+        SourceFormulaRootId, SourceFormulaRootOwnership,
     };
 
     assert_eq!(SOURCE_STATEMENT_B4C_TEXT.len(), 139);
@@ -60,12 +53,12 @@ fn task258b4c_real_route_publishes_exact_nested_quantifier_statement_root() {
             "source byte {index}"
         );
         assert!(
-            source_statement_b4c_output_with_mutation(
+            source_statement_b4c_lower_with_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
                 &changed,
-                |_| panic!("near miss reached upper capture"),
+                |_| panic!("near miss reached lower capture"),
             )
             .is_none()
         );
@@ -160,78 +153,25 @@ fn task258b4c_real_route_publishes_exact_nested_quantifier_statement_root() {
         [label.origin_path().clone()]
     );
 
-    let statement = &output.statement;
-    assert_eq!(statement.source_id, ast.source_id);
-    assert_eq!(statement.module_id, module);
     assert_eq!(
         (
             output.binding_env.contexts().len(),
             output.binding_env.bindings().len(),
             output.binding_env.diagnostics().len(),
-            statement.owners.len(),
-            statement.statements.len(),
-            statement.contexts.len(),
-            statement.input_facts.len(),
-            statement.candidate_facts.len(),
         ),
-        (4, 4, 0, 1, 1, 1, 0, 1)
+        (4, 4, 0)
     );
-    let owner = &statement.owners[0];
-    assert_eq!(owner.contribution.index(), 0);
-    assert_eq!(owner.site.node().index(), 62);
-    assert_eq!(owner.source_range, range(ast.source_id, 19, 137));
-    assert_eq!(owner.spelling, "FormulaNestedQuantifierPayloadBoundary");
-    assert_eq!(owner.role, SourceTheoremRole::Theorem);
-    assert_eq!(owner.status, SourceTheoremStatus::Unmodified);
-    assert_eq!(owner.recovery, SourceStatementRecovery::Normal);
     let checked_owner =
         mizar_checker::type_checker::CheckedStatementOwner::validate_exact_local_theorem(
             &resolver,
-            owner.symbol.clone(),
+            resolver_owner.symbol().clone(),
             ast.source_id,
             &module,
         )
-        .expect("genuine checked theorem owner before raw admission");
+        .expect("genuine checked theorem owner");
     assert_eq!(checked_owner.origin().structural_path(), [2, 1]);
-    assert_eq!(checked_owner.symbol(), &owner.symbol);
-    assert_eq!(checked_owner.source_range(), owner.source_range);
-    let row = &statement.statements[0];
-    assert_eq!(row.owner, SourceTheoremOwnerId::new(0));
-    assert_eq!(row.context, SourceStatementContextId::new(0));
-    assert_eq!(
-        row.formula,
-        SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0))
-    );
-    assert_eq!(row.site.node().index(), 62);
-    assert_eq!(row.source_range, range(ast.source_id, 19, 137));
-    assert_eq!(row.source_ordinal, 0);
-    assert_eq!(
-        row.spelling,
-        concat!(
-            "theorem FormulaNestedQuantifierPayloadBoundary : ",
-            "for x being set st x = x ex y being set st for r st r = y holds x = r ;",
-        )
-    );
-    assert_eq!(row.kind, SourceStatementKind::TheoremProposition);
-    assert_eq!(row.recovery, SourceStatementRecovery::Normal);
-    let context = &statement.contexts[0];
-    assert_eq!(context.statement, SourceStatementId::new(0));
-    assert_eq!(context.binding_context, BindingContextId::new(0));
-    assert_eq!(context.source_range, range(ast.source_id, 19, 137));
-    assert_eq!(
-        context.visible_bindings.as_slice(),
-        &[mizar_checker::binding_env::BindingId::new(0)]
-    );
-    let candidate = &statement.candidate_facts[0];
-    assert_eq!(candidate.statement, SourceStatementId::new(0));
-    assert_eq!(candidate.context, SourceStatementContextId::new(0));
-    assert_eq!(candidate.ordinal, 0);
-    assert_eq!(
-        candidate.kind,
-        SourceStatementCandidateFactKind::UnverifiedProposition
-    );
-    assert_eq!(candidate.formula, row.formula);
-
+    assert_eq!(checked_owner.symbol(), resolver_owner.symbol());
+    assert_eq!(checked_owner.source_range(), range(ast.source_id, 19, 137));
     let primary = &output.primary;
     let atomic = &output.atomic;
     let composite = &output.composite;
@@ -342,13 +282,7 @@ fn task258b4c_real_route_publishes_exact_nested_quantifier_statement_root() {
 }
 
 #[test]
-fn task258b4c_lower_and_upper_mutations_fail_at_owning_stage_and_replay() {
-    use mizar_checker::{
-        source_atomic_formula::SourceAtomicFormulaId,
-        source_statement::{SourceStatementFormulaTarget, SourceStatementRecovery},
-        typed_ast::{TypedArena, TypedNodeId},
-    };
-
+fn task258b4c_lower_mutations_fail_at_owning_stage_and_replay() {
     let (ast, module, symbols, baseline) = task258b4c_output(266_600);
     let baseline_debug = format!("{baseline:?}");
     let symbols_before = format!("{symbols:?}");
@@ -361,19 +295,6 @@ fn task258b4c_lower_and_upper_mutations_fail_at_owning_stage_and_replay() {
     .expect("lower selector")
     .expect("independent lower baseline");
     let foreign_source = task258b3m2b2b3a_foreign_source_id(ast.source_id);
-    let wrong_module = ResolverModuleId::new(
-        PackageId::new("pkg"),
-        ModulePath::new("statement.b4c.wrong"),
-    );
-    let mut foreign_contributions = symbols.contributions().clone();
-    let foreign_contribution = foreign_contributions.insert(
-        module.clone(),
-        mizar_resolve::env::ContributionKind::LocalSource {
-            source_id: foreign_source,
-        },
-        mizar_session::SourceAnchor::Range(range(foreign_source, 0, 1)),
-    );
-
     for mutation in 0..8 {
         let run = || {
             source_formula_composition_output_with_source_and_mutation(
@@ -405,272 +326,22 @@ fn task258b4c_lower_and_upper_mutations_fail_at_owning_stage_and_replay() {
             .expect_err("lower mutation")
         };
         let error = run();
-        assert_eq!(error, [
-            "source primary-term transaction is inconsistent",
-            "source primary-term reference 0 is inconsistent",
-            "source atomic-formula environment identity mismatch",
-            "source atomic-formula environment identity mismatch",
-            "source composite formula 0 is invalid",
-            "source composite formula tree is invalid",
-            "source formula composition dependency mismatch",
-            "source formula composition aggregate is invalid",
-        ][mutation], "lower owning stage {mutation}");
+        assert_eq!(
+            error,
+            [
+                "source primary-term transaction is inconsistent",
+                "source primary-term reference 0 is inconsistent",
+                "source atomic-formula environment identity mismatch",
+                "source atomic-formula environment identity mismatch",
+                "source composite formula 0 is invalid",
+                "source composite formula tree is invalid",
+                "source formula composition dependency mismatch",
+                "source formula composition aggregate is invalid",
+            ][mutation],
+            "lower owning stage {mutation}"
+        );
         assert_eq!(error, run(), "lower mutation {mutation} replay");
     }
-
-    for mutation in 0..37 {
-        let run = || {
-            let mut changed = None;
-            let error = source_statement_b4c_output_with_mutation(
-                &ast,
-                module.clone(),
-                &symbols,
-                SOURCE_STATEMENT_B4C_TEXT,
-                |input| {
-                    let before = format!("{input:?}");
-                    match mutation {
-                    0 => input.statement.source_id = foreign_source,
-                    1 => input.statement.module_id = wrong_module.clone(),
-                    2 => input.statement.owners.clear(),
-                    3 => input
-                        .statement
-                        .owners
-                        .push(input.statement.owners[0].clone()),
-                    4 => {
-                        input.statement.owners[0].symbol =
-                            mizar_resolve::resolved_ast::SymbolId::new(
-                                input.statement.module_id.clone(),
-                                mizar_resolve::resolved_ast::LocalSymbolId::new(
-                                    "ForeignTask258B4COwner",
-                                ),
-                                mizar_resolve::resolved_ast::FullyQualifiedName::new(
-                                    "pkg::statement.b4c::ForeignTask258B4COwner",
-                                ),
-                            )
-                    }
-                    5 => input.statement.owners[0].contribution = foreign_contribution,
-                    6 => {
-                        input.statement.owners[0].site =
-                            mizar_checker::typed_ast::TypedSiteRef::Node(TypedNodeId::new(61))
-                    }
-                    7 => input.statement.owners[0].source_range.start += 1,
-                    8 => input.statement.owners[0].source_range.end -= 1,
-                    9 => input.statement.owners[0].spelling.push_str("NearMiss"),
-                    10 => input.statement.owners[0].recovery = SourceStatementRecovery::Degraded,
-                    11 => input.statement.statements.clear(),
-                    12 => input
-                        .statement
-                        .statements
-                        .push(input.statement.statements[0].clone()),
-                    13 => {
-                        input.statement.statements[0].owner =
-                            mizar_checker::source_statement::SourceTheoremOwnerId::new(1)
-                    }
-                    14 => {
-                        input.statement.statements[0].context =
-                            mizar_checker::source_statement::SourceStatementContextId::new(1)
-                    }
-                    15 => {
-                        input.statement.statements[0].formula =
-                            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
-                    }
-                    16 => {
-                        input.statement.statements[0].site =
-                            mizar_checker::typed_ast::TypedSiteRef::Node(TypedNodeId::new(61))
-                    }
-                    17 => input.statement.statements[0].source_range.start += 1,
-                    18 => input.statement.statements[0].source_range.end -= 1,
-                    19 => input.statement.statements[0].source_ordinal = 1,
-                    20 => input.statement.statements[0].spelling.push_str(" NearMiss"),
-                    21 => {
-                        input.statement.statements[0].kind =
-                            mizar_checker::source_statement::SourceStatementKind::Assumption
-                    }
-                    22 => {
-                        input.statement.statements[0].recovery = SourceStatementRecovery::Degraded
-                    }
-                    23 => input.statement.contexts.clear(),
-                    24 => input
-                        .statement
-                        .contexts
-                        .push(input.statement.contexts[0].clone()),
-                    25 => {
-                        input.statement.contexts[0].statement =
-                            mizar_checker::source_statement::SourceStatementId::new(1)
-                    }
-                    26 => input.statement.contexts[0].binding_context = BindingContextId::new(1),
-                    27 => input.statement.contexts[0].source_range.start += 1,
-                    28 => input.statement.contexts[0].source_range.end -= 1,
-                    29 => input.statement.contexts[0].visible_bindings.clear(),
-                    30 => input.statement.input_facts.push(
-                        mizar_checker::source_statement::SourceStatementInputFactInput {
-                            statement:
-                                mizar_checker::source_statement::SourceStatementId::new(0),
-                            context:
-                                mizar_checker::source_statement::SourceStatementContextId::new(0),
-                            ordinal: 0,
-                            kind: mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
-                            binding: mizar_checker::binding_env::BindingId::new(0),
-                            uses: Vec::new(),
-                        },
-                    ),
-                    31 => input.statement.candidate_facts.clear(),
-                    32 => input
-                        .statement
-                        .candidate_facts
-                        .push(input.statement.candidate_facts[0].clone()),
-                    33 => {
-                        input.statement.candidate_facts[0].statement =
-                            mizar_checker::source_statement::SourceStatementId::new(1)
-                    }
-                    34 => {
-                        input.statement.candidate_facts[0].context =
-                            mizar_checker::source_statement::SourceStatementContextId::new(1)
-                    }
-                    35 => input.statement.candidate_facts[0].ordinal = 1,
-                    36 => {
-                        input.statement.candidate_facts[0].formula =
-                            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
-                    }
-                    _ => unreachable!(),
-                    }
-                    let after = format!("{input:?}");
-                    assert_ne!(after, before, "actual upper draft mutation {mutation}");
-                    changed = Some(after);
-                },
-            )
-            .expect("upper selector")
-            .expect_err("retired upper profile");
-            // Owning guard refusals are exercised by the private Checker matrix.
-            assert_eq!(error, "source statement dependency mismatch");
-            changed.expect("genuine changed upper draft")
-        };
-        let error = run();
-        assert_eq!(error, run(), "upper mutation {mutation} replay");
-    }
-
-    const OWNED_NODES: [usize; 25] = [
-        9, 17, 22, 32, 33, 36, 37, 38, 39, 41, 43, 44, 45, 46, 47, 48, 50, 52, 53, 55, 57, 58, 59,
-        60, 62,
-    ];
-    for node_index in OWNED_NODES {
-        for mutate_kind in [false, true] {
-            let run = || {
-                let mut changed = None;
-                let error = source_statement_b4c_output_with_mutation(
-                    &ast,
-                    module.clone(),
-                    &symbols,
-                    SOURCE_STATEMENT_B4C_TEXT,
-                    |input| {
-                        let before = format!("{input:?}");
-                        let mut nodes = input
-                            .arena
-                            .iter()
-                            .map(|(_, node)| node.clone())
-                            .collect::<Vec<_>>();
-                        if mutate_kind {
-                            nodes[node_index].kind = "source.statement.corrupted".into();
-                        } else {
-                            nodes[node_index].anchor =
-                                mizar_session::SourceAnchor::Range(range(ast.source_id, 0, 0));
-                        }
-                        input.arena =
-                            TypedArena::try_new(input.arena.root(), nodes).expect("mutated arena");
-                        let after = format!("{input:?}");
-                        assert_ne!(after, before, "actual arena mutation");
-                        changed = Some(after);
-                    },
-                )
-                .expect("owned-node selector")
-                .expect_err("retired upper profile");
-                assert_eq!(error, "source statement dependency mismatch");
-                changed.expect("genuine changed arena draft")
-            };
-            let error = run();
-            assert_eq!(
-                error,
-                run(),
-                "owned node {node_index} kind={mutate_kind} replay"
-            );
-        }
-    }
-    const UNOWNED_NODES: [usize; 41] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 23, 24, 25, 26, 27,
-        28, 29, 30, 31, 34, 35, 40, 42, 49, 51, 54, 56, 61, 63, 64, 65,
-    ];
-    for node_index in UNOWNED_NODES {
-        for mutation in 0..3 {
-            let run = || {
-                let mut changed = None;
-                let error = source_statement_b4c_output_with_mutation(
-                    &ast,
-                    module.clone(),
-                    &symbols,
-                    SOURCE_STATEMENT_B4C_TEXT,
-                    |input| {
-                        let before = format!("{input:?}");
-                        let mut nodes = input
-                            .arena
-                            .iter()
-                            .map(|(_, node)| node.clone())
-                            .collect::<Vec<_>>();
-                        match mutation {
-                            0 => nodes[node_index].kind = "source.formula.unexpected".into(),
-                            1 => {
-                                nodes[node_index].anchor =
-                                    mizar_session::SourceAnchor::Range(range(ast.source_id, 0, 0))
-                            }
-                            2 => {
-                                nodes[node_index].recovery =
-                                    mizar_checker::typed_ast::NodeRecoveryState::Degraded
-                            }
-                            _ => unreachable!(),
-                        }
-                        input.arena =
-                            TypedArena::try_new(input.arena.root(), nodes).expect("mutated arena");
-                        let after = format!("{input:?}");
-                        assert_ne!(after, before, "actual arena mutation");
-                        changed = Some(after);
-                    },
-                )
-                .expect("unowned-node selector")
-                .expect_err("retired upper profile");
-                assert_eq!(error, "source statement dependency mismatch");
-                changed.expect("genuine changed arena draft")
-            };
-            assert_eq!(
-                run(),
-                run(),
-                "unowned node {node_index} mutation {mutation} replay"
-            );
-        }
-    }
-    let rooted_run = || {
-        let mut changed = None;
-        let error = source_statement_b4c_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B4C_TEXT,
-            |input| {
-                let before = format!("{input:?}");
-                input.arena = TypedArena::try_new(
-                    Some(TypedNodeId::new(65)),
-                    input.arena.iter().map(|(_, node)| node.clone()).collect(),
-                )
-                .expect("coherent rooted arena");
-                let after = format!("{input:?}");
-                assert_ne!(after, before, "actual arena mutation");
-                changed = Some(after);
-            },
-        )
-        .expect("rooted selector")
-        .expect_err("retired upper profile");
-        assert_eq!(error, "source statement dependency mismatch");
-        changed.expect("genuine rooted arena draft")
-    };
-    assert_eq!(rooted_run(), rooted_run(), "rooted replay");
 
     let (_, _, replay_symbols, replay) = task258b4c_output(266_600);
     assert_eq!(format!("{replay:?}"), baseline_debug);
@@ -701,16 +372,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
     assert_eq!(diagnostics, 0);
     let active_symbols =
         augment_type_elaboration_import_summaries(&active_ast, &active_module, active_symbols);
-    assert!(
-        source_statement_output_with_source(
-            &active_ast,
-            active_module.clone(),
-            &active_symbols,
-            active_source,
-        )
-        .is_none(),
-        "the active one-LF source must remain lower-only"
-    );
+
     let lower = source_formula_composition_output_with_source(
         &active_ast,
         active_module,
@@ -741,16 +403,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
             task253_ast_from_source_text_with_diagnostic_count(&near_miss, 266_710 + ordinal);
         let near_symbols =
             augment_type_elaboration_import_summaries(&near_ast, &near_module, near_symbols);
-        assert!(
-            source_statement_output_with_source(
-                &near_ast,
-                near_module.clone(),
-                &near_symbols,
-                &near_miss,
-            )
-            .is_none(),
-            "near miss {ordinal} must not reach B4C"
-        );
+
         let lower = source_formula_composition_output_with_source(
             &near_ast,
             near_module,
@@ -774,7 +427,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
 
     let (b4a_ast, b4a_module, b4a_symbols, b4a) = task258b4a_output(266_720);
     assert!(
-        source_statement_b4c_output_with_mutation(
+        source_statement_b4c_lower_with_mutation(
             &b4a_ast,
             b4a_module,
             &b4a_symbols,
@@ -784,12 +437,16 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         .is_none()
     );
     assert_eq!(
-        b4a.primary.references().iter().map(|(_, row)| row.use_ordinal()).collect::<Vec<_>>(),
+        b4a.primary
+            .references()
+            .iter()
+            .map(|(_, row)| row.use_ordinal())
+            .collect::<Vec<_>>(),
         [1, 1]
     );
     let (b4b_ast, b4b_module, b4b_symbols, b4b) = task258b4b_output(266_721);
     assert!(
-        source_statement_b4c_output_with_mutation(
+        source_statement_b4c_lower_with_mutation(
             &b4b_ast,
             b4b_module,
             &b4b_symbols,
@@ -813,7 +470,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
     let symbols_before = format!("{symbols:?}");
     let baseline_before = format!("{baseline:?}");
     let pre_enriched_before = format!("{pre_enriched:?}");
-    let pre_enriched_error = source_statement_b4c_output_with_mutation(
+    let pre_enriched_error = source_statement_b4c_lower_with_mutation(
         &ast,
         module.clone(),
         &pre_enriched,
@@ -843,7 +500,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         Task258B4CRawResolverMutation::ContributionDefinitionEffects,
     ] {
         let run = || {
-            source_statement_b4c_output_with_raw_resolver_mutation(
+            source_statement_b4c_lower_with_raw_resolver_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -864,27 +521,39 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         };
         let error = run();
         use mizar_checker::type_checker::StatementOwnerError;
-        let symbol = baseline.statement.owners[0].symbol.clone();
+        let owners = symbols.symbols().visible_candidates(
+            &mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+            "FormulaNestedQuantifierPayloadBoundary",
+        );
+        let [owner] = owners.as_slice() else {
+            panic!("one Task258B4C theorem owner")
+        };
+        let symbol = owner.symbol().clone();
         let expected = match mutation {
             Task258B4CRawResolverMutation::OwnerOriginSource
             | Task258B4CRawResolverMutation::OwnerVisibility
-            | Task258B4CRawResolverMutation::OwnerExport =>
-                StatementOwnerError::InvalidOwner { symbol }.to_string(),
+            | Task258B4CRawResolverMutation::OwnerExport => {
+                StatementOwnerError::InvalidOwner { symbol }.to_string()
+            }
             Task258B4CRawResolverMutation::OwnerOriginModule
             | Task258B4CRawResolverMutation::OwnerOriginRange
-            | Task258B4CRawResolverMutation::OwnerOriginPath =>
-                StatementOwnerError::InvalidDefinition { symbol }.to_string(),
+            | Task258B4CRawResolverMutation::OwnerOriginPath => {
+                StatementOwnerError::InvalidDefinition { symbol }.to_string()
+            }
             Task258B4CRawResolverMutation::ContributionModule
             | Task258B4CRawResolverMutation::ContributionKind
-            | Task258B4CRawResolverMutation::ContributionSource =>
-                StatementOwnerError::InvalidProvenance { symbol }.to_string(),
+            | Task258B4CRawResolverMutation::ContributionSource => {
+                StatementOwnerError::InvalidProvenance { symbol }.to_string()
+            }
             Task258B4CRawResolverMutation::OwnerKind
-            | Task258B4CRawResolverMutation::OwnerSpelling =>
-                "Task258B4C raw resolver theorem owner mismatch".to_owned(),
+            | Task258B4CRawResolverMutation::OwnerSpelling => {
+                "Task258B4C raw resolver theorem owner mismatch".to_owned()
+            }
             Task258B4CRawResolverMutation::ContributionAnchor
             | Task258B4CRawResolverMutation::ContributionSymbolEffects
-            | Task258B4CRawResolverMutation::ContributionDefinitionEffects =>
-                "Task258B4C raw resolver provenance mismatch".to_owned(),
+            | Task258B4CRawResolverMutation::ContributionDefinitionEffects => {
+                "Task258B4C raw resolver provenance mismatch".to_owned()
+            }
         };
         assert_eq!(error, expected, "raw owning stage {mutation:?}");
         assert_eq!(error, run(), "{mutation:?} raw replay");
@@ -900,7 +569,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         Task258B2ResolverMutation::Recovered,
     ] {
         let run = || {
-            source_statement_b4c_output_with_resolver_mutation(
+            source_statement_b4c_lower_with_resolver_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -920,11 +589,15 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
             .expect_err("resolver mutation")
         };
         let error = run();
-        assert_eq!(error, match mutation {
-            Task258B2ResolverMutation::Missing | Task258B2ResolverMutation::Duplicate =>
-                "Task258B4C resolver theorem label mismatch",
-            _ => "Task258B4C resolver theorem provenance mismatch",
-        }, "resolver owning stage {mutation:?}");
+        assert_eq!(
+            error,
+            match mutation {
+                Task258B2ResolverMutation::Missing | Task258B2ResolverMutation::Duplicate =>
+                    "Task258B4C resolver theorem label mismatch",
+                _ => "Task258B4C resolver theorem provenance mismatch",
+            },
+            "resolver owning stage {mutation:?}"
+        );
         assert_eq!(error, run(), "{mutation:?} replay");
     }
     for mutation in [
@@ -940,7 +613,7 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
         Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
     ] {
         let run = || {
-            source_statement_b4c_output_with_resolver_mutation(
+            source_statement_b4c_lower_with_resolver_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -960,12 +633,16 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
             .expect_err("label resolver mutation")
         };
         let error = run();
-        assert_eq!(error, match mutation {
-            Task258B3M2B2B3ALabelMutation::Namespace
-            | Task258B3M2B2B3ALabelMutation::PrimarySpelling =>
-                "Task258B4C resolver theorem label mismatch",
-            _ => "Task258B4C resolver theorem provenance mismatch",
-        }, "label owning stage {mutation:?}");
+        assert_eq!(
+            error,
+            match mutation {
+                Task258B3M2B2B3ALabelMutation::Namespace
+                | Task258B3M2B2B3ALabelMutation::PrimarySpelling =>
+                    "Task258B4C resolver theorem label mismatch",
+                _ => "Task258B4C resolver theorem provenance mismatch",
+            },
+            "label owning stage {mutation:?}"
+        );
         assert_eq!(error, run(), "{mutation:?} replay");
     }
     let (_, _, replay_symbols, replay) = task258b4c_output(266_730);
@@ -978,9 +655,8 @@ fn task258b4c_source_resolver_and_active_b3_near_misses_stay_isolated() {
 
 #[test]
 fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
-    use mizar_checker::{
-        source_composite_formula::{SourceFormulaRootId, SourceFormulaRootOwnership},
-        typed_ast::TypedAstError,
+    use mizar_checker::source_composite_formula::{
+        SourceFormulaRootId, SourceFormulaRootOwnership,
     };
 
     let (b4c_ast, b4c_module, b4c_symbols, b4c) = task258b4c_output(266_800);
@@ -1022,96 +698,10 @@ fn task258b4c_cross_family_b4a_b4b_orders_and_ownership_are_atomic() {
         .expect("atomic statement")
         .clone();
     assert!(atomic_statement.composite_formula_fingerprint().is_none());
-    assert_eq!(
-        b4c_lower
-            .typed_ast
-            .clone()
-            .with_source_statement(atomic_statement)
-            .expect_err("B4C lower then atomic statement must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
-
-    // Accepted-C setter directions remain in the private Checker tests.
-    // These are genuine foreign lower donors captured before retired raw admission.
-    for (composite, composition) in [
-        (&b4a.composite, &b4a.composition),
-        (&b4b.composite, &b4b.composition),
-    ] {
-        let run = || {
-            let mut changed = None;
-            let error = source_statement_b4c_output_with_mutation(
-                &b4c_ast,
-                b4c_module.clone(),
-                &b4c_symbols,
-                SOURCE_STATEMENT_B4C_TEXT,
-                |input| {
-                    let before = format!("{input:?}");
-                    input.composite = composite.clone();
-                    input.composition = composition.clone();
-                    let after = format!("{input:?}");
-                    assert_ne!(after, before, "actual foreign lower donor delta");
-                    changed = Some(after);
-                },
-            )
-            .expect("C/foreign lower selector")
-            .expect_err("retired raw C");
-            assert_eq!(error, "source statement dependency mismatch");
-            changed.expect("genuine C draft with foreign lower donor")
-        };
-        assert_eq!(run(), run(), "foreign donor draft replay");
-    }
-    let run_a = || {
-        let mut changed = None;
-        let error = source_statement_b4a_output_with_mutation(
-            &b4a_ast,
-            b4a_module.clone(),
-            &b4a_symbols,
-            SOURCE_STATEMENT_B4A_TEXT,
-            |input| {
-                let before = format!("{input:?}");
-                input.composite = b4c.composite.clone();
-                input.composition = b4c.composition.clone();
-                let after = format!("{input:?}");
-                assert_ne!(after, before, "actual C lower donor delta");
-                changed = Some(after);
-            },
-        )
-        .expect("B4A/B4C selector")
-        .expect_err("retired raw B4A");
-        assert_eq!(error, "source statement dependency mismatch");
-        changed.expect("genuine changed B4A tuple")
-    };
-    assert_eq!(run_a(), run_a(), "A/C draft replay");
-    let run_b = || {
-        let mut changed = None;
-        let error = source_statement_b4b_output_with_mutation(
-            &b4b_ast,
-            b4b_module.clone(),
-            &b4b_symbols,
-            SOURCE_STATEMENT_B4B_TEXT,
-            |input| {
-                let before = format!("{input:?}");
-                input.composite = b4c.composite.clone();
-                input.composition = b4c.composition.clone();
-                let after = format!("{input:?}");
-                assert_ne!(after, before, "actual C lower donor delta");
-                changed = Some(after);
-            },
-        )
-        .expect("B4B/B4C selector")
-        .expect_err("retired raw B4B");
-        assert_eq!(error, "source statement dependency mismatch");
-        changed.expect("genuine changed B4B tuple")
-    };
-    assert_eq!(run_b(), run_b(), "B/C draft replay");
     assert_eq!(format!("{b4c:?}"), b4c_before);
     assert_eq!(format!("{b4a:?}"), b4a_before);
     assert_eq!(format!("{b4b:?}"), b4b_before);
-    for composite in [
-        &b4a.composite,
-        &b4b.composite,
-        &b4c.composite,
-    ] {
+    for composite in [&b4a.composite, &b4b.composite, &b4c.composite] {
         assert_eq!(
             composite
                 .roots()
@@ -1182,7 +772,6 @@ fn task258b4c_final_clone_debug_and_semantic_outputs_are_stable() {
         output.resolved.clone().debug_text(),
         output.resolved.debug_text()
     );
-    // Exact accepted upper fingerprints and final replay remain private Checker duties.
     assert!(output.typed_ast.source_statement().is_none());
     assert!(output.resolved.source_statement().is_none());
     assert_eq!(output.typed_ast.source_term(), Some(&inputs.primary));
@@ -1249,29 +838,4 @@ fn task258b4c_final_clone_debug_and_semantic_outputs_are_stable() {
     assert!(output.resolved.checked_proofs().is_empty());
     assert!(output.resolved.checked_proof_nodes().is_empty());
     assert!(output.resolved.checked_terminal_goals().is_empty());
-    assert!(
-        source_statement_transport_detail_keys(&ast, module, &symbols, SOURCE_STATEMENT_B4C_TEXT,)
-            .is_none()
-    );
-
-    let (b4a_ast, b4a_module, b4a_symbols, _) = task258b4a_output(266_901);
-    assert!(
-        source_statement_transport_detail_keys(
-            &b4a_ast,
-            b4a_module,
-            &b4a_symbols,
-            SOURCE_STATEMENT_B4A_TEXT,
-        )
-        .is_none()
-    );
-    let (b4b_ast, b4b_module, b4b_symbols, _) = task258b4b_output(266_902);
-    assert!(
-        source_statement_transport_detail_keys(
-            &b4b_ast,
-            b4b_module,
-            &b4b_symbols,
-            SOURCE_STATEMENT_B4B_TEXT,
-        )
-        .is_none()
-    );
 }

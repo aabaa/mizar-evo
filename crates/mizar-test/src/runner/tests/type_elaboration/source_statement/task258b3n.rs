@@ -350,65 +350,7 @@ fn task258b3n_real_frontend_freezes_named_witness_table_contract() {
                 mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(index)
             )
         );
-        let context = statement
-            .contexts()
-            .get(mizar_checker::source_statement::SourceStatementContextId::new(index))
-            .expect("statement context");
-        assert_eq!(
-            (
-                context.statement().index(),
-                context.binding_context().index(),
-                context.source_range(),
-                context
-                    .visible_bindings()
-                    .iter()
-                    .map(|id| id.index())
-                    .collect::<Vec<_>>(),
-            ),
-            (index, index, row.source_range(), vec![0])
-        );
-        let fact = statement
-            .input_facts()
-            .get(mizar_checker::source_statement::SourceStatementInputFactId::new(index))
-            .expect("input fact");
-        assert_eq!(
-            (
-                fact.statement().index(),
-                fact.context().index(),
-                fact.ordinal(),
-                fact.kind(),
-                fact.binding().index(),
-                fact.uses().iter().map(|id| id.index()).collect::<Vec<_>>(),
-            ),
-            (
-                index,
-                index,
-                0,
-                mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
-                0,
-                if index == 0 { vec![0, 1] } else { vec![3, 4] },
-            )
-        );
-        let candidate = statement
-            .candidate_facts()
-            .get(mizar_checker::source_statement::SourceStatementCandidateFactId::new(index))
-            .expect("candidate fact");
-        assert_eq!(
-            (
-                candidate.statement().index(),
-                candidate.context().index(),
-                candidate.ordinal(),
-                candidate.kind(),
-                candidate.formula(),
-            ),
-            (
-                index,
-                index,
-                0,
-                mizar_checker::source_statement::SourceStatementCandidateFactKind::UnverifiedProposition,
-                row.formula(),
-            )
-        );
+
     }
     assert_eq!(
         (
@@ -441,10 +383,7 @@ fn task258b3n_real_frontend_freezes_named_witness_table_contract() {
     assert_eq!(witness.spelling(), "y = x");
     assert_eq!(handoff.statement_fingerprint(), statement.debug_text());
     assert_eq!(handoff.primary_term_fingerprint(), primary.debug_text());
-    assert_eq!(
-        name.witness(),
-        mizar_checker::source_statement::SourceStatementWitnessId::new(0)
-    );
+
     assert_eq!(
         (
             name.site().node().index(),
@@ -580,11 +519,11 @@ fn task258b3n_validation_precedence_rows_and_replay_fail_closed() {
 
 #[test]
 fn task258b3n_selector_and_byte_subtree_near_misses_are_exact() {
-    let (ast, module, _, symbols) =
+    let (ast, module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B3N_TEXT, 258_704);
     let baseline = task258_native_output(&ast, &module);
     assert_eq!(baseline.0.nodes().len(), 51);
-    assert!(source_statement_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B3N_TEXT).is_none());
+
     for (ordinal, source) in [
         SOURCE_STATEMENT_B3N_TEXT.trim_end_matches('\n').to_owned(),
         format!("{SOURCE_STATEMENT_B3N_TEXT}\n"),
@@ -598,10 +537,7 @@ fn task258b3n_selector_and_byte_subtree_near_misses_are_exact() {
     .into_iter()
     .enumerate()
     {
-        assert!(
-            source_statement_output_with_source(&ast, module.clone(), &symbols, &source,).is_none(),
-            "byte near miss {ordinal}"
-        );
+
         let (coherent_ast, coherent_module, _, _) = task253_ast_from_source_text(&source, 258_730 + ordinal);
         let (typed, resolved) = task258_native_output(&coherent_ast, &coherent_module);
         assert_eq!(typed.source_statement_witnesses().unwrap().names().len(), 1);
@@ -632,22 +568,13 @@ fn task258b3n_selector_and_byte_subtree_near_misses_are_exact() {
     .into_iter()
     .enumerate()
     {
-        let (near_ast, near_module, _, near_symbols) =
+        let (near_ast, near_module, _, _) =
             task253_ast_from_source_text(&source, 258_710 + ordinal);
         assert!(
             extract_named_witness_source_statement(&near_ast, SOURCE_STATEMENT_B3N_TEXT).is_none(),
             "subtree extraction near miss {ordinal}"
         );
-        assert!(
-            source_statement_output_with_source(
-                &near_ast,
-                near_module.clone(),
-                &near_symbols,
-                SOURCE_STATEMENT_B3N_TEXT,
-            )
-            .is_none(),
-            "subtree route near miss {ordinal}"
-        );
+
         if ordinal <= 1 {
             let (typed, resolved) = task258_native_output(&near_ast, &near_module);
             assert_eq!(typed.source_statement_witnesses().unwrap().names().len(), usize::from(ordinal == 1));
@@ -719,14 +646,7 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
     let (typed, _) = task258_native_output(&ast, &module);
     let (original, env) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap().unwrap();
     let (scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&original, &env).unwrap();
-    let b3n_statement = typed
-        .source_statement()
-        .expect("B3N statement")
-        .clone();
-    let b3n_witnesses = typed
-        .source_statement_witnesses()
-        .expect("B3N witnesses")
-        .clone();
+
     let baseline_debug = typed.debug_text();
 
     let (b3_ast, b3_module, _, _) = task253_ast_from_source_text(SOURCE_STATEMENT_B3_TEXT, 258_720);
@@ -760,50 +680,8 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
         let (foreign_ast, foreign_module, _, _) = task253_ast_from_source_text(source, 258_722 + ordinal);
         let (foreign_typed, _) = task258_native_output(&foreign_ast, &foreign_module);
         let foreign_debug = foreign_typed.debug_text();
-        assert_eq!(
-            foreign_typed
-                .clone()
-                .with_source_statement_witnesses(b3n_statement.clone(), b3n_witnesses.clone(),),
-            Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-            "foreign family {ordinal}"
-        );
+
         assert_eq!(foreign_typed.debug_text(), foreign_debug);
-        if let Some(references) = foreign_typed.source_statement_references() {
-            assert_eq!(
-                typed.clone().with_source_statement_references(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    references.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3N receiver family {ordinal}"
-            );
-        } else if let Some(foreign_witnesses) = foreign_typed.source_statement_witnesses() {
-            assert_eq!(
-                typed.clone().with_source_statement_witnesses(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                    foreign_witnesses.clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3N receiver family {ordinal}"
-            );
-        } else {
-            assert_eq!(
-                typed.clone().with_source_statement(
-                    foreign_typed
-                        .source_statement()
-                        .expect("foreign statement")
-                        .clone(),
-                ),
-                Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement),
-                "B3N receiver family {ordinal}"
-            );
-        }
         let (foreign_original, foreign_env) = mizar_resolve::symbols::source_theorem_module_original_inputs(&foreign_ast, &foreign_module).unwrap().unwrap();
         let (foreign_scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&foreign_original, &foreign_env).unwrap();
         let (_, _, foreign_base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&foreign_original, &foreign_env, &foreign_scope).expect("genuine foreign lower tuple");
@@ -838,24 +716,10 @@ fn task258b3n_family_and_active_route_isolation_is_atomic_in_both_orders() {
         if !resolver.detail_keys.is_empty() {
             continue;
         }
-        let active_symbols =
-            augment_type_elaboration_import_summaries(&active_ast, &resolver.module, resolver.env);
+
         let extracted = extract_named_witness_source_statement(&active_ast, &source).is_some();
-        let selected_route = source_statement_output_with_source(
-            &active_ast,
-            resolver.module.clone(),
-            &active_symbols,
-            &source,
-        )
-        .is_some_and(|result| {
-            result.is_ok_and(|output| {
-                output
-                    .typed_ast
-                    .source_statement_witnesses()
-                    .is_some_and(|witnesses| !witnesses.names().is_empty())
-            })
-        });
-        if extracted || selected_route {
+
+        if extracted {
             selected.push(case.id.0.clone());
         }
     }
@@ -904,9 +768,7 @@ fn task258b3n_typed_final_clone_debug_rollback_and_empty_semantics_are_stable() 
     assert!(resolved.checked_proof_nodes().is_empty());
     assert!(resolved.checked_terminal_goals().is_empty());
     let baseline_debug = typed.debug_text();
-    assert_eq!(typed.clone().with_source_statement_witnesses(
-        typed.source_statement().unwrap().clone(), typed.source_statement_witnesses().unwrap().clone(),
-    ), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+
     assert!(typed.source_proof_local_declaration().is_none());
     assert!(resolved.source_proof_local_declaration().is_none());
     assert!(typed.contexts().is_empty());

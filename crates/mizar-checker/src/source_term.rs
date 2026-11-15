@@ -4994,9 +4994,9 @@ mod tests {
                     assert_eq!(comp_count, 1);
                     let SourceSetTarget::Primary(mapper) = set_input.edges[0].target else { panic!("actual mapper Primary"); };
                     let mapper_row = handoff.terms().get(mapper).unwrap();
-                    let child_range = range(ast.source_id, comprehension.range().start + 1, set_input.generators[0].source_range.start);
-                    let generator_range = range(ast.source_id, mapper_row.source_range().end + 1, mapper_row.source_range().end + 2);
-                    let type_range = range(ast.source_id, generator_range.end + 1, generator_range.end + 4);
+                    let child_range = self::range(ast.source_id, comprehension.range().start + 1, set_input.generators[0].source_range.start);
+                    let generator_range = self::range(ast.source_id, mapper_row.source_range().end + 1, mapper_row.source_range().end + 2);
+                    let type_range = self::range(ast.source_id, generator_range.end + 1, generator_range.end + 4);
                     assert!(child_range.start < mapper_row.source_range().start && mapper_row.source_range().end < generator_range.start && type_range.end < child_range.end);
                     let mut nodes = set_arena.iter().map(|(_, row)| row.clone()).collect::<Vec<_>>();
                     let first = nodes.len();
@@ -7527,15 +7527,16 @@ mod tests {
             fixture.module.clone(),
             fixture.dependency.binding_env().clone(),
         );
-        assert_task269gcu_sibling_both_orders!(
-            declaration,
-            inject_source_proof_local_declaration_for_test,
-            with_source_proof_local_declaration,
-            TypedAstError::InvalidSourceProofLocalDeclaration,
-            fixture.source,
-            fixture.module.clone(),
-            fixture.arena.clone()
+        let mut declaration_first = task269gcu_empty_typed(&fixture, fixture.arena.clone());
+        declaration_first.inject_source_proof_local_declaration_for_test(declaration);
+        let before = declaration_first.clone();
+        assert_eq!(
+            declaration_first
+                .clone()
+                .with_source_proof_local_given_condition_use_term(handoff.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenConditionUseTerm)
         );
+        assert_eq!(declaration_first, before);
         assert_task269gcu_sibling_both_orders!(
             let_binding,
             inject_source_proof_local_let_binding_for_test,
@@ -7712,17 +7713,29 @@ mod tests {
             sdc.module_id().clone(),
             sdc.binding_env().clone(),
         );
-        assert_task269sdc_sibling_both_orders!(
-            declaration,
-            inject_source_proof_local_declaration_for_test,
-            with_source_proof_local_declaration,
-            source_proof_local_declaration,
-            TypedAstError::InvalidSourceProofLocalDeclaration,
-            ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding,
-            source_id_for("f8"),
-            module("task269sdc"),
-            TypedArena::try_new(None, Vec::new()).expect("Task269SDC declaration arena")
+        let sdc = task269sdc_neighbor_for(source_id_for("f8"), module("task269sdc"));
+        let mut declaration_first = task269gcu_empty_typed_for(
+            sdc.source_id(),
+            sdc.module_id().clone(),
+            TypedArena::try_new(None, Vec::new()).expect("Task269SDC declaration arena"),
         );
+        declaration_first.inject_source_proof_local_declaration_for_test(declaration.clone());
+        let before = declaration_first.clone();
+        assert_eq!(
+            declaration_first
+                .clone()
+                .with_source_proof_local_given_descendant_binding(sdc.clone()),
+            Err(TypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        assert_eq!(declaration_first, before);
+        assert!(declaration_first.source_proof_local_declaration().is_some());
+        declaration_first.inject_source_proof_local_given_descendant_binding_for_test(sdc);
+        let before = declaration_first.clone();
+        assert_eq!(
+            task269gcu_resolved_result_with_inputs(&declaration_first, Vec::new(), Vec::new()),
+            Err(ResolvedTypedAstError::InvalidSourceProofLocalGivenDescendantBinding)
+        );
+        assert_eq!(declaration_first, before);
         assert_task269sdc_sibling_both_orders!(
             task269gu_let_neighbor(),
             inject_source_proof_local_let_binding_for_test,

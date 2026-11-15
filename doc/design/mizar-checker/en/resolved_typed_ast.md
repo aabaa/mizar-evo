@@ -1,5 +1,7 @@
 # Resolved Typed AST
 
+Current APIs and historical Task sections follow the [retirement boundary](source_statement.md).
+
 C2/C3 slot policy follows the [composition owner](source_formula_composition.md#variable-reference-predicate-chain-associations).
 
 `source_proof_local_binding()` retains the [native binding transaction](./source_proof_local_declaration.md#native-proof-local-binding-boundary).
@@ -2076,7 +2078,7 @@ table, capture state, diagnostic, Core payload, generated origin/parameter, or
 active route, and no caller can replace the typed receipt during assembly.
 
 ## Original-source reserved statement transport
-The [atomic original-source installer](typed_ast.md#original-source-reserved-statement-installation) seals the rooted native base, statement and mutually exclusive reference/witness companions as one immutable unit. Final inputs cannot replace its arena or handoffs. Assembly validates actual five-table/lower/context/site joins and retains the five tables. The proofless slice requires no reference; the B1/B5A nested slices require the complete label/citation pair and actual citing-statement/branching-parent joins, full stored projection-batch resolution replay and label-only snapshot correspondence. Label authenticity originates in source intake and immutable construction; legacy validation remains separate.
+The [atomic original-source installer](typed_ast.md#original-source-reserved-statement-installation) seals the rooted native base, statement and mutually exclusive reference/witness companions as one immutable unit. Final inputs cannot replace its arena or handoffs. Assembly validates actual five-table/lower/context/site joins and retains the five tables. The proofless slice requires no reference; the B1/B5A nested slices require the complete label/citation pair and actual citing-statement/branching-parent joins, full stored projection-batch resolution replay and label-only snapshot correspondence. Label authenticity originates in source intake and immutable construction.
 The native exception is confined to statement transport; shared proof-local root exclusions stay enforced. Reject every auxiliary source family including templates, enriched semantic tables, expression/cluster/overload/template results, statement semantic/proof bundles and non-syntax node hints. The nested reference is the required native pair, not an auxiliary family. Complete installed clones preserve transport.
 No implicit closure, checked assumption/fact, logical binder, proof validity, obligation discharge, theorem publication or acceptance follows. Structural source/reference authentication does not assert raw captured bytes/trivia/currentness or ordinary-name resolution completeness.
 Native B2 revalidates the complete native base and all three [constructed rows](source_statement.md#original-source-reserved-statement-construction), joining theorem and proof-local sites to actual proof containment and module/proof parent contexts even though no reference pair is present. Absence of references must not imply absence of a proof.
@@ -2087,8 +2089,6 @@ Native B3M2B1 final replay revalidates the actual wrapper/child relation and six
 For the two-group witness, final replay must preserve and revalidate the outer 2 → inner 3 → leaf 4 chain and the existing immutable statement/witness pair. Keep final inputs syntax-only and semantic/type/context/proof tables empty; separate inference payloads are not copied into `ResolvedTypedAst`.
 
 Original-statement final assembly admits the retained SourceSet only with a bounded original finite-enumeration witness pair (optionally with a fresh unused name) or bare-set choice witness pair (also optionally with a fresh unused name) and its complete validated set/primary/statement fingerprints. Route that pair through the existing set-aware witness validator; keep ordinary source-set clone validation and preserve the entire immutable pair/set in output and clone replay. All application/structure/other auxiliary exclusions, Unknown/default source hints, empty semantic/type/context/proof products, and proof/Driver boundaries remain unchanged. No raw-profile allowance or general set-witness acceptance follows.
-
-Historical B3B and C raw set-dependency and witness-final allowances exist only in Checker test compilation. Keep original-source empty-set/choice replay and all other raw families separate; no production B3B/C raw handoff or semantic/proof authority remains.
 
 ## Original-source universal composition
 When native source context coexists with composite transport, require both existing composite/composition handoffs. Fresh joint validation rederives the source graph, incoming/body contexts, actual binder/type applications and header/proof partition from retained original/context/type/lower data, and compares the complete expected handoffs and fingerprints. Missing companions, coherent association swaps and orphan/foreign rows refuse; immutable clones retain the complete pair.

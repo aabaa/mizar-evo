@@ -324,7 +324,7 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         .contexts()
         .get(mizar_checker::source_statement::SourceStatementContextId::new(0))
         .expect("Task258A context row");
-    assert_eq!(context.statement().index(), 0);
+
     assert_eq!(context.binding_context().index(), 0);
     assert_eq!(context.source_range(), extracted.theorem_range);
     assert_eq!(
@@ -339,7 +339,7 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         .input_facts()
         .get(mizar_checker::source_statement::SourceStatementInputFactId::new(0))
         .expect("Task258A input fact");
-    assert_eq!(input_fact.statement().index(), 0);
+
     assert_eq!(input_fact.context().index(), 0);
     assert_eq!(input_fact.ordinal(), 0);
     assert_eq!(input_fact.binding().index(), 0);
@@ -359,7 +359,7 @@ fn task258a_real_frontend_publishes_exact_statement_provenance_and_empty_semanti
         .candidate_facts()
         .get(mizar_checker::source_statement::SourceStatementCandidateFactId::new(0))
         .expect("Task258A candidate fact");
-    assert_eq!(candidate.statement().index(), 0);
+
     assert_eq!(candidate.context().index(), 0);
     assert_eq!(candidate.ordinal(), 0);
     assert_eq!(
@@ -626,51 +626,13 @@ fn task258a_selector_rejects_loaded_named_recovered_subtree_and_active_near_miss
         assert_eq!(task258_native_output(&exact_ast, &exact_module), baseline);
     }
 
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .expect("mizar-test crate below workspace")
-        .to_path_buf();
-    let config = DiscoveryConfig {
-        workspace_root: workspace_root.clone(),
-        tests_root: workspace_root.join("tests"),
-        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
-        profile: TestProfile::Fast,
-        validation_mode: ValidationMode::Metadata,
-    };
-    let plan = build_test_plan(&config).expect("Task258A isolation plan");
-    let mut selected = Vec::new();
-    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        let frontend = run_frontend(&workspace_root, case, ordinal)
-            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
-        let source = frontend.source_text;
-        let Some(ast) = frontend.ast else {
-            continue;
-        };
-        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
-        if !resolver.detail_keys.is_empty() {
-            continue;
-        }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        if source_statement_output_with_source(&ast, resolver.module, &symbols, &source).is_some() {
-            selected.push(case.id.0.clone());
-        }
-    }
-    assert!(
-        selected.is_empty(),
-        "dormant Task258A route must not select an active type-elaboration case: {selected:?}"
-    );
 }
 
 #[test]
 fn task258a_typed_resolved_ownership_and_task248_first_exclusion_are_atomic() {
     let (ast, module, _, _) = task253_ast_from_source_text(TASK258A_SOURCE, 258_300);
     let (output, resolved) = task258_native_output(&ast, &module);
-    let statement = output
-        .source_statement()
-        .expect("Task258A typed owner")
-        .clone();
+
     assert_eq!(
         output.source_statement(),
         resolved.source_statement()
@@ -688,14 +650,7 @@ fn task258a_typed_resolved_ownership_and_task248_first_exclusion_are_atomic() {
     assert!(task248.typed_ast.source_context().is_some());
     assert!(task248.typed_ast.source_statement().is_none());
     let before = task248.typed_ast.debug_text();
-    assert_eq!(
-        task248
-            .typed_ast
-            .clone()
-            .with_source_statement(statement)
-            .expect_err("Task248-first/Task258A-second must fail"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
+
     assert_eq!(task248.typed_ast.debug_text(), before);
     assert!(task248.typed_ast.source_statement().is_none());
     assert_eq!(

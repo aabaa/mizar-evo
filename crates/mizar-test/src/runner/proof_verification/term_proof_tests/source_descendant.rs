@@ -892,18 +892,7 @@ fn source_descendant_statement_original_capture_preserves_boundary() -> Result<(
                 "{control}"
             );
         }
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement(statements.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached {control}"
-        );
-        assert!(
-            reconstructed
-                .with_source_statement_references(statements.clone(), references.clone())
-                .is_err()
-        );
+
         assert_eq!(
             base.clone()
                 .with_source_statement_from_original(&source, &symbols, &scope),
@@ -980,27 +969,11 @@ fn source_descendant_statement_original_capture_preserves_boundary() -> Result<(
         source_theorem_module_original_inputs(captures[3].ast.as_ref().unwrap(), &module)?.unwrap();
     let (b1_scope, _, _) = source_proof_inputs(&b1, &b1_env)?;
     let b1_base = TermFormulaChecker::check_source_theorem_equalities(&b1, &b1_env, &b1_scope)?.2;
-    let b1_pair = b1_base
+    b1_base
         .clone()
         .with_source_statement_from_original(&b1, &b1_env, &b1_scope)
         .unwrap();
-    assert!(
-        base.clone()
-            .with_source_statement_references(
-                statements.clone(),
-                b1_pair.source_statement_references().unwrap().clone()
-            )
-            .is_err()
-    );
-    assert!(
-        b1_base
-            .clone()
-            .with_source_statement_references(
-                b1_pair.source_statement().unwrap().clone(),
-                references.clone()
-            )
-            .is_err()
-    );
+
     let collection = OverloadCollectionOutput::collect([], []);
     let expansion = TemplateExpansionOutput::expand(&collection);
     let viability = CandidateViabilityOutput::filter(&expansion, []);

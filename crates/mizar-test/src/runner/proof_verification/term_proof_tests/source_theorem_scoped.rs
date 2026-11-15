@@ -3518,7 +3518,7 @@ fn task258_native_let_statements_preserve_source_intent_and_installed_replay() -
         source_statement::*,
         source_type::{SourceTypeHead, SourceTypeProducer},
         type_checker::{CheckedStatementOwner, FormulaStatus, TermStatus, TypeHeadRef},
-        typed_ast::{TypeEntryActual, TypeStatus, TypedAst, TypedAstParts, TypedSiteRef},
+        typed_ast::{TypeEntryActual, TypeStatus, TypedAst, TypedSiteRef},
     };
     use mizar_frontend::{
         orchestration::Frontend,
@@ -4558,40 +4558,14 @@ fn task258_native_let_statements_preserve_source_intent_and_installed_replay() -
                 .with_source_statement_from_original(source, symbols, scope)
                 .is_err()
         );
-        assert!(
-            installed
-                .clone()
-                .with_source_statement(statement.clone())
-                .is_err()
-        );
-        assert!(
-            baseline
-                .clone()
-                .with_source_statement(statement.clone())
-                .is_err()
-        );
+
         assert!(
             primitive
                 .clone()
                 .with_source_statement_from_original(source, symbols, scope)
                 .is_err()
         );
-        assert!(
-            primitive
-                .clone()
-                .with_source_statement(statement.clone())
-                .is_err()
-        );
-        assert!(
-            primitive
-                .clone()
-                .with_source_formula_composition_statement(
-                    baseline.source_composite_formula().unwrap().clone(),
-                    baseline.source_formula_composition().unwrap().clone(),
-                    statement.clone()
-                )
-                .is_err()
-        );
+
         let mut rows_only = primitive.clone();
         rows_only.install_source_nodes(source).unwrap();
         assert!(
@@ -4599,27 +4573,7 @@ fn task258_native_let_statements_preserve_source_intent_and_installed_replay() -
                 .with_source_statement_from_original(source, symbols, scope)
                 .is_err()
         );
-        let detached = TypedAst::try_new(TypedAstParts {
-            source_id: source.source_id(),
-            module_id: source.module().clone(),
-            resolved_root: primitive.resolved_root(),
-            source_context: primitive.source_context().cloned(),
-            source_type: primitive.source_type().cloned(),
-            source_attribute: None,
-            nodes: primitive.nodes().clone(),
-            contexts: primitive.contexts().clone(),
-            types: primitive.types().clone(),
-            facts: primitive.facts().clone(),
-            coercions: primitive.coercions().clone(),
-            initial_obligations: primitive.initial_obligations().clone(),
-            diagnostics: primitive.diagnostics().clone(),
-        });
-        assert!(
-            detached
-                .unwrap()
-                .with_source_statement(statement.clone())
-                .is_err()
-        );
+
         let foreign = &prepared[(case + 1) % 8];
         assert!(
             baseline
@@ -6832,12 +6786,7 @@ fn task257b6_native_connective_composition_preserves_installed_replay() -> Resul
                         .with_source_statement_from_original(source, symbols, scope)
                         .is_err()
                 );
-                assert!(
-                    baseline
-                        .clone()
-                        .with_source_statement(statement.clone())
-                        .is_err()
-                );
+
                 assert!(
                     primitive
                         .clone()
@@ -6856,16 +6805,7 @@ fn task257b6_native_connective_composition_preserves_installed_replay() -> Resul
                         .with_source_formula_composition(composite.clone(), joined.clone())
                         .is_err()
                 );
-                assert!(
-                    primitive
-                        .clone()
-                        .with_source_formula_composition_statement(
-                            composite.clone(),
-                            joined.clone(),
-                            statement.clone()
-                        )
-                        .is_err()
-                );
+
                 assert!(
                     with_rows
                         .with_source_formula_composition_from_original(source, symbols, scope)
@@ -11235,24 +11175,6 @@ fn task257b7_native_quantifier_composition_preserves_installed_replay() -> Resul
                         .is_err()
                 );
                 assert!(install_statement(installed.clone(), source, symbols, scope).is_err());
-                if let Some(statement) = installed.source_statement() {
-                    assert!(
-                        baseline
-                            .clone()
-                            .with_source_statement(statement.clone())
-                            .is_err()
-                    );
-                    assert!(
-                        primitive
-                            .clone()
-                            .with_source_formula_composition_statement(
-                                composite.clone(),
-                                joined.clone(),
-                                statement.clone()
-                            )
-                            .is_err()
-                    );
-                }
                 assert!(install_statement(primitive.clone(), source, symbols, scope).is_err());
                 assert!(
                     primitive

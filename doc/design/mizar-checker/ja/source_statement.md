@@ -1,9 +1,9 @@
 # Source Statement Transport
 
+現行 API: R5 により raw statement/reference/witness と旧 proof-local declaration の raw producer 入口・installer・classifier・専用 fixture test を全構成から削除した。認証済み original-source transport と共有 live lower API は保持する。以下の Task 番号付き節は履歴契約であり、現行 API を追加しない。
+
 owner metadata enum は opt-in theorem-skeleton checker 向けに
 `SourceTheoremRole::Lemma` と `SourceTheoremStatus::{Open, Assumed}` も表す。
-以下の Task 258A producer は Theorem/Unmodified 限定のままで、
-statement/reference installation profile を拡張しない。
 
 > canonical languageはEnglish。英語版:
 > [../en/source_statement.md](../en/source_statement.md)。
@@ -14,20 +14,20 @@ statement parse、label resolve、formula proof、theorem fact publicationは行
 
 ## Native quantified statement and Let guard construction
 original-source statement入口は、nativeが受理する組込み型universal・proof内Let宣言・最後の直接等式結論を持つ単一の認証済みB5 theoremも扱う。既存の単一定理seal、五テーブル、完全なnative lower/composite fingerprintを保持する。theorem propositionはincoming module contextのComposite rootを指し、外部quantifier guardを作らない。proof-local宣言変数は実proof contextの結論にLetTypeGuard intentを供給し、実reference useを保持する。未使用名のuseは空でよく、Let自体はproposition rowではない。
-fresh joint replayはoriginal graphとsource-type applicationに照らしてowner/statement/context/guard/candidate transaction全体を認証する。実primitive tableとmetadata、canonicalな原子的組込み、旧reserved/reference/witness経路とraw拒否を保持し、accepted factやproofを加えない。
+fresh joint replayはoriginal graphとsource-type applicationに照らしてowner/statement/context/guard/candidate transaction全体を認証する。実primitive tableとmetadata、canonicalな原子的組込み、reserved/reference/witness経路とnative拒否境界を保持し、accepted factやproofを加えない。
 
 ## Original-source reserved statement construction
 crate-private所有constructor `SourceStatementHandoff::from_original` は[TypeChecker intake](type_checker.md#original-source-reserved-statement-inputs)にソース解釈を委ね、返されたsemantic ownerを`CheckedStatementOwner`で認証し、既存5テーブル・任意reference/witness companion・正規base `TypedAst`をtupleで返す。実ソースとlower factsからtheorem proposition、module context、reserved-type guard、未検証candidateを導出する。
 proofless sliceではownerのsite/rangeは元TheoremItem、spellingは実label、metadataはTheorem/Unmodified/Normalとする。唯一のstatementも同じsite/range、owner/context IDとsource ordinalは0、formulaは実atomic equality targetを使う。statement spellingはtheorem内tokenをsource range順に並べASCII空白1個で連結する。認証済み固定grammarにより、owner labelと実atomic spellingからの整形も同値となる。contextはtheorem rangeと実module binding context/visible bindings、reserved-type guardは実bindingとoperand順のprimary reference IDを使う。guard/candidate ordinalは0で、candidateは同じstatement/context/atomic targetを指す。このordinalはtable位置でありresolver use clockではない。
 private row構築と`TypedAst`組み込みの所有境界であり、unchecked attachment wrapperではない。label authenticityはintakeとimmutableなinstalled pairが保持し、typed token Debugから再構築しない。既存reference AST slot以外のcapture/provenance表現は追加せず、native resolverの全実reference ordinalを保持する。
-本番raw `SourceStatementProducer::build`はlegacy fixture profileのadmissionを拒否する。歴史的な構築・検証algorithmとexact vectorはChecker内テストに保持し、public raw signatureは維持する。[TypedAst owner](typed_ast.md#original-source-reserved-statement-installation)でatomicに組み込み、切り離したhandoffは再組み込みできない。
-native B2：実site/range/kind/equality targetと正規化source tokenからsource順のtheorem/assumption/direct-conclusionの3行と対応context/reserved guard/未検証candidateを導く。assumptionはsource intentのみを表し、logical binder・proof-local closure・accepted premise/fact・checked formula・proof acceptanceを作らない。Chapter 4のbindingとChapter 16のskeleton検証は下流に残す。native組み込み前に本番B2 raw producer/classifier/legacy-setter admissionを退役し、歴史的golden/corruptionはprivateに残し、そのclassifierからnative Active bindingを除外する。
+[TypedAst owner](typed_ast.md#original-source-reserved-statement-installation)でatomicに組み込み、切り離したhandoffは再組み込みできない。
+native B2：実site/range/kind/equality targetと正規化source tokenからsource順のtheorem/assumption/direct-conclusionの3行と対応context/reserved guard/未検証candidateを導く。assumptionはsource intentのみを表し、logical binder・proof-local closure・accepted premise/fact・checked formula・proof acceptanceを作らない。Chapter 4のbindingとChapter 16のskeleton検証は下流に残す。
 
 ## Original-source unnamed witness construction
 native B3はtheorem/conclusion formula行とcontext・reserved guard・未検証candidateに、namesが空の既存の別unnamed-witness handoffを加える。既存private constructor tupleだけを拡張し、private inline構築と既存validatorを使う。実theorem/take/conclusion roleから順序を導き、statement IDはdense `0/1`、statement source ordinalは`0/2`、witness source ordinalは`1`、within-take ordinalは`0`とし、atomic formula ID/source ordinalはdense `0/1`を保つ。unnamed `take`はbinder・closure・accepted witness・substitution・fact・proof creditを作らず、このequality theoremは有効なexistential proofではない。existential goalのwitness type/guardとproof skeletonの義務は下流に残す。
 
 ## Original-source named witness construction
-native B3Nは実unused identifier token・equals token・reserved RHSからNamed witness一つとdense name行0を記録し、両方向linkと実包含関係を検証する。nameはreservationと異なりterm-use roleに現れず、既存reference五つ・独立clock・statement二行を保つ。既存witness input/handoffとvalidatorでprivate構築し、BindingId・abbreviation・activation clock・proof結果を作らない。本番raw B3Nと歴史的Task269A上位依存を退役しprivate golden/causal拒否を保持する。native上位binding/use authorityは別に残る。 name依存のtheorem全体spellingはname認証後に既存の必須witness validatorで検証し、base検証はname非依存joinとunnamed spelling検証を保持する。
+native B3Nは実unused identifier token・equals token・reserved RHSからNamed witness一つとdense name行0を記録し、両方向linkと実包含関係を検証する。nameはreservationと異なりterm-use roleに現れず、既存reference五つ・独立clock・statement二行を保つ。既存witness input/handoffとvalidatorでprivate構築し、BindingId・abbreviation・activation clock・proof結果を作らない。native上位binding/use authorityは別に残る。 name依存のtheorem全体spellingはname認証後に既存の必須witness validatorで検証し、base検証はname非依存joinとunnamed spelling検証を保持する。
 native B3M2B1は同じ一行unnamed witness transportを拡張するが、targetは認証したouter wrapper primary 2に限る。child primary 3はparent 2を持つ実reference childである。statement source ordinal `0/2`、witness global/within-Take ordinal `1/0`と正規base比較を保持し、child reference clockはwrapper/primary ordinalから独立して解決する。equality spellingはwrapped witnessでなく実theorem/conclusion atomic rowから導く。wrapper/childのterm typeはTypeCheckerが完全に検査し、existential goalのwitness type/guardとproof skeletonの義務は下流に残す。binding/name/declaration/substitution/fact/proof resultを作らない。
 有限深さ`d`のtransparent witness chainでは既存witnessがouter primary 2をtargetとし、認証した全immediate parent/child edgeを実leaf `d+2`まで辿り、固定深さ上限を設けない。primary検証が先行parent・厳密包含range・単一childを要求するため有限acyclic table上で終了する。groupはbinding/reference/name/factを所有しない。statement source ordinal `0/2`、witness ordinal `1/0`、equality edge `[0,1]`と`[d+3,d+4]`、input-fact reference `[0,1]`と`[3,4]`を保つ。TypeCheckerがsource nodeを認証し、constructorはsyntax AST import/debug parseなしでtyped rowを使う。全canonical-base比較を維持し、binder/substitution/proof resultを作らない。
 
@@ -44,34 +44,14 @@ named enumeration witness は既存の fresh な未使用 identifier と name ro
 ## Original-source bare-set choice witness
 native pairはlowerの唯一のbare `take the set;`（freshな未使用nameは任意）も既存SetTerm target 0で認め、全binding/primary/atomic/set/statement fingerprintを保持する。Normal Choice一つ、term 0所有のBuiltinSet ChoiceTarget一つ、ChoiceNonempty(type-site 0)→ResultType(type siteなし)の順のrequestを要求し、edge/wrapper/generator/condition/余分な行を認めない。実Take/Witness/TermExpression/Choice/target-expression/head/`set`の祖先関係・直接child・reserved-word `the`/`set`・句読点・range・source/module/context・Normal recoveryを実type-site rowと独立に認証する。実reference四つのclock `0..3`、equality/input-fact use `[0,1]`と`[2,3]`、statement ordinal `0/2`とwitness ordinal `1/0`を保持し、任意のnameは既存Named witness規則で認証するmetadata行だけを追加する。Choice自体はprimary/reference/binding/input factを追加しない。guard/candidateは未検証のまま、lowerのtarget typing/builtin gateと未解決SourceSet intentは各ownerに残し、Core choice・obligation discharge・proof creditを与えない。他choice profileとraw routeはこのnative構築経路では認めない。
 
-## Private legacy empty-enumeration preservation
-旧source/schema/debug goldenと実frontendの証拠を区別する。内部handoff-field行列では実mutation・型付きproducerまたは下流validatorの拒否・入力不変性・正規入力の再生を確認し、producer成功時だけの条件分岐をcoverageと数えない。source-byte/surface認証とdormant runnerの責務は別途レビューしたretirementまで既存ownerに残し、共有family helperとsyntax-only final境界を保つ。
-
-旧raw B3B空集合のprofile・classifier・exact schemaはtest専用とし、productionは認証済みoriginal-source構築を使う。private legacy goldenと因果的拒否行列、native/legacy binding分離、全set依存と他raw familyを保つ。runnerのtest buildからCheckerのtest-only admissionを有効にしない。
-
 ## Private legacy choice preservation
-raw Choiceのgoldenとfinal専用guardを維持する。追加・強化する内部field/owner mutationでは実差分、型付きproducerの拒否または受理handoffに対する正確な下流拒否、入力不変性と正規pair/typed/finalの再生を確認する。整合する追加label effectは内部で受理され得る一方、runnerは厳密なlabel一覧を要求する。実source/Surfaceとresolver認証はrunnerのtest専用adapterに残し、旧raw Choiceのprofile・classifier・setter・final allowanceはCheckerのtest compilationだけに限定する。productionは認証済みoriginal-source構築を使い、runnerのtest buildからCheckerのlegacy admissionを有効にしない。
-
-## Private legacy numeral preservation
-休眠raw M2A numeral・A numeric-enumerationのprofile・classifier・setter・final許可はChecker内テスト専用とする。旧goldenと因果的拒否行列をそこで保持し、runner test adapterは実source/Surface/resolver認証、lower numeric-request intent、正規入力の再生を保ち、raw admissionの拒否を明示する。本番のfixture固有numeral・numeric-enumeration dispatchは退役し、native numeric witness transportとnumeric-type payloadは延期する。
-
-## Private legacy Qua and comprehension preservation
-休眠raw D Qua・E comprehension profileとstatement/witness組み込み・final許可はChecker内テスト専用とする。旧goldenと因果的拒否行列はそこで保持し、runner adapterは実source/Surface/resolver認証を保ち、lower producer自体のエラーと変更済みlower handoffを区別する。本番のfixture固有Qua・comprehension dispatchは退役し、数値型決定・widening・generator binding・sethood・native構築は延期する。
-
-## Private legacy application preservation
-bare B1A・wrapped B1B1 statement/witnessのprofile・classifier・setter/final許可はChecker内テスト専用とする。runner adapterはraw拒否の前にsource/owner・resolver検査と実際のapplication lower handoffを保持し、独立したbare/wrapped application lower APIは維持する。public schemaとmethodは利用可能なままとし、native application型決定とwitness/proof semanticsは延期する。
-
-## Private legacy structure preservation
-休眠2A constructor・2B selector・2C update statement/witnessのprofile・classifier・組み込み/final許可はChecker内テスト専用とする。最後の本番callerが退役した共通raw witness内部処理もテスト専用とする。runner adapterは実source/Surface/resolver認証と独立したlower handoffを保持する。public raw methodのsignatureを保ち、退役profileを拒否する。native original-source構築・検証は維持し、functional-copy・constructor/selector/member/replacement/result型決定とwitness/proof semanticsは延期する。
-
-## Private legacy composite statement preservation
-B4A explicit-universal、B4B connective-groupingとB4C nested-quantifier upperのprofile・共通raw classifier/revalidation・組み込み/final許可はChecker内テスト専用とする。runner adapterはraw拒否の前にsource/Surface認証、実resolver入力と独立したTask-257B1/B2/B3 lower tupleを保持し、upper owner/label guardは既存の非公開ownerに保持する。public composite producer/installerのsignatureは維持し、退役したraw admissionを拒否する。activeなsingle-LF caseはlower-onlyのままとし、native composite statement構築は延期する。lower binding規則とproof境界は既存ownerに保持する。
+旧 raw preservation 契約は R5 に置き換えた。独立した live lower test は保持し、raw golden とその実行経路は削除した。
 
 ## Original-source nested statement references
 native B1はsource順theorem/compact/inner-conclusion/outer-conclusionの4statement、B5Aは後続child proof内のdescendant conclusionを加える。実source/lowerから対応context・reserved guard・未検証candidateを作る。site/range/roleと全statement token正規化spellingは実値、statement ordinalはdense preorder。binding contextは実module/outer/child scopeとparentへ対応し、module reservationのvisibilityだけを継承する。
 proof labelはcompact statementと未検証candidate、citationは実direct citing conclusion（B5Aではdescendant）を所有し、実candidateのlabel scopeを使う。全Resolver replayで同scopeまたは祖先から子孫へのvisibilityを認証する。label `source_ordinal`/citation row `ordinal`はowned-table順、label `visible_after_ordinal`/candidate `ordinal()`は実resolver clockを保つ。variable/label scopeとhierarchical collector/flat node originを分け、cast/path改変でなく実site/range/source/moduleでjoinする。
-既存private projection slotは全実`Vec<LabelProjection>`（native owner+proof label、legacy singleton）を保持する。singular `pub const` getterはsingletonまたはowned labelへjoinする唯一のproof-scoped projectionを選び、collection/index順に依存しない。全batchから全resolutionをreplayし、plural getter/index field/receiptを追加しない。
-既存resolver AST slotはlabel-onlyで全元nodeと実citation key/table/resolutionを保持する。TypeCheckerがsource/snapshot解釈、本moduleがprivate row/fingerprintを所有し、legacy canonical debugを維持する。本番raw B1/B5A/B5B statement/referenceのproducer・classifier・setter・final admissionは退役し、歴史的algorithm/vectorはprivateに保持する。native original-source referenceのcanonical所有とlocal-only構築は維持する。imported original-source構築は延期し、public Imported/SimpleImported metadataとdebug schemaは維持する。
+既存private projection slotは全実`Vec<LabelProjection>`（native owner+proof label）を保持する。singular `pub const` getterはsingletonまたはowned labelへjoinする唯一のproof-scoped projectionを選び、collection/index順に依存しない。全batchから全resolutionをreplayし、plural getter/index field/receiptを追加しない。
+既存resolver AST slotはlabel-onlyで全元nodeと実citation key/table/resolutionを保持する。TypeCheckerがsource/snapshot解釈、本moduleがprivate row/fingerprintを所有し、legacy canonical debugを維持する。native original-source referenceのcanonical所有とlocal-only構築は維持する。imported original-source構築は延期し、public Imported/SimpleImported metadataとdebug schemaは維持する。
 
 ## Generic original-source transport (Task 284 設計)
 決定 (VELOCITY-GENERIC-SOURCE-TRANSPORT step 1、2026-11-02)：元ソース転送を「fixture ごとに 1 つの admission grammar」で行う方式をやめる。`tests/coverage/source_transport_classification.tsv` の inventory はすべての `SurfaceNodeKind` を分類する。`referenced` は本番 checker code が既に match している kind、class `a` (annotation、reference/import、単純な expression wrapper) は element rule なしで汎用 walk から site/range/parent/order を得る kind、class `b` は role や binding のために element rule も必要な kind (proof-skeleton statement は Task 269/272、reconsider は Task 271、definition/redefinition は Task 270/279、binder/case expression は Task 257)、class `c` の algorithm kind は意味論を ALGDEF task に留保しつつ span は class `a` とする。

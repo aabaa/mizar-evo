@@ -1137,13 +1137,12 @@ fn task258b5a_lower_resolver_scope_and_row_mutations_fail_at_owning_stage() {
 
 #[test]
 fn task258b5a_source_active_fixture_and_visibility_near_misses_stay_isolated() {
-    let (exact_ast, exact_module, _, exact_symbols) =
+    let (exact_ast, exact_module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_520);
     let (native_source, native_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&exact_ast, &exact_module).unwrap().unwrap();
     let (native_scope, _, _) = mizar_resolve::symbols::source_proof_inputs(&native_source, &native_symbols).unwrap();
-    let (_, _, native_base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&native_source, &native_symbols, &native_scope).unwrap();
-    let native_baseline = task258_native_output(&exact_ast, &exact_module);
-    assert!(source_statement_output_with_source(&exact_ast, exact_module.clone(), &exact_symbols, SOURCE_STATEMENT_B5A_TEXT).is_none(), "B5A production dispatch is retired");
+    let (_, _, _) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&native_source, &native_symbols, &native_scope).unwrap();
+
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(Path::parent)
@@ -1166,7 +1165,7 @@ fn task258b5a_source_active_fixture_and_visibility_near_misses_stay_isolated() {
         let fixture = std::fs::read_to_string(&fixture_path)
             .unwrap_or_else(|error| panic!("read {}: {error}", fixture_path.display()));
         assert_eq!(sha256_text(&fixture), expected_hash, "{relative_path}");
-        let (fixture_ast, fixture_module, _, fixture_symbols, diagnostics) =
+        let (fixture_ast, _, _, _, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&fixture, 258_521 + ordinal);
         assert_eq!(diagnostics, 0, "{relative_path} must parse unchanged");
         assert!(
@@ -1174,16 +1173,7 @@ fn task258b5a_source_active_fixture_and_visibility_near_misses_stay_isolated() {
                 .is_none(),
             "{relative_path} must not satisfy the private exact extractor"
         );
-        assert!(
-            source_statement_output_with_source(
-                &fixture_ast,
-                fixture_module,
-                &fixture_symbols,
-                &fixture,
-            )
-            .is_none(),
-            "{relative_path} must remain isolated from B5A"
-        );
+
     }
     let config = DiscoveryConfig {
         workspace_root: workspace_root.clone(),
@@ -1205,255 +1195,6 @@ fn task258b5a_source_active_fixture_and_visibility_near_misses_stay_isolated() {
                 .source_path
                 .ends_with("fail_type_elaboration_statement_proof_gap_001.miz")
     }));
-    let mut selected = Vec::new();
-    let mut active_count = 0;
-    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        active_count += 1;
-        let frontend = run_frontend(&workspace_root, case, ordinal)
-            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
-        let source = frontend.source_text;
-        let Some(ast) = frontend.ast else {
-            continue;
-        };
-        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
-        if !resolver.detail_keys.is_empty() {
-            continue;
-        }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        if source_statement_output_with_source(&ast, resolver.module, &symbols, &source).is_some() {
-            selected.push(case.id.0.clone());
-        }
-    }
-    assert_eq!(active_count, 273);
-    assert!(
-        selected.is_empty(),
-        "private B5A route selected active type cases: {selected:?}"
-    );
-    let near_misses = [
-        (
-            "missing final LF",
-            SOURCE_STATEMENT_B5A_TEXT
-                .trim_end_matches('\n')
-                .to_owned(),
-        ),
-        ("extra final LF", format!("{SOURCE_STATEMENT_B5A_TEXT}\n")),
-        (
-            "theorem label drift",
-            SOURCE_STATEMENT_B5A_TEXT.replacen(
-                "FormulaStatementAncestorLabelDescendantCitationSmoke",
-                "FormulaStatementAncestorLabelDescendantCitationOther",
-                1,
-            ),
-        ),
-        (
-            "label spelling drift",
-            SOURCE_STATEMENT_B5A_TEXT.replacen("  A:", "  B:", 1),
-        ),
-        (
-            "citation spelling drift",
-            SOURCE_STATEMENT_B5A_TEXT.replacen("by A", "by B", 1),
-        ),
-        (
-            "qualified citation",
-            SOURCE_STATEMENT_B5A_TEXT.replacen("by A", "by Other.A", 1),
-        ),
-        (
-            "citation in first descendant",
-            SOURCE_STATEMENT_B5A_TEXT.replacen(
-                "    thus x = x;\n",
-                "    thus x = x by A;\n",
-                1,
-            ),
-        ),
-        (
-            "citation returned to ancestor",
-            SOURCE_STATEMENT_B5A_TEXT.replacen(
-                "  thus x = x proof\n    thus x = x by A;\n  end;",
-                "  thus x = x by A;",
-                1,
-            ),
-        ),
-        (
-            "descendant proof omitted",
-            SOURCE_STATEMENT_B5A_TEXT.replacen(
-                "  thus x = x proof\n    thus x = x by A;\n  end;",
-                "  thus x = x;",
-                1,
-            ),
-        ),
-        (
-            "sibling blocks reordered",
-            SOURCE_STATEMENT_B5A_TEXT.replacen(
-                "  A: x = x proof\n    thus x = x;\n  end;\n  thus x = x proof\n    thus x = x by A;\n  end;",
-                "  thus x = x proof\n    thus x = x by A;\n  end;\n  A: x = x proof\n    thus x = x;\n  end;",
-                1,
-            ),
-        ),
-    ];
-    for (ordinal, (label, source)) in near_misses.into_iter().enumerate() {
-        assert!(extract_ancestor_label_descendant_citation_source_statement(&exact_ast, &source).is_none(), "{label} exact AST");
-        let positive = matches!(label, "missing final LF" | "extra final LF" | "theorem label drift" | "citation returned to ancestor");
-        let unique = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let package_root = std::env::temp_dir().join(format!("mizar-test-b5a-native-selector-{}-{ordinal}-{unique}", std::process::id()));
-        let source_path = package_root.join("src").join("selector.miz");
-        std::fs::create_dir_all(source_path.parent().unwrap()).unwrap();
-        std::fs::write(&source_path, &source).unwrap();
-        let package = PackageId::new("mizar-test-b5a-native-selector");
-        let module_path = ModulePath::new(format!("tests.b5a_native_selector_{ordinal}"));
-        let normalized_path = mizar_session::normalize_path(&package_root, &source_path).unwrap();
-        let frontend = mizar_frontend::orchestration::Frontend::new(
-            mizar_frontend::source::FrontendSourceLoader::new(mizar_session::DiskSourceLoader::new(&package_root)),
-            ParseOnlyImportProvider, mizar_frontend::parsing::MizarParserSeam,
-        );
-        let output = frontend.run(mizar_frontend::source::SourceUnitRequest {
-            snapshot: super::shared::snapshot_id(280_000 + ordinal),
-            input: mizar_session::SourceInput {
-                package_id: package.clone(), module_path: module_path.clone(), normalized_path,
-                edition: Edition::new("2026"), origin: mizar_session::SourceOriginInput::Disk { path: source_path },
-            },
-        }, &mizar_session::InMemorySessionIdAllocator::new()).unwrap();
-        std::fs::remove_dir_all(&package_root).unwrap();
-        let module = ResolverModuleId::new(package, module_path);
-        if let Some(ast) = output.ast {
-            assert!(extract_ancestor_label_descendant_citation_source_statement(&ast, &source).is_none(), "{label} parsed AST");
-            if positive {
-                assert!(output.diagnostics.is_empty(), "{label} coherent native source");
-                let (typed, resolved) = task258_native_output(&ast, &module);
-                assert_eq!(typed.source_statement().unwrap().statements().len(), if label == "citation returned to ancestor" { 4 } else { 5 });
-                let references = typed.source_statement_references().expect("native reference pair");
-                assert_eq!(resolved.source_statement_references(), Some(references));
-            } else {
-                match mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module) {
-                    Err(error) => assert_eq!(error, mizar_resolve::resolved_ast::SurfaceResolvedArena::lower(&ast, &module).unwrap_err().to_string(), "{label} source lowering refusal"),
-                    Ok(None) => {
-                        let shells = mizar_resolve::declarations::DeclarationShellCollector::new(&ast, &module).collect();
-                        let collected = mizar_resolve::symbols::SignatureProjectionExtractor::new(&ast, &shells, mizar_resolve::env::NamespacePath::new(module.path().as_str())).collect(&module);
-                        assert!(!collected.diagnostics().is_empty(), "{label} declaration collection refusal");
-                    }
-                    Ok(Some((original, symbols))) => match mizar_resolve::symbols::source_proof_inputs(&original, &symbols) {
-                        Err(error) => assert_eq!(mizar_resolve::symbols::source_proof_inputs(&original, &symbols), Err(error), "{label} resolver refusal replay"),
-                        Ok((scope, labels, resolution)) => {
-                            mizar_resolve::symbols::validate_source_proof_occurrences(&original, &symbols, &scope).unwrap();
-                            if matches!(label, "label spelling drift" | "citation spelling drift") {
-                                assert!(resolution.has_unresolved(), "{label} actual unknown-label table");
-                                assert!(!resolution.table().is_empty());
-                                assert!(resolution.diagnostics().is_empty(), "unknown label is not a conflict diagnostic");
-                            }
-                            let before = (original.clone(), symbols.clone(), scope.clone(), labels.clone(), resolution.clone());
-                            assert!(mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &symbols, &scope).is_err(), "{label} bounded native refusal");
-                            assert_eq!((original, symbols, scope, labels, resolution), before);
-                        }
-                    },
-                }
-            }
-        } else {
-            assert!(!positive, "{label} positive requires an AST");
-            assert!(!output.diagnostics.is_empty(), "{label} Frontend owns absent AST");
-        }
-        assert_eq!(task258_native_output(&exact_ast, &exact_module), native_baseline, "{label} pristine native retry");
-    }
-    let enriched = source_statement_b5a_resolver_env_for_test(
-        &exact_ast,
-        &exact_module,
-        &exact_symbols,
-        SOURCE_STATEMENT_B5A_TEXT,
-    )
-    .expect("B5A enriched resolver");
-    let env_before = (exact_symbols.clone(), enriched.clone());
-    assert!(validate_task258b5a_raw_resolver_env(&exact_ast, &exact_module, &exact_symbols).is_ok());
-    assert!(validate_task258b5a_enriched_resolver_env(&exact_ast, &exact_module, &enriched).is_ok());
-    assert!(validate_task258b5a_raw_resolver_env(&exact_ast, &exact_module, &enriched).is_err(), "pre-enriched input must fail raw authentication");
-    assert!(mizar_resolve::symbols::validate_source_symbol_env(&native_source, &enriched).is_err());
-    assert_eq!(native_base.clone().with_source_statement_from_original(&native_source, &enriched, &native_scope), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-    assert_eq!(task258_native_output(&exact_ast, &exact_module), native_baseline);
-    for mutation in [
-        Task258B5ARawResolverMutation::OwnerOriginSource,
-        Task258B5ARawResolverMutation::OwnerOriginModule,
-        Task258B5ARawResolverMutation::OwnerOriginRange,
-        Task258B5ARawResolverMutation::OwnerOriginPath,
-        Task258B5ARawResolverMutation::OwnerKind,
-        Task258B5ARawResolverMutation::OwnerVisibility,
-        Task258B5ARawResolverMutation::OwnerExport,
-        Task258B5ARawResolverMutation::OwnerSpelling,
-        Task258B5ARawResolverMutation::ContributionModule,
-        Task258B5ARawResolverMutation::ContributionKind,
-        Task258B5ARawResolverMutation::ContributionSource,
-        Task258B5ARawResolverMutation::ContributionAnchor,
-        Task258B5ARawResolverMutation::ContributionSymbolEffects,
-        Task258B5ARawResolverMutation::ContributionDefinitionEffects,
-    ] {
-        let run = || {
-            let mutated = task258b5a_mutate_raw_resolver(exact_symbols.clone(), mutation);
-            validate_task258b5a_raw_resolver_env(&exact_ast, &exact_module, &mutated).expect_err("B5A raw resolver mutation")
-        };
-        assert_eq!(run(), run(), "{mutation:?} raw replay");
-        let mutated = task258b5a_mutate_raw_resolver(native_symbols.clone(), mutation);
-        assert_ne!(mutated, native_symbols);
-        assert!(mizar_resolve::symbols::validate_source_symbol_env(&native_source, &mutated).is_err());
-        assert_eq!(native_base.clone().with_source_statement_from_original(&native_source, &mutated, &native_scope), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-        assert_eq!((exact_symbols.clone(), enriched.clone()), env_before);
-        assert_eq!(task258_native_output(&exact_ast, &exact_module), native_baseline);
-    }
-    for mutation in [
-        Task258B2ResolverMutation::Imported,
-        Task258B2ResolverMutation::Missing,
-        Task258B2ResolverMutation::Duplicate,
-        Task258B2ResolverMutation::WrongPath,
-        Task258B2ResolverMutation::WrongKind,
-        Task258B2ResolverMutation::Private,
-        Task258B2ResolverMutation::LocalOnly,
-        Task258B2ResolverMutation::Recovered,
-    ] {
-        let run = || {
-            let mutated = task258b2_mutate_resolver(enriched.clone(), mutation);
-            validate_task258b5a_enriched_resolver_env(&exact_ast, &exact_module, &mutated).expect_err("B5A resolver mutation")
-        };
-        assert_eq!(run(), run(), "{mutation:?} resolver replay");
-        assert_eq!((exact_symbols.clone(), enriched.clone()), env_before);
-        assert!(validate_task258b5a_raw_resolver_env(&exact_ast, &exact_module, &exact_symbols).is_ok());
-        assert!(validate_task258b5a_enriched_resolver_env(&exact_ast, &exact_module, &enriched).is_ok());
-        assert_eq!(task258_native_output(&exact_ast, &exact_module), native_baseline);
-    }
-    for mutation in [
-        Task258B3M2B2B3ALabelMutation::Namespace,
-        Task258B3M2B2B3ALabelMutation::PrimarySpelling,
-        Task258B3M2B2B3ALabelMutation::Contribution,
-        Task258B3M2B2B3ALabelMutation::OriginSource,
-        Task258B3M2B2B3ALabelMutation::OriginModule,
-        Task258B3M2B2B3ALabelMutation::OriginAnchor,
-        Task258B3M2B2B3ALabelMutation::OriginStructuralPath,
-        Task258B3M2B2B3ALabelMutation::ContributionEffectsMissing,
-        Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
-        Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
-    ] {
-        let run = || {
-            let mutated = task258b3m2b2b3a_mutate_label_resolver(enriched.clone(), mutation);
-            validate_task258b5a_enriched_resolver_env(&exact_ast, &exact_module, &mutated).expect_err("B5A enriched label mutation")
-        };
-        assert_eq!(run(), run(), "{mutation:?} label replay");
-        assert_eq!((exact_symbols.clone(), enriched.clone()), env_before);
-        assert!(validate_task258b5a_raw_resolver_env(&exact_ast, &exact_module, &exact_symbols).is_ok());
-        assert!(validate_task258b5a_enriched_resolver_env(&exact_ast, &exact_module, &enriched).is_ok());
-        assert_eq!(task258_native_output(&exact_ast, &exact_module), native_baseline);
-    }
-    let (b1_ast, b1_module, _, _) =
-        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_522);
-    let (b1, _) = task258_native_output(&b1_ast, &b1_module);
-    assert_eq!(b1.source_term().unwrap().references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), (0..8).collect::<Vec<_>>());
-    assert!(
-        source_statement_output_with_source(
-            &b1_ast,
-            exact_module,
-            &exact_symbols,
-            SOURCE_STATEMENT_B5A_TEXT,
-        )
-        .is_none()
-    );
-    assert_eq!(
-        sha256_text(TASK258A_SOURCE),
-        sha256_text(SOURCE_STATEMENT_TEXT)
-    );
 }
 
 #[test]
@@ -1482,74 +1223,14 @@ fn task258b5a_b1_profile_installation_orders_and_ownership_are_atomic() {
         .source_statement_references()
         .expect("B5A references")
         .clone();
-    assert_eq!(
-        task258_reference_syntax_base(&b1)
-            .with_source_statement_references(b1_statement.clone(), b1_references.clone()),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b5a)
-            .with_source_statement_references(b5a_statement.clone(), b5a_references.clone()),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b1)
-            .with_source_statement_references(b5a_statement.clone(), b5a_references.clone())
-            .expect_err("B5A pair on B1 base"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b5a)
-            .with_source_statement_references(b1_statement.clone(), b1_references.clone())
-            .expect_err("B1 pair on B5A base"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b1)
-            .with_source_statement_references(b1_statement.clone(), b5a_references.clone())
-            .expect_err("B1 statement with B5A references"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b5a)
-            .with_source_statement_references(b5a_statement.clone(), b1_references.clone())
-            .expect_err("B5A statement with B1 references"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task258_reference_syntax_base(&b5a)
-            .with_source_statement(b5a_statement.clone())
-            .expect_err("partial B5A base"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
+
     let installed = b5a.clone();
     let installed_debug = installed.debug_text();
-    assert_eq!(
-        installed
-            .clone()
-            .with_source_statement_references(b5a_statement.clone(), b5a_references.clone())
-            .expect_err("duplicate B5A pair"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
+
     assert_eq!(installed.debug_text(), installed_debug);
     let task248 = task248_real_output();
     let before = task248.typed_ast.debug_text();
-    assert_eq!(
-        task248
-            .typed_ast
-            .clone()
-            .with_source_statement_references(b1_statement.clone(), b1_references.clone())
-            .expect_err("Task248/B1 ownership"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task248
-            .typed_ast
-            .clone()
-            .with_source_statement_references(b5a_statement.clone(), b5a_references.clone())
-            .expect_err("Task248/B5A ownership"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
+
     assert_eq!(task248.typed_ast.debug_text(), before);
     assert_eq!(b1.source_statement(), Some(&b1_statement));
     assert_eq!(

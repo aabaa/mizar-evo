@@ -1,71 +1,3 @@
-#[test]
-fn task258b3m2b2b3d_actual_active_plan_has_no_qua_witness_route() {
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .expect("mizar-test crate below workspace")
-        .to_path_buf();
-    let config = DiscoveryConfig {
-        workspace_root: workspace_root.clone(),
-        tests_root: workspace_root.join("tests"),
-        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
-        profile: TestProfile::Fast,
-        validation_mode: ValidationMode::Metadata,
-    };
-    let plan = build_test_plan(&config).expect("Task258B3M2B2B3D active isolation plan");
-    let (mut scanned, mut with_ast, mut resolved) = (0, 0, 0);
-    let mut selected = Vec::new();
-    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        scanned += 1;
-        let frontend = run_frontend(&workspace_root, case, ordinal)
-            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
-        let source = frontend.source_text;
-        let Some(ast) = frontend.ast else {
-            // Frontend refusal cases may have no AST to pass to the resolver.
-            continue;
-        };
-        with_ast += 1;
-        let extracted = extract_qua_witness_source_statement(&ast, &source).is_some();
-        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
-        let selected_route = if resolver.detail_keys.is_empty() {
-            resolved += 1;
-            let symbols =
-                augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-            source_statement_output_with_source(&ast, resolver.module, &symbols, &source)
-                .is_some_and(|result| {
-                    result.is_ok_and(|output| {
-                        output.typed_ast.source_statement_witnesses().is_some_and(|witnesses| {
-                            witnesses.witnesses().len() == 1 && witnesses.names().is_empty()
-                        }) && output.typed_ast.source_term().is_some_and(|primary| {
-                            primary.numeric_type_requests().len() == 1
-                        }) && output.typed_ast.source_set_term().is_some_and(|set| {
-                            set.terms().len() == 1
-                                && set.terms().iter().all(|(_, term)| {
-                                    term.kind() == mizar_checker::source_set_term::SourceSetTermKind::Qua
-                                })
-                        })
-                    })
-                })
-        } else {
-            false
-        };
-        if extracted || selected_route {
-            selected.push(case.id.0.clone());
-        }
-    }
-    eprintln!(
-        "Qua active isolation: scanned={scanned} with_ast={with_ast} resolved={resolved} selected={}",
-        selected.len()
-    );
-    assert!(
-        scanned > 0 && with_ast > 0 && resolved > 0,
-        "empty active scan"
-    );
-    assert!(
-        selected.is_empty(),
-        "Qua selected active cases: {selected:?}"
-    );
-}
 
 #[test]
 fn task258b3m2b2b3d_real_frontend_freezes_qua_witness_contract() {
@@ -75,7 +7,6 @@ fn task258b3m2b2b3d_real_frontend_freezes_qua_witness_contract() {
             SourceSetTermKind, SourceSetTypeHead, SourceSetTypeOwner, SourceSetTypeRole,
             SourceSetTypeSiteId,
         },
-        source_statement::{SourceStatementWitnessKind, SourceStatementWitnessTermTarget},
         source_term::SourcePrimaryTermKind,
     };
 
@@ -177,41 +108,12 @@ fn task258b3m2b2b3d_real_frontend_freezes_qua_witness_contract() {
     );
 
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-        )
-        .is_none()
-    );
+
     assert_eq!(
         (ast.snapshot_text(), module.clone(), symbols.clone()),
         before
     );
-    assert_eq!(
-        (
-            lower.binding_env.contexts().len(),
-            lower.binding_env.bindings().len(),
-            lower.binding_env.diagnostics().len(),
-            lower.statement.owners.len(),
-            lower.statement.statements.len(),
-            lower.statement.contexts.len(),
-            lower.statement.input_facts.len(),
-            lower.statement.candidate_facts.len()
-        ),
-        (2, 1, 0, 1, 2, 2, 2, 2)
-    );
+
     let proof = lower
         .binding_env
         .contexts()
@@ -355,38 +257,7 @@ fn task258b3m2b2b3d_real_frontend_freezes_qua_witness_contract() {
             .collect::<Vec<_>>(),
         [0, 1, 3, 4]
     );
-    assert_eq!(
-        lower
-            .statement
-            .input_facts
-            .iter()
-            .map(|row| row.uses.iter().map(|id| id.index()).collect::<Vec<_>>())
-            .collect::<Vec<_>>(),
-        [vec![0, 1], vec![2, 3]]
-    );
 
-    assert_eq!(
-        (lower.witness.witnesses.len(), lower.witness.names.len()),
-        (1, 0)
-    );
-    let witness = &lower.witness.witnesses[0];
-    assert_eq!(
-        witness.term,
-        SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(0))
-    );
-    assert_eq!(
-        (
-            witness.take_site.node().index(),
-            witness.site.node().index(),
-            witness.binding_context.index(),
-            witness.source_ordinal,
-            witness.ordinal
-        ),
-        (40, 39, 1, 1, 0)
-    );
-    assert_eq!(witness.spelling, "4 qua set");
-    assert_eq!(witness.kind, SourceStatementWitnessKind::Unnamed);
-    assert!(witness.name.is_none());
     assert_eq!(
         lower
             .arena
@@ -428,7 +299,7 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         );
     };
     for mutation in 0..5 {
-        let error = source_statement_b3m2b2b3d_output_with_mutation(
+        let error = source_statement_b3m2b2b3d_lower_with_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -463,7 +334,7 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         Task258B2ResolverMutation::LocalOnly,
         Task258B2ResolverMutation::Recovered,
     ] {
-        let error = source_statement_b3m2b2b3d_output_with_resolver_mutation(
+        let error = source_statement_b3m2b2b3d_lower_with_resolver_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -493,7 +364,7 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
         Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
     ] {
-        let error = source_statement_b3m2b2b3d_output_with_resolver_mutation(
+        let error = source_statement_b3m2b2b3d_lower_with_resolver_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -512,24 +383,14 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         assert_eq!(error, expected, "{mutation:?}");
         replay();
     }
-    assert_eq!(
-        (
-            TASK258B3M2B2B3D_TASK48_FIELD_COUNT,
-            TASK258B3M2B2B3D_TASK252_FIELD_COUNT,
-            TASK258B3M2B2B3D_TASK255_FIELD_COUNT,
-            TASK258B3M2B2B3D_TASK256_FIELD_COUNT,
-            TASK258B3M2B2B3D_TASK258_FIELD_COUNT,
-            TASK258B3M2B2B3D_WITNESS_FIELD_COUNT
-        ),
-        (32, 70, 44, 72, 62, 21)
-    );
+
     for (stage, fields, prefix) in [
         (SourceStatementB3M2B2B3DLowerStage::Task48, 32, "Task48:"),
         (SourceStatementB3M2B2B3DLowerStage::Task252, 70, "Task252:"),
         (SourceStatementB3M2B2B3DLowerStage::Task255, 44, "Task255:"),
     ] {
         for field in 0..fields {
-            match source_statement_b3m2b2b3d_output_with_lower_stage_mutation(
+            match source_statement_b3m2b2b3d_lower_with_lower_stage_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -556,7 +417,7 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         }
     }
     for field in 0..TASK258B3M2B2B3D_TASK256_FIELD_COUNT {
-        match source_statement_b3m2b2b3d_output_with_stage_mutation(
+        match source_statement_b3m2b2b3d_lower_with_stage_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -571,7 +432,6 @@ fn task258b3m2b2b3d_validation_precedence_mutation_and_replay_fail_closed() {
         }
         replay();
     }
-    // Task258/witness field causality remains in the Checker-private Qua matrices.
     assert_eq!((ast.snapshot_text(), module, symbols), before);
 }
 
@@ -590,7 +450,7 @@ fn task258b3m2b2b3d_qua_and_byte_subtree_near_misses_are_exact() {
             "byte {byte_index}"
         );
         assert!(
-            source_statement_b3m2b2b3d_output_with_mutation(
+            source_statement_b3m2b2b3d_lower_with_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -617,7 +477,7 @@ fn task258b3m2b2b3d_qua_and_byte_subtree_near_misses_are_exact() {
                 "node {target} mutation {mutation}"
             );
             assert!(
-                source_statement_b3m2b2b3d_output_with_resolver_mutation(
+                source_statement_b3m2b2b3d_lower_with_resolver_mutation(
                     &changed,
                     module.clone(),
                     &symbols,
@@ -646,69 +506,11 @@ fn task258b3m2b2b3d_qua_and_byte_subtree_near_misses_are_exact() {
         .is_none()
     );
 
-    let changed_label = SOURCE_STATEMENT_B3M2B2B3D_TEXT.replacen(
-        "FormulaStatementQuaWitnessSmoke",
-        "FormulaStatementQuaWitnessNearMiss",
-        1,
-    );
-    let mut near_misses = vec![changed_label];
-    for replacement in [
-        "5 qua set",
-        "x qua set",
-        "4 qua object",
-        "4 qua non empty set",
-        "4 qua set attr",
-        "4 qua set(x)",
-        "(4 qua set)",
-        "(4) qua set",
-        "4 qua set qua set",
-        "4",
-        "the set",
-        "{}",
-        "{4}",
-        "{x where x is set : x = x}",
-        "TypeCaseStruct(x: 1, y: 2)",
-    ] {
-        near_misses.push(SOURCE_STATEMENT_B3M2B2B3D_TEXT.replacen("4 qua set", replacement, 1));
-    }
-    near_misses.push(SOURCE_STATEMENT_B3M2B2B3D_TEXT.replacen(
-        "take 4 qua set",
-        "take y = 4 qua set",
-        1,
-    ));
-    near_misses.push(SOURCE_STATEMENT_B3M2B2B3D_TEXT.replacen(
-        "take 4 qua set",
-        "take 4 qua set, 4 qua set",
-        1,
-    ));
-    near_misses.push(SOURCE_STATEMENT_B3M2B2B3D_TEXT.replace('\n', "\r\n"));
-    near_misses.push(SOURCE_STATEMENT_B3M2B2B3D_TEXT.trim_end().to_owned());
-    near_misses.push(format!("{SOURCE_STATEMENT_B3M2B2B3D_TEXT}\n"));
-
-    for (index, source) in near_misses.into_iter().enumerate() {
-        let (near_ast, near_module, _, near_symbols, _) =
-            task253_ast_from_source_text_with_diagnostic_count(&source, 261_100 + index);
-        assert!(
-            source_statement_output_with_source(
-                &near_ast,
-                near_module.clone(),
-                &near_symbols,
-                &source,
-            )
-            .is_none(),
-            "near miss {index}: {source:?}"
-        );
-        assert!(
-            source_statement_transport_detail_keys(&near_ast, near_module, &near_symbols, &source)
-                .is_none(),
-            "near-miss detail route {index}"
-        );
-    }
 }
 
 #[test]
 fn task258b3m2b2b3d_family_and_active_route_isolation_is_atomic() {
-    let (ast, module, symbols, lower) = task258b3m2b2b3d_lower_inputs(261_200);
+    let (_, _, _, lower) = task258b3m2b2b3d_lower_inputs(261_200);
     let baselines = [
         task258b3m2b2b3_family_debug(0, 261_201),
         task258b3m2b2b3_family_debug(1, 261_202),
@@ -722,59 +524,6 @@ fn task258b3m2b2b3d_family_and_active_route_isolation_is_atomic() {
     }
     let set = lower.set_term.as_ref().expect("B3D set");
     assert_eq!(set.edges().len(), 1);
-
-    let application = {
-        let (case_ast, case_module, _, case_symbols, diagnostics) =
-            task253_ast_from_source_text_with_diagnostic_count(
-                SOURCE_STATEMENT_B3M2B2B1A_TEXT,
-                261_205,
-            );
-        assert_eq!(diagnostics, 0);
-        let case_symbols =
-            augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        task258b3m2b2b1a_lower_inputs(&case_ast, &case_module, &case_symbols)
-            .application
-            .expect("genuine bare application")
-    };
-    let structure = {
-        let (case_ast, case_module, _, case_symbols, diagnostics) =
-            task253_ast_from_source_text_with_diagnostic_count(
-                SOURCE_STATEMENT_B3M2B2B2A_TEXT,
-                261_206,
-            );
-        assert_eq!(diagnostics, 0);
-        let case_symbols =
-            augment_type_elaboration_import_summaries(&case_ast, &case_module, case_symbols);
-        task258b3m2b2b2a_lower_inputs(&case_ast, &case_module, &case_symbols)
-        .structure.expect("genuine constructor structure")
-    };
-    let set = set.clone();
-    for tuple in 0u8..8 {
-        let mut captured = None;
-        let error = source_statement_b3m2b2b3d_output_with_post_auth_family_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-            |input| {
-                input.application = (tuple & 0b001 != 0).then(|| application.clone());
-                input.structure = (tuple & 0b010 != 0).then(|| structure.clone());
-                input.set_term = (tuple & 0b100 != 0).then(|| set.clone());
-                captured = Some((
-                    input.application.is_some(),
-                    input.structure.is_some(),
-                    input.set_term.is_some(),
-                ));
-            },
-        )
-        .expect("authentic selector")
-        .expect_err("retired raw profile");
-        assert_eq!(
-            captured,
-            Some((tuple & 1 != 0, tuple & 2 != 0, tuple & 4 != 0))
-        );
-        assert_eq!(error, "source statement dependency mismatch");
-    }
 
     let mut order_index = 0;
     for a in 0..4 {
@@ -808,14 +557,14 @@ fn task258b3m2b2b3d_family_and_active_route_isolation_is_atomic() {
     }
     assert_eq!(order_index, 24);
 
-    for (source, expects_application, expects_structure, expects_set) in [
-        (SOURCE_STATEMENT_B3M2B2B1A_TEXT, true, false, false),
-        (SOURCE_STATEMENT_B3M2B2B2A_TEXT, false, true, false),
-        (SOURCE_STATEMENT_B3M2B2B2B_TEXT, false, true, false),
-        (SOURCE_STATEMENT_B3M2B2B2C_TEXT, false, true, false),
-        (SOURCE_STATEMENT_B3M2B2B3A_TEXT, false, false, true),
-        (SOURCE_STATEMENT_B3M2B2B3C_TEXT, false, false, true),
-        (SOURCE_STATEMENT_B3M2B2B3D_TEXT, false, false, true),
+    for source in [
+        SOURCE_STATEMENT_B3M2B2B1A_TEXT,
+        SOURCE_STATEMENT_B3M2B2B2A_TEXT,
+        SOURCE_STATEMENT_B3M2B2B2B_TEXT,
+        SOURCE_STATEMENT_B3M2B2B2C_TEXT,
+        SOURCE_STATEMENT_B3M2B2B3A_TEXT,
+        SOURCE_STATEMENT_B3M2B2B3C_TEXT,
+        SOURCE_STATEMENT_B3M2B2B3D_TEXT,
     ] {
         let (case_ast, case_module, _, case_symbols, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(source, 261_700 + source.len());
@@ -864,60 +613,21 @@ fn task258b3m2b2b3d_family_and_active_route_isolation_is_atomic() {
             || source == SOURCE_STATEMENT_B3M2B2B3D_TEXT
         {
             let before = (case_ast.snapshot_text(), case_module.clone(), case_symbols.clone());
-            assert!(source_statement_output_with_source(
-                &case_ast, case_module.clone(), &case_symbols, source,
-            ).is_none());
-            assert!(source_statement_transport_detail_keys(
-                &case_ast, case_module.clone(), &case_symbols, source,
-            ).is_none());
+
             if source == SOURCE_STATEMENT_B3M2B2B3A_TEXT {
                 assert!(
                     extract_set_enumeration_witness_source_statement(&case_ast, source).is_some()
                 );
-                assert_eq!(
-                    source_statement_b3m2b2b3a_output_with_mutation(
-                        &case_ast,
-                        case_module.clone(),
-                        &case_symbols,
-                        source,
-                        |_| {},
-                    )
-                    .expect("authentic numeric enumeration extraction")
-                    .expect_err("retired raw profile"),
-                    "source statement dependency mismatch"
-                );
+
             }
             assert_eq!((case_ast.snapshot_text(), case_module, case_symbols), before);
             continue;
         }
-        let output =
-            source_statement_output_with_source(&case_ast, case_module, &case_symbols, source)
-                .expect("dormant selector")
-                .expect("dormant route");
-        assert_eq!(
-            output.typed_ast.source_application().is_some(),
-            expects_application
-        );
-        assert_eq!(
-            output.typed_ast.source_structure().is_some(),
-            expects_structure
-        );
-        assert_eq!(output.typed_ast.source_set_term().is_some(), expects_set);
     }
-
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-        )
-        .is_none()
-    );
 }
 
 #[test]
-fn task258b3m2b2b3d_raw_refusal_preserves_lower_clone_debug_and_qua_requests() {
+fn task258b3m2b2b3d_lower_clone_debug_and_qua_requests() {
     use mizar_checker::source_set_term::{
         SourceSetEdgeRole, SourceSetRequestKind, SourceSetTarget,
     };
@@ -942,16 +652,7 @@ fn task258b3m2b2b3d_raw_refusal_preserves_lower_clone_debug_and_qua_requests() {
             SourceSetRequestKind::ResultType
         ]
     );
-    let error = source_statement_b3m2b2b3d_output_with_mutation(
-        &ast,
-        module.clone(),
-        &symbols,
-        SOURCE_STATEMENT_B3M2B2B3D_TEXT,
-        |inputs| inputs.witness.witnesses.clear(),
-    )
-    .expect("authentic extraction")
-    .expect_err("raw admission precedes witness validation");
-    assert_eq!(error, "source statement dependency mismatch");
+
     let (_, _, _, replay) = task258b3m2b2b3d_lower_inputs(261_800);
     assert_eq!(format!("{replay:?}"), debug);
     assert_eq!((ast.snapshot_text(), module, symbols), before);

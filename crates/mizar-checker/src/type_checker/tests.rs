@@ -23,10 +23,7 @@ use mizar_session::{
     ModulePath, PackageId, SessionIdAllocator, SourceAnchor, SourceId,
 };
 use mizar_syntax as syntax;
-include!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/support/source_variable_semantics_unit.rs"
-));
+include!("../../tests/support/source_variable_semantics_unit.rs");
 
 fn source_nodes_typed(
     source: &SurfaceResolvedArena,

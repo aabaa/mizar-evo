@@ -783,24 +783,6 @@ impl SourceStructureDefinitionProducer {
         )
     }
 
-    #[cfg(test)]
-    fn build_canonical(
-        input: SourceStructureDefinitionHandoffInput,
-        env: &SymbolEnv,
-        source_type: &SourceTypeApplicationHandoff,
-        base_initial_obligations: &InitialObligationTable,
-        arena: &TypedArena,
-    ) -> Result<SourceStructureDefinitionProjection, SourceStructureDefinitionError> {
-        Self::build_with_source(
-            input,
-            env,
-            source_type,
-            base_initial_obligations,
-            arena,
-            None,
-        )
-    }
-
     fn build_with_source(
         input: SourceStructureDefinitionHandoffInput,
         env: &SymbolEnv,
@@ -1483,7 +1465,6 @@ fn validate_inheritance_inputs(
     } else {
         None
     };
-    #[cfg(not(test))]
     if original.is_none() {
         return Err(error);
     }

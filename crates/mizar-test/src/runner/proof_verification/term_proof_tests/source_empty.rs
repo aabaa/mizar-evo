@@ -1328,12 +1328,11 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
         (pairs, reconstruct)
     })();
     for index in [6, 7] {
-        let base = &bases[index].as_ref().unwrap().2;
         let installed = pairs[index].as_ref().unwrap();
         let statement = installed.source_statement().unwrap();
-        let witnesses = installed.source_statement_witnesses().unwrap();
+
         assert_eq!(cases[index].0.source.source_text.as_ref(), historical);
-        // Assert the retained raw classifier's observable predicate without exposing it.
+        // Preserve the native collision with the historical raw classifier predicate.
         let owner = statement
             .owners()
             .get(SourceTheoremOwnerId::new(0))
@@ -1368,60 +1367,6 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
             ),
             (2, 2, 2, 2, 2)
         );
-        // Retain the native node root first: resolved_root alone cannot authenticate raw intake.
-        for control in ["resolved-rootless", "typed-rootless", "rootless"] {
-            let receiver = reconstruct(base, control, false);
-            assert_eq!(
-                receiver.resolved_root(),
-                if control == "typed-rootless" {
-                    base.resolved_root()
-                } else {
-                    None
-                }
-            );
-            assert_eq!(
-                receiver.nodes().root(),
-                if control == "resolved-rootless" {
-                    base.nodes().root()
-                } else {
-                    None
-                }
-            );
-            assert_eq!(receiver.source_term(), base.source_term());
-            assert_eq!(
-                receiver.source_atomic_formula(),
-                base.source_atomic_formula()
-            );
-            assert!(receiver.source_set_term().is_none());
-            assert!(
-                receiver
-                    .nodes()
-                    .iter()
-                    .any(|(_, row)| row.kind.as_str() == "TheoremItem")
-            );
-            let before = (receiver.clone(), base.clone(), installed.clone());
-            assert_eq!(
-                receiver.clone().with_source_set_term_statement_witnesses(
-                    base.source_set_term().unwrap().clone(),
-                    statement.clone(),
-                    witnesses.clone()
-                ),
-                Err(TypedAstError::InvalidSourceStatement),
-                "historical native detached raw setter {control}"
-            );
-            assert_eq!(
-                (&receiver, base, installed),
-                (&before.0, &before.1, &before.2)
-            );
-            assert_eq!(
-                base.clone().with_source_statement_from_original(
-                    &cases[index].1,
-                    &cases[index].2,
-                    &cases[index].3
-                ),
-                Ok(installed.clone())
-            );
-        }
     }
     let finals = Box::new(|| -> Result<_, String> {
         let finals = pairs
@@ -1666,8 +1611,6 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
             );
         };
         let own_base = &bases[0].as_ref().unwrap().2;
-        let statement = own_pair.source_statement().unwrap();
-        let witnesses = own_pair.source_statement_witnesses().unwrap();
         assert_eq!(
             own_pair
                 .clone()
@@ -1695,34 +1638,6 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
                         .with_source_statement_from_original(&target.1, &target.2, &target.3),
                     Err(TypedAstError::InvalidSourceStatement),
                     "original receiver {control}"
-                );
-                assert_eq!(receiver, before);
-                pristine();
-            }
-            for include_set in [false, true] {
-                let receiver = reconstruct(own_base, "rootless", include_set);
-                let before = receiver.clone();
-                assert_eq!(
-                    receiver.clone().with_source_statement(statement.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver
-                        .clone()
-                        .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-                    Err(TypedAstError::InvalidSourceStatement)
-                );
-                assert_eq!(receiver, before);
-                pristine();
-                assert_eq!(
-                    receiver.clone().with_source_set_term_statement_witnesses(
-                        own_base.source_set_term().unwrap().clone(),
-                        statement.clone(),
-                        witnesses.clone()
-                    ),
-                    Err(TypedAstError::InvalidSourceStatement)
                 );
                 assert_eq!(receiver, before);
                 pristine();
@@ -2632,25 +2547,7 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
         );
         assert_eq!(partial, partial_before);
         foreign_pristine();
-        for (current_statement, current_witnesses) in [
-            (
-                statement,
-                foreign_pair.source_statement_witnesses().unwrap(),
-            ),
-            (foreign_pair.source_statement().unwrap(), witnesses),
-        ] {
-            let before = own_base.clone();
-            assert_eq!(
-                own_base.clone().with_source_set_term_statement_witnesses(
-                    own_base.source_set_term().unwrap().clone(),
-                    current_statement.clone(),
-                    current_witnesses.clone()
-                ),
-                Err(TypedAstError::InvalidSourceStatement)
-            );
-            assert_eq!(own_base, &before);
-            foreign_pristine();
-        }
+
         fs::remove_dir_all(&root).unwrap();
         Ok(())
     })()

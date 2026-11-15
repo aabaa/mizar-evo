@@ -254,8 +254,7 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             .expect("B5B lower-stage opt-in"),
         enriched
     );
-    assert!(source_statement_output_with_source(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
-    assert!(source_statement_transport_detail_keys(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
+
     let binding_env = &inputs.binding_env;
     assert_eq!((binding_env.contexts().len(), binding_env.bindings().len(), binding_env.diagnostics().len()), (2, 1, 0));
     let module_context = binding_env
@@ -428,253 +427,13 @@ fn task258b5b_real_route_publishes_exact_imported_public_theorem_citation() {
             .count(),
         49
     );
-    let projection = &inputs.projection;
-    assert!(matches!(
-        projection.source(),
-        mizar_resolve::labels::LabelProjectionSource::Imported
-    ));
-    assert_eq!(
-        (
-            projection.origin_path().as_str(),
-            projection.module().path().as_str(),
-            projection.namespace().as_str(),
-            projection.primary_spelling(),
-            projection.kind(),
-            projection.visibility(),
-            projection.export_status(),
-            projection.declaration_range().start,
-            projection.declaration_range().end,
-            projection.contribution().index(),
-        ),
-        (
-            "summary:parser.type_fixtures::Ref:label:Ref",
-            "parser.type_fixtures",
-            module.path().as_str(),
-            "Ref",
-            mizar_resolve::resolved_ast::LabelKind::Theorem,
-            mizar_resolve::env::Visibility::Public,
-            mizar_resolve::env::ExportStatus::Exported,
-            7,
-            27,
-            2,
-        )
-    );
-    assert_eq!(
-        (
-            projection.origin().source_id(),
-            projection.origin().module_id().path().as_str(),
-            projection.origin().structural_path(),
-            projection.origin().import_edge(),
-            projection.origin().is_recovered(),
-        ),
-        (
-            ast.source_id,
-            "parser.type_fixtures",
-            &[1, 0][..],
-            None,
-            false,
-        )
-    );
-    let reference = &inputs.reference;
-    assert_eq!(
-        (
-            reference.site().node().index(),
-            reference.site().range().start,
-            reference.site().range().end,
-            reference.site().spelling(),
-            reference.ordinal(),
-            reference.expectation(),
-            reference.origin().source_id(),
-            reference.origin().module_id(),
-            reference.origin().structural_path(),
-            reference.origin().import_edge(),
-            reference.origin().is_recovered(),
-        ),
-        (
-            48,
-            136,
-            139,
-            "Ref",
-            1,
-            mizar_resolve::resolved_ast::LabelExpectation::ProofOrTheorem,
-            ast.source_id,
-            &module,
-            &[48][..],
-            None,
-            false,
-        )
-    );
-    assert!(matches!(
-        reference.scope(),
-        mizar_resolve::labels::LabelReferenceScope::Unqualified {
-            proof_scope: Some(scope)
-        } if scope.path() == [0]
-    ));
-    let resolver_ast = &inputs.resolver_ast;
-    assert_eq!(
-        (
-            resolver_ast.nodes().root().index(),
-            resolver_ast.nodes().len(),
-            resolver_ast.name_refs().len(),
-            resolver_ast.label_refs().len(),
-            resolver_ast.imports().imports().count(),
-            resolver_ast.imports().exports().count(),
-        ),
-        (56, 57, 0, 1, 1, 0)
-    );
-    assert_eq!(
-        (
-            inputs.resolution.index().len(),
-            inputs.resolution.table().len(),
-            inputs.resolution
-                .ids()
-                .iter()
-                .map(|id| id.index())
-                .collect::<Vec<_>>(),
-            inputs.resolution.diagnostics().len(),
-            inputs.resolution.has_unresolved(),
-        ),
-        (1, 1, vec![0], 0, false)
-    );
-    let (_, import) = resolver_ast
-        .imports()
-        .imports()
-        .next()
-        .expect("one resolved import");
-    assert_eq!(
-        (
-            import.owner().index(),
-            import.range().start,
-            import.range().end,
-            import.source_spelling(),
-            import.alias(),
-            import.origin().source_id(),
-            import.origin().module_id(),
-            import.origin().structural_path(),
-            import.origin().import_edge(),
-            import.recovery(),
-        ),
-        (
-            29,
-            7,
-            27,
-            "import parser.type_fixtures;",
-            None,
-            ast.source_id,
-            &module,
-            &[0][..],
-            None,
-            mizar_resolve::resolved_ast::RecoveryState::Normal,
-        )
-    );
-    assert!(matches!(
-        import.resolution(),
-        mizar_resolve::resolved_ast::ImportResolution::Resolved(target)
-            if target.package() == module.package()
-                && target.path().as_str() == "parser.type_fixtures"
-    ));
-    for (id, node) in resolver_ast.nodes().iter() {
-        assert_eq!(node.kind(), &ast.nodes()[id.index()].kind);
-        assert_eq!(
-            node.children()
-                .iter()
-                .map(|child| child.index())
-                .collect::<Vec<_>>(),
-            ast.nodes()[id.index()]
-                .children
-                .iter()
-                .map(|child| child.index())
-                .collect::<Vec<_>>()
-        );
-        assert_eq!(
-            (
-                node.origin().source_id(),
-                node.origin().module_id(),
-                node.origin().anchor(),
-                node.origin().structural_path(),
-                node.origin().import_edge(),
-                node.origin().is_recovered(),
-                node.recovery(),
-            ),
-            (
-                ast.source_id,
-                &module,
-                &mizar_session::SourceAnchor::Range(ast.nodes()[id.index()].range),
-                &[id.index() as u32][..],
-                None,
-                false,
-                mizar_resolve::resolved_ast::RecoveryState::Normal,
-            )
-        );
-        if id.index() == 48 {
-            assert_eq!(
-                node.resolution(),
-                mizar_resolve::resolved_ast::NodeResolutionState::Resolved
-            );
-            assert!(matches!(
-                node.reference_key(),
-                Some(mizar_resolve::resolved_ast::NodeReferenceKey::Label(key))
-                    if key.index() == 0
-            ));
-        } else {
-            assert_eq!(
-                node.resolution(),
-                mizar_resolve::resolved_ast::NodeResolutionState::NotApplicable
-            );
-            assert_eq!(node.reference_key(), None);
-        }
-    }
-    assert_eq!(inputs.reference_input.citations[0].ordinal, 0);
-    assert_eq!(inputs.reference.ordinal(), 1);
-    assert_eq!(inputs.clone().primary, inputs.primary);
+
 }
 
 #[test]
 fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
-    let (ast, module, raw, enriched, baseline) = task258b5b_exact_env(258_570);
+    let (_, _, _, enriched, baseline) = task258b5b_exact_env(258_570);
     let baseline_debug = format!("{baseline:?}");
-    let import_id = baseline.resolver_ast.imports().imports().next().expect("B5B import").0;
-    let wrong_node = baseline.resolver_ast.nodes().iter().find_map(|(id, _)| (id.index() == 47).then_some(id)).expect("B5B adjacent node");
-    let wrong_contribution = enriched
-        .contributions()
-        .iter()
-        .find_map(|record| (record.id().index() == 1).then_some(record.id()))
-        .expect("B5B foreign contribution");
-
-    // Raw dependency, row, reference and provenance guards are exercised at their
-    // private Checker owner. Here the real captured drafts remain mutation inputs.
-    for context_index in 0..2 {
-        let mutated = task258b5a_binding_env_with_context_recovery(
-            &baseline.binding_env,
-            context_index,
-        );
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { assert_ne!(inputs.binding_env, mutated); inputs.binding_env = mutated; },
-            )
-            .expect("Task48 context selector")
-            .is_err(),
-            "Task48 context {context_index}"
-        );
-    }
-    let mutated_binding = task258b5a_binding_env_with_binding_recovery(
-        &baseline.binding_env,
-    );
-    assert!(
-        source_statement_b5b_output_with_mutation(
-            &ast,
-            module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |inputs| { assert_ne!(inputs.binding_env, mutated_binding); inputs.binding_env = mutated_binding; },
-        )
-        .expect("Task48 binding selector")
-        .is_err()
-    );
 
     let baseline_primary = &baseline.primary;
     let baseline_binding = &baseline.binding_env;
@@ -790,207 +549,6 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
     assert_eq!(mizar_checker::source_term::SourcePrimaryTermProducer::build(task258b3m2a_primary_input(baseline_primary), baseline_binding, &baseline.arena).expect("pristine primary replay"), *baseline_primary);
     assert_eq!(mizar_checker::source_atomic_formula::SourceAtomicFormulaProducer::build(task258b3m2b1_atomic_input(baseline_atomic), baseline_binding, &enriched, baseline_primary, None, None, None, &baseline.arena).expect("pristine atomic replay"), *baseline_atomic);
 
-    for row in 0..2 {
-        for family in 0..4 {
-            let result = source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}"); match family {
-                    0 => inputs.statement.statements[row].source_ordinal = 2,
-                    1 => {
-                        inputs.statement.contexts[row].binding_context =
-                            mizar_checker::binding_env::BindingContextId::new((row + 1) % 2)
-                    }
-                    2 => inputs.statement.input_facts[row].uses.swap(0, 1),
-                    3 => inputs.statement.candidate_facts[row].ordinal = 1,
-                    _ => unreachable!(),
-                }; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("Task258 row selector");
-            assert!(result.is_err(), "Task258 family {family} row {row}");
-        }
-    }
-    for mutation in 0..8 {
-        let result = source_statement_b5b_output_with_mutation(
-            &ast,
-            module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |inputs| { let before = format!("{inputs:?}"); match mutation {
-                0 => inputs.reference_input.labels.push(
-                    mizar_checker::source_statement::SourceStatementLabelInput {
-                        statement: mizar_checker::source_statement::SourceStatementId::new(0),
-                        context: mizar_checker::source_statement::SourceStatementContextId::new(0),
-                        candidate:
-                            mizar_checker::source_statement::SourceStatementCandidateFactId::new(0),
-                        origin_path: mizar_resolve::resolved_ast::LabelOriginPath::new(
-                            "local::wrong",
-                        ),
-                        proof_scope: mizar_resolve::labels::LabelScopePath::new(vec![0]),
-                        source_range: range(ast.source_id, 56, 106),
-                        source_ordinal: 0,
-                        visible_after_ordinal: 1,
-                        spelling: "Wrong".to_owned(),
-                        kind: mizar_checker::source_statement::SourceStatementLabelKind::ProofStep,
-                        recovery: mizar_checker::source_statement::SourceStatementRecovery::Normal,
-                    },
-                ),
-                1 => {
-                    inputs.reference_input.citations[0].statement =
-                        mizar_checker::source_statement::SourceStatementId::new(0)
-                }
-                2 => {
-                    inputs.reference_input.citations[0].context =
-                        mizar_checker::source_statement::SourceStatementContextId::new(0)
-                }
-                3 => {
-                    inputs.reference_input.citations[0].target =
-                        mizar_checker::source_statement::SourceStatementCitationTarget::Local(
-                            mizar_checker::source_statement::SourceStatementLabelId::new(0),
-                        )
-                }
-                4 => {
-                    inputs.reference_input.citations[0].proof_scope =
-                        mizar_resolve::labels::LabelScopePath::new(vec![0, 1])
-                }
-                5 => inputs.reference_input.citations[0].source_range.start -= 1,
-                6 => inputs.reference_input.citations[0].ordinal = 1,
-                7 => {
-                    inputs.reference_input.citations[0].recovery =
-                        mizar_checker::source_statement::SourceStatementRecovery::Degraded
-                }
-                _ => unreachable!(),
-            }; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-        )
-        .expect("citation selector");
-        assert!(result.is_err(), "citation mutation {mutation}");
-    }
-
-    for mutation in TASK258B5B_IMPORT_MUTATIONS.iter().copied() {
-        let mutated = task258b5b_resolver_ast_with_import_mutation(
-            &baseline.resolver_ast,
-            &module,
-            mutation,
-        );
-        let rejected = match mutated {
-            Err(_) => true,
-            Ok(mutated) => source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("import mutation selector")
-            .is_err(),
-        };
-        assert!(rejected, "import mutation {mutation:?}");
-    }
-    for mutation in TASK258B5B_RESOLVER_NODE_MUTATIONS.iter().copied() {
-        let mutated = task258b5b_resolver_ast_with_node_mutation(
-            &baseline.resolver_ast,
-            mutation,
-        );
-        let rejected = match mutated {
-            Err(_) => true,
-            Ok(mutated) => source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("resolver-node mutation selector")
-            .is_err(),
-        };
-        assert!(rejected, "resolver-node mutation {mutation:?}");
-    }
-    for mutation in TASK258B5B_PROJECTION_MUTATIONS.iter().copied() {
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}");
-                    inputs.projection = task258b5b_projection_with_mutation(
-                        &inputs.projection,
-                        &module,
-                        wrong_contribution,
-                        import_id,
-                        mutation,
-                    );
-                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("projection selector")
-            .is_err(),
-            "projection mutation {mutation:?}"
-        );
-    }
-    for mutation in TASK258B5B_REFERENCE_MUTATIONS.iter().copied() {
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}");
-                    inputs.reference = task258b5b_reference_with_mutation(
-                        &inputs.reference,
-                        &module,
-                        wrong_node,
-                        import_id,
-                        mutation,
-                    );
-                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("reference selector")
-            .is_err(),
-            "reference mutation {mutation:?}"
-        );
-    }
-    for mutation in 0..2 {
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}");
-                    if mutation == 0 {
-                        inputs.reference_input.citations[0].ordinal = 1;
-                    } else {
-                        inputs.reference = task258b5b_reference_with_mutation(
-                            &inputs.reference,
-                            &module,
-                            wrong_node,
-                            import_id,
-                            Task258B5BReferenceMutation::SourceOrdinal,
-                        );
-                    }
-                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("independent ordinal selector")
-            .is_err(),
-            "independent ordinal mutation {mutation}"
-        );
-    }
-    assert!(
-        source_statement_b5b_output_with_raw_resolver_mutation(
-            &ast,
-            module.clone(),
-            &raw,
-            SOURCE_STATEMENT_B5B_TEXT,
-            |mutated| task258b5a_mutate_raw_resolver(
-                mutated,
-                Task258B5ARawResolverMutation::OwnerOriginRange,
-            ),
-        )
-        .expect("raw resolver selector")
-        .is_err()
-    );
     let (_, _, _, _, replay) = task258b5b_exact_env(258_570);
     assert_eq!(format!("{baseline:?}"), baseline_debug);
     assert_eq!(format!("{replay:?}"), baseline_debug);
@@ -998,38 +556,11 @@ fn task258b5b_lower_import_resolver_and_row_mutations_fail_at_owning_stage() {
 
 #[test]
 fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
-    let (exact_ast, exact_module, raw, enriched, _) = task258b5b_exact_env(258_580);
+    let (exact_ast, exact_module, raw, _, _) = task258b5b_exact_env(258_580);
     let normal = augment_type_elaboration_import_summaries(&exact_ast, &exact_module, raw.clone());
-    assert!(
-        source_statement_output_with_source(
-            &exact_ast,
-            exact_module.clone(),
-            &raw,
-            SOURCE_STATEMENT_B5B_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_output_with_source(
-            &exact_ast,
-            exact_module.clone(),
-            &normal,
-            SOURCE_STATEMENT_B5B_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_output_with_source(
-            &exact_ast,
-            exact_module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-        )
-        .is_none()
-    );
 
     for symbols in [&raw, &normal] {
-        assert_eq!(source_statement_b5b_output_with_mutation(&exact_ast, exact_module.clone(), symbols, SOURCE_STATEMENT_B5B_TEXT, |_| {}).expect("strict B5B opt-in selector").expect_err("raw/default resolver must fail preflight"), "Task258B5B opt-in resolver profile mismatch");
+        assert_eq!(source_statement_b5b_lower_with_mutation(&exact_ast, exact_module.clone(), symbols, SOURCE_STATEMENT_B5B_TEXT, |_| {}).expect("strict B5B opt-in selector").expect_err("raw/default resolver must fail preflight"), "Task258B5B opt-in resolver profile mismatch");
     }
 
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1054,7 +585,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
         let fixture = std::fs::read_to_string(&fixture_path)
             .unwrap_or_else(|error| panic!("read {}: {error}", fixture_path.display()));
         assert_eq!(sha256_text(&fixture), expected_hash, "{relative_path}");
-        let (fixture_ast, fixture_module, _, fixture_raw, diagnostics) =
+        let (fixture_ast, _, _, _, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&fixture, 258_581 + ordinal);
         assert_eq!(diagnostics, 0, "{relative_path}");
         assert!(
@@ -1062,18 +593,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
                 .is_none(),
             "{relative_path}"
         );
-        let fixture_symbols =
-            augment_type_elaboration_import_summaries(&fixture_ast, &fixture_module, fixture_raw);
-        assert!(
-            source_statement_output_with_source(
-                &fixture_ast,
-                fixture_module,
-                &fixture_symbols,
-                &fixture,
-            )
-            .is_none(),
-            "{relative_path}"
-        );
+
     }
     let config = DiscoveryConfig {
         workspace_root: workspace_root.clone(),
@@ -1095,152 +615,7 @@ fn task258b5b_source_fixture_and_import_visibility_near_misses_stay_isolated() {
                 .source_path
                 .ends_with("pass_parser_redefinition_notation_001.miz")
     }));
-    let mut active_count = 0;
-    let mut selected = Vec::new();
-    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        active_count += 1;
-        let frontend = run_frontend(&workspace_root, case, ordinal)
-            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
-        let source = frontend.source_text;
-        let Some(ast) = frontend.ast else {
-            continue;
-        };
-        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
-        if !resolver.detail_keys.is_empty() {
-            continue;
-        }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        if source_statement_output_with_source(&ast, resolver.module, &symbols, &source).is_some() {
-            selected.push(case.id.0.clone());
-        }
-    }
-    assert_eq!(active_count, 273);
-    assert!(
-        selected.is_empty(),
-        "private B5B route selected active type cases: {selected:?}"
-    );
 
-    for (label, source) in [
-        (
-            "missing final LF",
-            SOURCE_STATEMENT_B5B_TEXT.trim_end_matches('\n').to_owned(),
-        ),
-        ("extra final LF", format!("{SOURCE_STATEMENT_B5B_TEXT}\n")),
-        (
-            "import path",
-            SOURCE_STATEMENT_B5B_TEXT.replacen("parser.type_fixtures", "parser.other_fixtures", 1),
-        ),
-        (
-            "theorem label",
-            SOURCE_STATEMENT_B5B_TEXT.replacen(
-                "FormulaStatementImportedPublicTheoremCitationSmoke",
-                "FormulaStatementImportedPublicTheoremCitationOther",
-                1,
-            ),
-        ),
-        (
-            "citation spelling",
-            SOURCE_STATEMENT_B5B_TEXT.replacen("by Ref", "by Other", 1),
-        ),
-        (
-            "qualified citation",
-            SOURCE_STATEMENT_B5B_TEXT.replacen("by Ref", "by parser.type_fixtures.Ref", 1),
-        ),
-        (
-            "citation removed",
-            SOURCE_STATEMENT_B5B_TEXT.replacen(" by Ref", "", 1),
-        ),
-        (
-            "proof removed",
-            SOURCE_STATEMENT_B5B_TEXT.replacen(" proof\n  thus x = x by Ref;\nend;", ";", 1),
-        ),
-    ] {
-        assert!(
-            source_statement_output_with_source(
-                &exact_ast,
-                exact_module.clone(),
-                &enriched,
-                &source,
-            )
-            .is_none(),
-            "{label} loaded-source isolation"
-        );
-        assert!(extract_imported_public_theorem_citation_source_statement(&exact_ast, &source).is_none(), "{label} loaded-source extraction");
-        let (ast, module, _, raw) = task253_ast_from_source_text(&source, 258_583);
-        assert!(extract_imported_public_theorem_citation_source_statement(&ast, &source).is_none(), "{label} parsed-source extraction");
-        let symbols = super::import_fixtures::
-            augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
-                &ast, &module, raw,
-            );
-        assert!(
-            source_statement_output_with_source(&ast, module, &symbols, &source).is_none(),
-            "{label} parsed-source isolation"
-        );
-    }
-    let foreign_source = task258b3m2b2b3a_foreign_source_id(exact_ast.source_id);
-    for mutation in [
-        Task258B5BImportedLabelMutation::Missing,
-        Task258B5BImportedLabelMutation::Duplicate,
-        Task258B5BImportedLabelMutation::Private,
-        Task258B5BImportedLabelMutation::LocalOnly,
-        Task258B5BImportedLabelMutation::ReExported,
-        Task258B5BImportedLabelMutation::WrongKind,
-        Task258B5BImportedLabelMutation::WrongSpelling,
-        Task258B5BImportedLabelMutation::WrongModule,
-        Task258B5BImportedLabelMutation::WrongNamespace,
-        Task258B5BImportedLabelMutation::WrongContribution,
-        Task258B5BImportedLabelMutation::Recovered,
-        Task258B5BImportedLabelMutation::WrongOriginPath,
-        Task258B5BImportedLabelMutation::WrongSource,
-        Task258B5BImportedLabelMutation::WrongRange,
-        Task258B5BImportedLabelMutation::WrongStructuralPath,
-        Task258B5BImportedLabelMutation::MissingEffect,
-        Task258B5BImportedLabelMutation::ExtraEffect,
-        Task258B5BImportedLabelMutation::WrongEffect,
-    ] {
-        let run = || {
-            source_statement_b5b_output_with_resolver_mutation(
-                &exact_ast,
-                exact_module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |symbols| {
-                    let mutated = task258b5b_mutate_imported_label(
-                        &symbols,
-                        &exact_module,
-                        foreign_source,
-                        mutation,
-                    );
-                    assert_ne!(mutated, symbols, "actual opt-in environment mutation");
-                    mutated
-                },
-            )
-            .expect("B5B resolver selector")
-            .expect_err("B5B resolver mutation")
-        };
-        let error = run();
-        assert_ne!(error, mizar_checker::source_statement::SourceStatementError::DependencyMismatch.to_string(), "{mutation:?} must fail real resolver preflight");
-        assert_eq!(error, run(), "{mutation:?}");
-    }
-    let (b1_ast, b1_module, _, _) =
-        task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_584);
-    let (b1, _) = task258_native_output(&b1_ast, &b1_module);
-    assert_eq!(b1.source_term().unwrap().references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), (0..8).collect::<Vec<_>>());
-    let (b5a_ast, b5a_module, _, _) =
-        task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_585);
-    let (b5a, _) = task258_native_output(&b5a_ast, &b5a_module);
-    assert_eq!(b5a.source_term().unwrap().references().iter().map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>(), (0..10).collect::<Vec<_>>());
-    assert!(extract_imported_public_theorem_citation_source_statement(&b1_ast, SOURCE_STATEMENT_B5B_TEXT).is_none());
-    assert!(
-        source_statement_output_with_source(
-            &b1_ast,
-            exact_module.clone(),
-            &enriched,
-            SOURCE_STATEMENT_B5B_TEXT,
-        )
-        .is_none()
-    );
 }
 
 #[test]
@@ -1251,12 +626,12 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
     let (b5a_ast, b5a_module, _, _) =
         task253_ast_from_source_text(SOURCE_STATEMENT_B5A_TEXT, 258_590);
     let (b5a, _) = task258_native_output(&b5a_ast, &b5a_module);
-    let (b5b_ast, b5b_module, _, b5b_symbols, _) = task258b5b_exact_env(258_590);
+    let (b5b_ast, b5b_module, _, _, _) = task258b5b_exact_env(258_590);
     assert_eq!(b1.source_id(), b5b_ast.source_id);
     assert_eq!(b1.module_id(), &b5b_module);
     assert_eq!(b5a.source_id(), b5b_ast.source_id);
     assert_eq!(b5a.module_id(), &b5b_module);
-    assert!(source_statement_output_with_source(&b5b_ast, b5b_module, &b5b_symbols, SOURCE_STATEMENT_B5B_TEXT).is_none());
+
     let b1_statement = b1
         .source_statement()
         .expect("B1 statement")
@@ -1273,30 +648,11 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
         .source_statement_references()
         .expect("B5A references")
         .clone();
-    assert_eq!(task258_reference_syntax_base(&b1)
-        .with_source_statement_references(b1_statement.clone(), b1_references.clone()),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-    assert_eq!(task258_reference_syntax_base(&b1).with_source_statement(b1_statement.clone()),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-    assert_eq!(task258_reference_syntax_base(&b5a).with_source_statement_references(b5a_statement.clone(), b5a_references.clone()), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
-    assert_eq!(task258_reference_syntax_base(&b5a).with_source_statement(b5a_statement.clone()), Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement));
+
     // Accepted B5B pair, cross-profile and duplicate directions live in Checker.
     let task248 = task248_real_output();
     let before = task248.typed_ast.debug_text();
-    for (label, statement, references) in [
-        ("Task248/B1", b1_statement.clone(), b1_references.clone()),
-        ("Task248/B5A", b5a_statement.clone(), b5a_references.clone()),
-    ] {
-        assert_eq!(
-            task248
-                .typed_ast
-                .clone()
-                .with_source_statement_references(statement, references)
-                .unwrap_err(),
-            mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement,
-            "{label}"
-        );
-    }
+
     assert_eq!(task248.typed_ast.debug_text(), before);
     assert_eq!(b1.source_statement(), Some(&b1_statement));
     assert_eq!(
@@ -1312,103 +668,13 @@ fn task258b5b_b5a_profile_installation_orders_and_ownership_are_atomic() {
 
 #[test]
 fn task258b5b_final_clone_debug_replay_and_empty_semantics_are_stable() {
-    let (ast, module, _, enriched, first) = task258b5b_exact_env(258_600);
+    let (_, _, _, _, first) = task258b5b_exact_env(258_600);
     let pristine = format!("{first:?}");
     assert_eq!(format!("{:?}", first.clone()), pristine);
     let (_, _, _, _, second) = task258b5b_exact_env(258_600);
     assert_eq!(format!("{second:?}"), pristine);
-    assert!(source_statement_transport_detail_keys(&ast, module.clone(), &enriched, SOURCE_STATEMENT_B5B_TEXT).is_none());
-    let final_import = first.resolver_ast.imports().imports().next().expect("B5B import").0;
-    let wrong_node = first.resolver_ast.nodes().iter().find_map(|(id, _)| (id.index() == 47).then_some(id)).expect("B5B adjacent resolver node");
-    let wrong_contribution = enriched
-        .contributions()
-        .iter()
-        .find_map(|record| (record.id().index() == 1).then_some(record.id()))
-        .expect("B5B non-label contribution");
-    for mutation in TASK258B5B_IMPORT_MUTATIONS.iter().copied() {
-        let mutated = task258b5b_resolver_ast_with_import_mutation(
-            &first.resolver_ast,
-            &module,
-            mutation,
-        );
-        let rejected = match mutated {
-            Err(_) => true,
-            Ok(mutated) => source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("final import mutation selector")
-            .is_err(),
-        };
-        assert!(rejected, "final import mutation {mutation:?}");
-    }
-    for mutation in TASK258B5B_RESOLVER_NODE_MUTATIONS.iter().copied() {
-        let mutated =
-            task258b5b_resolver_ast_with_node_mutation(&first.resolver_ast, mutation);
-        let rejected = match mutated {
-            Err(_) => true,
-            Ok(mutated) => source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}"); inputs.resolver_ast = mutated; assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("final resolver-node mutation selector")
-            .is_err(),
-        };
-        assert!(rejected, "final resolver-node mutation {mutation:?}");
-    }
-    for mutation in TASK258B5B_PROJECTION_MUTATIONS.iter().copied() {
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}");
-                    inputs.projection = task258b5b_projection_with_mutation(
-                        &inputs.projection,
-                        &module,
-                        wrong_contribution,
-                        final_import,
-                        mutation,
-                    );
-                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("final projection mutation selector")
-            .is_err(),
-            "final projection mutation {mutation:?}"
-        );
-    }
-    for mutation in TASK258B5B_REFERENCE_MUTATIONS.iter().copied() {
-        assert!(
-            source_statement_b5b_output_with_mutation(
-                &ast,
-                module.clone(),
-                &enriched,
-                SOURCE_STATEMENT_B5B_TEXT,
-                |inputs| { let before = format!("{inputs:?}");
-                    inputs.reference = task258b5b_reference_with_mutation(
-                        &inputs.reference,
-                        &module,
-                        wrong_node,
-                        final_import,
-                        mutation,
-                    );
-                 assert_ne!(format!("{inputs:?}"), before, "B5B mutation must change captured input"); },
-            )
-            .expect("final reference mutation selector")
-            .is_err(),
-            "final reference mutation {mutation:?}"
-        );
-    }
+
     let (_, _, _, _, replay) = task258b5b_exact_env(258_600);
     assert_eq!(format!("{first:?}"), pristine);
     assert_eq!(format!("{replay:?}"), pristine);
-    // Immutable final corruption, complete debug and empty semantics are checked
-    // by the private Checker final owner; these loops re-enter the raw producer.
 }

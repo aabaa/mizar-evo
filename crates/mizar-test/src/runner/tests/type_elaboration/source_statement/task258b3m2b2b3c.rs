@@ -119,19 +119,7 @@ fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
     );
 
     let before = (ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone());
-    assert!(source_statement_output_with_source(
-        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-    ).is_none());
-    assert!(source_statement_transport_detail_keys(
-        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-    ).is_none());
-    assert_eq!(
-        source_statement_b3m2b2b3c_output_with_resolver_mutation(
-            &ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-            |symbols| symbols,
-        ).expect("authentic resolver extraction").expect_err("retired statement profile"),
-        "source statement dependency mismatch",
-    );
+
     assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone()), before);
     assert!(extract_choice_witness_source_statement(
         &ast, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
@@ -147,7 +135,7 @@ fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
         Task258B2ResolverMutation::LocalOnly,
         Task258B2ResolverMutation::Recovered,
     ] {
-        let error = source_statement_b3m2b2b3c_output_with_resolver_mutation(
+        let error = source_statement_b3m2b2b3c_lower_with_resolver_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -165,14 +153,7 @@ fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
         };
         assert_eq!(error, expected, "{mutation:?}");
         assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone()), before);
-        assert_eq!(
-            source_statement_b3m2b2b3c_output_with_resolver_mutation(
-                &ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-                |symbols| symbols,
-            ).expect("resolver replay extraction").expect_err("retired statement profile"),
-            "source statement dependency mismatch",
-            "{mutation:?} authentic replay",
-        );
+
         assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone()), before);
         assert!(extract_choice_witness_source_statement(
             &ast, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
@@ -190,7 +171,7 @@ fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
         Task258B3M2B2B3ALabelMutation::ContributionEffectsExtra,
         Task258B3M2B2B3ALabelMutation::ContributionEffectsWrongPath,
     ] {
-        let error = source_statement_b3m2b2b3c_output_with_resolver_mutation(
+        let error = source_statement_b3m2b2b3c_lower_with_resolver_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -208,14 +189,7 @@ fn task258b3m2b2b3c_real_frontend_freezes_choice_witness_contract() {
         };
         assert_eq!(error, expected, "{mutation:?}");
         assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone()), before);
-        assert_eq!(
-            source_statement_b3m2b2b3c_output_with_resolver_mutation(
-                &ast, module.clone(), &symbols, SOURCE_STATEMENT_B3M2B2B3C_TEXT,
-                |symbols| symbols,
-            ).expect("label replay extraction").expect_err("retired statement profile"),
-            "source statement dependency mismatch",
-            "{mutation:?} authentic replay",
-        );
+
         assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone(), resolver.clone()), before);
         assert!(extract_choice_witness_source_statement(
             &ast, SOURCE_STATEMENT_B3M2B2B3C_TEXT,

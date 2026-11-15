@@ -1,5 +1,7 @@
 # mizar-checker: TypedAst
 
+現行 API と履歴 Task 節の境界は [retirement boundary](source_statement.md) に従う。
+
 C2/C3 slot方針は[composition owner](source_formula_composition.md#変数参照predicate-chainの関連付け)に従う。
 
 native proof-local binding は `source_proof_local_binding()` と
@@ -1993,7 +1995,7 @@ capture テストは同じ UID で異なる C と Var 同一性を分け、既�
 
 ## Original-source reserved statement installation
 `TypedAst::with_source_statement_from_original(self, source, symbols, scope)`は[所有constructor](source_statement.md#original-source-reserved-statement-construction)からstatement・任意reference/witness companion・正規native baseを取得し、constructor 所有の認証済み source table を正規 lower base から分離し、source-table slot が空の全体の`self == canonical_base`を要求した後、その table と statement・相互排他的 companion を atomic に移す。不一致は入力を変えず`InvalidSourceStatement`。全node/token/range/edge/root/lower handoff/内部tableを比較し、lower rows一致だけではforeign envelopeを認証しない。
-proofless reserveはreferenceなし、同scopeのB1とdescendant citationのB5Aは共に完全なreference pairを要求する。enriched base・再組み込み・欠落/mixed pair・detached rooted/rootless replayを拒否する。legacy setterのroot guardを維持しnative cardinality fallbackを置かない。public partsにはstatement/reference/witnessがなくgetterはimmutable、cloneは全pairを保持する。新public type/field、unchecked attachment API、captured-source表現は追加しない。
+proofless reserveはreferenceなし、同scopeのB1とdescendant citationのB5Aは共に完全なreference pairを要求する。enriched base・再組み込み・欠落/mixed pair・detached rooted/rootless replayを拒否する。detachedな組込みやnative cardinality fallbackを置かない。public partsにはstatement/reference/witnessがなくgetterはimmutable、cloneは全pairを保持する。新public type/field、unchecked attachment API、captured-source表現は追加しない。
 native B2：実proofがあってもreference handoffなしで同じpublic APIとprivate constructor tupleを再利用し、正規base全体の比較とatomic組み込みを維持する。3個のstatement行を理由にlegacy-setterやdetached replayを認めない。
 native B3は既存private constructor tupleを既存の任意witness handoffで拡張し、既存installation検証を再利用する。正規base全体の比較を保持し、statementと相互排他的なreference/witness companionをatomicに設定し、half pair・orphan・detached replayを拒否する。必須witness companionを理由にauxiliary-family admissionを広げず、public API・field・unchecked attachmentを追加しない。
 native B3Nも正規base全体比較と既存dense name行を含むprivate statement/witness atomic設定を使う。detached/raw組み込みや歴史的proof-local declaration添付からnative admissionを与えず、public field/setterを追加しない。
@@ -2001,9 +2003,7 @@ native mixed B3M1も同じ全体base比較とatomic pairを使い、ordered witn
 native B3M2B1もこの厳密な正規base比較とatomic pairを維持し、一つのunnamed witnessをwrapper primary 2だけへ対応させる。TypeCheckerが別の結果として6 termのcomplete inferenceを確立し、canonical baseはsource-primary site 6件を保持する。wrapper 2にreferenceを置かず、child 3のparentをwrapper 2とし、semanticなtype/context tableは空のまま保つ。Resolver reference 5件、atomic edge、statement input factはそれぞれ実joinを保つ。canonical再構築はpartialなwrapper/child inferenceを拒否し、ID由来のreference clock・detached pair・public installer seamを認めない。
 二重group original-source witnessも同じ全canonical-base比較とstatement/witness atomic組み込みを再利用する。実outer/inner/leaf node、lower handoff、既存の`Unknown`/default node hintと空のsemantic/type/context tableをcanonical base内に保持し、TypedAst field/setter、detached attachment、semantic/type tableを追加しない。
 
-original空集合・単元集合・bare-set choiceのstatement/witness pairも全canonical-base比較後にatomic代入する。実SourceSetと全primary fingerprintを保持し、この限定caseのset-aware companion検証を要求する。stale/partial/enriched/foreign/repeated receiverをhalf pairなしで拒否する。既存combined raw setterはresolved/arena root flagと独立にnative TheoremItem nodeを拒否し、歴史的raw tag/root方針を保つ。root metadataを落としてcanonical組込みを迂回させず、新field/API/caller-built source receiptを作らない。
-
-combined raw set/statement/witness setterの旧B3B/C admissionはCheckerのtest compilationだけに限定する。native-node/root guardは常に維持し、productionのoriginal-source構築と他raw-set familyの既存境界を保つ。
+original空集合・単元集合・bare-set choiceのstatement/witness pairも全canonical-base比較後にatomic代入する。実SourceSetと全primary fingerprintを保持し、この限定caseのset-aware companion検証を要求する。stale/partial/enriched/foreign/repeated receiverをhalf pairなしで拒否する。root metadataを落としてcanonical組込みを迂回させず、新field/API/caller-built source receiptを作らない。
 
 ## Original-source universal composition
 型省略Quantifier/ProofLetが共有するReserve type/head nodeは実module contextを保つ。宣言local contextとの一致例外は、元の省略構文・一意な先行Reserve owner・完全なdefault/type application対応でaliasを認証した場合だけ認める。QuantifierBinder/QuantifierVariableSegmentまたはProofLet/QualifiedVariableSegmentの対応を要求する。明示経路は正確に保ち、型の等しさや任意の祖先contextだけで例外を認めない。

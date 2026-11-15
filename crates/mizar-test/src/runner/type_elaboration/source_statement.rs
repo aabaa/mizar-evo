@@ -9,14 +9,14 @@ use mizar_checker::{
         BindingDiagnosticTable, BindingDraft, BindingKind, BindingRecoveryState, BindingStatus,
         BindingTable, BindingTypeSite, CapturedFreeVariables,
     },
-    source_application::{SourceFunctorApplicationHandoff, SourceFunctorApplicationId},
+    source_application::SourceFunctorApplicationHandoff,
     source_atomic_formula::{
         SourceAssertionAttributeInput, SourceAssertionAttributePolarityInput,
         SourceAssertionTypeHead, SourceAssertionTypeSiteInput, SourceAtomicWrapperInput,
         SourcePredicateCandidateInput, SourcePredicateHeadId, SourcePredicateHeadInput,
         SourcePredicateSegmentInput, SourcePredicateSegmentPolarityInput,
     },
-    source_composite_formula::{SourceCompositeFormulaHandoff, SourceCompositeFormulaId},
+    source_composite_formula::SourceCompositeFormulaHandoff,
     source_formula_composition::SourceFormulaCompositionHandoff,
     source_set_term::{
         SourceSetConditionInput, SourceSetEdgeInput, SourceSetEdgeRole, SourceSetGeneratorId,
@@ -26,12 +26,7 @@ use mizar_checker::{
         SourceSetTypeOwner, SourceSetTypeRole, SourceSetTypeSiteId, SourceSetTypeSiteInput,
         SourceSetWrapperInput,
     },
-    source_statement::{
-        SourceStatementWitnessHandoffInput, SourceStatementWitnessInput,
-        SourceStatementWitnessKind, SourceStatementWitnessNameId, SourceStatementWitnessNameInput,
-        SourceStatementWitnessProducer, SourceStatementWitnessTermTarget,
-    },
-    source_structure::{SourceStructureHandoff, SourceStructureTermId},
+    source_structure::SourceStructureHandoff,
     source_term::{
         SourceNumericTypeRequestInput, SourcePrimaryTermHandoffInput, SourcePrimaryTermInput,
         SourcePrimaryTermKind, SourcePrimaryTermProducer, SourcePrimaryTermRecovery,
@@ -44,9 +39,6 @@ use mizar_checker::{
         BindingContextDraft, BindingContextId, BindingContextLayer, BindingContextOwner,
         BindingContextRecovery, BindingEnv, BindingEnvParts, BindingId,
     },
-    resolved_typed_ast::{
-        ResolvedNodeKindHint, ResolvedNodeKindHintKind, ResolvedTypedAst, SourceNodeRole,
-    },
     source_atomic_formula::{
         SourceAtomicEdgeId, SourceAtomicEdgeInput, SourceAtomicEdgeRole,
         SourceAtomicFormulaHandoff, SourceAtomicFormulaHandoffInput, SourceAtomicFormulaId,
@@ -54,21 +46,8 @@ use mizar_checker::{
         SourceAtomicFormulaRecovery, SourceAtomicRequestInput, SourceAtomicRequestKind,
         SourceAtomicTermTarget,
     },
-    source_statement::{
-        SourceStatementCandidateFactInput, SourceStatementCandidateFactKind,
-        SourceStatementCitationInput, SourceStatementCitationKind, SourceStatementCitationTarget,
-        SourceStatementContextId, SourceStatementContextInput, SourceStatementFormulaTarget,
-        SourceStatementHandoffInput, SourceStatementId, SourceStatementInput,
-        SourceStatementInputFactInput, SourceStatementInputFactKind, SourceStatementKind,
-        SourceStatementProducer, SourceStatementRecovery, SourceStatementReferenceHandoffInput,
-        SourceStatementReferenceProducer, SourceTheoremOwnerId, SourceTheoremOwnerInput,
-        SourceTheoremRole, SourceTheoremStatus,
-    },
-    source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId, SourcePrimaryTermReferenceId},
-    typed_ast::{
-        CoercionTable, InitialObligationTable, LocalTypeContextTable, TypeDiagnosticTable,
-        TypeFactTable, TypeTable, TypedArena, TypedAstParts, TypedNodeId, TypedSiteRef,
-    },
+    source_term::{SourcePrimaryTermHandoff, SourcePrimaryTermId},
+    typed_ast::{TypedArena, TypedNodeId, TypedSiteRef},
 };
 use mizar_checker::{
     source_proof_local_declaration::SourceProofLocalIntakeReceipt,
@@ -90,15 +69,10 @@ use mizar_resolve::{
 #[cfg(test)]
 use mizar_resolve::{
     env::{DefinitionIndex, DefinitionShell, SourceContributionIndex, SymbolEnvIndexes},
-    labels::{
-        LabelProjection, LabelProjectionData, LabelReferenceCandidate, LabelResolver,
-        LabelScopePath,
-    },
+    labels::{LabelProjection, LabelProjectionData, LabelResolver},
     resolved_ast::{
-        FullyQualifiedName, ImportResolution, LabelKind, LabelOriginPath, LocalSymbolId,
-        NameRefTable, NodeReferenceKey, NodeResolutionState, RecoveryState, ReferenceSite,
-        ResolvedArena, ResolvedArenaBuilder, ResolvedAst, ResolvedImport, ResolvedImports,
-        ResolvedNode, SemanticOrigin,
+        FullyQualifiedName, LabelKind, LabelOriginPath, LocalSymbolId, RecoveryState,
+        SemanticOrigin,
     },
 };
 #[cfg(test)]
@@ -138,7 +112,6 @@ use super::{
 
 #[cfg(test)]
 use super::{
-    checker_handoff::assemble_empty_resolved_typed_ast,
     source_ast::{direct_token_texts, structural_child_ids, surface_nodes_with_kind, surface_site},
     source_reserve::extract_builtin_source_reserve_declarations_after_node_guard,
     source_term::source_term_parts_for_context_roots,
@@ -397,9 +370,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B4A_TEXT: &str =
 
 #[cfg(test)]
 const SOURCE_STATEMENT_B4A_LABEL: &str = "FormulaQuantifierBoundUsePayloadBoundary";
-#[cfg(test)]
-const SOURCE_STATEMENT_B4A_SPELLING: &str =
-    "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;";
+
 #[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B4B_TEXT: &str = concat!(
     "theorem FormulaConnectiveGroupingPayloadBoundary: for x being set holds ",
@@ -408,12 +379,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B4B_TEXT: &str = concat!(
 );
 #[cfg(test)]
 const SOURCE_STATEMENT_B4B_LABEL: &str = "FormulaConnectiveGroupingPayloadBoundary";
-#[cfg(test)]
-const SOURCE_STATEMENT_B4B_SPELLING: &str = concat!(
-    "theorem FormulaConnectiveGroupingPayloadBoundary : for x being set holds ",
-    "( ( 0 = 0 & ... & 0 = 3 ) or ( 0 = 0 or ... or 0 = 3 ) ) iff ",
-    "( ( 0 = 0 & 0 = 0 ) or ( 0 = 0 or 0 = 0 ) ) ;",
-);
+
 #[cfg(test)]
 pub(in crate::runner) const SOURCE_STATEMENT_B4C_TEXT: &str = concat!(
     "reserve r for set; theorem FormulaNestedQuantifierPayloadBoundary: ",
@@ -421,11 +387,7 @@ pub(in crate::runner) const SOURCE_STATEMENT_B4C_TEXT: &str = concat!(
 );
 #[cfg(test)]
 const SOURCE_STATEMENT_B4C_LABEL: &str = "FormulaNestedQuantifierPayloadBoundary";
-#[cfg(test)]
-const SOURCE_STATEMENT_B4C_SPELLING: &str = concat!(
-    "theorem FormulaNestedQuantifierPayloadBoundary : ",
-    "for x being set st x = x ex y being set st for r st r = y holds x = r ;",
-);
+
 #[cfg(test)]
 const TASK258B4A_SURFACE_KINDS: [&str; 26] = [
     "Token(SurfaceToken { kind: ReservedWord, text: \"theorem\" })",
@@ -1989,11 +1951,6 @@ const SOURCE_STATEMENT_B5A_LABEL: &str = "FormulaStatementAncestorLabelDescendan
 #[cfg(test)]
 const SOURCE_STATEMENT_B5B_LABEL: &str = "FormulaStatementImportedPublicTheoremCitationSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B5B_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementImportedPublicTheoremCitationSmoke : x = x proof thus x = x by Ref ; end ;",
-    "thus x = x by Ref ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B2_LABEL: &str = "FormulaStatementSingleAssumptionSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3_LABEL: &str = "FormulaStatementSingleWitnessSmoke";
@@ -2002,80 +1959,30 @@ const SOURCE_STATEMENT_B3N_LABEL: &str = "FormulaStatementNamedWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2A_LABEL: &str = "FormulaStatementNumeralWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2A_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementNumeralWitnessSmoke : x = x proof take 101 ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B1_LABEL: &str = "FormulaStatementParenthesizedWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2A_LABEL: &str = "FormulaStatementNestedParenthesizedWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B1A_LABEL: &str = "FormulaStatementApplicationWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B1A_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementApplicationWitnessSmoke : x = x proof take 1 ++ 2 ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B1B1_LABEL: &str =
     "FormulaStatementParenthesizedApplicationWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B1B1_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementParenthesizedApplicationWitnessSmoke : x = x proof take ( 1 ++ 2 ) ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2A_LABEL: &str = "FormulaStatementStructureConstructorWitnessSmoke";
-#[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B2A_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementStructureConstructorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2B_LABEL: &str = "FormulaStatementStructureSelectorWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementStructureSelectorWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) . x ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B2C_LABEL: &str = "FormulaStatementStructureUpdateWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementStructureUpdateWitnessSmoke : x = x proof take TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 ) ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3A_LABEL: &str = "FormulaStatementSetEnumerationWitnessSmoke";
-#[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementSetEnumerationWitnessSmoke : x = x proof take { 1 , 2 } ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3B_LABEL: &str = "FormulaStatementEmptySetEnumerationWitnessSmoke";
 #[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3C_LABEL: &str = "FormulaStatementChoiceWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementChoiceWitnessSmoke : x = x proof take the set ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3D_LABEL: &str = "FormulaStatementQuaWitnessSmoke";
 #[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B3D_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementQuaWitnessSmoke : x = x proof take 4 qua set ; thus x = x ; end ;",
-    "thus x = x ;",
-];
-#[cfg(test)]
 const SOURCE_STATEMENT_B3M2B2B3E_LABEL: &str = "FormulaStatementComprehensionWitnessSmoke";
-#[cfg(test)]
-const SOURCE_STATEMENT_B3M2B2B3E_SPELLINGS: [&str; 2] = [
-    "theorem FormulaStatementComprehensionWitnessSmoke : x = x proof take { 3 where candidate255 is set } ; thus x = x ; end ;",
-    "thus x = x ;",
-];
 #[cfg(test)]
 const SOURCE_STATEMENT_CONFIG: SourceReservedVariableBinaryFormulaConfig =
     SourceReservedVariableBinaryFormulaConfig {
@@ -2206,7 +2113,6 @@ pub(in crate::runner) struct SourceStatementB3M2AExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 5],
@@ -2263,15 +2169,12 @@ pub(in crate::runner) struct SourceStatementB3M2B2B1AExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 6],
     pub(in crate::runner) term_ranges: [SourceRange; 6],
     pub(in crate::runner) take_site: TypedSiteRef,
-    pub(in crate::runner) take_range: SourceRange,
     pub(in crate::runner) witness_site: TypedSiteRef,
-    pub(in crate::runner) witness_range: SourceRange,
     pub(in crate::runner) application_node: usize,
     pub(in crate::runner) proof_range: SourceRange,
 }
@@ -2283,7 +2186,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B1B1Extraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 6],
@@ -2304,7 +2206,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2AExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 6],
@@ -2324,7 +2225,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2BExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 6],
@@ -2344,7 +2244,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B2CExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 7],
@@ -2364,7 +2263,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3AExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 6],
@@ -2424,7 +2322,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3DExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 5],
@@ -2444,7 +2341,6 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3EExtraction {
     pub(in crate::runner) theorem_range: SourceRange,
     pub(in crate::runner) label_range: SourceRange,
     pub(in crate::runner) statement_sites: [TypedSiteRef; 2],
-    pub(in crate::runner) statement_ranges: [SourceRange; 2],
     pub(in crate::runner) formula_sites: [TypedSiteRef; 2],
     pub(in crate::runner) formula_ranges: [SourceRange; 2],
     pub(in crate::runner) term_sites: [TypedSiteRef; 5],
@@ -2461,34 +2357,25 @@ pub(in crate::runner) struct SourceStatementB3M2B2B3EExtraction {
 #[derive(Debug, Clone)]
 struct SourceStatementWitnessItemExtraction {
     site: TypedSiteRef,
-    range: SourceRange,
     name: Option<(TypedSiteRef, SourceRange)>,
-    spelling: &'static str,
 }
 
 #[cfg(test)]
 #[derive(Debug, Clone)]
 struct SourceStatementWitnessExtraction {
-    theorem_site: TypedSiteRef,
     theorem_range: SourceRange,
     label_range: SourceRange,
     statement_sites: [TypedSiteRef; 2],
-    statement_ranges: [SourceRange; 2],
     formula_sites: [TypedSiteRef; 2],
     formula_ranges: [SourceRange; 2],
     term_sites: Vec<TypedSiteRef>,
     term_ranges: Vec<SourceRange>,
     take_site: TypedSiteRef,
-    take_range: SourceRange,
     witnesses: Vec<SourceStatementWitnessItemExtraction>,
     proof_range: SourceRange,
     label: &'static str,
-    spellings: &'static [&'static str; 2],
     task: &'static str,
-    node_count: usize,
-    root: usize,
     atomic_term_starts: [usize; 2],
-    input_fact_reference_starts: [usize; 2],
     application_node: Option<usize>,
     application_wrapper_node: Option<usize>,
     structure_node: Option<usize>,
@@ -2502,31 +2389,22 @@ struct SourceStatementWitnessExtraction {
 impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2AExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "101",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2A_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2A_SPELLINGS,
             task: "Task258B3M2A",
-            node_count: 49,
-            root: 48,
             atomic_term_starts: [0, 3],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2542,31 +2420,22 @@ impl From<SourceStatementB3M2AExtraction> for SourceStatementWitnessExtraction {
 impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B1AExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "1 ++ 2",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B1A_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B1A_SPELLINGS,
             task: "Task258B3M2B2B1A",
-            node_count: 63,
-            root: 62,
             atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 2],
             application_node: Some(extracted.application_node),
             application_wrapper_node: None,
             structure_node: None,
@@ -2582,31 +2451,22 @@ impl From<SourceStatementB3M2B2B1AExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B1B1Extraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "( 1 ++ 2 )",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B1B1_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B1B1_SPELLINGS,
             task: "Task258B3M2B2B1B1",
-            node_count: 67,
-            root: 66,
             atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 2],
             application_node: Some(extracted.application_node),
             application_wrapper_node: Some(extracted.application_wrapper_node),
             structure_node: None,
@@ -2622,31 +2482,22 @@ impl From<SourceStatementB3M2B2B1B1Extraction> for SourceStatementWitnessExtract
 impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2AExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "TypeCaseStruct ( x : 1 , y : 2 )",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B2A_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B2A_SPELLINGS,
             task: "Task258B3M2B2B2A",
-            node_count: 76,
-            root: 75,
             atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: Some(extracted.structure_node),
@@ -2662,31 +2513,22 @@ impl From<SourceStatementB3M2B2B2AExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2BExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "TypeCaseStruct ( x : 1 , y : 2 ) . x",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B2B_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B2B_SPELLINGS,
             task: "Task258B3M2B2B2B",
-            node_count: 79,
-            root: 78,
             atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2702,31 +2544,22 @@ impl From<SourceStatementB3M2B2B2BExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B2CExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "TypeCaseStruct ( x : 1 , y : 2 ) with ( x := 3 )",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B2C_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B2C_SPELLINGS,
             task: "Task258B3M2B2B2C",
-            node_count: 86,
-            root: 85,
             atomic_term_starts: [0, 5],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2742,31 +2575,22 @@ impl From<SourceStatementB3M2B2B2CExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B3AExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3AExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "{ 1 , 2 }",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B3A_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B3A_SPELLINGS,
             task: "Task258B3M2B2B3A",
-            node_count: 57,
-            root: 56,
             atomic_term_starts: [0, 4],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2782,31 +2606,22 @@ impl From<SourceStatementB3M2B2B3AExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B3CExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3CExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "the set",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B3C_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B3C_SPELLINGS,
             task: "Task258B3M2B2B3C",
-            node_count: 52,
-            root: 51,
             atomic_term_starts: [0, 2],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2822,31 +2637,22 @@ impl From<SourceStatementB3M2B2B3CExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B3DExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3DExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "4 qua set",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B3D_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B3D_SPELLINGS,
             task: "Task258B3M2B2B3D",
-            node_count: 54,
-            root: 53,
             atomic_term_starts: [0, 3],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2862,31 +2668,22 @@ impl From<SourceStatementB3M2B2B3DExtraction> for SourceStatementWitnessExtracti
 impl From<SourceStatementB3M2B2B3EExtraction> for SourceStatementWitnessExtraction {
     fn from(extracted: SourceStatementB3M2B2B3EExtraction) -> Self {
         Self {
-            theorem_site: extracted.theorem_site,
             theorem_range: extracted.theorem_range,
             label_range: extracted.label_range,
             statement_sites: extracted.statement_sites,
-            statement_ranges: extracted.statement_ranges,
             formula_sites: extracted.formula_sites,
             formula_ranges: extracted.formula_ranges,
             term_sites: extracted.term_sites.into(),
             term_ranges: extracted.term_ranges.into(),
             take_site: extracted.take_site,
-            take_range: extracted.take_range,
             witnesses: vec![SourceStatementWitnessItemExtraction {
                 site: extracted.witness_site,
-                range: extracted.witness_range,
                 name: None,
-                spelling: "{ 3 where candidate255 is set }",
             }],
             proof_range: extracted.proof_range,
             label: SOURCE_STATEMENT_B3M2B2B3E_LABEL,
-            spellings: &SOURCE_STATEMENT_B3M2B2B3E_SPELLINGS,
             task: "Task258B3M2B2B3E",
-            node_count: 60,
-            root: 59,
             atomic_term_starts: [0, 3],
-            input_fact_reference_starts: [0, 2],
             application_node: None,
             application_wrapper_node: None,
             structure_node: None,
@@ -2907,7 +2704,6 @@ pub(in crate::runner) struct SourceStatementB4ARouteInputs {
     pub(in crate::runner) atomic: SourceAtomicFormulaHandoff,
     pub(in crate::runner) composite: SourceCompositeFormulaHandoff,
     pub(in crate::runner) composition: SourceFormulaCompositionHandoff,
-    pub(in crate::runner) statement: SourceStatementHandoffInput,
 }
 
 #[cfg(test)]
@@ -2922,12 +2718,6 @@ pub(in crate::runner) struct SourceStatementB1RouteInputs {
     pub(in crate::runner) arena: TypedArena,
     pub(in crate::runner) primary: SourcePrimaryTermHandoff,
     pub(in crate::runner) atomic: SourceAtomicFormulaHandoff,
-    pub(in crate::runner) statement: SourceStatementHandoffInput,
-    pub(in crate::runner) resolver_ast: ResolvedAst,
-    pub(in crate::runner) projection: LabelProjection,
-    pub(in crate::runner) reference: LabelReferenceCandidate,
-    pub(in crate::runner) resolution: mizar_resolve::labels::LabelResolutionResult,
-    pub(in crate::runner) reference_input: SourceStatementReferenceHandoffInput,
 }
 
 #[cfg(test)]
@@ -2940,8 +2730,6 @@ pub(in crate::runner) struct SourceStatementB3RouteInputs {
     pub(in crate::runner) arena: TypedArena,
     pub(in crate::runner) primary: SourcePrimaryTermHandoff,
     pub(in crate::runner) atomic: SourceAtomicFormulaHandoff,
-    pub(in crate::runner) statement: SourceStatementHandoffInput,
-    pub(in crate::runner) witness: SourceStatementWitnessHandoffInput,
     pub(in crate::runner) application: Option<SourceFunctorApplicationHandoff>,
     pub(in crate::runner) structure: Option<SourceStructureHandoff>,
     pub(in crate::runner) set_term: Option<SourceSetTermHandoff>,
@@ -2972,8 +2760,6 @@ pub(in crate::runner) type SourceStatementB3M2B2B3ERouteInputs = SourceStatement
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::runner) enum SourceStatementB3M2B2B3AStage {
     Task256,
-    Task258,
-    Witness,
 }
 
 #[cfg(test)]
@@ -2995,50 +2781,12 @@ pub(in crate::runner) type SourceStatementB3M2B2B3ELowerStage = SourceStatementB
 
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3A_TASK256_FIELD_COUNT: usize = 72;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3A_TASK258_FIELD_COUNT: usize = 62;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3A_WITNESS_FIELD_COUNT: usize = 21;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3D_TASK48_FIELD_COUNT: usize = 32;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3D_TASK252_FIELD_COUNT: usize = 70;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3D_TASK255_FIELD_COUNT: usize = 44;
+
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3D_TASK256_FIELD_COUNT: usize = 72;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3D_TASK258_FIELD_COUNT: usize = 62;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3D_WITNESS_FIELD_COUNT: usize = 21;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3E_TASK48_FIELD_COUNT: usize = 32;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3E_TASK252_FIELD_COUNT: usize = 70;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3E_TASK255_FIELD_COUNT: usize = 53;
+
 #[cfg(test)]
 pub(in crate::runner) const TASK258B3M2B2B3E_TASK256_FIELD_COUNT: usize = 72;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3E_TASK258_FIELD_COUNT: usize = 62;
-#[cfg(test)]
-pub(in crate::runner) const TASK258B3M2B2B3E_WITNESS_FIELD_COUNT: usize = 21;
-
-#[cfg(test)]
-#[derive(Debug)]
-pub(in crate::runner) struct SourceStatementRouteOutput {
-    pub(in crate::runner) typed_ast: TypedAst,
-    pub(in crate::runner) resolved: ResolvedTypedAst,
-}
-
-pub(in crate::runner) fn source_statement_transport_detail_keys(
-    _ast: &SurfaceAst,
-    _module: ModuleId,
-    _symbols: &SymbolEnv,
-    _source_text: &str,
-) -> Option<Vec<String>> {
-    None
-}
 
 #[cfg(test)]
 pub(in crate::runner) fn extract_source_reserved_variable_theorem_statement(
@@ -3885,7 +3633,6 @@ pub(in crate::runner) fn extract_numeral_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [range(ast.source_id, 19, 106), range(ast.source_id, 90, 101)],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         term_sites: term_sites.try_into().ok()?,
@@ -4738,18 +4485,12 @@ pub(in crate::runner) fn extract_application_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 48, 142),
-            range(ast.source_id, 126, 137),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         term_sites: term_sites.try_into().ok()?,
         term_ranges: root_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         take_site: surface_site(take_id),
-        take_range: take.range,
         witness_site: surface_site(witness_id),
-        witness_range: witness.range,
         application_node: application_id.index(),
         proof_range: proof.range,
     })
@@ -4859,10 +4600,6 @@ pub(in crate::runner) fn extract_wrapped_application_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 48, 157),
-            range(ast.source_id, 141, 152),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: [
             range(ast.source_id, 110, 115),
@@ -5039,10 +4776,6 @@ pub(in crate::runner) fn extract_structure_constructor_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 48, 171),
-            range(ast.source_id, 155, 166),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         term_sites: term_sites.try_into().ok()?,
@@ -5216,10 +4949,6 @@ pub(in crate::runner) fn extract_structure_selector_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 48, 170),
-            range(ast.source_id, 154, 165),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         term_sites: term_sites.try_into().ok()?,
@@ -5393,10 +5122,6 @@ pub(in crate::runner) fn extract_structure_update_witness_source_statement(
         theorem_range: theorem.range,
         label_range: label.range,
         statement_sites: statement_ids.map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 48, 180),
-            range(ast.source_id, 164, 175),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: formula_ranges.map(|(start, end)| range(ast.source_id, start, end)),
         term_sites: term_sites.try_into().ok()?,
@@ -5746,10 +5471,6 @@ pub(in crate::runner) fn extract_set_enumeration_witness_source_statement(
         theorem_range: theorem.range,
         label_range: ast.node(label_id)?.range,
         statement_sites: [theorem_id, conclusion_id].map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 19, 116),
-            range(ast.source_id, 100, 111),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: [range(ast.source_id, 71, 76), range(ast.source_id, 105, 110)],
         term_sites: term_ids.map(surface_site),
@@ -14456,24 +14177,14 @@ fn surface_is_descendant(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_output_with_source(
-    _ast: &SurfaceAst,
-    _module: ModuleId,
-    _symbols: &SymbolEnv,
-    _source_text: &str,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    None
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3e_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ERouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b3e_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b3e_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -14483,7 +14194,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_stage_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3e_lower_with_stage_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -14501,24 +14212,18 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_stage_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         Some((stage, field)),
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => Ok(inputs),
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
+    ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_lower_stage_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3e_lower_with_lower_stage_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -14526,16 +14231,15 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_lower_stage_muta
     stage: SourceStatementB3M2B2B3ELowerStage,
     field: usize,
 ) -> Option<Result<SourceStatementB3M2B2B3ERouteInputs, String>> {
-    let mut captured = None;
-    let result = source_statement_b3m2b2b3e_output_with_source_and_mutation_impl(
+    let mut inputs = match source_statement_b3m2b2b3e_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
         source_text,
-        |inputs| captured = Some(inputs.clone()),
-    )?;
-    let Some(mut inputs) = captured else {
-        return Some(Err(result.expect_err("refusal before lower capture")));
+        |_| {},
+    )? {
+        Ok(inputs) => inputs,
+        Err(error) => return Some(Err(error)),
     };
     Some((|| {
         match stage {
@@ -14574,42 +14278,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_lower_stage_muta
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_post_auth_family_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ERouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_comprehension_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3E_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        &symbols,
-        extracted.into(),
-        |_| {},
-        None,
-        mutate,
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3e_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_comprehension_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14620,7 +14295,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3e_output(
+    Some(build_source_statement_b3m2b2b3e_lower(
         ast,
         module,
         &symbols,
@@ -14644,13 +14319,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b3e_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b3e_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b3e_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ERouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_comprehension_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14661,20 +14336,20 @@ fn source_statement_b3m2b2b3e_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3e_output(
+    Some(build_source_statement_b3m2b2b3e_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3d_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3DRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b3d_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -14684,7 +14359,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_stage_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3d_lower_with_stage_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -14702,24 +14377,18 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_stage_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         Some((stage, field)),
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => Ok(inputs),
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
+    ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_lower_stage_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3d_lower_with_lower_stage_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -14727,16 +14396,15 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_lower_stage_muta
     stage: SourceStatementB3M2B2B3DLowerStage,
     field: usize,
 ) -> Option<Result<SourceStatementB3M2B2B3DRouteInputs, String>> {
-    let mut captured = None;
-    let result = source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
+    let mut inputs = match source_statement_b3m2b2b3d_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
         source_text,
-        |inputs| captured = Some(inputs.clone()),
-    )?;
-    let Some(mut inputs) = captured else {
-        return Some(Err(result.expect_err("refusal before lower capture")));
+        |_| {},
+    )? {
+        Ok(inputs) => inputs,
+        Err(error) => return Some(Err(error)),
     };
     Some((|| {
         match stage {
@@ -14774,42 +14442,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_lower_stage_muta
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_post_auth_family_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3DRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_qua_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3D_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        &symbols,
-        extracted.into(),
-        |_| {},
-        None,
-        mutate,
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3d_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_qua_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14820,7 +14459,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3d_output(
+    Some(build_source_statement_b3m2b2b3d_lower(
         ast,
         module,
         &symbols,
@@ -14844,13 +14483,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b3d_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b3d_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3DRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_qua_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14861,19 +14500,19 @@ fn source_statement_b3m2b2b3d_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3d_output(
+    Some(build_source_statement_b3m2b2b3d_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3c_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_choice_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -14884,7 +14523,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3c_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3c_output(
+    Some(build_source_statement_b3m2b2b3c_lower(
         ast,
         module,
         &symbols,
@@ -14922,14 +14561,14 @@ pub(in crate::runner) fn source_statement_b3m2b2b3b_resolver_env_for_test(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3a_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b3a_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -14939,7 +14578,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_stage_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3a_lower_with_stage_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -14957,71 +14596,24 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_stage_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         Some((stage, field)),
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => {
-            let expected = match stage {
-                SourceStatementB3M2B2B3AStage::Task256 => {
-                    "Task256: source statement dependency mismatch"
-                }
-                SourceStatementB3M2B2B3AStage::Task258 => {
-                    "Task258: source statement dependency mismatch"
-                }
-                SourceStatementB3M2B2B3AStage::Witness => "source statement dependency mismatch",
-            };
-            assert_eq!(result.expect_err("retired raw profile"), expected);
-            Ok(inputs)
-        }
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_post_auth_family_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B3M2B2B3A_LABEL,
-        extracted.label_range,
-    ) {
-        Ok(symbols) => symbols,
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        &symbols,
-        extracted.into(),
-        |_| {},
-        None,
-        mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b3a_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15032,7 +14624,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3a_output(
+    Some(build_source_statement_b3m2b2b3a_lower(
         ast,
         module,
         &symbols,
@@ -15056,13 +14648,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b3a_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b3a_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_set_enumeration_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15073,20 +14665,20 @@ fn source_statement_b3m2b2b3a_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b3a_output(
+    Some(build_source_statement_b3m2b2b3a_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2c_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b2c_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15096,7 +14688,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2c_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -15113,26 +14705,14 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         None,
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => {
-            assert_eq!(
-                result.expect_err("retired raw profile"),
-                "source statement dependency mismatch"
-            );
-            Ok(inputs)
-        }
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
+    ))
 }
 
 #[cfg(test)]
@@ -15150,13 +14730,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b2c_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b2c_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_structure_update_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15167,20 +14747,20 @@ fn source_statement_b3m2b2b2c_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2c_output(
+    Some(build_source_statement_b3m2b2b2c_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2b_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2b_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b2b_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15190,13 +14770,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b2b_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2b_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2b_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_structure_selector_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15207,7 +14787,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2b_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2b_output(
+    Some(build_source_statement_b3m2b2b2b_lower(
         ast,
         module,
         &symbols,
@@ -15231,13 +14811,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b2b_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b2b_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_structure_selector_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15248,20 +14828,20 @@ fn source_statement_b3m2b2b2b_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2b_output(
+    Some(build_source_statement_b3m2b2b2b_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2a_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2a_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b2a_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15271,13 +14851,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b2a_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b2a_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b2a_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_structure_constructor_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15288,7 +14868,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b2a_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2a_output(
+    Some(build_source_statement_b3m2b2b2a_lower(
         ast,
         module,
         &symbols,
@@ -15312,13 +14892,13 @@ pub(in crate::runner) fn source_statement_b3m2b2b2a_resolver_env_for_test(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b2a_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_structure_constructor_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15329,20 +14909,20 @@ fn source_statement_b3m2b2b2a_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b2a_output(
+    Some(build_source_statement_b3m2b2b2a_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b1b1_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b1b1_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15352,7 +14932,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -15369,36 +14949,24 @@ pub(in crate::runner) fn source_statement_b3m2b2b1b1_output_with_resolver_mutati
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         None,
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => {
-            assert_eq!(
-                result.expect_err("retired raw profile"),
-                "source statement dependency mismatch"
-            );
-            Ok(inputs)
-        }
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
+    ))
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b1b1_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_wrapped_application_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15409,20 +14977,20 @@ fn source_statement_b3m2b2b1b1_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b1b1_output(
+    Some(build_source_statement_b3m2b2b1b1_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b1a_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2b2b1a_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15432,7 +15000,7 @@ pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2b2b1a_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
@@ -15449,36 +15017,24 @@ pub(in crate::runner) fn source_statement_b3m2b2b1a_output_with_resolver_mutatio
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    let mut captured = None;
-    let result = build_source_statement_witness_output_with_controls(
+    Some(build_source_statement_witness_lower_with_controls(
         ast,
         module,
         &symbols,
         extracted.into(),
         |_| {},
         None,
-        |inputs| captured = Some(inputs.clone()),
-    );
-    Some(match captured {
-        Some(inputs) => {
-            assert_eq!(
-                result.expect_err("retired raw profile"),
-                "source statement dependency mismatch"
-            );
-            Ok(inputs)
-        }
-        None => Err(result.expect_err("lower producer refused before capture")),
-    })
+    ))
 }
 
 #[cfg(test)]
-fn source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
+fn source_statement_b3m2b2b1a_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_application_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15489,20 +15045,20 @@ fn source_statement_b3m2b2b1a_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2b2b1a_output(
+    Some(build_source_statement_b3m2b2b1a_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2a_output_with_mutation(
+pub(in crate::runner) fn source_statement_b3m2a_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b3m2a_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
+    source_statement_b3m2a_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15512,13 +15068,13 @@ pub(in crate::runner) fn source_statement_b3m2a_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b3m2a_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b3m2a_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_numeral_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15529,7 +15085,7 @@ pub(in crate::runner) fn source_statement_b3m2a_output_with_resolver_mutation(
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2a_output(
+    Some(build_source_statement_b3m2a_lower(
         ast,
         module,
         &symbols,
@@ -15539,13 +15095,13 @@ pub(in crate::runner) fn source_statement_b3m2a_output_with_resolver_mutation(
 }
 
 #[cfg(test)]
-fn source_statement_b3m2a_output_with_source_and_mutation_impl(
+fn source_statement_b3m2a_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB3M2ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB3RouteInputs, String>> {
     let extracted = extract_numeral_witness_source_statement(ast, source_text)?;
     let symbols = match enrich_source_statement_resolver_env_for_owner(
         &module,
@@ -15556,19 +15112,19 @@ fn source_statement_b3m2a_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b3m2a_output(
+    Some(build_source_statement_b3m2a_lower(
         ast, module, &symbols, extracted, mutate,
     ))
 }
 
 #[cfg(test)]
-fn source_statement_b4c_output_with_source_and_mutation_impl(
+fn source_statement_b4c_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4CRouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4C_TEXT {
         return None;
     }
@@ -15588,7 +15144,7 @@ fn source_statement_b4c_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4c_output(
+    Some(build_source_statement_b4c_lower(
         ast,
         module,
         raw_symbols,
@@ -15599,14 +15155,14 @@ fn source_statement_b4c_output_with_source_and_mutation_impl(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4c_output_with_mutation(
+pub(in crate::runner) fn source_statement_b4c_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b4c_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB4CRouteInputs, String>> {
+    source_statement_b4c_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15616,13 +15172,13 @@ pub(in crate::runner) fn source_statement_b4c_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4c_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b4c_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4CRouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4C_TEXT {
         return None;
     }
@@ -15642,7 +15198,7 @@ pub(in crate::runner) fn source_statement_b4c_output_with_resolver_mutation(
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4c_output(
+    Some(build_source_statement_b4c_lower(
         ast,
         module,
         raw_symbols,
@@ -15653,13 +15209,13 @@ pub(in crate::runner) fn source_statement_b4c_output_with_resolver_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4c_output_with_raw_resolver_mutation(
+pub(in crate::runner) fn source_statement_b4c_lower_with_raw_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4CRouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4C_TEXT {
         return None;
     }
@@ -15679,7 +15235,7 @@ pub(in crate::runner) fn source_statement_b4c_output_with_raw_resolver_mutation(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4c_output(
+    Some(build_source_statement_b4c_lower(
         ast,
         module,
         &raw_symbols,
@@ -15690,13 +15246,13 @@ pub(in crate::runner) fn source_statement_b4c_output_with_raw_resolver_mutation(
 }
 
 #[cfg(test)]
-fn source_statement_b4b_output_with_source_and_mutation_impl(
+fn source_statement_b4b_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4BRouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4B_TEXT {
         return None;
     }
@@ -15716,7 +15272,7 @@ fn source_statement_b4b_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4b_output(
+    Some(build_source_statement_b4b_lower(
         ast,
         module,
         raw_symbols,
@@ -15727,14 +15283,14 @@ fn source_statement_b4b_output_with_source_and_mutation_impl(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4b_output_with_mutation(
+pub(in crate::runner) fn source_statement_b4b_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b4b_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB4BRouteInputs, String>> {
+    source_statement_b4b_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15744,13 +15300,13 @@ pub(in crate::runner) fn source_statement_b4b_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4b_output_with_resolver_mutation(
+pub(in crate::runner) fn source_statement_b4b_lower_with_resolver_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4BRouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4B_TEXT {
         return None;
     }
@@ -15770,7 +15326,7 @@ pub(in crate::runner) fn source_statement_b4b_output_with_resolver_mutation(
         Ok(symbols) => mutate(symbols),
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4b_output(
+    Some(build_source_statement_b4b_lower(
         ast,
         module,
         raw_symbols,
@@ -15781,13 +15337,13 @@ pub(in crate::runner) fn source_statement_b4b_output_with_resolver_mutation(
 }
 
 #[cfg(test)]
-fn source_statement_b4a_output_with_source_and_mutation_impl(
+fn source_statement_b4a_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB4ARouteInputs, String>> {
     if source_text != SOURCE_STATEMENT_B4A_TEXT {
         return None;
     }
@@ -15804,7 +15360,7 @@ fn source_statement_b4a_output_with_source_and_mutation_impl(
         Ok(symbols) => symbols,
         Err(error) => return Some(Err(error)),
     };
-    Some(build_source_statement_b4a_output(
+    Some(build_source_statement_b4a_lower(
         ast,
         module,
         raw_symbols,
@@ -15815,14 +15371,14 @@ fn source_statement_b4a_output_with_source_and_mutation_impl(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4a_output_with_mutation(
+pub(in crate::runner) fn source_statement_b4a_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4ARouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b4a_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB4ARouteInputs, String>> {
+    source_statement_b4a_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15832,48 +15388,14 @@ pub(in crate::runner) fn source_statement_b4a_output_with_mutation(
 }
 
 #[cfg(test)]
-pub(in crate::runner) fn source_statement_b4a_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    if source_text != SOURCE_STATEMENT_B4A_TEXT {
-        return None;
-    }
-    if !exact_task258b4a_surface_profile(ast, source_text) {
-        return Some(Err("Task258B4A exact surface identity mismatch".to_owned()));
-    }
-    let raw_symbols = symbols;
-    let symbols = match enrich_source_statement_resolver_env_for_owner(
-        &module,
-        symbols,
-        SOURCE_STATEMENT_B4A_LABEL,
-        range(ast.source_id, 8, 48),
-    ) {
-        Ok(symbols) => mutate(symbols),
-        Err(error) => return Some(Err(error)),
-    };
-    Some(build_source_statement_b4a_output(
-        ast,
-        module,
-        raw_symbols,
-        &symbols,
-        source_text,
-        |_| {},
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b5b_output_with_mutation(
+pub(in crate::runner) fn source_statement_b5b_lower_with_mutation(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB5BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    source_statement_b5b_output_with_source_and_mutation_impl(
+) -> Option<Result<SourceStatementB5BRouteInputs, String>> {
+    source_statement_b5b_lower_with_source_and_mutation_impl(
         ast,
         module,
         symbols,
@@ -15883,73 +15405,19 @@ pub(in crate::runner) fn source_statement_b5b_output_with_mutation(
 }
 
 #[cfg(test)]
-fn source_statement_b5b_output_with_source_and_mutation_impl(
+fn source_statement_b5b_lower_with_source_and_mutation_impl(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB5BRouteInputs),
-) -> Option<Result<SourceStatementRouteOutput, String>> {
+) -> Option<Result<SourceStatementB5BRouteInputs, String>> {
     let extracted = extract_imported_public_theorem_citation_source_statement(ast, source_text)?;
     if let Err(error) = validate_task258b5b_enriched_resolver_env(ast, &module, symbols) {
         return Some(Err(error));
     }
-    Some(build_source_statement_b5b_output(
+    Some(build_source_statement_b5b_lower(
         ast, module, symbols, extracted, mutate,
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b5b_output_with_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_imported_public_theorem_citation_source_statement(ast, source_text)?;
-    if let Err(error) = validate_task258b5b_enriched_resolver_env(ast, &module, symbols) {
-        return Some(Err(error));
-    }
-    let symbols = mutate(symbols.clone());
-    if let Err(error) = validate_task258b5b_enriched_resolver_env(ast, &module, &symbols) {
-        return Some(Err(error));
-    }
-    Some(build_source_statement_b5b_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
-    ))
-}
-
-#[cfg(test)]
-pub(in crate::runner) fn source_statement_b5b_output_with_raw_resolver_mutation(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbols: &SymbolEnv,
-    source_text: &str,
-    mutate: impl FnOnce(SymbolEnv) -> SymbolEnv,
-) -> Option<Result<SourceStatementRouteOutput, String>> {
-    let extracted = extract_imported_public_theorem_citation_source_statement(ast, source_text)?;
-    let symbols = mutate(symbols.clone());
-    if let Err(error) = validate_task258b5b_raw_resolver_env(ast, &module, &symbols) {
-        return Some(Err(error));
-    }
-    let symbols = crate::runner::import_fixtures::
-        augment_type_elaboration_import_summaries_with_imported_public_theorem_label(
-            ast, &module, symbols,
-        );
-    if let Err(error) = validate_task258b5b_enriched_resolver_env(ast, &module, &symbols) {
-        return Some(Err(error));
-    }
-    Some(build_source_statement_b5b_output(
-        ast,
-        module,
-        &symbols,
-        extracted,
-        |_| {},
     ))
 }
 
@@ -16723,14 +16191,14 @@ fn validate_task258b4b_raw_resolver_env(
 }
 
 #[cfg(test)]
-fn build_source_statement_b4c_output(
+fn build_source_statement_b4c_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     raw_symbols: &SymbolEnv,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4CRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
+) -> Result<SourceStatementB4CRouteInputs, String> {
     if source_text != SOURCE_STATEMENT_B4C_TEXT || symbols.module_id() != &module {
         return Err("Task258B4C source or symbol module mismatch".to_owned());
     }
@@ -16890,70 +16358,20 @@ fn build_source_statement_b4c_output(
         atomic: atomic.clone(),
         composite: composite.clone(),
         composition: composition.clone(),
-        statement: SourceStatementHandoffInput {
-            source_id: ast.source_id,
-            module_id: module.clone(),
-            owners: vec![SourceTheoremOwnerInput {
-                symbol: owner.symbol().clone(),
-                contribution: owner.contribution(),
-                site: TypedSiteRef::Node(TypedNodeId::new(62)),
-                source_range: range(ast.source_id, 19, 137),
-                spelling: SOURCE_STATEMENT_B4C_LABEL.to_owned(),
-                role: SourceTheoremRole::Theorem,
-                status: SourceTheoremStatus::Unmodified,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            statements: vec![SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(0),
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-                site: TypedSiteRef::Node(TypedNodeId::new(62)),
-                source_range: range(ast.source_id, 19, 137),
-                source_ordinal: 0,
-                spelling: SOURCE_STATEMENT_B4C_SPELLING.to_owned(),
-                kind: SourceStatementKind::TheoremProposition,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            contexts: vec![SourceStatementContextInput {
-                statement: SourceStatementId::new(0),
-                binding_context: BindingContextId::new(0),
-                source_range: range(ast.source_id, 19, 137),
-                visible_bindings: vec![BindingId::new(0)],
-            }],
-            input_facts: Vec::new(),
-            candidate_facts: vec![SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(0),
-                context: SourceStatementContextId::new(0),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-            }],
-        },
     };
     mutate(&mut inputs);
-    let error = SourceStatementProducer::build_with_formula_composition(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.composite,
-        &inputs.composition,
-        &inputs.arena,
-    )
-    .expect_err("retired raw Task258B4C profile");
-    Err(error.to_string())
+    Ok(inputs)
 }
 
 #[cfg(test)]
-fn build_source_statement_b4b_output(
+fn build_source_statement_b4b_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     raw_symbols: &SymbolEnv,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4BRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
+) -> Result<SourceStatementB4BRouteInputs, String> {
     if source_text != SOURCE_STATEMENT_B4B_TEXT || symbols.module_id() != &module {
         return Err("Task258B4B source or symbol module mismatch".to_owned());
     }
@@ -17110,70 +16528,20 @@ fn build_source_statement_b4b_output(
         atomic: atomic.clone(),
         composite: composite.clone(),
         composition: composition.clone(),
-        statement: SourceStatementHandoffInput {
-            source_id: ast.source_id,
-            module_id: module.clone(),
-            owners: vec![SourceTheoremOwnerInput {
-                symbol: owner.symbol().clone(),
-                contribution: owner.contribution(),
-                site: TypedSiteRef::Node(TypedNodeId::new(120)),
-                source_range: range(ast.source_id, 0, 165),
-                spelling: SOURCE_STATEMENT_B4B_LABEL.to_owned(),
-                role: SourceTheoremRole::Theorem,
-                status: SourceTheoremStatus::Unmodified,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            statements: vec![SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(0),
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-                site: TypedSiteRef::Node(TypedNodeId::new(120)),
-                source_range: range(ast.source_id, 0, 165),
-                source_ordinal: 0,
-                spelling: SOURCE_STATEMENT_B4B_SPELLING.to_owned(),
-                kind: SourceStatementKind::TheoremProposition,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            contexts: vec![SourceStatementContextInput {
-                statement: SourceStatementId::new(0),
-                binding_context: BindingContextId::new(0),
-                source_range: range(ast.source_id, 0, 165),
-                visible_bindings: Vec::new(),
-            }],
-            input_facts: Vec::new(),
-            candidate_facts: vec![SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(0),
-                context: SourceStatementContextId::new(0),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-            }],
-        },
     };
     mutate(&mut inputs);
-    let error = SourceStatementProducer::build_with_formula_composition(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.composite,
-        &inputs.composition,
-        &inputs.arena,
-    )
-    .expect_err("retired raw Task258B4B profile");
-    Err(error.to_string())
+    Ok(inputs)
 }
 
 #[cfg(test)]
-fn build_source_statement_b4a_output(
+fn build_source_statement_b4a_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     raw_symbols: &SymbolEnv,
     symbols: &SymbolEnv,
     source_text: &str,
     mutate: impl FnOnce(&mut SourceStatementB4ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
+) -> Result<SourceStatementB4ARouteInputs, String> {
     if source_text != SOURCE_STATEMENT_B4A_TEXT || symbols.module_id() != &module {
         return Err("Task258B4A source or symbol module mismatch".to_owned());
     }
@@ -17253,236 +16621,119 @@ fn build_source_statement_b4a_output(
             .source_formula_composition()
             .cloned()
             .ok_or_else(|| "Task258B4A composition handoff is missing".to_owned())?,
-        statement: SourceStatementHandoffInput {
-            source_id: ast.source_id,
-            module_id: module.clone(),
-            owners: vec![SourceTheoremOwnerInput {
-                symbol: owner.symbol().clone(),
-                contribution: owner.contribution(),
-                site: TypedSiteRef::Node(TypedNodeId::new(22)),
-                source_range: range(ast.source_id, 0, 78),
-                spelling: SOURCE_STATEMENT_B4A_LABEL.to_owned(),
-                role: SourceTheoremRole::Theorem,
-                status: SourceTheoremStatus::Unmodified,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            statements: vec![SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(0),
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-                site: TypedSiteRef::Node(TypedNodeId::new(22)),
-                source_range: range(ast.source_id, 0, 78),
-                source_ordinal: 0,
-                spelling: SOURCE_STATEMENT_B4A_SPELLING.to_owned(),
-                kind: SourceStatementKind::TheoremProposition,
-                recovery: SourceStatementRecovery::Normal,
-            }],
-            contexts: vec![SourceStatementContextInput {
-                statement: SourceStatementId::new(0),
-                binding_context: BindingContextId::new(0),
-                source_range: range(ast.source_id, 0, 78),
-                visible_bindings: Vec::new(),
-            }],
-            input_facts: Vec::new(),
-            candidate_facts: vec![SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(0),
-                context: SourceStatementContextId::new(0),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)),
-            }],
-        },
     };
     mutate(&mut inputs);
-    let statement = SourceStatementProducer::build_with_formula_composition(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.composite,
-        &inputs.composition,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let reference_use_ordinals = inputs
-        .primary
-        .references()
-        .iter()
-        .map(|(_, row)| row.use_ordinal())
-        .collect::<Vec<_>>();
-    let [_, _] = reference_use_ordinals.as_slice() else {
-        return Err("Task258B4A lower reference profile mismatch".to_owned());
-    };
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_formula_composition_statement(inputs.composite, inputs.composition, statement)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_composite_formula() != resolved.source_composite_formula()
-        || typed_ast.source_formula_composition() != resolved.source_formula_composition()
-        || typed_ast.source_statement_references().is_some()
-        || typed_ast.source_statement_witnesses().is_some()
-        || !typed_ast.contexts().is_empty()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258B4A immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-    })
+    Ok(inputs)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2a_output(
+fn build_source_statement_b3m2a_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2AExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b1a_output(
+fn build_source_statement_b3m2b2b1a_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B1AExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b1b1_output(
+fn build_source_statement_b3m2b2b1b1_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B1B1Extraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B1B1RouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b2a_output(
+fn build_source_statement_b3m2b2b2a_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B2AExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b2b_output(
+fn build_source_statement_b3m2b2b2b_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B2BExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2BRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b2c_output(
+fn build_source_statement_b3m2b2b2c_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B2CExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B2CRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b3a_output(
+fn build_source_statement_b3m2b2b3a_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B3AExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ARouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b3c_output(
+fn build_source_statement_b3m2b2b3c_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B3CExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3CRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b3d_output(
+fn build_source_statement_b3m2b2b3d_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B3DExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3DRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 #[cfg(test)]
-fn build_source_statement_b3m2b2b3e_output(
+fn build_source_statement_b3m2b2b3e_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB3M2B2B3EExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3M2B2B3ERouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output(ast, module, symbols, extracted.into(), mutate)
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower(ast, module, symbols, extracted.into(), mutate)
 }
 
 fn task258b3m2b2b3a_mutated_module(module: &ModuleId) -> ModuleId {
@@ -18304,194 +17555,27 @@ fn mutate_task258b3m2b2b3a_atomic_input(
 }
 
 #[cfg(test)]
-fn mutate_task258b3m2b2b3a_statement_input(
-    input: &mut SourceStatementHandoffInput,
-    field: usize,
-) -> Result<(), String> {
-    match field {
-        0 => input.owners.clear(),
-        1 => input.owners.push(input.owners[0].clone()),
-        2 => input.owners[0].site = input.statements[1].site.clone(),
-        3 => input.owners[0].source_range.start += 1,
-        4 => input.owners[0].spelling.push('!'),
-        5 => input.owners[0].recovery = SourceStatementRecovery::Degraded,
-        6 => input.statements.clear(),
-        7 => input.statements.push(input.statements[0].clone()),
-        8..24 => {
-            let offset = field - 8;
-            let statement = offset / 8;
-            let other = 1 - statement;
-            match offset % 8 {
-                0 => input.statements[statement].owner = SourceTheoremOwnerId::new(1),
-                1 => input.statements[statement].context = SourceStatementContextId::new(other),
-                2 => {
-                    input.statements[statement].formula =
-                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(other))
-                }
-                3 => input.statements[statement].site = input.statements[other].site.clone(),
-                4 => input.statements[statement].source_range.start += 1,
-                5 => input.statements[statement].source_ordinal += 3,
-                6 => input.statements[statement].spelling.push('!'),
-                7 => input.statements[statement].recovery = SourceStatementRecovery::Degraded,
-                _ => unreachable!(),
-            }
-        }
-        24 => input.contexts.clear(),
-        25 => input.contexts.push(input.contexts[0].clone()),
-        26..34 => {
-            let offset = field - 26;
-            let context = offset / 4;
-            let other = 1 - context;
-            match offset % 4 {
-                0 => input.contexts[context].statement = SourceStatementId::new(other),
-                1 => input.contexts[context].binding_context = BindingContextId::new(other),
-                2 => input.contexts[context].source_range.start += 1,
-                3 => input.contexts[context].visible_bindings.clear(),
-                _ => unreachable!(),
-            }
-        }
-        34 => input.input_facts.clear(),
-        35 => input.input_facts.push(input.input_facts[0].clone()),
-        36..46 => {
-            let offset = field - 36;
-            let fact = offset / 5;
-            let other = 1 - fact;
-            match offset % 5 {
-                0 => input.input_facts[fact].statement = SourceStatementId::new(other),
-                1 => input.input_facts[fact].context = SourceStatementContextId::new(other),
-                2 => input.input_facts[fact].ordinal += 1,
-                3 => input.input_facts[fact].binding = BindingId::new(99),
-                4 => input.input_facts[fact].uses.swap(0, 1),
-                _ => unreachable!(),
-            }
-        }
-        46 => input.candidate_facts.clear(),
-        47 => input.candidate_facts.push(input.candidate_facts[0].clone()),
-        48..56 => {
-            let offset = field - 48;
-            let candidate = offset / 4;
-            let other = 1 - candidate;
-            match offset % 4 {
-                0 => input.candidate_facts[candidate].statement = SourceStatementId::new(other),
-                1 => {
-                    input.candidate_facts[candidate].context = SourceStatementContextId::new(other)
-                }
-                2 => input.candidate_facts[candidate].ordinal += 1,
-                3 => {
-                    input.candidate_facts[candidate].formula =
-                        SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(other))
-                }
-                _ => unreachable!(),
-            }
-        }
-        56 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
-        57 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
-        58 => {
-            input.owners[0].symbol = SymbolId::new(
-                input.module_id.clone(),
-                mizar_resolve::resolved_ast::LocalSymbolId::new("Task258B3M2B2B3A/mutated-owner"),
-                mizar_resolve::resolved_ast::FullyQualifiedName::new(format!(
-                    "{}::Task258B3M2B2B3A/mutated-owner",
-                    input.module_id.path().as_str()
-                )),
-            )
-        }
-        59 => {
-            let mut contributions = mizar_resolve::env::SourceContributionIndex::new();
-            let kind = mizar_resolve::env::ContributionKind::LocalSource {
-                source_id: input.source_id,
-            };
-            let anchor = SourceAnchor::Range(input.owners[0].source_range);
-            contributions.insert(input.module_id.clone(), kind.clone(), anchor.clone());
-            input.owners[0].contribution =
-                contributions.insert(input.module_id.clone(), kind, anchor);
-        }
-        60 => input.statements[0].kind = SourceStatementKind::Conclusion,
-        61 => input.statements[1].kind = SourceStatementKind::TheoremProposition,
-        _ => return Err(format!("Task258: unknown mutation field {field}")),
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-fn mutate_task258b3m2b2b3a_witness_input(
-    input: &mut SourceStatementWitnessHandoffInput,
-    field: usize,
-) -> Result<(), String> {
-    match field {
-        0 => input.witnesses.clear(),
-        1 => input.witnesses.push(input.witnesses[0].clone()),
-        2 => input.witnesses[0].owner = SourceTheoremOwnerId::new(1),
-        3 => input.witnesses[0].binding_context = BindingContextId::new(0),
-        4 => {
-            input.witnesses[0].term =
-                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2))
-        }
-        5 => input.witnesses[0].take_site = input.witnesses[0].site.clone(),
-        6 => input.witnesses[0].take_range.start += 1,
-        7 => input.witnesses[0].site = input.witnesses[0].take_site.clone(),
-        8 => input.witnesses[0].source_range.end -= 1,
-        9 => input.witnesses[0].source_ordinal = 0,
-        10 => input.witnesses[0].ordinal = 1,
-        11 => input.witnesses[0].spelling.push('!'),
-        12 => input.witnesses[0].recovery = SourceStatementRecovery::Degraded,
-        13 => input.witnesses[0].name = Some(SourceStatementWitnessNameId::new(0)),
-        14 => input.names.push(SourceStatementWitnessNameInput {
-            witness: mizar_checker::source_statement::SourceStatementWitnessId::new(0),
-            site: input.witnesses[0].site.clone(),
-            source_range: input.witnesses[0].source_range,
-            spelling: "y".to_owned(),
-            recovery: SourceStatementRecovery::Normal,
-        }),
-        15 => input.module_id = task258b3m2b2b3a_mutated_module(&input.module_id),
-        16 => input.source_id = task258b3m2b2b3a_mutated_source_id(input.source_id),
-        17 => input.witnesses[0].kind = SourceStatementWitnessKind::Named,
-        18 => {
-            input.witnesses[0].term =
-                SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(1))
-        }
-        19 => {
-            input.witnesses[0].term =
-                SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId::new(0))
-        }
-        20 => {
-            input.witnesses[0].term =
-                SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(0))
-        }
-        _ => return Err(format!("B3A: unknown mutation field {field}")),
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-fn build_source_statement_witness_output(
+fn build_source_statement_witness_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementWitnessExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
-    build_source_statement_witness_output_with_controls(
-        ast,
-        module,
-        symbols,
-        extracted,
-        mutate,
-        None,
-        |_| {},
+) -> Result<SourceStatementB3RouteInputs, String> {
+    build_source_statement_witness_lower_with_controls(
+        ast, module, symbols, extracted, mutate, None,
     )
 }
 
 #[cfg(test)]
-fn build_source_statement_witness_output_with_controls(
+fn build_source_statement_witness_lower_with_controls(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementWitnessExtraction,
     mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
     stage_mutation: Option<(SourceStatementB3M2B2B3AStage, usize)>,
-    post_auth_mutate: impl FnOnce(&mut SourceStatementB3RouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
+) -> Result<SourceStatementB3RouteInputs, String> {
     let structure_family_count = [
         extracted.structure_node,
         extracted.structure_selector_node,
@@ -18941,69 +18025,6 @@ fn build_source_statement_witness_output_with_controls(
             error.to_string()
         }
     })?;
-    let mut statement = task258b3_statement_input(
-        ast,
-        module.clone(),
-        owner_entry.symbol().clone(),
-        owner_entry.contribution(),
-        &extracted,
-    );
-    if let Some((SourceStatementB3M2B2B3AStage::Task258, field)) = stage_mutation {
-        mutate_task258b3m2b2b3a_statement_input(&mut statement, field)?;
-    }
-    let mut names = Vec::new();
-    let mut witnesses = Vec::new();
-    for (index, witness) in extracted.witnesses.iter().enumerate() {
-        let name = witness.name.as_ref().map(|(site, source_range)| {
-            let name = SourceStatementWitnessNameId::new(names.len());
-            names.push(SourceStatementWitnessNameInput {
-                witness: mizar_checker::source_statement::SourceStatementWitnessId::new(index),
-                site: site.clone(),
-                source_range: *source_range,
-                spelling: "y".to_owned(),
-                recovery: SourceStatementRecovery::Normal,
-            });
-            name
-        });
-        witnesses.push(SourceStatementWitnessInput {
-            owner: SourceTheoremOwnerId::new(0),
-            binding_context: BindingContextId::new(1),
-            term: if extracted.application_node.is_some() {
-                SourceStatementWitnessTermTarget::Application(SourceFunctorApplicationId::new(
-                    index,
-                ))
-            } else if has_structure {
-                SourceStatementWitnessTermTarget::Structure(SourceStructureTermId::new(index))
-            } else if set_term.is_some() {
-                SourceStatementWitnessTermTarget::SetTerm(SourceSetTermId::new(index))
-            } else {
-                SourceStatementWitnessTermTarget::Primary(SourcePrimaryTermId::new(2 + index))
-            },
-            take_site: extracted.take_site.clone(),
-            take_range: extracted.take_range,
-            site: witness.site.clone(),
-            source_range: witness.range,
-            source_ordinal: 1,
-            ordinal: index,
-            spelling: witness.spelling.to_owned(),
-            kind: if name.is_some() {
-                SourceStatementWitnessKind::Named
-            } else {
-                SourceStatementWitnessKind::Unnamed
-            },
-            recovery: SourceStatementRecovery::Normal,
-            name,
-        });
-    }
-    let mut witness = SourceStatementWitnessHandoffInput {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        witnesses,
-        names,
-    };
-    if let Some((SourceStatementB3M2B2B3AStage::Witness, field)) = stage_mutation {
-        mutate_task258b3m2b2b3a_witness_input(&mut witness, field)?;
-    }
     let expected_binding_env = binding_env.clone();
     let expected_arena = arena.clone();
     let expected_primary = primary.clone();
@@ -19016,8 +18037,6 @@ fn build_source_statement_witness_output_with_controls(
         arena,
         primary,
         atomic,
-        statement,
-        witness,
         application,
         structure,
         set_term,
@@ -19033,194 +18052,17 @@ fn build_source_statement_witness_output_with_controls(
     {
         return Err(format!("{} lower dependency mismatch", extracted.task));
     }
-    post_auth_mutate(&mut inputs);
-    let statement = SourceStatementProducer::build(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.arena,
-    )
-    .map_err(|error| match stage_mutation {
-        Some((SourceStatementB3M2B2B3AStage::Task256, _)) => {
-            format!("Task256: {error}")
-        }
-        Some((SourceStatementB3M2B2B3AStage::Task258, _)) => {
-            format!("Task258: {error}")
-        }
-        _ => error.to_string(),
-    })?;
-    let witnesses = match (&inputs.application, &inputs.structure, &inputs.set_term) {
-        (Some(application), None, None) => SourceStatementWitnessProducer::build_with_application(
-            inputs.witness,
-            &statement,
-            &inputs.primary,
-            application,
-            &inputs.arena,
-        ),
-        (None, Some(structure), None) => SourceStatementWitnessProducer::build_with_structure(
-            inputs.witness,
-            &statement,
-            &inputs.primary,
-            structure,
-            &inputs.arena,
-        ),
-        (None, None, Some(set_term)) => SourceStatementWitnessProducer::build_with_set_term(
-            inputs.witness,
-            &statement,
-            &inputs.primary,
-            set_term,
-            &inputs.arena,
-        ),
-        (None, None, None) => SourceStatementWitnessProducer::build(
-            inputs.witness,
-            &statement,
-            &inputs.primary,
-            &inputs.arena,
-        ),
-        _ => {
-            return Err(format!(
-                "{} lower-family dependencies must be mutually exclusive",
-                extracted.task
-            ));
-        }
-    }
-    .map_err(|error| {
-        if matches!(
-            stage_mutation,
-            Some((SourceStatementB3M2B2B3AStage::Witness, _))
-        ) {
-            let stage = match extracted.task {
-                #[cfg(test)]
-                "Task258B3M2B2B3D" => "B3D",
-                #[cfg(test)]
-                "Task258B3M2B2B3E" => "B3E",
-                _ => "B3A",
-            };
-            format!("{stage}: {error}")
-        } else {
-            error.to_string()
-        }
-    })?;
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?;
-    let typed_ast = match (inputs.application, inputs.structure, inputs.set_term) {
-        (Some(application), None, None) => {
-            typed_ast.with_source_application_statement_witnesses(application, statement, witnesses)
-        }
-        (None, Some(structure), None) => {
-            typed_ast.with_source_structure_statement_witnesses(structure, statement, witnesses)
-        }
-        (None, None, Some(set_term)) => {
-            typed_ast.with_source_set_term_statement_witnesses(set_term, statement, witnesses)
-        }
-        (None, None, None) => typed_ast.with_source_statement_witnesses(statement, witnesses),
-        _ => {
-            return Err(format!(
-                "{} lower-family dependencies must be mutually exclusive",
-                extracted.task
-            ));
-        }
-    }
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.nodes().len() != extracted.node_count
-        || typed_ast
-            .nodes()
-            .root()
-            .is_none_or(|root| root.index() != extracted.root)
-        || typed_ast.source_statement().is_none()
-        || typed_ast.source_statement_witnesses().is_none()
-        || typed_ast.source_statement_references().is_some()
-        || typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_statement_witnesses() != resolved.source_statement_witnesses()
-        || resolved.source_statement_references().is_some()
-        || typed_ast.source_term() != resolved.source_term()
-        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
-        || typed_ast.source_context().is_some()
-        || typed_ast.source_type().is_some()
-        || typed_ast.source_attribute().is_some()
-        || typed_ast.source_evidence().is_some()
-        || typed_ast.source_application().is_some() != extracted.application_node.is_some()
-        || typed_ast.source_application() != resolved.source_application()
-        || typed_ast.source_structure().is_some() != has_structure
-        || typed_ast.source_structure() != resolved.source_structure()
-        || typed_ast.source_set_term().is_some() != extracted.set_term_node.is_some()
-        || typed_ast.source_set_term() != resolved.source_set_term()
-        || typed_ast.source_composite_formula().is_some()
-        || typed_ast.source_formula_composition().is_some()
-        || typed_ast.source_condition_formula_composition().is_some()
-        || typed_ast.source_predicate_chain_composition().is_some()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.collection_candidates().is_empty()
-        || !resolved.expanded_candidates().is_empty()
-        || !resolved.template_expansions().is_empty()
-        || !resolved.viable_candidates().is_empty()
-        || !resolved.viability_decisions().is_empty()
-        || !resolved.specificity_graphs().is_empty()
-        || !resolved.resolved_overloads().is_empty()
-        || !resolved.inserted_coercions().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err(format!(
-            "{} immutable final handoff mismatch",
-            extracted.task
-        ));
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-    })
+    Ok(inputs)
 }
 
 #[cfg(test)]
-fn build_source_statement_b5b_output(
+fn build_source_statement_b5b_lower(
     ast: &SurfaceAst,
     module: ModuleId,
     symbols: &SymbolEnv,
     extracted: SourceStatementB5BExtraction,
     mutate: impl FnOnce(&mut SourceStatementB5BRouteInputs),
-) -> Result<SourceStatementRouteOutput, String> {
+) -> Result<SourceStatementB5BRouteInputs, String> {
     validate_task258b5b_enriched_resolver_env(ast, &module, symbols)?;
     let namespace = NamespacePath::new(module.path().as_str());
     let owners = symbols
@@ -19319,323 +18161,14 @@ fn build_source_statement_b5b_output(
         &arena,
     )
     .map_err(|error| error.to_string())?;
-    let statement = task258b5b_statement_input(
-        ast,
-        module.clone(),
-        owner_entry.symbol().clone(),
-        owner_entry.contribution(),
-        &extracted,
-    );
-    let (resolver_ast, projection, reference, resolution) =
-        task258b5b_resolver_bundle(ast, &module, symbols)?;
-    let reference_input = SourceStatementReferenceHandoffInput {
-        source_id: ast.source_id,
-        module_id: module.clone(),
-        labels: Vec::new(),
-        citations: vec![SourceStatementCitationInput {
-            statement: SourceStatementId::new(1),
-            context: SourceStatementContextId::new(1),
-            target: SourceStatementCitationTarget::Imported,
-            label_ref: resolution.ids()[0],
-            proof_scope: LabelScopePath::new(vec![0]),
-            source_range: range(ast.source_id, 136, 139),
-            ordinal: 0,
-            kind: SourceStatementCitationKind::SimpleImported,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-    };
     let mut inputs = SourceStatementB5BRouteInputs {
         binding_env,
         arena,
         primary,
         atomic,
-        statement,
-        resolver_ast,
-        projection,
-        reference,
-        resolution,
-        reference_input,
     };
     mutate(&mut inputs);
-    let statement = SourceStatementProducer::build(
-        inputs.statement,
-        symbols,
-        &inputs.binding_env,
-        &inputs.primary,
-        &inputs.atomic,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let references = SourceStatementReferenceProducer::build(
-        inputs.reference_input,
-        &statement,
-        &inputs.resolver_ast,
-        &inputs.projection,
-        &inputs.reference,
-        &inputs.resolution,
-        &inputs.arena,
-    )
-    .map_err(|error| error.to_string())?;
-    let typed_ast = TypedAst::try_new(TypedAstParts {
-        source_id: ast.source_id,
-        module_id: module,
-        resolved_root: None,
-        source_context: None,
-        source_type: None,
-        source_attribute: None,
-        nodes: inputs.arena,
-        contexts: LocalTypeContextTable::new(),
-        types: TypeTable::new(),
-        facts: TypeFactTable::new(),
-        coercions: CoercionTable::new(),
-        initial_obligations: InitialObligationTable::new(),
-        diagnostics: TypeDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())?
-    .with_source_term(inputs.primary)
-    .map_err(|error| error.to_string())?
-    .with_source_atomic_formula(inputs.atomic)
-    .map_err(|error| error.to_string())?
-    .with_source_statement_references(statement, references)
-    .map_err(|error| error.to_string())?;
-    let node_hints = typed_ast
-        .nodes()
-        .iter()
-        .map(|(typed_node, _)| ResolvedNodeKindHint {
-            typed_node,
-            kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.statement.transport"),
-            },
-        })
-        .collect();
-    let resolved = assemble_empty_resolved_typed_ast(&typed_ast, node_hints)?;
-    if typed_ast.nodes().len() != 57
-        || typed_ast.source_statement().is_none()
-        || typed_ast.source_statement_references().is_none()
-        || typed_ast.source_statement() != resolved.source_statement()
-        || typed_ast.source_statement_references() != resolved.source_statement_references()
-        || typed_ast.source_term() != resolved.source_term()
-        || typed_ast.source_atomic_formula() != resolved.source_atomic_formula()
-        || typed_ast.source_context().is_some()
-        || typed_ast.source_type().is_some()
-        || typed_ast.source_attribute().is_some()
-        || typed_ast.source_evidence().is_some()
-        || typed_ast.source_application().is_some()
-        || typed_ast.source_structure().is_some()
-        || typed_ast.source_set_term().is_some()
-        || typed_ast.source_composite_formula().is_some()
-        || typed_ast.source_formula_composition().is_some()
-        || typed_ast.source_condition_formula_composition().is_some()
-        || typed_ast.source_predicate_chain_composition().is_some()
-        || !typed_ast.types().is_empty()
-        || !typed_ast.facts().is_empty()
-        || !typed_ast.coercions().is_empty()
-        || !typed_ast.initial_obligations().is_empty()
-        || !typed_ast.diagnostics().is_empty()
-        || !resolved.expr_metadata().is_empty()
-        || !resolved.collection_candidates().is_empty()
-        || !resolved.expanded_candidates().is_empty()
-        || !resolved.template_expansions().is_empty()
-        || !resolved.viable_candidates().is_empty()
-        || !resolved.viability_decisions().is_empty()
-        || !resolved.specificity_graphs().is_empty()
-        || !resolved.resolved_overloads().is_empty()
-        || !resolved.inserted_coercions().is_empty()
-        || !resolved.cluster_facts().is_empty()
-        || !resolved.diagnostics().is_empty()
-        || !resolved.checked_formulas().is_empty()
-        || !resolved.statement_semantics().is_empty()
-        || !resolved.checked_proofs().is_empty()
-        || !resolved.checked_proof_nodes().is_empty()
-        || !resolved.checked_terminal_goals().is_empty()
-    {
-        return Err("Task258B5B immutable final handoff mismatch".to_owned());
-    }
-    Ok(SourceStatementRouteOutput {
-        typed_ast,
-        resolved,
-    })
-}
-
-#[cfg(test)]
-fn task258b5b_resolver_bundle(
-    ast: &SurfaceAst,
-    module: &ModuleId,
-    symbols: &SymbolEnv,
-) -> Result<
-    (
-        ResolvedAst,
-        LabelProjection,
-        LabelReferenceCandidate,
-        mizar_resolve::labels::LabelResolutionResult,
-    ),
-    String,
-> {
-    let preliminary = task258b5b_resolved_arena(ast, module, None)?;
-    if preliminary.root().index() != 56
-        || preliminary.len() != 57
-        || preliminary
-            .iter()
-            .any(|(_, node)| node.reference_key().is_some())
-        || preliminary.iter().any(|(id, node)| {
-            node.kind() != &ast.nodes()[id.index()].kind
-                || node
-                    .children()
-                    .iter()
-                    .map(|child| child.index())
-                    .ne(ast.nodes()[id.index()]
-                        .children
-                        .iter()
-                        .map(|child| child.index()))
-                || node.origin().source_id() != ast.source_id
-                || node.origin().module_id() != module
-                || node.origin().import_edge().is_some()
-                || node.origin().structural_path() != [id.index() as u32]
-                || node.origin().anchor() != &SourceAnchor::Range(ast.nodes()[id.index()].range)
-                || node.origin().is_recovered()
-                || node.recovery() != RecoveryState::Normal
-                || node.resolution() != NodeResolutionState::NotApplicable
-        })
-    {
-        return Err("Task258B5B preliminary resolver arena drift".to_owned());
-    }
-    let reference_node = preliminary
-        .iter()
-        .find_map(|(id, _)| (id.index() == 48).then_some(id))
-        .ok_or_else(|| "Task258B5B preliminary reference node is missing".to_owned())?;
-    let imported_module = ModuleId::new(
-        module.package().clone(),
-        ModulePath::new("parser.type_fixtures"),
-    );
-    let namespace = NamespacePath::new(module.path().as_str());
-    let labels = symbols.labels().visible_candidates(&namespace, "Ref");
-    let [label] = labels.as_slice() else {
-        return Err("Task258B5B resolver imported label is missing".to_owned());
-    };
-    let projection = LabelProjection::imported(LabelProjectionData {
-        origin_path: label.origin_path().clone(),
-        module: imported_module.clone(),
-        namespace: namespace.clone(),
-        primary_spelling: label.primary_spelling().to_owned(),
-        kind: label.kind(),
-        declaration_range: range(ast.source_id, 7, 27),
-        origin: label.origin().clone(),
-        contribution: label.contribution(),
-    })
-    .with_visibility(label.visibility())
-    .with_export_status(label.export_status());
-    let reference = LabelReferenceCandidate::unqualified_citation(
-        ReferenceSite::new(reference_node, range(ast.source_id, 136, 139), "Ref"),
-        SemanticOrigin::new(
-            ast.source_id,
-            module.clone(),
-            SourceAnchor::Range(range(ast.source_id, 136, 139)),
-            vec![48],
-        ),
-        1,
-        Some(LabelScopePath::new(vec![0])),
-    );
-    let resolution = LabelResolver::new(std::slice::from_ref(&projection)).resolve(
-        module,
-        &namespace,
-        std::slice::from_ref(&reference),
-    );
-    let [label_ref] = resolution.ids() else {
-        return Err("Task258B5B resolver did not produce one reference id".to_owned());
-    };
-    let final_arena = task258b5b_resolved_arena(ast, module, Some(*label_ref))?;
-    let import_owner = final_arena
-        .iter()
-        .find_map(|(id, _)| (id.index() == 29).then_some(id))
-        .ok_or_else(|| "Task258B5B resolver import owner is missing".to_owned())?;
-    let mut imports = ResolvedImports::new();
-    let import = imports.push_import(ResolvedImport::new(
-        import_owner,
-        range(ast.source_id, 7, 27),
-        "import parser.type_fixtures;",
-        None,
-        ImportResolution::Resolved(imported_module),
-        SemanticOrigin::new(
-            ast.source_id,
-            module.clone(),
-            SourceAnchor::Range(range(ast.source_id, 7, 27)),
-            vec![0],
-        ),
-    ));
-    if import.index() != 0 {
-        return Err("Task258B5B resolver import id drift".to_owned());
-    }
-    let resolver_ast = ResolvedAst::try_new(
-        ast.source_id,
-        module.clone(),
-        final_arena,
-        NameRefTable::new(),
-        resolution.table().clone(),
-        imports,
-    )
-    .map_err(|error| error.to_string())?;
-    if resolver_ast.nodes().root().index() != 56
-        || resolver_ast.nodes().len() != 57
-        || resolver_ast
-            .nodes()
-            .iter()
-            .any(|(id, node)| node.kind() != &ast.nodes()[id.index()].kind)
-        || resolver_ast.imports().imports().count() != 1
-        || resolver_ast.imports().exports().count() != 0
-        || !resolver_ast.name_refs().is_empty()
-        || resolver_ast.label_refs().len() != 1
-    {
-        return Err("Task258B5B resolver replay lost parser identity".to_owned());
-    }
-    Ok((resolver_ast, projection, reference, resolution))
-}
-
-#[cfg(test)]
-fn task258b5b_resolved_arena(
-    ast: &SurfaceAst,
-    module: &ModuleId,
-    label_ref: Option<mizar_resolve::resolved_ast::LabelRefId>,
-) -> Result<ResolvedArena, String> {
-    let mut builder = ResolvedArenaBuilder::new();
-    let mut ids = Vec::with_capacity(ast.nodes().len());
-    for (index, node) in ast.nodes().iter().enumerate() {
-        let children = node
-            .children
-            .iter()
-            .map(|child| {
-                ids.get(child.index())
-                    .copied()
-                    .ok_or_else(|| "Task258B5B resolver child order drift".to_owned())
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let origin = SemanticOrigin::new(
-            ast.source_id,
-            module.clone(),
-            SourceAnchor::Range(node.range),
-            vec![index as u32],
-        );
-        let mut resolved = ResolvedNode::new(node.kind.clone(), children, origin);
-        if node.recovered {
-            resolved = resolved.with_recovery(RecoveryState::Recovered);
-        }
-        if index == 48
-            && let Some(label_ref) = label_ref
-        {
-            resolved = resolved
-                .with_resolution(NodeResolutionState::Resolved)
-                .with_reference_key(NodeReferenceKey::Label(label_ref));
-        }
-        let id = builder.push(resolved).map_err(|error| error.to_string())?;
-        if id.index() != index {
-            return Err("Task258B5B resolver node identity drift".to_owned());
-        }
-        ids.push(id);
-    }
-    let root = ast
-        .root()
-        .and_then(|root| ids.get(root.index()).copied())
-        .ok_or_else(|| "Task258B5B resolver root is missing".to_owned())?;
-    builder.finish(root).map_err(|error| error.to_string())
+    Ok(inputs)
 }
 
 #[cfg(test)]
@@ -19700,81 +18233,6 @@ fn task258b3_atomic_input(
 }
 
 #[cfg(test)]
-fn task258b3_statement_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbol: mizar_resolve::resolved_ast::SymbolId,
-    contribution: mizar_resolve::env::SourceContributionId,
-    extracted: &SourceStatementWitnessExtraction,
-) -> SourceStatementHandoffInput {
-    let kinds = [
-        SourceStatementKind::TheoremProposition,
-        SourceStatementKind::Conclusion,
-    ];
-    let source_ordinals = [0, 2];
-    SourceStatementHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        owners: vec![SourceTheoremOwnerInput {
-            symbol,
-            contribution,
-            site: extracted.theorem_site.clone(),
-            source_range: extracted.theorem_range,
-            spelling: extracted.label.to_owned(),
-            role: SourceTheoremRole::Theorem,
-            status: SourceTheoremStatus::Unmodified,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        statements: (0..2)
-            .map(|index| SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(index),
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-                site: extracted.statement_sites[index].clone(),
-                source_range: extracted.statement_ranges[index],
-                source_ordinal: source_ordinals[index],
-                spelling: extracted.spellings[index].to_owned(),
-                kind: kinds[index],
-                recovery: SourceStatementRecovery::Normal,
-            })
-            .collect(),
-        contexts: (0..2)
-            .map(|index| SourceStatementContextInput {
-                statement: SourceStatementId::new(index),
-                binding_context: BindingContextId::new(index),
-                source_range: extracted.statement_ranges[index],
-                visible_bindings: vec![BindingId::new(0)],
-            })
-            .collect(),
-        input_facts: (0..2)
-            .map(|index| {
-                let first_reference = extracted.input_fact_reference_starts[index];
-                SourceStatementInputFactInput {
-                    statement: SourceStatementId::new(index),
-                    context: SourceStatementContextId::new(index),
-                    ordinal: 0,
-                    kind: SourceStatementInputFactKind::ReservedTypeGuard,
-                    binding: BindingId::new(0),
-                    uses: vec![
-                        SourcePrimaryTermReferenceId::new(first_reference),
-                        SourcePrimaryTermReferenceId::new(first_reference + 1),
-                    ],
-                }
-            })
-            .collect(),
-        candidate_facts: (0..2)
-            .map(|index| SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(index),
-                context: SourceStatementContextId::new(index),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-            })
-            .collect(),
-    }
-}
-
-#[cfg(test)]
 fn task258b5b_atomic_input(
     ast: &SurfaceAst,
     module: ModuleId,
@@ -19831,77 +18289,6 @@ fn task258b5b_atomic_input(
         attributes: Vec::new(),
         edges,
         requests,
-    }
-}
-
-#[cfg(test)]
-fn task258b5b_statement_input(
-    ast: &SurfaceAst,
-    module: ModuleId,
-    symbol: mizar_resolve::resolved_ast::SymbolId,
-    contribution: mizar_resolve::env::SourceContributionId,
-    extracted: &SourceStatementB5BExtraction,
-) -> SourceStatementHandoffInput {
-    SourceStatementHandoffInput {
-        source_id: ast.source_id,
-        module_id: module,
-        owners: vec![SourceTheoremOwnerInput {
-            symbol,
-            contribution,
-            site: extracted.theorem_site.clone(),
-            source_range: extracted.theorem_range,
-            spelling: SOURCE_STATEMENT_B5B_LABEL.to_owned(),
-            role: SourceTheoremRole::Theorem,
-            status: SourceTheoremStatus::Unmodified,
-            recovery: SourceStatementRecovery::Normal,
-        }],
-        statements: (0..2)
-            .map(|index| SourceStatementInput {
-                owner: SourceTheoremOwnerId::new(0),
-                context: SourceStatementContextId::new(index),
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-                site: extracted.statement_sites[index].clone(),
-                source_range: extracted.statement_ranges[index],
-                source_ordinal: index,
-                spelling: SOURCE_STATEMENT_B5B_SPELLINGS[index].to_owned(),
-                kind: if index == 0 {
-                    SourceStatementKind::TheoremProposition
-                } else {
-                    SourceStatementKind::Conclusion
-                },
-                recovery: SourceStatementRecovery::Normal,
-            })
-            .collect(),
-        contexts: (0..2)
-            .map(|index| SourceStatementContextInput {
-                statement: SourceStatementId::new(index),
-                binding_context: BindingContextId::new(index),
-                source_range: extracted.statement_ranges[index],
-                visible_bindings: vec![BindingId::new(0)],
-            })
-            .collect(),
-        input_facts: (0..2)
-            .map(|index| SourceStatementInputFactInput {
-                statement: SourceStatementId::new(index),
-                context: SourceStatementContextId::new(index),
-                ordinal: 0,
-                kind: SourceStatementInputFactKind::ReservedTypeGuard,
-                binding: BindingId::new(0),
-                uses: vec![
-                    SourcePrimaryTermReferenceId::new(index * 2),
-                    SourcePrimaryTermReferenceId::new(index * 2 + 1),
-                ],
-            })
-            .collect(),
-        candidate_facts: (0..2)
-            .map(|index| SourceStatementCandidateFactInput {
-                statement: SourceStatementId::new(index),
-                context: SourceStatementContextId::new(index),
-                ordinal: 0,
-                kind: SourceStatementCandidateFactKind::UnverifiedProposition,
-                formula: SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(index)),
-            })
-            .collect(),
     }
 }
 
@@ -20229,7 +18616,6 @@ pub(in crate::runner) fn extract_qua_witness_source_statement(
         theorem_range: theorem.range,
         label_range: ast.node(label_id)?.range,
         statement_sites: [theorem_id, conclusion_id].map(surface_site),
-        statement_ranges: [range(ast.source_id, 19, 108), range(ast.source_id, 92, 103)],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: [range(ast.source_id, 60, 65), range(ast.source_id, 97, 102)],
         term_sites: term_ids.map(surface_site),
@@ -20586,10 +18972,6 @@ pub(in crate::runner) fn extract_comprehension_witness_source_statement(
         theorem_range: theorem.range,
         label_range: ast.node(label_id)?.range,
         statement_sites: [theorem_id, conclusion_id].map(surface_site),
-        statement_ranges: [
-            range(ast.source_id, 19, 138),
-            range(ast.source_id, 122, 133),
-        ],
         formula_sites: formula_ids.map(surface_site),
         formula_ranges: [range(ast.source_id, 70, 75), range(ast.source_id, 127, 132)],
         term_sites: term_ids.map(surface_site),

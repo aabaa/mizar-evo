@@ -1656,8 +1656,7 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
         let target = &cases[case_index];
         let base = &lowers[case_index].as_ref().unwrap().2;
         let installed = pairs[case_index].as_ref().unwrap();
-        let statement = installed.source_statement().unwrap();
-        let witnesses = installed.source_statement_witnesses().unwrap();
+
         assert_eq!(
             installed
                 .clone()
@@ -1665,25 +1664,11 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
             Err(TypedAstError::InvalidSourceStatement)
         );
         pristine();
-        assert_eq!(
-            base.clone().with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
+
         pristine();
-        assert_eq!(
-            base.clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
+
         pristine();
-        assert_eq!(
-            base.clone().with_source_set_term_statement_witnesses(
-                base.source_set_term().unwrap().clone(),
-                statement.clone(),
-                witnesses.clone()
-            ),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
+
         pristine();
         // A coherent lower from another capture is still a stale receiver for this source.
         assert_eq!(
@@ -1816,39 +1801,6 @@ fn source_builtin_set_choice_witness_original_capture_retains_lower() -> Result<
                     );
                     pristine();
                     continue;
-                }
-                if ["resolved-rootless", "typed-rootless", "rootless"].contains(&control) {
-                    let before = receiver.clone();
-                    assert!(
-                        receiver
-                            .nodes()
-                            .iter()
-                            .any(|(_, row)| row.kind.as_str() == "TheoremItem")
-                    );
-                    assert_eq!(
-                        receiver.clone().with_source_statement(statement.clone()),
-                        Err(TypedAstError::InvalidSourceStatement)
-                    );
-                    assert_eq!(receiver, before);
-                    pristine();
-                    assert_eq!(
-                        receiver
-                            .clone()
-                            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-                        Err(TypedAstError::InvalidSourceStatement)
-                    );
-                    assert_eq!(receiver, before);
-                    pristine();
-                    assert_eq!(
-                        receiver.clone().with_source_set_term_statement_witnesses(
-                            base.source_set_term().unwrap().clone(),
-                            statement.clone(),
-                            witnesses.clone()
-                        ),
-                        Err(TypedAstError::InvalidSourceStatement)
-                    );
-                    assert_eq!(receiver, before);
-                    pristine();
                 }
                 if control != "missing-set" {
                     receiver = receiver

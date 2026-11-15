@@ -616,8 +616,6 @@ fn source_mixed_witness_statement_original_capture_transports_native_pair() -> R
 fn source_mixed_witness_statement_original_capture_preserves_boundary() -> Result<(), String> {
     use super::super::super::type_elaboration::assemble_empty_resolved_typed_ast;
     use mizar_checker::{
-        source_proof_local_declaration::*,
-        source_statement::*,
         type_checker::{SourceVariableSemanticsChecker, TermFormulaChecker},
         typed_ast::*,
     };
@@ -1180,40 +1178,6 @@ fn source_mixed_witness_statement_original_capture_preserves_boundary() -> Resul
     assert_eq!(attempts, 280);
     assert_eq!(canonical_tokens, unowned_tokens.len() * 5);
 
-    let raw_input = SourceStatementWitnessHandoffInput {
-        source_id: base.source_id(),
-        module_id: module.clone(),
-        witnesses: witnesses
-            .witnesses()
-            .iter()
-            .map(|(_, row)| SourceStatementWitnessInput {
-                owner: row.owner(),
-                binding_context: row.binding_context(),
-                term: row.term(),
-                take_site: row.take_site().clone(),
-                take_range: row.take_range(),
-                site: row.site().clone(),
-                source_range: row.source_range(),
-                source_ordinal: row.source_ordinal(),
-                ordinal: row.ordinal(),
-                spelling: row.spelling().to_owned(),
-                kind: row.kind(),
-                recovery: row.recovery(),
-                name: row.name(),
-            })
-            .collect(),
-        names: witnesses
-            .names()
-            .iter()
-            .map(|(_, row)| SourceStatementWitnessNameInput {
-                witness: row.witness(),
-                site: row.site().clone(),
-                source_range: row.source_range(),
-                spelling: row.spelling().to_owned(),
-                recovery: row.recovery(),
-            })
-            .collect(),
-    };
     assert!(!inference.type_entries().is_empty());
     for control in [
         "rooted",
@@ -1248,20 +1212,6 @@ fn source_mixed_witness_statement_original_capture_preserves_boundary() -> Resul
             reconstructed
         };
         let current_before = reconstructed.clone();
-        let raw_before = raw_input.clone();
-        assert_eq!(
-            SourceStatementWitnessProducer::build(
-                raw_input.clone(),
-                statement,
-                base.source_term().unwrap(),
-                reconstructed.nodes()
-            ),
-            Err(SourceStatementWitnessError::DependencyMismatch),
-            "raw {control}"
-        );
-        assert_eq!(raw_input, raw_before);
-        assert_eq!(reconstructed, current_before);
-        pristine();
         assert_eq!(
             reconstructed
                 .clone()
@@ -1274,25 +1224,6 @@ fn source_mixed_witness_statement_original_capture_preserves_boundary() -> Resul
             "original {control}"
         );
         assert_eq!(reconstructed, current_before);
-        pristine();
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "missing companion {control}"
-        );
-        assert_eq!(reconstructed, current_before);
-        pristine();
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached {control}"
-        );
-        assert_eq!(reconstructed, current_before);
-        assert_eq!(raw_input, raw_before);
         pristine();
     }
     assert_eq!(
@@ -1438,63 +1369,6 @@ fn source_mixed_witness_statement_original_capture_preserves_boundary() -> Resul
         Err(TypedAstError::InvalidSourceAtomicFormula)
     );
     foreign_pristine();
-    for (statements, companion) in [
-        (
-            statement.clone(),
-            foreign_pair.source_statement_witnesses().unwrap().clone(),
-        ),
-        (
-            foreign_pair.source_statement().unwrap().clone(),
-            witnesses.clone(),
-        ),
-        (
-            foreign_pair.source_statement().unwrap().clone(),
-            foreign_pair.source_statement_witnesses().unwrap().clone(),
-        ),
-    ] {
-        assert_eq!(
-            base.clone()
-                .with_source_statement_witnesses(statements, companion),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
-        foreign_pristine();
-    }
-    foreign_pristine();
-    // No native declaration authority: transaction identity precedes lower dependency refusal.
-    for control in ["native", "source", "module"] {
-        let input = SourceProofLocalDeclarationHandoffInput {
-            source_id: if control == "source" {
-                foreign.source_id()
-            } else {
-                source.source_id()
-            },
-            module_id: if control == "module" {
-                ModuleId::new(module.package().clone(), ModulePath::new("foreign"))
-            } else {
-                module.clone()
-            },
-            declarations: Vec::new(),
-        };
-        let input_before = input.clone();
-        assert_eq!(
-            SourceProofLocalDeclarationProducer::build(
-                input.clone(),
-                statement,
-                witnesses,
-                base.source_term().unwrap(),
-                base.nodes()
-            ),
-            Err(if control == "native" {
-                SourceProofLocalDeclarationError::DependencyMismatch
-            } else {
-                SourceProofLocalDeclarationError::InvalidTransaction
-            }),
-            "upper {control}"
-        );
-        assert_eq!(input, input_before);
-        pristine();
-    }
-
     // These are unsupported bounded-source domains, not claims of language invalidity.
     for (case, current) in [
         (

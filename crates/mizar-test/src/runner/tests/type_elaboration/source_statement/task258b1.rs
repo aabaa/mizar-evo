@@ -1473,50 +1473,10 @@ fn task258b1_keeps_task258a_and_active_corpus_routes_isolated() {
         .map(|(_, reference)| reference.use_ordinal()).collect::<Vec<_>>();
     assert_eq!(references, scope.references().iter().map(|reference| reference.ordinal()).collect::<Vec<_>>());
     assert_eq!(references, [0, 1]);
-    let (b1_ast, b1_module, _, b1_symbols) = task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_439);
+    let (b1_ast, b1_module, _, _) = task253_ast_from_source_text(SOURCE_STATEMENT_B1_TEXT, 258_439);
     let (b1, _) = task258_native_output(&b1_ast, &b1_module);
     assert!(b1.source_statement_references().is_some());
-    assert!(source_statement_output_with_source(&b1_ast, b1_module, &b1_symbols, SOURCE_STATEMENT_B1_TEXT).is_none());
 
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .expect("mizar-test crate below workspace")
-        .to_path_buf();
-    let config = DiscoveryConfig {
-        workspace_root: workspace_root.clone(),
-        tests_root: workspace_root.join("tests"),
-        manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
-        profile: TestProfile::Fast,
-        validation_mode: ValidationMode::Metadata,
-    };
-    let plan = build_test_plan(&config).expect("Task258B1 isolation plan");
-    let mut selected = Vec::new();
-    for (ordinal, case) in active_type_elaboration_cases(&plan).enumerate() {
-        let frontend = run_frontend(&workspace_root, case, ordinal)
-            .unwrap_or_else(|error| panic!("{} frontend failed: {error}", case.id.0));
-        let source = frontend.source_text;
-        let Some(ast) = frontend.ast else {
-            continue;
-        };
-        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
-        if !resolver.detail_keys.is_empty() {
-            continue;
-        }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
-        if source_statement_output_with_source(&ast, resolver.module, &symbols, &source)
-            .is_some_and(|result| {
-                result.is_ok_and(|output| output.typed_ast.source_statement_references().is_some())
-            })
-        {
-            selected.push(case.id.0.clone());
-        }
-    }
-    assert!(
-        selected.is_empty(),
-        "Task258B1 selected active cases: {selected:?}"
-    );
 }
 
 #[test]
@@ -1544,29 +1504,6 @@ fn task258b1_typed_final_ownership_clone_debug_and_empty_semantics_are_atomic() 
     assert!(first_resolved.checked_terminal_goals().is_empty());
     let task248 = task248_real_output();
     let before = task248.typed_ast.debug_text();
-    let statement = first
-        .source_statement()
-        .expect("statement")
-        .clone();
-    let statement_references = first
-        .source_statement_references()
-        .expect("statement references")
-        .clone();
-    assert_eq!(
-        task248
-            .typed_ast
-            .clone()
-            .with_source_statement(statement.clone())
-            .expect_err("Task258B1 base must not use legacy installer"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
-    assert_eq!(
-        task248
-            .typed_ast
-            .clone()
-            .with_source_statement_references(statement, statement_references)
-            .expect_err("Task248 and Task258B1 owners must not coexist"),
-        mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement
-    );
+
     assert_eq!(task248.typed_ast.debug_text(), before);
 }

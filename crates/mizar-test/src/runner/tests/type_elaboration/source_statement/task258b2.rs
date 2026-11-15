@@ -485,32 +485,9 @@ fn task258b2_keeps_task258a_task258b1_and_active_routes_isolated() {
         if !resolver.detail_keys.is_empty() {
             continue;
         }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+
         if extract_single_assumption_source_statement(&ast, &source).is_some()
-            || source_statement_output_with_source(&ast, resolver.module, &symbols, &source)
-                .is_some_and(|result| {
-                    result.is_ok_and(|output| {
-                        output
-                            .typed_ast
-                            .source_statement()
-                            .is_some_and(|statement| {
-                                statement.statements().len() == 3
-                                    && statement
-                                        .statements()
-                                        .get(
-                                            mizar_checker::source_statement::SourceStatementId::new(
-                                                1,
-                                            ),
-                                        )
-                                        .is_some_and(|row| {
-                                            row.kind()
-                                                == mizar_checker::source_statement::SourceStatementKind::Assumption
-                                        })
-                            })
-                    })
-                })
-        {
+            {
             selected.push(case.id.0.clone());
         }
     }
@@ -555,13 +532,6 @@ fn task258b2_typed_final_ownership_clone_and_empty_semantics_are_atomic() {
 
     let task248 = task248_real_output();
     let before = task248.typed_ast.debug_text();
-    let statement = first
-        .source_statement()
-        .expect("Task258B2 statement")
-        .clone();
-    assert_eq!(
-        task248.typed_ast.clone().with_source_statement(statement),
-        Err(mizar_checker::typed_ast::TypedAstError::InvalidSourceStatement)
-    );
+
     assert_eq!(task248.typed_ast.debug_text(), before);
 }

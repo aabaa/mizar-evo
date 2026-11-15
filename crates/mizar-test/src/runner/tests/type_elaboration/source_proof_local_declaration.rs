@@ -2,11 +2,7 @@ use super::type_elaboration::{
     source_proof_local_given_descendant_set_binding_output,
     SOURCE_STATEMENT_B3M1_TEXT as TASK269B_SOURCE_TEXT,
     SOURCE_STATEMENT_B3N_TEXT as TASK269A_SOURCE_TEXT,
-     source_proof_local_declaration_output,
-
-    source_statement_output_with_source as task269a_lower_output,
-    source_statement_transport_detail_keys as task269a_legacy_detail_keys,
-};
+     };
 use super::{
     SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT, SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
     SOURCE_PROOF_LOCAL_GIVEN_TEXT, SOURCE_PROOF_LOCAL_GIVEN_USE_TEXT, SOURCE_PROOF_LOCAL_LET_TEXT,
@@ -108,7 +104,7 @@ fn task269a_exact_frontend_binding_transaction_and_debug_are_stable() {
     );
     assert!(TASK269A_SOURCE_TEXT.ends_with('\n'));
     assert!(!TASK269A_SOURCE_TEXT.ends_with("\n\n"));
-    let (ast, module, _shells, symbols, diagnostics) =
+    let (ast, module, _shells, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(TASK269A_SOURCE_TEXT, 269_000);
     assert_eq!(diagnostics, 0);
     assert_eq!(
@@ -116,7 +112,6 @@ fn task269a_exact_frontend_binding_transaction_and_debug_are_stable() {
         (51, Some(50))
     );
 
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269A_SOURCE_TEXT).is_none());
     let (typed, resolved) = task258_native_output(&ast, &module);
     let statement = typed.source_statement().expect("native named lower statement");
     let witnesses = typed.source_statement_witnesses().expect("native named lower witnesses");
@@ -248,12 +243,11 @@ fn assert_task269b_exact_frontend_binding_transaction_and_debug() {
     );
     assert!(TASK269B_SOURCE_TEXT.ends_with('\n'));
     assert!(!TASK269B_SOURCE_TEXT.ends_with("\n\n"));
-    let (ast, module, _shells, symbols, diagnostics) =
+    let (ast, module, _shells, _, diagnostics) =
         task253_ast_from_source_text_with_diagnostic_count(TASK269B_SOURCE_TEXT, 269_001);
     assert_eq!(diagnostics, 0);
     assert_eq!((ast.nodes().len(), ast.root().map(|id| id.index())), (56, Some(55)));
 
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
     let (typed, resolved) = task258_native_output(&ast, &module);
     let statement = typed.source_statement().expect("native mixed lower statement");
     let witnesses = typed.source_statement_witnesses().expect("native mixed lower witnesses");
@@ -289,126 +283,48 @@ fn assert_task269b_exact_frontend_binding_transaction_and_debug() {
 }
 
 #[test]
-fn task269a_resolver_local_row_and_lower_mutations_fail_at_the_owner() {
-    let (ast, module, _, symbols) = task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 269_100);
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269A_SOURCE_TEXT).is_none());
-    let (typed, resolved) = task258_native_output(&ast, &module);
-    let before = (typed.clone(), resolved.clone());
-    let statement = typed.source_statement().unwrap();
-    let witnesses = typed.source_statement_witnesses().unwrap();
-    let primary = typed.source_term().unwrap();
-    assert_eq!(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer::build(
-        mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationHandoffInput {
-            source_id: ast.source_id, module_id: module.clone(), declarations: Vec::new(),
-        }, statement, witnesses, primary, typed.nodes(),
-    ), Err(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationError::DependencyMismatch));
-    assert_eq!((typed, resolved), before);
-    assert_eq!(task258_native_output(&ast, &module), before);
-    // All historical B lower and declaration faults are retained at their private producers.
-    let (ast, module, _, symbols) = task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_101);
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
-    let (typed, resolved) = task258_native_output(&ast, &module);
-    let before = (typed.clone(), resolved.clone());
-    assert_eq!(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationProducer::build(
-        mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationHandoffInput {
-            source_id: ast.source_id, module_id: module.clone(), declarations: Vec::new(),
-        }, typed.source_statement().unwrap(), typed.source_statement_witnesses().unwrap(), typed.source_term().unwrap(), typed.nodes(),
-    ), Err(mizar_checker::source_proof_local_declaration::SourceProofLocalDeclarationError::DependencyMismatch));
-    assert_eq!((typed, resolved), before);
-    assert_eq!(task258_native_output(&ast, &module), before);
-}
-
-#[test]
 fn task269a_near_misses_and_public_route_remain_isolated() {
     let near_misses = [
-        TASK269A_SOURCE_TEXT.trim_end_matches('\n').to_owned(),
-        format!("{TASK269A_SOURCE_TEXT}\n"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "take x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "take y = x, x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "take z = x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "take y = {x};"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "let y be set;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "set y = x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "given y being set;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "consider y being set;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "reconsider y = x as set;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "deffunc y() = x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "defpred y[] means x = x;"),
-        TASK269A_SOURCE_TEXT.replace("take y = x;", "take y = imported_x;"),
+        (0, TASK269A_SOURCE_TEXT.trim_end_matches('\n').to_owned()),
+        (1, format!("{TASK269A_SOURCE_TEXT}\n")),
+        (3, TASK269A_SOURCE_TEXT.replace("take y = x;", "take y = x, x;")),
+        (4, TASK269A_SOURCE_TEXT.replace("take y = x;", "take z = x;")),
     ];
-    for (ordinal, source) in near_misses.into_iter().enumerate() {
-        let (ast, module, _shells, symbols) =
+    for (ordinal, source) in near_misses {
+        let (ast, module, _shells, _) =
             task253_ast_from_source_text(&source, 269_200 + ordinal);
-        assert!(
-            source_proof_local_declaration_output(&ast, module.clone(), &symbols, &source).is_none(),
-            "Task269A selected near miss {ordinal}"
-        );
-        if [0, 1, 3, 4].contains(&ordinal) {
-            let (typed, resolved) = task258_native_output(&ast, &module);
-            let witnesses = typed.source_statement_witnesses().unwrap();
-            assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 3 { 2 } else { 1 }, 1));
-            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
-            assert!(typed.source_proof_local_declaration().is_none());
-            assert!(resolved.source_proof_local_declaration().is_none());
-        }
+
+        let (typed, resolved) = task258_native_output(&ast, &module);
+        let witnesses = typed.source_statement_witnesses().unwrap();
+        assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 3 { 2 } else { 1 }, 1));
+        assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+        assert!(typed.source_proof_local_declaration().is_none());
+        assert!(resolved.source_proof_local_declaration().is_none());
 
     }
 
     let b3m1_near_misses = [
-        TASK269B_SOURCE_TEXT.trim_end_matches('\n').to_owned(),
-        format!("{TASK269B_SOURCE_TEXT}\n"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take y = x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take x, y = x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take y = x, z = x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take z = x, x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take y = {x}, x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "let y be set;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "set y = x;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "given y being set;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "consider y being set;"),
-        TASK269B_SOURCE_TEXT.replace("take y = x, x;", "reconsider y = x as set;"),
+        (0, TASK269B_SOURCE_TEXT.trim_end_matches('\n').to_owned()),
+        (1, format!("{TASK269B_SOURCE_TEXT}\n")),
+        (2, TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take y = x;")),
+        (5, TASK269B_SOURCE_TEXT.replace("take y = x, x;", "take z = x, x;")),
     ];
-    for (ordinal, source) in b3m1_near_misses.into_iter().enumerate() {
-        let (ast, module, _shells, symbols) =
+    for (ordinal, source) in b3m1_near_misses {
+        let (ast, module, _shells, _) =
             task253_ast_from_source_text(&source, 269_220 + ordinal);
-        assert!(
-            source_proof_local_declaration_output(&ast, module.clone(), &symbols, &source).is_none(),
-            "Task269B selected near miss {ordinal}"
-        );
-        if [0, 1, 2, 5].contains(&ordinal) {
-            let (typed, resolved) = task258_native_output(&ast, &module);
-            let witnesses = typed.source_statement_witnesses().unwrap();
-            assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 2 { 1 } else { 2 }, 1));
-            assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
-            assert!(typed.source_proof_local_declaration().is_none());
-            assert!(resolved.source_proof_local_declaration().is_none());
-        }
+
+        let (typed, resolved) = task258_native_output(&ast, &module);
+        let witnesses = typed.source_statement_witnesses().unwrap();
+        assert_eq!((witnesses.witnesses().len(), witnesses.names().len()), (if ordinal == 2 { 1 } else { 2 }, 1));
+        assert_eq!(resolved.source_statement_witnesses(), Some(witnesses));
+        assert!(typed.source_proof_local_declaration().is_none());
+        assert!(resolved.source_proof_local_declaration().is_none());
+
     }
 
-    let (ast, module, _shells, symbols) =
+    let (ast, module, _shells, _) =
         task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 269_250);
-    let recovered_ast = task269a_ast_with_recovered_name_token(&ast, 81, 82);
-    assert!(
-        source_proof_local_declaration_output(
-            &recovered_ast,
-            module.clone(),
-            &symbols,
-            TASK269A_SOURCE_TEXT,
-        )
-        .is_none(),
-        "Task269A selected a recovered name token"
-    );
-    let imported_y = task269a_symbols_with_visible_imported_y(&symbols, ast.source_id);
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module.clone(),
-            &imported_y,
-            TASK269A_SOURCE_TEXT,
-        )
-        .is_none(),
-        "Task269A accepted a visible imported y"
-    );
+
     let (original, native_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&ast, &module).unwrap().unwrap();
     let (scope, labels, resolution) = mizar_resolve::symbols::source_proof_inputs(&original, &native_symbols).unwrap();
     let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &native_symbols, &scope).expect("genuine named native base");
@@ -422,19 +338,10 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
     assert_eq!(task258_native_output(&ast, &module), native_pair);
 
 
-    let (b3m1_ast, b3m1_module, _shells, b3m1_symbols) =
+    let (b3m1_ast, b3m1_module, _shells, _) =
         task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_251);
     let b3m1_recovered = task269a_ast_with_recovered_name_token(&b3m1_ast, 84, 85);
-    assert!(
-        source_proof_local_declaration_output(
-            &b3m1_recovered,
-            b3m1_module.clone(),
-            &b3m1_symbols,
-            TASK269B_SOURCE_TEXT,
-        )
-        .is_none(),
-        "Task269B selected a recovered name token"
-    );
+
     let (original, native_symbols) = mizar_resolve::symbols::source_theorem_module_original_inputs(&b3m1_ast, &b3m1_module).unwrap().unwrap();
     let (scope, labels, resolution) = mizar_resolve::symbols::source_proof_inputs(&original, &native_symbols).unwrap();
     let (_, _, base) = mizar_checker::type_checker::TermFormulaChecker::check_source_theorem_equalities(&original, &native_symbols, &scope).expect("genuine mixed native base");
@@ -459,34 +366,16 @@ fn task269a_near_misses_and_public_route_remain_isolated() {
     assert_eq!((original, native_symbols, scope, labels, resolution, base, enriched), before);
     assert_eq!(task258_native_output(&b3m1_ast, &b3m1_module), native_pair);
 
-    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(std::path::Path::parent)
-        .expect("mizar-test below workspace");
-    let broad = std::fs::read_to_string(
-        workspace_root
-            .join("tests/miz/fail/types/fail_type_elaboration_proof_local_declaration_gap_001.miz"),
-    )
-    .expect("Task269 broad gap fixture");
-    let (broad_ast, broad_module, _broad_shells, broad_symbols) =
-        task253_ast_from_source_text(&broad, 269_299);
-    assert!(
-        source_proof_local_declaration_output(&broad_ast, broad_module, &broad_symbols, &broad,)
-            .is_none()
-    );
-
-    let (ast, module, _shells, symbols) =
+    let (ast, module, _shells, _) =
         task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 269_300);
-    assert!(task269a_lower_output(&ast, module.clone(), &symbols, TASK269A_SOURCE_TEXT).is_none());
-    assert_eq!(task269a_legacy_detail_keys(&ast, module.clone(), &symbols, TASK269A_SOURCE_TEXT), None);
+
     let (typed, resolved) = task258_native_output(&ast, &module);
     assert!(typed.source_proof_local_declaration().is_none());
     assert!(resolved.source_proof_local_declaration().is_none());
 
-    let (ast, module, _shells, symbols) =
+    let (ast, module, _shells, _) =
         task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_301);
-    assert!(task269a_lower_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
-    assert_eq!(task269a_legacy_detail_keys(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT), None);
+
     let (typed, resolved) = task258_native_output(&ast, &module);
     assert!(typed.source_proof_local_declaration().is_none());
     assert!(resolved.source_proof_local_declaration().is_none());
@@ -596,9 +485,9 @@ fn task269a_symbols_with_visible_imported_y(
 
 #[test]
 fn task269a_typed_and_final_replay_preserve_empty_semantics() {
-    let (ast, module, _shells, symbols) =
+    let (ast, module, _shells, _) =
         task253_ast_from_source_text(TASK269A_SOURCE_TEXT, 269_400);
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269A_SOURCE_TEXT).is_none());
+
     let (typed_ast, resolved) = task258_native_output(&ast, &module);
 
     assert!(typed_ast.source_proof_local_declaration().is_none());
@@ -678,9 +567,9 @@ fn task269a_typed_and_final_replay_preserve_empty_semantics() {
 }
 
 fn assert_task269b_typed_and_final_replay_preserve_empty_semantics() {
-    let (ast, module, _shells, symbols) =
+    let (ast, module, _shells, _) =
         task253_ast_from_source_text(TASK269B_SOURCE_TEXT, 269_401);
-    assert!(source_proof_local_declaration_output(&ast, module.clone(), &symbols, TASK269B_SOURCE_TEXT).is_none());
+
     let (typed_ast, resolved) = task258_native_output(&ast, &module);
 
     assert_eq!(
@@ -2299,33 +2188,7 @@ fn task269cp_private_lower_route_has_zero_checker_and_active_semantic_effect() {
     ] {
         assert!(!output.debug_text().contains(forbidden));
     }
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        task269a_lower_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        )
-        .is_none()
-    );
-    assert_eq!(
-        task269a_legacy_detail_keys(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        ),
-        None
-    );
+
 }
 
 #[test]
@@ -3579,33 +3442,7 @@ fn source_proof_local_given_lower_has_zero_checker_or_semantic_effect() {
     ] {
         assert!(!output.debug_text().contains(forbidden));
     }
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        task269a_lower_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
-        )
-        .is_none()
-    );
-    assert_eq!(
-        task269a_legacy_detail_keys(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
-        ),
-        None
-    );
+
     assert!(
         source_proof_local_let_lower_output(
             &ast,
@@ -3879,26 +3716,9 @@ fn task269c_near_miss_neighbor_and_active_routes_remain_isolated() {
             "Task269C selected Task269A/B family {ordinal}",
         );
     }
-    let (ast, module, shells, symbols) =
+    let (_, _, shells, _) =
         task253_ast_from_source_text(SOURCE_PROOF_LOCAL_LET_TEXT, 269_660);
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        )
-        .is_none()
-    );
-    assert_eq!(
-        task269a_legacy_detail_keys(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        ),
-        None
-    );
+
     assert_eq!(shells.declarations().len(), 2);
 }
 
@@ -4306,15 +4126,7 @@ fn task269g_near_miss_neighbor_and_active_routes_remain_isolated() {
 
     let (ast, module, shells, symbols) =
         task253_ast_from_source_text(SOURCE_PROOF_LOCAL_GIVEN_TEXT, 269_870);
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
-        )
-        .is_none()
-    );
+
     assert!(
         source_proof_local_let_binding_output(
             &ast,
@@ -4335,15 +4147,7 @@ fn task269g_near_miss_neighbor_and_active_routes_remain_isolated() {
         )
         .is_none()
     );
-    assert_eq!(
-        task269a_legacy_detail_keys(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_TEXT,
-        ),
-        None
-    );
+
 }
 
 #[test]
@@ -4779,15 +4583,7 @@ fn task269ct_near_miss_task269c_and_active_routes_remain_isolated() {
             .type_site,
         mizar_checker::binding_env::BindingTypeSite::Missing
     );
-    assert!(
-        source_proof_local_declaration_output(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_PROOF_LOCAL_LET_TEXT,
-        )
-        .is_none()
-    );
+
 }
 
 #[test]
@@ -7481,13 +7277,7 @@ fn task269gcp_near_miss_and_active_routes_remain_isolated() {
         SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
     )
     .is_none());
-    assert!(task269a_lower_output(
-        &ast,
-        module,
-        &symbols,
-        SOURCE_PROOF_LOCAL_GIVEN_CONDITION_TEXT,
-    )
-    .is_none());
+
 }
 
 #[test]
@@ -11197,15 +10987,7 @@ fn task269sdp_near_miss_and_active_routes_remain_isolated() {
         )
         .is_none()
     );
-    assert!(
-        task269a_lower_output(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_PROOF_LOCAL_GIVEN_DESCENDANT_SET_TEXT,
-        )
-        .is_none()
-    );
+
 }
 
 fn task269sdc_output() -> SourceProofLocalGivenDescendantBindingRouteOutput {

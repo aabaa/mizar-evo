@@ -1,10 +1,12 @@
 # 証明ローカル宣言 source transport
 
+現行 API と履歴 Task 節の境界は [retirement boundary](source_statement.md) に従う。
+
 > 正本は英語です。英語版:
 > [../en/source_proof_local_declaration.md](../en/source_proof_local_declaration.md)。
 
 ## Native named-witness boundary
-historical raw B3N profileとTask269A exact profile/runnerは既存private testに残し、native B3N named-witness syntaxは引き続きsupportedとする。mixed B3M1 sliceもsyntaxだけを記録しdeclarationを作らない。coupledなTask269B historical production graphを退役させるが、public declaration API・types・producer・errors・signatures・slotsは保持する。旧 witness-based `build` の native declaration authorityがない場合はtransaction identity検証後に既存`DependencyMismatch`を返す。B3M1/Task269Bのhistorical positiveとfaultは既存private testに残す。public GCU coverageはnative mixed source-family pairを両順で試しupper declarationなしを確認する。既存private SourceTerm GCU sentinelは両順のdeclaration-slot除外を引き続き所有する。
+native named/mixed witness は syntax だけを記録し、旧 declaration handoff を作らない。以下の認証済み Let/Given family と receipt authority は独立に保持し、共有 declaration-slot 排他条件も維持する。
 
 ## 認証済み proof-local intake
 

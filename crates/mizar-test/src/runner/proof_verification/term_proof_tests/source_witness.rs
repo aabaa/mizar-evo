@@ -624,10 +624,6 @@ fn source_witness_statement_original_capture_preserves_boundary() -> Result<(), 
         cluster_trace::ClusterFactTable,
         overload_resolution::*,
         resolved_typed_ast::*,
-        source_statement::{
-            SourceStatementWitnessError, SourceStatementWitnessHandoffInput,
-            SourceStatementWitnessInput, SourceStatementWitnessProducer,
-        },
         type_checker::{SourceVariableSemanticsChecker, TermFormulaChecker},
         typed_ast::*,
     };
@@ -862,18 +858,7 @@ fn source_witness_statement_original_capture_preserves_boundary() -> Result<(), 
             },
             "{control}"
         );
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "missing companion {control}"
-        );
-        assert_eq!(
-            reconstructed.with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached pair {control}"
-        );
+
         assert_eq!(
             base.clone()
                 .with_source_statement_from_original(&source, &symbols, &scope),
@@ -1035,122 +1020,16 @@ fn source_witness_statement_original_capture_preserves_boundary() -> Result<(), 
             .source_statement_witnesses(),
         Some(foreign_witnesses)
     );
-    let (_, row) = foreign_witnesses.witnesses().iter().next().unwrap();
-    let raw_input = SourceStatementWitnessHandoffInput {
-        source_id: foreign_base.source_id(),
-        module_id: foreign_base.module_id().clone(),
-        witnesses: vec![SourceStatementWitnessInput {
-            owner: row.owner(),
-            binding_context: row.binding_context(),
-            term: row.term(),
-            take_site: row.take_site().clone(),
-            take_range: row.take_range(),
-            site: row.site().clone(),
-            source_range: row.source_range(),
-            source_ordinal: row.source_ordinal(),
-            ordinal: row.ordinal(),
-            spelling: row.spelling().to_owned(),
-            kind: row.kind(),
-            recovery: row.recovery(),
-            name: row.name(),
-        }],
-        names: Vec::new(),
-    };
-    for rooted in [true, false] {
-        let arena = TypedArena::try_new(
-            if rooted {
-                foreign_base.nodes().root()
-            } else {
-                None
-            },
-            foreign_base
-                .nodes()
-                .iter()
-                .map(|(_, node)| node.clone())
-                .collect(),
-        )
-        .unwrap();
-        assert_eq!(
-            SourceStatementWitnessProducer::build(
-                raw_input.clone(),
-                foreign_statement,
-                foreign_base.source_term().unwrap(),
-                &arena
-            ),
-            Err(SourceStatementWitnessError::DependencyMismatch)
-        );
-        let detached = TypedAst::try_new(TypedAstParts {
-            source_id: foreign_base.source_id(),
-            module_id: foreign_base.module_id().clone(),
-            resolved_root: if rooted {
-                foreign_base.resolved_root()
-            } else {
-                None
-            },
-            source_context: None,
-            source_type: None,
-            source_attribute: None,
-            nodes: arena,
-            contexts: foreign_base.contexts().clone(),
-            types: foreign_base.types().clone(),
-            facts: foreign_base.facts().clone(),
-            coercions: foreign_base.coercions().clone(),
-            initial_obligations: foreign_base.initial_obligations().clone(),
-            diagnostics: foreign_base.diagnostics().clone(),
-        })
-        .unwrap()
-        .with_source_term(foreign_base.source_term().unwrap().clone())
-        .unwrap()
-        .with_source_atomic_formula(foreign_base.source_atomic_formula().unwrap().clone())
-        .unwrap();
-        assert_eq!(
-            detached.with_source_statement_witnesses(
-                foreign_statement.clone(),
-                foreign_witnesses.clone()
-            ),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
-        assert_eq!(
-            foreign_base.clone().with_source_statement_from_original(
-                &foreign,
-                &foreign_env,
-                &foreign_scope
-            ),
-            Ok(foreign_installed.clone())
-        );
-    }
-    for (statements, companion) in [
-        (
-            statement.clone(),
-            foreign_installed
-                .source_statement_witnesses()
-                .unwrap()
-                .clone(),
+
+    assert_eq!(
+        foreign_base.clone().with_source_statement_from_original(
+            &foreign,
+            &foreign_env,
+            &foreign_scope
         ),
-        (
-            foreign_installed.source_statement().unwrap().clone(),
-            witnesses.clone(),
-        ),
-        (
-            foreign_installed.source_statement().unwrap().clone(),
-            foreign_installed
-                .source_statement_witnesses()
-                .unwrap()
-                .clone(),
-        ),
-    ] {
-        assert_eq!(
-            base.clone()
-                .with_source_statement_witnesses(statements.clone(), companion.clone()),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
-        assert_eq!(
-            installed
-                .clone()
-                .with_source_statement_witnesses(statements, companion),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
-    }
+        Ok(foreign_installed.clone())
+    );
+
     let empty = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
     for (current, env, occurrences) in [
         (&foreign, &symbols, &scope),
@@ -1174,7 +1053,7 @@ fn source_witness_statement_original_capture_preserves_boundary() -> Result<(), 
         source_theorem_module_original_inputs(captures[2].ast.as_ref().unwrap(), &module)?.unwrap();
     let (b1_scope, _, _) = source_proof_inputs(&b1, &b1_env)?;
     let b1_base = TermFormulaChecker::check_source_theorem_equalities(&b1, &b1_env, &b1_scope)?.2;
-    let b1_installed = b1_base
+    b1_base
         .clone()
         .with_source_statement_from_original(&b1, &b1_env, &b1_scope)
         .unwrap();
@@ -1187,30 +1066,7 @@ fn source_witness_statement_original_capture_preserves_boundary() -> Result<(), 
         b1_base.with_source_statement_from_original(&source, &symbols, &scope),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(
-        base.clone()
-            .with_source_statement(b1_installed.source_statement().unwrap().clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    for typed in [&base, &installed] {
-        assert_eq!(
-            typed.clone().with_source_statement_references(
-                statement.clone(),
-                b1_installed.source_statement_references().unwrap().clone()
-            ),
-            Err(TypedAstError::InvalidSourceStatement)
-        );
-    }
-    assert_eq!(
-        installed.clone().with_source_statement(statement.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert_eq!(
-        installed
-            .clone()
-            .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
+
     let collection = OverloadCollectionOutput::collect([], []);
     let expansion = TemplateExpansionOutput::expand(&collection);
     let viability = CandidateViabilityOutput::filter(&expansion, []);

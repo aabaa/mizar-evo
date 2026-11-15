@@ -2327,18 +2327,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         {
             return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
         }
-        #[cfg(not(test))]
-        let has_task_258b4_statement = false;
-        #[cfg(test)]
-        let has_task_258b4_statement =
-            self.inputs
-                .typed_ast
-                .source_statement()
-                .is_some_and(|statement| {
-                    statement.is_task_258b4a_profile()
-                        || statement.is_task_258b4b_profile()
-                        || statement.is_task_258b4c_profile()
-                });
+
         let original_statement = self.inputs.typed_ast.resolved_root().is_some()
             && self.inputs.typed_ast.source_statement().is_some();
         if self.inputs.typed_ast.source_statement().is_some()
@@ -2639,15 +2628,11 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
         }
         let source_atomic_formula = self.inputs.typed_ast.source_atomic_formula().cloned();
         if let Some(source_atomic_formula) = &source_atomic_formula {
-            let source_term =
-                self.inputs
-                    .typed_ast
-                    .source_term()
-                    .ok_or(if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceAtomicFormula
-                    })?;
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceAtomicFormula)?;
             source_atomic_formula
                 .validate_installation(
                     source_id,
@@ -2658,13 +2643,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     source_set_term.as_ref(),
                     self.inputs.typed_ast.nodes(),
                 )
-                .map_err(|_| {
-                    if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceAtomicFormula
-                    }
-                })?;
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceAtomicFormula)?;
         }
         let initial_obligations = self.inputs.typed_ast.initial_obligations().clone();
         let source_attribute_definition =
@@ -2960,50 +2939,26 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             && !native_composition
         {
             if self.inputs.typed_ast.source_context().is_some() {
-                return Err(if has_task_258b4_statement {
-                    ResolvedTypedAstError::InvalidSourceStatement
-                } else {
-                    ResolvedTypedAstError::InvalidSourceCompositeFormula
-                });
+                return Err(ResolvedTypedAstError::InvalidSourceCompositeFormula);
             }
             source_composite_formula
                 .validate_installation(source_id, &module_id, self.inputs.typed_ast.nodes())
-                .map_err(|_| {
-                    if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceCompositeFormula
-                    }
-                })?;
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceCompositeFormula)?;
         }
         if let Some(source_formula_composition) = &source_formula_composition
             && !native_composition
         {
-            let source_term =
-                self.inputs
-                    .typed_ast
-                    .source_term()
-                    .ok_or(if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceFormulaComposition
-                    })?;
-            let source_atomic_formula =
-                source_atomic_formula
-                    .as_ref()
-                    .ok_or(if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceFormulaComposition
-                    })?;
-            let source_composite_formula =
-                source_composite_formula
-                    .as_ref()
-                    .ok_or(if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceFormulaComposition
-                    })?;
+            let source_term = self
+                .inputs
+                .typed_ast
+                .source_term()
+                .ok_or(ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
+            let source_atomic_formula = source_atomic_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
+            let source_composite_formula = source_composite_formula
+                .as_ref()
+                .ok_or(ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
             source_formula_composition
                 .validate_installation(
                     source_id,
@@ -3013,13 +2968,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     source_composite_formula,
                     self.inputs.typed_ast.nodes(),
                 )
-                .map_err(|_| {
-                    if has_task_258b4_statement {
-                        ResolvedTypedAstError::InvalidSourceStatement
-                    } else {
-                        ResolvedTypedAstError::InvalidSourceFormulaComposition
-                    }
-                })?;
+                .map_err(|_| ResolvedTypedAstError::InvalidSourceFormulaComposition)?;
         } else if !native_composition
             && source_composite_formula.as_ref().is_some_and(|handoff| {
                 handoff.is_task_257b1_profile()
@@ -3027,11 +2976,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     || handoff.is_task_257b3_profile()
             })
         {
-            return Err(if has_task_258b4_statement {
-                ResolvedTypedAstError::InvalidSourceStatement
-            } else {
-                ResolvedTypedAstError::InvalidSourceFormulaComposition
-            });
+            return Err(ResolvedTypedAstError::InvalidSourceFormulaComposition);
         }
         let source_condition_formula_composition = self
             .inputs
@@ -3117,42 +3062,14 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
         }
         if let Some(source_statement) = &source_statement {
-            #[cfg(not(test))]
-            let legacy_set_witness_statement = false;
-            #[cfg(test)]
-            let legacy_set_witness_statement = source_statement.is_task_258b3m2b2b3a_profile()
-                || source_statement.is_task_258b3m2b2b3b_profile()
-                || source_statement.is_task_258b3m2b2b3c_profile()
-                || source_statement.is_task_258b3m2b2b3d_profile()
-                || source_statement.is_task_258b3m2b2b3e_profile();
-            #[cfg(not(test))]
-            let structure_witness_profile = false;
-            #[cfg(test)]
-            let structure_witness_profile = source_statement.is_task_258b3m2b2b2a_profile()
-                || source_statement.is_task_258b3m2b2b2b_profile()
-                || source_statement.is_task_258b3m2b2b2c_profile();
-            #[cfg(not(test))]
-            let is_task_258b4 = false;
-            #[cfg(test)]
-            let is_task_258b4 = source_statement.is_task_258b4a_profile()
-                || source_statement.is_task_258b4b_profile()
-                || source_statement.is_task_258b4c_profile();
             if (self.inputs.typed_ast.source_context().is_some() && !native_statement)
                 || (self.inputs.typed_ast.source_type().is_some() && !native_statement)
                 || self.inputs.typed_ast.source_attribute().is_some()
                 || self.inputs.typed_ast.source_evidence().is_some()
-                || (source_structure.is_some() && !structure_witness_profile)
-                || (source_set_term.is_some()
-                    && !native_set_witness_statement
-                    && !legacy_set_witness_statement)
-                || (source_composite_formula.is_some() && !is_task_258b4 && !native_statement)
-                || (source_formula_composition.is_some() && !is_task_258b4 && !native_statement)
-                || (is_task_258b4
-                    && (source_composite_formula.is_none()
-                        || source_formula_composition.is_none()
-                        || source_application.is_some()
-                        || source_structure.is_some()
-                        || source_set_term.is_some()))
+                || source_structure.is_some()
+                || (source_set_term.is_some() && !native_set_witness_statement)
+                || (source_composite_formula.is_some() && !native_statement)
+                || (source_formula_composition.is_some() && !native_statement)
                 || source_condition_formula_composition.is_some()
                 || source_predicate_chain_composition.is_some()
             {
@@ -3166,23 +3083,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
             let source_atomic_formula = source_atomic_formula
                 .as_ref()
                 .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?;
-            if is_task_258b4 {
-                source_statement
-                    .validate_installation_with_formula_composition(
-                        source_id,
-                        &module_id,
-                        source_term,
-                        source_atomic_formula,
-                        source_composite_formula
-                            .as_ref()
-                            .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?,
-                        source_formula_composition
-                            .as_ref()
-                            .ok_or(ResolvedTypedAstError::InvalidSourceStatement)?,
-                        self.inputs.typed_ast.nodes(),
-                    )
-                    .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
-            } else if !native_statement {
+            if !native_statement {
                 source_statement
                     .validate_installation(
                         source_id,
@@ -3193,26 +3094,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     )
                     .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?;
             }
-            #[cfg(not(test))]
-            let legacy_reserved_statement = false;
-            #[cfg(test)]
-            let legacy_reserved_statement =
-                source_statement.is_task_258a_profile() || source_statement.is_task_258b2_profile();
-            #[cfg(not(test))]
-            let legacy_nested_statement = false;
-            #[cfg(test)]
-            let legacy_nested_statement = source_statement.is_task_258b1_profile()
-                || source_statement.is_task_258b5a_profile()
-                || source_statement.is_task_258b5b_profile();
-            #[cfg(not(test))]
-            let legacy_witness_statement = false;
-            #[cfg(test)]
-            let legacy_witness_statement = source_statement.is_task_258b3_profile()
-                || source_statement.is_task_258b3n_profile()
-                || source_statement.is_task_258b3m1_profile()
-                || source_statement.is_task_258b3m2a_profile()
-                || source_statement.is_task_258b3m2b1_profile()
-                || source_statement.is_task_258b3m2b2a_profile();
+
             let native_referenced_statement = original_statement
                 && self
                     .inputs
@@ -3220,16 +3102,12 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                     .nodes()
                     .iter()
                     .any(|(_, node)| node.kind.as_str() == "CompactStatement");
-            #[cfg(not(test))]
-            let application_witness_profile = false;
-            #[cfg(test)]
-            let application_witness_profile = source_statement.is_task_258b3m2b2b1a_profile()
-                || source_statement.is_task_258b3m2b2b1b1_profile();
+
             match (&source_statement_references, &source_statement_witnesses) {
                 (Some(references), None)
                     if source_application.is_none()
                         && !native_witness_statement
-                        && (native_referenced_statement || legacy_nested_statement) =>
+                        && native_referenced_statement =>
                 {
                     references
                         .validate_installation(
@@ -3241,55 +3119,7 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                         .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
                 }
                 (None, Some(witnesses))
-                    if source_application.is_none()
-                        && (native_witness_statement || legacy_witness_statement) =>
-                {
-                    witnesses
-                        .validate_installation_with_set_term(
-                            source_id,
-                            &module_id,
-                            source_statement,
-                            source_term,
-                            source_set_term.as_ref(),
-                            self.inputs.typed_ast.nodes(),
-                        )
-                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
-                }
-                (None, Some(witnesses))
-                    if application_witness_profile && source_application.is_some() =>
-                {
-                    witnesses
-                        .validate_installation_with_application(
-                            source_id,
-                            &module_id,
-                            source_statement,
-                            source_term,
-                            source_application.as_ref(),
-                            self.inputs.typed_ast.nodes(),
-                        )
-                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
-                }
-                (None, Some(witnesses))
-                    if structure_witness_profile
-                        && source_application.is_none()
-                        && source_structure.is_some() =>
-                {
-                    witnesses
-                        .validate_installation_with_structure(
-                            source_id,
-                            &module_id,
-                            source_statement,
-                            source_term,
-                            source_structure.as_ref(),
-                            self.inputs.typed_ast.nodes(),
-                        )
-                        .map_err(|_| ResolvedTypedAstError::InvalidSourceStatement)?
-                }
-                (None, Some(witnesses))
-                    if legacy_set_witness_statement
-                        && source_application.is_none()
-                        && source_structure.is_none()
-                        && source_set_term.is_some() =>
+                    if source_application.is_none() && native_witness_statement =>
                 {
                     witnesses
                         .validate_installation_with_set_term(
@@ -3304,42 +3134,16 @@ impl<'a> ResolvedTypedAstAssembler<'a> {
                 }
                 (None, None)
                     if source_application.is_none()
-                        && ((original_statement
-                            && !native_referenced_statement
-                            && !native_witness_statement)
-                            || legacy_reserved_statement
-                            || is_task_258b4) => {}
+                        && original_statement
+                        && !native_referenced_statement
+                        && !native_witness_statement => {}
                 _ => return Err(ResolvedTypedAstError::InvalidSourceStatement),
             }
         } else if source_statement_references.is_some() || source_statement_witnesses.is_some() {
             return Err(ResolvedTypedAstError::InvalidSourceStatement);
         }
-        if let Some(source_proof_local_declaration) = &source_proof_local_declaration {
-            if source_statement_references.is_some() {
-                return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
-            }
-            let source_term = self
-                .inputs
-                .typed_ast
-                .source_term()
-                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
-            let source_statement = source_statement
-                .as_ref()
-                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
-            let source_statement_witnesses = source_statement_witnesses
-                .as_ref()
-                .ok_or(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
-            source_proof_local_declaration
-                .validate_complete_installation(
-                    source_id,
-                    &module_id,
-                    source_statement,
-                    source_statement_witnesses,
-                    source_term,
-                    self.inputs.typed_ast.nodes(),
-                    true,
-                )
-                .map_err(|_| ResolvedTypedAstError::InvalidSourceProofLocalDeclaration)?;
+        if source_proof_local_declaration.is_some() {
+            return Err(ResolvedTypedAstError::InvalidSourceProofLocalDeclaration);
         }
 
         Ok(ResolvedTypedAst {
@@ -6892,9 +6696,8 @@ mod tests {
             |proof: &mut CheckedProof| proof.proposition = CheckedFormulaId::new(1)
         );
         reject_proof_mutation!(|proof: &mut CheckedProof| proof.root = CheckedProofNodeId::new(1));
-        reject_proof_mutation!(
-            |proof: &mut CheckedProof| proof.source_range = range(fixture.source, 11, 90)
-        );
+        let changed_proof_range = range(fixture.source, 11, 90);
+        reject_proof_mutation!(|proof: &mut CheckedProof| proof.source_range = changed_proof_range);
         reject_proof_mutation!(
             |proof: &mut CheckedProof| proof.owner_origin = proof.owner_origin.clone().recovered()
         );
@@ -6903,9 +6706,8 @@ mod tests {
         reject_node_mutation!(|node: &mut CheckedProofNode| node.proof = CheckedProofId::new(1));
         reject_node_mutation!(|node: &mut CheckedProofNode| node.kind =
             CheckedProofNodeKind::TerminalGoal(CheckedTerminalGoalId::new(1)));
-        reject_node_mutation!(
-            |node: &mut CheckedProofNode| node.source_range = range(fixture.source, 51, 60)
-        );
+        let changed_node_range = range(fixture.source, 51, 60);
+        reject_node_mutation!(|node: &mut CheckedProofNode| node.source_range = changed_node_range);
         reject_node_mutation!(
             |node: &mut CheckedProofNode| node.recovery = NodeRecoveryState::Recovered
         );
@@ -6934,8 +6736,9 @@ mod tests {
         reject_goal_mutation!(
             |goal: &mut CheckedTerminalGoal| goal.formula_node = TypedNodeId::new(1)
         );
+        let changed_goal_range = range(fixture.source, 51, 60);
         reject_goal_mutation!(
-            |goal: &mut CheckedTerminalGoal| goal.source_range = range(fixture.source, 51, 60)
+            |goal: &mut CheckedTerminalGoal| goal.source_range = changed_goal_range
         );
         reject_goal_mutation!(
             |goal: &mut CheckedTerminalGoal| goal.recovery = NodeRecoveryState::Recovered

@@ -985,20 +985,7 @@ fn source_nested_statement_original_capture_preserves_boundary() -> Result<(), S
                 "{control}"
             );
         }
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached statement {control}"
-        );
-        assert!(
-            reconstructed
-                .clone()
-                .with_source_statement_references(statement.clone(), references.clone())
-                .is_err(),
-            "detached pair {control}"
-        );
+
         assert_eq!(
             base.clone()
                 .with_source_statement_from_original(&source, &symbols, &scope),
@@ -1131,14 +1118,7 @@ fn source_nested_statement_original_capture_preserves_boundary() -> Result<(), S
                 .unwrap();
             assert_eq!(a.source_statement().unwrap().statements().len(), 1);
             assert!(a.source_statement_references().is_none());
-            assert!(
-                own_base
-                    .with_source_statement_references(
-                        a.source_statement().unwrap().clone(),
-                        references.clone(),
-                    )
-                    .is_err()
-            );
+
             assert_eq!(
                 installed
                     .clone()
@@ -2335,7 +2315,6 @@ fn source_nested_parenthesized_witness_statement_original_capture_preserves_boun
 -> Result<(), String> {
     use super::super::super::type_elaboration::assemble_empty_resolved_typed_ast;
     use mizar_checker::{
-        source_statement::*,
         type_checker::{SourceVariableSemanticsChecker, TermFormulaChecker},
         typed_ast::*,
     };
@@ -2905,30 +2884,6 @@ fn source_nested_parenthesized_witness_statement_original_capture_preserves_boun
     assert_eq!(attempts, 285);
     assert_eq!(canonical_tokens, unowned_tokens.len() * 5);
 
-    let raw_input = SourceStatementWitnessHandoffInput {
-        source_id: base.source_id(),
-        module_id: module.clone(),
-        witnesses: witnesses
-            .witnesses()
-            .iter()
-            .map(|(_, row)| SourceStatementWitnessInput {
-                owner: row.owner(),
-                binding_context: row.binding_context(),
-                term: row.term(),
-                take_site: row.take_site().clone(),
-                take_range: row.take_range(),
-                site: row.site().clone(),
-                source_range: row.source_range(),
-                source_ordinal: row.source_ordinal(),
-                ordinal: row.ordinal(),
-                spelling: row.spelling().to_owned(),
-                kind: row.kind(),
-                recovery: row.recovery(),
-                name: row.name(),
-            })
-            .collect(),
-        names: Vec::new(),
-    };
     assert!(!inference.type_entries().is_empty());
     for control in [
         "rooted",
@@ -2963,20 +2918,6 @@ fn source_nested_parenthesized_witness_statement_original_capture_preserves_boun
             reconstructed
         };
         let current_before = reconstructed.clone();
-        let raw_before = raw_input.clone();
-        assert_eq!(
-            SourceStatementWitnessProducer::build(
-                raw_input.clone(),
-                statement,
-                base.source_term().unwrap(),
-                reconstructed.nodes()
-            ),
-            Err(SourceStatementWitnessError::DependencyMismatch),
-            "raw {control}"
-        );
-        assert_eq!(raw_input, raw_before);
-        assert_eq!(reconstructed, current_before);
-        pristine();
         assert_eq!(
             reconstructed
                 .clone()
@@ -2989,25 +2930,6 @@ fn source_nested_parenthesized_witness_statement_original_capture_preserves_boun
             "original {control}"
         );
         assert_eq!(reconstructed, current_before);
-        pristine();
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "missing companion {control}"
-        );
-        assert_eq!(reconstructed, current_before);
-        pristine();
-        assert_eq!(
-            reconstructed
-                .clone()
-                .with_source_statement_witnesses(statement.clone(), witnesses.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached {control}"
-        );
-        assert_eq!(reconstructed, current_before);
-        assert_eq!(raw_input, raw_before);
         pristine();
     }
     rejected_pair(
@@ -3136,27 +3058,6 @@ fn source_nested_parenthesized_witness_statement_original_capture_preserves_boun
             .with_source_atomic_formula(foreign_base.source_atomic_formula().unwrap().clone()),
         Err(TypedAstError::InvalidSourceAtomicFormula)
     );
-    foreign_pristine();
-    for (statements, companion) in [
-        (
-            statement.clone(),
-            foreign_pair.source_statement_witnesses().unwrap().clone(),
-        ),
-        (
-            foreign_pair.source_statement().unwrap().clone(),
-            witnesses.clone(),
-        ),
-        (
-            foreign_pair.source_statement().unwrap().clone(),
-            foreign_pair.source_statement_witnesses().unwrap().clone(),
-        ),
-    ] {
-        rejected_pair(
-            base.clone()
-                .with_source_statement_witnesses(statements, companion),
-        );
-        foreign_pristine();
-    }
     foreign_pristine();
     // Triple grouping has its own native base; other mutations remain bounded-source refusals.
     for (case, current) in [

@@ -1,10 +1,12 @@
 # Source Proof-Local Declaration Transport
 
+Current APIs and historical Task sections follow the [retirement boundary](source_statement.md).
+
 > Canonical language: English. Japanese companion:
 > [../ja/source_proof_local_declaration.md](../ja/source_proof_local_declaration.md).
 
 ## Native named-witness boundary
-The historical raw B3N profile and Task269A exact profile/runner remain confined to existing private tests; native B3N named-witness syntax remains supported. Native mixed B3M1 also records syntax only and supplies no declaration. Retire the coupled Task269B historical production graph while preserving the public declaration API, types, producer, errors, signatures and slots; unavailable native authority for the legacy witness-based `build` returns the existing `DependencyMismatch` after transaction-identity validation. Preserve historical B3M1/Task269B positives and faults in existing private tests. Public GCU coverage transfers to the native mixed source-family pair in both orders with no upper declaration; the existing private SourceTerm GCU sentinel continues to own both-order declaration-slot exclusion.
+Native named and mixed witnesses record syntax only and supply no old declaration handoff. The authenticated Let/Given families below and their receipt authority remain separate; shared declaration-slot exclusions remain enforced.
 
 ## Authenticated proof-local intake
 

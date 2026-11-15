@@ -4207,6 +4207,92 @@ fn literal_source_offset_counter_visits_macro_payloads_not_patterns_or_text() {
     ] {
         assert!(literal_source_offset_count(source).is_err(), "{source}");
     }
+
+    let forwarding = r#"
+        fn range(id: SourceId, start: usize, end: usize) -> SourceRange {
+            SourceRange { source_id: id, start, end }
+        }
+    "#;
+    let definition = "macro_rules! token { ($kind:expr, $start:expr, $end:expr) => { builder.add_token($kind, range(id, $start, $end)) }; }";
+    for (body, expected) in [
+        (
+            "token!(kind, 1, end); token!(kind, start, 2); token!(kind, start, end);",
+            2,
+        ),
+        ("token!(SourceRange::new(id, 3, end), 1, end);", 2),
+        (
+            "{ macro_rules! token { ($a:expr, $b:expr, $c:expr) => { unrelated($a, $b, $c) }; } token!(kind, 1, 2); } token!(kind, 1, 2);",
+            1,
+        ),
+        (
+            "#[cfg(not(test))] macro_rules! token { ($a:expr, $b:expr, $c:expr) => { unrelated($a, $b, $c) }; } token!(kind, 1, 2);",
+            1,
+        ),
+    ] {
+        let source = format!("{forwarding} fn f() {{ {definition} {body} }}");
+        assert_eq!(
+            literal_source_offset_count_for(&source, true, false),
+            Ok(expected),
+            "{body}"
+        );
+        assert!(
+            literal_source_offset_count(&source).is_err(),
+            "production forwarding policy changed"
+        );
+    }
+    for invalid in [
+        "macro_rules! token { ($s:expr, $e:expr) => { range(id, $s, $e) }; () => { range(id, 1, 2) }; }",
+        "macro_rules! token { ($s:tt, $e:expr) => { range(id, $s, $e) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { pair(range(id, $s, $e), range(id, $s, $e)) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { builder.pair(range(id, $s, $e), SourceRange::new(id, 1, 2)) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { opaque!(range(id, $s, $e)) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { range(id, $s + 1, $e) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { self::range(id, $s, $e) }; }",
+        "macro_rules! token { ($s:expr, $e:expr) => { range(id, $s, $e); range(id, $s, $e) }; }",
+        "let range = unknown; macro_rules! token { ($s:expr, $e:expr) => { range(id, $s, $e) }; }",
+    ] {
+        let source = format!("{forwarding} fn f() {{ {invalid} }}");
+        assert!(
+            literal_source_offset_count_for(&source, true, false).is_err(),
+            "{invalid}"
+        );
+    }
+    for invocation in [
+        "token!(1);",
+        "token!(1, 2, 3, 4);",
+        "self::token!(kind, 1, 2);",
+        "let range = unknown; token!(kind, 1, 2);",
+        "token!(kind, 1, 2 +);",
+    ] {
+        let source = format!("{forwarding} fn f() {{ {definition} {invocation} }}");
+        assert!(
+            literal_source_offset_count_for(&source, true, false).is_err(),
+            "{invocation}"
+        );
+    }
+    for body in [
+        format!("use token as alias; {definition} alias!(kind, 1, 2);"),
+        format!("{definition} use token as alias; alias!(kind, 1, 2);"),
+        format!(
+            "{definition} #[cfg(feature = \"optional\")] macro_rules! token {{ ($a:expr, $b:expr, $c:expr) => {{ unrelated($a, $b, $c) }}; }} token!(kind, 1, 2);"
+        ),
+        format!("#[cfg(feature = \"optional\")] {definition} token!(kind, 1, 2);"),
+    ] {
+        let source = format!("{forwarding} fn f() {{ {body} }}");
+        assert!(
+            literal_source_offset_count_for(&source, true, false).is_err(),
+            "{body}"
+        );
+    }
+    let source = format!(
+        "{forwarding} {definition} mod nested {{ fn range(start: usize, id: SourceId, end: usize) -> SourceRange {{ SourceRange {{ source_id: id, start, end }} }} fn f() {{ token!(kind, 1, end); }} }}"
+    );
+    assert!(literal_source_offset_count_for(&source, true, false).is_err());
+    // Textual definitions apply only after their declaration and within scope.
+    let source = format!(
+        "{forwarding} fn f() {{ token!(kind, 1, 2); {{ {definition} token!(kind, 3, 4); }} token!(kind, 5, 6); }}"
+    );
+    assert_eq!(literal_source_offset_count_for(&source, true, false), Ok(1));
 }
 
 #[test]
@@ -4226,6 +4312,7 @@ fn literal_source_offset_counter_applies_three_valued_cfg() {
     // test is false; other predicates are unknown and included unless a false
     // test conjunct proves the complete cfg false.
     assert_eq!(literal_source_offset_count(source), Ok(3));
+    assert_eq!(literal_source_offset_count_for(source, true, false), Ok(5));
     assert_eq!(
         literal_source_offset_count(
             "#![cfg(test)]\nfn f() { let _ = SourceRange::new(id, 1, 2); }"
@@ -4239,8 +4326,56 @@ fn literal_source_offset_counter_applies_three_valued_cfg() {
         Ok(1)
     );
     assert_eq!(
+        literal_source_offset_count_for(
+            "#![cfg(test)]\nfn f() { let _ = SourceRange::new(id, 1, 2); }",
+            true,
+            false,
+        ),
+        Ok(1)
+    );
+    assert_eq!(
+        literal_source_offset_count_for(
+            "#![cfg(not(test))]\nfn f() { let _ = SourceRange::new(id, 1, 2); }",
+            true,
+            false,
+        ),
+        Ok(0)
+    );
+    assert_eq!(
         literal_source_offset_count(
             "fn f() { #[cfg(test)] { let _ = SourceRange::new(id, 1, 2); } #[cfg(feature = \"maybe\")] { let _ = SourceRange::new(id, 3, 4); } }"
+        ),
+        Ok(1)
+    );
+    assert_eq!(
+        literal_source_offset_count_for(
+            "fn f() { #[cfg(test)] let _ = SourceRange::new(id, 1, 2); #[cfg(not(test))] { let _ = SourceRange::new(id, 3, 4); } #[cfg_attr(test, cfg(test))] { let _ = SourceRange::new(id, 5, 6); } #[cfg_attr(not(test), cfg(test))] { let _ = SourceRange::new(id, 7, 8); } }",
+            true,
+            false,
+        ),
+        Ok(3)
+    );
+    assert_eq!(
+        literal_source_offset_count_for(
+            "fn f() { #[cfg(test)] let _ = SourceRange::new(id, 1, 2); #[cfg(not(test))] { let _ = SourceRange::new(id, 3, 4); } #[cfg_attr(test, cfg(test))] { let _ = SourceRange::new(id, 5, 6); } #[cfg_attr(not(test), cfg(test))] { let _ = SourceRange::new(id, 7, 8); } }",
+            false,
+            false,
+        ),
+        Ok(2)
+    );
+    assert_eq!(
+        literal_source_offset_count_for(
+            "#[cfg_attr(test, cfg(not(test)))] fn cfg_attr_test_off() { let _ = SourceRange::new(id, 1, 2); } #[cfg_attr(not(test), cfg(test))] fn cfg_attr_prod_off() { let _ = SourceRange::new(id, 3, 4); }",
+            false,
+            false,
+        ),
+        Ok(1)
+    );
+    assert_eq!(
+        literal_source_offset_count_for(
+            "#[cfg_attr(test, cfg(not(test)))] fn cfg_attr_test_off() { let _ = SourceRange::new(id, 1, 2); } #[cfg_attr(not(test), cfg(test))] fn cfg_attr_prod_off() { let _ = SourceRange::new(id, 3, 4); }",
+            true,
+            false,
         ),
         Ok(1)
     );
@@ -4257,6 +4392,26 @@ fn literal_source_offset_counter_applies_three_valued_cfg() {
     ] {
         assert_eq!(literal_source_offset_count(source), Ok(expected));
     }
+    assert_eq!(
+        literal_source_offset_count_for(
+            "fn f() { #[cfg(test)] { let _ = SourceRange::new(id, 1, 2); } }",
+            true,
+            false,
+        ),
+        Ok(1)
+    );
+    assert!(
+        literal_source_offset_count_for("#[cfg(test)] include!(\"fragment.rs\");", true, false,)
+            .is_err()
+    );
+    assert!(
+        literal_source_offset_count_for(
+            "fn f() { #[cfg(test)] include!(\"fragment.rs\"); }",
+            true,
+            false,
+        )
+        .is_err()
+    );
 }
 
 #[test]
@@ -4302,6 +4457,10 @@ fn literal_source_offset_workspace_finds_production_sources() {
             }
             fn root_offset() { let _ = SourceRange::new(id, 1, end); }
         "#,
+    );
+    write_test_file(
+        &root.join("crates/demo/src/missing_test.rs"),
+        "fn gated_file_test() { let _ = SourceRange::new(id, 27, end); }",
     );
     write_test_file(
         &root.join("crates/demo/src/main.rs"),
@@ -4383,12 +4542,13 @@ fn literal_source_offset_workspace_finds_production_sources() {
         "fn second() { let _ = SourceRange::new(id, 26, end); }",
     );
 
-    let actual = literal_source_offset_counts(&root).unwrap();
+    let actual = literal_source_offset_counts(&root, false).unwrap();
     assert_eq!(actual.get("crates/demo/src/zero.rs"), Some(&0));
     for test_only in [
         "crates/demo/src/test_support.rs",
         "crates/demo/src/descendant.rs",
         "crates/demo/src/test_support/production_after.rs",
+        "crates/demo/src/missing_test.rs",
         "crates/demo/src/fragments/test_fragments.rs",
         "crates/demo/src/fragments/test_nested.rs",
         "crates/demo/src/external_fragment.rs",
@@ -4418,6 +4578,30 @@ fn literal_source_offset_workspace_finds_production_sources() {
         ("crates/mizar-test/src/lib.rs".to_owned(), 1),
     ]);
     assert_eq!(positive, expected);
+
+    let test_actual = literal_source_offset_counts(&root, true).unwrap();
+    assert_eq!(test_actual.get("crates/demo/src/lib.rs"), Some(&3));
+    assert_eq!(test_actual.get("crates/demo/src/missing_test.rs"), Some(&1));
+    assert_eq!(test_actual.get("crates/demo/src/test_support.rs"), Some(&2));
+    assert_eq!(test_actual.get("crates/demo/shared.rs"), Some(&1));
+    assert_eq!(
+        test_actual.get("crates/demo/src/fragments/test_fragments.rs"),
+        Some(&1)
+    );
+    assert_eq!(
+        test_actual.get("crates/demo/src/fragments/test_nested.rs"),
+        Some(&1)
+    );
+    assert_eq!(
+        test_actual.get("crates/demo/src/external_fragment.rs"),
+        Some(&1)
+    );
+    assert_eq!(
+        test_actual.get("crates/demo/src/external_nested.rs"),
+        Some(&1)
+    );
+    assert!(!test_actual.contains_key("crates/demo/src/test_support/production_after.rs"));
+    assert_eq!(test_actual.get("crates/demo/src/zero.rs"), Some(&0));
     remove_dir_if_exists(&root);
 }
 
@@ -4464,7 +4648,7 @@ fn literal_source_offset_workspace_requires_builtin_test_include_proof() {
             }
         "#,
     );
-    let ordinary_local_names = literal_source_offset_counts(&root).unwrap();
+    let ordinary_local_names = literal_source_offset_counts(&root, false).unwrap();
     assert!(
         !ordinary_local_names.contains_key("crates/demo/src/orphan.rs"),
         "function-local names and an ordinary function do not shadow item include!"
@@ -4539,7 +4723,7 @@ fn literal_source_offset_workspace_requires_builtin_test_include_proof() {
             "{root_items}\nmod foreign {{ pub fn value() {{}} }}\n#[cfg(test)] mod test_scope {{ {module_items} include!(\"orphan.rs\"); }}"
         );
         write_test_file(&root.join("crates/demo/src/lib.rs"), &source);
-        let actual = literal_source_offset_counts(&root);
+        let actual = literal_source_offset_counts(&root, false);
         let orphan_remains_production = actual
             .as_ref()
             .ok()
@@ -4550,7 +4734,53 @@ fn literal_source_offset_workspace_requires_builtin_test_include_proof() {
             actual.is_err() || orphan_remains_production,
             "{case} cannot prove the orphan is test-only"
         );
+        let test_error = literal_source_offset_counts(&root, true)
+            .expect_err("unsafe test include was not fail-visible");
+        assert!(
+            test_error.contains("crates/demo/src/lib.rs"),
+            "{case} error omitted the physical include source: {test_error}"
+        );
     }
+
+    write_test_file(
+        &root.join("crates/demo/src/inactive.rs"),
+        "include!(\"missing.rs\"); include!(concat!(\"unsupported\", \".rs\")); mod nested { opaque_item!(); include!(\"also_missing.rs\"); }",
+    );
+    for disabled in [
+        "#[cfg(not(test))] include!(\"missing.rs\");",
+        "#[cfg(not(test))] include!(concat!(\"unsupported\", \".rs\"));",
+        "#[cfg(not(test))] opaque_item!();",
+        "#[cfg(not(test))] mod inactive;",
+        "#[cfg(not(test))] mod skipped { include!(\"missing.rs\"); opaque_item!(); }",
+        "#[cfg(not(test))] include!(\"orphan.rs\");",
+    ] {
+        // Keep the hazardous module referenced even in cases testing other edges.
+        let source = format!(
+            "#[cfg(not(test))] mod inactive; {disabled} fn live() {{ let _ = SourceRange::new(id, 2, end); }} include!(\"active.rs\");"
+        );
+        write_test_file(&root.join("crates/demo/src/lib.rs"), &source);
+        write_test_file(
+            &root.join("crates/demo/src/active.rs"),
+            "fn active() { let _ = SourceRange::new(id, 3, end); }",
+        );
+        let counts = literal_source_offset_counts(&root, true)
+            .unwrap_or_else(|error| panic!("{disabled}: {error}"));
+        assert_eq!(counts.get("crates/demo/src/lib.rs"), Some(&1));
+        assert_eq!(counts.get("crates/demo/src/active.rs"), Some(&1));
+        assert!(!counts.contains_key("crates/demo/src/inactive.rs"));
+        if disabled.ends_with("include!(\"orphan.rs\");") {
+            assert!(!counts.contains_key("crates/demo/src/orphan.rs"));
+        }
+    }
+    write_test_file(
+        &root.join("crates/demo/src/lib.rs"),
+        "#[cfg(not(test))] mod inactive; #[cfg(not(test))] mod dead { macro_rules! include { ($p:literal) => {}; } include!(\"orphan.rs\"); }",
+    );
+    let ambiguous_inactive = literal_source_offset_counts(&root, true).unwrap();
+    assert_eq!(
+        ambiguous_inactive.get("crates/demo/src/orphan.rs"),
+        Some(&1)
+    );
     remove_dir_if_exists(&root);
 }
 
@@ -4582,11 +4812,11 @@ fn literal_source_offset_workspace_fails_closed_on_unsupported_inputs() {
         &invalid_root.join("crates/demo/src/selected.rs"),
         "fn selected() {}",
     );
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
     write_test_file(&invalid_root.join("crates/demo/src/lib.rs"), "fn broken( {");
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
     write_test_file(&invalid_root.join("crates/demo/src/lib.rs"), "mod missing;");
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
     write_test_file(
         &invalid_root.join("crates/demo/production_payload.rs"),
         "fn f() { let _ = SourceRange::new(id, 1, 2); }",
@@ -4595,12 +4825,12 @@ fn literal_source_offset_workspace_fails_closed_on_unsupported_inputs() {
         &invalid_root.join("crates/demo/src/lib.rs"),
         "include!(\"../production_payload.rs\");",
     );
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
     write_test_file(
         &invalid_root.join("crates/demo/src/lib.rs"),
         "std::include!(\"../production_payload.rs\");",
     );
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
 
     write_test_file(
         &invalid_root.join("crates/demo/test_payload.rs"),
@@ -4610,9 +4840,32 @@ fn literal_source_offset_workspace_fails_closed_on_unsupported_inputs() {
         &invalid_root.join("crates/demo/src/lib.rs"),
         "#[cfg(test)] include!(\"../test_payload.rs\");",
     );
-    let test_only_include = literal_source_offset_counts(&invalid_root).unwrap();
+    let test_only_include = literal_source_offset_counts(&invalid_root, false).unwrap();
     assert_eq!(test_only_include.get("crates/demo/src/lib.rs"), Some(&0));
     assert!(!test_only_include.contains_key("crates/demo/test_payload.rs"));
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "#[cfg(not(test))] include!(\"missing_inactive.rs\"); #[cfg(test)] include!(\"../test_payload.rs\");",
+    );
+    let active_test_include = literal_source_offset_counts(&invalid_root, true).unwrap();
+    assert_eq!(active_test_include.get("crates/demo/src/lib.rs"), Some(&0));
+    assert_eq!(
+        active_test_include.get("crates/demo/test_payload.rs"),
+        Some(&1)
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/src/lib.rs"),
+        "include!(\"../test_payload.rs\");",
+    );
+    write_test_file(
+        &invalid_root.join("crates/demo/test_payload.rs"),
+        "include!(\"src/lib.rs\");",
+    );
+    assert!(
+        literal_source_offset_counts(&invalid_root, true)
+            .unwrap_err()
+            .contains("recursive literal include")
+    );
     write_test_file(
         &invalid_root.join("crates/demo/Cargo.toml"),
         "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"\n[[bin]]\nname = \"bad-root\"\npath = [\"src/main.rs\"]\n",
@@ -4621,119 +4874,152 @@ fn literal_source_offset_workspace_fails_closed_on_unsupported_inputs() {
         &invalid_root.join("crates/demo/src/main.rs"),
         "fn main() { let _ = SourceRange::new(id, 5, 6); }",
     );
-    assert!(literal_source_offset_counts(&invalid_root).is_err());
+    assert!(literal_source_offset_counts(&invalid_root, false).is_err());
     remove_dir_if_exists(&invalid_root);
 }
 
 #[test]
 fn literal_source_offset_baseline_vectors_and_repository_ratchet() {
-    let actual = BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 3)]);
+    let path = "crates/demo/src/lib.rs".to_owned();
+    let production = BTreeMap::from([(path.clone(), 3)]);
+    let test = BTreeMap::from([(path.clone(), 5)]);
+    for baseline in [
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t4\t7\n",
+    ] {
+        assert!(literal_source_offset_baseline_violations(baseline, &production, &test).is_empty());
+    }
+
+    let production_zero = BTreeMap::from([(path.clone(), 0)]);
+    let test_one = BTreeMap::from([(path.clone(), 1)]);
     assert!(
         literal_source_offset_baseline_violations(
-            "path	count\ncrates/demo/src/lib.rs	3\n",
-            &actual
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t0\t1\n",
+            &production_zero,
+            &test_one,
         )
         .is_empty()
     );
+    let production_one = BTreeMap::from([(path.clone(), 1)]);
+    let test_zero = BTreeMap::from([(path.clone(), 0)]);
     assert!(
         literal_source_offset_baseline_violations(
-            "path	count\ncrates/demo/src/lib.rs	4\n",
-            &actual
-        )
-        .is_empty()
-    );
-    let zero_file = BTreeMap::from([
-        ("crates/demo/src/lib.rs".to_owned(), 3),
-        ("crates/demo/src/new.rs".to_owned(), 0),
-    ]);
-    assert!(
-        literal_source_offset_baseline_violations(
-            "path	count\ncrates/demo/src/lib.rs	3\n",
-            &zero_file
-        )
-        .is_empty()
-    );
-    assert!(
-        literal_source_offset_baseline_violations(
-            "path	count\n",
-            &BTreeMap::from([("crates/demo/src/new.rs".to_owned(), 0),])
-        )
-        .is_empty()
-    );
-    assert!(
-        literal_source_offset_baseline_violations(
-            "path	count\ncrates/demo/src/new.rs	1\n",
-            &BTreeMap::from([("crates/demo/src/new.rs".to_owned(), 0),])
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t1\t0\n",
+            &production_one,
+            &test_zero,
         )
         .is_empty()
     );
 
-    for (baseline, current) in [
+    let new_zero_production =
+        BTreeMap::from([(path.clone(), 3), ("crates/demo/src/new.rs".into(), 0)]);
+    let new_zero_test = BTreeMap::from([(path.clone(), 5), ("crates/demo/src/new.rs".into(), 0)]);
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+            &new_zero_production,
+            &new_zero_test,
+        )
+        .is_empty()
+    );
+    assert!(
+        literal_source_offset_baseline_violations(
+            "path\tproduction_count\ttest_count\n",
+            &BTreeMap::from([("crates/demo/src/new.rs".into(), 0)]),
+            &BTreeMap::from([("crates/demo/src/new.rs".into(), 0)]),
+        )
+        .is_empty()
+    );
+
+    for (baseline, current_production, current_test, expected) in [
         (
-            "path	count\ncrates/demo/src/lib.rs	3\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 4)]),
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+            BTreeMap::from([(path.clone(), 4)]),
+            test.clone(),
+            "production",
         ),
         (
-            "path	count\ncrates/demo/src/lib.rs	1\n",
-            BTreeMap::from([
-                ("crates/demo/src/lib.rs".to_owned(), 1),
-                ("crates/demo/src/new.rs".to_owned(), 1),
-            ]),
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+            production.clone(),
+            BTreeMap::from([(path.clone(), 6)]),
+            "test",
         ),
         (
-            "path	count\ncrates/old/src/lib.rs	1\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+            BTreeMap::from([(path.clone(), 3), ("crates/demo/src/new.rs".into(), 1)]),
+            BTreeMap::from([(path.clone(), 5)]),
+            "production",
         ),
         (
-            "path	count\ncrates/demo/src/lib.rs	0\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 0)]),
+            "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\n",
+            BTreeMap::from([(path.clone(), 3)]),
+            BTreeMap::from([(path.clone(), 5), ("crates/demo/src/new.rs".into(), 1)]),
+            "test",
         ),
-        (
-            "path	count\ncrates/demo/src/lib.rs	bad\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
-        ),
-        (
-            "path	count\ncrates/demo/src/lib.rs	1	extra\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 1)]),
-        ),
-        (
-            "path	count\ncrates/demo/src/lib.rs	1\ncrates/demo/src/lib.rs	2\n",
-            BTreeMap::from([("crates/demo/src/lib.rs".to_owned(), 2)]),
-        ),
-        (
-            "path	count\ncrates/demo/src/z.rs	1\ncrates/demo/src/a.rs	1\n",
-            BTreeMap::from([
-                ("crates/demo/src/a.rs".to_owned(), 1),
-                ("crates/demo/src/z.rs".to_owned(), 1),
-            ]),
-        ),
-        ("wrong	count\n", BTreeMap::new()),
-        ("path	count\n\n", BTreeMap::new()),
-        ("path	count\n# comment\n", BTreeMap::new()),
+    ] {
+        let violations =
+            literal_source_offset_baseline_violations(baseline, &current_production, &current_test);
+        assert!(
+            violations
+                .iter()
+                .any(|violation| violation.contains(expected)),
+            "{expected} increase was accepted: {violations:?}"
+        );
+    }
+
+    let unchanged = BTreeMap::from([(path.clone(), 3)]);
+    let unchanged_test = BTreeMap::from([(path.clone(), 5)]);
+    for baseline in [
+        "path\tcount\ncrates/demo/src/lib.rs\t3\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t0\t0\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\tbad\t5\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\tbad\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\textra\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/lib.rs\t3\t5\ncrates/demo/src/lib.rs\t3\t5\n",
+        "path\tproduction_count\ttest_count\ncrates/demo/src/z.rs\t1\t1\ncrates/demo/src/a.rs\t1\t1\n",
+        "path\tproduction_count\ttest_count\ncrates/old/src/lib.rs\t1\t1\n",
+        "wrong\tproduction_count\ttest_count\n",
+        "path\tproduction_count\ttest_count\n\n",
+        "path\tproduction_count\ttest_count\n# comment\n",
     ] {
         assert!(
-            !literal_source_offset_baseline_violations(baseline, &current).is_empty(),
-            "invalid, stale, unsorted, or over-budget baseline was accepted: {baseline:?}"
+            !literal_source_offset_baseline_violations(baseline, &unchanged, &unchanged_test)
+                .is_empty(),
+            "invalid, stale, unsorted, zero or malformed baseline was accepted: {baseline:?}"
         );
     }
 
     let workspace = workspace_root();
     let baseline =
         read_to_string(&workspace.join("tests/coverage/literal_source_offset_baseline.tsv"));
-    let current = literal_source_offset_counts(&workspace)
+    let current = literal_source_offset_counts(&workspace, false)
         .unwrap_or_else(|error| panic!("production source scan failed: {error}"));
-    let violations = literal_source_offset_baseline_violations(&baseline, &current);
+    let test_current = literal_source_offset_counts(&workspace, true)
+        .unwrap_or_else(|error| panic!("test source scan failed: {error}"));
+    let violations = literal_source_offset_baseline_violations(&baseline, &current, &test_current);
     assert!(
         violations.is_empty(),
-        "production literal source offsets exceed their reviewed ceilings:\n{}",
+        "literal source offsets exceed their independently reviewed ceilings:\n{}",
         violations.join("\n")
     );
 }
 
 fn literal_source_offset_count(source: &str) -> Result<usize, String> {
+    literal_source_offset_count_for(source, false, false)
+}
+
+fn literal_source_offset_count_for(
+    source: &str,
+    test_configuration: bool,
+    allow_literal_test_includes: bool,
+) -> Result<usize, String> {
     let file = syn::parse_file(source).map_err(|error| error.to_string())?;
-    let mut counter = LiteralOffsetCounter::default();
-    if literal_offset_configuration(&file.attrs)?.0 {
+    let mut counter = LiteralOffsetCounter {
+        test_configuration,
+        allow_literal_test_includes,
+        ..LiteralOffsetCounter::default()
+    };
+    if literal_offset_configuration(&file.attrs, test_configuration)?.0 {
         counter.module(&file.items);
     }
     counter.error.map_or(Ok(counter.count), Err)
@@ -4755,11 +5041,11 @@ macro_rules! literal_offset_attrs {
     };
 }
 
-fn literal_offset_cfg(meta: &syn::Meta) -> Result<Option<bool>, String> {
+fn literal_offset_cfg(meta: &syn::Meta, test_configuration: bool) -> Result<Option<bool>, String> {
     use syn::{Meta, Token, punctuated::Punctuated};
     match meta {
         Meta::Path(path) => Ok(if literal_offset_path_is(path, "test") {
-            Some(false)
+            Some(test_configuration)
         } else {
             None
         }),
@@ -4770,7 +5056,7 @@ fn literal_offset_cfg(meta: &syn::Meta) -> Result<Option<bool>, String> {
                 .map_err(|error| error.to_string())?;
             let values = values
                 .iter()
-                .map(literal_offset_cfg)
+                .map(|value| literal_offset_cfg(value, test_configuration))
                 .collect::<Result<Vec<_>, _>>()?;
             if literal_offset_path_is(&list.path, "not") && values.len() == 1 {
                 return Ok(values[0].map(|value| !value));
@@ -4792,12 +5078,14 @@ fn literal_offset_cfg(meta: &syn::Meta) -> Result<Option<bool>, String> {
 
 fn literal_offset_configuration(
     attrs: &[syn::Attribute],
+    test_configuration: bool,
 ) -> Result<(bool, Option<String>), String> {
     fn apply(
         meta: &syn::Meta,
         enabled: &mut bool,
         path: &mut Option<String>,
         uncertain: bool,
+        test_configuration: bool,
     ) -> Result<(), String> {
         use syn::{Meta, Token, punctuated::Punctuated};
         if literal_offset_path_is(meta.path(), "cfg_attr") {
@@ -4808,10 +5096,19 @@ fn literal_offset_configuration(
                 .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
                 .map_err(|error| error.to_string())?;
             let mut args = args.iter();
-            let condition = literal_offset_cfg(args.next().ok_or("missing cfg_attr condition")?)?;
+            let condition = literal_offset_cfg(
+                args.next().ok_or("missing cfg_attr condition")?,
+                test_configuration,
+            )?;
             if condition != Some(false) {
                 for attr in args {
-                    apply(attr, enabled, path, uncertain || condition.is_none())?;
+                    apply(
+                        attr,
+                        enabled,
+                        path,
+                        uncertain || condition.is_none(),
+                        test_configuration,
+                    )?;
                 }
             }
         } else if literal_offset_path_is(meta.path(), "cfg") {
@@ -4825,6 +5122,7 @@ fn literal_offset_configuration(
                 &list
                     .parse_args::<Meta>()
                     .map_err(|error| error.to_string())?,
+                test_configuration,
             )? != Some(false);
         } else if literal_offset_path_is(meta.path(), "path") {
             if uncertain {
@@ -4849,7 +5147,13 @@ fn literal_offset_configuration(
     let mut enabled = true;
     let mut path = None;
     for attr in attrs {
-        apply(&attr.meta, &mut enabled, &mut path, false)?;
+        apply(
+            &attr.meta,
+            &mut enabled,
+            &mut path,
+            false,
+            test_configuration,
+        )?;
     }
     Ok((enabled, path))
 }
@@ -4872,20 +5176,20 @@ fn literal_offset_expr_attrs(expr: &syn::Expr) -> &[syn::Attribute] {
         Tuple, Unary, Unsafe, While, Yield
     )
 }
-fn literal_offset_integer(expr: &syn::Expr) -> bool {
-    if !literal_offset_configuration(literal_offset_expr_attrs(expr))
+fn literal_offset_integer(expr: &syn::Expr, test_configuration: bool) -> bool {
+    if !literal_offset_configuration(literal_offset_expr_attrs(expr), test_configuration)
         .is_ok_and(|(enabled, _)| enabled)
     {
         return false;
     }
     match expr {
-        syn::Expr::Paren(value) => literal_offset_integer(&value.expr),
-        syn::Expr::Group(value) => literal_offset_integer(&value.expr),
+        syn::Expr::Paren(value) => literal_offset_integer(&value.expr, test_configuration),
+        syn::Expr::Group(value) => literal_offset_integer(&value.expr, test_configuration),
         syn::Expr::Lit(value) => {
             matches!(&value.lit, syn::Lit::Int(value) if matches!(value.suffix(), "" | "u8" | "u16" | "u32" | "u64" | "u128" | "usize" | "i8" | "i16" | "i32" | "i64" | "i128" | "isize"))
         }
         syn::Expr::Unary(value) if matches!(value.op, syn::UnOp::Neg(_)) => {
-            literal_offset_integer(&value.expr)
+            literal_offset_integer(&value.expr, test_configuration)
         }
         _ => false,
     }
@@ -4941,16 +5245,27 @@ fn literal_offset_bindings(pat: &syn::Pat, names: &mut BTreeSet<String>) {
     }
 }
 
+#[derive(Clone)]
+struct LiteralOffsetForwardingMacro {
+    arity: usize,
+    helper: String,
+    endpoints: [usize; 2],
+    helper_endpoints: [usize; 2],
+}
+
 #[derive(Default)]
 struct LiteralOffsetCounter {
+    test_configuration: bool,
+    allow_literal_test_includes: bool,
     count: usize,
     error: Option<String>,
     helpers: BTreeMap<String, Vec<usize>>,
     shadows: Vec<BTreeMap<String, bool>>,
+    forwarding_macros: Vec<BTreeMap<String, Option<LiteralOffsetForwardingMacro>>>,
 }
 impl LiteralOffsetCounter {
     fn enabled(&mut self, attrs: &[syn::Attribute]) -> bool {
-        match literal_offset_configuration(attrs) {
+        match literal_offset_configuration(attrs, self.test_configuration) {
             Ok((enabled, _)) => enabled && self.error.is_none(),
             Err(error) => {
                 self.error = Some(error);
@@ -4962,6 +5277,7 @@ impl LiteralOffsetCounter {
         use syn::{Expr, Item, ReturnType, Stmt, Type, visit::Visit};
         let outer = std::mem::take(&mut self.helpers);
         let shadows = std::mem::take(&mut self.shadows);
+        self.forwarding_macros.push(BTreeMap::new());
         for item in items {
             let Item::Fn(function) = item else {
                 continue;
@@ -5050,6 +5366,7 @@ impl LiteralOffsetCounter {
         }
         self.helpers = outer;
         self.shadows = shadows;
+        self.forwarding_macros.pop();
     }
     fn function(&mut self, signature: &syn::Signature, block: &syn::Block) {
         use syn::visit::Visit;
@@ -5084,8 +5401,11 @@ impl LiteralOffsetCounter {
                     .filter(|element| {
                         let mut element = *element;
                         loop {
-                            if !literal_offset_configuration(literal_offset_expr_attrs(element))
-                                .is_ok_and(|(enabled, _)| enabled)
+                            if !literal_offset_configuration(
+                                literal_offset_expr_attrs(element),
+                                self.test_configuration,
+                            )
+                            .is_ok_and(|(enabled, _)| enabled)
                             {
                                 return false;
                             }
@@ -5093,9 +5413,16 @@ impl LiteralOffsetCounter {
                                 Expr::Paren(value) => element = &value.expr,
                                 Expr::Group(value) => element = &value.expr,
                                 Expr::Tuple(tuple) => {
-                                    return tuple.elems.iter().any(literal_offset_integer);
+                                    return tuple.elems.iter().any(|value| {
+                                        literal_offset_integer(value, self.test_configuration)
+                                    });
                                 }
-                                _ => return literal_offset_integer(element),
+                                _ => {
+                                    return literal_offset_integer(
+                                        element,
+                                        self.test_configuration,
+                                    );
+                                }
                             }
                         }
                     })
@@ -5137,6 +5464,168 @@ impl LiteralOffsetCounter {
             }
             _ => {}
         }
+    }
+    fn forwarding_macro(&self, mac: &syn::Macro) -> Option<LiteralOffsetForwardingMacro> {
+        use syn::{Expr, Token, parse::Parser};
+        // Parse one expr-fragment arm into an AST with inert parameter names.
+        // This inspects the body once; invocation arguments are never expanded.
+        fn body(input: syn::parse::ParseStream<'_>, params: &[String]) -> syn::Result<String> {
+            let mut output = String::new();
+            while !input.is_empty() {
+                if input.peek(Token![$]) {
+                    input.parse::<Token![$]>()?;
+                    let name = literal_offset_ident(&input.parse::<syn::Ident>()?);
+                    let index = params
+                        .iter()
+                        .position(|param| param == &name)
+                        .ok_or_else(|| input.error("unknown forwarding parameter"))?;
+                    output.push_str(&format!(" __literal_offset_parameter_{index} "));
+                } else if input.peek(syn::token::Paren) {
+                    let nested;
+                    syn::parenthesized!(nested in input);
+                    output.push_str(&format!(" ( {} ) ", body(&nested, params)?));
+                } else {
+                    let token = input.step(|cursor| {
+                        cursor
+                            .token_tree()
+                            .ok_or_else(|| cursor.error("invalid forwarding body"))
+                    })?;
+                    if token.to_string().starts_with("__literal_offset_parameter_") {
+                        return Err(input.error("reserved forwarding identifier"));
+                    }
+                    output.push_str(&format!(" {token} "));
+                }
+            }
+            Ok(output)
+        }
+        fn inspect(
+            expr: &Expr,
+            helpers: &BTreeMap<String, Vec<usize>>,
+            targets: &mut Vec<(String, Vec<usize>)>,
+        ) -> Option<()> {
+            match literal_offset_unwrap(expr) {
+                Expr::Call(call) => {
+                    let Expr::Path(path) = &*call.func else {
+                        return None;
+                    };
+                    if path
+                        .path
+                        .segments
+                        .iter()
+                        .any(|part| literal_offset_ident(&part.ident) == "SourceRange")
+                    {
+                        return None;
+                    }
+                    let name = literal_offset_ident(&path.path.segments.last()?.ident);
+                    if path
+                        .path
+                        .segments
+                        .iter()
+                        .any(|part| helpers.contains_key(&literal_offset_ident(&part.ident)))
+                        && !helpers.contains_key(&name)
+                    {
+                        return None;
+                    }
+                    if let Some(positions) = helpers.get(&name) {
+                        if path.qself.is_some() || path.path.get_ident().is_none() {
+                            return None;
+                        }
+                        let endpoints = positions
+                            .iter()
+                            .map(|position| {
+                                let Expr::Path(value) = call.args.iter().nth(*position)? else {
+                                    return None;
+                                };
+                                value
+                                    .path
+                                    .get_ident()?
+                                    .to_string()
+                                    .strip_prefix("__literal_offset_parameter_")?
+                                    .parse()
+                                    .ok()
+                            })
+                            .collect::<Option<Vec<_>>>()?;
+                        targets.push((name, endpoints));
+                    }
+                    for arg in &call.args {
+                        inspect(arg, helpers, targets)?;
+                    }
+                }
+                Expr::MethodCall(call) => {
+                    inspect(&call.receiver, helpers, targets)?;
+                    for arg in &call.args {
+                        inspect(arg, helpers, targets)?;
+                    }
+                }
+                Expr::Path(path)
+                    if path.path.segments.iter().all(|part| {
+                        !helpers.contains_key(&literal_offset_ident(&part.ident))
+                            && literal_offset_ident(&part.ident) != "SourceRange"
+                    }) => {}
+                Expr::Lit(_) => {}
+                _ => return None,
+            }
+            Some(())
+        }
+        (|input: syn::parse::ParseStream<'_>| {
+            let pattern;
+            syn::parenthesized!(pattern in input);
+            let mut params = Vec::new();
+            while !pattern.is_empty() {
+                pattern.parse::<Token![$]>()?;
+                let name = literal_offset_ident(&pattern.parse::<syn::Ident>()?);
+                if params.contains(&name) {
+                    return Err(pattern.error("duplicate parameter"));
+                }
+                params.push(name);
+                pattern.parse::<Token![:]>()?;
+                if pattern.parse::<syn::Ident>()? != "expr" {
+                    return Err(pattern.error("only expr fragments are supported"));
+                }
+                if !pattern.is_empty() {
+                    pattern.parse::<Token![,]>()?;
+                }
+            }
+            input.parse::<Token![=>]>()?;
+            let expression;
+            syn::braced!(expression in input);
+            let expression = syn::parse_str::<Expr>(&body(&expression, &params)?)?;
+            let _ = input.parse::<Token![;]>();
+            if !input.is_empty() {
+                return Err(input.error("multiple forwarding arms"));
+            }
+            Ok((params.len(), expression))
+        })
+        .parse2(mac.tokens.clone())
+        .ok()
+        .and_then(|(arity, expr)| {
+            if !matches!(
+                literal_offset_unwrap(&expr),
+                Expr::Call(_) | Expr::MethodCall(_)
+            ) {
+                return None;
+            }
+            let mut targets = Vec::new();
+            inspect(&expr, &self.helpers, &mut targets)?;
+            if targets.len() != 1 {
+                return None;
+            }
+            let (helper, positions) = targets.pop()?;
+            if self
+                .shadows
+                .iter()
+                .any(|scope| scope.contains_key(&helper) || scope.contains_key("*"))
+            {
+                return None;
+            }
+            let helper_endpoints = self.helpers.get(&helper)?.as_slice().try_into().ok()?;
+            Some(LiteralOffsetForwardingMacro {
+                arity,
+                helper,
+                endpoints: positions.try_into().ok()?,
+                helper_endpoints,
+            })
+        })
     }
     fn macro_targets(&self, mac: &syn::Macro) -> Result<bool, syn::Error> {
         use syn::{ext::IdentExt, parse::Parser};
@@ -5226,6 +5715,121 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
             Union,
             Use
         )) {
+            if self.test_configuration
+                && let Item::Use(item) = item
+            {
+                let mut pending = vec![&item.tree];
+                while let Some(tree) = pending.pop() {
+                    let imported = match tree {
+                        syn::UseTree::Path(path) => {
+                            pending.push(&path.tree);
+                            None
+                        }
+                        syn::UseTree::Group(group) => {
+                            pending.extend(&group.items);
+                            None
+                        }
+                        syn::UseTree::Name(name) => Some(literal_offset_ident(&name.ident)),
+                        syn::UseTree::Rename(name) => Some(literal_offset_ident(&name.ident)),
+                        syn::UseTree::Glob(_) => None,
+                    };
+                    if let Some(imported) = imported {
+                        if self
+                            .forwarding_macros
+                            .iter()
+                            .rev()
+                            .find_map(|scope| scope.get(&imported))
+                            .is_some_and(Option::is_some)
+                        {
+                            self.error = Some(format!("aliased forwarding macro: {imported}"));
+                            return;
+                        }
+                        self.forwarding_macros
+                            .last_mut()
+                            .unwrap()
+                            .insert(format!("import:{imported}"), None);
+                    }
+                }
+            }
+            if let Item::Macro(item) = item
+                && self.test_configuration
+                && literal_offset_path_is(&item.mac.path, "macro_rules")
+                && let Some(name) = &item.ident
+            {
+                fn certain(meta: &syn::Meta) -> bool {
+                    use syn::{Meta, Token, punctuated::Punctuated};
+                    if literal_offset_path_is(meta.path(), "cfg") {
+                        return matches!(meta, Meta::List(list) if list.parse_args::<Meta>()
+                            .is_ok_and(|predicate| literal_offset_cfg(&predicate, true) == Ok(Some(true))));
+                    }
+                    if literal_offset_path_is(meta.path(), "cfg_attr") {
+                        let Meta::List(list) = meta else {
+                            return false;
+                        };
+                        let Ok(args) =
+                            list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                        else {
+                            return false;
+                        };
+                        let mut args = args.iter();
+                        return match args
+                            .next()
+                            .and_then(|condition| literal_offset_cfg(condition, true).ok())
+                            .flatten()
+                        {
+                            Some(false) => true,
+                            Some(true) => args.all(certain),
+                            None => false,
+                        };
+                    }
+                    matches!(
+                        meta.path().get_ident().map(ToString::to_string).as_deref(),
+                        Some("allow" | "warn" | "deny" | "forbid" | "doc")
+                    )
+                }
+                let forwarding = self.forwarding_macro(&item.mac);
+                let recognized = forwarding.is_some();
+                let prior_target = self
+                    .forwarding_macros
+                    .iter()
+                    .rev()
+                    .find_map(|scope| scope.get(&literal_offset_ident(name)))
+                    .is_some_and(Option::is_some);
+                if (recognized || prior_target)
+                    && !item.attrs.iter().all(|attr| certain(&attr.meta))
+                {
+                    self.error = Some(format!("uncertain forwarding macro definition: {name}"));
+                    return;
+                }
+                if recognized
+                    && self.forwarding_macros.iter().any(|scope| {
+                        scope.contains_key(&format!("import:{}", literal_offset_ident(name)))
+                    })
+                {
+                    self.error = Some(format!("aliased forwarding macro: {name}"));
+                    return;
+                }
+                self.forwarding_macros
+                    .last_mut()
+                    .unwrap()
+                    .insert(literal_offset_ident(name), forwarding);
+                if recognized {
+                    return;
+                }
+            }
+            if let Item::Macro(item) = item
+                && self.test_configuration
+                && self.allow_literal_test_includes
+                && item.mac.path.leading_colon.is_none()
+                && item
+                    .mac
+                    .path
+                    .get_ident()
+                    .is_some_and(|ident| ident == "include")
+                && syn::parse2::<syn::LitStr>(item.mac.tokens.clone()).is_ok()
+            {
+                return;
+            }
             visit::visit_item(self, item);
         }
     }
@@ -5329,7 +5933,9 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
             }
         }
         self.shadows.push(names);
+        self.forwarding_macros.push(BTreeMap::new());
         syn::visit::visit_block(self, block);
+        self.forwarding_macros.pop();
         self.shadows.pop();
     }
     fn visit_local(&mut self, local: &'ast syn::Local) {
@@ -5362,9 +5968,10 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
         match expr {
             Expr::Struct(value) if value.path.segments.last().is_some_and(|part| literal_offset_ident(&part.ident) == "SourceRange")
                 && value.fields.iter().any(|field| {
-                    literal_offset_configuration(&field.attrs).is_ok_and(|(enabled, _)| enabled)
+                    literal_offset_configuration(&field.attrs, self.test_configuration)
+                        .is_ok_and(|(enabled, _)| enabled)
                         && matches!(&field.member, syn::Member::Named(name) if matches!(literal_offset_ident(name).as_str(), "start" | "end"))
-                        && literal_offset_integer(&field.expr)
+                        && literal_offset_integer(&field.expr, self.test_configuration)
                 }) => {
                 self.count += 1;
             }
@@ -5372,7 +5979,11 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
                 if let Expr::Path(path) = literal_offset_unwrap(&call.func) {
                     let segments = path.path.segments.iter().map(|part| literal_offset_ident(&part.ident)).collect::<Vec<_>>();
                     if segments.ends_with(&["SourceRange".into(), "new".into()]) {
-                        if call.args.len() == 3 && call.args.iter().skip(1).any(literal_offset_integer) {
+                        if call.args.len() == 3
+                            && call.args.iter().skip(1).any(|value| {
+                                literal_offset_integer(value, self.test_configuration)
+                            })
+                        {
                             self.count += 1;
                         }
                     } else if path.qself.is_none() && path.path.leading_colon.is_none()
@@ -5384,7 +5995,13 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
                             } else { None };
                             if shadow == Some(&true) {
                                 self.error = Some(format!("ambiguous shadowed range helper call: {name}"));
-                            } else if shadow.is_none() && positions.iter().any(|index| call.args.iter().nth(*index).is_some_and(literal_offset_integer)) {
+                            } else if shadow.is_none()
+                                && positions.iter().any(|index| {
+                                    call.args.iter().nth(*index).is_some_and(|value| {
+                                        literal_offset_integer(value, self.test_configuration)
+                                    })
+                                })
+                            {
                                 self.count += 1;
                             }
                         }
@@ -5448,7 +6065,44 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
         use syn::{Expr, Pat, Token, parse::Parser, punctuated::Punctuated};
         let name = literal_offset_ident(&mac.path.segments.last().unwrap().ident);
         if name == "include" {
-            self.error = Some("production include! is unsupported".into());
+            self.error = Some("include! is only supported as a proven literal test item".into());
+            return;
+        }
+        if self.test_configuration
+            && let Some(Some(forwarding)) = self
+                .forwarding_macros
+                .iter()
+                .rev()
+                .find_map(|scope| scope.get(&name))
+                .cloned()
+        {
+            if mac.path.get_ident().is_none()
+                || self.helpers.get(&forwarding.helper).map(Vec::as_slice)
+                    != Some(forwarding.helper_endpoints.as_slice())
+                || self
+                    .shadows
+                    .iter()
+                    .any(|scope| scope.contains_key(&forwarding.helper) || scope.contains_key("*"))
+            {
+                self.error = Some(format!("ambiguous forwarding macro: {name}"));
+                return;
+            }
+            match Punctuated::<Expr, Token![,]>::parse_terminated.parse2(mac.tokens.clone()) {
+                Ok(values) if values.len() == forwarding.arity => {
+                    if forwarding.endpoints.iter().any(|position| {
+                        values
+                            .iter()
+                            .nth(*position)
+                            .is_some_and(|value| literal_offset_integer(value, true))
+                    }) {
+                        self.count += 1;
+                    }
+                    for value in &values {
+                        self.visit_expr(value);
+                    }
+                }
+                _ => self.error = Some(format!("malformed forwarding macro: {name}")),
+            }
             return;
         }
         let parsed = if name == "vec" {
@@ -5508,7 +6162,10 @@ impl<'ast> syn::visit::Visit<'ast> for LiteralOffsetCounter {
     }
 }
 
-fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usize>, String> {
+fn literal_source_offset_counts(
+    workspace: &Path,
+    test_configuration: bool,
+) -> Result<BTreeMap<String, usize>, String> {
     fn derive_bit(name: &syn::Ident) -> u16 {
         match literal_offset_ident(name).as_str() {
             "Debug" => 1,
@@ -5523,25 +6180,40 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
             _ => 0,
         }
     }
-    fn import_hazards(tree: &syn::UseTree) -> (bool, u16) {
+    fn import_hazards(tree: &syn::UseTree) -> (bool, u16, bool, bool) {
         match tree {
-            syn::UseTree::Glob(_) => (true, 0),
+            syn::UseTree::Glob(_) => (true, 0, false, true),
             syn::UseTree::Name(name) => (
                 literal_offset_ident(&name.ident) == "include",
                 derive_bit(&name.ident),
+                literal_offset_ident(&name.ident) == "include",
+                false,
             ),
             syn::UseTree::Rename(rename) => (
                 literal_offset_ident(&rename.rename) == "include",
                 derive_bit(&rename.rename),
+                literal_offset_ident(&rename.ident) == "include"
+                    || literal_offset_ident(&rename.rename) == "include",
+                false,
             ),
             syn::UseTree::Path(path) => import_hazards(&path.tree),
-            syn::UseTree::Group(group) => {
-                group.items.iter().fold((false, 0), |(bad, bits), item| {
-                    let (item_bad, item_bits) = import_hazards(item);
-                    (bad || item_bad, bits | item_bits)
-                })
-            }
+            syn::UseTree::Group(group) => group.items.iter().fold(
+                (false, 0, false, false),
+                |(bad, bits, include, glob), item| {
+                    let (item_bad, item_bits, item_include, item_glob) = import_hazards(item);
+                    (
+                        bad || item_bad,
+                        bits | item_bits,
+                        include || item_include,
+                        glob || item_glob,
+                    )
+                },
+            ),
         }
+    }
+    fn builtin_include(mac: &syn::Macro) -> bool {
+        mac.path.leading_colon.is_none()
+            && mac.path.get_ident().is_some_and(|ident| ident == "include")
     }
     fn attribute_hazards(attrs: &[syn::Attribute]) -> (bool, u16) {
         let mut bad = false;
@@ -5594,13 +6266,25 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
     fn include_scope(
         items: &[syn::Item],
         physical: &Path,
-        possible: bool,
+        configuration: (bool, bool),
         visiting: &mut BTreeSet<PathBuf>,
         includes: &mut Vec<(PathBuf, bool)>,
         imports: &mut u16,
         derives: &mut u16,
     ) -> Result<bool, String> {
+        let (possible, test_configuration) = configuration;
         let mut clean = true;
+        let mut has_include = false;
+        for item in items {
+            if let syn::Item::Macro(item) = item
+                && test_configuration
+                && literal_offset_path_is(&item.mac.path, "include")
+                && possible
+                && literal_offset_configuration(&item.attrs, test_configuration)?.0
+            {
+                has_include = true;
+            }
+        }
         for item in items {
             let attrs = match item {
                 syn::Item::Const(v) => &v.attrs,
@@ -5623,25 +6307,93 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
                     continue;
                 }
             };
+            let item_possible = if test_configuration {
+                possible && literal_offset_configuration(attrs, true)?.0
+            } else {
+                possible
+            };
+            if test_configuration && !item_possible {
+                if !possible {
+                    // An inactive scope cannot fail validation, but only a proven
+                    // builtin include may suppress an otherwise orphaned source.
+                    let (bad, used) = attribute_hazards(attrs);
+                    clean &= !bad;
+                    *derives |= used;
+                    match item {
+                        syn::Item::Use(item) => {
+                            let (bad, names, _, _) = import_hazards(&item.tree);
+                            *imports |= names;
+                            let super_glob = matches!(&item.tree, syn::UseTree::Path(path)
+                                if literal_offset_ident(&path.ident) == "super"
+                                    && matches!(&*path.tree, syn::UseTree::Glob(_)));
+                            clean &= !bad || super_glob;
+                        }
+                        syn::Item::ExternCrate(_) => clean = false,
+                        syn::Item::Macro(item)
+                            if literal_offset_path_is(&item.mac.path, "macro_rules") =>
+                        {
+                            clean &= item
+                                .ident
+                                .as_ref()
+                                .is_none_or(|name| literal_offset_ident(name) != "include");
+                        }
+                        syn::Item::Macro(item) if !builtin_include(&item.mac) => clean = false,
+                        _ => {}
+                    }
+                }
+                if let syn::Item::Macro(item) = item
+                    && literal_offset_path_is(&item.mac.path, "include")
+                    && builtin_include(&item.mac)
+                    && let Ok(path) = syn::parse2::<syn::LitStr>(item.mac.tokens.clone())
+                {
+                    let path = physical.parent().unwrap().join(path.value());
+                    let path = fs::canonicalize(&path).unwrap_or(path);
+                    includes.push((path, false));
+                }
+                continue;
+            }
             let (bad, used) = attribute_hazards(attrs);
             clean &= !bad;
             *derives |= used;
             match item {
                 syn::Item::Use(item) => {
-                    let (bad, names) = import_hazards(&item.tree);
-                    clean &= !bad;
+                    let (bad, names, include_import, glob_import) = import_hazards(&item.tree);
                     *imports |= names;
+                    let is_super_glob = matches!(&item.tree, syn::UseTree::Path(path)
+                        if literal_offset_ident(&path.ident) == "super"
+                            && matches!(&*path.tree, syn::UseTree::Glob(_)));
+                    clean &= !bad || (test_configuration && is_super_glob);
+                    if test_configuration
+                        && item_possible
+                        && (include_import || (has_include && glob_import && !is_super_glob))
+                    {
+                        return Err("test include import is not proven builtin".into());
+                    }
                 }
                 syn::Item::ExternCrate(_) => clean = false,
                 syn::Item::Macro(item) if literal_offset_path_is(&item.mac.path, "macro_rules") => {
-                    clean &= item
+                    let shadows_include = item
                         .ident
                         .as_ref()
-                        .is_some_and(|ident| literal_offset_ident(ident) != "include");
+                        .is_some_and(|ident| literal_offset_ident(ident) == "include");
+                    if test_configuration && possible && shadows_include && has_include {
+                        return Err("test include is shadowed by macro_rules! include".into());
+                    }
+                    clean &= !shadows_include;
                 }
                 syn::Item::Macro(item) if literal_offset_path_is(&item.mac.path, "include") => {
-                    let item_possible = possible && literal_offset_configuration(&item.attrs)?.0;
+                    let item_possible = if test_configuration {
+                        item_possible
+                    } else {
+                        possible && literal_offset_configuration(&item.attrs, false)?.0
+                    };
+                    if test_configuration && item_possible && !builtin_include(&item.mac) {
+                        return Err("qualified or raw test include is unsupported".into());
+                    }
                     let Ok(path) = syn::parse2::<syn::LitStr>(item.mac.tokens.clone()) else {
+                        if test_configuration && item_possible {
+                            return Err("test include path is not a string literal".into());
+                        }
                         clean = false;
                         continue;
                     };
@@ -5655,24 +6407,52 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
                         .map_err(|error| format!("{}: {error}", path.display()))?;
                     let file = syn::parse_file(&source)
                         .map_err(|error| format!("{}: {error}", path.display()))?;
-                    let (bad, used) = attribute_hazards(&file.attrs);
+                    let file_possible = item_possible
+                        && (!test_configuration
+                            || literal_offset_configuration(&file.attrs, true)?.0);
+                    let (bad, used) = if test_configuration && !file_possible {
+                        (false, 0)
+                    } else {
+                        attribute_hazards(&file.attrs)
+                    };
                     clean &= !bad;
                     *derives |= used;
                     clean &= include_scope(
                         &file.items,
                         &path,
-                        item_possible,
+                        (file_possible, test_configuration),
                         visiting,
                         includes,
                         imports,
                         derives,
-                    )?;
+                    )
+                    .map_err(|error| format!("{}: {error}", path.display()))?;
                     visiting.remove(&path);
                     includes.push((path, item_possible));
                 }
-                syn::Item::Macro(_) => clean = false,
+                syn::Item::Macro(item) => {
+                    if test_configuration
+                        && possible
+                        && item
+                            .mac
+                            .path
+                            .segments
+                            .last()
+                            .is_some_and(|part| literal_offset_ident(&part.ident) == "include")
+                    {
+                        return Err("qualified or aliased test include is unsupported".into());
+                    }
+                    clean = false;
+                }
                 _ => {}
             }
+        }
+        if test_configuration
+            && possible
+            && includes.iter().any(|(_, active)| *active)
+            && *imports & *derives != 0
+        {
+            return Err("test include has an ambiguous derived macro binding".into());
         }
         Ok(clean)
     }
@@ -5681,24 +6461,40 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
         physical: &Path,
         directory: &Path,
         path_directory: &Path,
-        possible: bool,
+        configuration: (bool, bool),
         scope: (bool, u16, u16),
         result: &mut Vec<(PathBuf, bool, bool, bool, bool, u16, u16)>,
     ) -> Result<(), String> {
+        let (possible, test_configuration) = configuration;
         let mut includes = Vec::new();
         let (inherited_clean, inherited_imports, inherited_derives) = scope;
         let mut imports = inherited_imports;
         let mut derives = inherited_derives;
-        let clean = inherited_clean
-            && include_scope(
+        let local_clean = if test_configuration || inherited_clean {
+            include_scope(
                 items,
                 physical,
-                possible,
+                (possible, test_configuration),
                 &mut BTreeSet::new(),
                 &mut includes,
                 &mut imports,
                 &mut derives,
-            )?;
+            )
+            .map_err(|error| format!("{}: {error}", physical.display()))?
+        } else {
+            true
+        };
+        let clean = inherited_clean && local_clean;
+        if test_configuration
+            && possible
+            && includes.iter().any(|(_, active)| *active)
+            && (!clean || imports & derives != 0)
+        {
+            return Err(format!(
+                "{}: test include environment is not proven safe",
+                physical.display()
+            ));
+        }
         for (path, possible) in includes {
             result.push((path, possible, true, clean, true, imports, derives));
         }
@@ -5706,7 +6502,8 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
             let syn::Item::Mod(module) = item else {
                 continue;
             };
-            let (enabled, explicit) = literal_offset_configuration(&module.attrs)?;
+            let (enabled, explicit) =
+                literal_offset_configuration(&module.attrs, test_configuration)?;
             let possible = possible && enabled;
             if let Some((_, items)) = &module.content {
                 let nested = explicit.map_or_else(
@@ -5718,7 +6515,7 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
                     physical,
                     &nested,
                     &nested,
-                    possible,
+                    (possible, test_configuration),
                     (clean, imports, derives),
                     result,
                 )?;
@@ -5799,11 +6596,7 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
                 .map_err(|error| error.to_string())
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut graph = BTreeMap::new();
-    while let Some((path, path_loaded)) = pending.pop() {
-        if graph.contains_key(&(path.clone(), path_loaded)) {
-            continue;
-        }
+    let load = |path: &Path, path_loaded: bool, active: bool| {
         if !path.starts_with(&workspace) {
             return Err(format!(
                 "unsupported source outside workspace: {}",
@@ -5811,14 +6604,14 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
             ));
         }
         let source =
-            fs::read_to_string(&path).map_err(|error| format!("{}: {error}", path.display()))?;
+            fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
         let file =
             syn::parse_file(&source).map_err(|error| format!("{}: {error}", path.display()))?;
-        let enabled = literal_offset_configuration(&file.attrs)?.0;
+        let enabled = literal_offset_configuration(&file.attrs, test_configuration)?.0;
         let (attribute_bad, attribute_derives) = attribute_hazards(&file.attrs);
         let parent = path.parent().unwrap();
         let directory =
-            if path_loaded || roots.contains(&path) || path.file_name().unwrap() == "mod.rs" {
+            if path_loaded || roots.contains(path) || path.file_name().unwrap() == "mod.rs" {
                 parent.to_path_buf()
             } else {
                 parent.join(path.file_stem().unwrap())
@@ -5826,27 +6619,38 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
         let mut children = Vec::new();
         edges(
             &file.items,
-            &path,
+            path,
             &directory,
             parent,
-            enabled,
+            (enabled && active, test_configuration),
             (!attribute_bad, 0, attribute_derives),
             &mut children,
         )?;
+        Ok::<_, String>((source, enabled, children))
+    };
+    let mut graph = BTreeMap::new();
+    while let Some((path, path_loaded)) = pending.pop() {
+        if graph.contains_key(&(path.clone(), path_loaded)) {
+            continue;
+        }
+        let node = load(&path, path_loaded, !test_configuration)?;
         pending.extend(
-            children
+            node.2
                 .iter()
-                .filter(|(path, _, _, _, _, _, _)| path.exists())
+                .filter(|(path, _, _, _, include, _, _)| {
+                    path.exists() && (!test_configuration || !include)
+                })
                 .map(|(path, _, path_loaded, _, _, _, _)| (path.clone(), *path_loaded)),
         );
-        graph.insert((path, path_loaded), (source, enabled, children));
+        graph.insert((path, path_loaded), node);
     }
     let referenced = graph
         .values()
         .flat_map(|(_, _, children)| children.iter().map(|(path, _, _, _, _, _, _)| path.clone()))
         .collect::<BTreeSet<_>>();
     let mut queue = roots
-        .into_iter()
+        .iter()
+        .cloned()
         .chain(
             sources
                 .into_iter()
@@ -5858,28 +6662,57 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
     let mut reached = BTreeSet::new();
     loop {
         while let Some((path, possible, clean, imports, derives)) = queue.pop() {
+            if test_configuration && possible {
+                // Defer include validation to active ancestry. Inactive edges remain
+                // in the reference graph so their files cannot become orphans.
+                let node = load(&path.0, path.1, true)?;
+                graph.insert(path.clone(), node);
+            }
             let Some((_, enabled, children)) = graph.get(&path) else {
                 if possible {
                     return Err(format!("missing production module {}", path.0.display()));
                 }
+                if test_configuration {
+                    reached.insert((path, false, clean, imports, derives));
+                }
                 continue;
             };
             let possible = possible && *enabled;
-            if !reached.insert((path, possible, clean, imports, derives)) {
+            if !reached.insert((path.clone(), possible, clean, imports, derives)) {
                 continue;
+            }
+            if test_configuration
+                && possible
+                && children.iter().any(
+                    |(_, edge, _, scope_clean, include, scope_imports, scope_derives)| {
+                        *include
+                            && *edge
+                            && (!clean
+                                || !scope_clean
+                                || (imports | scope_imports) & (derives | scope_derives) != 0)
+                    },
+                )
+            {
+                return Err(format!(
+                    "{}: test include environment is not proven safe",
+                    path.0.display()
+                ));
             }
             queue.extend(children.iter().filter_map(
                 |(path, edge, path_loaded, scope_clean, include, scope_imports, scope_derives)| {
                     let clean = clean && *scope_clean;
                     let imports = imports | scope_imports;
                     let derives = derives | scope_derives;
-                    (!*include || (clean && imports & derives == 0)).then_some((
-                        (path.clone(), *path_loaded),
-                        possible && *edge,
-                        clean,
-                        imports,
-                        derives,
-                    ))
+                    (!*include
+                        || (test_configuration && possible && *edge)
+                        || (clean && imports & derives == 0))
+                        .then_some((
+                            (path.clone(), *path_loaded),
+                            possible && *edge,
+                            clean,
+                            imports,
+                            derives,
+                        ))
                 },
             ));
         }
@@ -5899,8 +6732,12 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
         }
         let relative = workspace_relative_slash_path(&workspace, &path.0);
         if let std::collections::btree_map::Entry::Vacant(entry) = counts.entry(relative) {
-            let count = literal_source_offset_count(&graph[path].0)
-                .map_err(|error| format!("{}: {error}", path.0.display()))?;
+            let count = literal_source_offset_count_for(
+                &graph[path].0,
+                test_configuration,
+                test_configuration,
+            )
+            .map_err(|error| format!("{}: {error}", path.0.display()))?;
             entry.insert(count);
         }
     }
@@ -5909,42 +6746,59 @@ fn literal_source_offset_counts(workspace: &Path) -> Result<BTreeMap<String, usi
 
 fn literal_source_offset_baseline_violations(
     baseline: &str,
-    actual: &BTreeMap<String, usize>,
+    production: &BTreeMap<String, usize>,
+    test: &BTreeMap<String, usize>,
 ) -> Vec<String> {
     let mut violations = Vec::new();
     let mut lines = baseline.lines();
-    if lines.next() != Some("path\tcount") {
-        return vec!["literal offset baseline requires path<TAB>count header".into()];
+    if lines.next() != Some("path\tproduction_count\ttest_count") {
+        return vec![
+            "literal offset baseline requires path<TAB>production_count<TAB>test_count header"
+                .into(),
+        ];
     }
     let mut rows = BTreeMap::new();
     let mut previous = "";
     for line in lines {
         let fields = line.split('\t').collect::<Vec<_>>();
-        let [path, count] = fields[..] else {
+        let [path, production_count, test_count] = fields[..] else {
             violations.push(format!("malformed literal offset baseline row: {line:?}"));
             continue;
         };
-        let Ok(count) = count.parse::<usize>() else {
-            violations.push(format!("invalid literal offset count: {line:?}"));
+        let Ok(production_count) = production_count.parse::<usize>() else {
+            violations.push(format!("invalid production literal offset count: {line:?}"));
             continue;
         };
-        if count == 0
-            || !fields[1].bytes().all(|byte| byte.is_ascii_digit())
+        let Ok(test_count) = test_count.parse::<usize>() else {
+            violations.push(format!("invalid test literal offset count: {line:?}"));
+            continue;
+        };
+        if !fields[1].bytes().all(|byte| byte.is_ascii_digit())
+            || !fields[2].bytes().all(|byte| byte.is_ascii_digit())
+            || (production_count == 0 && test_count == 0)
             || path <= previous
-            || !actual.contains_key(path)
+            || (!production.contains_key(path) && !test.contains_key(path))
         {
             violations.push(format!(
                 "zero, unsorted, duplicate or stale literal offset baseline row: {line:?}"
             ));
         }
         previous = path;
-        rows.insert(path, count);
+        rows.insert(path, (production_count, test_count));
     }
-    for (path, count) in actual {
-        let ceiling = rows.get(path.as_str()).copied().unwrap_or(0);
+    for (path, count) in production {
+        let ceiling = rows.get(path.as_str()).map_or(0, |row| row.0);
         if *count > ceiling {
             violations.push(format!(
-                "{path}: {count} literal source offsets exceed ceiling {ceiling}"
+                "production {path}: {count} literal source offsets exceed ceiling {ceiling}"
+            ));
+        }
+    }
+    for (path, count) in test {
+        let ceiling = rows.get(path.as_str()).map_or(0, |row| row.1);
+        if *count > ceiling {
+            violations.push(format!(
+                "test {path}: {count} literal source offsets exceed ceiling {ceiling}"
             ));
         }
     }

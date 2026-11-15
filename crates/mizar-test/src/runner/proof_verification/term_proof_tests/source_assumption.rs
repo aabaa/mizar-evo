@@ -663,11 +663,7 @@ fn source_assumption_statement_original_capture_preserves_boundary() -> Result<(
                 "{control}"
             );
         }
-        assert_eq!(
-            reconstructed.with_source_statement(statement.clone()),
-            Err(TypedAstError::InvalidSourceStatement),
-            "detached {control}"
-        );
+
         assert_eq!(
             base.clone()
                 .with_source_statement_from_original(&source, &symbols, &scope),
@@ -699,7 +695,7 @@ fn source_assumption_statement_original_capture_preserves_boundary() -> Result<(
         source_theorem_module_original_inputs(captures[2].ast.as_ref().unwrap(), &module)?.unwrap();
     let (b1_scope, _, _) = source_proof_inputs(&b1, &b1_env)?;
     let b1_base = TermFormulaChecker::check_source_theorem_equalities(&b1, &b1_env, &b1_scope)?.2;
-    let b1_installed = b1_base
+    b1_base
         .clone()
         .with_source_statement_from_original(&b1, &b1_env, &b1_scope)
         .unwrap();
@@ -712,28 +708,7 @@ fn source_assumption_statement_original_capture_preserves_boundary() -> Result<(
         b1_base.with_source_statement_from_original(&source, &symbols, &scope),
         Err(TypedAstError::InvalidSourceStatement)
     );
-    assert_eq!(
-        base.clone()
-            .with_source_statement(b1_installed.source_statement().unwrap().clone()),
-        Err(TypedAstError::InvalidSourceStatement)
-    );
-    assert!(
-        base.clone()
-            .with_source_statement_references(
-                statement.clone(),
-                b1_installed.source_statement_references().unwrap().clone()
-            )
-            .is_err()
-    );
-    assert!(
-        installed
-            .clone()
-            .with_source_statement_references(
-                statement.clone(),
-                b1_installed.source_statement_references().unwrap().clone()
-            )
-            .is_err()
-    );
+
     let collection = OverloadCollectionOutput::collect([], []);
     let expansion = TemplateExpansionOutput::expand(&collection);
     let viability = CandidateViabilityOutput::filter(&expansion, []);

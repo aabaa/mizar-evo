@@ -89,17 +89,6 @@ fn checker_manifest_dependency_boundary_is_step5c11_scoped() {
 }
 
 #[test]
-fn checker_task258b1_syntax_alias_remains_test_only() {
-    let root = crate_root();
-    let source = read_to_string(&root.join("src/source_statement/tests.rs"));
-    assert_eq!(
-        source.matches("use mizar_syntax as syntax;").count(),
-        1,
-        "only the Task-258B1 checker test fixture may alias mizar-syntax"
-    );
-}
-
-#[test]
 fn checker_source_syntax_import_is_limited_to_registration_intake() {
     let root = crate_root();
     let mut violations = Vec::new();

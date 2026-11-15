@@ -1,16 +1,8 @@
 #[test]
 fn task258b4a_real_route_publishes_exact_composite_statement_root() {
-    use mizar_checker::{
-        source_composite_formula::{
-            SourceCompositeFormulaId, SourceCompositeFormulaKind, SourceFormulaRootId,
-            SourceFormulaRootOwnership,
-        },
-        source_statement::{
-            SourceStatementCandidateFactKind,
-            SourceStatementContextId, SourceStatementFormulaTarget, SourceStatementId,
-            SourceStatementKind, SourceStatementRecovery, SourceTheoremOwnerId, SourceTheoremRole,
-            SourceTheoremStatus,
-        },
+    use mizar_checker::source_composite_formula::{
+        SourceCompositeFormulaId, SourceCompositeFormulaKind, SourceFormulaRootId,
+        SourceFormulaRootOwnership,
     };
 
     assert_eq!(SOURCE_STATEMENT_B4A_TEXT.len(), 80);
@@ -53,12 +45,24 @@ fn task258b4a_real_route_publishes_exact_composite_statement_root() {
         let mut bytes = SOURCE_STATEMENT_B4A_TEXT.as_bytes().to_vec();
         bytes[index] ^= 1;
         let changed = String::from_utf8(bytes).expect("ASCII source mutation");
-        assert!(!task258b4a_surface_profile_with_mutation_for_test(
-            &ast, &changed, SourceStatementB4ASurfaceMutation::None,
-        ), "source byte {index}");
-        assert!(source_statement_b4a_output_with_mutation(
-            &ast, module.clone(), &symbols, &changed, |_| panic!("near miss reached upper capture"),
-        ).is_none());
+        assert!(
+            !task258b4a_surface_profile_with_mutation_for_test(
+                &ast,
+                &changed,
+                SourceStatementB4ASurfaceMutation::None,
+            ),
+            "source byte {index}"
+        );
+        assert!(
+            source_statement_b4a_lower_with_mutation(
+                &ast,
+                module.clone(),
+                &symbols,
+                &changed,
+                |_| panic!("near miss reached lower capture"),
+            )
+            .is_none()
+        );
     }
     let resolver = source_statement_b4a_resolver_env_for_test(
         &ast,
@@ -110,34 +114,27 @@ fn task258b4a_real_route_publishes_exact_composite_statement_root() {
             false,
         )
     );
+    let owners = resolver.symbols().visible_candidates(
+        &mizar_resolve::env::NamespacePath::new(module.path().as_str()),
+        "FormulaQuantifierBoundUsePayloadBoundary",
+    );
+    let [resolver_owner] = owners.as_slice() else {
+        panic!("one Task258B4A theorem owner")
+    };
     assert_eq!(output.binding_env.contexts().len(), 2);
     assert_eq!(output.binding_env.bindings().len(), 1);
     assert_eq!(output.binding_env.diagnostics().len(), 4);
-    let statement = &output.statement;
-    assert_eq!(statement.source_id, ast.source_id);
-    assert_eq!(statement.module_id, module);
-    assert_eq!(statement.owners.len(), 1);
-    assert_eq!(statement.statements.len(), 1);
-    assert_eq!(statement.contexts.len(), 1);
-    assert!(statement.input_facts.is_empty());
-    assert_eq!(statement.candidate_facts.len(), 1);
-    let owner = &statement.owners[0];
-    assert_eq!(owner.contribution.index(), 0);
-    assert_eq!(owner.site.node().index(), 22);
-    assert_eq!(owner.source_range, range(ast.source_id, 0, 78));
-    assert_eq!(owner.spelling, "FormulaQuantifierBoundUsePayloadBoundary");
-    assert_eq!(owner.role, SourceTheoremRole::Theorem);
-    assert_eq!(owner.status, SourceTheoremStatus::Unmodified);
-    assert_eq!(owner.recovery, SourceStatementRecovery::Normal);
-    let checked_owner = mizar_checker::type_checker::CheckedStatementOwner::validate_exact_local_theorem(
-        &resolver, owner.symbol.clone(), ast.source_id, &module,
-    ).expect("genuine checked theorem owner before raw admission");
+    let checked_owner =
+        mizar_checker::type_checker::CheckedStatementOwner::validate_exact_local_theorem(
+            &resolver,
+            resolver_owner.symbol().clone(),
+            ast.source_id,
+            &module,
+        )
+        .expect("genuine checked theorem owner");
     assert_eq!(checked_owner.origin().structural_path(), [2, 0]);
-    assert_eq!(checked_owner.symbol(), &owner.symbol);
-    assert_eq!(
-        checked_owner.source_range(),
-        range(ast.source_id, 0, 78)
-    );
+    assert_eq!(checked_owner.symbol(), resolver_owner.symbol());
+    assert_eq!(checked_owner.source_range(), range(ast.source_id, 0, 78));
     assert_eq!(
         checked_owner.visibility(),
         mizar_resolve::env::Visibility::Public
@@ -146,10 +143,7 @@ fn task258b4a_real_route_publishes_exact_composite_statement_root() {
         checked_owner.export_status(),
         mizar_resolve::env::ExportStatus::Exported
     );
-    assert_eq!(
-        checked_owner.origin().source_id(),
-        ast.source_id
-    );
+    assert_eq!(checked_owner.origin().source_id(), ast.source_id);
     assert_eq!(checked_owner.origin().module_id(), &module);
     assert_eq!(
         checked_owner.origin().anchor(),
@@ -157,30 +151,13 @@ fn task258b4a_real_route_publishes_exact_composite_statement_root() {
     );
     assert!(checked_owner.origin().import_edge().is_none());
     assert!(!checked_owner.origin().is_recovered());
-    let row = &statement.statements[0];
-    assert_eq!(row.owner, SourceTheoremOwnerId::new(0));
-    assert_eq!(row.context, SourceStatementContextId::new(0));
-    assert_eq!(row.formula, SourceStatementFormulaTarget::Composite(SourceCompositeFormulaId::new(0)));
-    assert_eq!(row.site.node().index(), 22);
-    assert_eq!(row.source_range, range(ast.source_id, 0, 78));
-    assert_eq!(row.source_ordinal, 0);
-    assert_eq!(row.spelling, "theorem FormulaQuantifierBoundUsePayloadBoundary : for x being set holds x = x ;");
-    assert_eq!(row.kind, SourceStatementKind::TheoremProposition);
-    assert_eq!(row.recovery, SourceStatementRecovery::Normal);
-    let context = &statement.contexts[0];
-    assert_eq!(context.statement, SourceStatementId::new(0));
-    assert_eq!(context.binding_context.index(), 0);
-    assert_eq!(context.source_range, range(ast.source_id, 0, 78));
-    assert!(context.visible_bindings.is_empty());
-    let candidate = &statement.candidate_facts[0];
-    assert_eq!(candidate.statement, SourceStatementId::new(0));
-    assert_eq!(candidate.context, SourceStatementContextId::new(0));
-    assert_eq!(candidate.ordinal, 0);
-    assert_eq!(candidate.kind, SourceStatementCandidateFactKind::UnverifiedProposition);
-    assert_eq!(candidate.formula, row.formula);
     let primary = &output.primary;
     assert_eq!(
-        primary.references().iter().map(|(_, row)| row.use_ordinal()).collect::<Vec<_>>(),
+        primary
+            .references()
+            .iter()
+            .map(|(_, row)| row.use_ordinal())
+            .collect::<Vec<_>>(),
         [1, 1]
     );
     let atomic = &output.atomic;
@@ -241,29 +218,41 @@ fn task258b4a_real_route_publishes_exact_composite_statement_root() {
             .ownership(),
         SourceFormulaRootOwnership::UnassignedStatement
     );
-    let lower = source_formula_composition_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT)
-        .expect("independent lower selector").expect("independent lower transport");
+    let lower = source_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("independent lower selector")
+    .expect("independent lower transport");
     assert_eq!(primary, lower.typed_ast.source_term().unwrap());
     assert_eq!(atomic, lower.typed_ast.source_atomic_formula().unwrap());
-    assert_eq!(composite, lower.resolved.source_composite_formula().unwrap());
-    assert_eq!(composition, lower.resolved.source_formula_composition().unwrap());
+    assert_eq!(
+        composite,
+        lower.resolved.source_composite_formula().unwrap()
+    );
+    assert_eq!(
+        composition,
+        lower.resolved.source_formula_composition().unwrap()
+    );
     assert!(lower.typed_ast.source_statement().is_none());
     assert!(symbols.labels().is_empty());
     assert_eq!(module, lower.typed_ast.module_id().clone());
 }
 
 #[test]
-fn task258b4a_lower_and_upper_mutations_fail_at_owning_stage_and_replay() {
-    use mizar_checker::{
-        source_atomic_formula::SourceAtomicFormulaId,
-        source_statement::{SourceStatementFormulaTarget, SourceStatementRecovery},
-        typed_ast::{TypedArena, TypedNodeId},
-    };
-
+fn task258b4a_lower_mutations_fail_at_owning_stage_and_replay() {
     let (ast, module, symbols, baseline) = task258b4a_output(265_100);
     let baseline_debug = format!("{baseline:?}");
-    let lower = source_formula_composition_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT)
-        .expect("lower selector").expect("lower baseline");
+    let lower = source_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("lower selector")
+    .expect("lower baseline");
     let baseline_typed = lower.typed_ast.debug_text();
     let baseline_resolved = lower.resolved.debug_text();
 
@@ -675,236 +664,64 @@ fn task258b4a_lower_and_upper_mutations_fail_at_owning_stage_and_replay() {
         let error = run();
         assert_eq!(error, run(), "lower mutation {mutation}");
         let owning_stage_errors: &[&str] = match mutation {
-            0..=30 => &["source primary", "source numeric-type", "source binding event"],
+            0..=30 => &[
+                "source primary",
+                "source numeric-type",
+                "source binding event",
+            ],
             31..=67 => &["source atomic"],
-            68..=121 => &["source composite", "source formula root", "source quantifier binder", "source binder type site", "source formula edge", "source formula request"],
-            122..=141 => &["source formula composition", "source formula atomic edge", "source quantifier bound use"],
+            68..=121 => &[
+                "source composite",
+                "source formula root",
+                "source quantifier binder",
+                "source binder type site",
+                "source formula edge",
+                "source formula request",
+            ],
+            122..=141 => &[
+                "source formula composition",
+                "source formula atomic edge",
+                "source quantifier bound use",
+            ],
             _ => unreachable!(),
         };
-        assert!(owning_stage_errors.iter().any(|prefix| error.starts_with(prefix)), "lower owning stage mutation {mutation}: {error}");
-        assert_eq!(format!("{baseline:?}"), baseline_debug, "lower purity {mutation}");
-        let pristine = source_formula_composition_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT)
-            .expect("pristine lower selector").expect("pristine lower replay");
-        assert_eq!(pristine.typed_ast, lower.typed_ast, "lower pristine {mutation}");
-        assert_eq!(pristine.resolved, lower.resolved, "lower pristine final {mutation}");
-    }
-
-    // Typed owning-stage causes: Checker task_258b4a_composite_root_corruption_matrix_fails_atomically.
-    // Runner 0..3 -> Checker 0..3; 4..31 -> 5..32; 32 -> 34; 33 -> 36.
-    for mutation in 0..34 {
-        let run = || {
-            let mut captured = None;
-            let error =
-            source_statement_b4a_output_with_mutation(
-                &ast,
-                module.clone(),
-                &symbols,
-                SOURCE_STATEMENT_B4A_TEXT,
-                |input| {
-                    let before = format!("{input:?}");
-                    match mutation {
-                    0 => input.statement.source_id = foreign_source,
-                    1 => input.statement.module_id = wrong_module.clone(),
-                    2 => input.statement.owners.clear(),
-                    3 => input
-                        .statement
-                        .owners
-                        .push(input.statement.owners[0].clone()),
-                    4 => {
-                        input.statement.owners[0].site =
-                            mizar_checker::typed_ast::TypedSiteRef::Node(TypedNodeId::new(21))
-                    }
-                    5 => input.statement.owners[0].source_range.end -= 1,
-                    6 => input.statement.owners[0].spelling.push_str("Mutated"),
-                    7 => {
-                        input.statement.owners[0].recovery = SourceStatementRecovery::Degraded
-                    }
-                    8 => input.statement.statements.clear(),
-                    9 => input
-                        .statement
-                        .statements
-                        .push(input.statement.statements[0].clone()),
-                    10 => {
-                        input.statement.statements[0].owner =
-                            mizar_checker::source_statement::SourceTheoremOwnerId::new(1)
-                    }
-                    11 => {
-                        input.statement.statements[0].context =
-                            mizar_checker::source_statement::SourceStatementContextId::new(1)
-                    }
-                    12 => {
-                        input.statement.statements[0].formula =
-                            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
-                    }
-                    13 => {
-                        input.statement.statements[0].site =
-                            mizar_checker::typed_ast::TypedSiteRef::Node(TypedNodeId::new(21))
-                    }
-                    14 => input.statement.statements[0].source_range.end -= 1,
-                    15 => input.statement.statements[0].source_ordinal = 1,
-                    16 => input.statement.statements[0].spelling.push('!'),
-                    17 => {
-                        input.statement.statements[0].kind =
-                            mizar_checker::source_statement::SourceStatementKind::Conclusion
-                    }
-                    18 => {
-                        input.statement.statements[0].recovery =
-                            SourceStatementRecovery::Degraded
-                    }
-                    19 => input.statement.contexts.clear(),
-                    20 => input
-                        .statement
-                        .contexts
-                        .push(input.statement.contexts[0].clone()),
-                    21 => {
-                        input.statement.contexts[0].statement =
-                            mizar_checker::source_statement::SourceStatementId::new(1)
-                    }
-                    22 => {
-                        input.statement.contexts[0].binding_context = BindingContextId::new(1)
-                    }
-                    23 => input.statement.contexts[0].source_range.end -= 1,
-                    24 => input.statement.contexts[0].visible_bindings.push(BindingId::new(0)),
-                    25 => input.statement.input_facts.push(
-                        mizar_checker::source_statement::SourceStatementInputFactInput {
-                            statement:
-                                mizar_checker::source_statement::SourceStatementId::new(0),
-                            context:
-                                mizar_checker::source_statement::SourceStatementContextId::new(0),
-                            ordinal: 0,
-                            kind: mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard,
-                            binding: BindingId::new(0),
-                            uses: vec![
-                                mizar_checker::source_term::SourcePrimaryTermReferenceId::new(0),
-                                mizar_checker::source_term::SourcePrimaryTermReferenceId::new(1),
-                            ],
-                        },
-                    ),
-                    26 => input.statement.candidate_facts.clear(),
-                    27 => input
-                        .statement
-                        .candidate_facts
-                        .push(input.statement.candidate_facts[0].clone()),
-                    28 => {
-                        input.statement.candidate_facts[0].statement =
-                            mizar_checker::source_statement::SourceStatementId::new(1)
-                    }
-                    29 => {
-                        input.statement.candidate_facts[0].context =
-                            mizar_checker::source_statement::SourceStatementContextId::new(1)
-                    }
-                    30 => input.statement.candidate_facts[0].ordinal = 1,
-                    31 => {
-                        input.statement.candidate_facts[0].formula =
-                            SourceStatementFormulaTarget::Atomic(SourceAtomicFormulaId::new(0))
-                    }
-                    32 => {
-                        input.statement.statements[0].formula =
-                            SourceStatementFormulaTarget::Composite(
-                                mizar_checker::source_composite_formula::SourceCompositeFormulaId::new(1),
-                            );
-                        input.statement.candidate_facts[0].formula =
-                            input.statement.statements[0].formula;
-                    }
-                    33 => {
-                        input.statement.owners.clear();
-                        input.statement.candidate_facts.clear();
-                    }
-                    _ => unreachable!(),
-                    }
-                    let changed = format!("{input:?}");
-                    assert_ne!(changed, before, "upper extraction mutation {mutation} actual delta");
-                    captured = Some(changed);
-                },
-            )
-            .expect("upper selector")
-            .expect_err("retired raw upper");
-            assert_eq!(error, "source statement dependency mismatch");
-            captured.expect("changed upper inputs captured before refusal")
-        };
-        let changed = run();
-        assert_eq!(changed, run(), "upper extraction replay {mutation}");
-        assert_eq!(format!("{baseline:?}"), baseline_debug, "upper extraction purity {mutation}");
-    }
-    // The exact 26-node Surface profile is authenticated separately above. At
-    // the checker boundary only nodes owned by the Task 252/256/257/258
-    // handoffs are normative; unrelated lower-stage nodes remain unassigned.
-    // Capture actual arena deltas here; typed constructor/installer refusals
-    // for each of these owned causes remain in the private Checker suite.
-    for node_index in [4, 12, 13, 14, 15, 17, 19, 20, 22] {
-        for mutate_kind in [false, true] {
-            let run = || {
-                let mut captured = None;
-                let error = source_statement_b4a_output_with_mutation(
-                    &ast,
-                    module.clone(),
-                    &symbols,
-                    SOURCE_STATEMENT_B4A_TEXT,
-                    |input| {
-                        let before = format!("{:?}", input.arena);
-                        let mut nodes = input
-                            .arena
-                            .iter()
-                            .map(|(_, node)| node.clone())
-                            .collect::<Vec<_>>();
-                        if mutate_kind {
-                            nodes[node_index].kind = "source.statement.corrupted".into();
-                        } else {
-                            nodes[node_index].anchor =
-                                mizar_session::SourceAnchor::Range(range(ast.source_id, 0, 0));
-                        }
-                        input.arena =
-                            TypedArena::try_new(input.arena.root(), nodes).expect("mutated arena");
-                        let changed = format!("{:?}", input.arena);
-                        assert_ne!(changed, before, "owned arena {node_index} kind={mutate_kind} actual delta");
-                        captured = Some(changed);
-                    },
-                )
-                .expect("upper arena selector")
-                .expect_err("retired raw upper");
-                assert_eq!(error, "source statement dependency mismatch");
-                captured.expect("actual owned arena extraction")
-            };
-            let changed = run();
-            assert_eq!(
-                changed,
-                run(),
-                "arena node {node_index} kind={mutate_kind} capture replay"
-            );
-        }
-    }
-    let rooted_lower_run = || {
-        let mut captured = None;
-        let error = source_statement_b4a_output_with_mutation(
+        assert!(
+            owning_stage_errors
+                .iter()
+                .any(|prefix| error.starts_with(prefix)),
+            "lower owning stage mutation {mutation}: {error}"
+        );
+        assert_eq!(
+            format!("{baseline:?}"),
+            baseline_debug,
+            "lower purity {mutation}"
+        );
+        let pristine = source_formula_composition_output_with_source(
             &ast,
             module.clone(),
             &symbols,
             SOURCE_STATEMENT_B4A_TEXT,
-            |input| {
-                assert_ne!(input.arena.root(), Some(TypedNodeId::new(25)));
-                input.arena = TypedArena::try_new(
-                    Some(TypedNodeId::new(25)),
-                    input.arena.iter().map(|(_, node)| node.clone()).collect(),
-                )
-                .expect("coherent rooted lower arena");
-                captured = Some(format!("{:?}", input.arena));
-            },
         )
-        .expect("rooted lower selector")
-        .expect_err("retired raw upper");
-        assert_eq!(error, "source statement dependency mismatch");
-        captured.expect("actual rooted lower extraction")
-    };
-    assert_eq!(
-        rooted_lower_run(),
-        rooted_lower_run(),
-        "rooted lower replay"
-    );
+        .expect("pristine lower selector")
+        .expect("pristine lower replay");
+        assert_eq!(
+            pristine.typed_ast, lower.typed_ast,
+            "lower pristine {mutation}"
+        );
+        assert_eq!(
+            pristine.resolved, lower.resolved,
+            "lower pristine final {mutation}"
+        );
+    }
 
-    let replay =
-        source_formula_composition_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT)
-            .expect("replay selector")
-            .expect("replay");
+    let replay = source_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("replay selector")
+    .expect("replay");
     assert_eq!(replay.typed_ast.debug_text(), baseline_typed);
     assert_eq!(replay.resolved.debug_text(), baseline_resolved);
     assert_eq!(format!("{baseline:?}"), baseline_debug);
@@ -926,22 +743,21 @@ fn task258b4a_source_resolver_and_active_b1_near_misses_stay_isolated() {
     let active_symbols =
         augment_type_elaboration_import_summaries(&active_ast, &active_module, active_symbols);
     assert!(!task258b4a_surface_profile_with_mutation_for_test(
-        &active_ast, active_source, SourceStatementB4ASurfaceMutation::None,
+        &active_ast,
+        active_source,
+        SourceStatementB4ASurfaceMutation::None,
     ));
-    assert!(source_statement_b4a_output_with_mutation(
-        &active_ast, active_module.clone(), &active_symbols, active_source,
-        |_| panic!("active lower-only source reached retired upper capture"),
-    ).is_none());
     assert!(
-        source_statement_output_with_source(
+        source_statement_b4a_lower_with_mutation(
             &active_ast,
             active_module.clone(),
             &active_symbols,
             active_source,
+            |_| panic!("active near miss reached lower capture"),
         )
-        .is_none(),
-        "the active one-LF source must remain lower-only"
+        .is_none()
     );
+
     let lower = source_formula_composition_output_with_source(
         &active_ast,
         active_module,
@@ -957,57 +773,32 @@ fn task258b4a_source_resolver_and_active_b1_near_misses_stay_isolated() {
     let (ast, module, symbols, baseline) = task258b4a_output(265_210);
     let symbols_before = format!("{symbols:?}");
     let pristine_lower = source_formula_composition_output_with_source(
-        &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT,
-    ).expect("private lower selector").expect("genuine private lower");
-    // Exact typed owner-label refusals stay in the private Checker producer suite.
-    // The retired raw route still exposes each real changed resolver environment.
-    for mutation in [
-        Task258B2ResolverMutation::Imported,
-        Task258B2ResolverMutation::Missing,
-        Task258B2ResolverMutation::Duplicate,
-        Task258B2ResolverMutation::WrongPath,
-        Task258B2ResolverMutation::WrongKind,
-        Task258B2ResolverMutation::Private,
-        Task258B2ResolverMutation::Recovered,
-    ] {
-        let run = || {
-            let mut captured = None;
-            let error = source_statement_b4a_output_with_resolver_mutation(
-                &ast,
-                module.clone(),
-                &symbols,
-                SOURCE_STATEMENT_B4A_TEXT,
-                |symbols| {
-                    let before = format!("{symbols:?}");
-                    let symbols = task258b2_mutate_resolver(symbols, mutation);
-                    let changed = format!("{symbols:?}");
-                    assert_ne!(changed, before, "resolver {mutation:?} actual delta");
-                    captured = Some(changed);
-                    symbols
-                },
-            )
-            .expect("resolver selector")
-            .expect_err("retired raw upper");
-            assert_eq!(error, "source statement dependency mismatch");
-            captured.expect("actual mutated resolver environment")
-        };
-        assert_eq!(run(), run(), "{mutation:?} resolver capture replay");
-        assert_eq!(format!("{symbols:?}"), symbols_before, "{mutation:?} resolver purity");
-        let replay = source_formula_composition_output_with_source(
-            &ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT,
-        ).expect("pristine lower selector").expect("pristine lower replay");
-        assert_eq!(replay.typed_ast, pristine_lower.typed_ast, "{mutation:?} pristine typed");
-        assert_eq!(replay.resolved, pristine_lower.resolved, "{mutation:?} pristine final");
-    }
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("private lower selector")
+    .expect("genuine private lower");
+    assert_eq!(format!("{symbols:?}"), symbols_before);
+    let replay = source_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("pristine lower selector")
+    .expect("pristine lower replay");
+    assert_eq!(replay.typed_ast, pristine_lower.typed_ast);
+    assert_eq!(replay.resolved, pristine_lower.resolved);
     let (_, _, _, replay) = task258b4a_output(265_210);
     assert_eq!(format!("{replay:?}"), format!("{baseline:?}"));
 }
 
 #[test]
 fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
-    use mizar_checker::{
-        source_composite_formula::{SourceFormulaRootId, SourceFormulaRootOwnership},
-        typed_ast::TypedAstError,
+    use mizar_checker::source_composite_formula::{
+        SourceFormulaRootId, SourceFormulaRootOwnership,
     };
 
     let (composite_ast, composite_module, composite_symbols, composite_output) =
@@ -1018,8 +809,13 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
     let (atomic_output_typed, _) = task258_native_output(&atomic_ast, &atomic_module);
     let composite_before = format!("{composite_output:?}");
     let lower = source_formula_composition_output_with_source(
-        &composite_ast, composite_module.clone(), &composite_symbols, SOURCE_STATEMENT_B4A_TEXT,
-    ).expect("lower selector").expect("genuine composite lower");
+        &composite_ast,
+        composite_module.clone(),
+        &composite_symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("lower selector")
+    .expect("genuine composite lower");
     let atomic_statement = atomic_output_typed
         .source_statement()
         .expect("atomic statement")
@@ -1037,14 +833,7 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
             .contains("formula-composition-fingerprint:")
     );
     let atomic_before = atomic_output_typed.debug_text();
-    assert_eq!(
-        lower
-            .typed_ast
-            .clone()
-            .with_source_statement(atomic_statement.clone())
-            .expect_err("composite then atomic must fail"),
-        TypedAstError::InvalidSourceStatement
-    );
+
     assert_eq!(format!("{composite_output:?}"), composite_before);
     assert_eq!(atomic_output_typed.debug_text(), atomic_before);
     assert_eq!(
@@ -1066,8 +855,14 @@ fn task258b4a_cross_family_orders_and_ownership_are_atomic() {
 fn task258b4a_final_clone_debug_and_semantic_outputs_are_stable() {
     let (ast, module, symbols, captured) = task258b4a_output(265_400);
     assert_eq!(format!("{:?}", captured.clone()), format!("{captured:?}"));
-    let output = source_formula_composition_output_with_source(&ast, module.clone(), &symbols, SOURCE_STATEMENT_B4A_TEXT)
-        .expect("lower selector").expect("independent lower final");
+    let output = source_formula_composition_output_with_source(
+        &ast,
+        module.clone(),
+        &symbols,
+        SOURCE_STATEMENT_B4A_TEXT,
+    )
+    .expect("lower selector")
+    .expect("independent lower final");
     assert_eq!(output.typed_ast.clone(), output.typed_ast);
     assert_eq!(output.resolved.clone(), output.resolved);
     assert_eq!(
@@ -1081,9 +876,18 @@ fn task258b4a_final_clone_debug_and_semantic_outputs_are_stable() {
     assert!(output.typed_ast.source_statement().is_none());
     assert!(output.resolved.source_statement().is_none());
     assert_eq!(output.typed_ast.source_term(), Some(&captured.primary));
-    assert_eq!(output.typed_ast.source_atomic_formula(), Some(&captured.atomic));
-    assert_eq!(output.typed_ast.source_composite_formula(), Some(&captured.composite));
-    assert_eq!(output.typed_ast.source_formula_composition(), Some(&captured.composition));
+    assert_eq!(
+        output.typed_ast.source_atomic_formula(),
+        Some(&captured.atomic)
+    );
+    assert_eq!(
+        output.typed_ast.source_composite_formula(),
+        Some(&captured.composite)
+    );
+    assert_eq!(
+        output.typed_ast.source_formula_composition(),
+        Some(&captured.composition)
+    );
     assert!(output.typed_ast.source_statement_references().is_none());
     assert!(output.typed_ast.source_statement_witnesses().is_none());
     assert!(output.typed_ast.source_context().is_none());
@@ -1127,8 +931,4 @@ fn task258b4a_final_clone_debug_and_semantic_outputs_are_stable() {
     assert!(output.resolved.checked_proofs().is_empty());
     assert!(output.resolved.checked_proof_nodes().is_empty());
     assert!(output.resolved.checked_terminal_goals().is_empty());
-    assert!(
-        source_statement_transport_detail_keys(&ast, module, &symbols, SOURCE_STATEMENT_B4A_TEXT,)
-            .is_none()
-    );
 }

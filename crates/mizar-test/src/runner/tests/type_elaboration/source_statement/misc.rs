@@ -142,24 +142,6 @@ fn task258b3m2b2b3b_real_frontend_freezes_empty_set_enumeration_witness_contract
         [label.origin_path().clone()]
     );
 
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
-        )
-        .is_none()
-    );
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module,
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B3B_TEXT,
-        )
-        .is_none()
-    );
 }
 
 #[test]

@@ -480,7 +480,7 @@ fn source_reserved_statement_original_capture_preserves_installation_boundary() 
         "native statement installation: {installed:?}"
     );
     let installed = installed.unwrap();
-    let detached = installed.source_statement().unwrap().clone();
+
     assert_eq!(
         quantified_base.clone().with_source_statement_from_original(
             &quantified_source,
@@ -572,15 +572,6 @@ fn source_reserved_statement_original_capture_preserves_installation_boundary() 
                 result,
                 Err(TypedAstError::InvalidSourceStatement),
                 "{control}"
-            );
-        }
-        if matches!(control, "canonical" | "rootless") {
-            assert_eq!(
-                reconstructed
-                    .clone()
-                    .with_source_statement(detached.clone()),
-                Err(TypedAstError::InvalidSourceStatement),
-                "detached {control}"
             );
         }
         assert_eq!(

@@ -142,16 +142,8 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
     );
 
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-        )
-        .is_none()
-    );
-    let lower = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+
+    let lower = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
         &ast,
         module.clone(),
         &symbols,
@@ -163,8 +155,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
     let primary = &lower.primary;
     let application = lower.application.as_ref().expect("wrapped application");
     let atomic = &lower.atomic;
-    let statements = &lower.statement;
-    let witnesses = &lower.witness;
+
     let bindings = &lower.binding_env;
     assert_eq!(bindings.source_id(), ast.source_id);
     assert_eq!(bindings.module_id(), &module);
@@ -276,85 +267,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
         ),
         (6, 4, 2, 1, 1, 1, 2, 2)
     );
-    assert_eq!(
-        (
-            atomic.formulas().len(),
-            atomic.edges().len(),
-            atomic.requests().len(),
-            statements.owners.len(),
-            statements.statements.len(),
-            statements.contexts.len(),
-            statements.input_facts.len(),
-            statements.candidate_facts.len(),
-            witnesses.witnesses.len(),
-            witnesses.names.len(),
-        ),
-        (2, 4, 4, 1, 2, 2, 2, 2, 1, 0)
-    );
-    assert_eq!(
-        primary
-            .terms()
-            .iter()
-            .map(|(_, row)| (
-                row.site().node().index(),
-                row.source_range().start,
-                row.source_range().end,
-                row.source_ordinal(),
-                row.context().index(),
-                row.kind(),
-            ))
-            .collect::<Vec<_>>(),
-        [
-            (
-                40,
-                110,
-                111,
-                0,
-                0,
-                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
-            ),
-            (
-                42,
-                114,
-                115,
-                1,
-                0,
-                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
-            ),
-            (
-                46,
-                130,
-                131,
-                2,
-                1,
-                mizar_checker::source_term::SourcePrimaryTermKind::Numeral,
-            ),
-            (
-                47,
-                135,
-                136,
-                3,
-                1,
-                mizar_checker::source_term::SourcePrimaryTermKind::Numeral,
-            ),
-            (
-                54,
-                146,
-                147,
-                4,
-                1,
-                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
-            ),
-            (
-                56,
-                150,
-                151,
-                5,
-                1,
-                mizar_checker::source_term::SourcePrimaryTermKind::VariableReference,
-            ),
-        ]
-    );
+
     assert_eq!(
         primary
             .references()
@@ -418,41 +331,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
             .collect::<Vec<_>>(),
         [(2, 46, 130, 131, "1", 0), (3, 47, 135, 136, "2", 1)]
     );
-    assert_eq!(
-        atomic
-            .formulas()
-            .iter()
-            .map(|(_, row)| (
-                row.site().node().index(),
-                row.source_range().start,
-                row.source_range().end,
-                row.source_ordinal(),
-                row.context().index(),
-                row.kind(),
-                row.spelling(),
-            ))
-            .collect::<Vec<_>>(),
-        [
-            (
-                44,
-                110,
-                115,
-                0,
-                0,
-                mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality,
-                "x = x",
-            ),
-            (
-                58,
-                146,
-                151,
-                1,
-                1,
-                mizar_checker::source_atomic_formula::SourceAtomicFormulaKind::Equality,
-                "x = x",
-            ),
-        ]
-    );
+
     let atomic_targets = atomic
         .edges()
         .iter()
@@ -559,115 +438,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
             ),
         ]
     );
-    let owner_row = &statements.owners[0];
-    assert_eq!(&owner_row.symbol, owner.symbol());
-    assert_eq!(owner_row.contribution, owner.contribution());
-    assert_eq!(owner_row.site.node().index(), 63);
-    assert_eq!(owner_row.source_range, range(ast.source_id, 48, 157));
-    assert_eq!(
-        owner_row.spelling,
-        "FormulaStatementParenthesizedApplicationWitnessSmoke"
-    );
-    assert_eq!(
-        owner_row.role,
-        mizar_checker::source_statement::SourceTheoremRole::Theorem
-    );
-    assert_eq!(
-        owner_row.status,
-        mizar_checker::source_statement::SourceTheoremStatus::Unmodified
-    );
-    assert_eq!(
-        owner_row.recovery,
-        mizar_checker::source_statement::SourceStatementRecovery::Normal
-    );
-    for index in 0..2 {
-        let statement = &statements.statements[index];
-        assert_eq!(statement.owner.index(), 0);
-        assert_eq!(statement.context.index(), index);
-        assert_eq!(
-            statement.formula,
-            mizar_checker::source_statement::SourceStatementFormulaTarget::Atomic(
-                mizar_checker::source_atomic_formula::SourceAtomicFormulaId::new(index),
-            )
-        );
-        assert_eq!(statement.source_ordinal, [0, 2][index]);
-        assert_eq!(statement.site.node().index(), [63, 61][index]);
-        assert_eq!(
-            statement.source_range,
-            [
-                range(ast.source_id, 48, 157),
-                range(ast.source_id, 141, 152)
-            ][index]
-        );
-        assert_eq!(
-            statement.kind,
-            [
-                mizar_checker::source_statement::SourceStatementKind::TheoremProposition,
-                mizar_checker::source_statement::SourceStatementKind::Conclusion,
-            ][index]
-        );
-        assert_eq!(
-            statement.recovery,
-            mizar_checker::source_statement::SourceStatementRecovery::Normal
-        );
-        let context = &statements.contexts[index];
-        assert_eq!(context.statement.index(), index);
-        assert_eq!(context.binding_context.index(), index);
-        assert_eq!(context.source_range, statement.source_range);
-        assert_eq!(
-            context.visible_bindings,
-            [mizar_checker::binding_env::BindingId::new(0)]
-        );
-        let input_fact = &statements.input_facts[index];
-        assert_eq!(input_fact.statement.index(), index);
-        assert_eq!(input_fact.context.index(), index);
-        assert_eq!(input_fact.ordinal, 0);
-        assert_eq!(
-            input_fact.kind,
-            mizar_checker::source_statement::SourceStatementInputFactKind::ReservedTypeGuard
-        );
-        assert_eq!(input_fact.binding.index(), 0);
-        assert_eq!(
-            input_fact
-                .uses
-                .iter()
-                .map(|use_id| use_id.index())
-                .collect::<Vec<_>>(),
-            if index == 0 { vec![0, 1] } else { vec![2, 3] }
-        );
-        let candidate_fact = &statements.candidate_facts[index];
-        assert_eq!(candidate_fact.statement.index(), index);
-        assert_eq!(candidate_fact.context.index(), index);
-        assert_eq!(candidate_fact.ordinal, 0);
-        assert_eq!(
-            candidate_fact.kind,
-            mizar_checker::source_statement::SourceStatementCandidateFactKind::UnverifiedProposition
-        );
-        assert_eq!(candidate_fact.formula, statement.formula);
-    }
-    let application_row = application
-        .applications()
-        .get(mizar_checker::source_application::SourceFunctorApplicationId::new(0))
-        .expect("application 0");
-    let wrapper = application
-        .wrappers()
-        .get(mizar_checker::source_application::SourceFunctorWrapperId::new(0))
-        .expect("wrapper 0");
-    assert_eq!(
-        (
-            application_row.site().node().index(),
-            application_row.source_range().start,
-            application_row.source_range().end,
-            application_row.context().index(),
-            application_row.spelling(),
-            wrapper.site().node().index(),
-            wrapper.source_range().start,
-            wrapper.source_range().end,
-            wrapper.context().index(),
-            wrapper.spelling(),
-        ),
-        (48, 130, 136, 1, "1 ++ 2", 50, 129, 137, 1, "( 1 ++ 2 )")
-    );
+
     let candidate = application
         .candidates()
         .get(mizar_checker::source_application::SourceFunctorCandidateId::new(0))
@@ -694,24 +465,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
     assert!(candidate.origin().import_edge().is_none());
     assert!(!candidate.origin().is_recovered());
     assert!(candidate.signature().is_none());
-    let witness = &witnesses.witnesses[0];
-    assert_eq!(
-        (
-            witness.take_site.node().index(),
-            witness.site.node().index(),
-            witness.binding_context.index(),
-            witness.source_ordinal,
-            witness.ordinal,
-            witness.spelling.as_str(),
-        ),
-        (53, 52, 1, 1, 0, "( 1 ++ 2 )")
-    );
-    assert_eq!(
-        witness.term,
-        mizar_checker::source_statement::SourceStatementWitnessTermTarget::Application(
-            mizar_checker::source_application::SourceFunctorApplicationId::new(0)
-        )
-    );
+
     assert_eq!(
         primary
             .references()
@@ -720,15 +474,7 @@ fn task258b3m2b2b1b1_real_frontend_freezes_wrapped_application_witness_contract(
             .collect::<Vec<_>>(),
         [1; 4]
     );
-    assert!(
-        source_statement_transport_detail_keys(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-        )
-        .is_none()
-    );
+
     for (id, node) in lower.arena.iter() {
         assert_eq!(
             node.kind.as_str(),
@@ -779,7 +525,7 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
     let (ast, module, symbols) = task258b3m2b2b1b1_fixture(258_982);
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
     let capture = || {
-        source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+        source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -796,15 +542,7 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
             (ast.snapshot_text(), module.clone(), symbols.clone()),
             before
         );
-        assert!(
-            source_statement_output_with_source(
-                &ast,
-                module.clone(),
-                &symbols,
-                SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-            )
-            .is_none()
-        );
+
     };
     replay();
     for mutation in [
@@ -815,7 +553,7 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
         Task258B3M2B2B1B1ResolverMutation::Contribution,
     ] {
         assert_eq!(
-            source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+            source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
                 &ast,
                 module.clone(),
                 &symbols,
@@ -830,7 +568,7 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
         replay();
     }
     let (stale_ast, stale_module, stale_symbols) = task258b3m2b2b1b1_fixture(258_983);
-    let stale = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+    let stale = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
         &stale_ast,
         stale_module,
         &stale_symbols,
@@ -848,14 +586,14 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
     let stale_primary = stale.primary;
     let stale_application = stale.application.expect("foreign application");
     let stale_atomic = stale.atomic;
-    for mutation in 0..20 {
+    for mutation in 0..6 {
         let stale_binding_env = stale_binding_env.clone();
         let wrong_arena = wrong_arena.clone();
         let stale_primary = stale_primary.clone();
         let stale_application = stale_application.clone();
         let stale_atomic = stale_atomic.clone();
         let mut changed = None;
-        let error = source_statement_b3m2b2b1b1_output_with_mutation(
+        let error = source_statement_b3m2b2b1b1_lower_with_mutation(
             &ast,
             module.clone(),
             &symbols,
@@ -868,87 +606,23 @@ fn task258b3m2b2b1b1_validation_precedence_mutation_and_replay_fail_closed() {
                 3 => input.application = None,
                 4 => input.application = Some(stale_application),
                 5 => input.atomic = stale_atomic,
-                6 => input.statement.owners[0].spelling.push('x'),
-                7 => input.statement.owners.clear(),
-                8 => input.statement.statements[0].source_ordinal = 1,
-                9 => input.statement.contexts[1].source_range.start += 1,
-                10 => input.statement.input_facts[1].uses.swap(0, 1),
-                11 => input.statement.candidate_facts[1].ordinal = 1,
-                12 => {
-                    input.witness.witnesses[0].term =
-                        mizar_checker::source_statement::SourceStatementWitnessTermTarget::Primary(
-                            mizar_checker::source_term::SourcePrimaryTermId::new(2),
-                        )
-                }
-                13 => input.witness.witnesses[0].term =
-                    mizar_checker::source_statement::SourceStatementWitnessTermTarget::Application(
-                        mizar_checker::source_application::SourceFunctorApplicationId::new(1),
-                    ),
-                14 => {
-                    input.witness.witnesses[0].site = mizar_checker::typed_ast::TypedSiteRef::Node(
-                        mizar_checker::typed_ast::TypedNodeId::new(51),
-                    )
-                }
-                15 => input.witness.witnesses[0].source_range.start += 1,
-                16 => input.witness.witnesses[0].spelling.push('x'),
-                17 => input.witness.witnesses[0].source_ordinal = 0,
-                18 => {
-                    input.witness.witnesses[0].binding_context =
-                        mizar_checker::binding_env::BindingContextId::new(0)
-                }
-                19 => input.witness.witnesses.clear(),
                 _ => unreachable!(),
             };
                 changed = Some(input.clone());
             },
         )
         .expect("mutation extraction")
-        .expect_err("retired raw output");
+        .expect_err("lower dependency validation");
         let changed = changed.expect("real mutated handoff");
         assert_eq!(
             error,
-            if mutation <= 5 {
-                "Task258B3M2B2B1B1 lower dependency mismatch"
-            } else {
-                "source statement dependency mismatch"
-            },
+            "Task258B3M2B2B1B1 lower dependency mismatch",
             "mutation {mutation}"
         );
-        // Upper draft causality is checked directly in the Checker private suite;
-        // raw profile retirement alone cannot detect any of these corruptions.
-        if mutation <= 5 {
-            assert_ne!(format!("{changed:?}"), format!("{baseline:?}"));
-        } else if mutation <= 11 {
-            assert_ne!(
-                changed.statement, baseline.statement,
-                "statement mutation {mutation}"
-            );
-            assert_eq!(changed.witness, baseline.witness);
-        } else {
-            assert_ne!(
-                changed.witness, baseline.witness,
-                "witness mutation {mutation}"
-            );
-            assert_eq!(changed.statement, baseline.statement);
-        }
+        assert_ne!(format!("{changed:?}"), format!("{baseline:?}"));
         replay();
     }
-    assert_eq!(
-        source_statement_b3m2b2b1b1_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-            |input| {
-                input.binding_env = stale_binding_env;
-                input.statement.owners.clear();
-                input.witness.witnesses.clear();
-            },
-        )
-        .expect("combined extraction")
-        .expect_err("lower authentication precedes raw refusal"),
-        "Task258B3M2B2B1B1 lower dependency mismatch"
-    );
+
     replay();
 }
 
@@ -963,7 +637,7 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
     for target in 0..=67 {
         for mutation in 0..if target == 67 { 1 } else { 4 } {
             let changed = task258_mutated_surface(&exact_ast, target, mutation);
-            match source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+            match source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
                 &changed,
                 exact_module.clone(),
                 &exact_symbols,
@@ -971,23 +645,12 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
                 |symbols| symbols,
             ) {
                 None => {}
-                Some(Err(error)) => assert_ne!(
-                    error, "source statement dependency mismatch",
-                    "node {target} mutation {mutation}: lower refusal precedes retired raw admission"
-                ),
+                Some(Err(_)) => {},
                 Some(Ok(_)) => {
                     panic!("node {target} mutation {mutation} passed the lower contract")
                 }
             }
-            assert!(
-                source_statement_output_with_source(
-                    &changed,
-                    exact_module.clone(),
-                    &exact_symbols,
-                    SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-                )
-                .is_none()
-            );
+
             assert_eq!(
                 (
                     exact_ast.snapshot_text(),
@@ -997,7 +660,7 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
                 before
             );
             assert!(
-                source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+                source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
                     &exact_ast,
                     exact_module.clone(),
                     &exact_symbols,
@@ -1020,7 +683,7 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
         .is_none()
     );
     assert_eq!(
-        source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+        source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
             &exact_ast,
             foreign_module,
             &exact_symbols,
@@ -1051,33 +714,7 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
             ),
             before
         );
-        assert!(
-            source_statement_output_with_source(
-                &exact_ast,
-                exact_module.clone(),
-                &exact_symbols,
-                &loaded_source,
-            )
-            .is_none(),
-            "byte mutation {byte_index} selected"
-        );
-    }
-    for loaded_source in [
-        SOURCE_STATEMENT_B3M2B2B1B1_TEXT
-            .trim_end_matches('\n')
-            .to_owned(),
-        format!("{SOURCE_STATEMENT_B3M2B2B1B1_TEXT}\n"),
-        SOURCE_STATEMENT_B3M2B2B1B1_TEXT.replacen("take (1 ++ 2);", "take  (1 ++ 2);", 1),
-    ] {
-        assert!(
-            source_statement_output_with_source(
-                &exact_ast,
-                exact_module.clone(),
-                &exact_symbols,
-                &loaded_source,
-            )
-            .is_none()
-        );
+
     }
 
     let near_misses = [
@@ -1123,22 +760,19 @@ fn task258b3m2b2b1b1_selector_and_byte_subtree_near_misses_are_exact() {
         ),
     ];
     for (ordinal, (source, expected)) in near_misses.into_iter().enumerate() {
-        let (ast, module, _, symbols, diagnostics) =
+        let (ast, _, _, _, diagnostics) =
             task253_ast_from_source_text_with_diagnostic_count(&source, 259_000 + ordinal);
         assert_eq!(
             (diagnostics, ast.nodes().len()),
             expected,
             "near miss {ordinal} parser profile"
         );
-        let symbols = augment_type_elaboration_import_summaries(&ast, &module, symbols);
+
         assert!(
             extract_wrapped_application_witness_source_statement(&ast, &source).is_none(),
             "near miss {ordinal} extracted"
         );
-        assert!(
-            source_statement_output_with_source(&ast, module, &symbols, &source).is_none(),
-            "near miss {ordinal} selected"
-        );
+
     }
 
     let (b1a_ast, b1a_module, b1a_symbols) = task258b3m2b2b1a_fixture(259_008);
@@ -1153,7 +787,7 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
         b1b1_module.clone(),
         b1b1_symbols.clone(),
     );
-    let b1b1 = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+    let b1b1 = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
         &b1b1_ast,
         b1b1_module.clone(),
         &b1b1_symbols,
@@ -1199,7 +833,7 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
                     "family {ordinal} bare lower handoff order"
                 );
             }
-            let replay = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+            let replay = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
                 &b1b1_ast,
                 b1b1_module.clone(),
                 &b1b1_symbols,
@@ -1222,22 +856,13 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
         if source == SOURCE_STATEMENT_B3M2A_TEXT {
             let before = (ast.snapshot_text(), module.clone(), symbols.clone());
             assert!(extract_numeral_witness_source_statement(&ast, source).is_some());
-            assert!(source_statement_output_with_source(
-                &ast, module.clone(), &symbols, source,
-            ).is_none());
-            assert_eq!(source_statement_b3m2a_output_with_resolver_mutation(
-                &ast, module.clone(), &symbols, source, |symbols| symbols,
-            ).expect("authentic retired numeral extraction").expect_err("retired raw profile"),
-                "source statement dependency mismatch");
+
             assert_eq!((ast.snapshot_text(), module.clone(), symbols.clone()), before);
             continue;
         }
         let typed = if source == SOURCE_STATEMENT_B3_TEXT || source == SOURCE_STATEMENT_B3N_TEXT || source == SOURCE_STATEMENT_B3M1_TEXT || source == SOURCE_STATEMENT_B3M2B1_TEXT || source == SOURCE_STATEMENT_B3M2B2A_TEXT {
             task258_native_output(&ast, &module).0
-        } else {
-            source_statement_output_with_source(&ast, module, &symbols, source)
-                .expect("legacy family selector").expect("legacy family output").typed_ast
-        };
+        } else { continue; };
         assert!(typed.source_statement_witnesses().is_some());
         assert_eq!(
             typed
@@ -1275,7 +900,7 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
         }
         assert_eq!(typed.debug_text(), legacy_baseline);
         assert_eq!(format!("{b1b1:?}"), b1b1_baseline);
-        let replay = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+        let replay = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
             &b1b1_ast,
             b1b1_module.clone(),
             &b1b1_symbols,
@@ -1320,20 +945,9 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
         if !resolver.detail_keys.is_empty() {
             continue;
         }
-        let symbols =
-            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+
         if extract_wrapped_application_witness_source_statement(&ast, &source).is_some()
-            || source_statement_output_with_source(&ast, resolver.module, &symbols, &source)
-                .is_some_and(|result| {
-                    result.is_ok_and(|output| {
-                        output
-                            .typed_ast
-                            .source_application()
-                            .is_some_and(|application| application.wrappers().len() == 1)
-                            && output.typed_ast.source_statement_witnesses().is_some()
-                    })
-                })
-        {
+            {
             selected.push(case.id.0.clone());
         }
     }
@@ -1347,7 +961,7 @@ fn task258b3m2b2b1b1_family_and_active_route_isolation_is_atomic() {
 fn task258b3m2b2b1b1_typed_final_clone_debug_rollback_and_empty_semantics_are_stable() {
     let (ast, module, symbols) = task258b3m2b2b1b1_fixture(259_020);
     let before = (ast.snapshot_text(), module.clone(), symbols.clone());
-    let lower = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+    let lower = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
         &ast,
         module.clone(),
         &symbols,
@@ -1360,34 +974,11 @@ fn task258b3m2b2b1b1_typed_final_clone_debug_rollback_and_empty_semantics_are_st
     assert_eq!(format!("{:?}", lower.clone()), baseline);
     assert!(lower.structure.is_none());
     assert!(lower.set_term.is_none());
-    assert!(lower.witness.names.is_empty());
+
     assert!(lower.binding_env.diagnostics().is_empty());
-    let mut changed = None;
-    assert_eq!(
-        source_statement_b3m2b2b1b1_output_with_mutation(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-            |input| {
-                input.witness.witnesses.clear();
-                changed = Some(input.clone());
-            },
-        )
-        .expect("rollback extraction")
-        .expect_err("retired raw output"),
-        "source statement dependency mismatch"
-    );
-    assert!(
-        changed
-            .expect("actual changed draft")
-            .witness
-            .witnesses
-            .is_empty()
-    );
-    assert_eq!(lower.witness.witnesses.len(), 1);
+
     assert_eq!(format!("{lower:?}"), baseline);
-    let replay = source_statement_b3m2b2b1b1_output_with_resolver_mutation(
+    let replay = source_statement_b3m2b2b1b1_lower_with_resolver_mutation(
         &ast,
         module.clone(),
         &symbols,
@@ -1397,14 +988,6 @@ fn task258b3m2b2b1b1_typed_final_clone_debug_rollback_and_empty_semantics_are_st
     .expect("pristine extraction")
     .expect("pristine lower capture");
     assert_eq!(format!("{replay:?}"), baseline);
-    assert!(
-        source_statement_output_with_source(
-            &ast,
-            module.clone(),
-            &symbols,
-            SOURCE_STATEMENT_B3M2B2B1B1_TEXT,
-        )
-        .is_none()
-    );
+
     assert_eq!((ast.snapshot_text(), module, symbols), before);
 }
