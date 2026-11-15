@@ -35,8 +35,12 @@ The existing explicit native frontend path groups notifications by URI in ordere
 
 ## Implementation boundary
 
-Task8 defines publication only. Task7 provides the retained full registry and atomic activation; task9's delivery implementation and task10's scheduling remain open. The existing native frontend path remains syntax-only. No new transport payload, diagnostic allocation or producer behavior is introduced.
+`src/diagnostics.rs` implements task9. `Server::snapshot_diagnostic_notifications` selects a current retained snapshot; unavailable or stale selection returns no notifications. Conversion errors reject the entire batch, including non-range source-load records whose wire encoding remains undefined.
+
+Notifications use URI order and the captured document version, including empty lists for clean sources. Primary ranges and ordered secondary `relatedInformation` use original raw maps. Diagnostic `data` contains the existing handle as `{snapshot: <published BuildSnapshotId>, id: <ordinal>}`; it refers to the unchanged record in the retained index, preserving anchor shape, generated reasons, provenance, notes and intent without duplicating them in a new representation. It grants no currentness or edit authority.
+
+`Server::publish_snapshot_diagnostics_to_writer` retains that selection through conversion and writing, checking currentness and selection identity before each frame. It propagates conversion/I/O errors; external writes have no atomic-currentness, rollback or retry guarantee. Build scheduling/event consumption remains task11; the existing native frontend path remains syntax-only.
 
 ## Test design
 
-No tests change in this design task. Task9 retains its existing publication-fixture, stale-index-suppression and deterministic-order obligations. This document grants no implementation or §23.6/SCA-003 completion credit.
+Task9 tests cover genuine coherent publication, stale-index suppression, deterministic order, exact-source conversion, retained record identity, explicit batch failures and framed delivery. They grant no task11 or §23.6/SCA-003 completion credit.

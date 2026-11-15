@@ -19,7 +19,7 @@
 | range | [range.md](range.md)（task 2） | `src/range_mapper.rs` | [x] |
 | server | [server.md](server.md)（task 4） | `src/server.rs` | [x] |
 | snapshot | `snapshot.md`（task 6） | `src/snapshot.rs` | [ ] |
-| diagnostics | `diagnostics.md`（task 8） | `src/diagnostics.rs` | [ ] |
+| diagnostics | `diagnostics.md`（task 8） | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md`（task 10） | `src/build_bridge.rs` | [ ] |
 | metadata | `metadata.md`（task 12） | `src/metadata.rs` | [ ] |
 | navigation | `navigation.md`（task 14） | `src/navigation.rs` | [ ] |
@@ -135,7 +135,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
    - 依存: 6。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「Diagnostic Aggregator」「Lightweight Open-Buffer Diagnostics」。
 
-9. **診断の公開。** [ ]
+9. **診断の公開。** [x]
    - 現在の snapshot の索引から変換済み range 付きで診断を公開する。
      古い snapshot の診断は current として決して公開されない。
    - テスト: 公開のフィクスチャ。stale 索引の抑制。決定的な順序。

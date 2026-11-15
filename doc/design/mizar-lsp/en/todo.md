@@ -20,7 +20,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 | range | [range.md](range.md) (task 2) | `src/range_mapper.rs` | [x] |
 | server | [server.md](server.md) (task 4) | `src/server.rs` | [x] |
 | snapshot | [snapshot.md](snapshot.md) (task 6) | `src/snapshot.rs` | [ ] |
-| diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [ ] |
+| diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [ ] |
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [ ] |
 | navigation | `navigation.md` (task 14) | `src/navigation.rs` | [ ] |
@@ -135,7 +135,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
    - Deps: 6. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "Diagnostic Aggregator"/"Lightweight Open-Buffer Diagnostics".
 
-9. **Diagnostic publication.** [ ]
+9. **Diagnostic publication.** [x]
    - Publish diagnostics from the current snapshot's index with converted
      ranges; obsolete-snapshot diagnostics are never published as current.
    - Tests: publication fixtures; stale-index suppression; deterministic

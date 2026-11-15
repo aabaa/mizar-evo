@@ -5907,3 +5907,297 @@ pub(super) mod full_snapshot_registry_b {
         ));
     }
 }
+
+#[cfg(test)]
+mod task9_publication_api_tests {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+    use std::io::{self, Write};
+
+    #[derive(Default)]
+    struct RecordingWriter {
+        bytes: Vec<u8>,
+        fail_at: Option<&'static str>,
+        in_body: bool,
+        obsolete_on_flush: Option<(
+            std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+            mizar_session::BuildSnapshotId,
+        )>,
+        flushes: usize,
+    }
+
+    impl Write for RecordingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            let operation = if self.in_body { "body" } else { "header" };
+            if self.fail_at == Some(operation) {
+                return Err(io::Error::other(operation));
+            }
+            self.bytes.extend_from_slice(bytes);
+            self.in_body |= self.bytes.ends_with(b"\r\n\r\n");
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            self.flushes += 1;
+            if self.fail_at == Some("flush") {
+                return Err(io::Error::other("flush"));
+            }
+            if let Some((publisher, snapshot)) = self.obsolete_on_flush.take() {
+                publisher.mark_obsolete(snapshot).unwrap();
+            }
+            self.in_body = false;
+            Ok(())
+        }
+    }
+
+    fn publish(fixture: &RegistryFixture) -> Option<Vec<Value>> {
+        fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+    }
+
+    #[test]
+    fn coherent_snapshot_publishes_each_exact_version_and_clean_empty_diagnostics() {
+        let mut fixture = RegistryFixture::new();
+        assert!(publish(&fixture).is_none());
+        let mut unavailable_writer = RecordingWriter::default();
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut unavailable_writer,
+                )
+                .unwrap(),
+            0
+        );
+        assert!(unavailable_writer.bytes.is_empty());
+        assert_eq!(unavailable_writer.flushes, 0);
+        fixture.build();
+
+        let notifications = publish(&fixture).expect("current coherent publication");
+        assert_eq!(notifications.len(), 2);
+        let expected_uris = fixture
+            .sources
+            .iter()
+            .map(|(_, _, uri)| uri.clone())
+            .collect::<std::collections::BTreeSet<_>>();
+        let actual_uris = notifications
+            .iter()
+            .map(|notification| notification["params"]["uri"].as_str().unwrap().to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(actual_uris, expected_uris.into_iter().collect::<Vec<_>>());
+
+        for notification in &notifications {
+            assert_eq!(notification["jsonrpc"], "2.0");
+            assert_eq!(notification["method"], "textDocument/publishDiagnostics");
+            let params = &notification["params"];
+            let uri = params["uri"].as_str().unwrap();
+            assert_eq!(params["version"], 1);
+            assert_eq!(params["diagnostics"], json!([]));
+            assert!(
+                fixture
+                    .sources
+                    .iter()
+                    .any(|(_, _, source_uri)| source_uri == uri)
+            );
+        }
+
+        // A fresh coherent generation produces explicit empty arrays to clear prior diagnostics.
+        let changed_uri = fixture.sources[0].2.clone();
+        fixture.did_change_version_only(&changed_uri, 2);
+        assert!(publish(&fixture).is_none());
+        fixture.build();
+        let clearing = publish(&fixture).expect("replacement current publication");
+        assert_eq!(clearing.len(), 2);
+        assert!(
+            clearing
+                .iter()
+                .all(|n| n["params"]["diagnostics"] == json!([]))
+        );
+        assert!(clearing.iter().any(|n| n["params"]["version"] == 2));
+    }
+
+    #[test]
+    fn stale_or_unavailable_publication_is_suppressed_across_editor_and_terminal_lifecycle() {
+        for edit in ["version", "normalized-raw", "identical-reopen", "recapture"] {
+            let mut fixture = RegistryFixture::new();
+            fixture.build();
+            let uri = fixture.sources[0].2.clone();
+            let retained = fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .0;
+            match edit {
+                "version" => fixture.did_change_version_only(&uri, 2),
+                "normalized-raw" => fixture.did_change_text(
+                    &uri,
+                    2,
+                    format!("\u{feff}{}", fixture.server.document(&uri).unwrap().1),
+                ),
+                "identical-reopen" => fixture.did_close_and_reopen(&uri, 1),
+                "recapture" => {
+                    fixture.capture();
+                }
+                _ => unreachable!(),
+            }
+            assert!(publish(&fixture).is_none(), "edit case: {edit}");
+            let mut writer = RecordingWriter::default();
+            assert_eq!(
+                fixture
+                    .server
+                    .publish_snapshot_diagnostics_to_writer(
+                        &fixture.driver,
+                        &fixture.snapshots,
+                        &mut writer,
+                    )
+                    .unwrap(),
+                0,
+                "stale edit case: {edit}"
+            );
+            assert!(writer.bytes.is_empty(), "stale edit case: {edit}");
+            assert_eq!(writer.flushes, 0, "stale edit case: {edit}");
+            assert!(std::sync::Arc::ptr_eq(
+                &retained,
+                &fixture
+                    .server
+                    .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                    .unwrap()
+                    .0
+            ));
+            assert_eq!(retained.publication().manifests().len(), 2);
+        }
+
+        for terminal in ["obsolete", "shutdown", "exit"] {
+            let mut fixture = RegistryFixture::new();
+            let (submission, activated) = fixture.build();
+            assert!(activated);
+            if terminal == "obsolete" {
+                fixture
+                    .publisher
+                    .mark_obsolete(submission.session.captured().snapshot().id)
+                    .unwrap();
+            } else if terminal == "shutdown" {
+                let _ = fixture.server.handle_message(json!({
+                    "jsonrpc":"2.0", "id":9, "method":"shutdown", "params":null
+                }));
+            } else {
+                let _ = fixture.server.handle_message(json!({
+                    "jsonrpc":"2.0", "method":"exit", "params":null
+                }));
+            }
+            assert!(publish(&fixture).is_none(), "terminal case: {terminal}");
+            let mut writer = RecordingWriter::default();
+            assert_eq!(
+                fixture
+                    .server
+                    .publish_snapshot_diagnostics_to_writer(
+                        &fixture.driver,
+                        &fixture.snapshots,
+                        &mut writer,
+                    )
+                    .unwrap(),
+                0,
+                "terminal case: {terminal}"
+            );
+            assert!(writer.bytes.is_empty(), "terminal case: {terminal}");
+            assert_eq!(writer.flushes, 0, "terminal case: {terminal}");
+        }
+    }
+
+    #[test]
+    fn writer_emits_exact_framed_current_notifications_and_stops_after_obsolescence() {
+        let mut fixture = RegistryFixture::new();
+        fixture.build();
+        let notifications = publish(&fixture).unwrap();
+        let mut expected = Vec::new();
+        for notification in &notifications {
+            let body = serde_json::to_vec(notification).unwrap();
+            expected
+                .extend_from_slice(format!("Content-Length: {}\r\n\r\n", body.len()).as_bytes());
+            expected.extend_from_slice(&body);
+        }
+        let first_body = serde_json::to_vec(&notifications[0]).unwrap();
+        let first_header = format!("Content-Length: {}\r\n\r\n", first_body.len());
+        let mut first_frame = first_header.as_bytes().to_vec();
+        first_frame.extend_from_slice(&first_body);
+        let mut writer = RecordingWriter::default();
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut writer,
+                )
+                .unwrap(),
+            2
+        );
+        assert_eq!(writer.bytes, expected);
+        assert_eq!(writer.flushes, 2);
+
+        let snapshot_id = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .0
+            .publication()
+            .captured()
+            .snapshot()
+            .id;
+        let mut obsolete_writer = RecordingWriter {
+            obsolete_on_flush: Some((fixture.publisher.clone(), snapshot_id)),
+            ..Default::default()
+        };
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut obsolete_writer,
+                )
+                .unwrap(),
+            1
+        );
+        assert_eq!(obsolete_writer.flushes, 1);
+        assert_eq!(obsolete_writer.bytes, first_frame);
+    }
+
+    #[test]
+    fn writer_propagates_header_body_and_flush_failures_without_claiming_delivery() {
+        let mut fixture = RegistryFixture::new();
+        fixture.build();
+        let notifications = publish(&fixture).unwrap();
+        let first_body = serde_json::to_vec(&notifications[0]).unwrap();
+        let header = format!("Content-Length: {}\r\n\r\n", first_body.len());
+        let mut complete_first_frame = header.as_bytes().to_vec();
+        complete_first_frame.extend_from_slice(&first_body);
+        for fail_at in ["header", "body", "flush"] {
+            let mut writer = RecordingWriter {
+                fail_at: Some(fail_at),
+                ..Default::default()
+            };
+            let error = fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut writer,
+                )
+                .unwrap_err();
+            assert_eq!(error.to_string(), fail_at);
+            assert_eq!(writer.flushes, usize::from(fail_at == "flush"));
+            if fail_at == "header" {
+                assert!(writer.bytes.is_empty());
+            } else if fail_at == "body" {
+                assert_eq!(writer.bytes.as_slice(), header.as_bytes());
+            } else {
+                assert_eq!(writer.bytes, complete_first_frame);
+            }
+        }
+    }
+}

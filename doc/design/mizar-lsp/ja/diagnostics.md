@@ -35,8 +35,12 @@ source の診断を選択するときは aggregator の [canonical record order]
 
 ## Implementation boundary
 
-task8 は公開設計だけを定める。task7 は保持された完全 registry と atomic activation を提供する。task9 の配送実装と task10 の scheduling は未完了のままである。既存 native frontend path は syntax-only のままとする。新 transport payload、診断割当、producer 動作を導入しない。
+`src/diagnostics.rs` が task9 を実装する。`Server::snapshot_diagnostic_notifications` は current な保持 snapshot を選択し、未取得または stale なら通知を返さない。変換エラーは batch 全体を拒否し、wire encoding 未定義の non-range source-load record も対象となる。
+
+通知は URI 順、capture 時の document version を使い、正常 source の空リストも含む。primary range と順序を保つ secondary `relatedInformation` は元の raw map で変換する。診断の `data` は既存 handle を `{snapshot: <published BuildSnapshotId>, id: <ordinal>}` として保持 index 内の未変更 record を参照する。anchor の形、generated reason、provenance、note、intent は新しい表現に複製せず元の record に保持する。この handle は currentness や編集権限を与えない。
+
+`Server::publish_snapshot_diagnostics_to_writer` は変換と書込みの間も選択 snapshot を保持し、各 frame 前に currentness と選択 identity を検証する。変換・I/O エラーは伝播し、外部書込みに atomic-currentness、rollback、retry の保証はない。build scheduling/event consumption は task11 に残り、既存 native frontend path は syntax-only のままとする。
 
 ## Test design
 
-この設計 task では test を変えない。task9 は既存の公開 fixture、stale index 抑止、決定的順序の検証義務を維持し、この文書で実装や §23.6/SCA-003 の完了 credit を与えない。
+task9 の test は真正な coherent 公開、stale index 抑止、決定的順序、正確な source 変換、保持 record identity、明示的 batch 失敗、frame 配送を検証する。task11 や §23.6/SCA-003 の完了 credit は与えない。
