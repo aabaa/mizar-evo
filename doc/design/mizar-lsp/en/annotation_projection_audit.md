@@ -1,0 +1,55 @@
+# Annotation display and evaluation projection audit
+Canonical language: English; [Japanese pointer](../ja/annotation_projection_audit.md).
+
+This owns the chapter21 annotation path classification under [§21.5–21.6](../../../spec/en/21.source_code_annotation_and_atp.md#215-aiide-display-hints) and [architecture12](../../architecture/en/12.diagnostics_and_lsp.md#lsp-model). Required behavior below is distinct from available source behavior. Completing this audit closes SCA-003's audit obligation; chapters21/23 remain partial, without semantic or end-to-end display/evaluation credit.
+
+## Syntax and producer boundary
+
+Paths below are relative to `crates/`. `mizar-parser/src/module/annotations.rs::parse_annotation_at` represents `@show_thesis` and `@show_resolution` as `SurfaceNodeKind::Annotation` on their hosts. `parse_standalone_diagnostic_annotation_at` represents `@show_type(expr)` and `@eval(expr)` with a term child as `StandaloneDiagnosticAnnotation`; these remain separate items before a following declaration/statement. `mizar-parser/src/module.rs` invokes that parser at module, definition, proof and algorithm sites. `mizar-syntax/src/ast.rs` owns the corresponding node kinds/accessors.
+
+`mizar-checker/src/source_proof_local_declaration.rs` admits standalone diagnostic nodes in structural traversal; it does not emit their requested information or evaluate their terms. No annotation-specific semantic producer connects these nodes to diagnostics or artifact expression rows. Parsing a marker therefore establishes no type, resolution, thesis or evaluation result.
+
+| Annotation/input | Required verification output | Current artifact and LSP result |
+|---|---|---|
+| `@show_type(expr)`, standalone diagnostic item | `info.type` diagnostic with the inferred type in scope (§21.5.3). | Requested diagnostic unavailable. Generic artifact `inferred_type` can appear in an explicit hover response when populated, independently of the annotation. No annotation inline hint or separate information response. |
+| `@show_resolution`, attached to the following expression | `info.resolution` diagnostic with resolved FQN, template substitutions, inserted coercions and active coherent refinements; hover access (§21.5.2). | Annotation result unavailable. Generic hover can render published symbol/coercion/overload summaries; these do not establish the complete requested resolution tuple or an annotation-to-expression association. No annotation inline hint or separate information response. |
+| `@show_thesis`, at a proof point | `info.thesis` diagnostic with the current obligation; inclusion in missing-facts output for an undischarged step (§21.5.1). | No annotation diagnostic, obligation-timeline producer or annotation-to-missing-facts connection. Optional artifact `active_thesis` can be rendered by generic hover; it does not establish that proof-point result. Inline hint and separate information response unavailable. |
+| `@eval(expr)`, module/proof/algorithm | `info.eval` diagnostic: ground value and type at module level, concrete substitutions or type-only result for proof variables, current variable values in algorithms; IDE inline hint. Non-computable input requires a warning and no value (§21.6.1). | Evaluation result producer, diagnostic, artifact result association, inline hint and separate information response unavailable. Generic expression hover is not evaluation and supplies no computed value. LSP never evaluates terms or substitutes a local evaluator for missing results. |
+
+## Diagnostics and artifact channels
+
+The [diagnostic registry owner](../../mizar-diagnostics/en/registry.md#deferred-code-space-gaps) records the `spec_gap`: chapter21's semantic names have no approved concrete mapping into chapter22's reserved `I0001`–`I0099` range. `mizar-diagnostics/tests/registry.rs::descriptor_validation_rejects_range_severity_and_alias_gaps` rejects allocating `I0001` as `info.thesis`; `builtin_registry_locks_allocated_codes` checks its absence. These are reservation tests, not annotation emission evidence. No `info.type`, `info.resolution`, `info.thesis` or `info.eval` emitter is present.
+
+Chapter21's non-computable `@eval` warning is described as “W0003-class”, while [§22.6.1](../../../spec/en/22.error_handling_and_diagnostics.md#2261-unused-variables-and-definitions) allocates W0003 to `warn.unused_hypothesis`. This is a deferred language/Diagnostics-owner clarification; the audit chooses neither a numeric code nor a replacement warning policy.
+
+`mizar-lsp/src/diagnostics.rs::convert_index` maps existing Error/Warning/Info severities to LSP 1/2/3. The compiler enum has no Hint variant and this converter supplies no LSP Hint (4) path. Architecture12's Hint/Information distinction remains a presentation requirement, not implemented annotation delivery. A diagnostic severity of Hint and the `textDocument/inlayHint` feature are separate channels; no inlay-hint handler currently exists.
+
+The [artifact expression schema](../../mizar-artifact/en/verified_artifact.md#expression-metadata) stores optional inferred type, resolved symbol, coercions, active thesis and overload summaries. It neither binds an annotation occurrence/result nor provides an evaluation-result channel. `mizar-driver/src/frontend_adapter/artifact.rs` constructs bounded source-type/quantified expression rows, including inferred `set` types, with symbol/thesis/overload fields absent and coercions empty. Its `project_native_theorem_artifact_draft` can additionally attach `active_thesis` text to authenticated bounded theorem expression rows. This draft projection does not bind a `@show_thesis` occurrence or establish a general proof-point obligation timeline; neither route is an annotation result producer.
+
+`mizar-lsp/src/metadata.rs::artifact_hover` renders only existing expression fields; `Server::snapshot_hover` and `handle_message_with_metadata` serve them as explicit hover responses. Missing fields are not inferred. The ordinary executable handler has no metadata host; [task26](todo.md) retains host integration. `mizar/explain` reads diagnostic-attached explanation handles via its [existing owner](explain.md#implementation-boundary), not annotation nodes, and supplies no missing annotation information or evaluation fallback.
+
+## Freshness and evidence limits
+
+The [snapshot owner](snapshot.md#source-association) and [metadata reader](metadata.md#snapshot-association-and-freshness) retain one immutable publication and original OpenBuffer URI/version/raw-source/maps for a read. An equal build id does not authorize current delivery after a version/raw-text/incarnation change. Later reads select a replacement while retained readers preserve the original association. None of these rules authorizes server evaluation.
+
+Hover's retained-read states are Current and StaleArtifact. Stale hover labels its original URI/version and retained lookup coordinates, preserves metadata and omits the live editor range. Missing snapshot, source, artifact or expression yields no hover/null. Pending is an architecture/scheduling state, not a third retained-read state or an evidenced hover response; missing data does not imply scheduled work. Diagnostics retain their separate [current delivery/refusal rules](diagnostics.md#build-index-publication).
+
+| Existing evidence | What it establishes and excludes |
+|---|---|
+| `mizar-parser/src/module/tests/misc.rs::parser_emits_task35_annotation_nodes_and_wrappers`; [pass fixture](../../../../tests/miz/pass/parser/pass_parser_annotations_001.miz) and its parse-only expectation | Thesis in proof, resolution in algorithm, standalone module type/eval and algorithm type syntax. No proof/algorithm `@eval` case and no successful annotation semantics in any context. |
+| [Malformed/recovery fixture](../../../../tests/miz/fail/parser/fail_parser_annotations_recovery_001.miz); `mizar-syntax/src/ast/tests.rs::task35_annotation_nodes_ast` | Empty `@eval()` recovery and synthetic annotation AST shapes, respectively; neither executes or projects results. |
+| `mizar-lsp/src/metadata_tests.rs::artifact_expression_hover_preserves_published_semantics_and_identity`, `optional_fields_and_unavailable_artifacts_remain_absent` | Hand-populated typed artifacts exercise rich rendering and absence. They do not establish genuine semantic producers. |
+| `mizar-lsp/src/hover_tests.rs::genuine_publication_serves_hover_through_host_route` | Genuine coherent publication and host hover of bounded native expression metadata; no annotation request/result. |
+| Same file: `stale_reads_keep_original_source_identity_and_drop_the_live_editor_range`, `publication_replacement_switches_hover_metadata_and_freshness`, `no_snapshot_unknown_expression_and_invalid_or_closed_lifecycle_requests_are_graceful` | Native stale/replacement/unavailable behavior. No annotation-specific pending, computed value, inline hint or information-diagnostic delivery evidence. |
+
+## Deferred follow-ups and ownership
+
+These bounded audit follow-ups remain unscheduled; they do not expand task24 into later-task implementation. Each needs genuine source-to-output tests before claiming coverage.
+
+| Gap/classification | Owner and required next action |
+|---|---|
+| A1 `spec_gap`: reserved info codes and non-computable warning identity | Language/Diagnostics owners: approve the chapter21-to-chapter22 code mapping and clarify the warning discrepancy before allocating/emitting codes. Preserve the [registry deferral](../../mizar-diagnostics/en/registry.md#deferred-code-space-gaps). |
+| A2 `source_drift`/`test_gap`: type/resolution/thesis annotation producers and full output contents absent | Checker/Core/Proof own type/resolution and proof-point obligation extraction; produce source-associated diagnostics/metadata and the required missing-facts link after A1. [Existing theorem metadata](../../mizar-checker/en/type_checker.md#original-source-theorem-expression-metadata) is a bounded prerequisite, not this general display producer. |
+| A3 deferred runtime producer and `test_gap`: evaluation in all three contexts, including type-only/non-computable outcomes | VC/runtime and Checker own verification-time evaluation and scope values under ALG-MVM-EVALUATION in the [VC plan](../../mizar-vc/en/00.crate_plan.md); separately bind advisory annotation results after authentic runtime inputs and A1. That contract alone does not supply annotation semantics or inline delivery. |
+| A4 `source_drift`/`test_gap`: annotation/result artifact association and inline display absent | Artifact owns the reviewed output projection/schema; LSP owns consuming it without inference/evaluation, with current/stale/pending/unavailable and replacement tests. Freeze the producer/result association and inline-hint presentation before adding transport. Generic hover/task13 is not completion of this path. |
+| A5 deferred executable integration | Existing task26/Driver entry owner: install genuine published diagnostic/metadata hosts and prove framed delivery after upstream producers exist. Existing stdio degradation tests do not establish annotation output. |

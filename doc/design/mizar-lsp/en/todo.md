@@ -169,8 +169,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       "Artifact Projection Boundary".
 
 13. **Hover and type metadata.** [x]
-    - Serve hover (inferred types, resolved symbols, `@show_*` data) from
-      expression metadata.
+    - Serve hover (inferred types and resolved symbols) from expression metadata;
+      annotation-specific producers remain [deferred](annotation_projection_audit.md#deferred-follow-ups-and-ownership).
     - Tests: hover fixtures over fixture artifacts; stale data marked.
     - Deps: 12, `mizar-artifact` task 11. Spec: `metadata.md`.
 
@@ -254,8 +254,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Parity owner: [bilingual sync audit](bilingual_sync_audit.md).
     - Deps: 22. Spec: repository documentation policy.
 
-24. **Annotation display and evaluation projection audit.** [ ]
+24. **Annotation display and evaluation projection audit.** [x]
     - Contract: [LSP-ANNOTATION-PROJECTION-AUDIT](../../task_contracts/en/LSP-ANNOTATION-PROJECTION-AUDIT.md).
+    - Owner: [annotation projection audit](annotation_projection_audit.md).
     - Before claiming chapter-21 display/evaluation coverage, audit how
       `@show_type`, `@show_resolution`, `@show_thesis`, and `@eval` flow from
       parser/syntax nodes through diagnostics, metadata artifacts, and LSP
