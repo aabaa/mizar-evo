@@ -15,6 +15,8 @@ seal 済み phase output 間の親/派生関係を記録する。
 
 ## 消費する identity と所有する identity
 
+`PipelinePhase::from(mizar_session::PipelinePhase)` は [Session の共通 identity 表記](../../mizar-session/ja/pipeline.md) を使い、任意の文字列ラベルと系譜エンコードを維持する。共通 hash 処理は [Session](../../mizar-session/ja/hashing.md) に置く。
+
 | Identity | Owner | Stability |
 |---|---|---|
 | `BuildSnapshotId` | `mizar-session` | 正確な source、dependency、lockfile、toolchain、verifier-config state に対して決定的。 |

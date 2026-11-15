@@ -24,6 +24,18 @@ fn task_ids_are_deterministic_and_snapshot_scoped() {
         .expect("snapshot identity serializes");
 
     let ids = task_ids(&graph);
+    assert_eq!(
+        module_task(&graph, TaskKind::CheckAndElaborate, "app", "main")
+            .id
+            .as_str(),
+        concat!(
+            "mizar-build-task-v1|snapshot=mizar-session-build-snapshot-v1%3A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "|kind=CheckAndElaborate|unit=module=app%3Amain|phases=",
+            "SignatureCollection,TypeChecking,RegistrationResolution,",
+            "OverloadResolution,Elaboration,AlgorithmPreparation",
+        ),
+    );
     assert_eq!(ids, task_ids(&second_graph));
     assert_ne!(ids, task_ids(&different_snapshot_graph));
     assert!(

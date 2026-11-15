@@ -1022,8 +1022,7 @@ fn final_hash_for_request(
 }
 
 fn stable_hasher(label: &str) -> blake3::Hasher {
-    let mut hasher = blake3::Hasher::new();
-    write_str(&mut hasher, DEPENDENCY_FINGERPRINT_HASH_DOMAIN);
+    let mut hasher = mizar_session::domain_hasher(DEPENDENCY_FINGERPRINT_HASH_DOMAIN);
     write_str(&mut hasher, label);
     hasher
 }

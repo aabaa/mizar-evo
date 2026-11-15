@@ -95,10 +95,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Ok(CacheKeyRequest {
             cache_schema_version: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
             phase: CachePhase::new(descriptor.service_name),
-            work_unit: CacheWorkUnit::new(format!(
-                "{:?}:{:?}",
+            work_unit: CacheWorkUnit::new(module_work_unit_label(
                 source.package_id.as_str(),
-                source.module_path.as_str()
+                source.module_path.as_str(),
             )),
             source_identity: Some(SourceIdentity {
                 package_id: source.package_id,
@@ -1537,11 +1536,10 @@ impl PhaseService for SourceLoadService {
             "mizar-frontend/source-unit-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("SourceLoad");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::SourceLoad);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             source.package_id.as_str(),
-            source.module_path.as_str()
+            source.module_path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceUnit");
         let decode_input = source_input;

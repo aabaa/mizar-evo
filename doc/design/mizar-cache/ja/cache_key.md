@@ -21,6 +21,8 @@ cache hit/miss state を kernel-verified status や trusted `used_axioms` へ昇
 
 ## Public API
 
+`PipelinePhase::from(mizar_session::PipelinePhase)` は [Session の identity 表記](../../mizar-session/ja/pipeline.md) を使う。任意の phase/work-unit 文字列と key の正準化は維持する。共通 hash 処理は [Session](../../mizar-session/ja/hashing.md) に置く。
+
 task 3 は以下の概念 API を公開する。実際の Rust field wrapper は newtype にしてよいが、
 semantic field は test と audit code から見える形を保つ。
 

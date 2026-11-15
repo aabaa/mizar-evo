@@ -22,6 +22,8 @@
 |---|---|---|---|
 | [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` | 後追いの autonomous crate plan、gap 分類、task decomposition、exit criteria | Complete |
 | [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | 不透明なセッション識別子、順序付け、シリアライズ境界、互換性規則 | Implemented |
+| [pipeline.md](./pipeline.md) | `crates/mizar-session/src/pipeline.rs` | 共通 phase 表記と module work-unit ラベル | Implemented |
+| [hashing.md](./hashing.md) | `crates/mizar-session/src/hashing.rs` | Hash hex、BLAKE3 domain 初期化、VC/Kernel bridge mixer | Implemented |
 | [source.md](./source.md) | `crates/mizar-session/src/source.rs` | ソース読み込みレコード、正規化パス、ソースハッシュ、オープンバッファのソーステキスト | Implemented |
 | [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`、`SourceVersion`、スナップショットの同一性、保持、鮮度の契約 | Implemented |
 | [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`、ソース範囲、前処理マップ、生成スパン、座標変換 | Implemented |

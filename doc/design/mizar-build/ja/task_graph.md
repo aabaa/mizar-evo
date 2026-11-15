@@ -448,12 +448,13 @@ Task 7 は documentation-only である。Task 8 は focused Rust tests を追�
 
 ## 公開 enum policy
 
+`PipelinePhase` は [Session の共通語彙](../../mizar-session/ja/pipeline.md) を再公開し、identity と CLI 表記はそこで所有する。構造化 work unit は task graph に残す。
+
 この module が所有する exhaustive public enum exception はない。
 
 | Enum | Policy |
 |---|---|
 | `TaskKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
-| `PipelinePhase` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `WorkUnit` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `DependencyCoverage` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `ResourceClass` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

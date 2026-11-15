@@ -22,6 +22,8 @@ It does not own task scheduling, IR storage, artifact publication, or diagnostic
 |---|---|---|---|
 | [00.crate_plan.md](./00.crate_plan.md) | `doc/design/autonomous_crate_development.md` | Retrospective autonomous crate plan, gap classification, task decomposition, and exit criteria | Complete |
 | [ids.md](./ids.md) | `crates/mizar-session/src/ids.rs` | Opaque session identifiers, ordering, serialization boundaries, and compatibility rules | Implemented |
+| [pipeline.md](./pipeline.md) | `crates/mizar-session/src/pipeline.rs` | Shared phase spellings and module work-unit labels | Implemented |
+| [hashing.md](./hashing.md) | `crates/mizar-session/src/hashing.rs` | Hash hex, BLAKE3 domain initialization and VC/Kernel bridge mixer | Implemented |
 | [source.md](./source.md) | `crates/mizar-session/src/source.rs` | Source loading records, normalized paths, source hashes, and open-buffer source text | Implemented |
 | [snapshot.md](./snapshot.md) | `crates/mizar-session/src/snapshot.rs` | `BuildSnapshot`, `SourceVersion`, snapshot identity, retention, and freshness contracts | Implemented |
 | [source_map.md](./source_map.md) | `crates/mizar-session/src/source_map.rs` | `LineMap`, source ranges, preprocessing maps, generated spans, and coordinate conversion | Implemented |

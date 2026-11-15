@@ -1681,10 +1681,12 @@ impl CompilerDriver {
                     let [output] = result.output_refs.as_slice() else {
                         return None;
                     };
-                    let work_unit =
-                        format!("{:?}:{:?}", module.package.as_str(), module.path.as_str());
+                    let work_unit = mizar_session::module_work_unit_label(
+                        module.package.as_str(),
+                        module.path.as_str(),
+                    );
                     if output.snapshot() != session.captured.snapshot.id
-                        || output.phase() != &IrPhase::new("ArtifactCommit")
+                        || output.phase() != &IrPhase::from(PipelinePhase::ArtifactCommit)
                         || output.output_kind() != &OutputKind::new("SourceTheoremArtifactData")
                         || output.work_unit() != &WorkUnit::new(&work_unit)
                         || output.schema_version() != mizar_ir::storage::SchemaVersion::new(1)

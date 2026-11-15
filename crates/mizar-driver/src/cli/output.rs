@@ -534,26 +534,7 @@ fn scheduler_event_name(kind: SchedulerEventKind) -> &'static str {
 }
 
 fn phase_name(phase: PipelinePhase) -> &'static str {
-    match phase {
-        PipelinePhase::PackageResolve => "package_resolve",
-        PipelinePhase::SourceLoad => "source_load",
-        PipelinePhase::Frontend => "frontend",
-        PipelinePhase::ModuleResolve => "module_resolve",
-        PipelinePhase::SignatureCollection => "signature_collection",
-        PipelinePhase::TypeChecking => "type_checking",
-        PipelinePhase::RegistrationResolution => "registration_resolution",
-        PipelinePhase::OverloadResolution => "overload_resolution",
-        PipelinePhase::Elaboration => "elaboration",
-        PipelinePhase::AlgorithmPreparation => "algorithm_preparation",
-        PipelinePhase::VcGenerate => "vc_generate",
-        PipelinePhase::VcDischarge => "vc_discharge",
-        PipelinePhase::AtpSolve => "atp_solve",
-        PipelinePhase::BackendRun => "backend_run",
-        PipelinePhase::KernelCheck => "kernel_check",
-        PipelinePhase::ArtifactCommit => "artifact_commit",
-        PipelinePhase::DocumentationExtract => "documentation_extract",
-        _ => "unknown",
-    }
+    phase.as_cli_str()
 }
 
 fn availability_name(availability: PhaseServiceAvailability) -> &'static str {

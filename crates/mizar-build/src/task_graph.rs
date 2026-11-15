@@ -4,6 +4,7 @@ use crate::{
     module_index::{ModuleId, ModuleIndex, ModuleIndexEntry, ModuleIndexLocation},
     planner::{BuildPlan, DependencyEdge},
 };
+pub use mizar_session::PipelinePhase;
 use mizar_session::{BuildSnapshotId, PackageId};
 
 pub const TASK_GRAPH_SCHEMA_VERSION: u32 = 1;
@@ -60,28 +61,6 @@ pub enum TaskKind {
     Frontend,
     ModuleResolve,
     CheckAndElaborate,
-    VcGenerate,
-    VcDischarge,
-    AtpSolve,
-    BackendRun,
-    KernelCheck,
-    ArtifactCommit,
-    DocumentationExtract,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[non_exhaustive]
-pub enum PipelinePhase {
-    PackageResolve,
-    SourceLoad,
-    Frontend,
-    ModuleResolve,
-    SignatureCollection,
-    TypeChecking,
-    RegistrationResolution,
-    OverloadResolution,
-    Elaboration,
-    AlgorithmPreparation,
     VcGenerate,
     VcDischarge,
     AtpSolve,
@@ -1167,30 +1146,6 @@ impl TaskKind {
             Self::Frontend => "Frontend",
             Self::ModuleResolve => "ModuleResolve",
             Self::CheckAndElaborate => "CheckAndElaborate",
-            Self::VcGenerate => "VcGenerate",
-            Self::VcDischarge => "VcDischarge",
-            Self::AtpSolve => "AtpSolve",
-            Self::BackendRun => "BackendRun",
-            Self::KernelCheck => "KernelCheck",
-            Self::ArtifactCommit => "ArtifactCommit",
-            Self::DocumentationExtract => "DocumentationExtract",
-        }
-    }
-}
-
-impl PipelinePhase {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::PackageResolve => "PackageResolve",
-            Self::SourceLoad => "SourceLoad",
-            Self::Frontend => "Frontend",
-            Self::ModuleResolve => "ModuleResolve",
-            Self::SignatureCollection => "SignatureCollection",
-            Self::TypeChecking => "TypeChecking",
-            Self::RegistrationResolution => "RegistrationResolution",
-            Self::OverloadResolution => "OverloadResolution",
-            Self::Elaboration => "Elaboration",
-            Self::AlgorithmPreparation => "AlgorithmPreparation",
             Self::VcGenerate => "VcGenerate",
             Self::VcDischarge => "VcDischarge",
             Self::AtpSolve => "AtpSolve",

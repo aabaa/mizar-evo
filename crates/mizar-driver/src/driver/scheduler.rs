@@ -14,6 +14,7 @@ use mizar_ir::{
     dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest},
     publisher::{OutputAuthorization, PhaseOutputPublisher},
 };
+use mizar_session::module_work_unit_label;
 
 use crate::{
     driver::DriverSchedulerRun,
@@ -579,10 +580,9 @@ fn dispatch_registry_phase(
                         Vec::new(),
                     ));
                 }
-                let unit = IrWorkUnit::new(format!(
-                    "{:?}:{:?}",
+                let unit = IrWorkUnit::new(module_work_unit_label(
                     module.package.as_str(),
-                    module.path.as_str()
+                    module.path.as_str(),
                 ));
                 let named = if discharge_prefix || candidate_prefix {
                     vec![mizar_ir::identity::NamedInputHash {
@@ -595,9 +595,9 @@ fn dispatch_registry_phase(
                 };
                 let direct = if discharge_prefix || candidate_prefix {
                     let (phase, kind) = if candidate_prefix {
-                        ("VcDischarge", "SourceTheoremDischarge")
+                        (PipelinePhase::VcDischarge, "SourceTheoremDischarge")
                     } else {
-                        ("VcGenerate", "SourceTheoremVC")
+                        (PipelinePhase::VcGenerate, "SourceTheoremVC")
                     };
                     let mut candidates = task.task.dependencies.iter().filter_map(|id| {
                         let [result] = phase_results.get(id)?.as_slice() else {
@@ -608,7 +608,7 @@ fn dispatch_registry_phase(
                         };
                         (result.status == PhaseStatus::Complete
                             && result.diagnostics.is_empty()
-                            && output.phase() == &IrPhase::new(phase)
+                            && output.phase() == &IrPhase::from(phase)
                             && output.output_kind() == &OutputKind::new(kind)
                             && output.snapshot() == task.snapshot
                             && output.work_unit() == &unit
@@ -638,7 +638,7 @@ fn dispatch_registry_phase(
                         };
                         (result.status == PhaseStatus::Complete
                             && result.diagnostics.is_empty()
-                            && output.phase() == &IrPhase::new("VcGenerate")
+                            && output.phase() == &IrPhase::from(PipelinePhase::VcGenerate)
                             && output.output_kind() == &OutputKind::new("SourceTheoremVC")
                             && output.snapshot() == task.snapshot
                             && output.work_unit() == &unit
@@ -664,12 +664,21 @@ fn dispatch_registry_phase(
                             return None;
                         }
                         let expected = [
-                            ("SignatureCollection", "SourceTheoremModuleSummary"),
-                            ("TypeChecking", "SourceTheoremTypedAst"),
-                            ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
-                            ("OverloadResolution", "SourceTheoremMetadata"),
-                            ("Elaboration", "SourceTheoremCore"),
-                            ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                            (
+                                PipelinePhase::SignatureCollection,
+                                "SourceTheoremModuleSummary",
+                            ),
+                            (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
+                            (
+                                PipelinePhase::RegistrationResolution,
+                                "SourceTheoremRegistrationClosure",
+                            ),
+                            (PipelinePhase::OverloadResolution, "SourceTheoremMetadata"),
+                            (PipelinePhase::Elaboration, "SourceTheoremCore"),
+                            (
+                                PipelinePhase::AlgorithmPreparation,
+                                "SourceTheoremPreparation",
+                            ),
                         ];
                         if results.len() != expected.len()
                             || !results.iter().zip(expected).all(|(result, (phase, kind))| {
@@ -678,7 +687,7 @@ fn dispatch_registry_phase(
                                 };
                                 result.status == PhaseStatus::Complete
                                     && result.diagnostics.is_empty()
-                                    && output.phase() == &IrPhase::new(phase)
+                                    && output.phase() == &IrPhase::from(phase)
                                     && output.output_kind() == &OutputKind::new(kind)
                                     && output.snapshot() == task.snapshot
                                     && output.work_unit() == &unit
@@ -728,7 +737,7 @@ fn dispatch_registry_phase(
                                 ]
                                 .into_iter()
                                 .all(|(output, kind)| {
-                                    output.phase() == &IrPhase::new("KernelCheck")
+                                    output.phase() == &IrPhase::from(PipelinePhase::KernelCheck)
                                         && output.output_kind() == &OutputKind::new(kind)
                                         && output.snapshot() == task.snapshot
                                         && output.work_unit() == &unit
@@ -769,11 +778,14 @@ fn dispatch_registry_phase(
                         || vc_group
                     {
                         (
-                            IrPhase::new("ModuleResolve"),
+                            IrPhase::from(PipelinePhase::ModuleResolve),
                             OutputKind::new("SourceTheoremModuleCandidates"),
                         )
                     } else {
-                        (IrPhase::new("Frontend"), OutputKind::new("FrontendOutput"))
+                        (
+                            IrPhase::from(PipelinePhase::Frontend),
+                            OutputKind::new("FrontendOutput"),
+                        )
                     };
                     let mut parents = task.task.dependencies.iter().filter_map(|id| {
                         let [result] = phase_results.get(id)?.as_slice() else {
@@ -804,16 +816,18 @@ fn dispatch_registry_phase(
                         .filter(|result| result.status == PhaseStatus::Complete)
                         .flat_map(|result| result.output_refs.iter())
                         .filter(|parent| {
-                            (parent.phase() == &IrPhase::new("SourceLoad")
+                            (parent.phase() == &IrPhase::from(PipelinePhase::SourceLoad)
                                 && parent.work_unit() == &unit
                                 && parent.output_kind() == &OutputKind::new("SourceUnit"))
-                                || (parent.phase() == &IrPhase::new("Frontend")
+                                || (parent.phase() == &IrPhase::from(PipelinePhase::Frontend)
                                     && parent.output_kind() == &OutputKind::new("FrontendOutput"))
                         })
                         .collect::<Vec<_>>();
                     if parents
                         .iter()
-                        .filter(|parent| parent.phase() == &IrPhase::new("SourceLoad"))
+                        .filter(|parent| {
+                            parent.phase() == &IrPhase::from(PipelinePhase::SourceLoad)
+                        })
                         .count()
                         != 1
                     {
@@ -920,33 +934,57 @@ fn dispatch_registry_phase(
                     storage::SchemaVersion,
                 };
                 let results = phase_results.get(&task.task.id)?;
-                let expected: &[(&str, &str)] = if *phase == PipelinePhase::TypeChecking {
-                    &[("SignatureCollection", "SourceTheoremModuleSummary")]
+                let expected: &[(PipelinePhase, &str)] = if *phase == PipelinePhase::TypeChecking {
+                    &[(
+                        PipelinePhase::SignatureCollection,
+                        "SourceTheoremModuleSummary",
+                    )]
                 } else if *phase == PipelinePhase::RegistrationResolution {
                     &[
-                        ("SignatureCollection", "SourceTheoremModuleSummary"),
-                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        (
+                            PipelinePhase::SignatureCollection,
+                            "SourceTheoremModuleSummary",
+                        ),
+                        (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
                     ]
                 } else if *phase == PipelinePhase::OverloadResolution {
                     &[
-                        ("SignatureCollection", "SourceTheoremModuleSummary"),
-                        ("TypeChecking", "SourceTheoremTypedAst"),
-                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        (
+                            PipelinePhase::SignatureCollection,
+                            "SourceTheoremModuleSummary",
+                        ),
+                        (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
+                        (
+                            PipelinePhase::RegistrationResolution,
+                            "SourceTheoremRegistrationClosure",
+                        ),
                     ]
                 } else if *phase == PipelinePhase::Elaboration {
                     &[
-                        ("SignatureCollection", "SourceTheoremModuleSummary"),
-                        ("TypeChecking", "SourceTheoremTypedAst"),
-                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
-                        ("OverloadResolution", "SourceTheoremMetadata"),
+                        (
+                            PipelinePhase::SignatureCollection,
+                            "SourceTheoremModuleSummary",
+                        ),
+                        (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
+                        (
+                            PipelinePhase::RegistrationResolution,
+                            "SourceTheoremRegistrationClosure",
+                        ),
+                        (PipelinePhase::OverloadResolution, "SourceTheoremMetadata"),
                     ]
                 } else {
                     &[
-                        ("SignatureCollection", "SourceTheoremModuleSummary"),
-                        ("TypeChecking", "SourceTheoremTypedAst"),
-                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
-                        ("OverloadResolution", "SourceTheoremMetadata"),
-                        ("Elaboration", "SourceTheoremCore"),
+                        (
+                            PipelinePhase::SignatureCollection,
+                            "SourceTheoremModuleSummary",
+                        ),
+                        (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
+                        (
+                            PipelinePhase::RegistrationResolution,
+                            "SourceTheoremRegistrationClosure",
+                        ),
+                        (PipelinePhase::OverloadResolution, "SourceTheoremMetadata"),
+                        (PipelinePhase::Elaboration, "SourceTheoremCore"),
                     ]
                 };
                 if results.len() != expected.len() {
@@ -955,10 +993,9 @@ fn dispatch_registry_phase(
                 let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
                     return None;
                 };
-                let unit = IrWorkUnit::new(format!(
-                    "{:?}:{:?}",
+                let unit = IrWorkUnit::new(module_work_unit_label(
                     module.package.as_str(),
-                    module.path.as_str()
+                    module.path.as_str(),
                 ));
                 for (result, (phase, kind)) in results.iter().zip(expected) {
                     let [parent] = result.output_refs.as_slice() else {
@@ -968,7 +1005,7 @@ fn dispatch_registry_phase(
                         || !result.diagnostics.is_empty()
                         || parent.snapshot() != task.snapshot
                         || parent.work_unit() != &unit
-                        || parent.phase() != &IrPhase::new(*phase)
+                        || parent.phase() != &IrPhase::from(*phase)
                         || parent.output_kind() != &OutputKind::new(*kind)
                         || parent.schema_version() != SchemaVersion::new(1)
                     {
@@ -1220,12 +1257,11 @@ fn dispatch_registry_phase(
                         }
                         let kind = OutputKind::new("SourceTheoremArtifactData");
                         output.snapshot() == task.snapshot
-                            && output.phase() == &IrPhase::new("ArtifactCommit")
+                            && output.phase() == &IrPhase::from(PipelinePhase::ArtifactCommit)
                             && output.work_unit()
-                                == &IrWorkUnit::new(format!(
-                                    "{:?}:{:?}",
+                                == &IrWorkUnit::new(module_work_unit_label(
                                     module.package.as_str(),
-                                    module.path.as_str()
+                                    module.path.as_str(),
                                 ))
                             && output.output_kind() == &kind
                             && output.schema_version() == SchemaVersion::new(1)

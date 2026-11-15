@@ -10,7 +10,7 @@ use mizar_kernel::{
     checker::{KernelCheckResult, KernelCheckStatus, KernelEvidenceCheckKind},
     rejection::RejectionRecord,
 };
-use mizar_session::Hash;
+use mizar_session::{Hash, lower_hex};
 
 const POLICY_FINGERPRINT_DOMAIN: &str = "mizar-proof-policy-fingerprint-v1";
 
@@ -1471,16 +1471,6 @@ impl StableHasher {
         }
         Hash::from_bytes(bytes)
     }
-}
-
-fn lower_hex(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut encoded = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        encoded.push(char::from(HEX[(byte >> 4) as usize]));
-        encoded.push(char::from(HEX[(byte & 0x0f) as usize]));
-    }
-    encoded
 }
 
 #[cfg(test)]

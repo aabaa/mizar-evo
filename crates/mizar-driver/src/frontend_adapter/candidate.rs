@@ -24,17 +24,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err("native theorem candidate requires a module".to_owned());
         };
         let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::Elaboration)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
         }))
         .ok_or_else(|| "native theorem candidate requires one Core parent".to_owned())?;
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| "native theorem candidate requires one VC parent".to_owned())?;
         let discharge_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcDischarge")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcDischarge)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremDischarge")
         }))
@@ -43,10 +43,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let vc_ref = vc_parent.as_output_ref();
         let discharge_ref = discharge_parent.as_output_ref();
         let storage = publisher.storage();
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -160,13 +159,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Ok(None);
         };
         let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::Elaboration)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
         }))
         .ok_or_else(|| "native theorem candidate publication requires one Core parent".to_owned())?
         .as_output_ref();
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| "native theorem candidate publication requires one VC parent".to_owned())?
@@ -281,11 +280,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "mizar-driver/native-theorem-candidate-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("AtpSolve");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::AtpSolve);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceTheoremCandidateInputs");
         let source_id = version.source_id;
@@ -381,23 +379,23 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err("native theorem candidate check requires a module".to_owned());
         };
         let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::Elaboration)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
         }))
         .ok_or_else(|| "native theorem candidate check requires one Core parent".to_owned())?;
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| "native theorem candidate check requires one VC parent".to_owned())?;
         let discharge_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcDischarge")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcDischarge)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremDischarge")
         }))
         .ok_or_else(|| "native theorem candidate check requires one Discharge parent".to_owned())?;
         let atp_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("AtpSolve")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::AtpSolve)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateInputs")
         }))
@@ -407,10 +405,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let discharge_ref = discharge_parent.as_output_ref();
         let atp_ref = atp_parent.as_output_ref();
         let storage = publisher.storage();
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -620,7 +617,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let (logic_profile, concrete_format) = encoding;
         let (policy, verifier) = policies;
         let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::Elaboration)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
         }))
         .ok_or_else(|| {
@@ -628,7 +625,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         })?
         .as_output_ref();
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| {
@@ -636,7 +633,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         })?
         .as_output_ref();
         let atp_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("AtpSolve")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::AtpSolve)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateInputs")
         }))
@@ -789,11 +786,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "mizar-driver/native-theorem-candidate-check-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("KernelCheck");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::KernelCheck);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceTheoremCandidateCheck");
         let decode_ast = ast.clone();
@@ -891,17 +887,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err("native theorem candidate selection requires a module".to_owned());
         };
         let core_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("Elaboration")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::Elaboration)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremCore")
         }))
         .ok_or_else(|| "native theorem candidate selection requires one Core parent".to_owned())?;
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| "native theorem candidate selection requires one VC parent".to_owned())?;
         let discharge_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcDischarge")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcDischarge)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremDischarge")
         }))
@@ -909,7 +905,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "native theorem candidate selection requires one Discharge parent".to_owned()
         })?;
         let kernel_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::KernelCheck)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateCheck")
         }))
@@ -921,10 +917,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let discharge_ref = discharge_parent.as_output_ref();
         let kernel_ref = kernel_parent.as_output_ref();
         let storage = publisher.storage();
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -971,7 +966,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .output_lineage(*extra)
             .ok_or_else(|| "native theorem candidate selection ATP lineage mismatch".to_owned())?;
         if lineage.snapshot != input.snapshot
-            || lineage.phase != IrPipelinePhase::new("AtpSolve")
+            || lineage.phase != IrPipelinePhase::from(PipelinePhase::AtpSolve)
             || lineage.output_kind != OutputKind::new("SourceTheoremCandidateInputs")
             || lineage.work_unit != work_unit
             || lineage.named_input_hashes != named
@@ -1119,7 +1114,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err("native theorem candidate witness file requires a module".to_owned());
         };
         let kernel = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::KernelCheck)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateCheck")
         }))
@@ -1140,11 +1135,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         );
         let expected = expected.digest;
         let path = witness_path.to_owned();
-        let phase = IrPipelinePhase::new("KernelCheck");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::KernelCheck);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let kind = OutputKind::new("SourceTheoremCandidateWitnessFile");
         for parent in input.parent_outputs() {
@@ -1327,12 +1321,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Ok(None);
         }
         let vc_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         }))
         .ok_or_else(|| "native theorem candidate witness file requires one VC parent".to_owned())?;
         let kernel_parent = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::KernelCheck)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateCheck")
         }))
@@ -1566,7 +1560,7 @@ impl PhaseService for SourceTheoremAtpSolveService {
             return blocking();
         };
         let Some(parent) = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         })) else {
             return blocking();
@@ -1693,13 +1687,13 @@ impl PhaseService for SourceTheoremCandidateCheckService {
         };
         if input.parent_outputs().len() != 3
             || [
-                ("Elaboration", "SourceTheoremCore"),
-                ("VcDischarge", "SourceTheoremDischarge"),
+                (PipelinePhase::Elaboration, "SourceTheoremCore"),
+                (PipelinePhase::VcDischarge, "SourceTheoremDischarge"),
             ]
             .into_iter()
             .any(|(phase, kind)| {
                 unique(input.parent_outputs().iter().filter(|parent| {
-                    parent.as_output_ref().phase() == &IrPipelinePhase::new(phase)
+                    parent.as_output_ref().phase() == &IrPipelinePhase::from(phase)
                         && parent.as_output_ref().output_kind() == &OutputKind::new(kind)
                 }))
                 .is_none()
@@ -1708,7 +1702,7 @@ impl PhaseService for SourceTheoremCandidateCheckService {
             return blocking();
         }
         let Some(parent) = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         })) else {
             return blocking();
@@ -1809,10 +1803,7 @@ impl PhaseService for SourceTheoremCandidateCheckService {
                     return result;
                 };
                 let mut path = format!("{prefix}/");
-                for byte in result.output_refs[0].content_hash().as_bytes() {
-                    use std::fmt::Write as _;
-                    write!(path, "{byte:02x}").expect("writing to string cannot fail");
-                }
+                path.push_str(&result.output_refs[0].content_hash().to_lower_hex());
                 path.push_str(".json");
                 match inputs.publish_native_theorem_candidate_witness_file(
                     &PhaseInput::new(module_input.work_unit, bundle),

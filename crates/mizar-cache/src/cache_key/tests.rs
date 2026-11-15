@@ -2,6 +2,39 @@ use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]
+fn scheduler_phase_conversion_preserves_labels_and_open_inputs() {
+    use mizar_session::PipelinePhase as SchedulerPhase;
+
+    for (phase, expected) in [
+        (SchedulerPhase::PackageResolve, "PackageResolve"),
+        (SchedulerPhase::SourceLoad, "SourceLoad"),
+        (SchedulerPhase::Frontend, "Frontend"),
+        (SchedulerPhase::ModuleResolve, "ModuleResolve"),
+        (SchedulerPhase::SignatureCollection, "SignatureCollection"),
+        (SchedulerPhase::TypeChecking, "TypeChecking"),
+        (
+            SchedulerPhase::RegistrationResolution,
+            "RegistrationResolution",
+        ),
+        (SchedulerPhase::OverloadResolution, "OverloadResolution"),
+        (SchedulerPhase::Elaboration, "Elaboration"),
+        (SchedulerPhase::AlgorithmPreparation, "AlgorithmPreparation"),
+        (SchedulerPhase::VcGenerate, "VcGenerate"),
+        (SchedulerPhase::VcDischarge, "VcDischarge"),
+        (SchedulerPhase::AtpSolve, "AtpSolve"),
+        (SchedulerPhase::BackendRun, "BackendRun"),
+        (SchedulerPhase::KernelCheck, "KernelCheck"),
+        (SchedulerPhase::ArtifactCommit, "ArtifactCommit"),
+        (SchedulerPhase::DocumentationExtract, "DocumentationExtract"),
+    ] {
+        assert_eq!(PipelinePhase::from(phase).as_str(), expected);
+    }
+    for label in ["", "custom_phase", "λ\n\"phase\""] {
+        assert_eq!(PipelinePhase::new(label).as_str(), label);
+    }
+}
+
+#[test]
 fn key_builder_is_deterministic_and_sorts_all_vectors() {
     let mut first = request();
     first.input_hashes.push(first.input_hashes[0].clone());

@@ -22,7 +22,7 @@ use mizar_artifact::{
     registration_summary::{ArtifactHashClass, ArtifactHashRef},
     store::{CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion},
 };
-use mizar_session::Hash;
+use mizar_session::{Hash, lower_hex};
 
 use crate::{
     policy::{KernelEvidenceOrigin, PolicyFingerprint},
@@ -1924,15 +1924,6 @@ fn validate_witness_path(path: &str) -> Result<(), ProofWitnessStoreError> {
         }
     }
     Ok(())
-}
-
-fn lower_hex(bytes: &[u8]) -> String {
-    let mut encoded = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        use std::fmt::Write as _;
-        write!(&mut encoded, "{byte:02x}").expect("writing to string cannot fail");
-    }
-    encoded
 }
 
 fn optional_hash_hex(hash: Option<Hash>) -> String {

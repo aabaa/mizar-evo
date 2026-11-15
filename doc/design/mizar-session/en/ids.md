@@ -17,6 +17,8 @@ impl Hash {
     pub const BYTE_LEN: usize;
     pub const fn from_bytes(bytes: [u8; Self::BYTE_LEN]) -> Self;
     pub const fn as_bytes(&self) -> &[u8; Self::BYTE_LEN];
+    pub fn to_lower_hex(self) -> String;
+    pub fn from_lower_hex(value: &str) -> Option<Self>;
 }
 
 pub struct BuildSessionId(OpaqueId);

@@ -1463,17 +1463,11 @@ fn run_decoder(
 }
 
 pub(crate) fn content_blob_id(schema_version: SchemaVersion, bytes: &[u8]) -> ContentBlobId {
-    let mut hasher = blake3::Hasher::new();
-    write_blob_field(&mut hasher, "mizar-ir/content-blob/v1");
+    let mut hasher = mizar_session::domain_hasher("mizar-ir/content-blob/v1");
     hasher.update(&schema_version.get().to_le_bytes());
     hasher.update(&(bytes.len() as u64).to_le_bytes());
     hasher.update(bytes);
     ContentBlobId(Hash::from_bytes(*hasher.finalize().as_bytes()))
-}
-
-fn write_blob_field(hasher: &mut blake3::Hasher, value: &str) {
-    hasher.update(&(value.len() as u64).to_le_bytes());
-    hasher.update(value.as_bytes());
 }
 
 fn blob_is_referenced(state: &StorageState, blob: ContentBlobId) -> bool {

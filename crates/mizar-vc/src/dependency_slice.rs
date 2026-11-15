@@ -19,7 +19,7 @@ use crate::{
     },
 };
 use mizar_core::control_flow::ObligationHandoffId;
-use mizar_session::Hash;
+use mizar_session::{Hash, lower_hex as hex};
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -1566,14 +1566,6 @@ fn stable_hash(bytes: &[u8]) -> Hash {
         chunk.copy_from_slice(&lane.to_be_bytes());
     }
     Hash::from_bytes(output)
-}
-
-fn hex(bytes: &[u8]) -> String {
-    let mut encoded = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        write!(&mut encoded, "{byte:02x}").expect("write string");
-    }
-    encoded
 }
 
 fn imported_statement_projection_entries(handoff: &VcKernelEvidenceHandoff) -> Vec<String> {

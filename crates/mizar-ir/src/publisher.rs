@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use mizar_session::{BuildSnapshotId, Hash};
+use mizar_session::{BuildSnapshotId, Hash, domain_hasher as stable_hasher};
 
 use crate::{
     identity::{
@@ -891,12 +891,6 @@ fn named_input_key(value: &NamedInputHash) -> (&str, &str) {
 
 fn side_table_key(value: &SideTableRecord) -> (&str, &str, &[u8; Hash::BYTE_LEN]) {
     (&value.domain, &value.key, value.digest.as_bytes())
-}
-
-fn stable_hasher(domain: &str) -> blake3::Hasher {
-    let mut hasher = blake3::Hasher::new();
-    write_str(&mut hasher, domain);
-    hasher
 }
 
 fn write_hash(hasher: &mut blake3::Hasher, domain: &str, value: Hash) {

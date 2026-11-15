@@ -1177,8 +1177,7 @@ fn reject_empty_view(field: &'static str, value: &str) -> Result<(), ClusterDbVi
 }
 
 fn visible_origin_set_hash(origin_keys: &[String]) -> Hash {
-    let mut hasher = blake3::Hasher::new();
-    write_view_hash_str(&mut hasher, "mizar-cache/cluster-db/visible-origin-set/v1");
+    let mut hasher = mizar_session::domain_hasher("mizar-cache/cluster-db/visible-origin-set/v1");
     write_view_hash_len(&mut hasher, origin_keys.len());
     for origin_key in origin_keys {
         write_view_hash_str(&mut hasher, origin_key);

@@ -22,6 +22,8 @@ kernel-verified status or trusted `used_axioms`.
 
 ## Public API
 
+`PipelinePhase::from(mizar_session::PipelinePhase)` uses [Session's identity spelling](../../mizar-session/en/pipeline.md). Arbitrary phase/work-unit strings remain supported; key canonicalization is unchanged. Shared hash mechanics live in [Session](../../mizar-session/en/hashing.md).
+
 Task 3 should expose the following conceptual API. Exact Rust field wrappers
 may use newtypes, but the semantic fields must remain visible to tests and
 audit code.

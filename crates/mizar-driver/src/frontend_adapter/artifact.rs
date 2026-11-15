@@ -254,16 +254,22 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err(fail("requires six parents"));
         }
         let roles = [
-            ("SignatureCollection", "SourceTheoremModuleSummary"),
-            ("Elaboration", "SourceTheoremCore"),
-            ("VcGenerate", "SourceTheoremVC"),
-            ("VcDischarge", "SourceTheoremDischarge"),
-            ("KernelCheck", "SourceTheoremCandidateCheck"),
-            ("KernelCheck", "SourceTheoremCandidateWitnessFile"),
+            (
+                PipelinePhase::SignatureCollection,
+                "SourceTheoremModuleSummary",
+            ),
+            (PipelinePhase::Elaboration, "SourceTheoremCore"),
+            (PipelinePhase::VcGenerate, "SourceTheoremVC"),
+            (PipelinePhase::VcDischarge, "SourceTheoremDischarge"),
+            (PipelinePhase::KernelCheck, "SourceTheoremCandidateCheck"),
+            (
+                PipelinePhase::KernelCheck,
+                "SourceTheoremCandidateWitnessFile",
+            ),
         ];
         let parents = roles.map(|(phase, kind)| {
             unique(input.parent_outputs().iter().filter(|parent| {
-                parent.as_output_ref().phase() == &IrPipelinePhase::new(phase)
+                parent.as_output_ref().phase() == &IrPipelinePhase::from(phase)
                     && parent.as_output_ref().output_kind() == &OutputKind::new(kind)
             }))
         });
@@ -317,10 +323,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return no_draft;
         }
         let storage = publisher.storage();
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -954,13 +959,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 ("producer".to_owned(), CanonicalJson::string(producer)),
                 (
                     "digest".to_owned(),
-                    CanonicalJson::string(
-                        digest
-                            .as_bytes()
-                            .iter()
-                            .map(|byte| format!("{byte:02x}"))
-                            .collect::<String>(),
-                    ),
+                    CanonicalJson::string(digest.to_lower_hex()),
                 ),
             ]));
             let family = "mizar-driver/source-artifact-owner-fingerprint";
@@ -1665,7 +1664,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let implementation_hash = draft.artifact.implementation_hash;
         let artifact_hash = main_write.artifact_hash;
         let artifact_path = main_write.path.as_str().to_owned();
-        let phase = IrPipelinePhase::new("ArtifactCommit");
+        let phase = IrPipelinePhase::from(PipelinePhase::ArtifactCommit);
         let output_kind = OutputKind::new("SourceTheoremArtifactData");
         let work_unit = input.parent_outputs()[0]
             .as_output_ref()
@@ -1973,13 +1972,13 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             return blocking();
         }
         let Some(vc_parent) = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("VcGenerate")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
                 && parent.as_output_ref().output_kind() == &OutputKind::new("SourceTheoremVC")
         })) else {
             return blocking();
         };
         let Some(kernel) = unique(input.parent_outputs().iter().filter(|parent| {
-            parent.as_output_ref().phase() == &IrPipelinePhase::new("KernelCheck")
+            parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::KernelCheck)
                 && parent.as_output_ref().output_kind()
                     == &OutputKind::new("SourceTheoremCandidateCheck")
         })) else {
@@ -2046,18 +2045,8 @@ impl PhaseService for SourceTheoremArtifactCommitService {
         {
             return blocking();
         }
-        let snapshot_hex = input
-            .snapshot
-            .fingerprint()
-            .as_bytes()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        let source_hex = source_key
-            .as_bytes()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
+        let snapshot_hex = input.snapshot.fingerprint().to_lower_hex();
+        let source_hex = source_key.to_lower_hex();
         let root = parent.join(match &version.origin {
             SourceOrigin::OpenBuffer {
                 version: document_version,
@@ -2070,13 +2059,7 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             ),
             _ => format!("{snapshot_hex}-{source_hex}"),
         });
-        let kernel_hex = kernel
-            .as_output_ref()
-            .content_hash()
-            .as_bytes()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
+        let kernel_hex = kernel.as_output_ref().content_hash().to_lower_hex();
         let witness_path = format!("{prefix}/{kernel_hex}.json");
         let result = inputs.commit_native_theorem_artifact_manifest(
             &input,

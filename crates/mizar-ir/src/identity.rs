@@ -5,7 +5,7 @@
 
 use std::{collections::HashMap, error::Error, fmt, sync::Mutex};
 
-use mizar_session::{BuildSnapshotId, Hash, SourceId};
+use mizar_session::{BuildSnapshotId, Hash, SourceId, domain_hasher as stable_hasher};
 
 const MODULE_ID_DOMAIN: &str = "mizar-ir/module-id/v1";
 const ITEM_ID_DOMAIN: &str = "mizar-ir/item-id/v1";
@@ -650,6 +650,12 @@ impl PipelinePhase {
     }
 }
 
+impl From<mizar_session::PipelinePhase> for PipelinePhase {
+    fn from(phase: mizar_session::PipelinePhase) -> Self {
+        Self::new(phase.as_str())
+    }
+}
+
 impl WorkUnit {
     /// Creates a work-unit label.
     pub fn new(value: impl Into<String>) -> Self {
@@ -847,20 +853,13 @@ fn key_display(key: &CanonicalIdentityKey) -> String {
 fn value_display(value: &CanonicalValue) -> String {
     match value {
         CanonicalValue::Hash { domain, value } => {
-            format!("{domain}:{}", hash_hex(*value))
+            format!("{domain}:{}", value.to_lower_hex())
         }
-        CanonicalValue::Id(value) => hash_hex(*value),
-        CanonicalValue::OptionalHash(Some(value)) => hash_hex(*value),
+        CanonicalValue::Id(value) => value.to_lower_hex(),
+        CanonicalValue::OptionalHash(Some(value)) => value.to_lower_hex(),
         CanonicalValue::OptionalHash(None) => "none".to_owned(),
         CanonicalValue::String(value) => value.clone(),
     }
-}
-
-fn hash_hex(hash: Hash) -> String {
-    hash.as_bytes()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
 }
 
 fn canonicalize_named_input_hashes(
@@ -984,12 +983,6 @@ fn hash_identity(
     Ok(finish_hash(hasher))
 }
 
-fn stable_hasher(domain: &str) -> blake3::Hasher {
-    let mut hasher = blake3::Hasher::new();
-    write_str(&mut hasher, domain);
-    hasher
-}
-
 fn write_canonical_value(hasher: &mut blake3::Hasher, value: &CanonicalValue) {
     match value {
         CanonicalValue::Hash { domain, value } => {
@@ -1091,6 +1084,19 @@ fn sort_phase_output_ids(values: &mut [PhaseOutputId]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scheduler_phase_conversion_preserves_labels_and_open_inputs() {
+        use mizar_session::PipelinePhase as SchedulerPhase;
+
+        assert_eq!(
+            PipelinePhase::from(SchedulerPhase::VcGenerate).as_str(),
+            "VcGenerate"
+        );
+        for label in ["", "custom_phase", "λ\n\"phase\""] {
+            assert_eq!(PipelinePhase::new(label).as_str(), label);
+        }
+    }
 
     fn hash(seed: u8) -> Hash {
         Hash::from_bytes([seed; Hash::BYTE_LEN])

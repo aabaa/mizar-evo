@@ -1222,16 +1222,12 @@ fn location_key(location: &ModuleIndexLocation) -> Vec<String> {
         ModuleIndexLocation::DependencySummary {
             artifact,
             content_hash,
-        } => vec!["1".to_owned(), artifact.clone(), hash_hex(content_hash)],
+        } => vec![
+            "1".to_owned(),
+            artifact.clone(),
+            content_hash.to_lower_hex(),
+        ],
     }
-}
-
-fn hash_hex(hash: &Hash) -> String {
-    let mut encoded = String::with_capacity(Hash::BYTE_LEN * 2);
-    for byte in hash.as_bytes() {
-        encoded.push_str(&format!("{byte:02x}"));
-    }
-    encoded
 }
 
 fn sort_diagnostics(diagnostics: &mut [ModuleIndexDiagnostic]) {

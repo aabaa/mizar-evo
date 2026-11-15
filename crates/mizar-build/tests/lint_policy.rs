@@ -168,7 +168,6 @@ const PUBLIC_ENUM_POLICY: &[PublicEnumPolicy] = &[
     module_index_enum("ModuleIndexDiagnosticKind"),
     module_index_enum("ModuleIndexProviderError"),
     task_graph_enum("TaskKind"),
-    task_graph_enum("PipelinePhase"),
     task_graph_enum("WorkUnit"),
     task_graph_enum("DependencyCoverage"),
     task_graph_enum("ResourceClass"),

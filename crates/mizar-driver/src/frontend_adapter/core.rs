@@ -34,10 +34,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         publisher
             .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named_input_hashes = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -45,7 +44,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             digest: source_key,
         }];
         if parent.snapshot() != input.snapshot
-            || parent.phase() != &IrPipelinePhase::new("OverloadResolution")
+            || parent.phase() != &IrPipelinePhase::from(PipelinePhase::OverloadResolution)
             || parent.work_unit() != &work_unit
             || parent.output_kind() != &OutputKind::new("SourceTheoremMetadata")
             || parent.schema_version() != SchemaVersion::new(1)
@@ -66,12 +65,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 "native theorem metadata Core requires registered ancestry".to_owned()
             })?;
         let typed = unique(ancestors.iter().filter(|ancestor| {
-            ancestor.phase == IrPipelinePhase::new("TypeChecking")
+            ancestor.phase == IrPipelinePhase::from(PipelinePhase::TypeChecking)
                 && ancestor.output_kind == OutputKind::new("SourceTheoremTypedAst")
         }))
         .ok_or_else(|| "native theorem metadata Core requires one Type ancestor".to_owned())?;
         let registration = unique(ancestors.iter().filter(|ancestor| {
-            ancestor.phase == IrPipelinePhase::new("RegistrationResolution")
+            ancestor.phase == IrPipelinePhase::from(PipelinePhase::RegistrationResolution)
                 && ancestor.output_kind == OutputKind::new("SourceTheoremRegistrationClosure")
         }))
         .ok_or_else(|| {
@@ -217,11 +216,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "mizar-driver/native-theorem-core-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("Elaboration");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::Elaboration);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceTheoremCore");
         let source_id = version.source_id;
@@ -312,10 +310,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         publisher
             .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named_input_hashes = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -323,7 +320,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             digest: source_key,
         }];
         if parent.snapshot() != input.snapshot
-            || parent.phase() != &IrPipelinePhase::new("Elaboration")
+            || parent.phase() != &IrPipelinePhase::from(PipelinePhase::Elaboration)
             || parent.work_unit() != &work_unit
             || parent.output_kind() != &OutputKind::new("SourceTheoremCore")
             || parent.schema_version() != SchemaVersion::new(1)
@@ -338,7 +335,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .registry()
             .output_lineage(*ancestor)
             .ok_or_else(|| "native theorem preparation requires registered ancestry".to_owned())?;
-        if ancestor.phase != IrPipelinePhase::new("OverloadResolution")
+        if ancestor.phase != IrPipelinePhase::from(PipelinePhase::OverloadResolution)
             || ancestor.output_kind != OutputKind::new("SourceTheoremMetadata")
             || ancestor.snapshot != input.snapshot
             || ancestor.work_unit != work_unit
@@ -496,11 +493,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "mizar-driver/native-theorem-preparation-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("AlgorithmPreparation");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::AlgorithmPreparation);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceTheoremPreparation");
         let source_id = version.source_id;

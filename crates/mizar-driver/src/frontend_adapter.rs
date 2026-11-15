@@ -48,7 +48,7 @@ use mizar_ir::{
 };
 use mizar_session::{
     DiskSourceLoader, Hash, PackageId, SourceInput, SourceLoadError, SourceOrigin,
-    SourceOriginInput,
+    SourceOriginInput, module_work_unit_label,
 };
 
 use crate::registry::{

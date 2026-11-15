@@ -226,10 +226,9 @@ impl PhaseService for FrontendService {
         {
             return blocking();
         }
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let Some(parent) = unique(
             input
@@ -237,7 +236,7 @@ impl PhaseService for FrontendService {
                 .iter()
                 .map(|handle| handle.as_output_ref())
                 .filter(|handle| {
-                    handle.phase() == &IrPipelinePhase::new("SourceLoad")
+                    handle.phase() == &IrPipelinePhase::from(PipelinePhase::SourceLoad)
                         && handle.work_unit() == &work_unit
                         && handle.output_kind() == &OutputKind::new("SourceUnit")
                         && handle.schema_version() == SchemaVersion::new(1)
@@ -263,7 +262,8 @@ impl PhaseService for FrontendService {
         if !parents_current()
             || input.parent_outputs().iter().any(|handle| {
                 let handle = handle.as_output_ref();
-                handle.phase() == &IrPipelinePhase::new("SourceLoad") && handle != parent
+                handle.phase() == &IrPipelinePhase::from(PipelinePhase::SourceLoad)
+                    && handle != parent
             })
         {
             return blocking();
@@ -332,7 +332,7 @@ impl PhaseService for FrontendService {
                 if leaf == parent {
                     continue;
                 }
-                if leaf.phase() != &IrPipelinePhase::new("Frontend")
+                if leaf.phase() != &IrPipelinePhase::from(PipelinePhase::Frontend)
                     || leaf.output_kind() != &OutputKind::new("FrontendOutput")
                     || leaf.schema_version() != SchemaVersion::new(1)
                 {
@@ -371,10 +371,9 @@ impl PhaseService for FrontendService {
                 else {
                     return None;
                 };
-                let leaf_unit = IrWorkUnit::new(format!(
-                    "{:?}:{:?}",
+                let leaf_unit = IrWorkUnit::new(module_work_unit_label(
                     leaf_module.package.as_str(),
-                    leaf_module.path.as_str()
+                    leaf_module.path.as_str(),
                 ));
                 let parent_lineages = leaf
                     .lineage()
@@ -382,11 +381,9 @@ impl PhaseService for FrontendService {
                     .iter()
                     .map(|parent| publisher.registry().output_lineage(*parent))
                     .collect::<Option<Vec<_>>>()?;
-                let source_lineage = unique(
-                    parent_lineages
-                        .iter()
-                        .filter(|parent| parent.phase == IrPipelinePhase::new("SourceLoad")),
-                )?;
+                let source_lineage = unique(parent_lineages.iter().filter(|parent| {
+                    parent.phase == IrPipelinePhase::from(PipelinePhase::SourceLoad)
+                }))?;
                 let leaf_package = unique(
                     inputs
                         .build_plan
@@ -471,7 +468,7 @@ impl PhaseService for FrontendService {
                     || source_relative_path.is_empty()
                     || index_package.version != package.version
                     || source_lineage.snapshot != snapshot
-                    || source_lineage.phase != IrPipelinePhase::new("SourceLoad")
+                    || source_lineage.phase != IrPipelinePhase::from(PipelinePhase::SourceLoad)
                     || source_lineage.work_unit != leaf_unit
                     || source_lineage.output_kind != OutputKind::new("SourceUnit")
                     || !source_lineage.parents.is_empty()
@@ -517,10 +514,9 @@ impl PhaseService for FrontendService {
                         ModuleIndexLocation::DependencySummary { .. } => continue,
                         _ => return None,
                     }
-                    let unit = IrWorkUnit::new(format!(
-                        "{:?}:{:?}",
+                    let unit = IrWorkUnit::new(module_work_unit_label(
                         target.package.as_str(),
-                        target.path.as_str()
+                        target.path.as_str(),
                     ));
                     if !targets.contains(&unit) {
                         targets.push(unit);
@@ -531,7 +527,7 @@ impl PhaseService for FrontendService {
                         continue;
                     }
                     if parent.snapshot != snapshot
-                        || parent.phase != IrPipelinePhase::new("Frontend")
+                        || parent.phase != IrPipelinePhase::from(PipelinePhase::Frontend)
                         || parent.output_kind != OutputKind::new("FrontendOutput")
                     {
                         return None;
@@ -907,7 +903,7 @@ impl PhaseService for FrontendService {
         let decode_input = source_input;
         let source_id = version.source_id;
         let expected_source = output.source.clone();
-        let phase = IrPipelinePhase::new("Frontend");
+        let phase = IrPipelinePhase::from(PipelinePhase::Frontend);
         let output_kind = OutputKind::new("FrontendOutput");
         if !parents_current() {
             return blocking();

@@ -34,7 +34,7 @@ use crate::{
     },
 };
 use mizar_core::core_ir::CoreFormulaId;
-use mizar_session::Hash;
+use mizar_session::{Hash, bridge_fingerprint_hash as stable_bridge_hash, lower_hex as hex};
 
 pub const SUPPORTED_NORMALIZED_CLAUSE_FINGERPRINT_ALGORITHM_ID: u8 = 1;
 pub const KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION: u16 = 1;
@@ -1573,44 +1573,6 @@ fn context_identity_hash_input(identity: &KernelContextIdentityPayload) -> Vec<u
     output.into_bytes()
 }
 
-fn stable_bridge_hash(domain: &str, bytes: &[u8]) -> Hash {
-    let mut lanes = [
-        0x6d_69_7a_61_72_2d_76_63_u64,
-        0x70_72_6f_6f_66_2d_69_64_u64,
-        0x74_61_73_6b_32_30_2d_76_u64,
-        0x66_69_6e_67_65_72_2d_31_u64,
-    ];
-
-    for (index, byte) in domain
-        .as_bytes()
-        .iter()
-        .copied()
-        .chain([0])
-        .chain(bytes.iter().copied())
-        .enumerate()
-    {
-        let lane = index % lanes.len();
-        let mixed_index = (index as u64).rotate_left((lane as u32) + 1);
-        lanes[lane] ^= u64::from(byte)
-            .wrapping_add(0x9e37_79b9_7f4a_7c15)
-            .wrapping_add(mixed_index);
-        lanes[lane] = lanes[lane]
-            .rotate_left(11 + lane as u32)
-            .wrapping_mul(0x1000_0000_01b3);
-    }
-
-    lanes[0] ^= bytes.len() as u64;
-    lanes[1] ^= (domain.len() as u64).rotate_left(17);
-    lanes[2] ^= lanes[0].rotate_left(7);
-    lanes[3] ^= lanes[1].rotate_left(13);
-
-    let mut output = [0_u8; Hash::BYTE_LEN];
-    for (chunk, lane) in output.as_chunks_mut::<8>().0.iter_mut().zip(lanes) {
-        chunk.copy_from_slice(&lane.to_be_bytes());
-    }
-    Hash::from_bytes(output)
-}
-
 fn context_identity_source_render(source: KernelContextIdentitySource) -> String {
     match source {
         KernelContextIdentitySource::LocalHypothesis { local_context_id } => {
@@ -1642,16 +1604,6 @@ fn target_fingerprint_render(fingerprint: &TargetVcFingerprint) -> String {
 
 fn fingerprint_render(fingerprint: &Fingerprint) -> String {
     format!("{}:{}", fingerprint.algorithm_id, hex(&fingerprint.digest))
-}
-
-fn hex(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut output = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        output.push(HEX[(byte >> 4) as usize] as char);
-        output.push(HEX[(byte & 0x0f) as usize] as char);
-    }
-    output
 }
 
 fn check_formula_import_source(

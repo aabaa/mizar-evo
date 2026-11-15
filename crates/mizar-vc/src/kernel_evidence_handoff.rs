@@ -14,7 +14,7 @@ use crate::{
         stable_fingerprint_hash,
     },
 };
-use mizar_session::Hash;
+use mizar_session::{Hash, lower_hex as hex};
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -3471,16 +3471,6 @@ fn joined_hex(items: &[Vec<u8>]) -> String {
         .map(|bytes| hex(bytes))
         .collect::<Vec<_>>()
         .join(",")
-}
-
-fn hex(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut output = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        output.push(HEX[(byte >> 4) as usize] as char);
-        output.push(HEX[(byte & 0x0f) as usize] as char);
-    }
-    output
 }
 
 #[cfg(test)]

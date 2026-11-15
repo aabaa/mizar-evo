@@ -312,6 +312,12 @@ impl PipelinePhase {
     }
 }
 
+impl From<mizar_session::PipelinePhase> for PipelinePhase {
+    fn from(phase: mizar_session::PipelinePhase) -> Self {
+        Self::new(phase.as_str())
+    }
+}
+
 impl WorkUnit {
     /// Creates a work-unit identifier.
     pub fn new(value: impl Into<String>) -> Self {
@@ -771,8 +777,7 @@ fn final_hash_for_request(request: &CacheKeyRequest) -> Hash {
 }
 
 fn stable_hasher(label: &str) -> blake3::Hasher {
-    let mut hasher = blake3::Hasher::new();
-    write_str(&mut hasher, CACHE_KEY_HASH_DOMAIN);
+    let mut hasher = mizar_session::domain_hasher(CACHE_KEY_HASH_DOMAIN);
     write_str(&mut hasher, label);
     hasher
 }

@@ -387,27 +387,11 @@ fn allocate_opaque_id(counter: &AtomicU64) -> Result<OpaqueId, IdError> {
 }
 
 fn push_lower_hex(output: &mut String, bytes: &[u8]) {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-
-    for byte in bytes {
-        output.push(HEX[(byte >> 4) as usize] as char);
-        output.push(HEX[(byte & 0x0f) as usize] as char);
-    }
+    output.push_str(&crate::lower_hex(bytes));
 }
 
 fn decode_lower_hex_hash(hex: &str) -> Result<Hash, IdError> {
-    if hex.len() != Hash::BYTE_LEN * 2 {
-        return Err(IdError::MalformedSerializedId);
-    }
-
-    let mut bytes = [0; Hash::BYTE_LEN];
-    for (index, pair) in hex.as_bytes().as_chunks::<2>().0.iter().enumerate() {
-        let high = decode_lower_hex_nibble(pair[0])?;
-        let low = decode_lower_hex_nibble(pair[1])?;
-        bytes[index] = (high << 4) | low;
-    }
-
-    Ok(Hash::from_bytes(bytes))
+    Hash::from_lower_hex(hex).ok_or(IdError::MalformedSerializedId)
 }
 
 fn decode_lower_hex_nibble(byte: u8) -> Result<u8, IdError> {

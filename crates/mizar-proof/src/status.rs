@@ -8,7 +8,7 @@ use std::{error::Error, fmt};
 
 use mizar_artifact::store::SchemaVersion;
 use mizar_kernel::checker::{KernelCheckResult, KernelCheckStatus, UsedAxiom};
-use mizar_session::Hash;
+use mizar_session::{Hash, lower_hex as source_discharge_hex};
 use mizar_vc::vc_ir::VcId;
 
 use crate::{
@@ -5281,10 +5281,7 @@ pub fn select_source_registration_discharge_candidate(
     )?;
     let target = result.target_vc_fingerprint().sort_bytes();
     let mut id = String::from("source-registration-discharge-v1:");
-    for byte in &target {
-        use std::fmt::Write;
-        write!(id, "{byte:02x}").map_err(|_| invalid())?;
-    }
+    id.push_str(&source_discharge_hex(&target));
     let id = CandidateSourceId::new(id).map_err(|_| invalid())?;
     let candidate = if decision.class == crate::policy::CandidatePolicyClass::DischargedBuiltin {
         let metadata = metadata.ok_or_else(invalid)?;
@@ -5656,10 +5653,6 @@ pub fn project_source_registration_candidate_witness(
     };
     proof_witness_ref_json(&reference).map_err(|_| invalid())?;
     Ok((selection, reference, bytes))
-}
-
-fn source_discharge_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[cfg(test)]

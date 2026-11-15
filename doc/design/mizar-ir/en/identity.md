@@ -15,6 +15,8 @@ records parent/derived relationships between sealed phase outputs.
 
 ## Consumed And Owned Identities
 
+`PipelinePhase::from(mizar_session::PipelinePhase)` uses [Session's shared identity spelling](../../mizar-session/en/pipeline.md), retaining open string labels and exact lineage encoding. Shared hash mechanics live in [Session](../../mizar-session/en/hashing.md).
+
 | Identity | Owner | Stability |
 |---|---|---|
 | `BuildSnapshotId` | `mizar-session` | Deterministic for the exact source, dependency, lockfile, toolchain, and verifier-config state. |

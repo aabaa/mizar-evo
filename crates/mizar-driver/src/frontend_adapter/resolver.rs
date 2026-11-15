@@ -94,13 +94,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         publisher
             .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         if parent.snapshot() != input.snapshot
-            || parent.phase() != &IrPipelinePhase::new("Frontend")
+            || parent.phase() != &IrPipelinePhase::from(PipelinePhase::Frontend)
             || parent.work_unit() != &work_unit
             || parent.output_kind() != &OutputKind::new("FrontendOutput")
             || parent.schema_version() != SchemaVersion::new(1)
@@ -121,7 +120,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .output_lineage(*ancestor)
             .ok_or_else(|| "native Frontend resolver requires registered ancestry".to_owned())?;
         if ancestor.snapshot != input.snapshot
-            || ancestor.phase != IrPipelinePhase::new("SourceLoad")
+            || ancestor.phase != IrPipelinePhase::from(PipelinePhase::SourceLoad)
             || ancestor.work_unit != work_unit
             || ancestor.output_kind != OutputKind::new("SourceUnit")
             || !ancestor.parents.is_empty()
@@ -227,10 +226,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         publisher
             .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let named_input_hashes = vec![NamedInputHash {
             name: "source".to_owned(),
@@ -238,7 +236,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             digest: source_key,
         }];
         if parent.snapshot() != input.snapshot
-            || parent.phase() != &IrPipelinePhase::new("ModuleResolve")
+            || parent.phase() != &IrPipelinePhase::from(PipelinePhase::ModuleResolve)
             || parent.work_unit() != &work_unit
             || parent.output_kind() != &OutputKind::new("SourceTheoremModuleCandidates")
             || parent.schema_version() != SchemaVersion::new(1)
@@ -258,7 +256,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 "native theorem summary publication requires registered ancestry".to_owned()
             })?;
         if ancestor.snapshot != input.snapshot
-            || ancestor.phase != IrPipelinePhase::new("Frontend")
+            || ancestor.phase != IrPipelinePhase::from(PipelinePhase::Frontend)
             || ancestor.work_unit != work_unit
             || ancestor.output_kind != OutputKind::new("FrontendOutput")
         {
@@ -297,7 +295,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let identity = summary.module.clone();
         let interface_hash = summary.interface_hash;
-        let phase = IrPipelinePhase::new("SignatureCollection");
+        let phase = IrPipelinePhase::from(PipelinePhase::SignatureCollection);
         let output_kind = OutputKind::new("SourceTheoremModuleSummary");
         storage
             .validate_handle(parent)
@@ -415,11 +413,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             "mizar-driver/native-theorem-module-storage-side-table/v1",
             &storage_bytes,
         ));
-        let phase = IrPipelinePhase::new("ModuleResolve");
-        let work_unit = IrWorkUnit::new(format!(
-            "{:?}:{:?}",
+        let phase = IrPipelinePhase::from(PipelinePhase::ModuleResolve);
+        let work_unit = IrWorkUnit::new(module_work_unit_label(
             module.package.as_str(),
-            module.path.as_str()
+            module.path.as_str(),
         ));
         let output_kind = OutputKind::new("SourceTheoremModuleCandidates");
         let source_id = version.source_id;

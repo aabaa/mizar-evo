@@ -1646,15 +1646,13 @@ impl<'a> JsonParser<'a> {
 }
 
 fn output_hash(bytes: &[u8]) -> Hash {
-    let mut hasher = blake3::Hasher::new();
-    write_hash_part(&mut hasher, OUTPUT_HASH_DOMAIN.as_bytes());
+    let mut hasher = mizar_session::domain_hasher(OUTPUT_HASH_DOMAIN);
     write_hash_part(&mut hasher, bytes);
     Hash::from_bytes(*hasher.finalize().as_bytes())
 }
 
 fn dependency_artifact_hash(domain: &str, bytes: &[u8]) -> Hash {
-    let mut hasher = blake3::Hasher::new();
-    write_hash_part(&mut hasher, domain.as_bytes());
+    let mut hasher = mizar_session::domain_hasher(domain);
     write_hash_part(&mut hasher, bytes);
     Hash::from_bytes(*hasher.finalize().as_bytes())
 }
@@ -1690,11 +1688,7 @@ fn path_component_for(value: &str) -> String {
 }
 
 fn hash_hex(hash: Hash) -> String {
-    let mut output = String::with_capacity(Hash::BYTE_LEN * 2);
-    for byte in hash.as_bytes() {
-        push_hex_byte(&mut output, *byte);
-    }
-    output
+    hash.to_lower_hex()
 }
 
 fn push_hex_byte(output: &mut String, byte: u8) {
@@ -1704,22 +1698,7 @@ fn push_hex_byte(output: &mut String, byte: u8) {
 }
 
 fn hash_from_hex(value: &str) -> Option<Hash> {
-    if value.len() != Hash::BYTE_LEN * 2 {
-        return None;
-    }
-    let mut bytes = [0; Hash::BYTE_LEN];
-    for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
-        bytes[index] = (hex_digit(pair[0])? << 4) | hex_digit(pair[1])?;
-    }
-    Some(Hash::from_bytes(bytes))
-}
-
-fn hex_digit(byte: u8) -> Option<u8> {
-    match byte {
-        b'0'..=b'9' => Some(byte - b'0'),
-        b'a'..=b'f' => Some(byte - b'a' + 10),
-        _ => None,
-    }
+    Hash::from_lower_hex(value)
 }
 
 #[cfg(test)]

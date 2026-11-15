@@ -1,14 +1,18 @@
+mod hashing;
 mod identity;
 pub mod ids;
+mod pipeline;
 pub mod retention;
 pub mod snapshot;
 pub mod source;
 pub mod source_map;
 
+pub use hashing::{bridge_fingerprint_hash, domain_hasher, lower_hex};
 pub use ids::{
     BuildRequestId, BuildSessionId, BuildSnapshotId, Hash, IdError, InMemorySessionIdAllocator,
     SessionIdAllocator, SnapshotLeaseId, SourceId, SourceMapId,
 };
+pub use pipeline::{PipelinePhase, module_work_unit_label};
 pub use retention::{
     CollectionSummary, RetainGuard, RetainOwner, RetainSnapshotInput, RetainedSnapshotResources,
     RetentionError, RetentionLeaseDiagnostic, RetentionManager,

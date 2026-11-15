@@ -439,12 +439,13 @@ Task 7 is documentation-only. Task 8 must add focused Rust tests for:
 
 ## Public Enum Policy
 
+`PipelinePhase` is re-exported from [Session's shared vocabulary](../../mizar-session/en/pipeline.md); its identity and CLI spellings are owned there. The task graph retains structured work-unit ownership.
+
 No exhaustive public enum exceptions are owned by this module.
 
 | Enum | Decision |
 |---|---|
 | `TaskKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
-| `PipelinePhase` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `WorkUnit` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `DependencyCoverage` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `ResourceClass` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
