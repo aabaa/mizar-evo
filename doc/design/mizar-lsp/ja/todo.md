@@ -247,6 +247,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 依存: 21。仕様: 全モジュール仕様と本 TODO。
 
 23. **二言語ドキュメント同期監査。** [ ]
+    - Contract: [LSP-BILINGUAL-SYNC-AUDIT](../../task_contracts/ja/LSP-BILINGUAL-SYNC-AUDIT.md).
     - `doc/design/mizar-lsp/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 依存: 22。仕様: リポジトリのドキュメント方針。
