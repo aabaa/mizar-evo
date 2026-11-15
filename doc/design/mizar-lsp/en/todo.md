@@ -269,6 +269,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       [spec_coverage_audit.md](../../spec_coverage_audit.md).
 25. **Code completion.** [ ]
     - Deps: 6-7 and 12-15. Contract: [EDITOR-LSP-COMPLETION](../../task_contracts/en/EDITOR-LSP-COMPLETION.md).
+    - Producer prerequisite: [LSP-PRODUCER-METADATA-PUBLICATION-DESIGN](../../task_contracts/en/LSP-PRODUCER-METADATA-PUBLICATION-DESIGN.md), [proposal](producer_metadata_publication.md) awaiting owner approval; producer implementation and Task25 redispatch follow approval.
 26. **`mizar lsp` stdio entry (with mizar-driver).** [ ]
     - Deps: 4-5. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
 27. **Statement review aids (consumer).** [ ]
