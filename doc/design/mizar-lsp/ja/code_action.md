@@ -39,7 +39,7 @@ server は quickfix の resolve を通知する。client は code-action data �
 
 明示された expected text が一致する local/snapshot-bound 提案は、edit を持つ 3 種の applicability で提示できる。informational 提案、未知の class、この境界で利用できない hash/artifact/command の検証を要する提案は除外する。所有する validator がない限り、不透明な hash を source hash や artifact hash と解釈しない。command の wire encoding、explanation query の挙動、新しい action class、公開 diagnostic code/name/alias は定義せず、tasks18/19 は別単位のままとする。
 
-この規則は、保留中の OpenBuffer artifact provenance/storage、Session SourceId encoding、registry activation の判断から独立して、既存の提案と snapshot association を消費する。それらを前提とも決定ともせず、producer、diagnostics、artifact、snapshot の挙動を変更しない。
+この規則は、未決の OpenBuffer artifact provenance/storage と Session SourceId encoding から独立して、既存の提案と snapshot association を消費する。それらを前提とも決定ともせず、producer、diagnostics、artifact、snapshot の挙動を変更しない。
 
 ## Test design
 

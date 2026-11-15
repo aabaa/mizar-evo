@@ -246,11 +246,12 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 21. Spec: all module specs and this TODO.
 
-23. **Bilingual documentation sync audit.** [ ]
+23. **Bilingual documentation sync audit.** [x]
     - Contract: [LSP-BILINGUAL-SYNC-AUDIT](../../task_contracts/en/LSP-BILINGUAL-SYNC-AUDIT.md).
     - Compare each English canonical document under
       `doc/design/mizar-lsp/en/` with its Japanese companion and
       synchronize content.
+    - Parity owner: [bilingual sync audit](bilingual_sync_audit.md).
     - Deps: 22. Spec: repository documentation policy.
 
 24. **Annotation display and evaluation projection audit.** [ ]

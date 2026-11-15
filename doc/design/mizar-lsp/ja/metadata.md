@@ -35,7 +35,7 @@ current hover は元の map で変換した LSP range を含む。stale hover �
 
 `Server::handle_message_with_metadata` が hover request に Driver/registry の freshness を供給し、build bridge はこの経路を使う。通常の handler は request を検証し、metadata host がなければ hover を返さない。実行ファイルの host/build 統合と navigation は別作業のままである。
 
-read は公開済み入力と snapshot owner の既存 association を使う。この仕様は OpenBuffer provenance carrier、未保存 artifact の保存/公開、保留中の build scheduling policy を選択しない。
+read は公開済み入力と snapshot owner の既存 association を使う。この仕様は OpenBuffer provenance carrier と未保存 artifact の保存/公開を選択せず、build scheduling は [build bridge](build_bridge.md) が所有する。
 
 ## Test design
 

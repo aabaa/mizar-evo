@@ -35,7 +35,7 @@ Task14 fixes the read boundary; task15 implements navigation incrementally as me
 
 Task15's syntax-only token increment serves `textDocument/semanticTokens/full` from the exact current open-buffer text through existing lexer preprocessing and shell classification. Its legend is `keyword`, `operator`, `number`, `comment`, with no modifiers; unknown identifier roles are omitted. Raw LF, CRLF and lone CR delimit single-line UTF-16 tokens. No artifact class enrichment is applied, so retained stale metadata cannot affect current syntax tokens. Definitions, references, document symbols and resolved token enrichment remain deferred; task15 remains open.
 
-Navigation consumes published inputs and existing snapshot associations without presuming parked OpenBuffer artifact provenance/storage, Session SourceId encoding or registry activation decisions. None is decided here.
+Navigation consumes published inputs and existing snapshot associations without presuming deferred OpenBuffer artifact provenance/storage or Session SourceId encoding. Neither is decided here.
 
 ## Test design
 

@@ -39,7 +39,7 @@ The server advertises quickfix resolution. Clients must support code-action data
 
 Local and snapshot-bound suggestions with matching explicit expected text can be offered at all three edit-bearing applicability levels. Informational suggestions, unknown classes and suggestions requiring hash/artifact/command validation unavailable at this boundary are filtered. The opaque hash is not interpreted as a source or artifact hash without an owning validator. No command wire encoding, explanation-query behavior, new action class or public diagnostic code/name/alias is defined here; tasks18/19 remain separate.
 
-These rules consume existing suggestions and snapshot associations independently of parked OpenBuffer artifact provenance/storage, Session SourceId encoding and registry activation decisions. They neither presume nor decide those matters and change no producer, diagnostics, artifact or snapshot behavior.
+These rules consume existing suggestions and snapshot associations independently of deferred OpenBuffer artifact provenance/storage and Session SourceId encoding. They neither presume nor decide those matters and change no producer, diagnostics, artifact or snapshot behavior.
 
 ## Test design
 
