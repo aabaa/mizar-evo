@@ -1,0 +1,29 @@
+# Task LSP-NATIVE-PAYLOAD-PRODUCERS-DESIGN: native diagnostic payload proposal
+Canonical language: English; [Japanese pointer](../ja/LSP-NATIVE-PAYLOAD-PRODUCERS-DESIGN.md).
+Status: frozen spec-only unit; proposal awaits owner approval. Tier: full; new producer boundary, no pattern predecessor.
+Owner: [LSP plan](../../mizar-lsp/en/00.crate_plan.md), Task39 prerequisite. Consumers: Tasks17/19/38 code actions, explanations and deferred validators.
+Purpose: define genuine diagnostic producers attaching fixes and explanation handles with authenticated backing, without implementing them or deciding open semantics.
+
+## Authority and readiness
+
+Authority: spec [§22.1.3](../../../spec/en/22.error_handling_and_diagnostics.md#2213-fix-suggestions-and-help-annotations), [§23.6.1](../../../spec/en/23.package_management_and_build_system.md#2361-hover-code-actions-and-diagnostics); architecture12 [producers](../../architecture/en/12.diagnostics_and_lsp.md#producers), [fixes](../../architecture/en/12.diagnostics_and_lsp.md#fix-suggestions); internal03 [phase production](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#phase-diagnostic-production).
+Existing owners: Diagnostics [fix attachment](../../mizar-diagnostics/en/fix.md#attachment-to-records), [explanation identity/store](../../mizar-diagnostics/en/explain.md#attachment-and-deduplication); LSP [publication](../../mizar-lsp/en/diagnostics.md#build-index-publication), [source association](../../mizar-lsp/en/snapshot.md#source-association), [actions](../../mizar-lsp/en/code_action.md#implementation-boundary), [explanations](../../mizar-lsp/en/explain.md#implementation-boundary), [approved validators](../../mizar-lsp/en/code_action_validators.md#status-and-authority).
+Gaps: `design_drift`/producer incompleteness and `test_gap`: consumer schemas and typed tests exist, but native diagnostics lack the attached fix/handle/backing chain required for Task39's combined positive-host and stale-location evidence.
+Readiness: owner authorized a definition proposal; producer choice, payload contents and publication handoff alternatives require explicit owner approval before separate implementation dispatches. Task39 stays parked.
+
+## Scope and boundaries
+
+Author paired `doc/design/mizar-lsp/{en,ja}/native_payload_producers.md`: established requirements, concrete bounded producer candidates, conditional contracts and explicit open questions with options, recommendation and tradeoffs.
+Define phase/Diagnostics/Driver/host ownership; diagnostic/fix/handle identity, supported trigger and edit semantics, bounded backing content/encoding, population of approved Task38 Q3-A bindings, publication lifetime and failure behavior. Reuse approved Task38 hash domains, registrations and command rules; identify unsupported cases without widening consumers.
+Define a genuine source-to-producer-to-publication-to-host acceptance chain, including current actions/explanation content and retained stale original-source locations. Keep typed conversion/validator fixtures separate; no synthetic native producer credit.
+Forbidden: Rust/test/fixture/doc-spec/expectation/trace/ledger changes, diagnostic allocation, language/proof/acceptance changes, producer or Task39 implementation, AGENTS.md/protocol edits or coverage credit. Do not decide Task25 metadata Q1–Q5, Task40 execution, Task41 presentation, OpenBuffer storage/provenance or SourceId encoding.
+Writes: contract pair and one Task Index row per LSP plan first; then paired proposal, paired action/explanation-owner links, Task39-only TODO prerequisite link and bilingual-owner registration. No other fan-out.
+Coverage: SCA-003 audit status and §23.6 deferrals remain unchanged; no semantic coverage credit or producer/Task39 readiness is granted.
+
+## Review matrix and exit
+
+Document-review matrix (cap six; positive outcomes conditional on approval): (1) real supported source diagnostic: explicit trigger, exact fix edits/applicability and explanation subject/content, no invented correction; (2) multiple diagnostics/fixes/handles and reordered aggregation: deterministic canonical identity and exact fix-to-backing relation, no guessing; (3) Unicode/BOM/CRLF original sources and current publication: host delivers action and bounded explanation from genuine payloads using existing hash/range domains; (4) edit/version-only change/close-reopen/replacement/equal build id: stale actions refuse, retained explanation keeps original URI/version/coordinates and content; (5) absent/unsupported/mismatched backing or source/artifact identity: affected payload unavailable without losing the diagnostic or granting proof authority; (6) typed conversion fixtures versus native host route: distinct evidence, producer prerequisites and Task39 redispatch gates, no Task40/41 dependency inferred.
+Existing intent: `crates/mizar-lsp/src/diagnostics.rs::code_actions` action/freshness tests, `src/explain_tests.rs` host/typed explanation tests and `src/deferred_action_tests.rs` approved validator tests. No test changes or runtime claims.
+Reviews: independent specification/test-intent before freeze; sufficiency, precision, volume/scope, consistency and final full-tier assessment over both commits; additional cases require authority or a .miz test.
+Before each commit: both `cargo test -p mizar-checker --test lint_policy` and `cargo test -p mizar-test --test lint_policy`, local links/fragments, EN/JA section/question parity and `git diff --check`. Caps: contract 60 lines/660 words; combined documentation 200 added lines. Documentation only: no fmt/Clippy/runtime/E2E; full test only on a named cadence trigger.
+Exit: two local documentation commits (freeze then paired proposal), one changed task; task-related tree clean, owner edits excluded; owner approval pending, followed by separate producer implementation units and Task39 redispatch.
