@@ -234,7 +234,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
       常にマークされることのプロパティ的検証。
     - 依存: 11、13。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-21. **公開 enum の前方互換性ポリシー。** [ ]
+21. **公開 enum の前方互換性ポリシー。** [x]
     - 契約: [LSP-PUBLIC-ENUM-POLICY](../../task_contracts/ja/LSP-PUBLIC-ENUM-POLICY.md)。
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
     - 依存: 11。仕様: 全モジュール仕様。
