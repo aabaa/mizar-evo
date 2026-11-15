@@ -141,7 +141,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
    - テスト: 公開のフィクスチャ。stale 索引の抑制。決定的な順序。
    - 依存: 7、8、`mizar-diagnostics` task 9。仕様: `diagnostics.md`。
 
-10. **仕様: `build_bridge.md`。** [ ]
+10. **仕様: `build_bridge.md`。** [x]
+    - 完了: [LSP-BUILD-BRIDGE-DESIGN](../../task_contracts/ja/LSP-BUILD-BRIDGE-DESIGN.md)、[英語仕様](../en/build_bridge.md)、[日本語仕様](build_bridge.md)。
     - build bridge の仕様を執筆する（英語と日本語、コードなし）:
       `CompilerDriver` API を通じたビルドのスケジューリング、ビルド
       イベントの消費、編集時のデバウンスと置き換え、watch モードとの

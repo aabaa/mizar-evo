@@ -1,0 +1,48 @@
+# Build bridge
+正本: [英語版](../en/build_bridge.md)。英語版と同期した日本語訳。
+
+## Responsibility
+
+Task10 は Server 接続ごとの単一 `BuildLaneId`、origin `BuildRequestOrigin::Lsp` の scheduling と event 消費を定義する。以下の所有者決定方針は [internal01 の Watch and LSP Build](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md#watch-and-lsp-build) を具体化する。Task11 が実装し、source/freshness は [snapshot](snapshot.md)、公開は [diagnostics](diagnostics.md) が引き続き所有する。
+
+## Admission and deadlines
+
+accepted event は [Server 同期規則](server.md) が受理し状態を変える didOpen、didChange、didClose であり、空 change list による version 更新も含む。無視・不正・重複・stale 通知は含まない。didSave は trigger ではない。
+LSP lane は admitted かつ未 flush の slot を最大1つ持つ。text、version、generation、freshness label を持たず、`pending` ではない。admission は Driver entry point を呼ばず capture しない。初回は t_first/t_last を現在時刻に設定し、以後は同じ lane の全 document/package を通じて t_last だけを更新する。
+注入された単調時計を用い、各 accepted event の直後と次の deadline 到達時に trigger を評価する。仕様定数は quiet_period = 300 ms、max_wait = 2 s、quiet_period <= max_wait とし、editor 設定面は定義しない。
+now - t_last >= quiet_period、または now - t_first >= max_wait AND lane に running session がない、という条件を最初に満たす瞬間に flush する。submitted request は generation と Driver session を持ち、その session が非終端の間を running とする。quiet 満了は running 中も flush でき、cap 満了だけではできない。
+coalesce するのは admitted request のみ。submitted request 同士や slot とは coalesce せず、lane/origin を跨ぐ coalesce も行わない。中間の editor version は build しない。
+
+## Capture and submission
+
+他の accepted event を挟まず、flush は slot を消去し、lane 内の過去の全割当より厳密に大きい generation を1つ割り当て、その時点で開いている全 document と現 version を1つの cohort として capture し、成功時に1回だけ submit する。open document がなければ capture/submit せず slot を破棄し、document 数ゼロで build を行わない。
+[Server の native capture](snapshot.md#retained-native-sources) と既存の captured-session Driver submission（`submit_captured` または既存の import-discovery/native-index entry point）を使い、`submit_watch_change` は使わない。bridge が現在の open-document coordinate 全体を渡し、Driver は Server buffer を列挙しない。元の capture/ticket handoff と lease 所有を保ち、source map を再構成せず、呼出側が capture を捏造しない。
+capture は admission 時でなく flush 時に行う。capture 失敗は slot を消費して自動再試行せず、割当済 generation を再利用しない。従前の lane-current session を変更も cancel もせず、診断を消去せず、pending 状態を捏造しない。失敗の利用者通知は未規定である。
+capture 成功後に submission が失敗しても、新 generation は lane の generation に留まり旧 generation に戻さない。既存の構造化 Driver submission error と cleanup 所有は変えない。
+
+## Supersede and terminal lifecycle
+
+編集の継続は t_last のみを更新し、Driver request を行わず、running generation g を cancel しない。置換 capture が成功し Driver が置換を lane-current として受理した後、g に属する session が非終端なら `cancel(session_g, DriverCancelReason::Superseded, snapshots)` をその session に正確に1回要求し、既に終端なら何もしない。capture 失敗では g を cancel しない。
+shutdown request または exit は slot を flush せず破棄し、running session に `cancel(session, DriverCancelReason::Shutdown, snapshots)` を1回要求する。終端 lifecycle traffic 後は admission/capture/submission しない。cancel は既存 [request guard](../../mizar-driver/en/request.md) の下で協調的に行い、Driver が所有する。
+
+## Build event consumption
+
+所有する submitted session の既存 `CompilerDriver::events(session)` 履歴を読む。known-session 状態と実 event identity（session、lane、generation、optional snapshot、publication）で submission と元の captured cohort に対応付け、BuildSnapshotId の等値から editor version/incarnation を推定しない。これは replay 取得であり、新 subscription API ではない。
+自分の LSP lane の event のみ消費する。Driver 順序と publication guard を保ち、readiness の replay は current 権限を復活させない。progress、gap、suppression、SessionFinished は既存 [BuildEventKind の意味](../../mizar-driver/en/events.md) を保ち、下流の non-exhaustive match は wildcard を要する。event kind/payload field、公開 diagnostic code/name/alias、producer behavior を追加しない。
+真正で coherent な `SnapshotPublished { snapshot }` payload だけを task7 の registry/atomic activation と task9 の診断公開境界へ渡す。ArtifactBoundary/ArtifactCommitted、Frontend 完了、DiagnosticsReady、index 単独は coherent full snapshot ではない。ここで event 消費が registry を activate したり診断を送信したりせず、current 配送と stale read は元の source association とその所有者に従う。
+
+## Watch-mode interplay
+
+bridge は自分の LSP lane のみ submit/cancel/consume し、Watch-origin request を作らず、watch lane に submit/cancel/subscribe しない。watch と LSP は異なる BuildLaneId を使い、各 lane は1つの origin を持つ。arbitration、lane 間の generation 比較、supersede、cancel、coalesce はない。
+各 lane の admission、flush、capture 失敗、cancel は他 lane の admitted/submitted/running request を変更しない。Disk file 変更は LSP lane を trigger せず、editor buffer 編集は watch lane を trigger しない。
+独立性は Driver lane table の lane 分離を条件とする。IR `replace_current_snapshot` の `old` は同じ lane の直前 snapshot のみに限り、LSP と watch は `PhaseOutputPublisher` instance を共有しない。publisher currentness は [editor currentness](snapshot.md#currentness-and-retention) と別である。
+共有 Disk artifact/cache は各所有者の manifest transaction と cache validation 規則だけに従い、bridge は規則を加えない。registry/publication へは所有 LSP event のみ渡す。Disk-committed artifact の read は bridge 外の snapshot/metadata `stale_artifact` 規則に従う。これらの境界は例外なく全 bridge operation/target に適用する。
+したがって Disk 側の変更は次の accepted event まで LSP 結果に反映されず、この制限は [DRIVER-G-012](../../mizar-driver/en/00.crate_plan.md#known-gaps-and-drift) に紐付けて deferred とする。
+
+## Implementation boundary
+
+Task10 は code/test を変更しない。task7 の full registry/IR retention/atomic activation、task9 publication、task11 implementation は別単位のままとし、module 完了と SCA-003 credit は変えない。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。
+
+## Test design
+
+本設計単位は executable case を追加しない。task11 は上記方針に基づく edit-burst debounce、正しい event/snapshot 対応、supersede cancel の fixture を引き続き担当し、既存 lifecycle/capture/Driver/publication の test intent は各所有者に残す。

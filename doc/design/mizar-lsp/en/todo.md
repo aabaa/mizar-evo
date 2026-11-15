@@ -142,7 +142,8 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
      order.
    - Deps: 7, 8, `mizar-diagnostics` task 9. Spec: `diagnostics.md`.
 
-10. **Spec: `build_bridge.md`.** [ ]
+10. **Spec: `build_bridge.md`.** [x]
+    - Completed: [LSP-BUILD-BRIDGE-DESIGN](../../task_contracts/en/LSP-BUILD-BRIDGE-DESIGN.md); [English specification](build_bridge.md), [Japanese specification](../ja/build_bridge.md).
     - Write the build-bridge spec (English and Japanese, no code):
       scheduling builds through the `CompilerDriver` API, consuming build
       events, debouncing/superseding on edits, and watch-mode interplay.
