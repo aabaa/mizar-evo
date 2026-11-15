@@ -255,6 +255,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Deps: 22. Spec: repository documentation policy.
 
 24. **Annotation display and evaluation projection audit.** [ ]
+    - Contract: [LSP-ANNOTATION-PROJECTION-AUDIT](../../task_contracts/en/LSP-ANNOTATION-PROJECTION-AUDIT.md).
     - Before claiming chapter-21 display/evaluation coverage, audit how
       `@show_type`, `@show_resolution`, `@show_thesis`, and `@eval` flow from
       parser/syntax nodes through diagnostics, metadata artifacts, and LSP
