@@ -303,6 +303,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 38. **[Deferred code-action consumers](../../task_contracts/en/LSP-DEFERRED-CODE-ACTIONS.md).** [x]
 
 39. **Native feature payload delivery evidence.** [ ]
+    - Producer prerequisite: [LSP-NATIVE-PAYLOAD-PRODUCERS-DESIGN](../../task_contracts/en/LSP-NATIVE-PAYLOAD-PRODUCERS-DESIGN.md), [proposal](native_payload_producers.md) awaiting owner approval; producer implementation and Task39 redispatch follow approval.
     - Audit G4: after genuine diagnostic producers attach fixes/explanation handles and backing content, test positive host delivery and stale original-source locations together; keep typed conversion fixtures distinct. Producer work stays upstream.
     - Deps: 17, 19, native payload producers. Spec: [action tests](code_action.md#test-design), [explanation tests](explain.md#test-design).
 

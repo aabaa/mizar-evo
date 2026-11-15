@@ -50,3 +50,5 @@ server は quickfix の resolve を通知する。client は code-action data �
 ## Test design
 
 task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。既存の production 診断はまだ fix を付けないため、native publication test は currentness を独立して検証する。frame 付き stdio では publication が利用できない経路を検証する。Task38 の typed consumer test が認証済み hash/artifact/backing 登録と command 再構築・再検証を扱い、native payload 配信は Task39 が所有する。未対応 producer と効果を伴う command の所有者は保留し、§23.6/SCA-003 の credit は変わらない。
+
+[Native producer の前提](native_payload_producers.md) は別提案であり、producer 実装と Task39 再 dispatch に先立つ所有者承認を待ちます。

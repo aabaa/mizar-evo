@@ -43,3 +43,5 @@ Responses carry status (`available`, `unavailable`, `stale_handle`), freshness, 
 ## Test design
 
 Query fixtures exercise existing subject selection, store outcomes, exact bounded payload preservation and native UTF-16 conversion. Genuine publication fixtures check host selection and freshness; typed fixtures check original source locations. Combined host delivery of explanation content and stale locations awaits native explanation producers. Cancellation, malformed requests and framed stdio degradation are covered. §23.6 remains partial and SCA-003 unchanged.
+
+[Native producer prerequisites](native_payload_producers.md) are a separate proposal awaiting owner approval before producer implementation and Task39 redispatch.

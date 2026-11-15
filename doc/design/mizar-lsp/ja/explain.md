@@ -43,3 +43,5 @@ handle は作成時の snapshot または artifact hash の範囲内だけで有
 ## Test design
 
 query fixture は既存 subject の選択、store の結果、上限付き payload の厳密な保持と native UTF-16 変換を検証する。実際の公開 fixture は host 選択と freshness、型付き fixture は元の source location を確認する。explanation content と stale location を合わせた host 配信の検証は native explanation producer の接続を待つ。cancellation、不正要求、framed stdio の劣化も対象とする。§23.6 は partial、SCA-003 は変更しない。
+
+[Native producer の前提](native_payload_producers.md) は別提案であり、producer 実装と Task39 再 dispatch に先立つ所有者承認を待ちます。

@@ -4,6 +4,8 @@ This document owns language parity boundaries for the `mizar-lsp` design tree.
 
 ## Language ownership
 
+- The [native payload producer proposal](native_payload_producers.md) is paired; Q1–Q5 await owner approval.
+
 - The [producer metadata publication proposal](producer_metadata_publication.md) is paired; Q1–Q5 await owner approval.
 - The nine module designs remain EN/JA translations: [range](range.md), [server](server.md), [snapshot](snapshot.md), [diagnostics](diagnostics.md), [build bridge](build_bridge.md), [metadata](metadata.md), [navigation](navigation.md), [code actions](code_action.md), and [explanations](explain.md).
 - The [validator contract proposal](code_action_validators.md) is also paired; its options await owner approval.
