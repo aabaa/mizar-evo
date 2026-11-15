@@ -18,12 +18,12 @@
 |---|---|---|---|
 | range | [range.md](range.md)（task 2） | `src/range_mapper.rs` | [x] |
 | server | [server.md](server.md)（task 4） | `src/server.rs` | [x] |
-| snapshot | `snapshot.md`（task 6） | `src/snapshot.rs` | [ ] |
+| snapshot | `snapshot.md`（task 6） | `src/server.rs` | [x] |
 | diagnostics | `diagnostics.md`（task 8） | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md`（task 10） | `src/build_bridge.rs` | [x] |
 | metadata | `metadata.md`（task 12） | `src/metadata.rs` | [x] |
-| navigation | `navigation.md`（task 14） | `src/navigation.rs` | [ ] |
-| code_action | `code_action.md`（task 16） | `src/code_action.rs` | [ ] |
+| navigation | `navigation.md`（task 14） | `src/server.rs`（構文 token のみ） | [ ] |
+| code_action | `code_action.md`（task 16） | `src/diagnostics.rs`（local fix） | [x] |
 | explain | `explain.md`（task 18） | `src/explain.rs` | [x] |
 
 `mizar-lsp` はエディタ向けプロトコルブリッジを所有する: open バッファの
@@ -239,8 +239,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
     - 依存: 11。仕様: 全モジュール仕様。
 
-22. **ソース/仕様対応監査。** [ ]
+22. **ソース/仕様対応監査。** [x]
     - 契約: [LSP-SOURCE-SPEC-AUDIT](../../task_contracts/ja/LSP-SOURCE-SPEC-AUDIT.md)。
+    - [対応表と不足の所有者](../en/source_spec_correspondence.md)。保留 consumer は未完了のままとする。
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 21。仕様: 全モジュール仕様と本 TODO。
@@ -292,6 +293,26 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 36. **[Open document lifetime handles](../../task_contracts/ja/LSP-OPEN-DOCUMENT-LIFETIME.md).** [x]
 
 37. **[元の native OpenBuffer 捕捉](../../task_contracts/ja/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md)。** [x]
+
+38. **保留 code-action consumer。** [ ]
+    - 監査 G4: artifact/source hash と explanation/missing-facts validator の所有契約後、安全な artifact-assisted action と command 実行時 handle 再検証を追加する。それまでは除外を維持し、hash や command encoding を発明しない。
+    - 依存: 17、上流 validator。仕様: [code actions](code_action.md#request-sources-and-conversion)。
+
+39. **Native feature payload 配信の検証。** [ ]
+    - 監査 G4: genuine 診断 producer が fix/explanation handle と backing content を供給した後、positive host 配信と stale 元ソース位置を組み合わせて検証する。typed 変換 fixture と区別し、producer は上流に置く。
+    - 依存: 17、19、native payload producer。仕様: [action tests](code_action.md#test-design)、[explanation tests](explain.md#test-design)。
+
+40. **実行中 session の bridge cancellation 検証。** [ ]
+    - 監査 G5: Driver が対応する実行 seam を提供後、genuine nonterminal session で supersede/Shutdown cancellation を検証する。失敗時非 cancel と lane 分離を維持し、架空の acceptance や scheduler 方針変更を行わない。
+    - 依存: 11、owner 提供の nonterminal Driver 実行。仕様: [bridge cancellation](build_bridge.md#supersede-and-terminal-lifecycle)。
+
+41. **Non-range 診断配信の契約。** [ ]
+    - 監査 G6: source-load/non-range 表示を owner が承認した後、wire 変換と実配信テストを追加する。それまでは batch 全体の明示的拒否を維持し、新しい意味選択は owner へ戻す。
+    - 依存: 9、owner の表示決定。仕様: [diagnostic ranges](diagnostics.md#range-conversion)。
+
+42. **Lightweight 診断 overlay の保存と分離。** [ ]
+    - 監査 G8: 既存の source/retention 規則に従い、仕様の version ごとの診断 overlay 保存・置換と保持 read を実装し、semantic build index、CLI、VerifiedArtifact からの分離を検証する。import-discovery overlay は別物。host/producer 統合は task26/DRIVER-G-012 に残す。
+    - 依存: 9、native frontend/overlay producer 対応。仕様: [unsaved-text overlays](diagnostics.md#unsaved-text-overlays)。
 
 ## 推奨検証
 

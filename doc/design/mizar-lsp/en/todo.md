@@ -19,12 +19,12 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 |---|---|---|---|
 | range | [range.md](range.md) (task 2) | `src/range_mapper.rs` | [x] |
 | server | [server.md](server.md) (task 4) | `src/server.rs` | [x] |
-| snapshot | [snapshot.md](snapshot.md) (task 6) | `src/snapshot.rs` | [ ] |
+| snapshot | [snapshot.md](snapshot.md) (task 6) | `src/server.rs` | [x] |
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [x] |
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [x] |
-| navigation | `navigation.md` (task 14) | `src/navigation.rs` | [ ] |
-| code_action | `code_action.md` (task 16) | `src/code_action.rs` | [ ] |
+| navigation | `navigation.md` (task 14) | `src/server.rs` (syntax tokens only) | [ ] |
+| code_action | `code_action.md` (task 16) | `src/diagnostics.rs` (local fixes) | [x] |
 | explain | `explain.md` (task 18) | `src/explain.rs` | [x] |
 
 `mizar-lsp` owns the editor-facing protocol bridge: open-buffer source
@@ -239,8 +239,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 11. Spec: all module specs.
 
-22. **Source/spec correspondence audit.** [ ]
+22. **Source/spec correspondence audit.** [x]
     - Contract: [LSP-SOURCE-SPEC-AUDIT](../../task_contracts/en/LSP-SOURCE-SPEC-AUDIT.md).
+    - [Correspondence and owned gaps](source_spec_correspondence.md); deferred consumers remain open.
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 21. Spec: all module specs and this TODO.
@@ -293,6 +294,26 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 36. **[Open document lifetime handles](../../task_contracts/en/LSP-OPEN-DOCUMENT-LIFETIME.md).** [x]
 
 37. **[Originating native OpenBuffer capture](../../task_contracts/en/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md).** [x]
+
+38. **Deferred code-action consumers.** [ ]
+    - Audit G4: own artifact/source-hash and explanation/missing-facts validators, then add safe artifact-assisted actions and execution-time command handle revalidation. Preserve filtering until those owner contracts exist; no invented hashes or command encoding.
+    - Deps: 17, upstream validators. Spec: [code actions](code_action.md#request-sources-and-conversion).
+
+39. **Native feature payload delivery evidence.** [ ]
+    - Audit G4: after genuine diagnostic producers attach fixes/explanation handles and backing content, test positive host delivery and stale original-source locations together; keep typed conversion fixtures distinct. Producer work stays upstream.
+    - Deps: 17, 19, native payload producers. Spec: [action tests](code_action.md#test-design), [explanation tests](explain.md#test-design).
+
+40. **Running-session bridge cancellation evidence.** [ ]
+    - Audit G5: test supersede and Shutdown cancellation through genuine nonterminal sessions when Driver supports that execution seam; preserve failure/no-cancel and lane isolation controls. No synthetic acceptance or scheduler policy change.
+    - Deps: 11, owner-supported nonterminal Driver execution. Spec: [bridge cancellation](build_bridge.md#supersede-and-terminal-lifecycle).
+
+41. **Non-range diagnostic delivery contract.** [ ]
+    - Audit G6: obtain owner-approved source-load/non-range presentation before adding wire conversion and actual delivery tests; retain explicit whole-batch refusal meanwhile. Any new semantic choice returns to the owner.
+    - Deps: 9, owner presentation decision. Spec: [diagnostic ranges](diagnostics.md#range-conversion).
+
+42. **Lightweight diagnostic overlay storage and isolation.** [ ]
+    - Audit G8: implement the specified version-keyed diagnostic overlay store/replacement and retained reads under existing source/retention rules; test semantic-build-index, CLI and VerifiedArtifact isolation. Import-discovery overlays are separate. Host/producer integration stays with task26/DRIVER-G-012.
+    - Deps: 9, native frontend/overlay producer support. Spec: [unsaved-text overlays](diagnostics.md#unsaved-text-overlays).
 
 ## Recommended Verification
 
