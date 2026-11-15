@@ -59,6 +59,91 @@ fn raw_shell_classes_have_independent_legend_and_delta_oracle() {
             0,2,1,1,0
         ]})
     );
+
+    // String contents are not source tokens, even when they spell reserved
+    // words, numerals, or operators. Both supported delimiters are covered.
+    for (id, uri, text) in [
+        (
+            3,
+            "file:///latex-double.miz",
+            r#"@latex("x theorem 1 = y")"#,
+        ),
+        (4, "file:///latex-single.miz", "@latex('x theorem 1 = y')"),
+    ] {
+        open(&mut server, uri, text);
+        assert_eq!(tokens(&mut server, id, Some(uri)), json!({"data":[]}));
+    }
+
+    // Keep the declaration keyword, argument words, delimiters, and numeral
+    // visible around either form of the same quoted operator spelling.
+    for (id, uri, quote) in [
+        (5, "file:///operator-double.miz", '"'),
+        (6, "file:///operator-single.miz", '\''),
+    ] {
+        let text = format!("infix_operator ( {quote}x theorem 1 = y{quote} , left , 80 )");
+        open(&mut server, uri, &text);
+        assert_eq!(
+            tokens(&mut server, id, Some(uri)),
+            json!({"data":[0,0,14,0,0, 0,15,1,1,0, 0,20,1,1,0, 0,2,4,0,0, 0,5,1,1,0, 0,2,2,2,0, 0,3,1,1,0]})
+        );
+    }
+
+    // Escaped delimiters and backslashes do not end a string scan early.
+    for (id, uri, text) in [
+        (
+            7,
+            "file:///escaped-double.miz",
+            r#"@latex("say \" theorem 1 = y \\ theorem 2")
+theorem"#,
+        ),
+        (
+            8,
+            "file:///escaped-single.miz",
+            r#"@latex('say \' theorem 1 = y \\ theorem 2')
+theorem"#,
+        ),
+    ] {
+        open(&mut server, uri, text);
+        assert_eq!(
+            tokens(&mut server, id, Some(uri)),
+            json!({"data":[1,0,7,0,0]})
+        );
+    }
+
+    // A comma remains the argument boundary across comments and layout.
+    let uri = "file:///comma-string.miz";
+    open(
+        &mut server,
+        uri,
+        "@latex(\"first\", :: comment\n \"x theorem 1 = y\")",
+    );
+    assert_eq!(
+        tokens(&mut server, 9, Some(uri)),
+        json!({"data":[0,16,10,3,0]})
+    );
+
+    // The surrounding shell tokens use raw UTF-16 columns. The string has a
+    // BMP character and a supplementary-plane character before the semicolon;
+    // following-line tokens retain ordinary line-relative deltas.
+    let uri = "file:///tokens-around-string.miz";
+    open(
+        &mut server,
+        uri,
+        "theorem X : 1 = @latex(\"雪😀 theorem 1 = y\") ;\ntheorem Y : 2 = 3 ;",
+    );
+    assert_eq!(
+        tokens(&mut server, 10, Some(uri)),
+        json!({"data":[0,0,7,0,0, 0,10,1,1,0, 0,2,1,2,0, 0,2,1,1,0, 0,30,1,1,0, 1,0,7,0,0, 0,10,1,1,0, 0,2,1,2,0, 0,2,1,1,0, 0,2,1,2,0, 0,2,1,1,0]})
+    );
+
+    // Quotes that are part of a postfix symbol or identifier do not put the
+    // scanner into string mode, so later code tokens remain visible.
+    let uri = "file:///quotes-outside-arguments.miz";
+    open(&mut server, uri, "f\" theorem X' : 1 = 2 ;");
+    assert_eq!(
+        tokens(&mut server, 11, Some(uri)),
+        json!({"data":[0,3,7,0,0, 0,11,1,1,0, 0,2,1,2,0, 0,2,1,1,0, 0,2,1,2,0, 0,2,1,1,0]})
+    );
 }
 
 #[test]
@@ -106,6 +191,13 @@ fn incomplete_raw_input_keeps_recognized_tokens_and_omits_unknowns() {
             0,2,1,1,0,
             0,4,1,1,0
         ]})
+    );
+
+    let uri = "file:///unterminated-string-argument.miz";
+    open(&mut server, uri, "theorem X : 1 = @latex(\"x theorem 1 = y");
+    assert_eq!(
+        tokens(&mut server, 3, Some(uri)),
+        json!({"data":[0,0,7,0,0, 0,10,1,1,0, 0,2,1,2,0, 0,2,1,1,0]})
     );
 }
 

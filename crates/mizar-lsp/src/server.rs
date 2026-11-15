@@ -912,12 +912,37 @@ impl Server {
                             .iter()
                             .map(|comment| (comment.span, 3u32))
                             .collect::<Vec<_>>();
+                        // Keep argument-string context across raw chunks: layout
+                        // inside a literal must not expose its contents as code.
+                        let (mut quote, mut escaped, mut previous) = (None, false, None);
                         for raw in mizar_lexer::scan_raw_recoverable(&source.lexical_text).tokens {
-                            if matches!(
-                                raw.kind,
-                                mizar_lexer::RawTokenKind::Layout
-                                    | mizar_lexer::RawTokenKind::Error
-                            ) {
+                            let mut string_content = quote.is_some();
+                            for ch in raw.lexeme.chars() {
+                                if let Some(delimiter) = quote {
+                                    if escaped {
+                                        escaped = false;
+                                    } else if ch == '\\' {
+                                        escaped = true;
+                                    } else if ch == delimiter {
+                                        quote = None;
+                                    }
+                                } else if matches!(ch, '"' | '\'')
+                                    && matches!(previous, Some('(' | ','))
+                                {
+                                    quote = Some(ch);
+                                    string_content = true;
+                                }
+                                if !matches!(ch, ' ' | '\t' | '\r' | '\n') {
+                                    previous = Some(ch);
+                                }
+                            }
+                            if string_content
+                                || matches!(
+                                    raw.kind,
+                                    mizar_lexer::RawTokenKind::Layout
+                                        | mizar_lexer::RawTokenKind::Error
+                                )
+                            {
                                 continue;
                             }
                             let Ok(tokens) = mizar_lexer::lex(&raw.lexeme) else {
