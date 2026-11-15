@@ -38,12 +38,12 @@
 \node[heading,text=blue!60!black] at (126mm,12mm) {Extracted evidence};
 \node[anchor=north west,align=left] at (126mm,5mm)
   {Compose substitutions\\along each source branch:};
-\node[clause,text width=43mm,align=left] at (150mm,-18mm)
-  {$F_1:\ x\mapsto y\mapsto a$\\[2mm]
-   $F_2:\ y\mapsto a$\\[2mm]
+\node[clause,text width=43mm,align=left,anchor=north west] at (126mm,-9mm)
+  {$F_1:\ x\mapsto y\mapsto a$\\[1mm]
+   $F_2:\ y\mapsto a$\\[1mm]
    $\Longrightarrow\ F_1[x:=a]$\\[1mm]
    $\Longrightarrow\ F_2[y:=a]$};
-\node[anchor=north west,align=left,font=\sffamily\fontsize{11}{13}\selectfont] at (126mm,-38mm)
+\node[anchor=north west,align=left,font=\sffamily\fontsize{11}{13}\selectfont] at (126mm,-41mm)
   {Retain $F_1,F_2,H$, bindings,\\context and goal $R(a)$.\\[1mm]
    The kernel checks evidence;\\it does not replay this tree.};
 \end{tikzpicture}

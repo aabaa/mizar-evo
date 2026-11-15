@@ -2,9 +2,9 @@
 
 Working materials for the Mizar Evo talk at TPP 2026, the 22nd Theorem Proving
 and Provers meeting, RIKEN AIP Tokyo Office, November 16-17, 2026. The English
-deck and spoken script follow the reviewed Japanese version, with 32 main
-slides and five backups. The provisional 45-minute slot allows 36.5 minutes
-of presentation, seven minutes of questions, and 1.5 minutes of buffer.
+deck and spoken script follow the reviewed Japanese version, with 31 main
+slides and five backups. The provisional 45-minute slot allows 35.25 minutes
+of presentation, seven minutes of questions, and 2.75 minutes of buffer.
 Confirm the official slot and question time with the organizers. Aim for
 35–38 minutes, never over 40.
 
@@ -61,7 +61,7 @@ story is evidence, formula instantiation, and a trusted SAT check.
   plus `resolution_evidence` and `sat_evidence_check` shared by both checking sections.
 - `references.bib` - seed bibliography. Verify metadata before the final talk.
 
-## Storyline (Both Languages, 36.5 Minutes)
+## Storyline (Both Languages, 35.25 Minutes)
 
 History traces early experimental processors, the PC port, PC-Mizar and MML,
 then Mizar-rs and Evo before the six-principle table in frame 0.5. Sections 1–6
@@ -76,12 +76,12 @@ project origin with its design timeline, and design expansion with AI implementa
 | 1. Logical foundation | 9–11 | 2 | 1.1–1.2 |
 | 2. Readable mathematics | 11–16 | 5 | 2.1–2.6 |
 | 3. Generic mathematics | 16–19 | 3 | 3.1–3.4 |
-| 4. Verified computation | 19:00–24:15 | 5.25 | 4.1–4.5 |
-| 5. Development infrastructure | 24:15–27:15 | 3 | 5.1–5.3 |
-| 6. Checking and automation | 27:15–32:30 | 5.25 | 6.1–6.4 |
-| Status, roadmap, closing | 32:30–36:30 | 4 | 7.1–7.2 |
-| Questions (outside main talk) | 36.5–43.5 | 7 | selected backups |
-| Buffer | 43.5–45 | 1.5 | |
+| 4. Verified computation | 19:00–23:00 | 4 | 4.1–4.4 |
+| 5. Development infrastructure | 23:00–26:00 | 3 | 5.1–5.3 |
+| 6. Checking and automation | 26:00–31:15 | 5.25 | 6.1–6.4 |
+| Status, roadmap, closing | 31:15–35:15 | 4 | 7.1–7.2 |
+| Questions (outside main talk) | 35.25–42.25 | 7 | selected backups |
+| Buffer | 42.25–45 | 2.75 | |
 
 For 35 minutes, skip 3.3 (40 seconds), shorten 3.4 to 15 seconds (saving 20),
 and shorten the design-expansion part of 0.4 to 30 seconds (saving 30).
@@ -96,20 +96,21 @@ Kernel details stay in part 6.
 
 Frame 6.2 has 60 seconds for the ATP flow diagram, taking another 15 seconds
 from the closing section. Frames 6.3-6.4 show a resolution tree, composed substitutions, kernel preprocessing,
-and all clauses of a Tseitin SAT encoding;
+and all four clauses of the propositional SAT encoding;
 external resolution steps are not replayed as kernel acceptance evidence.
 The independent instance finder is planned and unimplemented at the fixed snapshot;
 the trace-extraction diagram is a candidate-generation sketch.
-Frames 2.1-2.6 follow type, registration, then overload: structure
-declarations in current Mizar and Evo (2.2), then strict field sets and
-why a uniquely determined identity can be a property (2.2a); inline parents versus separate
+Frames 2.1-2.6 follow type, overload, then registration: structure
+declarations in current Mizar and Evo (2.2), then strict field sets,
+equal fields giving equal strict objects, and properties (2.2a); inline parents versus separate
 inheritance declarations (2.3), then the Unital mode and its unit implementation,
-reused as zero through the selected
-LoopStr view (2.4). Labeled registration chains follow in 2.5, and definition
-selection with explicit inheritance views in 2.6. The latter distinguishes
-the additive AddMagma and multiplicative MulMagma views by obtaining zero
-or one as the neutral element of the same ring.
-Frames 2.2 and 2.2a each take 30 seconds; 2.6 takes 60 seconds, keeping part 2 within five minutes.
+reused as zero through the selected LoopStr view, with AddMagma as the second
+parent that shares add (2.4). Definition selection with explicit inheritance
+views follows in 2.5; it distinguishes the additive AddMagma and
+multiplicative MulMagma views by obtaining zero or one as the neutral element
+of the same ring. Labeled registration chains and a theorem that uses them
+without `by` close the part in 2.6.
+Frames 2.2 and 2.2a each take 30 seconds; 2.5 and 2.6 take 60 seconds each, keeping part 2 within five minutes.
 Frames 3.1-3.2 contrast per-type result redefinitions, registrations and proofs
 for complex, real, rational, integer and natural values with one generic sum.
 Frame 3.3 shows a scheme as a theorem; 3.4 gives brief struct VectorSpace[K]
@@ -117,13 +118,10 @@ and attr dense[M] examples of shared type/value parameterization, including
 `Vector of K` / `M-dense` as syntax sugar for `Vector[K]` / `dense[M]`.
 Part 3 keeps its three-minute budget (45/60/40/35 seconds);
 4.1 summarizes the basic assignment, branch, loop and return Hoare rules;
-4.3 repeats the Euclid body with numbered annotations matching the table of
-establishment, preservation, termination and exit obligations;
-4.4 explains promotion through checked termination, contract citation, and
-`by computation` using a concrete-input example. Default computation also
-trusts the MVM result; kernel replay is a separate path (MVM execution remains planned);
-4.5 connects lambda function notation, reflected syntax and verified symbolic
-differentiation. Part 4 uses 5.25 minutes (45/75/75/60/60 seconds), taking 15 seconds from the closing section;
+4.3 explains promotion through checked termination, contract citation, and
+`by computation` using a concrete-input example;
+4.4 connects lambda function notation, reflected syntax and verified symbolic
+differentiation. Part 4 uses 4 minutes (45/75/60/60 seconds), taking 15 seconds from the closing section;
 5.1 lists all ten environment directives and emphasizes notation/definition
 precedence and order dependence as the central authoring difficulty;
 5.2 then introduces imports. Frame 6.1 shows the planned native-hammer flow from

@@ -169,7 +169,6 @@ def build(gen, deck: dict) -> None:
                 "| Period | Main milestones |",
                 "| Period | Development |",
                 "### Developing the language design",
-                "| Point | Proof obligation | Mathematical reason |",
                 "| equalities / expansions | Equality / definition-expansion information |",
                 "| Area | Challenge in current Mizar | Design principle |",
                 "| Area | Now | Est. total | Size ratio | Scope / remaining work |",
@@ -177,11 +176,11 @@ def build(gen, deck: dict) -> None:
                 "| 時期 | 開発内容 |",
                 "### 言語設計の深化",
                 "thus euclid_gcd(12,8) = 4 by computation;",
-                "| 箇所 | 証明義務 | 数学的な根拠 |",
+                "scheme NatInd { P[Nat] } :",
                 "| equalities / expansions | 等式 / 定義展開の情報 |",
                 "| 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |",
                 "![Resolution tree with composed substitutions and extracted evidence](figures/resolution_evidence.pdf)",
-                "![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)",
+                "![Evidence checks, ground instances and a three-variable four-clause SAT refutation](figures/sat_evidence_check.pdf)",
                 "| 領域 | 実装済み | 完成時見積 | 規模比率 | 限定実装と残る範囲 |",
             )) else split_frame_lines(lines)
         )
@@ -203,9 +202,9 @@ def build(gen, deck: dict) -> None:
                     label = r"\par\noindent{\footnotesize\bfseries " + caption + r"\par}"
                     generated = [tex.replace(heading, label) for tex in generated]
         for annotation in (
-            "規模比率 = 実装済み / 完成時見積。機能完成率ではない。見積は暫定。テスト・コメント・依存・MML 移植は対象外。",
+            "規模比率 = 実装済み / 完成時見積。機能完成率ではない。",
             "Source: 11月4日固定版 `ae4326d1e`。再見積の前提: `draft.ja.md` §7。",
-            "Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.",
+            "Size ratio = current / estimated total code; not feature completeness.",
             "Source: November 4 snapshot `ae4326d1e`; revised estimate assumptions: `draft.ja.md` §7.",
             "Source: Matuszewski & Rudnicki (2005); Carneiro (ITP 2023), Table 1.",
             "JSPS KAKENHI, Scientific Research (C), awarded in 2024: 24K14897, “Renewing the language specification of a set-theory-based proof assistant” (title translated).",
@@ -223,7 +222,6 @@ def build(gen, deck: dict) -> None:
             (("Call (real R / complex C)[^1]", "Result type"), "lX"),
             (("Syntax", "Conditions to check (partial correctness)[^1]"), "lX"),
             (("Algorithm form", "Meaning under requires"), "lX"),
-            (("Point", "Proof obligation", "Mathematical reason"), "llX"),
             (("Directives", "What they import"), "lX"),
             (("Stage", "What authors can inspect"), "lX"),
         ) if deck["input"].name == "slides.md" else (
@@ -235,7 +233,6 @@ def build(gen, deck: dict) -> None:
             (("呼び出し（実数 R・複素数 C）[^1]", "結果型"), "lX"),
             (("構文", "検査する条件（部分正当性）[^1]"), "lX"),
             (("algorithm の形", "requires の下での意味"), "lX"),
-            (("箇所", "証明義務", "数学的な根拠"), "llX"),
             (("一覧", "取り込むもの"), "lX"),
             (("段階", "著者が確認できるもの"), "lX"),
         )
@@ -279,6 +276,23 @@ def build(gen, deck: dict) -> None:
             flex = r">{\raggedright\arraybackslash}X"
             table = table.replace("{" + flex * 3 + "}", "{l" + flex * 2 + "}")
             generated[index] = tex[:start] + table + tex[end:]
+        # Frame 3.3: classical scheme and template theorem side by side.
+        for index, tex in enumerate(generated):
+            anchor = tex.index("\nscheme NatInd { P[Nat] } :")
+            start = tex.rindex("\\smallskip\n\\textbf{", 0, anchor)
+            middle = tex.index("\\end{lstlisting}", anchor) + len("\\end{lstlisting}")
+            end = tex.index("\\end{lstlisting}", middle) + len("\\end{lstlisting}")
+            left = tex[start:middle].replace("\\ttfamily\\small", "\\ttfamily\\footnotesize")
+            right = tex[middle:end].replace("\\ttfamily\\small", "\\ttfamily\\footnotesize")
+            right = right.replace("\n\\smallskip\n", "\n", 1)
+            generated[index] = (
+                tex[:start]
+                + "\\begin{columns}[T,onlytextwidth]\n"
+                + "\\begin{column}{0.41\\textwidth}\n" + left + "\n\\end{column}\n"
+                + "\\begin{column}{0.57\\textwidth}\n\\smallskip" + right + "\n\\end{column}\n"
+                + "\\end{columns}\n\\smallskip"
+                + tex[end:]
+            )
         detail_tex, notes_tex = generated
     output_path.write_text(detail_tex, encoding="utf-8")
     notes_output_path.write_text(notes_tex, encoding="utf-8")

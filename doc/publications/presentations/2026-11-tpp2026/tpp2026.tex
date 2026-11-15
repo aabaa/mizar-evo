@@ -227,7 +227,7 @@ May 2026 & Implementation design → test harness → minimal lexer \\
 \textbf{Area} & \textbf{Challenge in current Mizar} & \textbf{Design principle} \\
 \midrule
 \textcolor{blue!55!black}{\textbf{§1 Foundation}} & Keep the logic and MML while replacing the processor & Keep FOL / set theory and a small kernel \\
-\textcolor{blue!55!black}{\textbf{§2 Writing}} & Trace implicit type, registration, and overload choices & Keep mathematical abstractions; explain implicit choices \\
+\textcolor{blue!55!black}{\textbf{§2 Writing}} & Trace implicit type, overload, and registration choices & Keep mathematical abstractions; explain implicit choices \\
 \textcolor{blue!55!black}{\textbf{§3 Generics}} & Separate mechanisms for definitions, theorems, and schemes & Unify generic mechanisms with templates \\
 \textcolor{blue!55!black}{\textbf{§4 Computation}} & Connect proofs to executable procedures & Check algorithm contracts, invariants, and termination \\
 \textcolor{blue!55!black}{\textbf{§5 Tools}} & Dependencies, distribution, incremental checking, IDE & Modules, namespaces, packages, incremental builds, LSP \\
@@ -340,7 +340,7 @@ proof ... end;
 \end{frame}
 
 \section{Part 2. Readable Mathematics}
-\begin{frame}[fragile,t]{2.1 - Trace type, registration, and overload choices}
+\begin{frame}[fragile,t]{2.1 - Trace type, overload, and registration choices}
 Readable mathematics relies on many automatic decisions.
 
 \begin{itemize}
@@ -348,8 +348,8 @@ Readable mathematics relies on many automatic decisions.
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{type: which types can this object be used as?}} Follow attributes and inheritance. Example: Group → Magma, with a unique path.
-\item \textcolor{blue!55!black}{\textbf{registration: which rules supplied the required attributes?}} Example: the chain empty → finite → countable.
 \item \textcolor{blue!55!black}{\textbf{overload: which definition and view were selected?}} Distinguish definitions with the same notation, or addition and multiplication in a ring.
+\item \textcolor{blue!55!black}{\textbf{registration: which rules supplied the required attributes?}} Example: the chain empty → finite → countable.
 \end{itemize}
 \textcolor{blue!55!black}{\textbf{Keep natural writing and automatic rules, while tracing the reasons for implicit choices.}}
 
@@ -362,8 +362,8 @@ Readable mathematics relies on many automatic decisions.
 \setlength{\parskip}{0pt}
 \item Readable mathematics relies on many automatic decisions.
 \item \textcolor{blue!55!black}{\textbf{type: which types can this object be used as?}} Follow attributes and inheritance. Example: Group → Magma, with a unique path.
-\item \textcolor{blue!55!black}{\textbf{registration: which rules supplied the required attributes?}} Example: the chain empty → finite → countable.
 \item \textcolor{blue!55!black}{\textbf{overload: which definition and view were selected?}} Distinguish definitions with the same notation, or addition and multiplication in a ring.
+\item \textcolor{blue!55!black}{\textbf{registration: which rules supplied the required attributes?}} Example: the chain empty → finite → countable.
 \item \textcolor{blue!55!black}{\textbf{Keep natural writing and automatic rules, while tracing the reasons for implicit choices.}}
 \end{itemize}
 \smallskip
@@ -372,7 +372,7 @@ Readable mathematics relies on many automatic decisions.
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; registration: 2.5; overload / views: 2.6.
+\item Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; overload / views: 2.5; registration: 2.6.
 \end{itemize}
 }
 \end{frame}
@@ -427,12 +427,24 @@ end;
 \end{frame}
 
 \begin{frame}[fragile,t]{2.2a - Why separate fields and properties?}
+\smallskip
+\textbf{Current Mizar: equal fields give equal strict objects}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+reserve M1, M2 for strict addMagma;
+theorem
+  the carrier of M1 = the carrier of M2 &
+  the addF of M1 = the addF of M2 implies M1 = M2;
+
+:: Without strict this fails: for an addLoopStr L,
+:: L and addMagma(# the carrier of L, the addF of L #)
+:: have the same carrier and addF, but L also has ZeroF.
+\end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{Current strict: limit the fields of a structure.}} For strict objects of the same structure, equal fields mean equal objects.
-\item \textcolor{blue!55!black}{\textbf{Remaining issue: a derived value is still stored data.}} A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+\item \textcolor{blue!55!black}{\textbf{Without strict, equal fields are not enough.}} An addLoopStr is also an addMagma, but it has the extra field ZeroF.
 \item \textcolor{blue!55!black}{\textbf{Evo property: derive a value without an extra stored field.}} Keep it separate from fields; obtain its value from an applicable implementation and proofs.
 \end{itemize}
 \note{
@@ -442,8 +454,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item Current Mizar: equal fields give equal strict objects.
 \item \textcolor{blue!55!black}{\textbf{Current strict: limit the fields of a structure.}} For strict objects of the same structure, equal fields mean equal objects.
-\item \textcolor{blue!55!black}{\textbf{Remaining issue: a derived value is still stored data.}} A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+\item \textcolor{blue!55!black}{\textbf{Without strict, equal fields are not enough.}} An addLoopStr is also an addMagma, but it has the extra field ZeroF.
 \item \textcolor{blue!55!black}{\textbf{Evo property: derive a value without an extra stored field.}} Keep it separate from fields; obtain its value from an applicable implementation and proofs.
 \end{itemize}
 \smallskip
@@ -452,8 +465,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. When ZeroF must satisfy the two-sided identity laws, the stored value is already uniquely determined by the operation. Source: Mizar in a Nutshell (\url{https://www.chimaira.org/archive/MizarInANutshell\_1980-4451-1-PB.pdf}), §2.3.5.
+\item Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. Source: Mizar in a Nutshell (\url{https://www.chimaira.org/archive/MizarInANutshell\_1980-4451-1-PB.pdf}), §2.3.5.
 \item Strict objects of the same structure are equal when all their fields agree (Kaliszyk \& P\k{a}k, §8.1 (\url{https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf})). Evo also limits extensionality to exact\_S instances of the same structure S (spec §§5.8.4–5.8.5). Properties add no stored fields; this does not identify different structures or views unconditionally.
+\item Code: a sketch, not an exact MML quotation; proof omitted. A strict object is identified with the aggregate of its fields, so equal fields give equal objects. MML uses this, for example, to prove uniqueness when a functor returns a strict structure (GROUP\_2:def 7, (1).G).
 \end{itemize}
 }
 \end{frame}
@@ -506,8 +520,8 @@ end;
 \end{frame}
 
 \begin{frame}[fragile,t]{2.4 - type: implement unit for Unital, reuse it as zero}
-has\_unit states that a two-sided identity exists; it does not depend on unit (sketch):
-
+\smallskip
+\textbf{Implement unit; AddMagma is AddLoopStr's other parent}~\badgeSketch
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   mode UnitalDef: Unital is has_unit LoopStr;
@@ -515,16 +529,19 @@ definition
   property M.unit means
     for x being Element of M.carrier holds
       M.binop(it,x) = x & M.binop(x,it) = x;
-  existence proof ... end;
-  uniqueness proof ... end;
 end;
+struct AddMagma where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+end;
+inherit AddLoopStr extends AddMagma;
 \end{lstlisting}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{If A's selected LoopStr view is Unital, reuse its unit implementation as zero.}}
-\item \texttt{property zero from unit} gives \texttt{A.zero = (A qua LoopStr).unit}. No new zero implementation is needed.
+\item \textcolor{blue!55!black}{\textbf{add comes from both LoopStr.binop and AddMagma.add.}} Both paths must reach the same Magma.binop.
+\item \textcolor{blue!55!black}{\textbf{If A's LoopStr view is Unital, A.zero = (A qua LoopStr).unit.}} Hence A.add(A.zero, x) = x = A.add(x, A.zero), with no new implementation.
 \end{itemize}
 \note{
 \smallskip
@@ -533,9 +550,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item has\_unit states that a two-sided identity exists; it does not depend on unit.
-\item \textcolor{blue!55!black}{\textbf{If A's selected LoopStr view is Unital, reuse its unit implementation as zero.}}
-\item \texttt{property zero from unit} gives \texttt{A.zero = (A qua LoopStr).unit}. No new zero implementation is needed.
+\item Implement unit; AddMagma is AddLoopStr's other parent.
+\item \textcolor{blue!55!black}{\textbf{add comes from both LoopStr.binop and AddMagma.add.}} Both paths must reach the same Magma.binop.
+\item \textcolor{blue!55!black}{\textbf{If A's LoopStr view is Unital, A.zero = (A qua LoopStr).unit.}} Hence A.add(A.zero, x) = x = A.add(x, A.zero), with no new implementation.
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -543,68 +560,13 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/07.modes.md} §7.4.1, 7.8.2; \texttt{05.structures.md} §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr. The has\_unit definition is in \texttt{draft.ja.md}; proof bodies are omitted. Existence follows from the mode assumption, uniqueness by applying the operation to two identities.
+\item Source: \texttt{doc/spec/en/07.modes.md} §7.4.1, 7.8.2; \texttt{05.structures.md} §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr; \texttt{sample\_codes.md}, magma.miz and loopstr.miz. has\_unit states that a two-sided identity exists and does not refer to unit; its definition is in \texttt{draft.ja.md}. The existence and uniqueness obligations of means are omitted for space: existence follows from the mode assumption, uniqueness by applying the operation to two identities. AddMagma itself extends Magma with add from binop (omitted).
 \item A is AddLoopStr, and the selected LoopStr view must satisfy Unital. Do not mix facts from different views. This example has no overlapping implementations; overlaps require coherence.
 \end{itemize}
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.5 - registration: automatic chains hide dependencies}
-\textcolor{blue!55!black}{\textbf{Automatic rule chains hide dependencies at the point of use.}}
-
-\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-\end{lstlisting}
-\par\noindent{\footnotesize\bfseries Table 5. Registration paths recorded by the new specification\par}
-\begin{footnotesize}
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lll}
-\toprule
-\textbf{Starting fact} & \textbf{Derived fact} & \textbf{Recorded rule} \\
-\midrule
-S is empty & S is finite & EmptyImpliesFinite \\
-S is finite & S is countable & FiniteImpliesCountable \\
-\bottomrule
-\end{tabular}
-\end{footnotesize}
-
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Declaring \texttt{empty} gives \texttt{finite} and then \texttt{countable} implicitly. No rule citation with \texttt{by} is needed.
-\item \textcolor{blue!55!black}{\textbf{New specification: keep automatic application, and record rule labels and application paths.}}
-\end{itemize}
-\note{
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{Automatic rule chains hide dependencies at the point of use.}}
-\item Declaring \texttt{empty} gives \texttt{finite} and then \texttt{countable} implicitly. No rule citation with \texttt{by} is needed.
-\item \textcolor{blue!55!black}{\textbf{New specification: keep automatic application, and record rule labels and application paths.}}
-\end{itemize}
-\smallskip
-\textbf{Optional notes and sources:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/17.clusters\_and\_registrations.md} §17.2, 17.4.1, 17.7; \texttt{23.package\_management\_and\_build\_system.md} §23.7.7. Labeled registration example from the new specification; the table is an explanatory trace for an empty set S.
-\item Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{2.6 - overload: two identities in the same ring}
+\begin{frame}[fragile,t]{2.5 - overload: two identities in the same ring}
 \textcolor{blue!55!black}{\textbf{In the same ring R, the additive identity is 0 and the multiplicative identity is 1.}}
 
 \begin{itemize}
@@ -651,6 +613,64 @@ id. (R qua MulMagma);     :: R.one
 \setlength{\parskip}{0pt}
 \item Source: \texttt{doc/spec/en/sample\_codes.md}, IdentityDef, LoopUnitalDef, RingLikeDef; \texttt{19.overload\_resolution.md} §19.2.2–19.3.1; \texttt{05.structures.md} §5.8.3.
 \item Sketch limited to the identity functor id. Assume both views are unital, their identities correspond to R.zero / R.one, and each path to Magma is unique. Definitions: \texttt{draft.ja.md}.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{2.6 - registration: automatic chains hide dependencies}
+\textcolor{blue!55!black}{\textbf{Automatic rule chains hide dependencies at the point of use.}}
+
+\smallskip
+\textbf{Rules and a use, coherence omitted}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+end;
+theorem
+  for S being empty set holds S is countable;
+\end{lstlisting}
+\par\noindent{\footnotesize\bfseries Table 5. Registration paths recorded by the new specification\par}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{lll}
+\toprule
+\textbf{Starting fact} & \textbf{Derived fact} & \textbf{Recorded rule} \\
+\midrule
+S is empty & S is finite & EmptyImpliesFinite \\
+S is finite & S is countable & FiniteImpliesCountable \\
+\bottomrule
+\end{tabular}
+\end{footnotesize}
+
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The theorem needs no \texttt{by}: \texttt{empty} gives \texttt{finite} and then \texttt{countable} implicitly.
+\item \textcolor{blue!55!black}{\textbf{New specification: keep automatic application, and record rule labels and application paths.}}
+\end{itemize}
+\note{
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item \textcolor{blue!55!black}{\textbf{Automatic rule chains hide dependencies at the point of use.}}
+\item Rules and a use, coherence omitted.
+\item The theorem needs no \texttt{by}: \texttt{empty} gives \texttt{finite} and then \texttt{countable} implicitly.
+\item \textcolor{blue!55!black}{\textbf{New specification: keep automatic application, and record rule labels and application paths.}}
+\end{itemize}
+\smallskip
+\textbf{Optional notes and sources:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Source: \texttt{doc/spec/en/17.clusters\_and\_registrations.md} §17.2, 17.4.1, 17.7; \texttt{23.package\_management\_and\_build\_system.md} §23.7.7. Labeled registration example from the new specification; coherence proofs are omitted. The theorem is an explanatory use, and the table is its trace for an empty set S.
+\item Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
 \end{itemize}
 }
 \end{frame}
@@ -769,9 +789,23 @@ end;
 \end{frame}
 
 \begin{frame}[fragile,t]{3.3 - Unify schemes with template theorems\deepdivetag}
+\begin{columns}[T,onlytextwidth]
+\begin{column}{0.41\textwidth}
 \smallskip
-\textbf{Induction as a theorem with a predicate parameter}~\badgeSpec
-\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
+\textbf{Classical scheme (MML):}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
+scheme NatInd { P[Nat] } :
+  for k being Nat holds P[k]
+provided
+  A1: P[0] and
+  A2: for k being Nat st P[k]
+        holds P[k+1];
+\end{lstlisting}
+\end{column}
+\begin{column}{0.57\textwidth}
+\smallskip
+\textbf{Template theorem}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   let P be pred(Nat);
   theorem NatInduction[P]:
@@ -780,12 +814,15 @@ definition
   proof ... end;
 end;
 \end{lstlisting}
+\end{column}
+\end{columns}
+\smallskip
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item A predicate parameter describes a family of first-order theorems, one per substituted predicate.\footnotemark[1]
-\item Explicit instantiation: \texttt{defpred}, followed by \texttt{by NatInduction[P], Base, Step}.
+\item Explicit instantiation: instead of \texttt{from NAT\_1:sch 2(A1,A2)}, \texttt{defpred} followed by an ordinary \texttt{by NatInduction[P], Base, Step}.
 \item Functor parameters are schema-level symbols, not sets. The logic stays first-order.
 \end{itemize}
 \footnotetext[1]{Details: Bia\l{}ystok deck, Story 6 (\texttt{PermProduct[T]} and views with \texttt{qua}); also Backup 1 here.}
@@ -796,9 +833,9 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Induction as a theorem with a predicate parameter.
+\item Template theorem.
 \item A predicate parameter describes a family of first-order theorems, one per substituted predicate.\footnotemark[1]
-\item Explicit instantiation: \texttt{defpred}, followed by \texttt{by NatInduction[P], Base, Step}.
+\item Explicit instantiation: instead of \texttt{from NAT\_1:sch 2(A1,A2)}, \texttt{defpred} followed by an ordinary \texttt{by NatInduction[P], Base, Step}.
 \item Functor parameters are schema-level symbols, not sets. The logic stays first-order.
 \end{itemize}
 \smallskip
@@ -807,6 +844,7 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
+\item The classical scheme is MML \texttt{NAT\_1:sch 2} (NatInd); its proof is omitted for space.
 \item Source: \texttt{doc/spec/en/18.templates.md} §18.2.3, 18.8.2, 18.9. Frame 3.4 shows type / value parameters for structures and attributes.
 \end{itemize}
 \begin{itemize}
@@ -934,7 +972,8 @@ terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
 do
   var x := a;  var y := b;
   while y <> 0 do
-    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);  decreasing y;
+    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);
+    decreasing y;
     const r := x mod y;  x := y;  y := r;
   end;
   return x;
@@ -977,60 +1016,8 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.3 - Euclid: code and proof obligations}
-\smallskip
-\textbf{The body again}~\badgeSketch~{\footnotesize(a,b >= 1; outer context omitted)}
-\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
-var x := a; var y := b; :: (1)
-while y <> 0 do
-  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
-  decreasing y; :: (3)
-  const r := x mod y; x := y; y := r;
-end;
-return x; :: (4)
-\end{lstlisting}
-\par\noindent{\footnotesize\bfseries Table 9. Proof obligations for Euclid's algorithm\par}
-\begin{footnotesize}
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{ll>{\raggedright\arraybackslash}X}
-\toprule
-\textbf{Point} & \textbf{Proof obligation} & \textbf{Mathematical reason} \\
-\midrule
-(1) & Establish the invariant & \texttt{x=a}, \texttt{y=b}; positivity from the precondition \\
-(2) & Preserve the invariant & \texttt{Gcd(x,y)=Gcd(y,r)}; old \texttt{y >= 1}, \texttt{r >= 0} \\
-(3) & Decrease the Nat measure & \texttt{y' = r}, \texttt{0 <= r < y} \\
-(4) & Postcondition at exit & \texttt{y=0}; \texttt{Gcd(a,b) = Gcd(x,0) = x} \\
-\bottomrule
-\end{tabularx}
-\end{footnotesize}
-
-\textcolor{blue!55!black}{\textbf{Check each point using library lemmas for GCD and remainder.}}
-
-\note{
-\smallskip
-\textbf{Read aloud:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item The body again.
-\item \textcolor{blue!55!black}{\textbf{Check each point using library lemmas for GCD and remainder.}}
-\end{itemize}
-\smallskip
-\textbf{Optional notes and sources:}
-\begin{itemize}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Source: \texttt{doc/spec/en/20.algorithm\_and\_verification.md} §20.5, 20.12, 20.13.3. Numbers connect the repeated body to the table. Compute r=x mod y in the old state, then update to (y,r). SAT alone does not know arithmetic. Changing y:=r to y:=x loses the decrease. Specification-based explanation.
-\item Future direction: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and code extraction remain future work.
-\end{itemize}
-}
-\end{frame}
-
-\begin{frame}[fragile,t]{4.4 - terminating and functor promotion}
-\par\noindent{\footnotesize\bfseries Table 10. Algorithm termination and guarantees\par}
+\begin{frame}[fragile,t]{4.3 - terminating and functor promotion}
+\par\noindent{\footnotesize\bfseries Table 9. Algorithm termination and guarantees\par}
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -1052,13 +1039,11 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 \end{lstlisting}
 \smallskip
-\textbf{Use a computed result in a proof}~\badgeSketch~{\footnotesize(MVM not implemented)}
+\textbf{Use a computed result in a proof}~\badgeSketch
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 thus euclid_gcd(12,8) = 4 by computation;
 \end{lstlisting}
 Run a verified algorithm on MVM, the virtual machine, and use its result in a proof.
-
-\textcolor{blue!55!black}{\textbf{The default \texttt{computed} path also trusts MVM. It differs from kernel / SAT rechecking.}}
 
 \note{
 \smallskip
@@ -1070,7 +1055,6 @@ Run a verified algorithm on MVM, the virtual machine, and use its result in a pr
 \item Reason with Euclid's contract.
 \item Use a computed result in a proof.
 \item Run a verified algorithm on MVM, the virtual machine, and use its result in a proof.
-\item \textcolor{blue!55!black}{\textbf{The default \texttt{computed} path also trusts MVM. It differs from kernel / SAT rechecking.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -1084,7 +1068,7 @@ Run a verified algorithm on MVM, the virtual machine, and use its result in a pr
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.5 - Verified expression rewriting: lambda and differentiation}
+\begin{frame}[fragile,t]{4.4 - Verified expression rewriting: lambda and differentiation}
 \smallskip
 \textbf{Write a function directly}~\badgeSketch~{\footnotesize(u is Real)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
@@ -1093,7 +1077,7 @@ u |-> (sin u)*u
 \texttt{differentiate} recursively processes expression forms such as products and sin.
 
 \smallskip
-\textbf{Use it in a derivative proof}~\badgeSketch~{\footnotesize(x is Real; MVM not implemented)}
+\textbf{Use it in a derivative proof}~\badgeSketch~{\footnotesize(x is Real)}
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
   by computation(differentiate(u |-> (sin u)*u));
@@ -1138,7 +1122,7 @@ thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
 \end{frame}
 
 \section{Part 5. Development Infrastructure}
-\begin{frame}[fragile,t]{5.1 - Environment: what must an author import?}
+\begin{frame}[fragile,t]{5.1 - Environment: the equivalent of importing external files}
 \smallskip
 \textbf{Current Mizar, shortened from ALGSTR\_0}~\badgeSketch
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
@@ -1149,7 +1133,7 @@ environ
  registrations ... STRUCT_0;
  theorems STRUCT_0;
 \end{lstlisting}
-\par\noindent{\footnotesize\bfseries Table 11. The ten environment directives\par}
+\par\noindent{\footnotesize\bfseries Table 10. The ten environment directives\par}
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -1204,7 +1188,7 @@ theorems / schemes & Theorems / schemes \\
 import .function;
 import mml.algebra.structure.sorted;
 \end{lstlisting}
-\par\noindent{\footnotesize\bfseries Table 12. Imports and dependency tracking\par}
+\par\noindent{\footnotesize\bfseries Table 11. Imports and dependency tracking\par}
 \begin{footnotesize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -1430,7 +1414,7 @@ thus Q(a) by library.AllPQ, Pa;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Save original formulas, composed substitutions, binding context, target VC, and refutation polarity. Regenerate instances and SAT clauses; details in \texttt{draft.ja.md} §6.
-\item Each blue box defines implication variable s/t and gives four clauses. With unit clauses p and not r, there are five variables and ten clauses. DIMACS is retained in \texttt{draft.ja.md} §6. This is not an execution dump.
+\item The blue box gives the two implication clauses and unit clauses p and not r: three variables, four clauses. This is not an execution dump.
 \item The kernel neither searches for substitutions nor replays external resolution steps. Source: architecture chapters 08, 15, 16.
 \end{itemize}
 }
@@ -1440,7 +1424,7 @@ thus Q(a) by library.AllPQ, Pa;
 \begin{frame}[fragile,t]{7.1 - Implementation status and size}
 \textcolor{blue!55!black}{\textbf{Rust product code: 293.2 kLoC; estimated total: 377–551 kLoC.}}
 
-\par\noindent{\footnotesize\bfseries Table 13. Measured / estimated size (kLoC) and size ratio\par}
+\par\noindent{\footnotesize\bfseries Table 12. Measured / estimated size (kLoC) and size ratio\par}
 \begin{scriptsize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}
@@ -1462,7 +1446,7 @@ MVM / extraction / doc & 0.2 & 17.2–57.2 & 0.4–1.4\% & Doc inputs; runtime /
 
 \textcolor{blue!55!black}{\textbf{Overall size ratio: 53–78\%. Kernel + SAT dependencies: 17.2 kLoC.}}
 
-{\footnotesize Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.}
+{\footnotesize Size ratio = current / estimated total code; not feature completeness.}
 
 {\footnotesize Source: November 4 snapshot \texttt{ae4326d1e}; revised estimate assumptions: \texttt{draft.ja.md} §7.}
 
@@ -1475,7 +1459,7 @@ MVM / extraction / doc & 0.2 & 17.2–57.2 & 0.4–1.4\% & Doc inputs; runtime /
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{Rust product code: 293.2 kLoC; estimated total: 377–551 kLoC.}}
 \item \textcolor{blue!55!black}{\textbf{Overall size ratio: 53–78\%. Kernel + SAT dependencies: 17.2 kLoC.}}
-\item {\footnotesize Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.}
+\item {\footnotesize Size ratio = current / estimated total code; not feature completeness.}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -1503,7 +1487,7 @@ MVM / extraction / doc & 0.2 & 17.2–57.2 & 0.4–1.4\% & Doc inputs; runtime /
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.}}
+\item \textcolor{blue!55!black}{\textbf{First priority: integrate the proof pipeline.}}
 \item Make algorithm semantics and proof obligations agree; extend the working parts.
 \item MVM runtime / extraction: separate work. MML porting is separate from processor completion.
 \item Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
@@ -1516,7 +1500,6 @@ MVM / extraction / doc & 0.2 & 17.2–57.2 & 0.4–1.4\% & Doc inputs; runtime /
 \setlength{\parskip}{0pt}
 \item \textcolor{blue!55!black}{\textbf{Keep FOL, set theory, and mathematical writing; redesign language and tools.}}
 \item \textcolor{blue!55!black}{\textbf{Separate ATP search from trusted checking. The specification is still evolving.}}
-\item \textcolor{blue!55!black}{\textbf{Please share your ITP needs: notation, proof assistance, development tools.}}
 \end{itemize}
 \note{
 \smallskip
@@ -1525,13 +1508,12 @@ MVM / extraction / doc & 0.2 & 17.2–57.2 & 0.4–1.4\% & Doc inputs; runtime /
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item \textcolor{blue!55!black}{\textbf{First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.}}
+\item \textcolor{blue!55!black}{\textbf{First priority: integrate the proof pipeline.}}
 \item Make algorithm semantics and proof obligations agree; extend the working parts.
 \item MVM runtime / extraction: separate work. MML porting is separate from processor completion.
 \item Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
 \item \textcolor{blue!55!black}{\textbf{Keep FOL, set theory, and mathematical writing; redesign language and tools.}}
 \item \textcolor{blue!55!black}{\textbf{Separate ATP search from trusted checking. The specification is still evolving.}}
-\item \textcolor{blue!55!black}{\textbf{Please share your ITP needs: notation, proof assistance, development tools.}}
 \end{itemize}
 \smallskip
 \textbf{Optional notes and sources:}
@@ -1673,7 +1655,7 @@ Source: \texttt{doc/spec/en/23.package\_management\_and\_build\_system.md}; Bia\
 
 \section{Backup 4. Comparing evaluation conditions}
 \begin{frame}[fragile,t]{Backup 4. Comparing evaluation conditions}
-\par\noindent{\footnotesize\bfseries Table 14. MizAR 60 and Sledgehammer evaluation conditions\par}
+\par\noindent{\footnotesize\bfseries Table 13. MizAR 60 and Sledgehammer evaluation conditions\par}
 \begin{scriptsize}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.15}

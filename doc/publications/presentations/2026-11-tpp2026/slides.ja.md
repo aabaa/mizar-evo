@@ -110,7 +110,7 @@ Speaker note:
 | 領域 | 現行 Mizar から取り組む課題 | 新仕様の設計指針 |
 |---|---|---|
 | **§1 基盤** | 論理・MML の継承と処理系の刷新 | 一階論理・集合論を維持し、kernel を小さく保つ |
-| **§2 記述** | 暗黙の type・registration・overload の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
+| **§2 記述** | 暗黙の type・overload・registration の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
 | **§3 汎用化** | 定義・定理・scheme の個別機構 | template で共通化の仕組みを統一 |
 | **§4 計算** | 証明と実行可能な手続きの接続 | algorithm の契約・不変条件・停止性を検査 |
 | **§5 開発基盤** | 依存管理・配布・差分検証・IDE | module・namespace・package・差分ビルド・LSP |
@@ -171,22 +171,22 @@ Speaker note:
 
 ## Part 2. Readable Mathematics
 
-### Frame 2.1 - type・registration・overload の追跡
+### Frame 2.1 - type・overload・registration の追跡
 
 数学を自然に記述するため、処理系は多くの判断を自動的に行う。
 
 - **type: 対象をどの型として使えるか。**
   属性や継承をたどる。例: Group → Magma（継承経路が一意の場合）。
-- **registration: 必要な属性は、どの規則から得られたか。**
-  例: empty → finite → countable という登録規則の連鎖。
 - **overload: どの定義を選び、どのビューで使うか。**
   同じ記号の候補や、環の加法・乗法のビューを区別する。
+- **registration: 必要な属性は、どの規則から得られたか。**
+  例: empty → finite → countable という登録規則の連鎖。
 
 **自然な記述と自動適用を保ちながら、暗黙の判断の根拠を追跡可能にする。**
 
 Speaker note:
 
-- Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。新仕様。type: 2.2–2.4、registration: 2.5、overload とビュー指定: 2.6。
+- Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。新仕様。type: 2.2–2.4、overload とビュー指定: 2.5、registration: 2.6。
 
 ### Frame 2.2 - struct: 現行 Mizar と Evo の対比
 
@@ -218,17 +218,31 @@ Speaker note:
 - 同じ加法と零元を題材にした表現設計の比較で、機械的な翻訳ではない。現行でも導出値は functor で定義できる。Evo の宣言だけでは zero の実装も単位元の法則も得られず、2.4の前提と証明が必要。
 ### Frame 2.2a - なぜ field と property を分けるか
 
+現行 Mizar: フィールドの一致から等しさを導く (sketch):
+
+```mizar
+reserve M1, M2 for strict addMagma;
+theorem
+  the carrier of M1 = the carrier of M2 &
+  the addF of M1 = the addF of M2 implies M1 = M2;
+
+:: Without strict this fails: for an addLoopStr L,
+:: L and addMagma(# the carrier of L, the addF of L #)
+:: have the same carrier and addF, but L also has ZeroF.
+```
+
 - **従来の strict: フィールドの範囲を限定する。**
   同じ構造の strict な対象同士では、全フィールドが一致すれば等しい。
-- **残る課題: 導出できる値も格納データに含まれる。**
-  両側単位元は存在すれば演算から一意に定まるが、ZeroF として格納すればフィールドが増える。
+- **strict がなければ、フィールドの一致だけでは等しくならない。**
+  addLoopStr は addMagma でもあるが、ZeroF というフィールドが余分にある。
 - **Evo の property: 導出値を追加の格納データにしない。**
   格納する field と分け、適用可能な実装と証明から値を得る。
 
 Speaker note:
 
-- `strict` は構造ごとに導入される属性で、宣言外のフィールドがないことを表す。strict addLoopStr は ZeroF を含むため strict addMagma ではない。ZeroF に両側単位元の法則を課す場合は、演算から一意に定まる値も格納する設計になる。Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf) §2.3.5。
+- `strict` は構造ごとに導入される属性で、宣言外のフィールドがないことを表す。strict addLoopStr は ZeroF を含むため strict addMagma ではない。Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf) §2.3.5。
 - 同じ構造の strict な対象同士では全フィールドの一致から等しさが従う（[Kaliszyk & Pąk, §8.1](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf)）。Evo も仕様 §5.8.4–5.8.5 で同一構造 S の exact_S に外延性を限定する。property は追加の格納フィールドではないが、異なる構造・ビューの無条件な同一視はしない。
+- コード: sketch（MML の逐語引用ではない。証明は省略）。strict な対象はフィールドから作った集成体（aggregate）と同一視されるため、フィールドが一致すれば等しい。MML では、たとえば strict な構造を返す functor の uniqueness 証明に使われる（GROUP_2:def 7, (1).G）。
 
 ### Frame 2.3 - type: 継承関係を後から宣言する
 
@@ -258,7 +272,7 @@ Speaker note:
 
 ### Frame 2.4 - type: Unital の unit を実装し、zero に引き継ぐ
 
-has_unit は両側単位元の存在を表す（unit に依存しない） (sketch):
+unit の実装と、AddLoopStr のもう一つの親 AddMagma (sketch):
 
 ```mizar
 definition
@@ -267,46 +281,22 @@ definition
   property M.unit means
     for x being Element of M.carrier holds
       M.binop(it,x) = x & M.binop(x,it) = x;
-  existence proof ... end;
-  uniqueness proof ... end;
 end;
+struct AddMagma where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+end;
+inherit AddLoopStr extends AddMagma;
 ```
 
-- **A の LoopStr ビューが Unital なら、unit の実装を zero として利用できる。**
-- `property zero from unit` の対応: `A.zero = (A qua LoopStr).unit`。zero の再実装は不要。
+- **add は LoopStr.binop と AddMagma.add の両方から継承。** 二つの経路が同じ Magma.binop に至るかを検査する。
+- **A の LoopStr ビューが Unital なら A.zero = (A qua LoopStr).unit。** よって A.add(A.zero, x) = x = A.add(x, A.zero)。zero の再実装は不要。
 
 Speaker note:
 
-- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3。仕様7の実装例を LoopStr に適用した sketch。has_unit の属性定義は draft.ja.md、証明本体は省略。存在は mode の前提から、一意性は二つの単位元の演算から示せる。A は AddLoopStr、その選択した LoopStr ビューに Unital の前提が必要。異なるビューの事実を混同しない。重なる実装がない例で、重なる場合は coherence が必要。
+- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3。仕様7の実装例を LoopStr に適用した sketch。`sample_codes.md` の magma.miz・loopstr.miz に基づく。has_unit は両側単位元の存在を表し、unit に依存しない（属性定義は draft.ja.md）。紙面の都合で means の existence・uniqueness は省略。存在は mode の前提から、一意性は二つの単位元の演算から示せる。AddMagma 自体は add from binop で Magma を継承する（省略）。A は AddLoopStr、その選択した LoopStr ビューに Unital の前提が必要。異なるビューの事実を混同しない。重なる実装がない例で、重なる場合は coherence が必要。
 
-### Frame 2.5 - registration: 自動連鎖で見えにくくなる依存
-
-**自動適用が連鎖し、利用箇所のソースだけでは依存する登録規則を追いにくい。**
-
-```mizar
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-```
-
-### 表5　新仕様で記録する登録規則の適用経路
-
-| 出発点 | 自動的に得られる事実 | 記録する規則 |
-|---|---|---|
-| S is empty | S is finite | EmptyImpliesFinite |
-| S is finite | S is countable | FiniteImpliesCountable |
-
-- `empty` の宣言から `finite`・`countable` まで暗黙に得る。`by` で規則を引用する必要はない。
-- **新仕様: 自動適用を保ち、規則のラベルと適用経路を記録する。**
-
-Speaker note:
-
-- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7。コードは新仕様のラベル付き登録例、表は empty set S の説明用トレース。利用箇所には規則の引用を書かず、別の登録規則が複数段適用されることを強調する。属性の解決は ATP 探索より前に行う。
-
-### Frame 2.6 - overload: 同じ環の単位元を使い分ける
+### Frame 2.5 - overload: 同じ環の単位元を使い分ける
 
 **同じ環 R でも、加法の単位元は 0、乗法の単位元は 1。**
 
@@ -328,6 +318,36 @@ id. (R qua MulMagma);     :: R.one
 Speaker note:
 
 - Source: `doc/spec/en/sample_codes.md`, IdentityDef・LoopUnitalDef・RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3。ここで示す単位元の id. 定義に限定した sketch。各ビューが unital で、単位元が R.zero / R.one に対応し、Magma への経路が一意であることを仮定する。定義は draft.ja.md。
+
+### Frame 2.6 - registration: 自動連鎖で見えにくくなる依存
+
+**自動適用が連鎖し、利用箇所のソースだけでは依存する登録規則を追いにくい。**
+
+登録規則と利用例（coherence 省略） (sketch):
+
+```mizar
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+end;
+theorem
+  for S being empty set holds S is countable;
+```
+
+### 表5　新仕様で記録する登録規則の適用経路
+
+| 出発点 | 自動的に得られる事実 | 記録する規則 |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- 定理に `by` は不要: `empty` から `finite`・`countable` まで暗黙に得る。
+- **新仕様: 自動適用を保ち、規則のラベルと適用経路を記録する。**
+
+Speaker note:
+
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7。コードは新仕様のラベル付き登録例（coherence の証明は省略）と説明用の利用例、表はその empty set S に対するトレース。利用箇所には規則の引用を書かず、別の登録規則が複数段適用されることを強調する。属性の解決は ATP 探索より前に行う。
+
 
 ## Part 3. Generic Mathematics
 
@@ -386,7 +406,18 @@ Speaker note:
 
 ### Frame 3.3 - Scheme を template に統合 [deep dive]
 
-述語パラメータ付き定理としての帰納法 (specification example):
+従来の scheme (MML):
+
+```mizar
+scheme NatInd { P[Nat] } :
+  for k being Nat holds P[k]
+provided
+  A1: P[0] and
+  A2: for k being Nat st P[k]
+        holds P[k+1];
+```
+
+述語パラメータ付き定理 (specification example):
 
 ```mizar
 definition
@@ -399,13 +430,14 @@ end;
 ```
 
 - 述語パラメータにより、代入する述語ごとの一階定理の族を表現する。[^1]
-- 明示的なインスタンス化: `defpred` に続けて `by NatInduction[P], Base, Step`。
+- 明示的なインスタンス化: `from NAT_1:sch 2(A1,A2)` に代えて、`defpred` に続けて通常の `by NatInduction[P], Base, Step`。
 - 関数子パラメータは集合ではなく schema レベルの記号として扱い、一階論理を維持する。
 
 [^1]: 詳細: Białystok 資料 Story 6（`PermProduct[T]`、`qua` によるビュー）、および本資料 Backup 1。
 
 Speaker note:
 
+- 従来の scheme は MML `NAT_1:sch 2` (NatInd)。proof は紙面の都合で省略。
 - Source: `doc/spec/en/18.templates.md` §18.2.3, 18.8.2, 18.9。型・値パラメータ化の構造・属性への適用例は次の3.4。
 
 ### Frame 3.4 - template: 構造と属性もパラメータ化する
@@ -481,7 +513,8 @@ terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
 do
   var x := a;  var y := b;
   while y <> 0 do
-    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);  decreasing y;
+    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);
+    decreasing y;
     const r := x mod y;  x := y;  y := r;
   end;
   return x;
@@ -498,39 +531,9 @@ Speaker note:
 - Source: spec 20、§20.1.1, 20.5, 20.12。外側の definition/let を省略。
 - 比較: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications)。
 
-### Frame 4.3 - 互除法: コードと証明義務
+### Frame 4.3 - terminating と functor 昇格
 
-互除法の本体を再掲（a,b >= 1、外枠省略） (sketch):
-
-```mizar
-var x := a; var y := b; :: (1)
-while y <> 0 do
-  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
-  decreasing y; :: (3)
-  const r := x mod y; x := y; y := r;
-end;
-return x; :: (4)
-```
-
-### 表9　ユークリッドの互除法の証明義務
-
-| 箇所 | 証明義務 | 数学的な根拠 |
-|---|---|---|
-| (1) | 不変条件の初期成立 | `x=a`, `y=b`。事前条件から正値性 |
-| (2) | 不変条件の保存 | 旧 `(x,y)` から `(y,r)` へ。`Gcd(x,y) = Gcd(y,r)`、旧 `y >= 1`、`r >= 0` |
-| (3) | Nat 値の測度の減少 | `y' = r`、`0 <= r < y` |
-| (4) | 終了時の事後条件 | `y=0`。`Gcd(a,b) = Gcd(x,0) = x` |
-
-**各箇所をライブラリの GCD・剰余の補題とともに検査する。**
-
-Speaker note:
-
-- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3。4.2 の本体を再掲し、注釈番号を表に対応させる。旧状態 (x,y) で r=x mod y、更新後は (y,r)。SAT 単独が算術を知っているわけではない。最後の y:=r を y:=x に変えると減少を失う。仕様に基づく説明例。
-- 長期的な対象は将来構想: 整数論・組合せ論、記号計算、最適化、暗号、量子アルゴリズム。MVM 実行・コード抽出も今後の課題。
-
-### Frame 4.4 - terminating と functor 昇格
-
-### 表10　Algorithm の停止性と保証
+### 表9　Algorithm の停止性と保証
 
 | algorithm の形 | requires の下での意味 |
 |---|---|
@@ -545,7 +548,7 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 ```
 
-計算結果を使う証明 (sketch, MVM 未実装):
+計算結果を使う証明 (sketch):
 
 ```mizar
 thus euclid_gcd(12,8) = 4 by computation;
@@ -553,14 +556,12 @@ thus euclid_gcd(12,8) = 4 by computation;
 
 検証済み algorithm を MVM（仮想機械）で実行し、その結果を証明に使う。
 
-**既定は MVM も信頼する `computed` 経路。kernel/SAT の再検査とは区別する。**
-
 Speaker note:
 
 - Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1。MVM 実行・コード抽出は今後の課題。
 - requires と検証済み実行artifactが前提。replay は定義方程式と kernel 検査を要求し、このループ付き互除法には使えない。詳細は draft.ja.md。
 
-### Frame 4.5 - 式変形を検証する: lambda と微分
+### Frame 4.4 - 式変形を検証する: lambda と微分
 
 関数を直接記述する（u は Real） (sketch):
 
@@ -570,7 +571,7 @@ u |-> (sin u)*u
 
 `differentiate` が積・sin などの式の構造を再帰的に処理する。
 
-微分の証明に利用する（x は Real） (sketch, MVM 未実装):
+微分の証明に利用する（x は Real） (sketch):
 
 ```mizar
 thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
@@ -589,7 +590,7 @@ Speaker note:
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - 環境部: 著者は何を取り込むのか
+### Frame 5.1 - 環境部: 外部ファイルのimportに相当
 
 現行 Mizar の環境部、ALGSTR_0 を短縮 (sketch):
 
@@ -602,7 +603,7 @@ environ
  theorems STRUCT_0;
 ```
 
-### 表11　環境部の10種類の指令
+### 表10　環境部の10種類の指令
 
 | 一覧 | 取り込むもの |
 |---|---|
@@ -629,7 +630,7 @@ import .function;
 import mml.algebra.structure.sorted;
 ```
 
-### 表12　import と依存関係の追跡
+### 表11　import と依存関係の追跡
 
 | 段階 | 著者が確認できるもの |
 |---|---|
@@ -718,14 +719,14 @@ Speaker note:
 
 evidence の照合から SAT による受理まで (sketch):
 
-![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)
+![Evidence checks, ground instances and a three-variable four-clause SAT refutation](figures/sat_evidence_check.pdf)
 
 - **evidence を照合し、CNF を再生成。SAT で UNSAT を確認して R(a) を受理。**
 
 Speaker note:
 
 - 元の式、合成した置換、束縛文脈、対象 VC と反駁の極性を保存。instance と SAT 節は再生成する（詳細は draft.ja.md §6）。
-- 青い各箱は含意を表す s/t の定義と4節。単位節 p・not r と合わせて5変数・10節。元の DIMACS は `draft.ja.md` §6に保持。実行ダンプではない。
+- 青い箱は二つの含意の節と単位節 p・not r。3変数・4節。実行ダンプではない。
 - kernel は置換を探索せず、外部 Resolution の各ステップを replay しない。Source: architecture 08, 15, 16。
 
 ## Part 7. Status And Roadmap
@@ -734,7 +735,7 @@ Speaker note:
 
 **Rust 製品コード: 実装済み293.2 kLoC、完成時見積377–551 kLoC。**
 
-### 表13　実測・完成時見積（kLoC）と規模比率
+### 表12　実測・完成時見積（kLoC）と規模比率
 
 | 領域 | 実装済み | 完成時見積 | 規模比率 | 限定実装と残る範囲 |
 |---|---:|---:|---:|---|
@@ -749,7 +750,7 @@ Speaker note:
 
 **全体の規模比率: 53–78%。kernel + SAT 依存: 17.2 kLoC。**
 
-規模比率 = 実装済み / 完成時見積。機能完成率ではない。見積は暫定。テスト・コメント・依存・MML 移植は対象外。
+規模比率 = 実装済み / 完成時見積。機能完成率ではない。
 
 Source: 11月4日固定版 `ae4326d1e`。再見積の前提: `draft.ja.md` §7。
 
@@ -763,7 +764,7 @@ Speaker note:
 
 ### 今後の開発
 
-- **最優先: source-to-semantics → VC → evidence → kernel → artifact → build の統合。**
+- **最優先: 証明パイプラインの統合。**
 - Algorithm の意味論・検証義務を整合し、限定的に動く経路を広げる。
 - MVM runtime・抽出は別途開発。MML 全体の移植は処理系完成と別課題。
 - 学習的前提選択、LLM 修復、暗号・量子は長期構想。
@@ -772,7 +773,6 @@ Speaker note:
 
 - **FOL・集合論と数学的な記述能力を継承し、言語・開発基盤を再設計する。**
 - **ATP の探索と信頼できる検査を分ける。仕様は今も進化中。**
-- **ITP をお使いの皆様から、記述・証明支援・開発環境への要望を伺いたい。**
 
 Speaker note:
 
@@ -840,7 +840,7 @@ Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok 資�
 
 ## Backup 4. 評価条件の比較
 
-### 表14　MizAR 60 と Sledgehammer の評価条件
+### 表13　MizAR 60 と Sledgehammer の評価条件
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|

@@ -1,7 +1,7 @@
 # TPP 2026 発表叩き台
 
 > **Status:** working draft  
-> **講演時間:** 45分枠を仮定し、本編36分30秒（35–38分、最大40分）＋質疑7分＋余裕1分30秒。正式な持ち時間は主催者に要確認。
+> **講演時間:** 45分枠を仮定し、本編35分15秒（35–38分、最大40分）＋質疑7分＋余裕2分45秒。正式な持ち時間は主催者に要確認。
 > **位置づけ:** Białystok 2026 セミナーを母体に、TPPでは歴史・開発経緯から **現行 Mizar の6つの課題と、新仕様の対応**へ接続し、Mizar Evolution の設計指針を説明する。
 > **注意:** 本文は言語仕様ではない。確立した事実、解釈、研究仮説、将来構想を区別する。
 
@@ -14,7 +14,7 @@
 | 課題 | 新仕様の対応 |
 |---|---|
 | **§1 基盤:** 論理・MML の継承と処理系の刷新の両立 | 一階論理・集合論を維持し、kernel を小さく保つ |
-| **§2 記述:** 暗黙の type・registration・overload の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
+| **§2 記述:** 暗黙の type・overload・registration の追跡 | 数学的な抽象化を継承し、暗黙の選択を明示 |
 | **§3 汎用化:** 定義・定理・scheme の共通化 | template による汎用化機構の統一 |
 | **§4 計算:** 証明と実行可能な手続きの接続 | algorithm の契約・不変条件・停止性の検査 |
 | **§5 開発基盤:** 依存管理・配布・差分検証・IDE 連携 | module・namespace・package・差分ビルド・LSP |
@@ -31,22 +31,22 @@
 
 ---
 
-## 36分30秒の構成
+## 35分15秒の構成
 
-スライドの表には、内容を示す表題と、本編・補足を通した通し番号（表1–表14）を直上に付す。
+スライドの表には、内容を示す表題と、本編・補足を通した通し番号（表1–表13）を直上に付す。
 
 | 時間 | 内容 | フレーム |
 |---|---|---|
 | 0–9分 | 歴史・構想・2024–25年の設計・AI開発から6原則へ | 0.1–0.5 |
 | 9–11分 | §1 一階論理・集合論・MML の継承 | 1.1–1.2 |
-| 11–16分 | §2 type → registration → overload | 2.1–2.6 |
+| 11–16分 | §2 type → overload → registration | 2.1–2.6 |
 | 16–19分 | §3 Template・記法・型引数推論・構造と属性の例 | 3.1–3.4 |
-| 19–24分15秒 | §4 契約・停止性・functor 昇格・互除法・式変形 | 4.1–4.5 |
-| 24分15秒–27分15秒 | §5 環境部・import・開発基盤 | 5.1–5.3 |
-| 27分15秒–32分30秒 | §6 探索と検査・evidence・CNF・SAT | 6.1–6.4 |
-| 32分30秒–36分30秒 | 実装状況・今後の開発とまとめ | 7.1–7.2 |
-| 36分30秒–43分30秒 | 質疑（本編外） | 必要な Backup |
-| 43分30秒–45分 | 余裕時間 | — |
+| 19–23分 | §4 契約・停止性・functor 昇格・式変形 | 4.1–4.4 |
+| 23分–26分 | §5 環境部・import・開発基盤 | 5.1–5.3 |
+| 26分–31分15秒 | §6 探索と検査・evidence・CNF・SAT | 6.1–6.4 |
+| 31分15秒–35分15秒 | 実装状況・今後の開発とまとめ | 7.1–7.2 |
+| 35分15秒–42分15秒 | 質疑（本編外） | 必要な Backup |
+| 42分15秒–45分 | 余裕時間 | — |
 
 35分版は 3.3（40秒）を省略し、3.4を15秒の概観に短縮（20秒短縮）、0.4 の設計深化の説明を30秒に短縮する（計1分30秒短縮）。年表 0.3 と evidence/SAT の説明は残す。図・コードを指す時間を含む設計値であり、実測はリハーサルで確認する。日本語版を先に確定し、英語版への反映は次段階とする。
 
@@ -356,7 +356,7 @@ Mizar Evolution の選択:
 
 ---
 
-# 2. 記述: type・registration・overload の追跡
+# 2. 記述: type・overload・registration の追跡
 
 Mizar の soft type、attribute、registration、構造と継承は、一階の集合論の上で数学を読みやすく記述するための言語機構である。
 自然な記述を支える自動処理を保ちながら、その判断の根拠を追跡可能にすることを、この節の主題とする。
@@ -364,8 +364,8 @@ Mizar の soft type、attribute、registration、構造と継承は、一階の�
 §2.1 は、次の三つの問いから導入する。
 
 - type: 属性や継承から、対象をどの型として使えるか。例: Group → Magma（継承経路が一意の場合）。
-- registration: 必要な属性が、どの規則の連鎖で得られたか。例: empty → finite → countable。
 - overload: 同じ記号の候補からどの定義を選び、構造をどのビューで使うか。例: 環の加法・乗法のビューを区別する。
+- registration: 必要な属性が、どの規則の連鎖で得られたか。例: empty → finite → countable。
 
 新仕様の説明であり、すべての判断を著者に明示指定させる方針ではない。継承経路が曖昧な場合には `qua` でビューを指定する。
 Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registrations.md` §17.7; `19.overload_resolution.md` §19.1–19.3。
@@ -375,9 +375,10 @@ Source: `doc/spec/en/08.type_inference.md` §8.1–8.2; `17.clusters_and_registr
 両コードは definition 内の抜粋。同じ加法と零元を題材にした表現設計の比較で、機械的な翻訳ではない。現行 Mizar でも導出値は functor で定義できる。
 
 §2.2a では field / property を区別する理由を示す。設計上の理由は、構造を構成するデータと、条件の下でそこから一意に定まる値を分けることにある。現行 Mizar の `strict` は構造ごとに導入される属性で、宣言されたフィールド以外を持たないことを表す。同じ構造の strict な対象同士では全フィールドの一致から等しさが従う。strict addLoopStr は carrier・addF・ZeroF を持ち、ZeroF を持たない strict addMagma とは格納フィールド集合が異なる。
-ZeroF に両側単位元の法則を課す場合、その値は演算から一意に定まる。それでも格納フィールドにすれば構造のデータに含まれる。Evo ではこのような導出値を property にして、追加の格納データとせず、適用可能な実装とその証明から値を得る。単位元の法則を仮定しない任意の ZeroF まで演算から決まるとはしない。
+スライドでは strict の使い方を、strict な addMagma 同士で carrier と addF が一致すれば等しいという定理で示す（sketch、証明省略、MML の逐語引用ではない）。strict がなければ成り立たない。addLoopStr L は addMagma でもあり、`addMagma(# the carrier of L, the addF of L #)` と carrier・addF が一致するが、L は ZeroF を余分に持つ。MML では、strict な構造を返す functor の uniqueness 証明などにこの性質が使われる（例: GROUP_2:def 7 の `(1).G`）。
+Evo では、条件の下で一意に定まる値を property にして、追加の格納データとせず、適用可能な実装とその証明から値を得る。
 Evo の外延性も、同一構造 S の exact_S な対象に限定される（仕様 §5.8.4–5.8.5）。property の導入を、strict に相当する対象の限定の撤廃や、異なる構造・ビューの無条件な同一視として説明しない。
-Source: [Grabowski et al., Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5; [Kaliszyk & Pąk, Semantics of Mizar as an Isabelle Object Logic](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf), §8.1; `doc/spec/en/05.structures.md` §5.8.4–5.8.5; `07.modes.md` §7.4.1。
+Source: [Grabowski et al., Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5; [Kaliszyk & Pąk, Semantics of Mizar as an Isabelle Object Logic](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf), §8.1; [MML GROUP_2](https://mizar.uwb.edu.pl/version/current/html/group_2.html), def 7, Th59; `doc/spec/en/05.structures.md` §5.8.4–5.8.5; `07.modes.md` §7.4.1。
 
 §2.3 は現行の `struct (ZeroStr, addMagma)` による親指定と、Evo の独立した inherit 宣言を対比する。ここで LoopStr を宣言し、`field add from binop`・`property zero from unit` の対応付けを追加する。
 Source: [MML ALGSTR_0](https://mizar.uwb.edu.pl/version/current/html/algstr_0.html), addLoopStr; `doc/spec/en/05.structures.md` §5.2–5.3, 5.5.1; `sample_codes.md`。
@@ -404,17 +405,29 @@ definition
 end;
 ```
 
-存在は mode の前提から、一意性は二つの両側単位元を互いに演算することで示せる。スライドでは has_unit の定義と証明本体を省略する。
-AddLoopStr の A について、選択した `A qua LoopStr` が Unital なら、そのビューに unit の実装が適用される。継承時の `property zero from unit` の対応により `A.zero = (A qua LoopStr).unit` となり、zero の別実装は不要である。任意の AddLoopStr に単位元があるとは主張しない。名前の異なる継承は reduct/view を経由するため、異なるビューの属性や実装を無条件に混同しない。
+存在は mode の前提から、一意性は二つの両側単位元を互いに演算することで示せる。スライドでは紙面の都合で has_unit の定義と existence・uniqueness を省略し、代わりに AddLoopStr のもう一つの親 AddMagma を示す。
+
+```mizar
+definition
+  struct AddMagma where
+    field carrier -> set;
+    field add -> BinOp of carrier;
+  end;
+  inherit AddMagma extends Magma where
+    field carrier from carrier;
+    field add from binop;
+  end;
+end;
+
+inherit AddLoopStr extends AddMagma;
+```
+
+AddLoopStr の add は、LoopStr.binop と AddMagma.add の両方から継承される。検証器は、二つの経路（AddLoopStr.add → LoopStr.binop → Magma.binop と AddLoopStr.add → AddMagma.add → Magma.binop）が同じ Magma.binop に至ることを検査する（`sample_codes.md`, loopstr.miz）。
+AddLoopStr の A について、選択した `A qua LoopStr` が Unital なら、そのビューに unit の実装が適用される。継承時の `property zero from unit` の対応により `A.zero = (A qua LoopStr).unit` となる。`field add from binop` により、すべての x について `A.add(A.zero, x) = x = A.add(x, A.zero)` が従い、A.zero は AddMagma ビューの単位元になる。zero の別実装は不要である。任意の AddLoopStr に単位元があるとは主張しない。名前の異なる継承は reduct/view を経由するため、異なるビューの属性や実装を無条件に混同しない。
 既存の重なる実装はない例とし、重なる場合には `coherence` が必要。`equals` による項からの実装も可能だが、この例では `means` に集中する。
-Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.5.1, 5.8.3。
+Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.5.1, 5.8.3; `sample_codes.md`, magma.miz・loopstr.miz。
 
-§2.5 は registration の自動的な連鎖と、それによる依存の見えにくさを課題として先に示す。
-`empty` な集合 S と宣言するだけで、登録規則から `finite`、さらに `countable` が暗黙に得られる。利用箇所で各規則を `by` に書く必要はない。登録が連鎖すると、最終的な型の事実がどの規則から得られたかを、その箇所のソースだけで追うことが難しくなる。
-その解決策として、新仕様の `EmptyImpliesFinite`・`FiniteImpliesCountable` のラベル付き登録と適用経路の記録を示す。ラベルは必須だが、自動適用は保ち、利用箇所での明示引用は不要。規則名だけでなく、empty → finite → countable という依存の連鎖を説明できることを中心にする。
-Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7。
-
-§2.6 は overload の説明として、同じ環 R に共存する加法と乗法の単位元を使い分ける例を示す。加法の AddMagma ビューでは零元 R.zero、乗法の MulMagma ビューでは単位元 R.one が得られる。§2.4 の unit・zero の実装と対応付けを受ける。
+§2.5 は overload の説明として、同じ環 R に共存する加法と乗法の単位元を使い分ける例を示す。加法の AddMagma ビューでは零元 R.zero、乗法の MulMagma ビューでは単位元 R.one が得られる。§2.4 の unit・zero の実装と対応付けを受ける。
 
 `sample_codes.md` の IdentityDef にある、unital Magma の単位元を返す functor `id. M` を用いる（carrier のアクセスを明記した sketch、証明省略）:
 
@@ -441,6 +454,19 @@ id. (R qua MulMagma);     :: R.one
 この例の id. は上記の定義を対象とする。定義が一つでも R から Magma への継承経路は複数あるので、暗黙の widening は曖昧となる。qua で選んだ AddMagma / MulMagma から Magma への経路は一意とする。
 選択した各 Magma ビューが unital であり、その単位元が R.zero / R.one に対応することを、構造の定義・継承・登録等から得ている前提の例である。異なる経路の属性は無条件に混同しない。加法側は Group、乗法側は unital であればよく、乗法側を Group と仮定しない。qua 自体は既存 Mizar にもある記法である。
 Source: `doc/spec/en/sample_codes.md`, IdentityDef・LoopUnitalDef・RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3。
+
+§2.6 は registration の自動的な連鎖と、それによる依存の見えにくさを課題として先に示す。
+`empty` な集合 S と宣言するだけで、登録規則から `finite`、さらに `countable` が暗黙に得られる。利用箇所で各規則を `by` に書く必要はない。登録が連鎖すると、最終的な型の事実がどの規則から得られたかを、その箇所のソースだけで追うことが難しくなる。
+スライドでは coherence の証明を省略した登録規則と、それが実際に適用される利用例を示す。
+
+```mizar
+theorem
+  for S being empty set holds S is countable;
+```
+
+この定理に `by` はなく、EmptyImpliesFinite、FiniteImpliesCountable の順に登録規則が自動適用される。
+その解決策として、新仕様の `EmptyImpliesFinite`・`FiniteImpliesCountable` のラベル付き登録と適用経路の記録を示す。ラベルは必須だが、自動適用は保ち、利用箇所での明示引用は不要。規則名だけでなく、empty → finite → countable という依存の連鎖を説明できることを中心にする。
+Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7。
 
 ---
 
@@ -628,20 +654,20 @@ algorithm の役割は二重。
 
 各構文の規則を本体に再帰的に適用し、最終的に一階論理式の証明義務へ分解する。表は単純変数・純粋な式についての基本形で、途中の return / break / continue と型・定義域の条件を省略する。代入の置換は後ろ向きの説明であり、仕様 §20.1.4・20.13.3 の前向き生成では旧状態名を導入し、代入対象と alias し得る事実を更新する。ループ頭では変更され得る事実を havoc し、不変条件と条件式から本体を検査する。入口の可変値に関する事実をそのまま全反復に持ち越さない。
 4.1 は45秒の概観とし、while の3条件を次の互除法の例につなげる。
-§4.2–4.4 は terminating が requires を満たすすべての入力での停止を要求し、検証後に functor として使えることを説明する。既定は部分正当性。可変状態・ループを含む互除法は、全域性と契約の公理を通じて推論する。§4.4 の本編は契約の引用と計算結果の利用に絞り、定義方程式の生成は扱わない（詳細は仕様 §20.7.3, 20.13.6）。
+§4.2–4.3 は terminating が requires を満たすすべての入力での停止を要求し、検証後に functor として使えることを説明する。既定は部分正当性。可変状態・ループを含む互除法は、全域性と契約の公理を通じて推論する。§4.3 の本編は契約の引用と計算結果の利用に絞り、定義方程式の生成は扱わない（詳細は仕様 §20.7.3, 20.13.6）。
 定義ラベル EuclidGcdDef と呼び出す名前 euclid_gcd を分け、証明では `by EuclidGcdDef` で検証済み昇格公理を引用する。
-§4.4 の下段では、`by computation` を「検証済み algorithm を具体的な入力で MVM（Mizar Virtual Machine）により実行し、計算結果を証明に用いる機能」と説明する。
+§4.3 の下段では、`by computation` を「検証済み algorithm を具体的な入力で MVM（Mizar Virtual Machine）により実行し、計算結果を証明に用いる機能」と説明する。
 
 ```mizar
 thus euclid_gcd(12,8) = 4 by computation;
 ```
 
 上段の一般の a,b に対する契約の引用に対し、下段は具体値の等式を計算で確かめる。評価するのは algorithm の euclid_gcd であり、数学的な func Gcd は実行対象ではない。requires は計算結果に依存せず別途証明し、実行には検証済みの実行artifactを用いる。既定の computation は MVM の正常終了報告も信頼する computed 経路である。`replay: true` は検証済み定義方程式による再生と最小核の検査を要求し、定義的でないループを持つこの互除法には適用できない（仕様 §20.9.2）。
-このコードは仕様に基づくスケッチで、現在の実行結果を示すものではない。MVM 実行・コード抽出は今後の課題。§4.4 は契約の引用と具体的な計算結果の利用を1分で説明し、既定では MVM の実行結果も信頼することを口頭とスライド本文に明示する。
+このコードは仕様に基づくスケッチで、現在の実行結果を示すものではない。MVM 実行・コード抽出は今後の課題。§4.3 は契約の引用と具体的な計算結果の利用を1分で説明する。
 ループ注釈は Dafny の invariant・decreases に類似し、Evo では invariant・decreasing と書く。比較の出典は [Dafny Reference Manual](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications) §8.15.1–8.15.2。採用元の断定には使わない。
 Source: `doc/spec/en/20.algorithm_and_verification.md` §20.1.1, 20.2–20.3, 20.7.2–20.7.3, 20.9.1–20.9.2, 20.13; `16.theorems_and_proofs.md` §16.5.1。
 
-§4.5 では lambda と検証済み式変形を結びつける。`u |-> (sin u)*u` は、u を Real と宣言した場合に全実数上の集合論的関数を表す。通常の論理式では関数の構成・一意性を通じて一階の式へ翻訳し、式の構造を扱う場面では `expr of Function of REAL,REAL` として束縛変数の同一性・型・文脈を保持する。
+§4.4 では lambda と検証済み式変形を結びつける。`u |-> (sin u)*u` は、u を Real と宣言した場合に全実数上の集合論的関数を表す。通常の論理式では関数の構成・一意性を通じて一階の式へ翻訳し、式の構造を扱う場面では `expr of Function of REAL,REAL` として束縛変数の同一性・型・文脈を保持する。
 
 スライドの証明抜粋は、仕様 §20.12 の微分例に基づく。
 
@@ -655,10 +681,10 @@ thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
 
 `differentiate` は式の構造を調べる部分 algorithm で、入力と結果はいずれも全実数上の関数を表す expr である。変数・定数・和・積・sin・cos の対応する分岐を微分則で検証し、通常終了した場合の契約は、すべての実数 u で入力関数が微分可能で、その微分値が結果の関数値に等しいことを保証する。証明には入力の型・全実数での適用条件、意味変換、点ごとの等式と簡約の補題を用いる。スライドには微分則・意味変換・簡約の補題を仮定することを脚注に示す。対応しない形では失敗し得る。コードは仕様上の利用例で、MVM での実行結果を主張しない。
 
-利点は、数学で使う関数表記をそのまま変換手続きの入力にし、変数束縛を保って構造を処理し、結果を数学的な主張へ戻せることにある。多項式の因数分解なら `u |-> u*u+2*u+1` から `u |-> (u+1)*(u+1)` への変換で、全実数入力について関数値が一致することを契約にする、という将来応用が考えられる。§4.5 では仕様に具体例がある微分を中心に示す。
+利点は、数学で使う関数表記をそのまま変換手続きの入力にし、変数束縛を保って構造を処理し、結果を数学的な主張へ戻せることにある。多項式の因数分解なら `u |-> u*u+2*u+1` から `u |-> (u+1)*(u+1)` への変換で、全実数入力について関数値が一致することを契約にする、という将来応用が考えられる。§4.4 では仕様に具体例がある微分を中心に示す。
 Source: `doc/spec/en/13.term_expression.md` §13.10; `20.algorithm_and_verification.md` §20.5.3, 20.9.2, 20.12。
 
-§4 はコード（4.2）、証明義務（4.3）、検証後の利用（4.4）、式変形（4.5）の順に進める。配分は45・75・75・60・60秒とし、§5は24:15に始める。lambda・微分に15秒を追加し、終盤から振り替える。4.3 では互除法の本体を外枠省略で再掲し、初期化・不変条件・測度・return に付けた (1)–(4) を証明義務の表と対応させる。旧状態 (x,y) と更新後 (y,r) を区別し、コードを指しながら保存・減少・終了時の結論を説明する。
+§4 はコード（4.2）、検証後の利用（4.3）、式変形（4.4）の順に進める。配分は45・75・60・60秒とし、§5は23:00に始める。lambda・微分に15秒を追加し、終盤から振り替える。
 
 ## A. automation procedure
 
@@ -835,7 +861,7 @@ package・バージョン管理・差分検証の詳細は全体像と Backup 2�
 Source: [Sledgehammer user guide](https://isabelle.in.tum.de/doc/sledgehammer.pdf), §1, 5.2; `doc/spec/en/21.source_code_annotation_and_atp.md` §21.7.2; `22.error_handling_and_diagnostics.md` §22.4.4; `23.package_management_and_build_system.md` §23.5.2, LSP; `doc/design/architecture/en/08.reasoning_boundary.md`, `09.atp_interface_protocol.md`。
 
 §6 では、ATP の探索・kernel 検査・ライブラリへの保存と再利用・再試行の流れ図を先に示す。
-図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。 §6.2は流れ図を指して説明するため60秒とし、§6全体は60・60・90・105秒で配分する。§7は32:30に始め、7.2は34:00から2分30秒。本編合計36分30秒を維持し、実測はリハーサルで確認する。支援で得た補題候補を引用に反映し、通常の検証で evidence を検査する流れにつなげる。
+図は設計意図であり、LLM の提案・修復も示すが、反復の費用対効果は未評価。 §6.2は流れ図を指して説明するため60秒とし、§6全体は60・60・90・105秒で配分する。§7は31:15に始め、7.2は32:45から2分30秒。本編合計35分15秒を維持し、実測はリハーサルで確認する。支援で得た補題候補を引用に反映し、通常の検証で evidence を検査する流れにつなげる。
 続いて本編6.3–6.4で、検査の仕組みを3段階で示す。
 
 1. **Evidence:** 元の論理式、明示的な代入、来歴、対象ゴールを保持する。
@@ -848,24 +874,18 @@ UNSAT は、前提とゴールの否定が同時には成立しないことを�
 
 §6.3 は F1: `forall x. (P(x) implies Q(x))`、F2: `forall y. (Q(y) implies R(y))`、H: `P(a)` からゴール `R(a)` を反駁する Resolution 木を図示する。左に導出木、右に抽出する evidence を配置する。Q の単一化で `x:=y`、続く P の単一化で `y:=a`、最後は基礎節 R(a) と not R(a) から空節を得る。枝上の置換を合成し、元の F1 に `x:=a`、F2 に `y:=a` を回収する。
 ログから置換を抽出する候補生成案として説明する。現行 architecture 10 は独立した instance finder が同じ受理用 evidence を生成する設計だが、固定版では未実装（[ATP TODO 30](../../../design/mizar-atp/en/todo.md)）。保存するのは元の式への出所の結び付け、置換と束縛文脈、対象 VC と反駁の極性であり、外部の導出ステップを kernel に replay させない。
-§6.4 は来歴・対象・capture avoidance の検査、基礎インスタンスの生成、命題変数への写像、CNF 化を順に示す。`p=P(a)`・`q=Q(a)`・`r=R(a)` に対し、含意を表す補助変数 s・t を導入する Tseitin 符号化を用い、図の青い2箱に s/t の定義と各4節を示し、単位節 p・not r と合わせた5変数・10節から UNSAT と受理までを示す。s・t と p が真で、not r が要求されるため充足不能。
-図のノード・矢印は説明用の設計スケッチ。元のインスタンス化・符号化の詳細（図と同じ5変数・10節）は次の通り。
+§6.4 は来歴・対象・capture avoidance の検査、基礎インスタンスの生成、命題変数への写像、CNF 化を順に示す。`p=P(a)`・`q=Q(a)`・`r=R(a)` に対し、二つの含意を節 `not p or q`・`not q or r` とし、単位節 p・not r と合わせた3変数・4節から UNSAT と受理までを示す。p と二つの含意から r が導かれ、not r と矛盾するため充足不能。
+図のノード・矢印は説明用の設計スケッチ。インスタンス化・符号化の詳細（図と同じ3変数・4節）は次の通り。
 
 ```text
 save: F1,F2,H (source bindings); F1[x:=a], F2[y:=a]; goal R(a), refute
 check: source/context, binders, capture avoidance
 instances: P(a) implies Q(a); Q(a) implies R(a); P(a); not R(a)
-atoms: p=P(a)=1, q=Q(a)=2, r=R(a)=3
-logical CNF: (not p or q) & (not q or r) & p & not r
-Tseitin: s=4 iff (not p or q); t=5 iff (not q or r)
-SAT clauses (DIMACS example; 0 ends each clause):
-p cnf 5 10
-1 0       -3 0
-1 4 0     -2 4 0     -1 2 -4 0     4 0
-2 5 0     -3 5 0     -2 3 -5 0     5 0
+atoms: p=P(a), q=Q(a), r=R(a)
+CNF: (not p or q) & (not q or r) & p & not r
 ```
 
-現行エンコーダも OR に補助変数を導入する。ここで示すのは solver 入力の具体的な構成例で、実装の実行ダンプや外部 prover の実証結果ではない。instance の不足はゴールが偽であることを意味せず、kernel は置換を探し直さない。
+現行エンコーダは OR に補助変数を導入するが、スライドでは説明のため省略する。ここで示すのは solver 入力の具体的な構成例で、実装の実行ダンプや外部 prover の実証結果ではない。instance の不足はゴールが偽であることを意味せず、kernel は置換を探し直さない。
 
 ATP や LLM は探索を支援できるが、受理の境界はこの共通の検査に置く。
 Source: `doc/design/architecture/en/08.reasoning_boundary.md`, `10.atp_backend_integration.md`, `15.kernel_certificate_format.md`, `16.substitution_and_binding.md`。
@@ -947,7 +967,7 @@ Source: [Step 6–7](../../../design/todo.md)、[semantic harness](../../../../c
 
 ## 7.2 — 今後の開発とまとめ
 
-最優先は source-to-semantics → VC → evidence → kernel → artifact → build の統合。限定経路を広げ、未対応入力を受理しない境界を保つ。Algorithm の意味論と検証義務の整合も継続する。
+最優先は証明パイプライン（source-to-semantics → VC → evidence → kernel → artifact → build）の統合。限定経路を広げ、未対応入力を受理しない境界を保つ。Algorithm の意味論と検証義務の整合も継続する。
 
 本編の7.2には「今後の開発」「まとめ」の小見出しを付け、処理系の統合と今後の開発範囲から、設計方針のまとめと ITP ユーザーとしての要望の募集へ進む。年度目標・科研費延長は扱わない。
 
@@ -961,7 +981,7 @@ MVM runtime・抽出・`by computation` の実行は別途必要な開発とし�
 一階の基盤と数学的な言語を継承し、template、algorithm、開発基盤、
 evidence と SAT 検査を通して処理系を再整備する。
 
-仕様は進化中である。討論では記述のしやすさ・証明支援・開発環境を中心に、ITP ユーザーとしての要望や日頃不便に感じている点を伺う。
+仕様は進化中である。
 ベンチマーク比較は、必要に応じて補足資料を参照する。
 
 ---
@@ -1015,7 +1035,7 @@ Backup は5枚とし、1: `PermProduct[T]` のインスタンス化とビュー�
 
 ---
 
-- [ ] 正式な発表枠・質疑時間、35分版／36分30秒版の実測
+- [ ] 正式な発表枠・質疑時間、35分版／35分15秒版の実測
 - [ ] 2023年の相談の年内順序、旧リポジトリの改名・移行時期
 - [ ] Białystok の具体的な発言・設計への影響（本人確認が得られるまで追記しない）
 - [ ] Mizar-rs の直接流用の有無（ソース・依存・ライセンスを確認するまで主張しない）
@@ -1030,4 +1050,4 @@ TPP 2026 スライドを作成するとき:
 4. MizAR / Sledgehammer の評価条件と HOL/FOL 比較は補足に置き、性能優位性を設計動機にしない。
 5. ATP 活用の流れ図を §6 に残し、続けて evidence → インスタンス化 → SAT 検査を示す。
 6. 仕様と実装状況を区別し、将来構想にはラベルを付ける。
-7. 最後に実装状況とロードマップを示し、記述・証明支援・開発環境について ITP ユーザーとしての要望を伺う。
+7. 最後に実装状況とロードマップを示す。

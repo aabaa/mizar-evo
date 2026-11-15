@@ -1,10 +1,10 @@
 # TPP 2026 Spoken Script (English)
 
 > **Status:** English companion to the reviewed Japanese script. Frame order follows `slides.md` and `slides.ja.md`; `draft.ja.md` remains the content authority.
-> **Timing:** Headings give start times in the 36:30 allocation: introduction 9 minutes, six principles 23:30, closing 4 minutes. Add seven minutes of questions and 1:30 of buffer for an assumed 45-minute slot. This includes pointing at code and figures; confirm the slot and rehearse the English delivery. Do not exceed 40 minutes.
+> **Timing:** Headings give start times in the 35:15 allocation: introduction 9 minutes, six principles 22:15, closing 4 minutes. Add seven minutes of questions and 2:45 of buffer for an assumed 45-minute slot. This includes pointing at code and figures; confirm the slot and rehearse the English delivery. Do not exceed 40 minutes.
 > **Claim labels:** [Literature], [Git history], [Specification], [Limited implementation], and [Plan / Future direction]. Presenter notes at the end are not spoken.
 
-For 35 minutes, skip 3.3 (40 seconds), reduce 3.4 to 15 seconds (save 20), and reduce the design discussion in 0.4 to 30 seconds (save 30). Keep the timeline in 0.3 and the checking examples in 6.3–6.4. Backups are for questions only. In the full version, start 7.1 at 32:30 and finish at 36:30.
+For 35 minutes, skip 3.3 (40 seconds), reduce 3.4 to 15 seconds (save 20), and reduce the design discussion in 0.4 to 30 seconds (save 30). Keep the timeline in 0.3 and the checking examples in 6.3–6.4. Backups are for questions only. In the full version, start 7.1 at 31:15 and finish at 35:15.
 
 ## Part 0. Introduction (0–9 minutes)
 
@@ -68,10 +68,10 @@ We keep this way of writing mathematics and redesign the processor that supports
 
 ## Part 2. Readable Mathematics (11–16 minutes)
 
-### 2.1 Trace type, registration, and overload choices (11:00)
+### 2.1 Trace type, overload, and registration choices (11:00)
 
-We follow implicit decisions in this order: type, registration, and overload.
-Which types can an object be used as? Which rules supplied the required attributes? Which definition and view were selected? We keep natural writing and automatic processing, while making the reasons visible. First, let us look at structure declarations and inheritance. [Specification]
+We follow implicit decisions in this order: type, overload, and registration.
+Which types can an object be used as? Which definition and view were selected? Which rules supplied the required attributes? We keep natural writing and automatic processing, while making the reasons visible. First, let us look at structure declarations and inheritance. [Specification]
 
 ### 2.2 struct: current Mizar and Evo (11:30)
 
@@ -81,7 +81,7 @@ Evo declares carrier and add as fields, and zero as a property. Only fields go i
 ### 2.2a Why separate fields and properties? (12:00)
 
 Strict limits the fields. For strict objects of the same structure, equal fields mean equal objects.
-A two-sided identity is unique if it exists. But storing it as ZeroF still adds a field.
+In this theorem, two strict addMagmas with the same carrier and addF are equal. Without strict, this fails: an addLoopStr is also an addMagma, but it has the extra field ZeroF.
 Evo makes this value a property. We separate stored data from values obtained through implementations and proofs. [Current Mizar / Evo specification]
 
 ### 2.3 type: declare inheritance after the structure (12:30)
@@ -92,22 +92,24 @@ Next, this mapping lets us reuse the parent's unit implementation. [Specificatio
 
 ### 2.4 type: implement unit for Unital, reuse it as zero (13:15)
 
-The attribute has_unit says that a two-sided identity exists. It does not refer to unit itself. The mode Unital selects LoopStr objects with this attribute. We then implement unit with means. Existence follows from the mode assumption; uniqueness follows by applying the operation to two identities.
-If AddLoopStr's selected LoopStr view is Unital, the zero from unit mapping lets us reuse this implementation as zero. We do not need a separate implementation for zero. [Specification-based sketch, proofs omitted]
+The attribute has_unit says that a two-sided identity exists. The mode Unital selects LoopStr objects with this attribute, and we implement unit with means.
+AddLoopStr has a second parent, AddMagma. Its add comes from LoopStr's binop and from AddMagma's add; the verifier checks that both paths reach the same Magma binop.
+If A's LoopStr view is Unital, zero from unit gives A.zero equal to the unit of that view. Since add is binop, A.zero is the identity for A.add, that is, the identity of the AddMagma view. We do not need a separate implementation for zero. [Specification-based sketch, proofs omitted]
 
-### 2.5 registration: automatic chains hide dependencies (14:00)
+### 2.5 overload: two identities in the same ring (14:00)
 
-Next is registration. Declaring a set S to be empty automatically gives finite, then countable. At the point of use, we do not have to cite these rules with by.
-This is useful, but when registrations form a chain, it becomes difficult to see which rules produced countable from that source alone. This is the traceability problem.
-The new specification keeps automatic application but requires labels and records the path from EmptyImpliesFinite to FiniteImpliesCountable. It can explain the dependency chain, as well as the final attribute. [Specification]
-
-### 2.6 overload: two identities in the same ring (15:00)
-
-Finally, overload. Let us use the identity element for addition and multiplication in a ring.
+Next, overload. Let us use the identity element for addition and multiplication in a ring.
 The additive identity is zero, and the multiplicative identity is one. Both are identities, but their values differ.
 A functor is a function symbol in Mizar. Here, id. M returns the identity of a unital Magma. Writing only id. R leaves a choice: the additive or multiplicative Magma view?
 R qua AddMagma gives R.zero. R qua MulMagma gives R.one. Each selected view must have an identity.
 The view lets us select zero or one within the same ring. Types and attributes decide which definitions apply; the chosen operation view must also be clear. [Specification-based sketch]
+
+### 2.6 registration: automatic chains hide dependencies (15:00)
+
+Finally, registration. Declaring a set S to be empty automatically gives finite, then countable. In this theorem, we do not have to cite these rules with by.
+This is useful, but when registrations form a chain, it becomes difficult to see which rules produced countable from that source alone. This is the traceability problem.
+The new specification keeps automatic application but requires labels and records the path from EmptyImpliesFinite to FiniteImpliesCountable. It can explain the dependency chain, as well as the final attribute. [Specification]
+
 
 ## Part 3. Generic Mathematics (16–19 minutes)
 
@@ -126,8 +128,8 @@ Current MML also handles intersections of different domains. This example is res
 
 ### 3.3 Unify schemes with template theorems [deep dive] (17:45)
 
-Traditional schemes also become theorems. Induction becomes NatInduction[P], with let P be pred(Nat). The predicate parameter gives a family of first-order theorems, one for each substituted predicate.
-After defpred, we explicitly apply by NatInduction[P], Base, Step. Functor parameters are schema-level symbols, so the logic stays first-order. [Specification]
+On the left is the classical MML induction scheme, with its own syntax and from. Traditional schemes also become theorems. On the right, induction becomes NatInduction[P], with let P be pred(Nat). The predicate parameter gives a family of first-order theorems, one for each substituted predicate.
+Instead of from, after defpred we explicitly apply an ordinary by NatInduction[P], Base, Step. Functor parameters are schema-level symbols, so the logic stays first-order. [Specification]
 
 ### 3.4 template: structures and attributes too (18:25)
 
@@ -135,7 +137,7 @@ The upper example gives vector-space data over a field K. The lower example desc
 Familiar of notation and prefix attributes are syntactic sugar for templates: shorter ways to write the same expressions. Vector of K corresponds to Vector[K]; M-dense corresponds to dense[M]. We can also write VectorSpace over K.
 Structures, attributes, modes, and other declarations share this parameter mechanism. [Specification-based sketch]
 
-## Part 4. Verified Computation (19:00–24:15)
+## Part 4. Verified Computation (19:00–23:00)
 
 ### 4.1 Computation: verified algorithms (19:00)
 
@@ -149,89 +151,81 @@ This is Euclid's algorithm. Requires states what must hold before the call. Ensu
 EuclidGcdDef is the definition label; euclid_gcd is the callable name. Terminating claims termination for every input satisfying requires. We check proof obligations generated from the invariant and measure.
 After verification, it can be used as a mathematical functor in formulas and proofs. [Specification]
 
-### 4.3 Euclid: code and proof obligations (21:00)
-
-Here is the body again. Match the numbered code points to the table.
-At one, initializing x=a and y=b establishes the invariant from the precondition. At two, the invariant must survive computing r=x mod y and replacing x,y by the old y,r. We use the lemma Gcd(x,y)=Gcd(y,r).
-At three, the measure is y. It is positive when we enter the loop. The remainder is nonnegative and smaller than the old y, so the measure strictly decreases. At four, y is zero. The invariant and Gcd(x,0)=x show that the returned value is the GCD of the inputs.
-We check these obligations with library lemmas. [Specification-based explanation]
-
-### 4.4 terminating and functor promotion (22:15)
+### 4.3 terminating and functor promotion (21:00)
 
 Partial correctness is the default. Once terminating is verified, the algorithm returns for every input that meets requires. It can then be used as a functor.
-The upper example cites the verified contract for positive natural numbers a and b. In the lower example, by computation runs the algorithm on 12 and 8 using MVM, the virtual machine. It uses the result, four, in the proof.
-This default path also trusts MVM's execution result. It differs from kernel and SAT rechecking. MVM execution is not implemented; the examples explain the specification. [Specification / Implementation status]
+The upper example cites the verified contract for positive natural numbers a and b. In the lower example, by computation runs the algorithm on 12 and 8 using MVM, the virtual machine. It uses the result, four, in the proof. [Specification]
 
-### 4.5 Verified expression rewriting: lambda and differentiation (23:15)
+### 4.4 Verified expression rewriting: lambda and differentiation (22:00)
 
 Lambda notation writes a function directly. Here, real u maps to sin u times u.
 An expr syntax tree keeps products, sin, and variable binding. We prove differentiate's contract using differentiation rules. On normal return, the input function is differentiable and the result represents its derivative. The displayed conclusion also needs semantic conversion and simplification lemmas.
-The differentiate call is explicit; the derivative goal does not select it automatically. This connects function notation, rewriting, and correctness proofs. It is a specification sketch; MVM execution remains future work. [Specification-based sketch]
+The differentiate call is explicit; the derivative goal does not select it automatically. This connects function notation, rewriting, and correctness proofs. It is a specification sketch. [Specification-based sketch]
 
-## Part 5. Development Infrastructure (24:15–27:15)
+## Part 5. Development Infrastructure (23:00–26:00)
 
-### 5.1 Environment: what must an author import? (24:15)
+### 5.1 Environment: the equivalent of importing external files (23:00)
 
 The table shows all ten environment directives. The code above is shortened from ALGSTR_0. Even for the same article STRUCT_0, authors select resources by role: symbols, notation, constructors, registrations, and so on.
 Notations and definitions are especially difficult. Overlapping notation and redefinitions have priorities. The order of articles can change which notation or definition is selected. Adding or reordering articles can affect existing text and proofs.
 Authors manage both the imported resources and these priorities. Managing overrides and order dependence is the hardest part of writing a Mizar article. [Current environment]
 
-### 5.2 Imports and dependency tracking (25:15)
+### 5.2 Imports and dependency tracking (24:00)
 
 The new specification imports a module's public items with import. The two example modules follow the specification. Original fully qualified names and registration traces are intended to show which items were actually used.
 Dependency fingerprints record which dependencies were checked. They allow us to reuse checked results. Packages and lockfiles fix versions. The editor is designed to show resolved names and traces.
 This is not a one-to-one translation of the old environment lists. We keep mathematical writing while building tools that explain dependencies and implicit processing. [Specification]
 
-### 5.3 The whole picture [deep dive] (26:15)
+### 5.3 The whole picture [deep dive] (25:00)
 
 Here is the whole design in one picture.
 At the top is rich mathematics: structures, templates, algorithms, and modules. Below is a small first-order foundation. Around it are modern tools: the ATP layer, kernel, artifacts, versioned libraries, IDE, AI, and publication.
 The design keeps mathematical writing and a small core, and rebuilds the tools. The features in this talk belong to these layers. [Specification]
 
-## Part 6. Checking And Automation (27:15–32:30)
+## Part 6. Checking And Automation (26:00–31:15)
 
-### 6.1 Automation: find lemmas and suggest a proof (27:15)
+### 6.1 Automation: find lemmas and suggest a proof (26:00)
 
 Isabelle's Sledgehammer finds lemmas and suggests proofs. We plan similar help in Mizar Evo.
 Here, by atp is proposed syntax for requesting search. The exact syntax is not yet specified. Arguments may be added later.
 For the goal Q(a) and local assumption P(a), the planned tool finds AllPQ. It tries the lemma with an ATP and suggests the citation below. We apply the citations in the source and verify again.
 Search and suggestions help authors. Acceptance depends on kernel checks of formula and substitution evidence. [Specification / Plan]
 
-### 6.2 Using ATPs: search, check, and reuse (28:15)
+### 6.2 Using ATPs: search, check, and reuse (27:00)
 
 The flowchart shows where ATPs are used.
 We send the goal and available premises to an ATP. The kernel checks the candidate evidence, and accepted results are stored in the library for reuse.
 If the goal remains open, we revise lemmas or strategy and retry. An LLM can help with suggestions and repairs. The figure shows design intent, not a measured result about the cost and benefit of retries.
 Normal verification uses source citations and local hypotheses. Lemmas found during assistance must also be written into citations and verified again. The next slide shows the evidence that supports acceptance. [Specification / Design intent]
 
-### 6.3 Resolution tree and extracted substitutions (29:15)
+### 6.3 Resolution tree and extracted substitutions (28:00)
 
 F1 says P implies Q; F2 says Q implies R; H is P(a); the goal is R(a). Add the negated goal and derive a contradiction.
 In the left tree, unifying Q(x) and Q(y) gives x:=y and the clause not P(y) or R(y). Then unifying P(y) and P(a) gives y:=a and R(a). Together with not R(a), this gives the empty clause.
 On the right, combine x:=y with y:=a along the branch. This gives x:=a for the original F1 and y:=a for F2. Record which formulas and goal these substitutions belong to.
 This is a proposal for getting candidate evidence from an external log. We do not trust the extractor; the kernel checks its output. The design also plans a separate instance finder that produces the same evidence format. It is not implemented. The kernel does not replay each inference in the log. [Design sketch / Unimplemented]
 
-### 6.4 From saved evidence to concrete SAT clauses (30:45)
+### 6.4 From saved evidence to concrete SAT clauses (29:30)
 
 SAT tests whether all propositional clauses can be true together. UNSAT means they cannot. At the top, the kernel checks formulas, substitutions, origins, target, and binding context. Free variables must not become bound by mistake. It then instantiates both implications at a and adds P(a) and the negated goal.
-Below, p, q, r stand for P(a), Q(a), R(a). Variables s and t stand for the implications. Each blue box gives three defining clauses and one unit clause asserting the implication. Add p and not r: five variables, ten clauses. This Tseitin encoding follows the current encoder.
+Below, p, q, r stand for P(a), Q(a), R(a). The two implications become the clauses not p or q, and not q or r. Add p and not r: three variables, four clauses.
 The green band shows the contradiction: p and the implications force r, but we also require not r. The kernel generates these clauses from checked evidence, then uses its trusted SAT checker to confirm UNSAT. It does not replay external resolution steps. This is an encoding example, not an execution dump. [Architecture-based design sketch]
 
-## Part 7. Status And Roadmap (32:30–36:30)
+## Part 7. Status And Roadmap (31:15–35:15)
 
-### 7.1 Implementation status and size (32:30)
+### 7.1 Implementation status and size (31:15)
 
 The unit is kLoC: one thousand lines. At the November 4 snapshot ae4326d1e, Rust product code is 293.2 kLoC, excluding tests, blank lines, and comments. We reviewed the remaining scope and provisionally estimate a total of 377 to 551 kLoC. Current code is about 53 to 78 percent of that estimated total. Each row shows the same size ratio. This is not feature completeness or an estimate of time remaining. MML porting is separate. [Measurement / Scope]
 The table separates ATP search from the kernel that accepts proofs. The kernel is 13.1 kLoC, including 2.0 for SAT encoding and connection. Adding the SAT solver and its dependency gives 17.2 kLoC for checking. Core, session, and shared support are counted separately, so this is not the size of the full minimum trusted computing base, or TCB. [Counting boundary]
 A bounded theorem path now reaches artifact commit. Native source diagnostics and documentation readers also exist. General source-to-artifact integration, full IDE support, MVM execution, extraction, and document rendering remain unfinished. [Limited implementation / Plan]
 
-### 7.2 Next steps and summary (34:00)
+### 7.2 Next steps and summary (32:45)
 
-Our first priority is to connect these steps. We give source code a precise meaning, then generate verification conditions, or VCs. Next come evidence, kernel acceptance, saved results called artifacts, and builds. We will expand the working paths in this order. Unsupported inputs must continue to be rejected. We will also keep working to make algorithm semantics and proof obligations agree. [Plan]
+Our first priority is to integrate the proof pipeline. We give source code a precise meaning, then generate verification conditions, or VCs. Next come evidence, kernel acceptance, saved results called artifacts, and builds. We will expand the working paths in this order. Unsupported inputs must continue to be rejected. We will also keep working to make algorithm semantics and proof obligations agree. [Plan]
 MVM runtime and code extraction are separate development tasks. Beyond them, we are considering learned premise selection, LLM repair, cryptography, and quantum algorithms. These are long-term directions without completion dates. [Future direction]
 
 We keep Mizar's first-order logic, set theory, and ability to read and write mathematics. On this foundation, we redesign templates, algorithms, and development tools, and separate ATP search from trusted checking.
-Several years of language design came first. Implementation and tests with AI agents now lead back to specification changes. The specification is still evolving. I would welcome requests from ITP users: what is difficult in your daily work, and what would you like in notation, proof assistance, or development tools?
+Several years of language design came first. Implementation and tests with AI agents now lead back to specification changes. The specification is still evolving.
 Thank you. We now have time for questions.
 
 ## Questions and backup choices
@@ -241,7 +235,7 @@ Thank you. We now have time for questions.
 - **Do templates really stay first-order?** Chapter 18 treats predicate and functor parameters at schema level. Each instance gives first-order obligations. Backup 1.
 - **Is algorithm just a tactic language?** Its own contracts must be verified. This includes tactic-like uses: they also need a specification and verification. MVM and extraction are unimplemented.
 - **How much is rechecked after a change?** Public claims, acceptance status, and dependency fingerprints determine reuse. Backup 2; package and lockfile example in Backup 3.
-- **What does the kernel trust?** Main frame 6.4: check evidence correspondence and substitutions, then confirm UNSAT for the kernel-generated SAT problem. Details: `draft.ja.md` §6. Default computation additionally trusts MVM; see 4.4.
+- **What does the kernel trust?** Main frame 6.4: check evidence correspondence and substitutions, then confirm UNSAT for the kernel-generated SAT problem. Details: `draft.ja.md` §6. Default computation additionally trusts MVM; see by computation in 4.3.
 - **What works now?** The limited implementation in 7.1. Connection details are in the question-time notes of `draft.ja.md` §7.1. No general source-to-artifact or end-to-end external-prover result is claimed. Recheck the fixed SHA, `doc/design/todo.md`, and source before the talk.
 
 ## Presenter notes (do not read aloud)

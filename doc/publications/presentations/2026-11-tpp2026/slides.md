@@ -110,7 +110,7 @@ Speaker note:
 | Area | Challenge in current Mizar | Design principle |
 |---|---|---|
 | **§1 Foundation** | Keep the logic and MML while replacing the processor | Keep FOL / set theory and a small kernel |
-| **§2 Writing** | Trace implicit type, registration, and overload choices | Keep mathematical abstractions; explain implicit choices |
+| **§2 Writing** | Trace implicit type, overload, and registration choices | Keep mathematical abstractions; explain implicit choices |
 | **§3 Generics** | Separate mechanisms for definitions, theorems, and schemes | Unify generic mechanisms with templates |
 | **§4 Computation** | Connect proofs to executable procedures | Check algorithm contracts, invariants, and termination |
 | **§5 Tools** | Dependencies, distribution, incremental checking, IDE | Modules, namespaces, packages, incremental builds, LSP |
@@ -171,22 +171,22 @@ Speaker note:
 
 ## Part 2. Readable Mathematics
 
-### Frame 2.1 - Trace type, registration, and overload choices
+### Frame 2.1 - Trace type, overload, and registration choices
 
 Readable mathematics relies on many automatic decisions.
 
 - **type: which types can this object be used as?**
   Follow attributes and inheritance. Example: Group → Magma, with a unique path.
-- **registration: which rules supplied the required attributes?**
-  Example: the chain empty → finite → countable.
 - **overload: which definition and view were selected?**
   Distinguish definitions with the same notation, or addition and multiplication in a ring.
+- **registration: which rules supplied the required attributes?**
+  Example: the chain empty → finite → countable.
 
 **Keep natural writing and automatic rules, while tracing the reasons for implicit choices.**
 
 Speaker note:
 
-- Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; registration: 2.5; overload / views: 2.6.
+- Source: spec 08 §8.1–8.2; 17 §17.7; 19 §19.1–19.3. Type: 2.2–2.4; overload / views: 2.5; registration: 2.6.
 
 ### Frame 2.2 - struct: current Mizar and Evo
 
@@ -218,17 +218,31 @@ Speaker note:
 - This compares ways to model addition and zero, not a mechanical translation. Current Mizar can also define derived values with functors. The Evo declaration alone gives neither an implementation of zero nor identity laws; it needs the assumptions and proofs in 2.4.
 ### Frame 2.2a - Why separate fields and properties?
 
+Current Mizar: equal fields give equal strict objects (sketch):
+
+```mizar
+reserve M1, M2 for strict addMagma;
+theorem
+  the carrier of M1 = the carrier of M2 &
+  the addF of M1 = the addF of M2 implies M1 = M2;
+
+:: Without strict this fails: for an addLoopStr L,
+:: L and addMagma(# the carrier of L, the addF of L #)
+:: have the same carrier and addF, but L also has ZeroF.
+```
+
 - **Current strict: limit the fields of a structure.**
   For strict objects of the same structure, equal fields mean equal objects.
-- **Remaining issue: a derived value is still stored data.**
-  A two-sided identity is unique if it exists, but storing it as ZeroF adds a field.
+- **Without strict, equal fields are not enough.**
+  An addLoopStr is also an addMagma, but it has the extra field ZeroF.
 - **Evo property: derive a value without an extra stored field.**
   Keep it separate from fields; obtain its value from an applicable implementation and proofs.
 
 Speaker note:
 
-- Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. When ZeroF must satisfy the two-sided identity laws, the stored value is already uniquely determined by the operation. Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5.
+- Each structure introduces a strict attribute: no fields beyond those declared. A strict addLoopStr has ZeroF, so it is not a strict addMagma. Source: [Mizar in a Nutshell](https://www.chimaira.org/archive/MizarInANutshell_1980-4451-1-PB.pdf), §2.3.5.
 - Strict objects of the same structure are equal when all their fields agree ([Kaliszyk & Pąk, §8.1](https://project-smart.uibk.ac.at/docs/19/ckkp-jar19.pdf)). Evo also limits extensionality to exact_S instances of the same structure S (spec §§5.8.4–5.8.5). Properties add no stored fields; this does not identify different structures or views unconditionally.
+- Code: a sketch, not an exact MML quotation; proof omitted. A strict object is identified with the aggregate of its fields, so equal fields give equal objects. MML uses this, for example, to prove uniqueness when a functor returns a strict structure (GROUP_2:def 7, (1).G).
 
 ### Frame 2.3 - type: declare inheritance after the structure
 
@@ -258,7 +272,7 @@ Speaker note:
 
 ### Frame 2.4 - type: implement unit for Unital, reuse it as zero
 
-has_unit states that a two-sided identity exists; it does not depend on unit (sketch):
+Implement unit; AddMagma is AddLoopStr's other parent (sketch):
 
 ```mizar
 definition
@@ -267,48 +281,23 @@ definition
   property M.unit means
     for x being Element of M.carrier holds
       M.binop(it,x) = x & M.binop(x,it) = x;
-  existence proof ... end;
-  uniqueness proof ... end;
 end;
+struct AddMagma where
+  field carrier -> set;
+  field add -> BinOp of carrier;
+end;
+inherit AddLoopStr extends AddMagma;
 ```
 
-- **If A's selected LoopStr view is Unital, reuse its unit implementation as zero.**
-- `property zero from unit` gives `A.zero = (A qua LoopStr).unit`. No new zero implementation is needed.
+- **add comes from both LoopStr.binop and AddMagma.add.** Both paths must reach the same Magma.binop.
+- **If A's LoopStr view is Unital, A.zero = (A qua LoopStr).unit.** Hence A.add(A.zero, x) = x = A.add(x, A.zero), with no new implementation.
 
 Speaker note:
 
-- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr. The has_unit definition is in `draft.ja.md`; proof bodies are omitted. Existence follows from the mode assumption, uniqueness by applying the operation to two identities.
+- Source: `doc/spec/en/07.modes.md` §7.4.1, 7.8.2; `05.structures.md` §5.3, 5.8.3. Sketch adapting the implementation example in chapter 7 to LoopStr; `sample_codes.md`, magma.miz and loopstr.miz. has_unit states that a two-sided identity exists and does not refer to unit; its definition is in `draft.ja.md`. The existence and uniqueness obligations of means are omitted for space: existence follows from the mode assumption, uniqueness by applying the operation to two identities. AddMagma itself extends Magma with add from binop (omitted).
 - A is AddLoopStr, and the selected LoopStr view must satisfy Unital. Do not mix facts from different views. This example has no overlapping implementations; overlaps require coherence.
 
-### Frame 2.5 - registration: automatic chains hide dependencies
-
-**Automatic rule chains hide dependencies at the point of use.**
-
-```mizar
-registration
-  cluster EmptyImpliesFinite: empty -> finite for set;
-  coherence proof ... end;
-  cluster FiniteImpliesCountable: finite -> countable for set;
-  coherence proof ... end;
-end;
-```
-
-### Table 5. Registration paths recorded by the new specification
-
-| Starting fact | Derived fact | Recorded rule |
-|---|---|---|
-| S is empty | S is finite | EmptyImpliesFinite |
-| S is finite | S is countable | FiniteImpliesCountable |
-
-- Declaring `empty` gives `finite` and then `countable` implicitly. No rule citation with `by` is needed.
-- **New specification: keep automatic application, and record rule labels and application paths.**
-
-Speaker note:
-
-- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7. Labeled registration example from the new specification; the table is an explanatory trace for an empty set S.
-- Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
-
-### Frame 2.6 - overload: two identities in the same ring
+### Frame 2.5 - overload: two identities in the same ring
 
 **In the same ring R, the additive identity is 0 and the multiplicative identity is 1.**
 
@@ -331,6 +320,37 @@ Speaker note:
 
 - Source: `doc/spec/en/sample_codes.md`, IdentityDef, LoopUnitalDef, RingLikeDef; `19.overload_resolution.md` §19.2.2–19.3.1; `05.structures.md` §5.8.3.
 - Sketch limited to the identity functor id. Assume both views are unital, their identities correspond to R.zero / R.one, and each path to Magma is unique. Definitions: `draft.ja.md`.
+
+### Frame 2.6 - registration: automatic chains hide dependencies
+
+**Automatic rule chains hide dependencies at the point of use.**
+
+Rules and a use, coherence omitted (sketch):
+
+```mizar
+registration
+  cluster EmptyImpliesFinite: empty -> finite for set;
+  cluster FiniteImpliesCountable: finite -> countable for set;
+end;
+theorem
+  for S being empty set holds S is countable;
+```
+
+### Table 5. Registration paths recorded by the new specification
+
+| Starting fact | Derived fact | Recorded rule |
+|---|---|---|
+| S is empty | S is finite | EmptyImpliesFinite |
+| S is finite | S is countable | FiniteImpliesCountable |
+
+- The theorem needs no `by`: `empty` gives `finite` and then `countable` implicitly.
+- **New specification: keep automatic application, and record rule labels and application paths.**
+
+Speaker note:
+
+- Source: `doc/spec/en/17.clusters_and_registrations.md` §17.2, 17.4.1, 17.7; `23.package_management_and_build_system.md` §23.7.7. Labeled registration example from the new specification; coherence proofs are omitted. The theorem is an explanatory use, and the table is its trace for an empty set S.
+- Emphasize that rules are not cited at the point of use and can apply in several stages. Attribute resolution takes place before ATP search.
+
 
 ## Part 3. Generic Mathematics
 
@@ -389,7 +409,18 @@ Speaker note:
 
 ### Frame 3.3 - Unify schemes with template theorems [deep dive]
 
-Induction as a theorem with a predicate parameter (specification example):
+Classical scheme (MML):
+
+```mizar
+scheme NatInd { P[Nat] } :
+  for k being Nat holds P[k]
+provided
+  A1: P[0] and
+  A2: for k being Nat st P[k]
+        holds P[k+1];
+```
+
+Template theorem (specification example):
 
 ```mizar
 definition
@@ -402,13 +433,14 @@ end;
 ```
 
 - A predicate parameter describes a family of first-order theorems, one per substituted predicate.[^1]
-- Explicit instantiation: `defpred`, followed by `by NatInduction[P], Base, Step`.
+- Explicit instantiation: instead of `from NAT_1:sch 2(A1,A2)`, `defpred` followed by an ordinary `by NatInduction[P], Base, Step`.
 - Functor parameters are schema-level symbols, not sets. The logic stays first-order.
 
 [^1]: Details: Białystok deck, Story 6 (`PermProduct[T]` and views with `qua`); also Backup 1 here.
 
 Speaker note:
 
+- The classical scheme is MML `NAT_1:sch 2` (NatInd); its proof is omitted for space.
 - Source: `doc/spec/en/18.templates.md` §18.2.3, 18.8.2, 18.9. Frame 3.4 shows type / value parameters for structures and attributes.
 
 ### Frame 3.4 - template: parameterize structures and attributes too
@@ -483,7 +515,8 @@ terminating algorithm EuclidGcdDef: euclid_gcd(a, b) -> Nat
 do
   var x := a;  var y := b;
   while y <> 0 do
-    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);  decreasing y;
+    invariant x >= 1 & y >= 0 & Gcd(a, b) = Gcd(x, y);
+    decreasing y;
     const r := x mod y;  x := y;  y := r;
   end;
   return x;
@@ -500,39 +533,9 @@ Speaker note:
 - Source: specification chapter 20, §20.1.1, 20.5, 20.12. Outer definition / let context omitted.
 - Comparison: [Dafny §8.15](https://dafny.org/latest/DafnyRef/DafnyRef.html#sec-loop-specifications).
 
-### Frame 4.3 - Euclid: code and proof obligations
+### Frame 4.3 - terminating and functor promotion
 
-The body again (sketch, a,b >= 1; outer context omitted):
-
-```mizar
-var x := a; var y := b; :: (1)
-while y <> 0 do
-  invariant x >= 1 & y >= 0 & Gcd(a,b) = Gcd(x,y); :: (2)
-  decreasing y; :: (3)
-  const r := x mod y; x := y; y := r;
-end;
-return x; :: (4)
-```
-
-### Table 9. Proof obligations for Euclid's algorithm
-
-| Point | Proof obligation | Mathematical reason |
-|---|---|---|
-| (1) | Establish the invariant | `x=a`, `y=b`; positivity from the precondition |
-| (2) | Preserve the invariant | `Gcd(x,y)=Gcd(y,r)`; old `y >= 1`, `r >= 0` |
-| (3) | Decrease the Nat measure | `y' = r`, `0 <= r < y` |
-| (4) | Postcondition at exit | `y=0`; `Gcd(a,b) = Gcd(x,0) = x` |
-
-**Check each point using library lemmas for GCD and remainder.**
-
-Speaker note:
-
-- Source: `doc/spec/en/20.algorithm_and_verification.md` §20.5, 20.12, 20.13.3. Numbers connect the repeated body to the table. Compute r=x mod y in the old state, then update to (y,r). SAT alone does not know arithmetic. Changing y:=r to y:=x loses the decrease. Specification-based explanation.
-- Future direction: number theory, combinatorics, symbolic computation, optimization, cryptography, and quantum algorithms. MVM execution and code extraction remain future work.
-
-### Frame 4.4 - terminating and functor promotion
-
-### Table 10. Algorithm termination and guarantees
+### Table 9. Algorithm termination and guarantees
 
 | Algorithm form | Meaning under requires |
 |---|---|
@@ -547,7 +550,7 @@ assume a >= 1 & b >= 1;
 thus euclid_gcd(a,b) = Gcd(a,b) by EuclidGcdDef;
 ```
 
-Use a computed result in a proof (sketch, MVM not implemented):
+Use a computed result in a proof (sketch):
 
 ```mizar
 thus euclid_gcd(12,8) = 4 by computation;
@@ -555,14 +558,12 @@ thus euclid_gcd(12,8) = 4 by computation;
 
 Run a verified algorithm on MVM, the virtual machine, and use its result in a proof.
 
-**The default `computed` path also trusts MVM. It differs from kernel / SAT rechecking.**
-
 Speaker note:
 
 - Source: `doc/spec/en/20.algorithm_and_verification.md` §20.7.2–20.7.3, 20.9.1–20.9.2, 20.13.2; `16.theorems_and_proofs.md` §16.5.1. MVM execution and code extraction are future work.
 - Requires the precondition and a verified executable artifact. Replay requires defining equations and kernel checks; it does not apply to this loop-based Euclid example. Details: `draft.ja.md`.
 
-### Frame 4.5 - Verified expression rewriting: lambda and differentiation
+### Frame 4.4 - Verified expression rewriting: lambda and differentiation
 
 Write a function directly (sketch, u is Real):
 
@@ -572,7 +573,7 @@ u |-> (sin u)*u
 
 `differentiate` recursively processes expression forms such as products and sin.
 
-Use it in a derivative proof (sketch, x is Real; MVM not implemented):
+Use it in a derivative proof (sketch, x is Real):
 
 ```mizar
 thus diff((u |-> (sin u)*u), x) = (cos x)*x + sin x
@@ -591,7 +592,7 @@ Speaker note:
 
 ## Part 5. Development Infrastructure
 
-### Frame 5.1 - Environment: what must an author import?
+### Frame 5.1 - Environment: the equivalent of importing external files
 
 Current Mizar, shortened from ALGSTR_0 (sketch):
 
@@ -604,7 +605,7 @@ environ
  theorems STRUCT_0;
 ```
 
-### Table 11. The ten environment directives
+### Table 10. The ten environment directives
 
 | Directives | What they import |
 |---|---|
@@ -631,7 +632,7 @@ import .function;
 import mml.algebra.structure.sorted;
 ```
 
-### Table 12. Imports and dependency tracking
+### Table 11. Imports and dependency tracking
 
 | Stage | What authors can inspect |
 |---|---|
@@ -720,14 +721,14 @@ Speaker note:
 
 From evidence checks to SAT-based acceptance (sketch):
 
-![Evidence checks, ground instances and a five-variable ten-clause SAT refutation](figures/sat_evidence_check.pdf)
+![Evidence checks, ground instances and a three-variable four-clause SAT refutation](figures/sat_evidence_check.pdf)
 
 - **Check evidence, regenerate CNF, confirm UNSAT with SAT, and accept R(a).**
 
 Speaker note:
 
 - Save original formulas, composed substitutions, binding context, target VC, and refutation polarity. Regenerate instances and SAT clauses; details in `draft.ja.md` §6.
-- Each blue box defines implication variable s/t and gives four clauses. With unit clauses p and not r, there are five variables and ten clauses. DIMACS is retained in `draft.ja.md` §6. This is not an execution dump.
+- The blue box gives the two implication clauses and unit clauses p and not r: three variables, four clauses. This is not an execution dump.
 - The kernel neither searches for substitutions nor replays external resolution steps. Source: architecture chapters 08, 15, 16.
 
 ## Part 7. Status And Roadmap
@@ -736,7 +737,7 @@ Speaker note:
 
 **Rust product code: 293.2 kLoC; estimated total: 377–551 kLoC.**
 
-### Table 13. Measured / estimated size (kLoC) and size ratio
+### Table 12. Measured / estimated size (kLoC) and size ratio
 
 | Area | Now | Est. total | Size ratio | Scope / remaining work |
 |---|---:|---:|---:|---|
@@ -751,7 +752,7 @@ Speaker note:
 
 **Overall size ratio: 53–78%. Kernel + SAT dependencies: 17.2 kLoC.**
 
-Size ratio = current / estimated total code; not feature completeness. Estimates are provisional; exclude tests, comments, dependencies and MML porting.
+Size ratio = current / estimated total code; not feature completeness.
 
 Source: November 4 snapshot `ae4326d1e`; revised estimate assumptions: `draft.ja.md` §7.
 
@@ -765,7 +766,7 @@ Speaker note:
 
 ### Next steps
 
-- **First priority: connect source-to-semantics → VC → evidence → kernel → artifact → build.**
+- **First priority: integrate the proof pipeline.**
 - Make algorithm semantics and proof obligations agree; extend the working parts.
 - MVM runtime / extraction: separate work. MML porting is separate from processor completion.
 - Learned premise selection, LLM repair, cryptography, and quantum algorithms are long-term directions.
@@ -774,7 +775,6 @@ Speaker note:
 
 - **Keep FOL, set theory, and mathematical writing; redesign language and tools.**
 - **Separate ATP search from trusted checking. The specification is still evolving.**
-- **Please share your ITP needs: notation, proof assistance, development tools.**
 
 Speaker note:
 
@@ -842,7 +842,7 @@ Source: `doc/spec/en/23.package_management_and_build_system.md`; Białystok deck
 
 ## Backup 4. Comparing evaluation conditions
 
-### Table 14. MizAR 60 and Sledgehammer evaluation conditions
+### Table 13. MizAR 60 and Sledgehammer evaluation conditions
 
 | | MizAR 60 (ITP 2023) | Sledgehammer / AFP (ITP 2022) |
 |---|---|---|
