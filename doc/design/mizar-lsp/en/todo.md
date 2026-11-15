@@ -315,7 +315,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Audit G6: obtain owner-approved source-load/non-range presentation before adding wire conversion and actual delivery tests; retain explicit whole-batch refusal meanwhile. Any new semantic choice returns to the owner.
     - Deps: 9, owner presentation decision. Spec: [diagnostic ranges](diagnostics.md#range-conversion).
 
-42. **Lightweight diagnostic overlay storage and isolation.** [ ]
+42. **[Lightweight diagnostic overlay storage and isolation](../../task_contracts/en/LSP-DIAGNOSTIC-OVERLAY.md).** [ ]
     - Audit G8: implement the specified version-keyed diagnostic overlay store/replacement and retained reads under existing source/retention rules; test semantic-build-index, CLI and VerifiedArtifact isolation. Import-discovery overlays are separate. Host/producer integration stays with task26/DRIVER-G-012.
     - Deps: 9, native frontend/overlay producer support. Spec: [unsaved-text overlays](diagnostics.md#unsaved-text-overlays).
 

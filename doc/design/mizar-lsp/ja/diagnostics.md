@@ -27,6 +27,10 @@ source-load 診断は package/path identity と non-range location を保つ。E
 
 overlay の置換は internal03 に従い、current 配送と retained read は [snapshot invalidation](snapshot.md#freshness-and-replacement) と [retention](snapshot.md#currentness-and-retention) に従う。
 
+`Server::submit_originating_diagnostic_overlay` は元の native capture を消費し、既存の guard 付き Frontend producer を明示的に一度呼ぶ。通知集合全体が適格な場合だけ、元の immutable index と保持 source association を `LspDiagnosticOverlay` として exact URI/document version を key に保存する。呼出側の index/診断は受け取らず、通常の submission/error と既存 notification/writer API は維持する。未取得結果は保存を維持し、適格な clean 結果は当該 source の空 index へ置換する。
+
+`Server::diagnostic_overlay` は元 cohort の raw tuple/incarnation と live Driver guard が current の間だけ URI/version で immutable な `Arc<LspDiagnosticOverlay>` を選択する。current は editor-current Frontend 出力であり semantic verification を意味しない。read は当該 document の元 record と native source tuple だけを公開し、cohort index/association は identity/retention のため内部で共有する。無効化後は元 source の参照だけを許す。新しい適格結果は重なる key を置換し、受理した編集/close は該当 cohort の選択を除去し、shutdown/exit は全選択を除去する。無視/不正/無関係 traffic は除去しない。完全 snapshot の activation 成功は一致する URI/version key を除去し、失敗/partial work は消去しない。reader は最後の参照解放まで元 OpenBufferOverlay lease を保持する。保存は Server 内で semantic publication、CLI rendering、artifact projection から分離し、自動 host integration は task26/DRIVER-G-012 に残す。
+
 ## Ordering
 
 source の診断を選択するときは aggregator の [canonical record order](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#build-aggregation)（`BuildDiagnosticIndex::records`）を保ち、message text、locale、非同期完了順で並べ直さない。
