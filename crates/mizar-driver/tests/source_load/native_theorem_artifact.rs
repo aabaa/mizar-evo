@@ -3309,42 +3309,9 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                     );
 
                     assert_eq!(actual.artifact.statements.len(), 1);
-                    let four = PhaseInput::new(
-                        six.work_unit.clone(),
-                        PhaseDispatchInputBundle::new(
-                            six.snapshot,
-                            six.identities().input_hash(),
-                            six.identities().dependency_hashes().to_vec(),
-                            six.parent_outputs()
-                                .iter()
-                                .filter(|parent| {
-                                    matches!(
-                                        parent.as_output_ref().output_kind().as_str(),
-                                        "SourceTheoremCore"
-                                            | "SourceTheoremVC"
-                                            | "SourceTheoremDischarge"
-                                            | "SourceTheoremCandidateCheck"
-                                    )
-                                })
-                                .cloned()
-                                .collect(),
-                        )
-                        .unwrap(),
-                    );
                     let wrong = verifier.clone().with_kernel_evidence_formats([]);
-                    let lower = inputs
-                        .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
-                            &four,
-                            owner,
-                            id,
-                            (profile.clone(), ConcreteFormat::Tptp),
-                            (&policy, &wrong),
-                            "proof-witnesses/checked.json",
-                        )
-                        .map(|value| value.is_some());
-                    assert_ne!(lower, Ok(true));
                     let absent = fixture.root.join("statement-policy");
-                    assert_eq!(
+                    assert_ne!(
                         inputs
                             .project_native_theorem_artifact_draft(
                                 six,
@@ -3355,9 +3322,9 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                                 ("proof-witnesses/checked.json", &absent),
                             )
                             .map(|value| value.is_some()),
-                        lower
+                        Ok(true)
                     );
-                    assert_eq!(
+                    assert_ne!(
                         inputs
                             .write_native_theorem_artifact_draft(
                                 six,
@@ -3368,7 +3335,7 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                                 ("proof-witnesses/checked.json", "main.mizir.json", &absent),
                             )
                             .map(|value| value.is_some()),
-                        lower
+                        Ok(true)
                     );
                     assert!(!absent.exists());
                     for lock in [true, false] {

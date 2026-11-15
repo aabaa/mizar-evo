@@ -173,6 +173,10 @@ fn native_theorem_preparation_core_caller_preserves_genuine_outputs() {
 
 #[test]
 fn native_theorem_preparation_core_caller_preserves_refusals() {
+    use mizar_ir::{
+        publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+        storage::{BlobDecodeError, BlobDecoder, IrSideTables, SchemaVersion},
+    };
     let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
     for case in [
         "missing",
@@ -246,15 +250,88 @@ fn native_theorem_preparation_core_caller_preserves_refusals() {
                     .iter()
                     .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
                     .unwrap();
-                let input = child(vec![frontend.clone()]);
-                inputs
-                    .publish_native_theorem_core(&input, owner)
+                let core_input = child(vec![parent.erase()]);
+                let core = inputs
+                    .native_theorem_core_with_metadata_parent(&core_input, owner)
                     .unwrap()
+                    .unwrap();
+                let handle = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        frontend,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                let retained = owner.storage().get(&handle).unwrap();
+                let ast = retained.ast.as_ref().unwrap();
+                let module =
+                    ResolverModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
+                let semantic =
+                    mizar_driver::native_theorem_core_semantic_payload(ast, &module, &core)
+                        .unwrap()
+                        .unwrap();
+                let storage = mizar_driver::native_theorem_core_storage_bytes(ast, &module, &core)
+                    .unwrap()
+                    .unwrap();
+                let storage_hash = Hash::from_bytes(blake3::derive_key(
+                    "mizar-driver/native-theorem-core-storage-side-table/v1",
+                    &storage,
+                ));
+                let source_id = ast.source_id;
+                let core_module = module.clone();
+                let work_unit = IrWorkUnit::new(format!(
+                    "{:?}:{:?}",
+                    module.package().as_str(),
+                    module.path().as_str()
+                ));
+                owner
+                    .publish(PublishOutputInput {
+                        slot: owner.allocate(
+                            old.snapshot,
+                            IrPipelinePhase::new("Elaboration"),
+                            work_unit.clone(),
+                            OutputKind::new("SourceTheoremCore"),
+                            SchemaVersion::new(1),
+                        ),
+                        snapshot: old.snapshot,
+                        phase: IrPipelinePhase::new("Elaboration"),
+                        work_unit,
+                        output_kind: OutputKind::new("SourceTheoremCore"),
+                        schema_version: SchemaVersion::new(1),
+                        payload: core,
+                        canonical_payload: Some(semantic),
+                        storage_payload: Some(storage),
+                        decode: BlobDecoder::new(move |bytes| {
+                            mizar_driver::native_theorem_core_from_storage_bytes(
+                                bytes,
+                                source_id,
+                                &core_module,
+                            )
+                            .map_err(BlobDecodeError::new)?
+                            .ok_or_else(|| BlobDecodeError::new("negative Core replay"))
+                        }),
+                        parents: vec![frontend.clone()],
+                        named_input_hashes: vec![mizar_ir::identity::NamedInputHash {
+                            name: "source".to_owned(),
+                            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                            digest: old.identities().input_hash(),
+                        }],
+                        side_tables: IrSideTables {
+                            source_maps: vec![mizar_ir::storage::SideTableRecord::new(
+                                "elaborate-theorem-core-storage",
+                                inputs.snapshot.source_versions[0].normalized_path.as_str(),
+                                storage_hash,
+                            )],
+                            ..IrSideTables::default()
+                        },
+                        origin: OutputOrigin::PackageSource,
+                        target: PublicationTarget::CurrentPackage,
+                    })
                     .unwrap()
             } else {
-                let input = child(vec![parent.erase()]);
+                let core_input = child(vec![parent.erase()]);
                 inputs
-                    .publish_native_theorem_core_with_metadata_parent(&input, owner)
+                    .publish_native_theorem_core_with_metadata_parent(&core_input, owner)
                     .unwrap()
                     .unwrap()
             };
@@ -428,7 +505,7 @@ fn native_theorem_preparation_core_caller_preserves_refusals() {
             let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
             let (_, submission_b, adapter_b, frontend_b, _) =
                 native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
-            let (inputs_b, old_b) = native_disk_lookup_context(&submission_b, ids);
+            let (_, old_b) = native_disk_lookup_context(&submission_b, ids);
             let publisher_b = adapter_b.publisher();
             let input_b = PhaseInput::new(
                 old_b.work_unit.clone(),
@@ -447,10 +524,8 @@ fn native_theorem_preparation_core_caller_preserves_refusals() {
                 )
                 .unwrap(),
             );
-            let original_b = inputs_b
-                .native_theorem_core_with_frontend_parent(&input_b, publisher_b)
-                .unwrap()
-                .unwrap();
+            let original_b =
+                genuine_theorem_core_from_frontend_parent(&input_b, publisher_b).unwrap();
             let output_b = publisher_b.storage().get(&frontend_b).unwrap();
             let ast_b = output_b.ast.as_ref().unwrap();
             assert_ne!(ast_a.source_id, ast_b.source_id);
@@ -541,7 +616,7 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
             text,
             open,
             threshold,
-            |fixture, inputs, old, owner, outputs, (_, ids, snapshots)| {
+            |fixture, _, old, owner, outputs, (_, ids, snapshots)| {
                 let frontend = outputs
                     .iter()
                     .find(|output| output.phase() == &IrPipelinePhase::new("Frontend"))
@@ -563,10 +638,7 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
                     )
                     .unwrap(),
                 );
-                let core = inputs
-                    .native_theorem_core_with_frontend_parent(&input, owner)
-                    .unwrap()
-                    .unwrap();
+                let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
                 let frontend_handle = owner
                     .storage()
                     .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
@@ -631,8 +703,7 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
                 let relocated_fixture = Fixture::new(text.as_bytes());
                 let (_, submission, adapter, relocated_handle, _) =
                     native_disk_frontend_record_submission(&relocated_fixture, ids, snapshots, 0);
-                let (relocated_inputs, relocated_old) =
-                    native_disk_lookup_context(&submission, ids);
+                let (_, relocated_old) = native_disk_lookup_context(&submission, ids);
                 let relocated_owner = adapter.publisher();
                 let relocated_input = PhaseInput::new(
                     relocated_old.work_unit.clone(),
@@ -651,10 +722,9 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
                     )
                     .unwrap(),
                 );
-                let relocated_core = relocated_inputs
-                    .native_theorem_core_with_frontend_parent(&relocated_input, relocated_owner)
-                    .unwrap()
-                    .unwrap();
+                let relocated_core =
+                    genuine_theorem_core_from_frontend_parent(&relocated_input, relocated_owner)
+                        .unwrap();
                 let relocated_frontend = relocated_owner.storage().get(&relocated_handle).unwrap();
                 let relocated_ast = relocated_frontend.ast.as_ref().unwrap();
                 assert_ne!(ast.source_id, relocated_ast.source_id);
@@ -715,7 +785,7 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
     let snapshots = SnapshotRegistry::new();
     let (_, submission, adapter, handle, _) =
         native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
-    let (inputs, old) = native_disk_lookup_context(&submission, &ids);
+    let (_, old) = native_disk_lookup_context(&submission, &ids);
     let owner = adapter.publisher();
     let input = PhaseInput::new(
         old.work_unit.clone(),
@@ -734,10 +804,7 @@ fn native_theorem_preparation_storage_replay_preserves_genuine_outputs() {
         )
         .unwrap(),
     );
-    let core = inputs
-        .native_theorem_core_with_frontend_parent(&input, owner)
-        .unwrap()
-        .unwrap();
+    let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
     let output = owner.storage().get(&handle).unwrap();
     let ast = output.ast.as_ref().unwrap();
     assert!(core.algorithms().is_empty());
@@ -770,7 +837,7 @@ fn native_theorem_preparation_storage_replay_preserves_refusals() {
     let snapshots = SnapshotRegistry::new();
     let (_, submission, adapter, handle, _) =
         native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
-    let (inputs, old) = native_disk_lookup_context(&submission, &ids);
+    let (_, old) = native_disk_lookup_context(&submission, &ids);
     let owner = adapter.publisher();
     let input = PhaseInput::new(
         old.work_unit.clone(),
@@ -789,10 +856,7 @@ fn native_theorem_preparation_storage_replay_preserves_refusals() {
         )
         .unwrap(),
     );
-    let core = inputs
-        .native_theorem_core_with_frontend_parent(&input, owner)
-        .unwrap()
-        .unwrap();
+    let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
     let output = owner.storage().get(&handle).unwrap();
     let ast = output.ast.as_ref().unwrap();
     let inner = encode_core(ast, &module, &core).unwrap().unwrap();

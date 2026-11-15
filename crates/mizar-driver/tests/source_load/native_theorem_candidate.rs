@@ -532,8 +532,7 @@ fn native_theorem_candidate_core_vc_discharge_caller_preserves_refusals() {
                 let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
                 let (_, foreign_submission, adapter, frontend, _) =
                     native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
-                let (foreign_inputs, foreign_old) =
-                    native_disk_lookup_context(&foreign_submission, ids);
+                let (_, foreign_old) = native_disk_lookup_context(&foreign_submission, ids);
                 let foreign_owner = adapter.publisher();
                 let foreign_input = PhaseInput::new(
                     foreign_old.work_unit.clone(),
@@ -552,10 +551,9 @@ fn native_theorem_candidate_core_vc_discharge_caller_preserves_refusals() {
                     )
                     .unwrap(),
                 );
-                let foreign_core = foreign_inputs
-                    .native_theorem_core_with_frontend_parent(&foreign_input, foreign_owner)
-                    .unwrap()
-                    .unwrap();
+                let foreign_core =
+                    genuine_theorem_core_from_frontend_parent(&foreign_input, foreign_owner)
+                        .unwrap();
                 let foreign_frontend = foreign_owner.storage().get(&frontend).unwrap();
                 let ast = foreign_frontend.ast.as_ref().unwrap();
                 assert_ne!(ast.source_id, core.source_id());
@@ -891,7 +889,7 @@ fn native_theorem_candidate_storage_replays_genuine_inputs() {
         let snapshots = SnapshotRegistry::new();
         let (_, submission, adapter, handle, _) =
             native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
-        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let (_, original) = native_disk_lookup_context(&submission, &ids);
         let owner = adapter.publisher();
         let input = PhaseInput::new(
             original.work_unit.clone(),
@@ -910,10 +908,7 @@ fn native_theorem_candidate_storage_replays_genuine_inputs() {
             )
             .unwrap(),
         );
-        let core = inputs
-            .native_theorem_core_with_frontend_parent(&input, owner)
-            .unwrap()
-            .unwrap();
+        let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
         let frontend = owner.storage().get(&handle).unwrap();
         assert!(frontend.diagnostics.is_empty());
         let ast = frontend.ast.as_ref().unwrap();
@@ -1095,7 +1090,7 @@ fn native_theorem_candidate_storage_preserves_refusals() {
     for fixture in &fixtures {
         let (_, submission, adapter, handle, _) =
             native_disk_frontend_record_submission(fixture, &ids, &snapshots, 0);
-        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let (_, original) = native_disk_lookup_context(&submission, &ids);
         let owner = adapter.publisher();
         let input = PhaseInput::new(
             original.work_unit.clone(),
@@ -1114,10 +1109,7 @@ fn native_theorem_candidate_storage_preserves_refusals() {
             )
             .unwrap(),
         );
-        let core = inputs
-            .native_theorem_core_with_frontend_parent(&input, owner)
-            .unwrap()
-            .unwrap();
+        let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
         let output = owner.storage().get(&handle).unwrap();
         let ast = output.ast.as_ref().unwrap();
         let opaque = old_encode(ast, &module, &core).unwrap().unwrap();
@@ -2988,10 +2980,8 @@ fn native_theorem_candidate_check_four_parent_caller_preserves_refusals() {
                 )
                 .unwrap(),
             );
-            let foreign_core = foreign_inputs
-                .native_theorem_core_with_frontend_parent(&frontend_input, foreign_owner)
-                .unwrap()
-                .unwrap();
+            let foreign_core =
+                genuine_theorem_core_from_frontend_parent(&frontend_input, foreign_owner).unwrap();
             let foreign_frontend = foreign_owner.storage().get(&handle).unwrap();
             let foreign_ast = foreign_frontend.ast.as_ref().unwrap();
             assert_ne!(foreign_ast.source_id, ast.source_id);
@@ -5298,6 +5288,7 @@ fn native_theorem_candidate_check_publication_preserves_refusals() {
                 assert_eq!(actual_generation, &generation);
                 assert_eq!(vcs.vcs().len(), 1);
                 let verifier = VerifierPolicy::default();
+                let disabled = verifier.clone().with_kernel_evidence_formats([]);
                 let expected = fresh(
                     &arena,
                     &check,
@@ -5359,7 +5350,6 @@ fn native_theorem_candidate_check_publication_preserves_refusals() {
                     .unwrap(),
                     Some(checked.clone())
                 );
-                let disabled = verifier.clone().with_kernel_evidence_formats([]);
                 let probe = |candidate: &PhaseInput,
                              publisher: &PhaseOutputPublisher,
                              selected: VcId,
@@ -7082,18 +7072,6 @@ fn native_theorem_candidate_witness_file_matches_current_kernel() {
                 );
                 fixture.write(&[0xff]);
                 fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
-                let raw = inputs
-                    .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
-                        four,
-                        owner,
-                        id,
-                        (profile.clone(), format),
-                        (&policy, &verifier),
-                        path,
-                    )
-                    .unwrap()
-                    .unwrap();
-                assert_eq!(raw, (expected.1.clone(), expected.2.clone()));
                 owner.allow_work_unit(AllowedWorkUnit::new(
                     IrPipelinePhase::new("KernelCheck"),
                     OutputKind::new("SourceTheoremCandidateWitnessFile"),
@@ -7219,19 +7197,6 @@ fn native_theorem_candidate_witness_file_matches_current_kernel() {
                     ),
                     (9, 0)
                 );
-                assert_eq!(
-                    inputs
-                        .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
-                            four,
-                            owner,
-                            id,
-                            (before.2.clone(), format),
-                            (&before.1, &before.3),
-                            path,
-                        )
-                        .unwrap(),
-                    Some((expected.1.clone(), expected.2.clone()))
-                );
                 let collected = owner.storage().collect(CollectInput {
                     snapshot: four.snapshot,
                     protected_outputs: vec![file.output()],
@@ -7278,7 +7243,6 @@ fn native_theorem_candidate_witness_file_preserves_refusals() {
                     },
                 };
                 let verifier = VerifierPolicy::default();
-                let disabled = verifier.clone().with_kernel_evidence_formats([]);
                 let profile = LogicProfile::try_new(
                     "witness-data",
                     LogicFragment::Fof,
@@ -7360,22 +7324,6 @@ fn native_theorem_candidate_witness_file_preserves_refusals() {
                     None,
                 )
                 .unwrap();
-                let expected = fresh(
-                    &arena,
-                    &check,
-                    &env,
-                    session.captured().snapshot(),
-                    id,
-                    (
-                        &vcs.vc(id).unwrap().anchor.generation_schema_version,
-                        vcs.schema_version(),
-                        profile.clone(),
-                        ConcreteFormat::Tptp,
-                    ),
-                    (&policy, &verifier),
-                    "proof-witnesses/checked.json",
-                )
-                .unwrap();
                 let before = (
                     four.clone(),
                     policy.clone(),
@@ -7426,7 +7374,6 @@ fn native_theorem_candidate_witness_file_preserves_refusals() {
                             .unwrap(),
                         );
                         let error = inputs.native_theorem_candidate_selection_with_core_vc_discharge_check_parents(&input, current, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier)).unwrap_err();
-                        assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(&input, current, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier), "proof-witnesses/checked.json").unwrap_err(), error);
                         assert_eq!(
                             inputs
                                 .publish_native_theorem_candidate_witness_file(
@@ -7441,16 +7388,6 @@ fn native_theorem_candidate_witness_file_preserves_refusals() {
                             error
                         );
                     }
-                    let error = inputs
-                        .native_theorem_candidate_selection_with_core_vc_discharge_check_parents(
-                            four,
-                            owner,
-                            id,
-                            (profile.clone(), ConcreteFormat::Tptp),
-                            (&policy, &disabled),
-                        )
-                        .unwrap_err();
-                    assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(four, owner, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &disabled), "").unwrap_err(), error);
                     let path_error = fresh(
                         &arena,
                         &check,
@@ -7481,7 +7418,6 @@ fn native_theorem_candidate_witness_file_preserves_refusals() {
                         path_error
                     );
                 } else if case == "denied" {
-                    assert_eq!(inputs.native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(four, owner, id, (profile.clone(), ConcreteFormat::Tptp), (&policy, &verifier), "proof-witnesses/checked.json").unwrap(), Some((expected.1, expected.2)));
                     assert_eq!(
                         inputs
                             .publish_native_theorem_candidate_witness_file(

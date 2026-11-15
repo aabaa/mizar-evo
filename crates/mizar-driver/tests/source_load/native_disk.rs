@@ -761,10 +761,8 @@ fn native_disk_cache_request_rejects_unbound_dispatch_capture_roots_and_policy_m
 
 #[test]
 fn native_disk_cache_record_resident_round_trips_real_store_with_owner_bytes() {
-    use mizar_cache::{
-        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
-        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
-    };
+    use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
     use mizar_ir::cache_adapter::{
         CacheAdapterCacheability, EncodeCacheRecordInput, EncodeCacheRecordOutcome,
     };
@@ -1529,10 +1527,8 @@ fn native_disk_expected_cache_payload_rejects_current_bytes_and_raw_maps_before_
 
 #[test]
 fn native_disk_expected_cache_blob_source_feeds_registered_frontend_like_clean_run() {
-    use mizar_cache::{
-        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
-        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
-    };
+    use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
     use mizar_ir::{
         cache_adapter::{
             CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter, RehydrateCacheHitInput,
@@ -3895,10 +3891,7 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
 
 #[test]
 fn native_disk_frontend_lookup_reconstructs_resident_blob_and_clean_aggregate() {
-    use mizar_cache::{
-        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
-        cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot},
-    };
+    use mizar_cache::cache_store::{CacheInsertOutcome, CacheLookupOutcome, CacheStoreRoot};
     use mizar_ir::{
         cache_adapter::{CacheAdapterMiss, CacheRehydrateOutcome, EncodeCacheRecordOutcome},
         publisher::PublishError,
@@ -3912,13 +3905,6 @@ fn native_disk_frontend_lookup_reconstructs_resident_blob_and_clean_aggregate() 
             native_disk_frontend_record_submission(&fixture, &ids, &snapshots, threshold);
         let (inputs, _) = native_disk_lookup_context(&submission, &ids);
         let policy = mizar_proof::policy::VerifierPolicy::release();
-        let request = inputs
-            .prepare_native_disk_frontend_cache_request(&oracle_input, &policy, &oracle, &handle)
-            .unwrap();
-        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request.clone()).build()
-        else {
-            panic!("current native leaf profile");
-        };
         let EncodeCacheRecordOutcome::Encoded(record) = inputs
             .encode_native_disk_frontend_cache_record(
                 &oracle_input,
@@ -3930,11 +3916,8 @@ fn native_disk_frontend_lookup_reconstructs_resident_blob_and_clean_aggregate() 
         else {
             panic!("genuine scheduled Frontend record");
         };
+        let key = record.header.key.clone();
         assert_eq!(key, record.header.key);
-        assert_eq!(
-            record.header.produced_by,
-            request.validation_inputs.toolchain_compatibility
-        );
         assert_eq!(key.phase.as_str(), "Frontend");
         let store = CacheStoreRoot::new(fixture.root.join("retained-frontend"));
         assert_eq!(store.insert(&record).unwrap(), CacheInsertOutcome::Inserted);

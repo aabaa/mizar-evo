@@ -1,0 +1,1599 @@
+use super::*;
+
+impl<'a> crate::registry::SourceLoadInputs<'a> {
+    /// Explicitly compares protected native capture with Build's package config content profile.
+    pub fn validate_native_config_content(self) -> Result<(), String> {
+        let captured = self
+            .captured
+            .ok_or_else(|| "native config content requires captured sources".to_owned())?;
+        if captured.snapshot() != self.snapshot
+            || captured.native_sources().is_none()
+            || self.build_plan.toolchain != self.snapshot.toolchain
+        {
+            return Err("native config content context mismatch".to_owned());
+        }
+        if mizar_build::planner::workspace_config_content_hash(
+            &self.build_plan.verifier_config,
+            &self.build_plan.build_config,
+        ) != self.snapshot.verifier_config_hash
+        {
+            return Err("native config content mismatch".to_owned());
+        }
+        Ok(())
+    }
+
+    /// Explicitly compares protected native capture with Build's typed lock content profile.
+    pub fn validate_native_lock_content(self) -> Result<(), String> {
+        let captured = self
+            .captured
+            .ok_or_else(|| "native lock content requires captured sources".to_owned())?;
+        if captured.snapshot() != self.snapshot
+            || captured.native_sources().is_none()
+            || self.build_plan.toolchain != self.snapshot.toolchain
+        {
+            return Err("native lock content context mismatch".to_owned());
+        }
+        if mizar_build::planner::lockfile_content_hash(&self.build_plan.lockfile)
+            != self.snapshot.lockfile_hash
+        {
+            return Err("native lock content mismatch".to_owned());
+        }
+        Ok(())
+    }
+
+    /// Projects protected native Disk capture into plain cache request data.
+    /// Root binding performs filesystem metadata I/O; no source body is reopened.
+    pub fn prepare_native_disk_cache_request(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+    ) -> Result<mizar_cache::cache_key::CacheKeyRequest, String> {
+        use mizar_cache::cache_key::{
+            CACHE_KEY_SCHEMA_VERSION, CacheKeyRequest, CacheValidationInputs, CompatibilityField,
+            FootprintCompleteness, NamedHash, NamedSchemaVersion, PipelinePhase as CachePhase,
+            PolicyFingerprint, SchemaVersion as CacheSchema, SourceIdentity,
+            WorkUnit as CacheWorkUnit,
+        };
+        use mizar_proof::policy::{DEFAULT_CHECKER_SCHEMA_VERSION, POLICY_SCHEMA_VERSION};
+
+        if input.snapshot != self.snapshot.id
+            || self.build_plan.toolchain != self.snapshot.toolchain
+            || !input.parent_outputs().is_empty()
+            || !input.identities().dependency_hashes().is_empty()
+        {
+            return Err("native Disk request context mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk request requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk request requires one captured source version".to_owned())?;
+        if version.origin != SourceOrigin::Disk
+            || input.identities().input_hash() != source_input_hash(version)
+        {
+            return Err("native Disk request source dispatch mismatch".to_owned());
+        }
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk request capture binding failed".to_owned())?;
+        if !matches!(source_input.origin, SourceOriginInput::Disk { .. }) {
+            return Err("native Disk request requires Disk capture".to_owned());
+        }
+        let storage = source
+            .canonical_disk_bytes()
+            .ok_or_else(|| "native Disk request storage is unsupported".to_owned())?;
+        if policy.profile_id().trim().is_empty()
+            || policy.schema_version() != POLICY_SCHEMA_VERSION
+            || policy.checker_schema_version() != DEFAULT_CHECKER_SCHEMA_VERSION
+        {
+            return Err("native Disk request policy metadata is unsupported".to_owned());
+        }
+        let fingerprint = policy.policy_fingerprint().hash();
+        let descriptor = SourceLoadService.phase();
+        Ok(CacheKeyRequest {
+            cache_schema_version: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
+            phase: CachePhase::new(descriptor.service_name),
+            work_unit: CacheWorkUnit::new(format!(
+                "{:?}:{:?}",
+                source.package_id.as_str(),
+                source.module_path.as_str()
+            )),
+            source_identity: Some(SourceIdentity {
+                package_id: source.package_id,
+                module_path: source.module_path,
+                normalized_source_path: source.normalized_path,
+                source_hash: source.source_hash,
+                language_edition: source.edition,
+            }),
+            input_hashes: vec![
+                NamedHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                },
+                NamedHash {
+                    name: "source-storage".to_owned(),
+                    domain: "mizar-frontend/source-unit-storage-side-table/v1".to_owned(),
+                    digest: Hash::from_bytes(blake3::derive_key(
+                        "mizar-frontend/source-unit-storage-side-table/v1",
+                        &storage,
+                    )),
+                },
+                NamedHash {
+                    name: "captured-lockfile".to_owned(),
+                    domain: "mizar-driver/captured-lockfile-identity/v1".to_owned(),
+                    digest: self.snapshot.lockfile_hash,
+                },
+            ],
+            dependency_hashes: Vec::new(),
+            dependency_slices: Vec::new(),
+            config_hash: self.snapshot.verifier_config_hash,
+            schema_versions: vec![
+                NamedSchemaVersion {
+                    schema_family: "phase-output".to_owned(),
+                    name: descriptor.output_kind,
+                    version: CacheSchema::new(descriptor.schema_version),
+                },
+                NamedSchemaVersion {
+                    schema_family: "source-key".to_owned(),
+                    name: "SourceUnit".to_owned(),
+                    version: CacheSchema::new(SOURCE_UNIT_CACHE_KEY_VERSION),
+                },
+                NamedSchemaVersion {
+                    schema_family: "source-storage".to_owned(),
+                    name: "Disk".to_owned(),
+                    version: CacheSchema::new("mizar-frontend-source-disk-v1"),
+                },
+            ],
+            policy_fingerprint: PolicyFingerprint::new(fingerprint),
+            validation_inputs: CacheValidationInputs {
+                cache_schema_compatibility: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
+                toolchain_compatibility: vec![CompatibilityField {
+                    family: "mizar-session/toolchain".to_owned(),
+                    field_name: "identity".to_owned(),
+                    value: self.snapshot.toolchain.identity().to_owned(),
+                }],
+                dependency_artifacts: Vec::new(),
+                footprint_completeness: FootprintCompleteness::Complete,
+                uncacheable: false,
+                policy_compatibility: vec![
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "schema_version".to_owned(),
+                        value: policy.schema_version().to_string(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "profile_id".to_owned(),
+                        value: policy.profile_id().to_owned(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "checker_schema_version".to_owned(),
+                        value: policy.checker_schema_version().to_string(),
+                    },
+                    CompatibilityField {
+                        family: "mizar-proof/verifier-policy".to_owned(),
+                        field_name: "fingerprint".to_owned(),
+                        value: blake3::Hash::from(*fingerprint.as_bytes())
+                            .to_hex()
+                            .to_string(),
+                    },
+                ],
+                canonical_vc_fingerprint: None,
+                local_context_fingerprint: None,
+                dependency_slice_fingerprints: Vec::new(),
+                obligation_anchor_fingerprint: None,
+                selected_proof_witness_hash: None,
+                deterministic_discharge_hash: None,
+                proof_reuse_schema_versions: Vec::new(),
+                proof_reuse_validation_hash: None,
+                proof_reuse_evidence_identities: Vec::new(),
+                diagnostic_refs: Vec::new(),
+            },
+        })
+    }
+
+    /// Encodes a current SourceLoad output bound to protected native Disk capture.
+    pub fn encode_native_disk_cache_record(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: mizar_ir::storage::PhaseOutputRef<SourceUnit>,
+    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+        use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+        use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
+
+        let request = self.prepare_native_disk_cache_request(input, policy)?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Disk encoding requires a cacheable key".to_owned()),
+        };
+        let publisher = adapter.publisher();
+        let storage = publisher.storage();
+        storage
+            .validate_handle(handle.any())
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_output(
+                input.snapshot,
+                handle.any(),
+                OutputAuthorization::CurrentPackage,
+            )
+            .map_err(|error| error.to_string())?;
+        if handle.phase().as_str() != request.phase.as_str()
+            || handle.work_unit().as_str() != request.work_unit.as_str()
+            || handle.output_kind() != &OutputKind::new("SourceUnit")
+            || handle.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Disk encoding output binding mismatch".to_owned());
+        }
+        let lineage = publisher
+            .registry()
+            .output_lineage(handle.output())
+            .ok_or_else(|| "native Disk encoding requires output lineage".to_owned())?;
+        if !lineage.parents.is_empty()
+            || lineage.named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+        {
+            return Err("native Disk encoding lineage mismatch".to_owned());
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk encoding requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk encoding requires one captured source version".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk encoding capture binding failed".to_owned())?;
+        let payload = storage.get(&handle).map_err(|error| error.to_string())?;
+        if payload.source_id != version.source_id
+            || !payload.matches_canonical_storage(&source, &source_input)
+        {
+            return Err("native Disk encoding source storage mismatch".to_owned());
+        }
+        let storage_input = unique(
+            request
+                .input_hashes
+                .iter()
+                .filter(|entry| entry.name == "source-storage"),
+        )
+        .ok_or_else(|| "native Disk encoding requires source storage identity".to_owned())?;
+        let side_tables = storage
+            .side_tables(&handle)
+            .map_err(|error| error.to_string())?;
+        if *side_tables
+            != (IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "source-storage",
+                    source.normalized_path.as_str(),
+                    storage_input.digest,
+                )],
+                ..IrSideTables::default()
+            })
+        {
+            return Err("native Disk encoding side tables mismatch".to_owned());
+        }
+        let storage_payload = payload
+            .canonical_disk_bytes()
+            .ok_or_else(|| "native Disk encoding storage is unsupported".to_owned())?;
+        Ok(adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: key,
+            produced_by: request.validation_inputs.toolchain_compatibility,
+            canonical_payload: source_input_hash(version).as_bytes().to_vec(),
+            storage_payload,
+            cacheability: CacheAdapterCacheability::Cacheable,
+        }))
+    }
+
+    fn prepare_native_disk_frontend_cache_payload(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: &mizar_ir::storage::PhaseOutputRef<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+    ) -> Result<(mizar_cache::cache_key::CacheKeyRequest, Vec<u8>, Vec<u8>), String> {
+        use mizar_cache::cache_key::{
+            NamedHash, NamedSchemaVersion, PipelinePhase as CachePhase,
+            SchemaVersion as CacheSchema,
+        };
+        use mizar_frontend::cache_key::PreprocessedSourceCacheKey;
+        use mizar_ir::dispatch_input::PhaseDispatchInputBundle;
+
+        self.validate_native_lock_content()?;
+        self.validate_native_config_content()?;
+        if !input.identities().dependency_hashes().is_empty()
+            || !self.snapshot.dependency_artifacts.is_empty()
+            || !self.module_index.dependency_summaries.is_empty()
+            || self
+                .module_index
+                .modules
+                .iter()
+                .any(|entry| !matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. }))
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native Frontend encoding requires the leaf profile".to_owned());
+        }
+        let source_input = PhaseInput::new(
+            input.work_unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                input.snapshot,
+                input.identities().input_hash(),
+                Vec::new(),
+            ),
+        );
+        let mut request = self.prepare_native_disk_cache_request(&source_input, policy)?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Frontend encoding requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Frontend encoding requires one captured source".to_owned())?;
+        let (source, captured_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Frontend encoding capture binding failed".to_owned())?;
+        let publisher = adapter.publisher();
+        let storage = publisher.storage();
+        let parent = input.parent_outputs()[0].as_output_ref();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_output(input.snapshot, parent, OutputAuthorization::CurrentPackage)
+            .map_err(|error| error.to_string())?;
+        if parent.phase().as_str() != "SourceLoad"
+            || parent.work_unit().as_str() != request.work_unit.as_str()
+            || parent.output_kind() != &OutputKind::new("SourceUnit")
+            || parent.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend encoding source parent mismatch".to_owned());
+        }
+        let typed_parent = storage
+            .typed_handle::<SourceUnit>(parent, &OutputKind::new("SourceUnit"))
+            .map_err(|error| error.to_string())?;
+        let parent_source = storage
+            .get(&typed_parent)
+            .map_err(|error| error.to_string())?;
+        if parent_source.source_id != version.source_id
+            || !parent_source.matches_canonical_storage(&source, &captured_input)
+        {
+            return Err("native Frontend encoding parent storage mismatch".to_owned());
+        }
+        let source_storage_hash = request
+            .input_hashes
+            .iter()
+            .find(|entry| entry.name == "source-storage")
+            .ok_or_else(|| "native Frontend encoding requires source storage identity".to_owned())?
+            .digest;
+        if !typed_parent.lineage().parents.is_empty()
+            || typed_parent.lineage().named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+            || *storage
+                .side_tables(&typed_parent)
+                .map_err(|error| error.to_string())?
+                != (IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "source-storage",
+                        source.normalized_path.as_str(),
+                        source_storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                })
+        {
+            return Err("native Frontend encoding source parent lineage mismatch".to_owned());
+        }
+        storage
+            .validate_handle(handle.any())
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_output(
+                input.snapshot,
+                handle.any(),
+                OutputAuthorization::CurrentPackage,
+            )
+            .map_err(|error| error.to_string())?;
+        if handle.phase().as_str() != "Frontend"
+            || handle.work_unit().as_str() != request.work_unit.as_str()
+            || handle.output_kind() != &OutputKind::new("FrontendOutput")
+            || handle.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend encoding output binding mismatch".to_owned());
+        }
+        let output = storage.get(handle).map_err(|error| error.to_string())?;
+        if output.source.source_id != version.source_id
+            || !output
+                .source
+                .matches_canonical_storage(&source, &captured_input)
+            || output.ast.is_none()
+            || !output.diagnostics.is_empty()
+            || !output.preprocessed.import_stubs.is_empty()
+            || output.cache_keys.source != SourceUnitCacheKey::from_source(&source)
+            || output.cache_keys.preprocessed != PreprocessedSourceCacheKey::from_source(&source)
+            || handle.lineage().parents != vec![parent.output()]
+            || handle.lineage().named_input_hashes
+                != vec![
+                    NamedInputHash {
+                        name: "active-lexical-environment".to_owned(),
+                        domain: ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION.to_owned(),
+                        digest: output.cache_keys.active_lexical_environment.stable_hash(),
+                    },
+                    NamedInputHash {
+                        name: "tokens".to_owned(),
+                        domain: TOKEN_STREAM_CACHE_KEY_VERSION.to_owned(),
+                        digest: output.cache_keys.tokens.stable_hash(),
+                    },
+                ]
+        {
+            return Err("native Frontend encoding output source or lineage mismatch".to_owned());
+        }
+        let ast_key = output
+            .cache_keys
+            .ast
+            .as_ref()
+            .ok_or_else(|| "native Frontend encoding requires an AST key".to_owned())?;
+        let key_bytes = output
+            .cache_keys
+            .canonical_bytes()
+            .ok_or_else(|| "native Frontend encoding requires canonical keys".to_owned())?;
+        let storage_payload = output
+            .canonical_disk_bytes()
+            .ok_or_else(|| "native Frontend encoding storage is unsupported".to_owned())?;
+        if *storage
+            .side_tables(handle)
+            .map_err(|error| error.to_string())?
+            != (IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "frontend-storage",
+                    source.normalized_path.as_str(),
+                    Hash::from_bytes(blake3::derive_key(
+                        "mizar-frontend/output-storage-side-table/v1",
+                        &storage_payload,
+                    )),
+                )],
+                ..IrSideTables::default()
+            })
+        {
+            return Err("native Frontend encoding side tables mismatch".to_owned());
+        }
+        let descriptor = FrontendService {
+            artifact_roots: Vec::new(),
+        }
+        .phase();
+        request.phase = CachePhase::new(descriptor.service_name);
+        let schema = request
+            .schema_versions
+            .iter_mut()
+            .find(|entry| entry.schema_family == "phase-output")
+            .ok_or_else(|| "native Frontend encoding requires phase schema".to_owned())?;
+        schema.name = descriptor.output_kind;
+        schema.version = CacheSchema::new(descriptor.schema_version);
+        let mut parent_bytes = parent.content_hash().as_bytes().to_vec();
+        parent_bytes.extend_from_slice(parent.side_table_hash().as_bytes());
+        for (name, domain, bytes) in [
+            (
+                "frontend-cache-keys",
+                "mizar-driver/native-disk-frontend-cache-keys/v1",
+                key_bytes,
+            ),
+            (
+                "source-parent",
+                "mizar-driver/native-disk-frontend-source-parent/v1",
+                parent_bytes,
+            ),
+        ] {
+            request.input_hashes.push(NamedHash {
+                name: name.to_owned(),
+                domain: domain.to_owned(),
+                digest: Hash::from_bytes(blake3::derive_key(domain, &bytes)),
+            });
+        }
+        for (schema_family, name, version) in [
+            (
+                "frontend-keys",
+                "FrontendCacheKeys",
+                "mizar-frontend/cache-keys/v1",
+            ),
+            ("frontend-storage", "Disk", "mizar-frontend-output-disk-v1"),
+        ] {
+            request.schema_versions.push(NamedSchemaVersion {
+                schema_family: schema_family.to_owned(),
+                name: name.to_owned(),
+                version: CacheSchema::new(version),
+            });
+        }
+        let mut canonical_payload = b"mizar-frontend/output-publication/v1\0".to_vec();
+        canonical_payload.extend_from_slice(ast_key.stable_hash().as_bytes());
+        Ok((request, canonical_payload, storage_payload))
+    }
+
+    /// Encodes a current zero-import Frontend output bound to native Disk capture.
+    pub fn encode_native_disk_frontend_cache_record(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: mizar_ir::storage::PhaseOutputRef<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+        use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+        use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
+
+        let (request, canonical_payload, storage_payload) =
+            self.prepare_native_disk_frontend_cache_payload(input, policy, adapter, &handle)?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Frontend encoding requires a cacheable key".to_owned()),
+        };
+        Ok(adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: key,
+            produced_by: request.validation_inputs.toolchain_compatibility,
+            canonical_payload,
+            storage_payload,
+            cacheability: CacheAdapterCacheability::Cacheable,
+        }))
+    }
+
+    /// Reconstructs a native leaf Frontend output against a retained current oracle.
+    pub fn rehydrate_native_disk_frontend_cache(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+        oracle: (
+            &PhaseInput,
+            &mizar_ir::cache_adapter::IrCacheAdapter,
+            &mizar_ir::storage::PhaseOutputRef<
+                FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+            >,
+        ),
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+    ) -> Result<
+        mizar_ir::cache_adapter::CacheRehydrateOutcome<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+        String,
+    > {
+        use mizar_cache::{
+            cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+            cache_store::CacheLookupOutcome,
+        };
+        use mizar_ir::cache_adapter::RehydrateCacheHitInput;
+
+        let (oracle_input, oracle_adapter, oracle_handle) = oracle;
+        let (request, semantic, storage_payload) = self
+            .prepare_native_disk_frontend_cache_payload(
+                oracle_input,
+                policy,
+                oracle_adapter,
+                oracle_handle,
+            )?;
+        if input.snapshot != oracle_input.snapshot
+            || input.work_unit != oracle_input.work_unit
+            || input.identities() != oracle_input.identities()
+            || input.parent_outputs().len() != 1
+        {
+            return Err("native Frontend lookup target binding mismatch".to_owned());
+        }
+        let publisher = adapter.publisher();
+        publisher
+            .validate_current_snapshot(input.snapshot)
+            .map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Frontend lookup requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Frontend lookup requires one captured source".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Frontend lookup capture binding failed".to_owned())?;
+        let storage = publisher.storage();
+        let parent = input.parent_outputs()[0].as_output_ref();
+        storage
+            .validate_handle(parent)
+            .map_err(|error| error.to_string())?;
+        publisher
+            .validate_output(input.snapshot, parent, OutputAuthorization::CurrentPackage)
+            .map_err(|error| error.to_string())?;
+        if parent.phase().as_str() != "SourceLoad"
+            || parent.work_unit().as_str() != request.work_unit.as_str()
+            || parent.output_kind() != &OutputKind::new("SourceUnit")
+            || parent.schema_version() != SchemaVersion::new(1)
+        {
+            return Err("native Frontend lookup source parent mismatch".to_owned());
+        }
+        let typed_parent = storage
+            .typed_handle::<SourceUnit>(parent, &OutputKind::new("SourceUnit"))
+            .map_err(|error| error.to_string())?;
+        let parent_source = storage
+            .get(&typed_parent)
+            .map_err(|error| error.to_string())?;
+        if parent_source.source_id != version.source_id
+            || !parent_source.matches_canonical_storage(&source, &source_input)
+        {
+            return Err("native Frontend lookup parent storage mismatch".to_owned());
+        }
+        let source_storage_hash = request
+            .input_hashes
+            .iter()
+            .find(|entry| entry.name == "source-storage")
+            .ok_or_else(|| "native Frontend lookup requires source storage identity".to_owned())?
+            .digest;
+        if !typed_parent.lineage().parents.is_empty()
+            || typed_parent.lineage().named_input_hashes
+                != vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: input.identities().input_hash(),
+                }]
+            || *storage
+                .side_tables(&typed_parent)
+                .map_err(|error| error.to_string())?
+                != (IrSideTables {
+                    source_maps: vec![SideTableRecord::new(
+                        "source-storage",
+                        source.normalized_path.as_str(),
+                        source_storage_hash,
+                    )],
+                    ..IrSideTables::default()
+                })
+            || parent.output() != oracle_input.parent_outputs()[0].output()
+        {
+            return Err("native Frontend lookup source parent lineage mismatch".to_owned());
+        }
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Frontend lookup requires a cacheable key".to_owned()),
+        };
+        let side_tables = IrSideTables {
+            source_maps: vec![SideTableRecord::new(
+                "frontend-storage",
+                source.normalized_path.as_str(),
+                Hash::from_bytes(blake3::derive_key(
+                    "mizar-frontend/output-storage-side-table/v1",
+                    &storage_payload,
+                )),
+            )],
+            ..IrSideTables::default()
+        };
+        let lookup = store.lookup(&key);
+        if let CacheLookupOutcome::Hit(record) = &lookup
+            && record.header.produced_by != request.validation_inputs.toolchain_compatibility
+        {
+            return Err("native Frontend lookup producer binding mismatch".to_owned());
+        }
+        Ok(adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot: input.snapshot,
+                phase: IrPipelinePhase::new(request.phase.as_str()),
+                work_unit: IrWorkUnit::new(request.work_unit.as_str()),
+                output_kind: OutputKind::new("FrontendOutput"),
+                schema_version: SchemaVersion::new(1),
+                parents: vec![parent.clone()],
+                named_input_hashes: oracle_handle.lineage().named_input_hashes.clone(),
+                decode: BlobDecoder::new(move |bytes| {
+                    if bytes != storage_payload {
+                        return Err(BlobDecodeError::new(
+                            "native Frontend lookup storage mismatch",
+                        ));
+                    }
+                    FrontendOutput::from_canonical_storage_bytes(
+                        bytes,
+                        source.source_id,
+                        &source_input,
+                    )
+                    .filter(|decoded| {
+                        decoded
+                            .source
+                            .matches_canonical_storage(&source, &source_input)
+                    })
+                    .ok_or_else(|| BlobDecodeError::new("native Frontend lookup storage mismatch"))
+                }),
+            },
+            &semantic,
+            &side_tables,
+        ))
+    }
+
+    /// Reconstructs an authorized current source from its genuine native Disk key.
+    pub fn rehydrate_native_disk_cache(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+    ) -> Result<mizar_ir::cache_adapter::CacheRehydrateOutcome<SourceUnit>, String> {
+        use mizar_cache::{
+            cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+            cache_store::CacheLookupOutcome,
+        };
+        use mizar_ir::cache_adapter::RehydrateCacheHitInput;
+
+        let request = self.prepare_native_disk_cache_request(input, policy)?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Disk lookup requires a cacheable key".to_owned()),
+        };
+        adapter
+            .publisher()
+            .validate_current_snapshot(input.snapshot)
+            .map_err(|error| error.to_string())?;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err("native Disk lookup requires a module".to_owned());
+        };
+        let version = unique(self.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        }))
+        .ok_or_else(|| "native Disk lookup requires one captured source version".to_owned())?;
+        let (source, source_input) = self
+            .native_source(version)
+            .ok_or_else(|| "native Disk lookup capture binding failed".to_owned())?;
+        let storage_input = unique(
+            request
+                .input_hashes
+                .iter()
+                .filter(|entry| entry.name == "source-storage"),
+        )
+        .ok_or_else(|| "native Disk lookup requires source storage identity".to_owned())?;
+        let side_tables = IrSideTables {
+            source_maps: vec![SideTableRecord::new(
+                "source-storage",
+                source.normalized_path.as_str(),
+                storage_input.digest,
+            )],
+            ..IrSideTables::default()
+        };
+        let lookup = store.lookup(&key);
+        if let CacheLookupOutcome::Hit(record) = &lookup
+            && record.header.produced_by != request.validation_inputs.toolchain_compatibility
+        {
+            return Err("native Disk lookup producer binding mismatch".to_owned());
+        }
+        let source_hash = input.identities().input_hash();
+        Ok(adapter.rehydrate_with_expected_payload(
+            RehydrateCacheHitInput {
+                lookup,
+                snapshot: input.snapshot,
+                phase: IrPipelinePhase::new(request.phase.as_str()),
+                work_unit: IrWorkUnit::new(request.work_unit.as_str()),
+                output_kind: OutputKind::new("SourceUnit"),
+                schema_version: SchemaVersion::new(1),
+                parents: Vec::new(),
+                named_input_hashes: vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_hash,
+                }],
+                decode: BlobDecoder::new(move |bytes| {
+                    SourceUnit::from_canonical_storage_bytes(bytes, source.source_id, &source_input)
+                        .filter(|decoded| decoded.matches_canonical_storage(&source, &source_input))
+                        .ok_or_else(|| BlobDecodeError::new("native Disk lookup storage mismatch"))
+                }),
+            },
+            source_hash.as_bytes(),
+            &side_tables,
+        ))
+    }
+
+    pub(super) fn native_source(
+        self,
+        version: &mizar_session::SourceVersion,
+    ) -> Option<(SourceUnit, SourceInput)> {
+        let captured = self.captured?;
+        if captured.snapshot() != self.snapshot
+            || self.build_plan.toolchain != self.snapshot.toolchain
+        {
+            return None;
+        }
+        let (loader, loaded, input) =
+            unique(captured.native_sources()?.iter().filter(|(_, loaded, _)| {
+                loaded.package_id == version.package_id && loaded.module_path == version.module_path
+            }))?;
+        if loaded.source_id != version.source_id
+            || loaded.normalized_path != version.normalized_path
+            || loaded.edition != version.edition
+            || loaded.source_hash != version.source_hash
+            || loaded.origin != version.origin
+            || input.package_id != loaded.package_id
+            || input.module_path != loaded.module_path
+            || input.normalized_path != loaded.normalized_path
+            || input.edition != loaded.edition
+        {
+            return None;
+        }
+        let package = unique(
+            self.build_plan
+                .packages
+                .iter()
+                .filter(|package| package.package_id == version.package_id),
+        )?;
+        let PackagePlanSource::Workspace {
+            root,
+            source_root,
+            manifest_path,
+        } = &package.source
+        else {
+            return None;
+        };
+        let indexed = unique(
+            self.module_index
+                .packages
+                .iter()
+                .filter(|package| package.package_id == version.package_id),
+        )?;
+        let mizar_build::module_index::PackageIndexSource::Workspace {
+            package_root: index_root,
+            source_root: index_source_root,
+            manifest_path: index_manifest,
+        } = &indexed.source
+        else {
+            return None;
+        };
+        let entry = unique(self.module_index.modules.iter().filter(|entry| {
+            entry.package_id == version.package_id && entry.module_path == version.module_path
+        }))?;
+        let ModuleIndexLocation::WorkspaceFile {
+            source_root: entry_root,
+            normalized_path,
+            source_relative_path,
+        } = &entry.location
+        else {
+            return None;
+        };
+        let workspace = PathBuf::from(self.snapshot.workspace_root.as_str())
+            .canonicalize()
+            .ok()?;
+        let expected_root = workspace.join(root).canonicalize().ok()?;
+        if self.snapshot.workspace_root != self.build_plan.workspace_root
+            || !safe_relative(root)
+            || !safe_relative(source_root)
+            || !safe_relative(manifest_path)
+            || !expected_root.starts_with(&workspace)
+            || loader.package_root().canonicalize().ok()? != expected_root
+            || root != index_root
+            || source_root != index_source_root
+            || manifest_path != index_manifest
+            || package.version != indexed.version
+            || package.edition != version.edition
+            || indexed.edition != version.edition
+            || entry.edition != version.edition
+            || entry.module.package != version.package_id
+            || entry.module.path != version.module_path
+            || entry_root != source_root
+            || normalized_path != version.normalized_path.as_str()
+            || normalized_path != &format!("src/{source_relative_path}")
+            || source_relative_path.is_empty()
+            || workspace.join(source_root) != workspace.join(root).join("src")
+            || workspace.join(manifest_path) != workspace.join(root).join("mizar.pkg")
+        {
+            return None;
+        }
+        let source = source_unit_from_loaded(loaded.clone(), diagnostic_file_path(input));
+        match &input.origin {
+            SourceOriginInput::Disk { .. } => {
+                source.canonical_disk_bytes()?;
+            }
+            SourceOriginInput::OpenBuffer { .. } => {
+                source.canonical_open_buffer_bytes(input)?;
+            }
+            _ => return None,
+        }
+        Some((source, input.clone()))
+    }
+
+    /// Acquires provisional lexical ordering without publishing source or phase outputs.
+    pub(crate) fn discover_import_overlay(
+        self,
+    ) -> Option<mizar_build::task_graph::ModuleDependencyOverlay> {
+        use mizar_build::{
+            module_index::{ModuleId, ModuleIndexLocation},
+            planner::PackagePlanSource,
+            task_graph::{ModuleDependencyCoverage, ModuleDependencyEdge, ModuleDependencyKind},
+        };
+        use mizar_frontend::{
+            lexical_env::LexicalEnvironmentRequest,
+            preprocess::preprocess,
+            source::{
+                FrontendSourceLoader, SourceUnitLoader, SourceUnitRequest, register_source_unit,
+            },
+            span_bridge::SpanBridge,
+        };
+        use mizar_resolve::{
+            imports::{ImportPathCandidate, ImportPathResolver},
+            module_index::ModuleIndexInput,
+        };
+        use mizar_session::{
+            DiskSourceLoader, InMemorySessionIdAllocator, SourceInput, SourceOrigin,
+            SourceOriginInput,
+        };
+        let snapshot = self.snapshot;
+        let build_plan = self.build_plan;
+        let module_index = self.module_index;
+        if snapshot.workspace_root != build_plan.workspace_root {
+            return None;
+        }
+        let workspace = std::path::Path::new(snapshot.workspace_root.as_str())
+            .canonicalize()
+            .ok()?;
+        let local_ids = InMemorySessionIdAllocator::new();
+        let index = ModuleIndexInput::new(module_index);
+        let mut edges = Vec::new();
+        let mut source_count = 0;
+        for entry in &module_index.modules {
+            let ModuleIndexLocation::WorkspaceFile {
+                source_root,
+                normalized_path,
+                source_relative_path,
+            } = &entry.location
+            else {
+                continue;
+            };
+            source_count += 1;
+            let mut versions = snapshot.source_versions.iter().filter(|version| {
+                version.package_id == entry.module.package
+                    && version.module_path == entry.module.path
+            });
+            let version = versions.next()?;
+            if versions.next().is_some()
+                || (version.origin != SourceOrigin::Disk
+                    && self
+                        .captured
+                        .is_none_or(|capture| capture.native_sources().is_none()))
+            {
+                return None;
+            }
+            let package = build_plan
+                .packages
+                .iter()
+                .find(|package| package.package_id == entry.module.package)?;
+            let PackagePlanSource::Workspace {
+                root,
+                source_root: plan_source_root,
+                ..
+            } = &package.source
+            else {
+                return None;
+            };
+            let package_root = workspace.join(root).canonicalize().ok()?;
+            if !package_root.starts_with(&workspace)
+                || source_root != plan_source_root
+                || workspace.join(source_root) != workspace.join(root).join("src")
+                || entry.package_id != version.package_id
+                || entry.module_path != version.module_path
+                || entry.edition != version.edition
+                || package.edition != version.edition
+                || normalized_path != version.normalized_path.as_str()
+                || normalized_path != &format!("src/{source_relative_path}")
+            {
+                return None;
+            }
+            let loaded = if self
+                .captured
+                .is_some_and(|capture| capture.native_sources().is_some())
+            {
+                self.native_source(version)?.0
+            } else {
+                FrontendSourceLoader::new(DiskSourceLoader::new(package_root))
+                    .load_source_unit(
+                        SourceUnitRequest {
+                            snapshot: snapshot.id,
+                            input: SourceInput {
+                                package_id: version.package_id.clone(),
+                                module_path: version.module_path.clone(),
+                                normalized_path: version.normalized_path.clone(),
+                                edition: version.edition.clone(),
+                                origin: SourceOriginInput::Disk {
+                                    path: normalized_path.into(),
+                                },
+                            },
+                        },
+                        &local_ids,
+                    )
+                    .ok()?
+            };
+            if loaded.package_id != version.package_id
+                || loaded.module_path != version.module_path
+                || loaded.normalized_path != version.normalized_path
+                || loaded.edition != version.edition
+                || loaded.source_hash != version.source_hash
+                || loaded.origin != version.origin
+            {
+                return None;
+            }
+            let mut bridge = SpanBridge::new();
+            register_source_unit(&mut bridge, &loaded).ok()?;
+            let preprocessed = preprocess(&loaded, &mut bridge).ok()?;
+            if !preprocessed.diagnostics.is_empty() {
+                return None;
+            }
+            let candidates =
+                ImportPathCandidate::from_frontend_imports(&LexicalEnvironmentRequest {
+                    source_id: loaded.source_id,
+                    import_stubs: &preprocessed.import_stubs,
+                    edition: loaded.edition.clone(),
+                })?;
+            let resolution = ImportPathResolver::new(index)
+                .resolve(&index.resolver_module_id(&entry.module), &candidates);
+            if !resolution.unresolved().is_empty() {
+                return None;
+            }
+            for import in resolution.resolved() {
+                let target = ModuleId::new(
+                    import.target().package().clone(),
+                    import.target().path().clone(),
+                );
+                let target_entry = module_index
+                    .modules
+                    .iter()
+                    .find(|candidate| candidate.module == target)?;
+                match &target_entry.location {
+                    ModuleIndexLocation::WorkspaceFile { .. } => {}
+                    ModuleIndexLocation::DependencySummary { .. } => continue,
+                    _ => return None,
+                }
+                let edge = ModuleDependencyEdge::new(
+                    entry.module.clone(),
+                    target,
+                    ModuleDependencyKind::ImportSummary,
+                );
+                if !edges.contains(&edge) {
+                    edges.push(edge);
+                }
+            }
+        }
+        if source_count != snapshot.source_versions.len() {
+            return None;
+        }
+        edges.sort_by(|a, b| {
+            (
+                a.dependent.package.as_str(),
+                a.dependent.path.as_str(),
+                a.dependency.package.as_str(),
+                a.dependency.path.as_str(),
+            )
+                .cmp(&(
+                    b.dependent.package.as_str(),
+                    b.dependent.path.as_str(),
+                    b.dependency.package.as_str(),
+                    b.dependency.path.as_str(),
+                ))
+        });
+        Some(mizar_build::task_graph::ModuleDependencyOverlay {
+            coverage: ModuleDependencyCoverage::ImportsOnly,
+            edges,
+        })
+    }
+
+    /// Resolves real dependency lexical summaries under explicit caller-owned roots.
+    /// Requires build-validated indexes and stubs from the captured source version.
+    pub fn dependency_lexical_provider(
+        self,
+        artifact_roots: &'a [(mizar_session::PackageId, PathBuf)],
+    ) -> impl mizar_frontend::lexical_env::LexicalSummaryProvider + 'a {
+        DependencyLexicalProvider {
+            inputs: self,
+            artifact_roots,
+            workspace_summaries: &[],
+        }
+    }
+}
+pub(super) struct DependencyLexicalProvider<'a> {
+    pub(super) inputs: crate::registry::SourceLoadInputs<'a>,
+    pub(super) artifact_roots: &'a [(mizar_session::PackageId, PathBuf)],
+    pub(super) workspace_summaries: &'a [(
+        mizar_resolve::module_index::IndexedModuleId,
+        ModuleLexicalSummary,
+    )],
+}
+
+impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalProvider<'_> {
+    fn resolve_imports(
+        &self,
+        request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+    ) -> Result<
+        mizar_frontend::lexical_env::ResolvedImports,
+        mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+    > {
+        use mizar_frontend::lexical_env::{
+            FrontendLexicalEnvironmentError, ModuleId, ResolvedImport, ResolvedImportEntry,
+            ResolvedImports,
+        };
+        use mizar_resolve::{
+            imports::{ImportPathCandidate, ImportPathResolver},
+            module_index::{IndexedModuleId, ModuleIndexInput},
+            module_summary_reuse::{ModuleSummaryReuse, ModuleSummaryReuseRequest},
+        };
+        let unavailable = || FrontendLexicalEnvironmentError::ProviderUnavailable {
+            message: "dependency lexical provider binding or payload unavailable".to_owned(),
+        };
+        let version = unique(
+            self.inputs
+                .snapshot
+                .source_versions
+                .iter()
+                .filter(|version| version.source_id == request.source_id),
+        )
+        .ok_or_else(unavailable)?;
+        let current = unique(self.inputs.module_index.modules.iter().filter(|entry| {
+            entry.module.package == version.package_id && entry.module.path == version.module_path
+        }))
+        .ok_or_else(unavailable)?;
+        if version.edition != request.edition
+            || current.edition != request.edition
+            || current.package_id != version.package_id
+            || current.module_path != version.module_path
+        {
+            return Err(unavailable());
+        }
+        let index = ModuleIndexInput::new(self.inputs.module_index);
+        let candidates =
+            ImportPathCandidate::from_frontend_imports(request).ok_or_else(unavailable)?;
+        let resolution = ImportPathResolver::new(index)
+            .resolve(&index.resolver_module_id(&current.module), &candidates);
+        let mut result = ResolvedImports {
+            imports: Vec::new(),
+            summaries: Vec::new(),
+            diagnostics: Vec::new(),
+        };
+        for import in resolution.resolved() {
+            let module = IndexedModuleId::new(
+                import.target().package().clone(),
+                import.target().path().clone(),
+            );
+            let entry = unique(
+                self.inputs
+                    .module_index
+                    .modules
+                    .iter()
+                    .filter(|entry| entry.module == module),
+            )
+            .ok_or_else(unavailable)?;
+            if let ModuleIndexLocation::WorkspaceFile { .. } = &entry.location {
+                let (_, summary) = unique(
+                    self.workspace_summaries
+                        .iter()
+                        .filter(|(target, _)| target == &module),
+                )
+                .ok_or_else(unavailable)?;
+                if entry.package_id != module.package || entry.module_path != module.path {
+                    return Err(unavailable());
+                }
+                let module_id = summary.module_id.clone();
+                result.summaries.push(summary.clone());
+                result.imports.push(ResolvedImportEntry {
+                    stub_ordinal: import.ordinal(),
+                    stub_span: import.range(),
+                    import: ResolvedImport { module_id },
+                });
+                continue;
+            }
+            let ModuleIndexLocation::DependencySummary {
+                artifact,
+                content_hash,
+            } = &entry.location
+            else {
+                return Err(unavailable());
+            };
+            let reference = unique(
+                self.inputs
+                    .module_index
+                    .dependency_summaries
+                    .iter()
+                    .filter(|reference| reference.module == module),
+            )
+            .ok_or_else(unavailable)?;
+            if entry.package_id != module.package
+                || entry.module_path != module.path
+                || artifact != &reference.artifact
+                || content_hash != &reference.content_hash
+            {
+                return Err(unavailable());
+            }
+            let (_, root) = unique(
+                self.artifact_roots
+                    .iter()
+                    .filter(|(package, _)| package == &module.package),
+            )
+            .ok_or_else(unavailable)?;
+            let module_id = if let Some(value) = reference.read_current_summary(root) {
+                let summary = ModuleSummaryReuse::new(index)
+                    .read_lexical_summary(
+                        ModuleSummaryReuseRequest::new(
+                            &module,
+                            mizar_session::SourceAnchor::Range(import.range()),
+                        ),
+                        &value,
+                    )
+                    .ok_or_else(unavailable)?;
+                let id = summary.module_id.clone();
+                result.summaries.push(summary);
+                id
+            } else {
+                ModuleId::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                ))
+            };
+            result.imports.push(ResolvedImportEntry {
+                stub_ordinal: import.ordinal(),
+                stub_span: import.range(),
+                import: ResolvedImport { module_id },
+            });
+        }
+        Ok(result)
+    }
+}
+
+pub(crate) struct SourceLoadService;
+
+impl PhaseService for SourceLoadService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceLoad",
+            PhaseOwner::MizarFrontend,
+            vec![PipelinePhase::SourceLoad],
+            "mizar-frontend/source-unit-publication/v1",
+            "SourceUnit",
+        )
+        .expect("source-load descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "current disk source maps require a real source load".to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        let snapshot = input.snapshot;
+        let Some(mut diagnostics) = context.diagnostics else {
+            return blocking();
+        };
+        if diagnostics.is_sealed()
+            || !diagnostics.drafts().is_empty()
+            || diagnostics.scope().phase() != DiagnosticPhase::SourceLoad
+            || diagnostics.scope().source_snapshot() != snapshot
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        if publisher.validate_current_snapshot(snapshot).is_err() {
+            return blocking();
+        }
+        let Some(source_inputs) = context.source_load else {
+            return blocking();
+        };
+        if source_inputs.snapshot.id != snapshot
+            || source_inputs.snapshot.workspace_root != source_inputs.build_plan.workspace_root
+        {
+            return blocking();
+        }
+        if !input.parent_outputs().is_empty() || !input.identities().dependency_hashes().is_empty()
+        {
+            return blocking();
+        }
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return blocking();
+        };
+        let Some(version) = unique(source_inputs.snapshot.source_versions.iter().filter(
+            |version| version.package_id == module.package && version.module_path == module.path,
+        )) else {
+            return blocking();
+        };
+        if !matches!(version.origin, SourceOrigin::Disk)
+            && source_inputs
+                .captured
+                .is_none_or(|capture| capture.native_sources().is_none())
+        {
+            return blocking();
+        }
+        let Some(package) = unique(
+            source_inputs
+                .build_plan
+                .packages
+                .iter()
+                .filter(|package| package.package_id == module.package),
+        ) else {
+            return blocking();
+        };
+        let PackagePlanSource::Workspace {
+            root,
+            source_root,
+            manifest_path,
+        } = &package.source
+        else {
+            return blocking();
+        };
+        let Some(index_package) = unique(
+            source_inputs
+                .module_index
+                .packages
+                .iter()
+                .filter(|entry| entry.package_id == module.package),
+        ) else {
+            return blocking();
+        };
+        let mizar_build::module_index::PackageIndexSource::Workspace {
+            package_root: index_root,
+            source_root: index_source_root,
+            manifest_path: index_manifest,
+        } = &index_package.source
+        else {
+            return blocking();
+        };
+        if root != index_root
+            || source_root != index_source_root
+            || manifest_path != index_manifest
+            || package.edition != version.edition
+            || index_package.edition != version.edition
+            || !safe_relative(root)
+            || !safe_relative(source_root)
+            || !safe_relative(manifest_path)
+        {
+            return blocking();
+        }
+        let Some(entry) = unique(
+            source_inputs
+                .module_index
+                .modules
+                .iter()
+                .filter(|entry| entry.module == *module),
+        ) else {
+            return blocking();
+        };
+        let ModuleIndexLocation::WorkspaceFile {
+            source_root: entry_source_root,
+            normalized_path,
+            source_relative_path,
+        } = &entry.location
+        else {
+            return blocking();
+        };
+        if entry.package_id != module.package
+            || entry.module_path != module.path
+            || entry.edition != version.edition
+            || entry_source_root != source_root
+            || normalized_path != version.normalized_path.as_str()
+            || normalized_path != &format!("src/{source_relative_path}")
+            || source_relative_path.is_empty()
+        {
+            return blocking();
+        }
+        let workspace = PathBuf::from(source_inputs.snapshot.workspace_root.as_str());
+        let package_root = workspace.join(root);
+        let source_root_path = workspace.join(source_root);
+        if source_root_path != package_root.join("src")
+            || workspace.join(manifest_path) != package_root.join("mizar.pkg")
+        {
+            return blocking();
+        }
+
+        let source_key = source_input_hash(version);
+        if input.identities().input_hash() != source_key {
+            return blocking();
+        }
+        let mut source_input = SourceInput {
+            package_id: version.package_id.clone(),
+            module_path: version.module_path.clone(),
+            normalized_path: version.normalized_path.clone(),
+            edition: version.edition.clone(),
+            origin: SourceOriginInput::Disk {
+                path: version.normalized_path.as_str().into(),
+            },
+        };
+        let bound_root = match (workspace.canonicalize(), package_root.canonicalize()) {
+            (Ok(workspace), Ok(root)) if root.starts_with(&workspace) => Some(root),
+            (Ok(_), Ok(_)) => return blocking(),
+            _ => None,
+        };
+        let loader = FrontendSourceLoader::new(DiskSourceLoader::new(
+            bound_root.as_ref().unwrap_or(&package_root),
+        ));
+        let loaded = if source_inputs
+            .captured
+            .is_some_and(|capture| capture.native_sources().is_some())
+        {
+            let Some((source, input)) = source_inputs.native_source(version) else {
+                return blocking();
+            };
+            source_input = input;
+            source
+        } else {
+            match loader.load_source_unit(
+                SourceUnitRequest {
+                    snapshot,
+                    input: source_input.clone(),
+                },
+                source_inputs.allocator,
+            ) {
+                Ok(loaded) => loaded,
+                Err(error) => {
+                    let (number, name) = match &error {
+                        SourceLoadError::InvalidUtf8 { .. } => (601, "invalid_utf8"),
+                        SourceLoadError::UnreadableSourceFile { .. } => (602, "unreadable_file"),
+                        SourceLoadError::SourcePathOutsidePackageRoot { .. } => {
+                            (603, "outside_package_root")
+                        }
+                        SourceLoadError::UnsupportedFileExtension { .. } => {
+                            (600, "unsupported_file_extension")
+                        }
+                        SourceLoadError::DuplicateModulePath { .. } => {
+                            (600, "duplicate_module_path")
+                        }
+                        SourceLoadError::StaleLspDocumentVersion { .. } => {
+                            (600, "stale_lsp_document_version")
+                        }
+                        SourceLoadError::UnmappedOpenBufferUri { .. } => {
+                            (600, "unmapped_open_buffer_uri")
+                        }
+                        SourceLoadError::GeneratedSourceWithoutMetadata { .. } => {
+                            (600, "generated_source_without_metadata")
+                        }
+                        SourceLoadError::SourceIdAllocation { .. } => (600, "source_id_allocation"),
+                        SourceLoadError::UnsupportedSourceOrigin { .. } => {
+                            (600, "unsupported_source_origin")
+                        }
+                        SourceLoadError::InvalidSourcePath { .. } => (600, "invalid_source_path"),
+                        _ => return blocking(),
+                    };
+                    let detail = format!("source.{name}");
+                    let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number)
+                        .expect("source-load diagnostic code is valid");
+                    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+                        source_snapshot: snapshot,
+                        code,
+                        phase: DiagnosticPhase::SourceLoad,
+                        category: FailureCategory::SourceLoadError,
+                        stable_detail_key: detail,
+                        message: error.to_string(),
+                        primary_location: DiagnosticPrimaryLocation::SourceLoad {
+                            package_id: source_input.package_id.clone(),
+                            path: source_input.normalized_path.clone(),
+                        },
+                        secondary_spans: Vec::new(),
+                        notes: Vec::new(),
+                        details: DiagnosticDetails::new(),
+                        fixes: Vec::new(),
+                        explanation: None,
+                    });
+                    let Ok(draft) = draft else {
+                        return blocking();
+                    };
+                    if diagnostics.emit(draft).is_err() {
+                        return blocking();
+                    }
+                    return PhaseResult {
+                        status: PhaseStatus::Fatal,
+                        diagnostics: vec![diagnostics.seal()],
+                        ..blocking()
+                    };
+                }
+            }
+        };
+        if bound_root.is_none()
+            || loaded.package_id != version.package_id
+            || loaded.module_path != version.module_path
+            || loaded.normalized_path != version.normalized_path
+            || loaded.edition != version.edition
+            || loaded.source_hash != version.source_hash
+            || loaded.origin != version.origin
+        {
+            return blocking();
+        }
+        let Some(storage_bytes) = (match &source_input.origin {
+            SourceOriginInput::OpenBuffer { .. } => {
+                loaded.canonical_open_buffer_bytes(&source_input)
+            }
+            _ => loaded.canonical_disk_bytes(),
+        }) else {
+            return blocking();
+        };
+        let Some(source) = SourceUnit::from_canonical_storage_bytes(
+            &storage_bytes,
+            version.source_id,
+            &source_input,
+        ) else {
+            return blocking();
+        };
+        if !source.matches_canonical_storage(&loaded, &source_input) {
+            return blocking();
+        }
+        let semantic_bytes = source_key.as_bytes().to_vec();
+        let storage_hash = Hash::from_bytes(blake3::derive_key(
+            "mizar-frontend/source-unit-storage-side-table/v1",
+            &storage_bytes,
+        ));
+        let phase = IrPipelinePhase::new("SourceLoad");
+        let work_unit = IrWorkUnit::new(format!(
+            "{:?}:{:?}",
+            source.package_id.as_str(),
+            source.module_path.as_str()
+        ));
+        let output_kind = OutputKind::new("SourceUnit");
+        let decode_input = source_input;
+        let source_id = source.source_id;
+        let expected_source = source.clone();
+        let (origin, target) = source_publication_route(&version.origin);
+        let handle = publisher.publish(PublishOutputInput {
+            slot: publisher.allocate(
+                snapshot,
+                phase.clone(),
+                work_unit.clone(),
+                output_kind.clone(),
+                SchemaVersion::new(1),
+            ),
+            snapshot,
+            phase,
+            work_unit,
+            output_kind,
+            schema_version: SchemaVersion::new(1),
+            payload: source,
+            canonical_payload: Some(semantic_bytes),
+            storage_payload: Some(storage_bytes),
+            decode: BlobDecoder::new(move |bytes| {
+                SourceUnit::from_canonical_storage_bytes(bytes, source_id, &decode_input)
+                    .filter(|source| {
+                        source.matches_canonical_storage(&expected_source, &decode_input)
+                    })
+                    .ok_or_else(|| BlobDecodeError::new("invalid source-unit disk payload"))
+            }),
+            parents: Vec::new(),
+            named_input_hashes: vec![NamedInputHash {
+                name: "source".to_owned(),
+                domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                digest: source_key,
+            }],
+            side_tables: IrSideTables {
+                source_maps: vec![SideTableRecord::new(
+                    "source-storage",
+                    version.normalized_path.as_str(),
+                    storage_hash,
+                )],
+                ..IrSideTables::default()
+            },
+            origin,
+            target,
+        });
+        match handle {
+            Ok(handle) => PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            },
+            Err(_) => blocking(),
+        }
+    }
+}

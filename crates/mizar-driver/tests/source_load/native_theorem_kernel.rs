@@ -291,9 +291,9 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
         "collected-vc",
         "dependencies",
         "absent",
-        "frontend-vc",
         "snapshot",
         "source-none",
+        "frontend-vc",
         "ancestors-collected",
     ] {
         with_native_summary_parent(
@@ -371,7 +371,7 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                     let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
                     let (_, submission, adapter, frontend, _) =
                         native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
-                    let (other_inputs, other_old) = native_disk_lookup_context(&submission, ids);
+                    let (_, other_old) = native_disk_lookup_context(&submission, ids);
                     let other_owner = adapter.publisher();
                     let input = PhaseInput::new(
                         other_old.work_unit.clone(),
@@ -390,10 +390,8 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                         )
                         .unwrap(),
                     );
-                    let core = other_inputs
-                        .native_theorem_core_with_frontend_parent(&input, other_owner)
-                        .unwrap()
-                        .unwrap();
+                    let core =
+                        genuine_theorem_core_from_frontend_parent(&input, other_owner).unwrap();
                     let output = other_owner.storage().get(&frontend).unwrap();
                     let ast = output.ast.as_ref().unwrap().clone();
                     assert_ne!(core.source_id(), actual_core.source_id());
@@ -485,18 +483,36 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                 };
                 let core_input = child(vec![core_parent.erase()]);
                 let core = owner.storage().get(&core_parent).unwrap();
-                let vc_parent = if matches!(case, "snapshot" | "source-none") {
-                    let ast =
-                        if case == "snapshot" {
-                            let frontend_handle = owner.storage()
+                let vc_parent = if matches!(case, "snapshot" | "source-none" | "frontend-vc") {
+                    let ast = if case == "snapshot" {
+                        let frontend_handle = owner
+                            .storage()
                             .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
-                                frontend, frontend.output_kind(),
-                            ).unwrap();
-                            let output = owner.storage().get(&frontend_handle).unwrap();
-                            output.ast.as_ref().unwrap().clone()
-                        } else {
-                            foreign_ast.unwrap()
-                        };
+                                frontend,
+                                frontend.output_kind(),
+                            )
+                            .unwrap();
+                        let output = owner.storage().get(&frontend_handle).unwrap();
+                        output.ast.as_ref().unwrap().clone()
+                    } else if case == "source-none" {
+                        foreign_ast.unwrap()
+                    } else {
+                        let frontend_handle = owner
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend,
+                                &OutputKind::new("FrontendOutput"),
+                            )
+                            .unwrap();
+                        owner
+                            .storage()
+                            .get(&frontend_handle)
+                            .unwrap()
+                            .ast
+                            .as_ref()
+                            .unwrap()
+                            .clone()
+                    };
                     let snapshot = if case == "snapshot" {
                         let other = Fixture::new(text.as_bytes());
                         let (_, submission, _, _, _) =
@@ -513,7 +529,7 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                     let raw = inputs
                         .native_theorem_preparation_with_core_parent(&core_input, owner)
                         .unwrap();
-                    assert_eq!(raw.is_some(), case == "snapshot");
+                    assert_eq!(raw.is_some(), matches!(case, "snapshot" | "frontend-vc"));
                     let bytes =
                         encode(&ast, core.module_id(), &core, &graph, snapshot, &generation)
                             .unwrap()
@@ -522,6 +538,11 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                     let module = core.module_id().clone();
                     let phase = IrPipelinePhase::new("VcGenerate");
                     let kind = OutputKind::new("SourceTheoremVC");
+                    let parents = if case == "frontend-vc" {
+                        vec![frontend.clone()]
+                    } else {
+                        vec![core_parent.erase(), preparation.erase()]
+                    };
                     let negative = owner
                         .publish(PublishOutputInput {
                             slot: owner.allocate(
@@ -544,7 +565,7 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                                     .map_err(BlobDecodeError::new)?
                                     .ok_or_else(|| BlobDecodeError::new("negative VC replay"))
                             }),
-                            parents: vec![core_parent.erase(), preparation.erase()],
+                            parents,
                             named_input_hashes: parent.lineage().named_input_hashes.clone(),
                             side_tables: IrSideTables::default(),
                             origin: OutputOrigin::PackageSource,
@@ -553,12 +574,6 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                         .unwrap();
                     assert_eq!(*owner.storage().get(&negative).unwrap(), graph);
                     negative
-                } else if case == "frontend-vc" {
-                    let old_input = child(vec![frontend.clone()]);
-                    inputs
-                        .publish_native_theorem_vcs(&old_input, owner, &generation, &schema)
-                        .unwrap()
-                        .unwrap()
                 } else {
                     let input = child(vec![core_parent.erase(), preparation.erase()]);
                     inputs
@@ -662,12 +677,12 @@ fn native_theorem_kernel_handoff_core_vc_caller_preserves_refusals() {
                         result.unwrap_err(),
                         "native theorem kernel handoff VC snapshot mismatch"
                     ),
-                    "dependencies" => assert_eq!(result.unwrap_err(), upstream.unwrap()),
-                    "absent" => assert_eq!(result.unwrap_err(), baseline.unwrap_err()),
                     "frontend-vc" => assert_eq!(
                         result.unwrap_err(),
                         "native theorem kernel handoff requires Core and Preparation ancestry"
                     ),
+                    "dependencies" => assert_eq!(result.unwrap_err(), upstream.unwrap()),
+                    "absent" => assert_eq!(result.unwrap_err(), baseline.unwrap_err()),
                     "ancestors-collected" => assert_eq!(result.unwrap(), Some(baseline.unwrap())),
                     _ => assert!(result.is_err(), "{case}"),
                 }

@@ -318,8 +318,7 @@ fn native_theorem_vcs_core_preparation_caller_preserves_refusals() {
                     let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
                     let (_, other_submission, other_adapter, other_frontend, _) =
                         native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
-                    let (other_inputs, other_old) =
-                        native_disk_lookup_context(&other_submission, ids);
+                    let (_, other_old) = native_disk_lookup_context(&other_submission, ids);
                     let other_owner = other_adapter.publisher();
                     let other_input = PhaseInput::new(
                         other_old.work_unit.clone(),
@@ -338,10 +337,9 @@ fn native_theorem_vcs_core_preparation_caller_preserves_refusals() {
                         )
                         .unwrap(),
                     );
-                    let other_core = other_inputs
-                        .native_theorem_core_with_frontend_parent(&other_input, other_owner)
-                        .unwrap()
-                        .unwrap();
+                    let other_core =
+                        genuine_theorem_core_from_frontend_parent(&other_input, other_owner)
+                            .unwrap();
                     let output = other_owner.storage().get(&other_frontend).unwrap();
                     let ast = output.ast.as_ref().unwrap();
                     assert_ne!(ast.source_id, actual_core.source_id());
@@ -650,7 +648,7 @@ fn native_theorem_vcs_core_preparation_publication_preserves_genuine_outputs() {
                 text,
                 open,
                 threshold,
-                |fixture, inputs, old, owner, outputs, (session, ids, snapshots)| {
+                |fixture, inputs, old, owner, outputs, (session, _, _)| {
                     for (phase, kind) in [
                         ("SignatureCollection", "SourceTheoremModuleSummary"),
                         ("TypeChecking", "SourceTheoremTypedAst"),
@@ -915,57 +913,6 @@ fn native_theorem_vcs_core_preparation_publication_preserves_genuine_outputs() {
                         }
                         _ => panic!("unexpected placement"),
                     }
-                    if representations.is_empty() {
-                        let independent = publisher(old.snapshot, threshold, &old.work_unit);
-                        allow_frontend(&independent, &old.work_unit);
-                        independent.allow_work_unit(AllowedWorkUnit::new(
-                            IrPipelinePhase::new("VcGenerate"),
-                            OutputKind::new("SourceTheoremVC"),
-                            core.work_unit().clone(),
-                        ));
-                        let mut builder = PhaseRegistryBuilder::new();
-                        builder.register_source_load().register_frontend(vec![]);
-                        let (_, submit) = fixture.submit_request(vec![], vec![]);
-                        let submission = CompilerDriver::new(builder.build().unwrap())
-                            .with_output_publisher(independent.clone())
-                            .submit_captured(
-                                session.clone(),
-                                ids,
-                                snapshots,
-                                submit,
-                                Default::default(),
-                            )
-                            .unwrap();
-                        let frontend = submission
-                            .scheduler_run
-                            .as_ref()
-                            .unwrap()
-                            .phase_results
-                            .values()
-                            .flatten()
-                            .flat_map(|result| &result.output_refs)
-                            .find(|output| {
-                                output.output_kind() == &OutputKind::new("FrontendOutput")
-                            })
-                            .unwrap();
-                        let old_input = child(&independent, vec![frontend.clone()]);
-                        let old_sealed = inputs
-                            .publish_native_theorem_vcs(
-                                &old_input,
-                                &independent,
-                                &generation,
-                                &schema,
-                            )
-                            .unwrap()
-                            .unwrap();
-                        assert_eq!(*independent.storage().get(&old_sealed).unwrap(), expected);
-                        assert_eq!(old_sealed.lineage().parents, vec![frontend.output()]);
-                        assert_eq!(old_sealed.placement(), sealed.placement());
-                        assert_eq!(
-                            *independent.storage().side_tables(&old_sealed).unwrap(),
-                            tables
-                        );
-                    }
                     for stage in 0..3 {
                         if stage == 1 {
                             fixture.write(if open {
@@ -1164,7 +1111,7 @@ fn native_theorem_vcs_core_preparation_publication_preserves_refusals() {
                         let other = Fixture::new(lemma.as_bytes());
                         let (_, submission, adapter, frontend, _) =
                             native_disk_frontend_record_submission(&other, ids, snapshots, 0);
-                        let (other_inputs, old) = native_disk_lookup_context(&submission, ids);
+                        let (_, old) = native_disk_lookup_context(&submission, ids);
                         let other_owner = adapter.publisher();
                         let input = PhaseInput::new(
                             old.work_unit.clone(),
@@ -1183,10 +1130,8 @@ fn native_theorem_vcs_core_preparation_publication_preserves_refusals() {
                             )
                             .unwrap(),
                         );
-                        let original = other_inputs
-                            .native_theorem_core_with_frontend_parent(&input, other_owner)
-                            .unwrap()
-                            .unwrap();
+                        let original =
+                            genuine_theorem_core_from_frontend_parent(&input, other_owner).unwrap();
                         let output = other_owner.storage().get(&frontend).unwrap();
                         let other_ast = output.ast.as_ref().unwrap();
                         assert_ne!(original.source_id(), ast.source_id);

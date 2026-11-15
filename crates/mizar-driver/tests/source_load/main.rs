@@ -2062,7 +2062,9 @@ fn persistent_native_frontend_case(
         cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
         cache_store::{CacheLookupOutcome, CacheStoreRoot},
     };
-    use mizar_ir::cache_adapter::{CacheRehydrateOutcome, IrCacheAdapter};
+    use mizar_ir::cache_adapter::{
+        CacheRehydrateOutcome, EncodeCacheRecordOutcome, IrCacheAdapter,
+    };
     let fixture = Fixture::new(stages[0].as_bytes());
     let ids = InMemorySessionIdAllocator::new();
     let snapshots = SnapshotRegistry::new();
@@ -2548,8 +2550,11 @@ fn persistent_native_frontend_case(
                         assert_eq!(frontend_task.dependencies.len(), 3);
                         assert!(
                             inputs
-                                .prepare_native_disk_frontend_cache_request(
-                                    &input, &policy, &adapter, &handle
+                                .encode_native_disk_frontend_cache_record(
+                                    &input,
+                                    &policy,
+                                    &adapter,
+                                    handle.clone()
                                 )
                                 .is_err()
                         );
@@ -2570,24 +2575,29 @@ fn persistent_native_frontend_case(
                     if case == "context" {
                         assert!(
                             inputs
-                                .prepare_native_disk_frontend_cache_request(
-                                    &input, &policy, &adapter, &handle
+                                .encode_native_disk_frontend_cache_record(
+                                    &input,
+                                    &policy,
+                                    &adapter,
+                                    handle.clone()
                                 )
                                 .is_err()
                         );
                         assert!(!store.root().exists());
                         continue;
                     }
-                    let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(
-                        inputs
-                            .prepare_native_disk_frontend_cache_request(
-                                &input, &policy, &adapter, &handle,
-                            )
-                            .unwrap(),
-                    )
-                    .build() else {
-                        panic!("frontend key");
+                    let EncodeCacheRecordOutcome::Encoded(record) = inputs
+                        .encode_native_disk_frontend_cache_record(
+                            &input,
+                            &policy,
+                            &adapter,
+                            handle.clone(),
+                        )
+                        .unwrap()
+                    else {
+                        panic!("frontend record");
                     };
+                    let key = record.header.key.clone();
                     if !actual {
                         assert!(!store.record_path(&key).exists());
                         if replay == 0 && *name == "alpha" {
@@ -3450,6 +3460,54 @@ fn with_native_summary_parent(
     );
 }
 
+fn genuine_theorem_core_from_ast(
+    ast: &<MizarParserSeam as ParserSeam>::Ast,
+    module: &ResolverModuleId,
+) -> Option<mizar_core::core_ir::CoreIr> {
+    let (arena, env) =
+        mizar_resolve::symbols::source_theorem_module_original_inputs(ast, module).unwrap()?;
+    let scope = mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+        mizar_resolve::names::SourceVariableScopeInput::new(ast, module, &env),
+    )
+    .unwrap();
+    let metadata =
+        mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope).unwrap();
+    let (scope, labels, resolved) =
+        mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+    let check =
+        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+            &arena,
+            &metadata.2,
+            &scope,
+            &env,
+            &labels,
+            &resolved,
+            None,
+        )
+        .unwrap();
+    Some(mizar_core::elaborator::lower_source_theorem_skeletons(&check, None).unwrap())
+}
+
+fn genuine_theorem_core_from_frontend_parent(
+    input: &PhaseInput,
+    publisher: &PhaseOutputPublisher,
+) -> Option<mizar_core::core_ir::CoreIr> {
+    let parent = input.parent_outputs().first()?.as_output_ref();
+    let frontend = publisher
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            parent,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let retained = publisher.storage().get(&frontend).unwrap();
+    let WorkUnit::Module { module } = &input.work_unit else {
+        return None;
+    };
+    let resolver_module = ResolverModuleId::new(module.package.clone(), module.path.clone());
+    genuine_theorem_core_from_ast(retained.ast.as_ref()?, &resolver_module)
+}
+
 fn with_native_theorem_witness_kernel(
     text: &str,
     open: bool,
@@ -3948,19 +4006,6 @@ fn with_native_theorem_artifact_context(
         witness_path,
     )
     .unwrap();
-    assert_eq!(
-        inputs
-            .native_theorem_candidate_witness_file_with_core_vc_discharge_check_parents(
-                &four,
-                &owner,
-                id,
-                (profile.clone(), ConcreteFormat::Tptp),
-                (&policy, &verifier),
-                witness_path
-            )
-            .unwrap(),
-        Some((actual68.1.clone(), actual68.2.clone()))
-    );
     let file = if file_fault.is_empty() {
         let file = inputs
             .publish_native_theorem_candidate_witness_file(
@@ -4912,7 +4957,6 @@ mod native_theorem_kernel;
 mod native_theorem_metadata;
 mod native_theorem_module;
 mod native_theorem_preparation;
-mod native_theorem_reflexivity;
 mod native_theorem_registration;
 mod native_theorem_summary;
 mod native_theorem_typed;

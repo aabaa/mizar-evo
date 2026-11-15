@@ -353,7 +353,7 @@ fn native_theorem_discharge_core_vc_caller_preserves_refusals() {
                     let changed = Fixture::new(b"theorem Different: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;");
                     let (_, submission, adapter, frontend, _) =
                         native_disk_frontend_record_submission(&changed, ids, snapshots, 0);
-                    let (other_inputs, other_old) = native_disk_lookup_context(&submission, ids);
+                    let (_, other_old) = native_disk_lookup_context(&submission, ids);
                     let other_owner = adapter.publisher();
                     let input = PhaseInput::new(
                         other_old.work_unit.clone(),
@@ -372,10 +372,8 @@ fn native_theorem_discharge_core_vc_caller_preserves_refusals() {
                         )
                         .unwrap(),
                     );
-                    let core = other_inputs
-                        .native_theorem_core_with_frontend_parent(&input, other_owner)
-                        .unwrap()
-                        .unwrap();
+                    let core =
+                        genuine_theorem_core_from_frontend_parent(&input, other_owner).unwrap();
                     let output = other_owner.storage().get(&frontend).unwrap();
                     let ast = output.ast.as_ref().unwrap().clone();
                     assert_ne!(ast.source_id, inputs.snapshot.source_versions[0].source_id);
@@ -735,7 +733,7 @@ fn native_theorem_discharge_storage_replays_genuine_outputs() {
             .with_output_publisher(owner.clone())
             .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
-        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let (_, original) = native_disk_lookup_context(&submission, &ids);
         let parent = submission
             .scheduler_run
             .as_ref()
@@ -763,10 +761,7 @@ fn native_theorem_discharge_storage_replays_genuine_outputs() {
             )
             .unwrap(),
         );
-        let core = inputs
-            .native_theorem_core_with_frontend_parent(&input, &owner)
-            .unwrap()
-            .unwrap();
+        let core = genuine_theorem_core_from_frontend_parent(&input, &owner).unwrap();
         let parent = owner
             .storage()
             .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
@@ -949,7 +944,7 @@ fn native_theorem_discharge_storage_preserves_refusals() {
         let fixture = Fixture::new(text.as_bytes());
         let (_, submission, adapter, frontend, _) =
             native_disk_frontend_record_submission(&fixture, &ids, &snapshots, 0);
-        let (inputs, original) = native_disk_lookup_context(&submission, &ids);
+        let (_, original) = native_disk_lookup_context(&submission, &ids);
         let owner = adapter.publisher();
         let input = PhaseInput::new(
             original.work_unit.clone(),
@@ -968,10 +963,7 @@ fn native_theorem_discharge_storage_preserves_refusals() {
             )
             .unwrap(),
         );
-        let core = inputs
-            .native_theorem_core_with_frontend_parent(&input, owner)
-            .unwrap()
-            .unwrap();
+        let core = genuine_theorem_core_from_frontend_parent(&input, owner).unwrap();
         let output = owner.storage().get(&frontend).unwrap();
         let ast = output.ast.as_ref().unwrap().clone();
         let vcs = generate(&core, original.snapshot, &generation, &schema).unwrap();

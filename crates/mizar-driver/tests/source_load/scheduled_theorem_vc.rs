@@ -851,7 +851,7 @@ fn scheduled_theorem_vc_descriptors_bind_genuine_sets_and_preserve_missing_proof
             "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
             open,
             threshold,
-            |fixture, inputs, old, _, _, (session, ids, snapshots)| {
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
                 let captured = session.captured().clone();
                 let source = &captured.snapshot().source_versions[0];
                 let WorkUnit::Module { module } = &old.work_unit else {
@@ -1065,38 +1065,6 @@ fn scheduled_theorem_vc_descriptors_bind_genuine_sets_and_preserve_missing_proof
                         .unwrap();
                         assert_eq!(*vcs, direct);
                         let selected = vcs.vcs()[0].id;
-                        let seal = |output: &AnyPhaseOutputRef| {
-                            SealedParentOutputHandle::from_published_output(
-                                &owner,
-                                old.snapshot,
-                                output.clone(),
-                            )
-                            .unwrap()
-                        };
-                        let input = PhaseInput::new(
-                            old.work_unit.clone(),
-                            PhaseDispatchInputBundle::new(
-                                old.snapshot,
-                                old.identities().input_hash(),
-                                old.identities().dependency_hashes().to_vec(),
-                                vec![seal(core_ref), seal(vc_ref)],
-                            )
-                            .unwrap(),
-                        );
-                        let policy = mizar_proof::policy::VerifierPolicy::default();
-                        let checked = inputs
-                            .native_theorem_reflexivity_with_core_vc_parents(
-                                &input, &owner, selected, &policy,
-                            )
-                            .unwrap()
-                            .unwrap();
-                        assert_eq!(
-                            (checked.0.status(), checked.1.class),
-                            (
-                                mizar_kernel::checker::KernelCheckStatus::Accepted,
-                                mizar_proof::policy::CandidatePolicyClass::DischargedBuiltin
-                            )
-                        );
                         baseline =
                             Some(((*core).clone(), (*prep).clone(), (*vcs).clone(), selected));
                     } else {
