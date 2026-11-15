@@ -11,7 +11,7 @@ metadata reader は [internal03](../../internal/en/03.diagnostics_model_and_lsp_
 
 既存の [ModuleSummary](../../mizar-artifact/en/module_summary.md#scope) projection から module identity と importer 向けの公開 symbol、label、lexical、reexport 情報を読む。module summary は式 metadata を含まず、`VerifiedArtifact.expressions` の代用にも、公開されていない局所的 semantic 情報の供給元にもならない。
 
-補完に欠ける producer 側 notation/import/alias 契約は [producer metadata 公開案](producer_metadata_publication.md) で提案する。Q1–Q5 はオーナー承認待ちで、現在利用可能な入力を追加しない。
+補完用 producer 入力は承認済み [公開契約](producer_metadata_publication.md) に従います。`SnapshotPublication::source_metadata` は manifest-backed summary と optional な immutable notation/import view を元の source association とともに保持し、unavailable と完全な空 view を区別します。Native profile の適格性は変更しません。
 
 schema、互換性、canonical order、検証は Artifact が所有する。既存の [validating reader](../../mizar-artifact/en/verified_artifact.md#reader-and-writer-requirements) と [summary reader 規則](../../mizar-artifact/en/module_summary.md#reader-and-writer-requirements) を使う。この設計で field、summary の形、format、検証方針を追加しない。
 

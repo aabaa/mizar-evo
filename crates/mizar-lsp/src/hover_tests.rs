@@ -123,6 +123,9 @@ fn stale_reads_keep_original_source_identity_and_drop_the_live_editor_range() {
         .lsp_snapshot(&fixture.driver, &fixture.snapshots)
         .unwrap()
         .0;
+    let original_metadata = retained.publication().source_metadata().to_vec();
+    assert!(!original_metadata.is_empty());
+    assert!(original_metadata.iter().all(Option::is_some));
     let original_version = &retained
         .native_open_buffers()
         .captured()
@@ -181,6 +184,16 @@ fn stale_reads_keep_original_source_identity_and_drop_the_live_editor_range() {
     assert_eq!(stale_after_reopen.get("range"), None);
     assert!(rendered(&stale_after_reopen).contains(&uri));
     assert!(rendered(&stale_after_reopen).contains(&format!("version {original_version}")));
+    let (stale_snapshot, freshness) = fixture
+        .server
+        .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+        .unwrap();
+    assert_eq!(freshness, super::LspSnapshotFreshness::StaleArtifact);
+    assert!(std::sync::Arc::ptr_eq(&retained, &stale_snapshot));
+    assert_eq!(
+        stale_snapshot.publication().source_metadata(),
+        original_metadata
+    );
 }
 
 #[test]

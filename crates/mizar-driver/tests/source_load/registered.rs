@@ -9,6 +9,7 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
             ManifestTransaction, ModuleArtifactEntry, PackageIdentity, artifact_manifest_json,
             current_schema_version as manifest_schema, manifest_hash_domain,
         },
+        module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, module_summary_json},
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
         store::{
             PublishedArtifactReadOptions, artifact_hash_domain, canonical_json_bytes,
@@ -167,6 +168,26 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                     panic!("one genuine witness")
                 };
                 assert_eq!(witness.witness_path, witness_path);
+                let mizar_build::task_graph::WorkUnit::Module { module } = &six.work_unit else {
+                    panic!("source module fixture")
+                };
+                let summary = inputs
+                    .native_theorem_module_summary_candidate(module)
+                    .unwrap()
+                    .unwrap();
+                let summary_path = mizar_artifact::store::PublishedArtifactPath::new(format!(
+                    "{}.summary.json",
+                    main_write.path.as_str()
+                ))
+                .unwrap();
+                let summary_write = mizar_artifact::store::write_published_artifact(
+                    &baseline_root,
+                    &summary_path,
+                    &module_summary_json(&summary).unwrap(),
+                    &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+                    &[],
+                )
+                .unwrap();
                 let entry = ModuleArtifactEntry {
                     module: artifact.module.clone(),
                     source_file: artifact.source_file.clone(),
@@ -190,9 +211,19 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                         artifact.schema_version,
                         artifact.implementation_hash,
                     ),
-                    module_summary_file: None,
-                    module_summary_hash: None,
-                    module_summary_interface_hash: None,
+                    module_summary_file: Some(summary_path.as_str().to_owned()),
+                    module_summary_hash: Some(ArtifactHashRef::new(
+                        ArtifactHashClass::Artifact,
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                        summary_write.artifact_hash,
+                    )),
+                    module_summary_interface_hash: Some(ArtifactHashRef::new(
+                        ArtifactHashClass::Interface,
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                        summary.interface_hash,
+                    )),
                     registration_summary_file: None,
                     registration_summary_hash: None,
                     registration_interface_hash: None,

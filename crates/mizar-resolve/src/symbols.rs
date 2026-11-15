@@ -1044,6 +1044,100 @@ pub struct SymbolCollectionResult {
     diagnostics: Vec<SymbolDiagnostic>,
 }
 
+/// Immutable source-owned notation facts; all positions refer to retained source text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNotationView {
+    source_id: SourceId,
+    source_hash: mizar_session::Hash,
+    module: ModuleId,
+    declarations: Vec<SourceNotationDeclaration>,
+    operator_events: Vec<SourceOperatorEvent>,
+}
+
+impl SourceNotationView {
+    /// Returns the source identity.
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+    /// Returns the retained source hash.
+    pub const fn source_hash(&self) -> mizar_session::Hash {
+        self.source_hash
+    }
+    /// Returns the canonical resolver module.
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module
+    }
+    /// Returns every written spelling piece, including private declarations.
+    pub fn declarations(&self) -> &[SourceNotationDeclaration] {
+        &self.declarations
+    }
+    /// Returns standalone spelling-level events in source order.
+    pub fn operator_events(&self) -> &[SourceOperatorEvent] {
+        &self.operator_events
+    }
+}
+
+/// One authenticated spelling piece and its resolver declaration owner.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceNotationDeclaration {
+    declaration: mizar_lexer::LocalUserSymbolDeclaration,
+    owner: SymbolEntry,
+    declared_at: mizar_session::MappedSourceRange,
+    activation: mizar_session::MappedSourceRange,
+}
+
+impl SourceNotationDeclaration {
+    /// Returns the lexer shape, with positions mapped to retained source text.
+    pub const fn declaration(&self) -> &mizar_lexer::LocalUserSymbolDeclaration {
+        &self.declaration
+    }
+    /// Returns the original declaration identity, visibility and semantic relations.
+    pub const fn owner(&self) -> &SymbolEntry {
+        &self.owner
+    }
+    /// Returns the exact spelling mapping, including original input offsets.
+    pub const fn declared_at(&self) -> &mizar_session::MappedSourceRange {
+        &self.declared_at
+    }
+    /// Returns the declaration boundary mapping, including original input offsets.
+    pub const fn activation(&self) -> &mizar_session::MappedSourceRange {
+        &self.activation
+    }
+}
+
+/// An authenticated standalone operator event; it introduces no symbol.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceOperatorEvent {
+    declaration: mizar_lexer::LocalOperatorDeclaration,
+    visibility: Visibility,
+    owner_range: SourceRange,
+    declared_at: mizar_session::MappedSourceRange,
+    activation: mizar_session::MappedSourceRange,
+}
+
+impl SourceOperatorEvent {
+    /// Returns the event with positions mapped to retained source text.
+    pub const fn declaration(&self) -> &mizar_lexer::LocalOperatorDeclaration {
+        &self.declaration
+    }
+    /// Returns the event's source visibility.
+    pub const fn visibility(&self) -> Visibility {
+        self.visibility
+    }
+    /// Returns the complete operator declaration range.
+    pub const fn owner_range(&self) -> SourceRange {
+        self.owner_range
+    }
+    /// Returns the spelling mapping, including original input offsets.
+    pub const fn declared_at(&self) -> &mizar_session::MappedSourceRange {
+        &self.declared_at
+    }
+    /// Returns the activation mapping, including original input offsets.
+    pub const fn activation(&self) -> &mizar_session::MappedSourceRange {
+        &self.activation
+    }
+}
+
 impl SymbolCollectionResult {
     /// Returns the collected symbol environment.
     #[must_use]
@@ -1061,6 +1155,19 @@ impl SymbolCollectionResult {
     /// The caller supplies the actual frontend locals and their preprocess mapping.
     /// This checks correspondence, not source authenticity or summary completeness.
     pub fn pair_exported_lexical_declarations<'a>(
+        &'a self,
+        locals: &'a mizar_lexer::LocalLexicalDeclarations,
+        mut map_span: impl FnMut(mizar_lexer::SourceSpan) -> Option<mizar_session::MappedSourceRange>,
+    ) -> Option<Vec<(&'a SymbolEntry, &'a mizar_lexer::LocalUserSymbolDeclaration)>> {
+        Some(
+            self.pair_local_lexical_declarations(locals, &mut map_span)?
+                .into_iter()
+                .filter(|(entry, _)| entry.visibility() == Visibility::Public)
+                .collect(),
+        )
+    }
+
+    fn pair_local_lexical_declarations<'a>(
         &'a self,
         locals: &'a mizar_lexer::LocalLexicalDeclarations,
         mut map_span: impl FnMut(mizar_lexer::SourceSpan) -> Option<mizar_session::MappedSourceRange>,
@@ -1107,13 +1214,38 @@ impl SymbolCollectionResult {
                         | (UserSymbolKind::Mode, SymbolKind::Mode)
                         | (UserSymbolKind::Attribute, SymbolKind::Attribute)
                         | (UserSymbolKind::Structure, SymbolKind::Structure)
+                        | (UserSymbolKind::Functor, SymbolKind::Synonym)
+                        | (UserSymbolKind::Predicate, SymbolKind::Antonym)
                 )
             {
                 return None;
             }
+            if matches!(entry.kind(), SymbolKind::Synonym | SymbolKind::Antonym) {
+                let [relation] = entry.relations() else {
+                    return None;
+                };
+                let target = self.env.symbols().get(relation.target())?;
+                if !matches!(
+                    (entry.kind(), relation.kind(), target.kind()),
+                    (
+                        SymbolKind::Synonym,
+                        RelationKind::Synonym,
+                        SymbolKind::Functor
+                    ) | (
+                        SymbolKind::Antonym,
+                        RelationKind::Antonym,
+                        SymbolKind::Predicate
+                    )
+                ) || target.symbol().module() != module
+                    || target.origin().is_recovered()
+                    || local.arity != mizar_lexer::UserSymbolArity::exact(2)
+                {
+                    return None;
+                }
+            }
             match (entry.visibility(), entry.export_status()) {
                 (Visibility::Public, ExportStatus::Exported) => pairs.push((entry, local)),
-                (Visibility::Private, ExportStatus::LocalOnly) => {}
+                (Visibility::Private, ExportStatus::LocalOnly) => pairs.push((entry, local)),
                 _ => return None,
             }
         }
@@ -1127,6 +1259,20 @@ impl SymbolCollectionResult {
         &'a self,
         frontend: &'a mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
     ) -> Option<Vec<(&'a SymbolEntry, &'a mizar_lexer::LocalUserSymbolDeclaration)>> {
+        let bridge = self.authenticated_frontend_bridge(frontend)?;
+        self.pair_exported_lexical_declarations(frontend.tokens.local_declarations(), |span| {
+            frontend
+                .preprocessed
+                .source_map
+                .lexical_span(&bridge, span.into())
+                .ok()
+        })
+    }
+
+    fn authenticated_frontend_bridge(
+        &self,
+        frontend: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+    ) -> Option<mizar_frontend::span_bridge::SpanBridge> {
         use mizar_frontend::{
             preprocess::preprocess, source::register_source_unit, span_bridge::SpanBridge,
         };
@@ -1168,12 +1314,302 @@ impl SymbolCollectionResult {
         if collected != *self {
             return None;
         }
-        self.pair_exported_lexical_declarations(frontend.tokens.local_declarations(), |span| {
-            preprocessed
+        Some(bridge)
+    }
+
+    /// Produces complete immutable local notation, independent of export eligibility.
+    /// Coordinates undo preprocessing; mappings also retain original input offsets.
+    pub fn source_notation_view(
+        &self,
+        frontend: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+    ) -> Option<SourceNotationView> {
+        let bridge = self.authenticated_frontend_bridge(frontend)?;
+        let ast = frontend.ast.as_ref()?;
+        if ast.node_views().any(|node| {
+            node.is_recovered() || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+        }) {
+            return None;
+        }
+        let map = |span: mizar_lexer::SourceSpan| {
+            let mut mapped = frontend
+                .preprocessed
                 .source_map
                 .lexical_span(&bridge, span.into())
-                .ok()
+                .ok()?;
+            let original = bridge
+                .loaded_mapping(
+                    frontend.source.source_id,
+                    mizar_lexer::SourceSpan::new(mapped.primary.start, mapped.primary.end).into(),
+                )
+                .ok()?;
+            if original.kind != mizar_session::MappedSourceRangeKind::Exact {
+                return None;
+            }
+            mapped.original_input = original.original_input;
+            (mapped.kind == mizar_session::MappedSourceRangeKind::Exact
+                && mapped.secondary.is_empty())
+            .then_some(mapped)
+        };
+        let locals = frontend.tokens.local_declarations();
+        let pairs = self.pair_local_lexical_declarations(locals, map)?;
+        let mut declarations = Vec::new();
+        for (owner, local) in pairs {
+            let declared_at = map(local.declared_at)?;
+            let activation = map(mizar_lexer::SourceSpan::new(
+                local.activation_start,
+                local.activation_start,
+            ))?;
+            let SourceAnchor::Range(range) = owner.origin().anchor() else {
+                return None;
+            };
+            if activation.primary.start != range.end {
+                return None;
+            }
+            let mut declaration = local.clone();
+            declaration.declared_at =
+                mizar_lexer::SourceSpan::new(declared_at.primary.start, declared_at.primary.end);
+            declaration.activation_start = activation.primary.start;
+            declarations.push(SourceNotationDeclaration {
+                declaration,
+                owner: owner.clone(),
+                declared_at,
+                activation,
+            });
+        }
+        // Every represented notation owner must have at least one genuine lexer piece.
+        for owner in self.env.symbols().iter().filter(|owner| {
+            matches!(
+                owner.kind(),
+                SymbolKind::Functor
+                    | SymbolKind::Predicate
+                    | SymbolKind::Mode
+                    | SymbolKind::Attribute
+                    | SymbolKind::Structure
+                    | SymbolKind::Synonym
+                    | SymbolKind::Antonym
+                    | SymbolKind::Redefinition
+            )
+        }) {
+            if !declarations
+                .iter()
+                .any(|local| local.owner.symbol() == owner.symbol())
+            {
+                return None;
+            }
+        }
+        let operators = ast
+            .node_views()
+            .filter(|node| node.kind() == &SurfaceNodeKind::OperatorDeclaration)
+            .collect::<Vec<_>>();
+        if operators.len() != locals.operator_declarations.len() {
+            return None;
+        }
+        let mut seen = BTreeSet::new();
+        let mut operator_events = Vec::new();
+        for local in &locals.operator_declarations {
+            if local.source_module.as_str() != self.env.module_id().path().as_str()
+                || local.declared_at.is_empty()
+                || local.operator.is_none()
+            {
+                return None;
+            }
+            let declared_at = map(local.declared_at)?;
+            let activation = map(mizar_lexer::SourceSpan::new(
+                local.activation_start,
+                local.activation_start,
+            ))?;
+            let mut matching = operators
+                .iter()
+                .filter(|node| source_range_contains(node.range(), declared_at.primary));
+            let owner = *matching.next()?;
+            if matching.next().is_some()
+                || !seen.insert(owner.id())
+                || activation.primary.start != owner.range().end
+            {
+                return None;
+            }
+            let arity = match local.operator?.fixity {
+                mizar_lexer::ExportedOperatorFixity::Infix(_) => 2,
+                _ => 1,
+            };
+            if !declarations.iter().any(|declaration| {
+                declaration.declaration.kind == mizar_lexer::UserSymbolKind::Functor
+                    && declaration.declaration.spelling == local.spelling
+                    && declaration.declaration.arity == mizar_lexer::UserSymbolArity::exact(arity)
+                    && declaration.declaration.activation_start <= owner.range().start
+            }) {
+                return None;
+            }
+            let mut visibility = Visibility::Public;
+            for wrapper in ast.node_views().filter(|node| {
+                node.kind() == &SurfaceNodeKind::VisibleItem
+                    && source_range_contains(node.range(), owner.range())
+            }) {
+                let marker = wrapper
+                    .child_views()
+                    .find(|child| child.kind() == &SurfaceNodeKind::VisibilityMarker)?;
+                match first_reserved_word(marker).as_deref() {
+                    Some("private") => visibility = Visibility::Private,
+                    Some("public") => {}
+                    _ => return None,
+                }
+            }
+            let mut declaration = local.clone();
+            declaration.declared_at =
+                mizar_lexer::SourceSpan::new(declared_at.primary.start, declared_at.primary.end);
+            declaration.activation_start = activation.primary.start;
+            operator_events.push(SourceOperatorEvent {
+                declaration,
+                visibility,
+                owner_range: owner.range(),
+                declared_at,
+                activation,
+            });
+        }
+        Some(SourceNotationView {
+            source_id: frontend.source.source_id,
+            source_hash: frontend.source.source_hash,
+            module: self.env.module_id().clone(),
+            declarations,
+            operator_events,
         })
+    }
+
+    /// Composes an unpublished notation-only summary from authenticated source owners.
+    /// This is a source base, not a complete module when imports or exports exist;
+    /// publication must compose validated forwarding and dependency interfaces.
+    pub fn source_notation_module_summary_candidate(
+        &self,
+        frontend: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+        identity: &mizar_artifact::module_summary::ModuleSummaryIdentity,
+    ) -> Result<Option<mizar_artifact::module_summary::ModuleSummary>, String> {
+        use mizar_artifact::module_summary::{
+            ExportedSymbolSummary, ModuleLexicalSummary, ModuleSummary, SourceRangeSummary,
+            current_schema_version, module_summary_json,
+        };
+        let Some(contributions) = self.export_frontend_lexical_contributions(frontend, identity)
+        else {
+            return Ok(None);
+        };
+        let ast = frontend.ast.as_ref().unwrap();
+        let shells = DeclarationShellCollector::new(ast, self.env.module_id()).collect();
+        let extractor = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(self.env.module_id().path().as_str()),
+        );
+        let mut exported_symbols = Vec::new();
+        for owner in self
+            .env
+            .symbols()
+            .iter()
+            .filter(|owner| owner.visibility() == Visibility::Public)
+        {
+            if !contributions
+                .iter()
+                .any(|contribution| contribution.key == owner.symbol().local().as_str())
+            {
+                return Ok(None);
+            }
+            let SourceAnchor::Range(range) = owner.origin().anchor() else {
+                return Ok(None);
+            };
+            let Some(shell) = shells
+                .declarations()
+                .iter()
+                .find(|shell| shell.range() == *range)
+            else {
+                return Ok(None);
+            };
+            // Render source header tokens, including an alias's original pattern,
+            // and the existing body-free definition parameter context.
+            let mut tokens = Vec::new();
+            let mut pending = vec![shell.node_id()];
+            while let Some(id) = pending.pop() {
+                let node = ast.node_view(id).unwrap();
+                if let Some(token) = node.as_token() {
+                    if matches!(token.text.as_ref(), "means" | "equals" | ";") {
+                        break;
+                    }
+                    tokens.push(token.text.as_ref());
+                }
+                pending.extend(node.children().iter().rev().copied());
+            }
+            if tokens.is_empty() {
+                return Ok(None);
+            }
+            let context = extractor
+                .definition_context_block(shell)
+                .and_then(|block| {
+                    let block_view = ast.node_view(block.node_id())?;
+                    let excluded = shells
+                        .declarations()
+                        .iter()
+                        .filter(|candidate| {
+                            candidate.id() != block.id()
+                                && source_range_contains(block.range(), candidate.range())
+                                && excludes_from_definition_context(candidate.kind())
+                        })
+                        .map(DeclarationShell::range)
+                        .chain(
+                            ast.node_views()
+                                .filter(|node| {
+                                    node.kind() == &SurfaceNodeKind::OperatorDeclaration
+                                        && source_range_contains(block.range(), node.range())
+                                })
+                                .map(|node| node.range()),
+                        )
+                        .collect::<Vec<_>>();
+                    Some(normalized_token_shape_excluding_ranges(
+                        block_view, &excluded,
+                    ))
+                })
+                .unwrap_or_else(|| "_".to_owned());
+            let rendered_signature = format!("{context} {}", tokens.join(" "));
+            let mut row = ExportedSymbolSummary {
+                origin_id: owner.symbol().local().as_str().to_owned(),
+                fully_qualified_name: owner.symbol().fqn().as_str().to_owned(),
+                namespace_path: owner
+                    .namespace()
+                    .as_str()
+                    .split('.')
+                    .map(str::to_owned)
+                    .collect(),
+                visibility: "public".to_owned(),
+                declaration_kind: symbol_kind_key(owner.kind()).to_owned(),
+                source_range: SourceRangeSummary {
+                    start_byte: u64::try_from(range.start).map_err(|error| error.to_string())?,
+                    end_byte: u64::try_from(range.end).map_err(|error| error.to_string())?,
+                },
+                rendered_signature,
+                interface_fingerprint: frontend.source.source_hash,
+                proof_status: None,
+            };
+            row.interface_fingerprint = row
+                .compute_interface_fingerprint(current_schema_version(), identity)
+                .map_err(|error| error.to_string())?;
+            exported_symbols.push(row);
+        }
+        let mut summary = ModuleSummary {
+            schema_version: current_schema_version(),
+            module: identity.clone(),
+            source_hash: frontend.source.source_hash,
+            interface_hash: frontend.source.source_hash,
+            exported_symbols,
+            exported_labels: Vec::new(),
+            lexical_summary: ModuleLexicalSummary {
+                schema_version: "mizar-resolve/exported-lexical/v1".to_owned(),
+                fingerprint: None,
+                contributions,
+            },
+            reexports: Vec::new(),
+            dependency_interfaces: Vec::new(),
+        };
+        summary
+            .refresh_interface_hash()
+            .map_err(|error| error.to_string())?;
+        module_summary_json(&summary).map_err(|error| error.to_string())?;
+        Ok(Some(summary))
     }
 
     /// Produces direct source lexical payloads, not a complete module summary.
@@ -1190,24 +1626,39 @@ impl SymbolCollectionResult {
         if identity.package_id != frontend.source.package_id.as_str()
             || identity.module_path != frontend.source.module_path.as_str()
             || identity.language_edition != frontend.source.edition.as_str()
-            || !frontend
-                .tokens
-                .local_declarations()
-                .operator_declarations
-                .is_empty()
-            || frontend
-                .ast
-                .as_ref()?
-                .node_views()
-                .any(|node| matches!(node.kind(), SurfaceNodeKind::NotationAlias))
         {
             return None;
         }
         let module_json = identity.canonical_json().ok()?;
         let source_module = canonical_json_string(&module_json);
-        self.pair_frontend_lexical_declarations(frontend)?
-            .into_iter()
-            .map(|(entry, local)| {
+        let view = self.source_notation_view(frontend)?;
+        let mut final_events = BTreeMap::new();
+        for event in view.operator_events() {
+            final_events.insert(event.declaration.spelling.as_str(), event);
+        }
+        for event in final_events.values() {
+            let arity = match event.declaration.operator?.fixity {
+                mizar_lexer::ExportedOperatorFixity::Infix(_) => 2,
+                _ => 1,
+            };
+            if event.visibility == Visibility::Private
+                || !view.declarations.iter().any(|local| {
+                    local.owner.visibility() == Visibility::Public
+                        && local.declaration.kind == mizar_lexer::UserSymbolKind::Functor
+                        && local.declaration.spelling == event.declaration.spelling
+                        && local.declaration.arity == mizar_lexer::UserSymbolArity::exact(arity)
+                        && local.declaration.activation_start <= event.owner_range.start
+                })
+            {
+                return None;
+            }
+        }
+        view.declarations
+            .iter()
+            .filter(|local| local.owner.visibility() == Visibility::Public)
+            .map(|declaration| {
+                let entry = &declaration.owner;
+                let local = &declaration.declaration;
                 let origin = entry.symbol().local().as_str();
                 let shape = mizar_lexer::ExportedSymbolShape {
                     spelling: local.spelling.clone(),
@@ -1218,8 +1669,15 @@ impl SymbolCollectionResult {
                     export_rank: local.export_rank,
                     kind: local.kind,
                     arity: local.arity,
-                    operator: local.operator,
+                    operator: final_events
+                        .get(local.spelling.as_str())
+                        .map_or(local.operator, |event| event.declaration.operator),
                 };
+                // The lexical owner validates arity/fixity and canonical shape storage.
+                mizar_lexer::ModuleLexicalSummary::from_exported_symbols(
+                    shape.source_module.clone(),
+                    vec![shape.clone()],
+                )?;
                 Some(LexicalContributionSummary {
                     kind: "exported-symbol".to_owned(),
                     key: origin.to_owned(),

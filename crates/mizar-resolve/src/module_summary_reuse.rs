@@ -185,6 +185,71 @@ impl<'a> ModuleSummaryReuse<'a> {
         Self { module_index }
     }
 
+    /// Reads a complete public surface bound to the indexed artifact and typed lexical envelopes.
+    /// This stricter publication path does not change the independent reuse readers.
+    #[must_use]
+    pub(crate) fn read_public_summary(
+        self,
+        request: ModuleSummaryReuseRequest<'_>,
+        value: &CanonicalJson,
+    ) -> Option<ModuleSummary> {
+        let context = self.context(&request).ok()?;
+        let reference = self.module_index.dependency_summary(request.module).ok()?;
+        let domain = mizar_artifact::store::artifact_hash_domain(
+            artifact_summary::MODULE_SUMMARY_SCHEMA_FAMILY,
+            artifact_summary::current_schema_version(),
+        );
+        if reference.module != *request.module || domain.hash(value, &[]) != reference.content_hash
+        {
+            return None;
+        }
+        if let crate::module_index::ModuleIndexLocation::DependencySummary {
+            artifact,
+            content_hash,
+        } = &self.module_index.module(request.module).ok()?.location
+            && (artifact != &reference.artifact || content_hash != &reference.content_hash)
+        {
+            return None;
+        }
+        let summary = artifact_summary::read_module_summary(
+            value,
+            ModuleSummaryReadOptions {
+                artifact_path: context.artifact.as_deref(),
+                expected_module: None,
+                expected_interface_hash: request.expected_interface_hash,
+            },
+        )
+        .ok()?;
+        if known_identity_mismatch_detail(&context.expected_identity, &summary.module).is_some()
+            || summary
+                .exported_symbols
+                .iter()
+                .any(|row| symbol_kind(&row.declaration_kind).is_none())
+            || summary
+                .exported_labels
+                .iter()
+                .any(|row| label_kind(&row.target_kind).is_none())
+            || summary
+                .exported_symbols
+                .iter()
+                .map(|symbol| symbol.visibility.as_str())
+                .chain(
+                    summary
+                        .exported_labels
+                        .iter()
+                        .map(|label| label.visibility.as_str()),
+                )
+                .any(|visibility| {
+                    summary_visibility(visibility)
+                        .is_none_or(|visibility| visibility.export_status != ExportStatus::Exported)
+                })
+        {
+            return None;
+        }
+        self.read_lexical_summary(request, value)?;
+        Some(summary)
+    }
+
     /// Reads a canonical module-summary JSON value through `mizar-artifact` and
     /// projects it into resolver-owned indexes.
     #[must_use]

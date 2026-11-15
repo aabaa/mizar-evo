@@ -531,8 +531,7 @@ collection 診断があれば全体を `None` とする。参照を返すため�
 保持し、複数の字句片が同一シンボルに対応してもよい。診断がなく入力が空なら空の
 ベクトルを返す。resolver の notation から字句情報を推測しない。
 
-別名・独立した演算子宣言・prepass 未対応の種別・完全性・ソースの真正性・artifact
-origin の直列化は後続 producer の責務。本メソッドは `locals.user_symbols` のみを
+独立 operator event、完全性、source の真正性、artifact origin の直列化は下記 producer の責務。本メソッドは `locals.user_symbols` のみを
 対象とし、他の字句効果を省略した要約の publication を許可しない。
 
 ### Frontend 出力に結び付いた対応付け
@@ -556,23 +555,13 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 ### ソース字句 contribution producer
 
-`SymbolCollectionResult::export_frontend_lexical_contributions(frontend, identity)`
-は frontend に結び付いた直接宣言ペアから `Option<Vec<LexicalContributionSummary>>`
-を返す。build 所有の `ModuleSummaryIdentity` を呼出側が渡し、package/module path/
-edition は保持ソースと一致する必要がある。identity の検証・JSON 正規化は artifact の
-`ModuleSummaryIdentity::canonical_json` が所有し、version/lockfile の出所は呼出側が担う。
-standalone operator 宣言、AST notation alias、identity 不一致、frontend 対応付け失敗、
-A8 encode 失敗を拒否し、部分的な vector は返さない。各ペアは schema
-`mizar-resolve/exported-lexical/v1` の kind `exported-symbol` contribution になる。
-key は `entry.symbol().local().as_str()` であり、対応する exported symbol producer は
-同じ `origin_id` を使う。spelling/rank/kind/arity/operator は保持し、module/symbol
-identity は A10 の envelope 対応文字列に置換する。artifact の JSON と canonical string
-writer を用い、末尾改行も保持する。ペア順序、非公開除外による rank の隙間、同一 origin
-の複数表記を保持し、key による重複除去や notation からのメタデータ推測はしない。
-これは contribution の生成であり、exported symbol 行、完全な module/lexical summary、
-fingerprint、import provider、publication ではない。未対応 prepass family と export 方針は
-既存所有者に残す。実 frontend の複数表記・非公開・既定 operator payload、identity の
-変化と拒否、alias/operator 拒否、codec 上限、決定性をテストする。
+`SymbolCollectionResult::source_notation_view(frontend)` は、保持した source identity/hash に結び付く getter-only `SourceNotationView` を返す。完全な notation/operator inventory、同一 frontend 対応、未回復 owner、元入力 offset を含む宣言/activation の正確な写像を検証する。各片は resolver owner、visibility、relation を保持し、private 宣言と以前の operator event は local に残す。AST や可変 environment は保持しない。独立 event には既に active な認証済み local functor/arity を要求し、inactive/imported-only target は local notation view 全体を unavailable とする。
+
+`export_frontend_lexical_contributions(frontend, identity)` は承認済み [Q1/Q2-A](../../mizar-lsp/en/producer_metadata_publication.md#notation-publication-proposal) に従う。対応する binary local functor synonym/predicate antonym には既存 extractor profile（visibility wrapper の制限を含む）の認証済み resolver relation を一つ要求し、imported target、chain、未対応 profile は product 全体を unavailable とする。Alias の lexical key は自身の宣言 origin を使う。独立 operator は spelling を追加せず、最終 public spelling-level event は対応する exported functor/arity を必要とし、同じ spelling の全 public shape で kind/arity を変更せず encoding できなければならない。混在する arity と互換性がなければ Q5 により outgoing lexical product 全体を公開しない。最終 private 効果や local exported owner のない効果も同様に公開しない。
+
+呼出側は build-owned identity/version/lockfile provenance を供給する。Canonical A10 envelope は lexer の spelling、arity、rank、同一 origin の複数片を保持する。mapping/inventory/codec 不足は `None`、完全な空入力は空 product とする。
+
+`source_notation_module_summary_candidate(frontend, identity)` は自身の origin を持つ public row と body を除いた source header/context を notation-only source base に射影し、proof status を付与しない。他の public symbol family は拒否する。Import/export がある場合は [import 合成](../en/imports.md#published-import-view) で認証済み forwarding/dependency interface を付与するまで不完全で、publication 権限ではない。既存 algorithm/theorem candidate の限定 profile は維持する。
 
 ## Constructor Actual Roles
 

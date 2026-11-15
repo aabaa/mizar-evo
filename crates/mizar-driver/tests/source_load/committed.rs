@@ -421,6 +421,8 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     )
                     .unwrap()
                     .unwrap();
+                let summary_path = entry.module_summary_file.as_deref().unwrap();
+                fs::copy(root.join(summary_path), other_root.join(summary_path)).unwrap();
                 let mut other_entry = entry.clone();
                 other_entry.artifact_hash.digest = other_main.artifact_hash;
                 other_entry.interface_hash.digest = other_artifact.artifact.interface_hash;
@@ -476,6 +478,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     artifact_manifest_path().as_str(),
                     main_write.path.as_str(),
                     witness_path,
+                    summary_path,
                 ] {
                     fs::copy(root.join(path), copied_root.join(path)).unwrap();
                 }
@@ -569,6 +572,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                         artifact_manifest_path().as_str(),
                         main_write.path.as_str(),
                         witness_path,
+                        summary_path,
                     ] {
                         fs::copy(root.join(path), challenge_root.join(path)).unwrap();
                     }
@@ -675,6 +679,7 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                     ),
                     (main_write.path.as_str(), main_bytes.clone()),
                     (witness_path, file_bytes.clone()),
+                    (summary_path, fs::read(root.join(summary_path)).unwrap()),
                 ] {
                     for missing in [false, true] {
                         if missing {

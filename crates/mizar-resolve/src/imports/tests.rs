@@ -35,9 +35,732 @@ fn parsed_import_ast(text: &str) -> mizar_syntax::SurfaceAst {
         .expect("represented parser AST")
 }
 
+fn publication_summary(path: &str) -> ModuleSummary {
+    use mizar_artifact::module_summary::{ModuleLexicalSummary, current_schema_version};
+    let mut summary = ModuleSummary {
+        schema_version: current_schema_version(),
+        module: ModuleSummaryIdentity {
+            package_id: "dep".into(),
+            package_version: Some("0.1.0".into()),
+            lockfile_identity: None,
+            module_path: path.into(),
+            language_edition: "2026".into(),
+        },
+        source_hash: Hash::from_bytes([1; Hash::BYTE_LEN]),
+        interface_hash: Hash::from_bytes([0; Hash::BYTE_LEN]),
+        exported_symbols: Vec::new(),
+        exported_labels: Vec::new(),
+        lexical_summary: ModuleLexicalSummary {
+            schema_version: "mizar-resolve/exported-lexical/v1".into(),
+            fingerprint: Some(Hash::from_bytes([2; Hash::BYTE_LEN])),
+            contributions: Vec::new(),
+        },
+        reexports: Vec::new(),
+        dependency_interfaces: Vec::new(),
+    };
+    summary.refresh_interface_hash().unwrap();
+    summary
+}
+
+fn publication_values(summaries: &[ModuleSummary]) -> BTreeMap<ModuleId, CanonicalJson> {
+    summaries
+        .iter()
+        .map(|summary| {
+            (
+                summary_module(&summary.module),
+                mizar_artifact::module_summary::module_summary_json(summary).unwrap(),
+            )
+        })
+        .collect()
+}
+
+fn publication_value(
+    values: &BTreeMap<ModuleId, CanonicalJson>,
+    module: &IndexedModuleId,
+) -> Option<CanonicalJson> {
+    values
+        .get(&module_id(module.package.as_str(), module.path.as_str()))
+        .cloned()
+}
+
+fn publication_provider(
+    values: &BTreeMap<ModuleId, CanonicalJson>,
+) -> WorkspaceStubModuleIndexProvider {
+    use mizar_artifact::{
+        module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, current_schema_version},
+        store::artifact_hash_domain,
+    };
+    let domain = artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, current_schema_version());
+    let references = values
+        .iter()
+        .map(|(module, value)| DependencyModuleSummaryRef {
+            module: indexed_module(module.package().as_str(), module.path().as_str()),
+            artifact: format!("{}.summary", module.path().as_str()),
+            content_hash: domain.hash(value, &[]),
+        })
+        .collect::<Vec<_>>();
+    let mut modules = vec![workspace_module("app", "main")];
+    modules.extend(references.iter().map(|reference| {
+        let mut module = dependency_module(
+            reference.module.package.as_str(),
+            reference.module.path.as_str(),
+        );
+        module.location = ModuleIndexLocation::DependencySummary {
+            artifact: reference.artifact.clone(),
+            content_hash: reference.content_hash,
+        };
+        module
+    }));
+    WorkspaceStubModuleIndexProvider::new(
+        vec![package("app"), package("dep")],
+        vec![namespace(NamespaceRoot::PackageName, &["dep"], "dep")],
+        modules,
+        references,
+    )
+}
+
+fn publication_output(
+    text: &str,
+    values: &BTreeMap<ModuleId, CanonicalJson>,
+) -> mizar_frontend::orchestration::FrontendOutput<SurfaceAst> {
+    struct Summaries<'a> {
+        index: WorkspaceStubModuleIndexProvider,
+        values: &'a BTreeMap<ModuleId, CanonicalJson>,
+    }
+    impl mizar_frontend::lexical_env::LexicalSummaryProvider for Summaries<'_> {
+        fn resolve_imports(
+            &self,
+            request: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+        ) -> Result<
+            mizar_frontend::lexical_env::ResolvedImports,
+            mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+        > {
+            use crate::module_summary_reuse::{ModuleSummaryReuse, ModuleSummaryReuseRequest};
+            use mizar_frontend::lexical_env::{
+                FrontendLexicalEnvironmentError, ResolvedImport, ResolvedImportEntry,
+                ResolvedImports,
+            };
+            let index = ModuleIndexInput::new(&self.index);
+            let mut imports = Vec::new();
+            let mut summaries = BTreeMap::new();
+            for candidate in ImportPathCandidate::from_frontend_imports(request).unwrap() {
+                // Provisional lexical loading resolves paths, independently of local alias conflicts.
+                let resolution = ImportPathResolver::new(index)
+                    .resolve(&module_id("app", "main"), std::slice::from_ref(&candidate));
+                let Some(binding) = resolution.resolved().first() else {
+                    continue;
+                };
+                let module = indexed_module(
+                    binding.target().package().as_str(),
+                    binding.target().path().as_str(),
+                );
+                let lexical = self
+                    .values
+                    .get(binding.target())
+                    .and_then(|value| {
+                        ModuleSummaryReuse::new(index).read_lexical_summary(
+                            ModuleSummaryReuseRequest::new(
+                                &module,
+                                SourceAnchor::Range(candidate.range()),
+                            ),
+                            value,
+                        )
+                    })
+                    .ok_or_else(|| FrontendLexicalEnvironmentError::ProviderUnavailable {
+                        message: "invalid test dependency lexical summary".into(),
+                    })?;
+                imports.push(ResolvedImportEntry {
+                    stub_ordinal: candidate.ordinal(),
+                    stub_span: candidate.range(),
+                    import: ResolvedImport {
+                        module_id: lexical.module_id.clone(),
+                    },
+                });
+                summaries.insert(lexical.module_id.clone(), lexical);
+            }
+            Ok(ResolvedImports {
+                imports,
+                summaries: summaries.into_values().collect(),
+                diagnostics: Vec::new(),
+            })
+        }
+    }
+    parsed_import_output_with_provider(
+        text,
+        "main",
+        Summaries {
+            index: publication_provider(values),
+            values,
+        },
+    )
+}
+
+#[test]
+fn publication_preserves_source_bindings_and_only_explicit_forwarding() {
+    let values = publication_values(&[publication_summary("logic")]);
+    let provider = publication_provider(&values);
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    let empty = parsed_import_output("definition\nend;", "main");
+    let empty_view = resolver
+        .publish_frontend(&empty, &empty.source, |_, _| panic!("empty inventory"))
+        .unwrap();
+    assert_eq!(empty_view.visible_surfaces().unwrap().count(), 0);
+    assert!(empty_view.visible_symbols().unwrap().is_empty());
+    assert!(empty_view.visible_labels().unwrap().is_empty());
+    assert_eq!(empty_view.module(), &module_id("app", "main"));
+    assert_eq!(empty_view.source_id(), empty.source.source_id);
+    assert_eq!(empty_view.source_hash(), empty.source.source_hash);
+    let ordinary = publication_output("import dep.logic;", &values);
+    let ordinary_view = resolver
+        .publish_frontend(&ordinary, &ordinary.source, |module, _| {
+            publication_value(&values, module)
+        })
+        .unwrap();
+    let ordinary_surfaces = ordinary_view
+        .visible_surfaces()
+        .unwrap()
+        .collect::<Vec<_>>();
+    assert_eq!(ordinary_surfaces.len(), 1);
+    assert_eq!(ordinary_surfaces[0].0.alias(), "logic");
+    assert_eq!(ordinary_surfaces[0].0.target(), &module_id("dep", "logic"));
+    assert!(ordinary_view.reexports().is_empty());
+    for (text, forwarding) in [
+        (
+            "import dep.logic as L, dep.logic as L;\ndefinition\nend;",
+            false,
+        ),
+        (
+            "import dep.logic as L, dep.logic as L;\nexport L, L;\ndefinition\nend;",
+            true,
+        ),
+    ] {
+        let output = publication_output(text, &values);
+        let view = resolver
+            .publish_frontend(&output, &output.source, |module, _| {
+                publication_value(&values, module)
+            })
+            .unwrap();
+        assert_eq!(view.resolution().resolved().len(), 2);
+        assert_ne!(
+            view.resolution().resolved()[0].range(),
+            view.resolution().resolved()[1].range()
+        );
+        assert_eq!(view.visible_surfaces().unwrap().count(), 2);
+        assert_eq!(view.summaries().len(), 1);
+        assert_eq!(view.exports().len(), if forwarding { 2 } else { 0 });
+        assert_eq!(view.reexports().len(), usize::from(forwarding));
+        assert_eq!(view.dependency_interfaces()[0].module.module_path, "logic");
+    }
+}
+
+#[test]
+fn publication_keeps_conflicts_unavailable_and_refuses_bad_exports() {
+    let values = publication_values(&[publication_summary("logic"), publication_summary("other")]);
+    let provider = publication_provider(&values);
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    {
+        let output = publication_output("import dep.logic as X, dep.other as X;", &values);
+        let view = resolver
+            .publish_frontend(&output, &output.source, |_, _| {
+                panic!("unavailable surface")
+            })
+            .unwrap();
+        assert!(view.visible_surfaces().is_none());
+        assert!(view.visible_symbols().is_none());
+        assert!(view.visible_labels().is_none());
+        assert!(view.resolution().has_unresolved());
+        assert!(view.summaries().is_empty());
+        let mut source_summary = publication_summary("main");
+        source_summary.module.package_id = "app".into();
+        source_summary.source_hash = output.source.source_hash;
+        source_summary.refresh_interface_hash().unwrap();
+        assert!(view.compose_summary(source_summary).is_none());
+    }
+    let missing = publication_output("import dep.absent;", &values);
+    assert!(!missing.diagnostics.is_empty());
+    assert!(
+        resolver
+            .resolve_frontend(&missing, &missing.source)
+            .unwrap()
+            .has_unresolved()
+    );
+    assert!(
+        resolver
+            .publish_frontend(&missing, &missing.source, |_, _| None)
+            .is_none()
+    );
+    for text in [
+        "export dep.logic;",
+        "import dep.logic; export dep.other;",
+        "import dep.logic; definition\nend; export dep.logic;",
+        "import dep.logic; export ;",
+    ] {
+        let output = publication_output(text, &values);
+        assert!(
+            resolver
+                .publish_frontend(&output, &output.source, |module, _| {
+                    publication_value(&values, module)
+                })
+                .is_none(),
+            "{text}"
+        );
+    }
+    let mut inconsistent = parsed_import_output("", "main");
+    inconsistent.source.source_hash = Hash::from_bytes([0; Hash::BYTE_LEN]);
+    assert!(
+        resolver
+            .publish_frontend(&inconsistent, &inconsistent.source, |_, _| None)
+            .is_none()
+    );
+    let mut diagnosed = parsed_import_output("", "main");
+    diagnosed.diagnostics = parsed_import_output("import ;", "main").diagnostics;
+    assert!(!diagnosed.diagnostics.is_empty());
+    assert!(
+        resolver
+            .publish_frontend(&diagnosed, &diagnosed.source, |_, _| None)
+            .is_none()
+    );
+    let mut tampered = publication_output("import dep.logic as L; export L;", &values);
+    tampered.ast = Some(rebuild_import_ast(tampered.ast.as_ref().unwrap(), |node| {
+        if let SurfaceNodeKind::Token(token) = &mut node.kind
+            && token.text.as_ref() == "export"
+        {
+            token.text = "import".into();
+        }
+    }));
+    assert!(
+        resolver
+            .publish_frontend(&tampered, &tampered.source, |_, _| None)
+            .is_none()
+    );
+}
+
+#[test]
+fn publication_canonical_composition_ignores_import_and_export_permutations() {
+    let values = publication_values(&[publication_summary("logic"), publication_summary("other")]);
+    let provider = publication_provider(&values);
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    let mut interfaces = Vec::new();
+    for text in [
+        "import dep.logic as L, dep.other as O; export L, O;",
+        "import dep.other as O, dep.logic as L; export O, L;",
+    ] {
+        let output = publication_output(text, &values);
+        let view = resolver
+            .publish_frontend(&output, &output.source, |module, _| {
+                publication_value(&values, module)
+            })
+            .unwrap();
+        let mut source_summary = publication_summary("main");
+        source_summary.module.package_id = "app".into();
+        source_summary.source_hash = output.source.source_hash;
+        source_summary.refresh_interface_hash().unwrap();
+        interfaces.push(view.compose_summary(source_summary).unwrap().interface_hash);
+    }
+    assert_eq!(interfaces[0], interfaces[1]);
+}
+
+#[test]
+fn publication_validates_public_closure_without_rehoming_lexical_payloads() {
+    use mizar_artifact::module_summary::{
+        ExportedSymbolSummary, LexicalContributionSummary, SourceRangeSummary,
+    };
+    use mizar_artifact::store::canonical_json_string;
+    use mizar_lexer::{ExportRank, ExportedSymbolShape, UserSymbolArity, UserSymbolKind};
+    let mut logic = publication_summary("logic");
+    logic.exported_symbols.push(ExportedSymbolSummary {
+        origin_id: "f-origin".into(),
+        fully_qualified_name: "dep.logic.f".into(),
+        namespace_path: vec![],
+        visibility: "public".into(),
+        declaration_kind: "functor".into(),
+        source_range: SourceRangeSummary {
+            start_byte: 0,
+            end_byte: 1,
+        },
+        rendered_signature: "f".into(),
+        interface_fingerprint: Hash::from_bytes([3; Hash::BYTE_LEN]),
+        proof_status: None,
+    });
+    logic.exported_labels.push(ExportedLabelSummary {
+        origin_id: "label-origin".into(),
+        label: "Fact".into(),
+        owner_fully_qualified_name: "dep.logic.f".into(),
+        visibility: "public".into(),
+        source_range: SourceRangeSummary {
+            start_byte: 0,
+            end_byte: 1,
+        },
+        target_kind: "definition".into(),
+    });
+    let identity = logic.module.canonical_json().unwrap();
+    let shape = ExportedSymbolShape {
+        spelling: "f".into(),
+        symbol_id: mizar_lexer::SymbolId::new(canonical_json_string(&CanonicalJson::array([
+            identity.clone(),
+            CanonicalJson::string("f-origin"),
+        ]))),
+        source_module: mizar_lexer::ModuleId::new(canonical_json_string(&identity)),
+        export_rank: ExportRank::new(0),
+        kind: UserSymbolKind::Functor,
+        arity: UserSymbolArity::exact(0),
+        operator: None,
+    };
+    logic
+        .lexical_summary
+        .contributions
+        .push(LexicalContributionSummary {
+            kind: "exported-symbol".into(),
+            key: "f-origin".into(),
+            payload: String::from_utf8(shape.canonical_bytes().unwrap()).unwrap(),
+        });
+    logic.refresh_interface_hash().unwrap();
+    let mut facade = publication_summary("facade");
+    facade.reexports.push(ModuleReexportSummary {
+        target_module: logic.module.clone(),
+        target_item_origin_id: None,
+        exported_name: None,
+        provenance_origin_id: None,
+    });
+    facade.dependency_interfaces.push(DependencyInterfaceRef {
+        module: logic.module.clone(),
+        interface_hash: logic.interface_hash,
+    });
+    facade.refresh_interface_hash().unwrap();
+    let values = publication_values(&[facade.clone(), logic.clone()]);
+    let output = publication_output("import dep.facade as F; export F;", &values);
+    let provider = publication_provider(&values);
+    let resolver = ImportPathResolver::new(ModuleIndexInput::new(&provider));
+    let publish = || {
+        resolver
+            .publish_frontend(&output, &output.source, |module, expected| {
+                if module.path.as_str() == "logic" {
+                    assert_eq!(expected, Some(logic.interface_hash));
+                }
+                publication_value(&values, module)
+            })
+            .unwrap()
+    };
+    let view = publish();
+    assert_eq!(view, publish());
+    assert_eq!(view.dependency_interfaces().len(), 2);
+    let surfaces = view.visible_surfaces().unwrap().collect::<Vec<_>>();
+    assert_eq!(surfaces.len(), 2);
+    assert!(surfaces.iter().all(|(binding, _)| binding.alias() == "F"));
+    assert_eq!(view.reexports()[0].target_module, facade.module);
+    assert_eq!(view.summaries()[0].lexical_summary.contributions.len(), 0);
+    assert_eq!(view.summaries()[1], logic);
+    for (text, alias) in [
+        ("import dep.logic as L;", "L"),
+        ("import dep.facade as F;", "F"),
+    ] {
+        let output = publication_output(text, &values);
+        let access_view = resolver
+            .publish_frontend(&output, &output.source, |module, _| {
+                publication_value(&values, module)
+            })
+            .unwrap();
+        let symbols = access_view.visible_symbols().unwrap();
+        assert_eq!(symbols[0].3, [alias, "f"]);
+        assert_eq!(symbols[0].1, &logic.module);
+        assert_eq!(symbols[0].2, &logic.exported_symbols[0]);
+        let labels = access_view.visible_labels().unwrap();
+        assert_eq!(labels[0].3, [alias, "Fact"]);
+        assert_eq!(labels[0].1, &logic.module);
+        assert_eq!(labels[0].2.origin_id, "label-origin");
+    }
+    let mut source_summary = publication_summary("main");
+    source_summary.module.package_id = "app".into();
+    source_summary.source_hash = output.source.source_hash;
+    source_summary.refresh_interface_hash().unwrap();
+    let before = source_summary.interface_hash;
+    let outgoing = view.compose_summary(source_summary.clone()).unwrap();
+    let mut without_forwarding = outgoing.clone();
+    without_forwarding.reexports.clear();
+    without_forwarding.refresh_interface_hash().unwrap();
+    assert_eq!(
+        outgoing.dependency_interfaces,
+        without_forwarding.dependency_interfaces
+    );
+    assert_ne!(outgoing.interface_hash, without_forwarding.interface_hash);
+    assert!(outgoing.exported_symbols.is_empty());
+    assert!(outgoing.lexical_summary.contributions.is_empty());
+    assert_eq!(outgoing.reexports, view.reexports());
+    assert_eq!(outgoing.dependency_interfaces, view.dependency_interfaces());
+    assert_ne!(outgoing.interface_hash, before);
+    assert!(view.compose_summary(outgoing).is_none());
+    source_summary.source_hash = Hash::from_bytes([9; Hash::BYTE_LEN]);
+    source_summary.refresh_interface_hash().unwrap();
+    assert!(view.compose_summary(source_summary).is_none());
+    for (index, mut broken) in [
+        facade.clone(),
+        facade.clone(),
+        facade.clone(),
+        facade.clone(),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        match index {
+            0 => broken.dependency_interfaces.clear(),
+            1 => {
+                broken.dependency_interfaces[0].interface_hash =
+                    Hash::from_bytes([9; Hash::BYTE_LEN])
+            }
+            2 => broken.reexports[0].target_item_origin_id = Some("f-origin".into()),
+            _ => {
+                broken.reexports[0].target_module = broken.module.clone();
+                broken.dependency_interfaces[0].module = broken.module.clone();
+            }
+        }
+        broken.refresh_interface_hash().unwrap();
+        let bad_values = publication_values(&[broken, logic.clone()]);
+        let bad_provider = publication_provider(&bad_values);
+        assert!(
+            ImportPathResolver::new(ModuleIndexInput::new(&bad_provider))
+                .publish_frontend(&output, &output.source, |module, _| {
+                    publication_value(&bad_values, module)
+                })
+                .is_none()
+        );
+    }
+    // A private row or an unpaired/foreign lexical envelope cannot become a public facade surface.
+    for index in 0..11 {
+        let mut broken = logic.clone();
+        match index {
+            0 => broken.exported_symbols[0].visibility = "private".into(),
+            1 => broken.lexical_summary.contributions[0].key = "missing".into(),
+            2 => broken.lexical_summary.schema_version = "unsupported/v1".into(),
+            3 => broken.lexical_summary.contributions[0].payload = "unsupported".into(),
+            4 => broken.exported_symbols[0].namespace_path = vec!["wrong".into()],
+            5 => broken.exported_symbols[0].fully_qualified_name = "dep.other.f".into(),
+            6 => {
+                broken.exported_symbols[0].fully_qualified_name =
+                    "dep::logic::contribution=0:kind=functor".into()
+            }
+            7 => broken.exported_labels[0].owner_fully_qualified_name = "dep.logic.missing".into(),
+            8 => broken.exported_labels[0].label = "not a label".into(),
+            9 => broken.exported_symbols[0].declaration_kind = "unknown-role".into(),
+            _ => broken.exported_labels[0].target_kind = "unknown-role".into(),
+        }
+        broken.refresh_interface_hash().unwrap();
+        let bad_values = publication_values(&[broken]);
+        let bad_provider = publication_provider(&bad_values);
+        let direct = publication_output("import dep.logic;", &values);
+        assert!(
+            ImportPathResolver::new(ModuleIndexInput::new(&bad_provider))
+                .publish_frontend(&direct, &direct.source, |module, _| {
+                    publication_value(&bad_values, module)
+                })
+                .is_none()
+        );
+    }
+    assert!(
+        resolver
+            .publish_frontend(&output, &output.source, |_, _| None)
+            .is_none()
+    );
+    let wrong = BTreeMap::from([(
+        module_id("dep", "facade"),
+        mizar_artifact::module_summary::module_summary_json(&publication_summary("wrong")).unwrap(),
+    )]);
+    let wrong_provider = publication_provider(&wrong);
+    assert!(
+        ImportPathResolver::new(ModuleIndexInput::new(&wrong_provider))
+            .publish_frontend(&output, &output.source, |_, _| wrong
+                .values()
+                .next()
+                .cloned())
+            .is_none()
+    );
+}
+
+#[test]
+fn source_notation_candidate_passes_typed_reader_for_synonym_and_antonym_rows() {
+    use crate::declarations::DeclarationShellCollector;
+    use crate::module_summary_reuse::{ModuleSummaryReuse, ModuleSummaryReuseRequest};
+    use crate::symbols::SignatureProjectionExtractor;
+    use mizar_artifact::module_summary::{
+        MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryIdentity, current_schema_version,
+        module_summary_json,
+    };
+    use mizar_artifact::store::artifact_hash_domain;
+
+    let text = "definition\n\
+        let x, y be set;\n\
+        func Base: x base y -> set equals x;\n\
+        pred Related: x related y means thesis;\n\
+end;\n\
+definition\n\
+        let x, y be set;\n\
+        synonym x alias y for x base y;\n\
+end;\n\
+definition\n\
+        let x, y be set;\n\
+        antonym x opposite y for x related y;\n\
+end;\n";
+    let output = parsed_import_output(text, "main");
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let ast = output.ast.as_ref().unwrap();
+    let module = ModuleId::new(
+        output.source.package_id.clone(),
+        output.source.module_path.clone(),
+    );
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let collection = SignatureProjectionExtractor::new(
+        ast,
+        &shells,
+        crate::env::NamespacePath::new(module.path().as_str()),
+    )
+    .collect(&module);
+    assert!(collection.diagnostics().is_empty());
+    let identity = ModuleSummaryIdentity {
+        package_id: output.source.package_id.as_str().to_owned(),
+        package_version: Some("0.1.0".to_owned()),
+        lockfile_identity: None,
+        module_path: output.source.module_path.as_str().to_owned(),
+        language_edition: output.source.edition.as_str().to_owned(),
+    };
+    let summary = collection
+        .source_notation_module_summary_candidate(&output, &identity)
+        .unwrap()
+        .expect("complete resolver-produced summary candidate");
+    let origin_for_spelling = |spelling: &str| {
+        summary
+            .lexical_summary
+            .contributions
+            .iter()
+            .find_map(|entry| {
+                let shape = mizar_lexer::ExportedSymbolShape::from_canonical_bytes(
+                    entry.payload.as_bytes(),
+                )?;
+                (shape.spelling == spelling).then(|| entry.key.clone())
+            })
+            .expect("source spelling has an exported origin row")
+    };
+    let alias_origin = origin_for_spelling("alias");
+    let antonym_origin = origin_for_spelling("opposite");
+    assert!(
+        summary
+            .exported_symbols
+            .iter()
+            .any(|row| row.origin_id == alias_origin)
+    );
+    assert!(
+        summary
+            .exported_symbols
+            .iter()
+            .any(|row| row.origin_id == antonym_origin)
+    );
+    assert_ne!(alias_origin, antonym_origin);
+
+    let read_through_owner = |summary: &ModuleSummary| {
+        let json = module_summary_json(summary).unwrap();
+        let domain = artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, current_schema_version());
+        let content_hash = domain.hash(&json, &[]);
+        let indexed = indexed_module("app", "main");
+        let artifact = "app.main.summary".to_owned();
+        let mut module_entry = dependency_module("app", "main");
+        module_entry.location = ModuleIndexLocation::DependencySummary {
+            artifact: artifact.clone(),
+            content_hash,
+        };
+        let provider = WorkspaceStubModuleIndexProvider::new(
+            vec![package("app")],
+            Vec::new(),
+            vec![module_entry],
+            vec![DependencyModuleSummaryRef {
+                module: indexed.clone(),
+                artifact,
+                content_hash,
+            }],
+        );
+        let request = ModuleSummaryReuseRequest::new(
+            &indexed,
+            SourceAnchor::Range(ast.node_view(ast.root().unwrap()).unwrap().range()),
+        )
+        .with_expected_interface_hash(summary.interface_hash);
+        let reuse = ModuleSummaryReuse::new(ModuleIndexInput::new(&provider));
+        (
+            reuse.read_lexical_shapes(request.clone(), &json),
+            reuse.read_public_summary(request, &json),
+        )
+    };
+    let (shapes, validated_summary) = read_through_owner(&summary);
+    let shapes = shapes.expect("typed lexical envelopes bind to exported rows");
+    assert!(validated_summary.is_some());
+    for origin in [&alias_origin, &antonym_origin] {
+        let row = summary
+            .exported_symbols
+            .iter()
+            .find(|row| &row.origin_id == origin)
+            .unwrap();
+        let shape = shapes
+            .iter()
+            .find(|shape| {
+                shape.spelling
+                    == if origin == &alias_origin {
+                        "alias"
+                    } else {
+                        "opposite"
+                    }
+            })
+            .expect("alias spelling retained by validated reader");
+        let expected_id = mizar_artifact::store::canonical_json_string(
+            &mizar_artifact::store::CanonicalJson::array([
+                identity.canonical_json().unwrap(),
+                mizar_artifact::store::CanonicalJson::string(&row.origin_id),
+            ]),
+        );
+        assert_eq!(shape.symbol_id.as_str(), expected_id);
+    }
+
+    let mut unpaired = summary.clone();
+    unpaired
+        .lexical_summary
+        .contributions
+        .iter_mut()
+        .find(|entry| entry.key == alias_origin)
+        .unwrap()
+        .key = "missing-origin".to_owned();
+    unpaired.refresh_interface_hash().unwrap();
+    let (unpaired_shapes, unpaired_public) = read_through_owner(&unpaired);
+    assert!(unpaired_shapes.is_none());
+    assert!(unpaired_public.is_none());
+
+    let mut foreign_envelope = summary.clone();
+    let base_payload = foreign_envelope
+        .lexical_summary
+        .contributions
+        .iter()
+        .find(|entry| entry.key != alias_origin && entry.key != antonym_origin)
+        .unwrap()
+        .payload
+        .clone();
+    foreign_envelope
+        .lexical_summary
+        .contributions
+        .iter_mut()
+        .find(|entry| entry.key == alias_origin)
+        .unwrap()
+        .payload = base_payload;
+    foreign_envelope.refresh_interface_hash().unwrap();
+    let (foreign_shapes, foreign_public) = read_through_owner(&foreign_envelope);
+    assert!(foreign_shapes.is_none());
+    assert!(foreign_public.is_none());
+}
+
 fn parsed_import_output(
     text: &str,
     module_path: &str,
+) -> mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst> {
+    parsed_import_output_with_provider(text, module_path, NoImportedSummaries)
+}
+
+fn parsed_import_output_with_provider(
+    text: &str,
+    module_path: &str,
+    summaries: impl mizar_frontend::lexical_env::LexicalSummaryProvider,
 ) -> mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst> {
     use mizar_frontend::{
         orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
@@ -57,7 +780,7 @@ fn parsed_import_output(
     std::fs::write(&path, text).unwrap();
     let output = Frontend::new(
         FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
-        NoImportedSummaries,
+        summaries,
         MizarParserSeam,
     )
     .run(

@@ -1,6 +1,6 @@
 # Task LSP-PRODUCER-METADATA-PUBLICATION-DESIGN: completion producer proposal
 Canonical language: English; [Japanese pointer](../ja/LSP-PRODUCER-METADATA-PUBLICATION-DESIGN.md).
-Status: frozen spec-only unit; proposal awaits owner approval. Tier: full; new producer publication boundary, no pattern predecessor.
+Status: frozen spec-only predecessor; owner approved Q1–Q5-A on 2026-11-16. Tier: full; new producer publication boundary, no pattern predecessor.
 Owner: [LSP plan](../../mizar-lsp/en/00.crate_plan.md), Task25 prerequisite. Consumer: [completion](EDITOR-LSP-COMPLETION.md).
 Purpose: define notation and import/alias metadata publication contracts; implement nothing and leave semantic choices to the owner.
 
@@ -9,7 +9,7 @@ Purpose: define notation and import/alias metadata publication contracts; implem
 Authority: spec [§2.5.2](../../../spec/en/02.lexical_structure.md#252-user-defined-symbolic-names), [§11.1](../../../spec/en/11.symbol_management.md#111-synonyms-and-antonyms), [§12.3–12.5](../../../spec/en/12.modules_and_namespaces.md#123-import-statements), and [§23.6](../../../spec/en/23.package_management_and_build_system.md#236-lsp-integration-and-ide-support).
 Existing owners: [lexical events/storage](../../mizar-lexer/en/lexical_environment.md#step-5a5-local-notation-alias-collection), [direct producer](../../mizar-resolve/en/symbols.md#source-lexical-contribution-producer), [import/alias resolution](../../mizar-resolve/en/imports.md#alias-binding), [summary schema](../../mizar-artifact/en/module_summary.md#scope), [metadata reads](../../mizar-lsp/en/metadata.md#published-inputs), [snapshot association](../../mizar-lsp/en/snapshot.md#source-association).
 Gaps: `design_drift`/producer incompleteness: `symbols.rs::export_frontend_lexical_contributions` rejects operator declarations and `NotationAlias`; bounded summary candidates do not publish a complete imported/aliased surface. Lexical candidates alone do not authenticate semantic aliases or exports.
-Readiness: owner authorized this definition unit; new semantic/publication choices are explicit questions with options, not approved requirements. Task25 stays parked pending approval, producer implementation and redispatch.
+Readiness: Q1–Q5-A are approved; the [implementation unit](LSP-PRODUCER-METADATA-PUBLICATION.md) owns producer readiness. Task25 requires separate redispatch.
 
 ## Scope and boundaries
 

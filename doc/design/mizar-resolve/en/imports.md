@@ -8,7 +8,7 @@ resolver-owned source-shaped path candidate seam for alias binding,
 relative-prefix interpretation, namespace/package binding, and explicit
 unresolved-import recovery feeding that graph layer. Parsed import collection
 now belongs to the bounded producer below. Full recovered-directive collection
-and export validation remain later resolver work.
+remains later resolver work; bounded module forwarding is covered below.
 
 ## Purpose
 
@@ -397,3 +397,11 @@ specified behavior.
   bindings, cycle rejection, and unresolved-import representation.
 - Checker, type, proof, and artifact crates own later type facts, proof facts,
   and persistent artifact schemas.
+
+## Published import view
+
+`ImportPathResolver::publish_frontend(output, source, summary_reader)` validates complete same-source import/export inventories and publishes immutable `PublishedImportView` projections. The reader receives canonical module and optional required interface hash; its caller owns captured dependency acquisition. Strict reuse validates index/content/module/schema/interface binding and public typed lexical envelopes. Local aliases never change canonical identities; duplicate source occurrences and conflict/unresolved outcomes are retained. Such outcomes make `visible_surfaces()` unavailable, distinct from a complete-empty view.
+
+Resolved imports expose source binding plus canonical public summaries through an acyclic module-forwarding closure. Missing/private/item-level/cyclic forwarding or dependency mismatch withholds the covered product. Every consumed summary interface is retained; foreign rows are never rehomed in a facade. Authenticated source exports retain their ranges and canonical targets. `visible_symbols()` and `visible_labels()` return unchanged canonical rows with resolver-computed qualified components: the importing alias plus row-relative namespace/name, including forwarded surfaces without an extra facade namespace. Unrepresentable names, namespace mismatches or missing label owners withhold the whole view.
+
+`compose_summary(source_base)` requires matching source module/hash, an available complete visible product and no prepopulated forwarding/dependencies. It preserves source-owned rows, adds explicit forwarding and consumed interfaces, then validates and refreshes the interface hash. The caller owns source-base authenticity. These products grant no checker/native acceptance or publication currentness.

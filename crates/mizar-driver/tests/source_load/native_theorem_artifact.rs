@@ -3454,6 +3454,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
             current_schema_version as manifest_schema, manifest_hash_domain, read_manifest_file,
             write_artifact_manifest,
         },
+        module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, module_summary_json},
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
         store::{
             PublishedArtifactReadOptions, artifact_hash_domain, canonical_json_bytes,
@@ -3689,6 +3690,26 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     .is_empty()
                 );
                 let artifact = &draft.artifact;
+                let mizar_build::task_graph::WorkUnit::Module { module } = &six.work_unit else {
+                    panic!("source module fixture")
+                };
+                let summary = inputs
+                    .native_theorem_module_summary_candidate(module)
+                    .unwrap()
+                    .unwrap();
+                let summary_path = mizar_artifact::store::PublishedArtifactPath::new(format!(
+                    "{}.summary.json",
+                    main_write.path.as_str()
+                ))
+                .unwrap();
+                let summary_write = mizar_artifact::store::write_published_artifact(
+                    &canonical_root,
+                    &summary_path,
+                    &module_summary_json(&summary).unwrap(),
+                    &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+                    &[],
+                )
+                .unwrap();
                 let entry = ModuleArtifactEntry {
                     module: artifact.module.clone(),
                     source_file: artifact.source_file.clone(),
@@ -3712,9 +3733,19 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                         artifact.schema_version,
                         artifact.implementation_hash,
                     ),
-                    module_summary_file: None,
-                    module_summary_hash: None,
-                    module_summary_interface_hash: None,
+                    module_summary_file: Some(summary_path.as_str().to_owned()),
+                    module_summary_hash: Some(ArtifactHashRef::new(
+                        ArtifactHashClass::Artifact,
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                        summary_write.artifact_hash,
+                    )),
+                    module_summary_interface_hash: Some(ArtifactHashRef::new(
+                        ArtifactHashClass::Interface,
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                        summary.interface_hash,
+                    )),
                     registration_summary_file: None,
                     registration_summary_hash: None,
                     registration_interface_hash: None,
@@ -3829,6 +3860,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     [
                         "artifact-manifest.json",
                         "main.mizir.json",
+                        "main.mizir.json.summary.json",
                         "proof-witnesses"
                     ]
                 );
@@ -3890,7 +3922,7 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     fs::read(actual_root.join(&witness.witness_path)).unwrap(),
                     witness_bytes
                 );
-                assert_eq!(fs::read_dir(&actual_root).unwrap().count(), 3);
+                assert_eq!(fs::read_dir(&actual_root).unwrap().count(), 4);
                 let storage = owner.storage();
                 let stored = storage.get(&output).unwrap();
                 assert_eq!(*stored, actual_draft.artifact);

@@ -583,8 +583,7 @@ Each nonempty mapped span must be contained by exactly one symbol origin range
 before visibility filtering. Its source id and module must agree
 with the origin and `ContributionKind::LocalSource { source_id }` contribution;
 recovered origins are rejected. Local lexer module names must equal
-the resolver module path (the existing frontend convention). Supported exact
-kind pairs are predicate, functor, mode, attribute and structure. Only
+the resolver module path (the existing frontend convention). Supported direct kind pairs are predicate, functor, mode, attribute and structure; authenticated alias relations retain their own synonym/antonym owners. Only
 `Visibility::Public` + `ExportStatus::Exported` pairs are retained;
 `Visibility::Private` + `ExportStatus::LocalOnly` pairs are omitted.
 `ReExported` and all other combinations,
@@ -594,8 +593,7 @@ Borrowed declarations preserve every field and input order; several lexical
 pieces may pair with the same symbol. Empty input yields an empty vector when
 collection diagnostics are empty. No metadata is inferred from resolver notation.
 
-Aliases, standalone operator declarations, absent prepass families, completeness,
-source authentication and artifact origin serialization remain producer work.
+Standalone operator events, completeness, source authentication and artifact origin serialization belong to the source producer below.
 This method considers `locals.user_symbols` only; it cannot authorize publication
 of a summary that omits other lexical effects.
 
@@ -627,29 +625,13 @@ not implement a production lexical-summary provider.
 
 ### Source lexical contribution producer
 
-`SymbolCollectionResult::export_frontend_lexical_contributions(frontend, identity)`
-returns `Option<Vec<LexicalContributionSummary>>` for the frontend-bound direct
-pairs. The caller supplies build-owned `ModuleSummaryIdentity`; package, module
-path and edition must match the retained source. Artifact identity validation and
-JSON normalization stay with `ModuleSummaryIdentity::canonical_json`. Version
-and lockfile provenance remain the caller's responsibility.
+`SymbolCollectionResult::source_notation_view(frontend)` returns a getter-only `SourceNotationView` bound to exact retained source identity/hash. It validates the complete notation/operator inventory, genuine frontend correspondence, unrecovered owners and exact declaration/activation mappings, including original-input offsets. Each piece retains its resolver owner, visibility and relations; private declarations and earlier operator events remain local. No AST or mutable environment is retained. Standalone events require an already-active authenticated local functor/arity; inactive or imported-only targets withhold the whole local notation view.
 
-Reject any standalone operator declarations or AST notation aliases, identity
-mismatch, failed frontend correspondence or A8 encoding failure; never return a
-partial vector. Each pair emits kind `exported-symbol` under producer schema
-`mizar-resolve/exported-lexical/v1`. Its key is `entry.symbol().local().as_str()`;
-the corresponding exported symbol producer must use that same `origin_id`.
-Construct A8 shapes from unchanged local spelling, rank, kind, arity and operator,
-with A10 envelope-bound module/symbol identity strings (including their canonical
-newlines). Use the artifact-owned identity JSON and canonical string writer.
-Preserve pair order, private-filter rank gaps and multiple spellings per origin;
-do not deduplicate by key or infer metadata from normalized resolver notation.
+`export_frontend_lexical_contributions(frontend, identity)` applies approved [Q1/Q2-A](../../mizar-lsp/en/producer_metadata_publication.md#notation-publication-proposal). Supported binary local functor synonyms and predicate antonyms require one authenticated resolver relation under the existing extractor profile (including its visibility-wrapper restrictions); imported targets, chains and other unsupported profiles withhold the whole product. Alias lexical keys use their own declaration origins. Standalone operators add no spelling: the final public spelling-level event requires a matching exported functor/arity and must encode on every retained public shape of that spelling without changing its kind or arity. Incompatible mixed-arity shapes withhold the whole outgoing lexical product under Q5; private determining events or effects without a local exported owner also withhold it.
 
-This produces contributions, not exported symbol rows, a complete module/lexical
-summary, lexical fingerprint, import provider or publication. Missing source
-prepass families and export policy remain with their owners. Tests cover actual
-frontend multi-piece/private/default-operator payloads, identity changes and
-rejections, unsupported aliases/operators, codec bounds and deterministic output.
+The caller supplies build-owned identity/version/lockfile provenance. Canonical A10 envelopes retain exact lexer spelling, arity, ranks and legal multiple pieces per origin; mapping, inventory or codec failure returns `None`, while complete-empty returns an empty product.
+
+`source_notation_module_summary_candidate(frontend, identity)` projects the notation-only source base with own-origin public rows and body-free source headers/context, without proof status. It rejects other public symbol families. This candidate is incomplete for imports/exports until [import composition](imports.md#published-import-view) supplies authenticated forwarding and dependency interfaces; it is not publication authority. Existing algorithm/theorem candidates keep their own bounded profiles.
 
 ## Constructor Actual Roles
 

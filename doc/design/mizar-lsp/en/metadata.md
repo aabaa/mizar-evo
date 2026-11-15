@@ -11,7 +11,7 @@ Use the selected snapshot's manifest-resolved outputs under [snapshot freshness]
 
 Read existing [ModuleSummary](../../mizar-artifact/en/module_summary.md#scope) projections for module identity and dependency-facing exported symbol, label, lexical and reexport information. Module summaries exclude expression metadata; they do not replace `VerifiedArtifact.expressions` or supply local semantic detail that was not published.
 
-Completion's missing producer-side notation and import/alias contracts are proposed in [producer metadata publication](producer_metadata_publication.md); its Q1–Q5 await owner approval and add no currently available input.
+Completion producer inputs follow the approved [publication contract](producer_metadata_publication.md). `SnapshotPublication::source_metadata` retains each manifest-backed summary and optional immutable notation/import views with the original source association; unavailable products differ from complete-empty views. Native profile eligibility is unchanged.
 
 Artifact owns schemas, compatibility, canonical ordering and validation. Use its existing [validating readers](../../mizar-artifact/en/verified_artifact.md#reader-and-writer-requirements) and [summary reader rules](../../mizar-artifact/en/module_summary.md#reader-and-writer-requirements); this design adds no field, summary shape, format or validation policy.
 

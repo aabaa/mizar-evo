@@ -84,7 +84,7 @@ pub enum BuildEventKind {
     },
 }
 
-pub use crate::frontend_adapter::SnapshotPublication;
+pub use crate::frontend_adapter::{PublishedSourceMetadata, SnapshotPublication};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]

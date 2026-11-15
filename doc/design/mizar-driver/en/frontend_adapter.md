@@ -842,3 +842,7 @@ The Frontend-parent algorithm summary entry is retired.
 ## Native Algorithm Summary Publication
 
 The algorithm summary publisher is retired.
+
+## Producer metadata publication
+
+The existing native theorem manifest transaction now includes its genuine source ModuleSummary using the existing summary codec/hash and optional manifest references. Native acceptance profiles remain unchanged. Coherent publication reads the summary manifest-first and obtains the same run's sealed Frontend output under source/snapshot/work-unit validation. It retains `PublishedSourceMetadata` beside each artifact: matching summary, optional immutable notation and import views, and their original captured source/dependency association. Missing products remain unavailable; complete-empty views are explicit. OpenBuffer stages may be discarded after the whole immutable publication is retained. Replacement and stale reads preserve this original set under the existing snapshot lifecycle; equal build ids grant no revival.

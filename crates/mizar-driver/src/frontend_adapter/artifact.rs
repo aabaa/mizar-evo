@@ -49,6 +49,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         let mut manifests = Vec::new();
         let mut artifacts = Vec::new();
         let mut development_artifacts = Vec::new();
+        let mut source_metadata = Vec::new();
         for module in modules {
             let version = unique(self.snapshot.source_versions.iter().filter(|version| {
                 version.package_id == module.package_id && version.module_path == module.module_path
@@ -161,6 +162,105 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             {
                 return None;
             }
+            source_metadata.push((|| {
+                use mizar_artifact::module_summary::{
+                    MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryReadOptions, read_module_summary,
+                };
+                use mizar_resolve::{
+                    declarations::DeclarationShellCollector, env::NamespacePath,
+                    imports::ImportPathResolver, module_index::ModuleIndexInput,
+                    resolved_ast::ModuleId, symbols::SignatureProjectionExtractor,
+                };
+                let path = PublishedArtifactPath::new(entry.module_summary_file.as_ref()?).ok()?;
+                let hash = entry.module_summary_hash.as_ref()?;
+                let read = read_published_artifact(
+                    &root,
+                    &path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&artifact_hash_domain(
+                            MODULE_SUMMARY_SCHEMA_FAMILY,
+                            hash.schema_version,
+                        )),
+                        hash_excluded_paths: &[],
+                        expected_artifact_hash: Some(hash.digest),
+                    },
+                )
+                .ok()?;
+                let summary = read_module_summary(
+                    &read.value,
+                    ModuleSummaryReadOptions {
+                        artifact_path: Some(path.as_str()),
+                        expected_module: Some(&entry.module),
+                        expected_interface_hash: Some(
+                            entry.module_summary_interface_hash.as_ref()?.digest,
+                        ),
+                    },
+                )
+                .ok()?;
+                let unit = IrWorkUnit::new(module_work_unit_label(
+                    module.package_id.as_str(),
+                    module.module_path.as_str(),
+                ));
+                let frontend_ref = unique(
+                    run.phase_results
+                        .values()
+                        .flatten()
+                        .flat_map(|result| &result.output_refs)
+                        .filter(|output| {
+                            output.work_unit() == &unit
+                                && output.phase() == &IrPipelinePhase::from(PipelinePhase::Frontend)
+                                && output.output_kind() == &OutputKind::new("FrontendOutput")
+                        }),
+                )?;
+                publisher
+                    .validate_output(
+                        self.snapshot.id,
+                        frontend_ref,
+                        OutputAuthorization::Published,
+                    )
+                    .ok()?;
+                let frontend = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                                frontend_ref,
+                                &OutputKind::new("FrontendOutput"),
+                            )
+                            .ok()?,
+                    )
+                    .ok()?;
+                let source = &frontend.source;
+                if source.source_id != version.source_id
+                    || source.source_hash != version.source_hash
+                    || summary.source_hash != version.source_hash
+                    || source.package_id != version.package_id
+                    || source.module_path != version.module_path
+                    || source.origin != version.origin
+                {
+                    return None;
+                }
+                let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+                let ast = frontend.ast.as_ref()?;
+                let shells = DeclarationShellCollector::new(ast, &module).collect();
+                let collection = SignatureProjectionExtractor::new(
+                    ast,
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                let imports = ImportPathResolver::new(ModuleIndexInput::new(self.module_index))
+                    .publish_frontend(&frontend, source, |_, _| None)?;
+                if imports.compose_summary(summary.clone())? != summary {
+                    return None;
+                }
+                Some(PublishedSourceMetadata {
+                    summary,
+                    notation: collection.source_notation_view(&frontend),
+                    imports: Some(imports),
+                })
+            })());
             artifacts.push(artifact);
             manifests.push(manifest);
         }
@@ -180,6 +280,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             manifests,
             artifacts,
             development_artifacts,
+            source_metadata,
         })
     }
 
@@ -1471,10 +1572,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 ManifestProofWitnessEntry, ManifestProvenance, ManifestTransaction,
                 ModuleArtifactEntry, PackageIdentity, current_schema_version, read_manifest_file,
             },
+            module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, module_summary_json},
             registration_summary::{ArtifactHashClass, ArtifactHashRef},
             store::{
                 PublishedArtifactPath, artifact_hash_domain, canonical_json_bytes,
-                parse_canonical_json_bytes,
+                parse_canonical_json_bytes, write_published_artifact,
             },
             verified_artifact::{
                 VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
@@ -1549,6 +1651,25 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return Err(fail("currentness validation failed"));
         }
         let artifact = &draft.artifact;
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return Err(fail("requires a module"));
+        };
+        let Some(summary) = self.native_theorem_module_summary_candidate(module)? else {
+            return Ok(None);
+        };
+        if summary.module != artifact.module || summary.source_hash != artifact.source_hash {
+            return Err(fail("summary source binding mismatch"));
+        }
+        let summary_path = PublishedArtifactPath::new(format!("{}.summary.json", staging.1))
+            .map_err(|error| error.to_string())?;
+        let summary_write = write_published_artifact(
+            &root,
+            &summary_path,
+            &module_summary_json(&summary).map_err(|error| error.to_string())?,
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .map_err(|error| error.to_string())?;
         let open_buffer = matches!(
             artifact.provenance.captured_source.as_ref(),
             Some((_, SourceOrigin::OpenBuffer { .. }, _))
@@ -1576,9 +1697,19 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 artifact.schema_version,
                 artifact.implementation_hash,
             ),
-            module_summary_file: None,
-            module_summary_hash: None,
-            module_summary_interface_hash: None,
+            module_summary_file: Some(summary_path.as_str().to_owned()),
+            module_summary_hash: Some(ArtifactHashRef::new(
+                ArtifactHashClass::Artifact,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                summary.schema_version,
+                summary_write.artifact_hash,
+            )),
+            module_summary_interface_hash: Some(ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                MODULE_SUMMARY_SCHEMA_FAMILY,
+                summary.schema_version,
+                summary.interface_hash,
+            )),
             registration_summary_file: None,
             registration_summary_hash: None,
             registration_interface_hash: None,
@@ -1868,6 +1999,27 @@ pub struct SnapshotPublication {
     pub(crate) manifests: Vec<mizar_artifact::manifest::PublishedManifestRead>,
     pub(crate) artifacts: Vec<Arc<mizar_artifact::verified_artifact::VerifiedArtifact>>,
     pub(crate) development_artifacts: Vec<mizar_artifact::store::PublishedArtifactRead>,
+    pub(crate) source_metadata: Vec<Option<PublishedSourceMetadata>>,
+}
+
+/// Owner projections bound to the matching manifest module and original source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PublishedSourceMetadata {
+    summary: mizar_artifact::module_summary::ModuleSummary,
+    notation: Option<mizar_resolve::symbols::SourceNotationView>,
+    imports: Option<mizar_resolve::imports::PublishedImportView>,
+}
+
+impl PublishedSourceMetadata {
+    pub fn summary(&self) -> &mizar_artifact::module_summary::ModuleSummary {
+        &self.summary
+    }
+    pub fn notation(&self) -> Option<&mizar_resolve::symbols::SourceNotationView> {
+        self.notation.as_ref()
+    }
+    pub fn imports(&self) -> Option<&mizar_resolve::imports::PublishedImportView> {
+        self.imports.as_ref()
+    }
 }
 
 impl SnapshotPublication {
@@ -1891,6 +2043,11 @@ impl SnapshotPublication {
     /// Resolved manifest development entries, including optional missing-facts payloads.
     pub fn development_artifacts(&self) -> &[mizar_artifact::store::PublishedArtifactRead] {
         &self.development_artifacts
+    }
+
+    /// Same order as artifacts; unavailable products remain distinct from complete-empty views.
+    pub fn source_metadata(&self) -> &[Option<PublishedSourceMetadata>] {
+        &self.source_metadata
     }
 }
 
@@ -2691,6 +2848,37 @@ mod snapshot_publication_tests {
         );
         assert!(!published.manifests().is_empty());
         assert!(!published.artifacts().is_empty());
+        assert_eq!(
+            published.source_metadata().len(),
+            published.artifacts().len()
+        );
+        for ((metadata, artifact), manifest) in published
+            .source_metadata()
+            .iter()
+            .zip(published.artifacts())
+            .zip(published.manifests())
+        {
+            let metadata = metadata
+                .as_ref()
+                .expect("genuine source metadata is available");
+            assert_eq!(metadata.summary().module, artifact.module);
+            assert_eq!(metadata.summary().source_hash, artifact.source_hash);
+            let notation = metadata.notation().expect("complete-empty local notation");
+            assert!(notation.declarations().is_empty());
+            assert!(notation.operator_events().is_empty());
+            assert_eq!(notation.source_hash(), artifact.source_hash);
+            let imports = metadata.imports().expect("complete-empty imports");
+            assert_eq!(imports.source_id(), notation.source_id());
+            assert_eq!(imports.source_hash(), notation.source_hash());
+            assert_eq!(imports.visible_surfaces().unwrap().count(), 0);
+            let entry = &manifest.manifest.modules[0];
+            assert_eq!(
+                entry.module_summary_interface_hash.as_ref().unwrap().digest,
+                metadata.summary().interface_hash
+            );
+            assert!(entry.module_summary_file.is_some());
+            assert!(entry.module_summary_hash.is_some());
+        }
         let stream = driver.events(session.id());
         let published_event_index = stream
             .events()
@@ -3121,6 +3309,7 @@ mod snapshot_publication_tests {
             .next()
             .expect("completed current build retains its publication");
         let before = retained.as_ref().clone();
+        assert!(before.source_metadata().iter().all(Option::is_some));
         fs::write(
             fixture.root.join("alpha/src/main.miz"),
             "theorem NewMain: for X being set holds X = X proof let X be set; thus X = X; end;",

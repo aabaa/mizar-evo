@@ -7,7 +7,7 @@ construction と cycle rejection を実装する。task R-010 は、alias bindin
 relative-prefix interpretation、namespace/package binding、明示的な unresolved-import
 recovery を graph layer へ供給する resolver-owned source-shaped path candidate seam を
 実装する。構文木からの import 収集は以下の限定 producer が所有する。
-回復 directive 全体の収集と export validation は後続の resolver 作業に残す。
+回復 directive 全体の収集は後続 resolver 作業に残し、限定 module forwarding は下記で扱う。
 
 ## 目的
 
@@ -355,3 +355,11 @@ task R-026 は frontend task 25 の public-enum decision procedure をこの mod
   cycle rejection、unresolved-import representation を所有する。
 - checker、type、proof、artifact crate は後続の type fact、proof fact、永続 artifact
   schema を所有する。
+
+## Published import view
+
+`ImportPathResolver::publish_frontend(output, source, summary_reader)` は同一 source の完全な import/export inventory を検証し、不変の `PublishedImportView` を返す。Reader は canonical module と optional な必要 interface hash を受け、呼出側が捕捉済み依存の取得を所有する。厳密な reuse は index/content/module/schema/interface と public typed lexical envelope を検証する。Alias は canonical identity を変えず、重複 source と競合/unresolved outcome を保持する。失敗 outcome の `visible_surfaces()` は unavailable とし、完全な空 view と区別する。
+
+Resolved import は source binding と、非循環 module forwarding closure 上の canonical public summary を公開する。欠落/private/item-level/cyclic forwarding や依存不一致は対象 product を公開しない。消費した全 summary interface と source export の範囲/canonical target を保持し、foreign row を facade に移さない。`visible_symbols()`/`visible_labels()` は canonical row と resolver が計算した qualified component（import alias と row-relative namespace/name）を返し、forwarding でも facade 用 namespace は追加しない。表現不能な名前、namespace 不一致、label owner 欠落では view 全体を unavailable とする。
+
+`compose_summary(source_base)` は source module/hash の一致、完全な visible product、未設定の forwarding/dependency を要求する。Source-owned row を保持し、明示 forwarding と消費 interface を加え、検証して interface hash を更新する。Source base の真正性は呼出側が所有し、checker/native acceptance や publication currentness は付与しない。

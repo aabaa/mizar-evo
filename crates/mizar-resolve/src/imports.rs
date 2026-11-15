@@ -3,14 +3,19 @@
 //! This module resolves source-shaped import path candidates into canonical
 //! module candidates, records path/alias recovery, and builds the deterministic
 //! accepted acyclic graph used by later import, name, and symbol resolution
-//! tasks. Parsed import preludes are collected here; full recovered-directive
-//! handling and export validation remain later work.
+//! tasks. Clean frontend preludes also produce immutable public-summary views;
+//! full recovered-directive handling remains later work.
 
 use crate::module_index::{
     IndexedModuleId, ModuleIndexInput, ModuleIndexProviderError, NamespaceIndexEntry, NamespaceRoot,
 };
 use crate::resolved_ast::ModuleId;
-use mizar_session::{ModulePath, PackageId, SourceRange};
+use mizar_artifact::module_summary::{
+    DependencyInterfaceRef, ExportedLabelSummary, ExportedSymbolSummary, ModuleReexportSummary,
+    ModuleSummary, ModuleSummaryIdentity,
+};
+use mizar_artifact::store::CanonicalJson;
+use mizar_session::{Hash, ModulePath, PackageId, SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -882,10 +887,359 @@ impl ImportPathResolution {
     }
 }
 
+fn summary_module(identity: &ModuleSummaryIdentity) -> ModuleId {
+    ModuleId::new(
+        PackageId::new(&identity.package_id),
+        ModulePath::new(&identity.module_path),
+    )
+}
+
+fn qualified_symbol_path(
+    binding: &ResolvedImportCandidate,
+    summary: &ModuleSummary,
+    row: &ExportedSymbolSummary,
+) -> Option<Vec<String>> {
+    let identity = &summary.module;
+    let owner_prefix = format!("{}::{}::", identity.package_id, identity.module_path);
+    let dotted_prefix = format!("{}.{}.", identity.package_id, identity.module_path);
+    let relative = row
+        .fully_qualified_name
+        .strip_prefix(&owner_prefix)
+        .or_else(|| row.fully_qualified_name.strip_prefix(&dotted_prefix))?;
+    let mut components = relative
+        .replace("::", ".")
+        .split('.')
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    let name = components.pop()?;
+    // Colons cannot distinguish a source name from the current opaque local-id encoding.
+    if name.contains(':')
+        || mizar_lexer::is_reserved_word(&name)
+        || mizar_lexer::is_reserved_symbol(&name)
+        || !(mizar_lexer::is_identifier(&name)
+            || mizar_lexer::is_constructor_name_spelling(&name)
+            || mizar_lexer::is_user_symbol_spelling(&name))
+        || components
+            .iter()
+            .any(|part| !mizar_lexer::is_identifier(part))
+    {
+        return None;
+    }
+    let canonical_namespace = identity
+        .module_path
+        .split('.')
+        .map(str::to_owned)
+        .chain(components.iter().cloned())
+        .collect::<Vec<_>>();
+    if row.namespace_path != components && row.namespace_path != canonical_namespace {
+        return None;
+    }
+    components.insert(0, binding.alias.clone());
+    components.push(name);
+    Some(components)
+}
+
+fn load_public_closure(
+    module_index: ModuleIndexInput<'_>,
+    module: &IndexedModuleId,
+    expected: Option<Hash>,
+    anchor: SourceAnchor,
+    reader: &mut impl FnMut(&IndexedModuleId, Option<Hash>) -> Option<CanonicalJson>,
+    summaries: &mut BTreeMap<ModuleId, ModuleSummary>,
+    visiting: &mut BTreeSet<ModuleId>,
+) -> Option<()> {
+    let id = module_index.resolver_module_id(module);
+    if let Some(summary) = summaries.get(&id) {
+        return expected
+            .is_none_or(|hash| hash == summary.interface_hash)
+            .then_some(());
+    }
+    if !visiting.insert(id.clone()) {
+        return None;
+    }
+    let mut request =
+        crate::module_summary_reuse::ModuleSummaryReuseRequest::new(module, anchor.clone());
+    if let Some(hash) = expected {
+        request = request.with_expected_interface_hash(hash);
+    }
+    let summary = crate::module_summary_reuse::ModuleSummaryReuse::new(module_index)
+        .read_public_summary(request, &reader(module, expected)?)?;
+    for edge in &summary.reexports {
+        if edge.target_item_origin_id.is_some()
+            || edge.exported_name.is_some()
+            || !summary
+                .dependency_interfaces
+                .iter()
+                .any(|reference| reference.module == edge.target_module)
+        {
+            return None;
+        }
+    }
+    for reference in &summary.dependency_interfaces {
+        let target = IndexedModuleId::new(
+            PackageId::new(&reference.module.package_id),
+            ModulePath::new(&reference.module.module_path),
+        );
+        load_public_closure(
+            module_index,
+            &target,
+            Some(reference.interface_hash),
+            anchor.clone(),
+            reader,
+            summaries,
+            visiting,
+        )?;
+        if summaries
+            .get(&module_index.resolver_module_id(&target))?
+            .module
+            != reference.module
+        {
+            return None;
+        }
+    }
+    visiting.remove(&id);
+    summaries.insert(id, summary);
+    Some(())
+}
+
+fn frontend_export_paths(
+    ast: &SurfaceAst,
+    source: &mizar_frontend::source::SourceUnit,
+) -> Option<Vec<ImportPathCandidate>> {
+    let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+    let shells = crate::declarations::DeclarationShellCollector::new(ast, &module).collect();
+    let root = ast.node(ast.root()?)?;
+    let unit = root
+        .children
+        .iter()
+        .filter_map(|id| ast.node(*id))
+        .find(|node| matches!(node.kind, SurfaceNodeKind::CompilationUnit))?;
+    let items = import_child(ast, unit, *unit.children.first()?)?;
+    let mut prelude = true;
+    let mut export_count = 0;
+    for id in &items.children {
+        let item = import_child(ast, items, *id)?;
+        if matches!(item.kind, SurfaceNodeKind::ExportItem) {
+            if !prelude {
+                return None;
+            }
+            export_count += 1;
+        } else if !matches!(item.kind, SurfaceNodeKind::ImportItem) {
+            prelude = false;
+        }
+    }
+    if export_count != shells.exports().len() {
+        return None;
+    }
+    let mut paths = Vec::new();
+    for shell in shells.exports() {
+        let item = ast.node(shell.node_id())?;
+        if shell.recovered()
+            || !valid_import_subtree(ast, item)
+            || item.children.len() < 3
+            || item.children.len().is_multiple_of(2)
+            || !import_token(
+                ast,
+                item,
+                item.children[0],
+                SurfaceTokenKind::ReservedWord,
+                "export",
+            )
+            || !import_token(
+                ast,
+                item,
+                *item.children.last()?,
+                SurfaceTokenKind::ReservedSymbol,
+                ";",
+            )
+        {
+            return None;
+        }
+        for view in ast.token_views().filter(|view| {
+            item.range.start <= view.range().start && view.range().end <= item.range.end
+        }) {
+            source.line_map.validate_range(view.range()).ok()?;
+            if source
+                .source_text
+                .get(view.range().start..view.range().end)?
+                != view.as_token()?.text.as_ref()
+            {
+                return None;
+            }
+        }
+        let mut represented = 0;
+        for (index, id) in item.children[1..item.children.len() - 1].iter().enumerate() {
+            if index % 2 == 1 {
+                if !import_token(ast, item, *id, SurfaceTokenKind::ReservedSymbol, ",") {
+                    return None;
+                }
+                continue;
+            }
+            let path = import_child(ast, item, *id)?;
+            let (prefix, components) = import_path(ast, path)?;
+            let candidate =
+                ImportPathCandidate::new(components, prefix, None, path.range, paths.len());
+            let shell_path = shell.paths().get(represented)?;
+            if shell_path.range() != path.range || shell_path.spelling() != candidate.spelling() {
+                return None;
+            }
+            represented += 1;
+            paths.push(candidate);
+        }
+        if represented != shell.paths().len() {
+            return None;
+        }
+    }
+    Some(paths)
+}
+
 /// Resolves source-shaped import paths through the resolver module-index seam.
 #[derive(Clone, Copy)]
 pub struct ImportPathResolver<'a> {
     module_index: ModuleIndexInput<'a>,
+}
+
+/// Immutable source bindings and canonical dependency surfaces from one frontend run.
+/// Failed semantic imports remain explicit; they make the whole visible surface unavailable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PublishedImportView {
+    module: ModuleId,
+    source_id: SourceId,
+    source_hash: Hash,
+    resolution: ImportPathResolution,
+    summaries: Vec<ModuleSummary>,
+    exports: Vec<(SourceRange, ModuleSummaryIdentity)>,
+    reexports: Vec<ModuleReexportSummary>,
+    dependency_interfaces: Vec<DependencyInterfaceRef>,
+    visible: Option<Vec<(usize, usize)>>,
+}
+
+impl PublishedImportView {
+    /// Adds authenticated forwarding/dependency inputs to the caller's genuine source summary.
+    /// The caller owns declaration/lexical provenance; this only authenticates composition.
+    pub fn compose_summary(&self, mut summary: ModuleSummary) -> Option<ModuleSummary> {
+        self.visible.as_ref()?;
+        if summary_module(&summary.module) != self.module
+            || summary.source_hash != self.source_hash
+            || !summary.reexports.is_empty()
+            || !summary.dependency_interfaces.is_empty()
+        {
+            return None;
+        }
+        mizar_artifact::module_summary::module_summary_json(&summary).ok()?;
+        summary.reexports.clone_from(&self.reexports);
+        summary
+            .dependency_interfaces
+            .clone_from(&self.dependency_interfaces);
+        summary.refresh_interface_hash().ok()?;
+        mizar_artifact::module_summary::module_summary_json(&summary).ok()?;
+        Some(summary)
+    }
+
+    /// Returns the importing module's canonical identity.
+    pub const fn module(&self) -> &ModuleId {
+        &self.module
+    }
+    /// Returns the original importing source identity.
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+    /// Returns the exact importing source hash.
+    pub const fn source_hash(&self) -> Hash {
+        self.source_hash
+    }
+    /// Returns every resolved and unresolved source binding, including duplicates and conflicts.
+    pub const fn resolution(&self) -> &ImportPathResolution {
+        &self.resolution
+    }
+    /// Returns canonical public summaries, without rehoming foreign lexical envelopes.
+    pub fn summaries(&self) -> &[ModuleSummary] {
+        &self.summaries
+    }
+    /// Returns source-ordered export paths and their canonical targets, preserving duplicates.
+    pub fn exports(&self) -> &[(SourceRange, ModuleSummaryIdentity)] {
+        &self.exports
+    }
+    /// Returns canonical outgoing module forwarding edges; ordinary imports add no edges.
+    pub fn reexports(&self) -> &[ModuleReexportSummary] {
+        &self.reexports
+    }
+    /// Returns all consumed dependency interfaces in canonical module order.
+    pub fn dependency_interfaces(&self) -> &[DependencyInterfaceRef] {
+        &self.dependency_interfaces
+    }
+    /// Pairs each source namespace binding with every public surface in its forwarding closure.
+    /// The binding owns local access spelling; each summary retains canonical origin/name paths.
+    pub fn visible_surfaces(
+        &self,
+    ) -> Option<impl Iterator<Item = (&ResolvedImportCandidate, &ModuleSummary)>> {
+        self.visible.as_ref().map(|visible| {
+            visible.iter().map(|(binding, summary)| {
+                (
+                    &self.resolution.resolved[*binding],
+                    &self.summaries[*summary],
+                )
+            })
+        })
+    }
+
+    /// Returns resolver-qualified symbol access paths and their unchanged canonical rows.
+    // Rationale: pair existing owner rows and local paths without a parallel wrapper type.
+    #[allow(clippy::type_complexity)]
+    pub fn visible_symbols(
+        &self,
+    ) -> Option<
+        Vec<(
+            &ResolvedImportCandidate,
+            &ModuleSummaryIdentity,
+            &ExportedSymbolSummary,
+            Vec<String>,
+        )>,
+    > {
+        self.visible_surfaces()?
+            .flat_map(|(binding, summary)| {
+                summary.exported_symbols.iter().map(move |row| {
+                    Some((
+                        binding,
+                        &summary.module,
+                        row,
+                        qualified_symbol_path(binding, summary, row)?,
+                    ))
+                })
+            })
+            .collect()
+    }
+
+    /// Returns label access paths in their owner's relative namespace, retaining label origin.
+    // Rationale: pair existing owner rows and local paths without a parallel wrapper type.
+    #[allow(clippy::type_complexity)]
+    pub fn visible_labels(
+        &self,
+    ) -> Option<
+        Vec<(
+            &ResolvedImportCandidate,
+            &ModuleSummaryIdentity,
+            &ExportedLabelSummary,
+            Vec<String>,
+        )>,
+    > {
+        self.visible_surfaces()?
+            .flat_map(|(binding, summary)| {
+                summary.exported_labels.iter().map(move |row| {
+                    let mut owners = summary.exported_symbols.iter().filter(|symbol| {
+                        symbol.fully_qualified_name == row.owner_fully_qualified_name
+                    });
+                    let owner = owners.next()?;
+                    if owners.next().is_some() || !mizar_lexer::is_identifier(&row.label) {
+                        return None;
+                    }
+                    let mut access = qualified_symbol_path(binding, summary, owner)?;
+                    *access.last_mut()? = row.label.clone();
+                    Some((binding, &summary.module, row, access))
+                })
+            })
+            .collect()
+    }
 }
 
 impl<'a> ImportPathResolver<'a> {
@@ -893,6 +1247,142 @@ impl<'a> ImportPathResolver<'a> {
     #[must_use]
     pub const fn new(module_index: ModuleIndexInput<'a>) -> Self {
         Self { module_index }
+    }
+
+    /// Publishes complete source import/export bindings and their validated public closure.
+    /// The caller retains genuine frontend provenance and publication freshness ownership.
+    pub fn publish_frontend(
+        self,
+        output: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+        source: &mizar_frontend::source::SourceUnit,
+        mut summary_reader: impl FnMut(&IndexedModuleId, Option<Hash>) -> Option<CanonicalJson>,
+    ) -> Option<PublishedImportView> {
+        if !output.diagnostics.is_empty()
+            || source.line_map.source_id() != source.source_id
+            || source.line_map.source() != source.source_text.as_ref()
+            || source.line_map.text_hash() != source.source_hash
+        {
+            return None;
+        }
+        let resolution = self.resolve_frontend(output, source)?;
+        let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+        let export_paths = frontend_export_paths(output.ast.as_ref()?, source)?;
+        let mut view = PublishedImportView {
+            module: module.clone(),
+            source_id: source.source_id,
+            source_hash: source.source_hash,
+            resolution,
+            summaries: Vec::new(),
+            exports: Vec::new(),
+            reexports: Vec::new(),
+            dependency_interfaces: Vec::new(),
+            visible: None,
+        };
+        if view.resolution.has_unresolved() {
+            return export_paths.is_empty().then_some(view);
+        }
+        let mut summaries = BTreeMap::new();
+        for binding in view.resolution.resolved() {
+            if binding.target == module {
+                return None;
+            }
+            load_public_closure(
+                self.module_index,
+                &IndexedModuleId::new(
+                    binding.target.package().clone(),
+                    binding.target.path().clone(),
+                ),
+                None,
+                SourceAnchor::Range(binding.range),
+                &mut summary_reader,
+                &mut summaries,
+                &mut BTreeSet::new(),
+            )?;
+        }
+        if summaries.contains_key(&module) {
+            return None;
+        }
+        for candidate in export_paths {
+            let range = candidate.range;
+            let aliases = view
+                .resolution
+                .resolved()
+                .iter()
+                .filter(|binding| {
+                    candidate.prefix == ImportPathPrefix::Unprefixed
+                        && candidate.components.len() == 1
+                        && candidate.components[0] == binding.alias()
+                })
+                .map(|binding| binding.target.clone())
+                .collect::<BTreeSet<_>>();
+            let target = if let Some(target) = aliases.first() {
+                target.clone()
+            } else {
+                let resolved = self.resolve(&module, &[candidate]);
+                let [binding] = resolved.resolved() else {
+                    return None;
+                };
+                binding.target.clone()
+            };
+            if !view
+                .resolution
+                .resolved()
+                .iter()
+                .any(|binding| binding.target == target)
+            {
+                return None;
+            }
+            view.exports
+                .push((range, summaries.get(&target)?.module.clone()));
+        }
+        view.reexports = view
+            .exports
+            .iter()
+            .map(|(_, identity)| identity.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .map(|target_module| ModuleReexportSummary {
+                target_module,
+                target_item_origin_id: None,
+                exported_name: None,
+                provenance_origin_id: None,
+            })
+            .collect();
+        view.summaries = summaries.into_values().collect();
+        view.dependency_interfaces = view
+            .summaries
+            .iter()
+            .map(|summary| DependencyInterfaceRef {
+                module: summary.module.clone(),
+                interface_hash: summary.interface_hash,
+            })
+            .collect();
+        let mut visible = Vec::new();
+        for (binding_index, binding) in view.resolution.resolved().iter().enumerate() {
+            let mut pending = vec![binding.target.clone()];
+            let mut seen = BTreeSet::new();
+            while let Some(target) = pending.pop() {
+                if !seen.insert(target.clone()) {
+                    continue;
+                }
+                let index = view
+                    .summaries
+                    .iter()
+                    .position(|summary| summary_module(&summary.module) == target)?;
+                visible.push((binding_index, index));
+                pending.extend(
+                    view.summaries[index]
+                        .reexports
+                        .iter()
+                        .map(|edge| summary_module(&edge.target_module)),
+                );
+            }
+        }
+        visible.sort_unstable();
+        view.visible = Some(visible);
+        view.visible_symbols()?;
+        view.visible_labels()?;
+        Some(view)
     }
 
     /// Checks trusted frontend/source correspondence before resolving parsed imports.

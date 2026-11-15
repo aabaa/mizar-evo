@@ -208,6 +208,38 @@
             .collect()
     }
 
+    fn source_notation_fixture(
+        output: &mizar_frontend::orchestration::FrontendOutput<SurfaceAst>,
+        package_version: Option<&str>,
+        lockfile_identity: Option<&str>,
+    ) -> (
+        ResolverModuleId,
+        mizar_resolve::symbols::SymbolCollectionResult,
+        mizar_artifact::module_summary::ModuleSummaryIdentity,
+    ) {
+        use mizar_resolve::{declarations::DeclarationShellCollector, symbols::SignatureProjectionExtractor};
+
+        let module = ResolverModuleId::new(
+            output.source.package_id.clone(),
+            output.source.module_path.clone(),
+        );
+        let shells = DeclarationShellCollector::new(output.ast.as_ref().unwrap(), &module).collect();
+        let collection = SignatureProjectionExtractor::new(
+            output.ast.as_ref().unwrap(),
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        let identity = mizar_artifact::module_summary::ModuleSummaryIdentity {
+            package_id: output.source.package_id.as_str().to_owned(),
+            package_version: package_version.map(str::to_owned),
+            lockfile_identity: lockfile_identity.map(str::to_owned),
+            module_path: output.source.module_path.as_str().to_owned(),
+            language_edition: output.source.edition.as_str().to_owned(),
+        };
+        (module, collection, identity)
+    }
+
     #[test]
     fn task257c4c1_physical_fixture_declarations_are_exact() {
         assert_eq!(TASK257C4C1_FIXTURE_SOURCE.len(), 140);
@@ -1052,6 +1084,482 @@ fn source_lexical_contributions_reject_identity_bounds_and_unsupported_forms() {
     assert!(
         collect(&operator)
             .export_frontend_lexical_contributions(&operator, &identity)
+            .is_none()
+    );
+    assert!(collect(&operator).source_notation_view(&operator).is_none());
+    let before_functor = task257c4c1_frontend_output(
+        "definition\n infix_operator(\"combine\", left, 80);\n let x, y be set; func F: x combine y -> set equals x;\nend;\n",
+        615,
+    );
+    assert!(before_functor.diagnostics.is_empty());
+    assert!(collect(&before_functor).source_notation_view(&before_functor).is_none());
+}
+
+#[test]
+fn source_notation_view_preserves_pieces_owners_relations_and_operator_events() {
+    use mizar_resolve::env::Visibility;
+
+    let text = ":: source offsets include removed comment\r\ndefinition\r\n\
+        let x, y be set;\r\n\
+        public func Pair: |. x .| -> set equals x;\r\n\
+        public func Infix: x combine y -> set equals x;\r\n\
+        infix_operator(\"combine\", left, 70);\r\n\
+        let a, b be object;\r\n\
+        public func Later: a combine b -> set equals b;\r\n\
+end;\r\n";
+    let output = task257c4c1_frontend_output(text, 616);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let (module, collection, identity) =
+        source_notation_fixture(&output, Some("1.2.3"), Some("lock-v1"));
+    assert!(collection.diagnostics().is_empty());
+
+    let view = collection
+        .source_notation_view(&output)
+        .expect("complete local notation view");
+    assert_eq!(view.source_id(), output.source.source_id);
+    assert_eq!(view.source_hash(), output.source.source_hash);
+    assert_eq!(view.module_id(), &module);
+
+    let pieces = view
+        .declarations()
+        .iter()
+        .filter(|entry| ["|.", ".|"].contains(&entry.declaration().spelling.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(pieces.len(), 2);
+    assert_eq!(pieces[0].owner().symbol(), pieces[1].owner().symbol());
+    assert_eq!(pieces[0].declaration().arity, pieces[1].declaration().arity);
+    for piece in pieces {
+        assert_eq!(piece.declared_at().kind, mizar_session::MappedSourceRangeKind::Exact);
+        assert_eq!(piece.activation().kind, mizar_session::MappedSourceRangeKind::Exact);
+        let mizar_session::SourceAnchor::Range(owner_range) =
+            piece.owner().origin().anchor()
+        else {
+            panic!("source notation owner has a range anchor")
+        };
+        assert_eq!(piece.activation().primary.start, owner_range.end);
+        let original = piece
+            .declared_at()
+            .original_input
+            .expect("original source spelling coordinates");
+        assert_eq!(&text[original.start..original.end], piece.declaration().spelling);
+    }
+
+    let combine = view
+        .declarations()
+        .iter()
+        .filter(|entry| entry.declaration().spelling == "combine")
+        .collect::<Vec<_>>();
+    assert_eq!(combine.len(), 2, "later overload retains its own candidate");
+    assert_ne!(combine[0].owner().symbol(), combine[1].owner().symbol());
+    assert!(combine.iter().all(|entry| {
+        entry.declaration().arity.minimum == 2
+            && entry.declaration().arity.maximum == Some(2)
+    }));
+    let combine_event = view
+        .operator_events()
+        .iter()
+        .find(|event| event.declaration().spelling == "combine")
+        .expect("explicit operator event");
+    assert_eq!(combine_event.visibility(), Visibility::Public);
+    assert_eq!(
+        combine_event.activation().primary.start,
+        combine_event.owner_range().end
+    );
+    assert_eq!(
+        combine_event.declared_at().original_input,
+        Some(mizar_session::TextRange {
+            start: text.find("\"combine\", left").unwrap(),
+            end: text.find("\"combine\", left").unwrap() + "\"combine\"".len(),
+        })
+    );
+
+    let summary = collection
+        .source_notation_module_summary_candidate(&output, &identity)
+        .unwrap()
+        .expect("public notation candidate");
+    let combine_shapes = summary
+        .lexical_summary
+        .contributions
+        .iter()
+        .filter_map(|contribution| {
+            mizar_lexer::ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+        })
+        .filter(|shape| shape.spelling == "combine")
+        .collect::<Vec<_>>();
+    assert_eq!(combine_shapes.len(), 2);
+    assert!(combine_shapes.iter().all(|shape| {
+        shape.operator
+            == Some(mizar_lexer::ExportedOperatorMetadata {
+                fixity: mizar_lexer::ExportedOperatorFixity::Infix(
+                    mizar_lexer::ExportedOperatorAssociativity::Left,
+                ),
+                precedence: 70,
+            })
+    }));
+    assert!(summary
+        .exported_symbols
+        .iter()
+        .all(|symbol| !symbol.fully_qualified_name.contains("Hidden")));
+    assert!(summary
+        .lexical_summary
+        .contributions
+        .iter()
+        .all(|contribution| contribution.key != "Hidden"));
+}
+
+#[test]
+fn source_notation_view_authenticates_local_alias_origin_and_relation() {
+    use mizar_resolve::env::RelationKind;
+
+    let text = "definition\n\
+        let x, y be set;\n\
+        func Base: x base y -> set equals x;\n\
+end;\n\
+definition\n\
+        let x, y be set;\n\
+        synonym x alias y for x base y;\n\
+end;\n";
+    let output = task257c4c1_frontend_output(text, 617);
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    let (_, collection, identity) = source_notation_fixture(&output, None, None);
+    assert!(collection.diagnostics().is_empty());
+    let view = collection
+        .source_notation_view(&output)
+        .expect("supported local alias relation");
+    let base = view
+        .declarations()
+        .iter()
+        .find(|entry| entry.declaration().spelling == "base")
+        .expect("base functor source owner");
+    let alias = view
+        .declarations()
+        .iter()
+        .find(|entry| entry.declaration().spelling == "alias")
+        .expect("alias source owner");
+    assert_ne!(alias.owner().symbol(), base.owner().symbol());
+    assert_eq!(alias.owner().visibility(), mizar_resolve::env::Visibility::Public);
+    let relation = alias
+        .owner()
+        .relations()
+        .iter()
+        .find(|relation| relation.kind() == RelationKind::Synonym)
+        .expect("resolver-authenticated synonym relation");
+    assert_eq!(relation.target(), base.owner().symbol());
+
+    let summary = collection
+        .source_notation_module_summary_candidate(&output, &identity)
+        .unwrap()
+        .expect("public alias row");
+    let alias_shape = summary
+        .lexical_summary
+        .contributions
+        .iter()
+        .filter_map(|contribution| {
+            mizar_lexer::ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+        })
+        .find(|shape| shape.spelling == "alias")
+        .expect("alias has its own exported lexical row");
+    let base_shape = summary
+        .lexical_summary
+        .contributions
+        .iter()
+        .filter_map(|contribution| {
+            mizar_lexer::ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+        })
+        .find(|shape| shape.spelling == "base")
+        .expect("base has its own exported lexical row");
+    assert_ne!(alias_shape.symbol_id, base_shape.symbol_id);
+
+    let predicate_text = "definition\n\
+        let x, y be set;\n\
+        pred Base: x base y means thesis;\n\
+end;\n\
+definition\n\
+        let x, y be set;\n\
+        antonym x opposite y for x base y;\n\
+end;\n";
+    let predicate = task257c4c1_frontend_output(predicate_text, 622);
+    assert!(predicate.diagnostics.is_empty(), "{:?}", predicate.diagnostics);
+    let (_, predicate_collection, _) = source_notation_fixture(&predicate, None, None);
+    assert!(predicate_collection.diagnostics().is_empty());
+    let predicate_view = predicate_collection
+        .source_notation_view(&predicate)
+        .expect("supported local predicate antonym");
+    let predicate_base = predicate_view
+        .declarations()
+        .iter()
+        .find(|entry| entry.declaration().spelling == "base")
+        .expect("base predicate source owner");
+    let antonym = predicate_view
+        .declarations()
+        .iter()
+        .find(|entry| entry.declaration().spelling == "opposite")
+        .expect("antonym source owner");
+    let relation = antonym
+        .owner()
+        .relations()
+        .iter()
+        .find(|relation| relation.kind() == RelationKind::Antonym)
+        .expect("resolver-authenticated antonym relation");
+    assert_ne!(antonym.owner().symbol(), predicate_base.owner().symbol());
+    assert_eq!(relation.target(), predicate_base.owner().symbol());
+}
+
+#[test]
+fn source_notation_view_refuses_foreign_ambiguous_and_multi_piece_alias_profiles() {
+    use mizar_resolve::env::{RelationKind, SymbolKind};
+
+    let assert_unavailable = |text: &str, ordinal| {
+        let output = task257c4c1_frontend_output(text, ordinal);
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let (_, collection, identity) = source_notation_fixture(&output, None, None);
+        assert!(
+            collection
+                .source_notation_module_summary_candidate(&output, &identity)
+                .unwrap()
+                .is_none(),
+            "notation candidate unexpectedly available for ordinal {ordinal}"
+        );
+        (output, collection)
+    };
+
+    assert_unavailable(
+        "import parser.type_fixtures;\ndefinition\n let x, y be set; synonym x alias y for x ++ y; end;\n",
+        624,
+    );
+    let (_, ambiguous) = assert_unavailable(
+        "definition\n let a, b be set; func First: a base b -> set equals a; end;\n\
+         definition\n let x, y be set; func Second: x base y -> set equals x; end;\n\
+         definition\n let x, y be set; synonym x alias y for x base y; end;\n",
+        625,
+    );
+    assert!(
+        ambiguous.diagnostics().is_empty(),
+        "ambiguous source remains diagnostic-free: {:?}",
+        ambiguous.diagnostics()
+    );
+    let multi_piece_text = "definition\n let x, y be set; func Base: x base y -> set equals x; end;\n\
+         definition\n let x, y be set; synonym [: x, y :] for x base y; end;\n";
+    let (multi_piece, multi_piece_collection) = assert_unavailable(
+        multi_piece_text,
+        626,
+    );
+    assert!(multi_piece
+        .ast
+        .as_ref()
+        .unwrap()
+        .node_views()
+        .any(|node| node.kind() == &SurfaceNodeKind::NotationAlias));
+    // This syntactically valid bracket alias is outside the resolver's current relation profile.
+    let alias_owners = multi_piece_collection
+        .env()
+        .symbols()
+        .iter()
+        .filter(|owner| owner.kind() == SymbolKind::Synonym)
+        .collect::<Vec<_>>();
+    assert_eq!(alias_owners.len(), 1);
+    assert!(alias_owners[0]
+        .relations()
+        .iter()
+        .all(|relation| relation.kind() != RelationKind::Synonym));
+    let (incompatible, collection) = assert_unavailable(
+        "definition\n let x be set; func Unary: blend x -> set equals x; end;\n\
+         definition\n let x, y be set; func Binary: x blend y -> set equals x; infix_operator(\"blend\", left, 70); end;\n",
+        628,
+    );
+    let view = collection
+        .source_notation_view(&incompatible)
+        .expect("incompatible shapes remain available in local view");
+    let arities = view
+        .declarations()
+        .iter()
+        .filter(|entry| entry.declaration().spelling == "blend")
+        .map(|entry| entry.declaration().arity.minimum)
+        .collect::<Vec<_>>();
+    assert_eq!(arities, [1, 2]);
+
+}
+
+#[test]
+fn source_notation_interface_hash_tracks_exported_notation_only() {
+    let collect_summary = |text: &str| {
+        let output = task257c4c1_frontend_output(text, 623);
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let (_, collection, identity) = source_notation_fixture(&output, None, None);
+        assert!(collection.diagnostics().is_empty());
+        let summary = collection
+            .source_notation_module_summary_candidate(&output, &identity)
+            .unwrap()
+            .expect("complete public notation candidate");
+        (output.source.source_hash, summary.interface_hash)
+    };
+    let base = "definition\n let x, y be set; public func F: x combine y -> set equals x; infix_operator(\"combine\", left, 70); end;\n";
+    let body_and_range_only = ":: shifted source range\n definition\n let x, y be set; public func F: x combine y -> set equals y; infix_operator(\"combine\", left, 70); end;\n";
+    let changed_operator = "definition\n let x, y be set; public func F: x combine y -> set equals x; infix_operator(\"combine\", left, 71); end;\n";
+    let changed_spelling = "definition\n let x, y be set; public func F: x merge y -> set equals x; infix_operator(\"merge\", left, 70); end;\n";
+    let alias_target_base = "definition\n let x, y be set; func Base: x base y -> set equals x; func Other: x other y -> set equals y; end;\ndefinition\n let x, y be set; synonym x alt y for x base y; end;\n";
+    let alias_target_other = alias_target_base.replace("for x base y", "for x other y");
+    let (base_source, base_interface) = collect_summary(base);
+    let (body_source, body_interface) = collect_summary(body_and_range_only);
+    let (operator_source, operator_interface) = collect_summary(changed_operator);
+    let (_, spelling_interface) = collect_summary(changed_spelling);
+    let (alias_base_source, alias_base_interface) = collect_summary(alias_target_base);
+    let (alias_other_source, alias_other_interface) = collect_summary(&alias_target_other);
+    assert_ne!(base_source, body_source);
+    assert_ne!(base_source, operator_source);
+    assert_eq!(base_interface, body_interface);
+    assert_ne!(base_interface, operator_interface);
+    assert_ne!(base_interface, spelling_interface);
+    assert_ne!(alias_base_source, alias_other_source);
+    assert_ne!(alias_base_interface, alias_other_interface);
+}
+
+#[test]
+fn source_notation_earlier_private_operator_event_does_not_change_final_public_export() {
+    let publish = |precedence| {
+        let text = format!(
+            "definition\n let x, y be set; private func Hidden: x secret y -> set equals x; private infix_operator(\"secret\", left, {precedence}); let a, b be object; public func Visible: a secret b -> set equals a; public infix_operator(\"secret\", right, 80); end;\n"
+        );
+        let output = task257c4c1_frontend_output(&text, 630);
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let (_, collection, identity) = source_notation_fixture(&output, None, None);
+        assert!(collection.diagnostics().is_empty());
+        let view = collection
+            .source_notation_view(&output)
+            .expect("authenticated private and public event history");
+        let summary = collection
+            .source_notation_module_summary_candidate(&output, &identity)
+            .unwrap()
+            .expect("final public operator effect");
+        (output.source.source_hash, view, summary)
+    };
+    let (source_a, view_a, summary_a) = publish(40);
+    let (source_b, view_b, summary_b) = publish(50);
+    assert_ne!(source_a, source_b);
+    assert_ne!(
+        view_a.operator_events()[0].declaration().operator,
+        view_b.operator_events()[0].declaration().operator
+    );
+    assert_eq!(
+        view_a.operator_events()[1].declaration().operator,
+        view_b.operator_events()[1].declaration().operator
+    );
+    assert_eq!(summary_a.exported_symbols, summary_b.exported_symbols);
+    assert_eq!(
+        summary_a.lexical_summary.contributions,
+        summary_b.lexical_summary.contributions
+    );
+    assert_eq!(summary_a.interface_hash, summary_b.interface_hash);
+}
+
+#[test]
+fn source_notation_view_keeps_private_only_and_complete_empty_distinct_from_failure() {
+    let private = task257c4c1_frontend_output(
+        "definition\n let x be set; private func Hidden: x secret -> set equals x; end;\n",
+        618,
+    );
+    assert!(private.diagnostics.is_empty(), "{:?}", private.diagnostics);
+    let (_, private_collection, private_identity) = source_notation_fixture(&private, None, None);
+    let private_view = private_collection
+        .source_notation_view(&private)
+        .expect("private local notation is retained");
+    assert_eq!(private_view.declarations().len(), 1);
+    let private_summary = private_collection
+        .source_notation_module_summary_candidate(&private, &private_identity)
+        .unwrap()
+        .expect("private-only module has a complete empty public product");
+    assert!(private_summary.exported_symbols.is_empty());
+    assert!(private_summary.lexical_summary.contributions.is_empty());
+
+    let private_effect = task257c4c1_frontend_output(
+        "definition\n let x, y be set; private func Hidden: x secret y -> set equals x; private infix_operator(\"secret\", left, 40); end;\n definition\n let a, b be object; public func Visible: a secret b -> set equals b; public infix_operator(\"secret\", right, 80); end;\n",
+        621,
+    );
+    assert!(private_effect.diagnostics.is_empty(), "{:?}", private_effect.diagnostics);
+    let (_, effect_collection, effect_identity) = source_notation_fixture(&private_effect, None, None);
+    let effect_view = effect_collection
+        .source_notation_view(&private_effect)
+        .expect("private local event remains inspectable");
+    assert_eq!(effect_view.operator_events().len(), 2);
+    assert_eq!(
+        effect_view
+            .operator_events()
+            .iter()
+            .map(|event| event.visibility())
+            .collect::<Vec<_>>(),
+        [
+            mizar_resolve::env::Visibility::Private,
+            mizar_resolve::env::Visibility::Public,
+        ]
+    );
+    let public_effect_summary = effect_collection
+        .source_notation_module_summary_candidate(&private_effect, &effect_identity)
+        .unwrap()
+        .expect("later public effect determines exported metadata");
+    let secret_shapes = public_effect_summary
+        .lexical_summary
+        .contributions
+        .iter()
+        .filter_map(|contribution| {
+            mizar_lexer::ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+        })
+        .filter(|shape| shape.spelling == "secret")
+        .collect::<Vec<_>>();
+    assert!(!secret_shapes.is_empty());
+    assert!(secret_shapes.iter().all(|shape| {
+        shape.operator
+            == Some(mizar_lexer::ExportedOperatorMetadata {
+                fixity: mizar_lexer::ExportedOperatorFixity::Infix(
+                    mizar_lexer::ExportedOperatorAssociativity::Right,
+                ),
+                precedence: 80,
+            })
+    }));
+
+    let final_private = task257c4c1_frontend_output(
+        "definition\n let x, y be set; public func Visible: x secret y -> set equals x; public infix_operator(\"secret\", left, 70); private infix_operator(\"secret\", right, 80); end;\n",
+        627,
+    );
+    assert!(final_private.diagnostics.is_empty(), "{:?}", final_private.diagnostics);
+    let (_, final_private_collection, final_private_identity) =
+        source_notation_fixture(&final_private, None, None);
+    let final_private_view = final_private_collection
+        .source_notation_view(&final_private)
+        .expect("the complete local event history remains available");
+    assert_eq!(final_private_view.operator_events().len(), 2);
+    assert_eq!(
+        final_private_view.operator_events()[1].visibility(),
+        mizar_resolve::env::Visibility::Private
+    );
+    assert!(final_private_collection
+        .source_notation_module_summary_candidate(
+            &final_private,
+            &final_private_identity,
+        )
+        .unwrap()
+        .is_none());
+
+    let empty = task257c4c1_frontend_output("definition\nend;\n", 619);
+    assert!(empty.diagnostics.is_empty(), "{:?}", empty.diagnostics);
+    let (_, empty_collection, empty_identity) = source_notation_fixture(&empty, None, None);
+    let empty_view = empty_collection
+        .source_notation_view(&empty)
+        .expect("complete empty notation inventory");
+    assert!(empty_view.declarations().is_empty());
+    assert!(empty_view.operator_events().is_empty());
+    let empty_summary = empty_collection
+        .source_notation_module_summary_candidate(&empty, &empty_identity)
+        .unwrap()
+        .expect("complete empty public product");
+    assert!(empty_summary.exported_symbols.is_empty());
+    assert!(empty_summary.lexical_summary.contributions.is_empty());
+
+    let recovered = task257c4c1_frontend_output("definition mode M: Visible is ; end;", 620);
+    assert!(!recovered.diagnostics.is_empty());
+    assert!(
+        source_notation_fixture(&recovered, None, None)
+            .1
+            .source_notation_view(&recovered)
             .is_none()
     );
 }
