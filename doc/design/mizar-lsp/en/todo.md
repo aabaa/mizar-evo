@@ -22,7 +22,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 | snapshot | [snapshot.md](snapshot.md) (task 6) | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [x] |
-| metadata | `metadata.md` (task 12) | `src/metadata.rs` | [ ] |
+| metadata | `metadata.md` (task 12) | `src/metadata.rs` | [x] |
 | navigation | `navigation.md` (task 14) | `src/navigation.rs` | [ ] |
 | code_action | `code_action.md` (task 16) | `src/code_action.rs` | [ ] |
 | explain | `explain.md` (task 18) | `src/explain.rs` | [ ] |
@@ -168,7 +168,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
       "Artifact Projection Boundary".
 
-13. **Hover and type metadata.** [ ]
+13. **Hover and type metadata.** [x]
     - Serve hover (inferred types, resolved symbols, `@show_*` data) from
       expression metadata.
     - Tests: hover fixtures over fixture artifacts; stale data marked.

@@ -183,18 +183,23 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     for message in [
         json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
         json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":0,"text":text}}}),
         json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":1},"contentChanges":[{"text":"\u{feff}:: 雪😀 edited\r\ndefinition\r\nend;\r\n"}]}}),
+        json!({"jsonrpc":"2.0","id":3,"method":"textDocument/hover","params":{"textDocument":{"uri":uri},"position":{"line":1,"character":0}}}),
         json!({"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":99}}),
         json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{"textDocument":{"uri":uri}}}),
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),
     ] {
         process.send(&frame(message));
     }
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":3,"result":null})
+    );
     assert_eq!(
         process.response(),
         json!({"jsonrpc":"2.0","id":2,"result":null})
@@ -237,7 +242,7 @@ fn complete_bad_json_responds_and_continues_to_exit() {
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     process.send(&frame(
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),

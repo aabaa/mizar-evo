@@ -132,7 +132,8 @@ impl Server {
             String,
         >,
     {
-        let response = message.and_then(|message| self.handle_message(message));
+        let response = message
+            .and_then(|message| self.handle_message_with_metadata(message, driver, snapshots));
         let result = (|| {
             let Some(bridge) = &mut self.build_bridge else {
                 return Ok(None);

@@ -29,10 +29,14 @@ The metadata reader does not load raw AST/IR, follow compiler storage references
 
 ## Implementation boundary
 
-Task12 specifies the reader only. Task7's registry/atomic activation, task9's diagnostic publication, task10's build bridge and task13's hover/type implementation remain separate. No Rust API, transport response or feature lookup algorithm is selected here.
+`Server::snapshot_hover` reads expression metadata from one retained publication using the original OpenBuffer URI and UTF-16 position. The smallest enclosing half-open expression range wins, with expression identity breaking equal-range ties. Plaintext hover includes published surface, identity and available type, symbol, coercion, thesis and overload summaries; missing fields are not reconstructed.
+
+Current hover includes the original mapped LSP range. Stale hover preserves metadata, identifies `stale_artifact` and the original source URI/version, states that lookup coordinates belong to that retained source, and omits the current-buffer LSP range. Invalid source associations/ranges fail explicitly; absent metadata yields no hover.
+
+`Server::handle_message_with_metadata` supplies Driver/registry freshness to hover requests; the build bridge uses this route. The ordinary handler validates requests and returns no hover without a metadata host. Executable host/build integration and navigation remain separate.
 
 Reads use already-published inputs and the snapshot owner's established association. This specification does not choose OpenBuffer provenance carriers, unsaved-artifact storage/publication, or the parked build scheduling policy.
 
 ## Test design
 
-No tests change in this design task. Task13 retains its artifact-backed hover fixture and stale-data-marking obligations; this document grants no module implementation or §23.6/SCA-003 completion credit.
+Artifact fixtures cover rendered optional metadata, expression selection and original raw-source mapping. Genuine coherent publications cover request serving, stale marking and replacement. This reader does not complete §23.6 or the SCA-003 annotation projection audit.

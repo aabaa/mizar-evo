@@ -10,6 +10,8 @@ use serde_json::{Value, json};
 
 #[path = "build_bridge.rs"]
 mod build_bridge;
+#[path = "metadata.rs"]
+mod metadata;
 pub use build_bridge::BuildBridgeError;
 
 #[cfg(test)]
@@ -18,6 +20,9 @@ mod build_bridge_event_tests;
 #[cfg(test)]
 #[path = "build_bridge_timing_tests.rs"]
 mod build_bridge_timing_tests;
+#[cfg(test)]
+#[path = "hover_tests.rs"]
+mod hover_tests;
 
 /// One LSP connection and its exact client-owned document text.
 #[derive(Default)]
@@ -864,7 +869,7 @@ impl Server {
                     return error(id.clone(), -32602, "Invalid params");
                 }
                 self.initialized = Some(params.clone());
-                json!({"capabilities": {"positionEncoding": "utf-16",
+                json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true,
                     "textDocumentSync": {"openClose": true, "change": 1}}})
             } else {
                 if self.initialized.is_none() {
@@ -874,6 +879,25 @@ impl Server {
                     return error(id.clone(), -32600, "Invalid Request");
                 }
                 match method {
+                    "textDocument/hover" => {
+                        let valid = params.is_some_and(|params| {
+                            params
+                                .pointer("/textDocument/uri")
+                                .and_then(Value::as_str)
+                                .is_some_and(|uri| !uri.is_empty())
+                                && ["line", "character"].iter().all(|field| {
+                                    params
+                                        .get("position")
+                                        .and_then(|position| position.get(field))
+                                        .and_then(Value::as_u64)
+                                        .is_some_and(|value| value <= i32::MAX as u64)
+                                })
+                        });
+                        if !valid {
+                            return error(id.clone(), -32602, "Invalid params");
+                        }
+                        Value::Null
+                    }
                     "shutdown" => {
                         if !params.is_none_or(Value::is_null) {
                             return error(id.clone(), -32602, "Invalid params");
@@ -1115,7 +1139,7 @@ mod tests {
         assert_eq!(
             response,
             json!({"jsonrpc": "2.0", "id": 7, "result": {
-            "capabilities": {"positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}}}})
+            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}}}})
         );
     }
 
@@ -1772,7 +1796,7 @@ mod tests {
                 server.handle_message(request("initialize", original.clone())),
                 Some(json!({
                     "jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                        "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                        "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
                     }}
                 }))
             );
@@ -1894,7 +1918,7 @@ mod tests {
             vec![
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32602, "message": "Invalid params"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
                 }}}),
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": null}),
@@ -1937,7 +1961,7 @@ mod tests {
             server.handle_message(request("initialize", params.clone())),
             Some(
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
                 }}})
             )
         );

@@ -29,10 +29,14 @@ metadata reader は生の AST/IR を読み込まず、compiler storage reference
 
 ## Implementation boundary
 
-task12 は reader の仕様だけを定める。task7 の registry/atomic activation、task9 の診断公開、task10 の build bridge、task13 の hover/type 実装は別単位のままである。Rust API、transport response、機能ごとの lookup algorithm はここで選択しない。
+`Server::snapshot_hover` は保持された一つの publication の式 metadata を、元の OpenBuffer URI と UTF-16 位置で読む。位置を含む最小の半開区間を選び、同じ区間なら式 identity で決定する。plaintext hover は公開済みの surface、identity、および存在する型、symbol、coercion、thesis、overload summary を含み、欠けた field は再構成しない。
+
+current hover は元の map で変換した LSP range を含む。stale hover は metadata を保持し、`stale_artifact` と元 source の URI/version、検索座標が保持された元 source に属することを明記して、current-buffer の LSP range を省く。不正な source association/range は明示的に失敗し、metadata がなければ hover を返さない。
+
+`Server::handle_message_with_metadata` が hover request に Driver/registry の freshness を供給し、build bridge はこの経路を使う。通常の handler は request を検証し、metadata host がなければ hover を返さない。実行ファイルの host/build 統合と navigation は別作業のままである。
 
 read は公開済み入力と snapshot owner の既存 association を使う。この仕様は OpenBuffer provenance carrier、未保存 artifact の保存/公開、保留中の build scheduling policy を選択しない。
 
 ## Test design
 
-この設計 task では test を変えない。task13 の artifact-backed hover fixture と stale data のマークに関する義務を維持する。この文書は module 実装や §23.6/SCA-003 の完了 credit を与えない。
+artifact fixture は任意 metadata の表示、式の選択、元の raw source の mapping を検証する。実際の coherent publication は request 配信、stale 表示、置換を検証する。この reader は §23.6 や SCA-003 の annotation projection audit を完了させない。
