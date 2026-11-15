@@ -21,6 +21,9 @@ mod build_bridge_event_tests;
 #[path = "build_bridge_timing_tests.rs"]
 mod build_bridge_timing_tests;
 #[cfg(test)]
+#[path = "deferred_action_tests.rs"]
+mod deferred_action_tests;
+#[cfg(test)]
 #[path = "explain_tests.rs"]
 mod explain_tests;
 #[cfg(test)]
@@ -33,6 +36,8 @@ mod semantic_token_tests;
 /// One LSP connection and its exact client-owned document text.
 #[derive(Default)]
 pub struct Server {
+    pub(crate) diagnostic_commands_enabled: bool,
+    pub(crate) deferred_fixes: Vec<crate::diagnostics::RegisteredDeferredFix>,
     initialized: Option<Value>,
     shutdown: bool,
     exit_code: Option<i32>,
@@ -514,6 +519,7 @@ impl Server {
                 self.diagnostic_overlays.remove(&(uri.clone(), version));
             }
         }
+        self.deferred_fixes.clear();
         self.lsp_snapshot = Some(candidate);
         true
     }
@@ -1040,9 +1046,14 @@ impl Server {
                     return error(id.clone(), -32602, "Invalid params");
                 }
                 self.initialized = Some(params.clone());
-                json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true},
+                let mut result = json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true},
                     "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true},
-                    "textDocumentSync": {"openClose": true, "change": 1}}})
+                    "textDocumentSync": {"openClose": true, "change": 1}}});
+                if self.diagnostic_commands_enabled {
+                    result["capabilities"]["executeCommandProvider"] =
+                        json!({"commands":["mizar.executeDiagnosticCommand"]});
+                }
+                result
             } else {
                 if self.initialized.is_none() {
                     return error(id.clone(), -32002, "Server not initialized");
@@ -1051,6 +1062,42 @@ impl Server {
                     return error(id.clone(), -32600, "Invalid Request");
                 }
                 match method {
+                    "workspace/executeCommand" => {
+                        if !self.diagnostic_commands_enabled {
+                            return error(id.clone(), -32601, "Method not found");
+                        }
+                        let Some(params) = params.filter(|params| params.is_object()) else {
+                            return error(id.clone(), -32602, "Invalid params");
+                        };
+                        let Some(command) = params["command"].as_str() else {
+                            return error(id.clone(), -32602, "Invalid params");
+                        };
+                        if command != "mizar.executeDiagnosticCommand" {
+                            return error(id.clone(), -32601, "Method not found");
+                        }
+                        if !params["arguments"].as_array().is_some_and(|arguments| {
+                            arguments.len() == 1
+                                && arguments[0].is_object()
+                                && ["publication", "snapshot", "fix", "uri"]
+                                    .iter()
+                                    .all(|field| {
+                                        arguments[0][field]
+                                            .as_str()
+                                            .is_some_and(|value| !value.is_empty())
+                                    })
+                                && arguments[0]["id"].is_u64()
+                                && arguments[0]["version"]
+                                    .as_i64()
+                                    .is_some_and(|version| i32::try_from(version).is_ok())
+                        }) {
+                            return error(id.clone(), -32602, "Invalid params");
+                        }
+                        return error(
+                            id.clone(),
+                            -32801,
+                            "Diagnostic command is no longer current",
+                        );
+                    }
                     "mizar/explain" => {
                         if !params.is_some_and(crate::explain::valid_explanation_params) {
                             return error(id.clone(), -32602, "Invalid params");
@@ -1275,6 +1322,7 @@ impl Server {
                             return error(id.clone(), -32602, "Invalid params");
                         }
                         self.shutdown = true;
+                        self.deferred_fixes.clear();
                         self.native_open_buffers = None;
                         self.diagnostic_overlays.clear();
                         if let Some(bridge) = &mut self.build_bridge {

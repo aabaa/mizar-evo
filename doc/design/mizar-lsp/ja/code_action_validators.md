@@ -39,7 +39,7 @@ lifecycle の提案: offer は対応と由来を検証し、resolve は current 
 
 ## Conditional validation matrix
 
-以下は承認済み設計と将来実装の review 義務であり、新たな実行 test や現在の positive-path credit ではありません。既存のフィルタ・拒否 test を変更しません。
+以下は typed consumer の検証と既存のフィルタ・拒否 test に適用する義務です。native positive payload 配信と未提供の操作所有者は保留し、typed consumer の検証は native 配信の credit を与えません。
 
 | Case | 入力形と必要な結果 |
 |---|---|

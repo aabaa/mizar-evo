@@ -23,7 +23,489 @@ use serde_json::{Value, json};
 
 use crate::{Server, server::LspSnapshotFreshness};
 
+/// One exact original source and manifest-reachable artifact used by a producer.
+pub struct DeferredArtifactDependency {
+    pub source: mizar_session::SourceVersion,
+    pub path: String,
+    pub hash: mizar_artifact::registration_summary::ArtifactHashRef,
+}
+
+/// Producer-owned encodings and missing-facts selectors; no client can supply this authority.
+pub trait DeferredActionProducer: Send + Sync {
+    fn validates_encoding(
+        &self,
+        _role: &str,
+        _encoding: &str,
+        _bytes: &[u8],
+        _payload: &mizar_diagnostics::explain::ExplanationPayload,
+        _handle: &mizar_diagnostics::explain::ExplanationHandle,
+    ) -> bool {
+        false
+    }
+
+    fn validates_missing_facts(
+        &self,
+        _backing: &mizar_artifact::store::CanonicalJson,
+        _dependency: &DeferredArtifactDependency,
+        _diagnostic: &mizar_diagnostics::failure_record::DiagnosticRecord,
+        _fix: &mizar_diagnostics::fix::FixSuggestion,
+        _obligation: &str,
+        _entry: &str,
+    ) -> bool {
+        false
+    }
+}
+
+/// Immutable host inputs associated with one canonical fix at registration.
+pub struct DeferredFixRegistration {
+    /// Exact byte-domain key `mizar-session/source-text/v1`, separately from manifest spelling.
+    pub text_hash_domain: Option<String>,
+    pub artifacts: Vec<DeferredArtifactDependency>,
+    pub explanation: Option<mizar_diagnostics::explain::ExplanationHandle>,
+    /// Producer encoding key and exact bounded original content bytes.
+    pub content: Option<(String, Vec<u8>)>,
+    /// Producer encoding key and canonical summary/descriptor bytes.
+    pub summary: Option<(String, Vec<u8>)>,
+    /// Artifact dependency index, authenticated obligation key and exact entry selector.
+    pub missing_facts: Option<(usize, String, String)>,
+    /// Exact allowlisted reference; the only supported operation reads the explanation.
+    pub command: Option<mizar_diagnostics::fix::FixCommandRef>,
+    pub store: Option<Arc<mizar_diagnostics::explain::ExplanationStore>>,
+    pub producer: Arc<dyn DeferredActionProducer>,
+}
+
+pub(crate) struct RegisteredDeferredFix {
+    pub(crate) publication: String,
+    pub(crate) diagnostic: mizar_diagnostics::failure_record::DiagnosticHandle,
+    pub(crate) fix: mizar_diagnostics::fix::FixSuggestion,
+    pub(crate) registration: DeferredFixRegistration,
+}
+
+pub(crate) struct DeferredActionContext<'a> {
+    pub(crate) publication: &'a mizar_driver::events::SnapshotPublication,
+    pub(crate) publication_identity: &'a str,
+    pub(crate) registrations: &'a [RegisteredDeferredFix],
+    pub(crate) supports_edits: bool,
+    pub(crate) commands: bool,
+}
+
+pub(crate) fn action_backing_hash(role: &str, encoding: &str, bytes: &[u8]) -> mizar_session::Hash {
+    let mut hash = blake3::Hasher::new();
+    hash.update(b"mizar-lsp/action-backing/v1");
+    for bytes in [role.as_bytes(), encoding.as_bytes(), bytes] {
+        hash.update(&(bytes.len() as u64).to_le_bytes());
+        hash.update(bytes);
+    }
+    mizar_session::Hash::from_bytes(*hash.finalize().as_bytes())
+}
+
+fn dependency_value(
+    publication: &mizar_driver::events::SnapshotPublication,
+    dependency: &DeferredArtifactDependency,
+) -> Option<mizar_artifact::store::CanonicalJson> {
+    use mizar_artifact::{
+        registration_summary::ArtifactHashClass,
+        store::{CanonicalHashDomain, HashClass},
+        verified_artifact::{artifact_hash_excluded_paths, verified_artifact_json},
+    };
+    if dependency.hash.class != ArtifactHashClass::Artifact
+        || !publication
+            .captured()
+            .snapshot()
+            .source_versions
+            .contains(&dependency.source)
+    {
+        return None;
+    }
+    let (_, loaded, _) = publication
+        .captured()
+        .native_sources()?
+        .iter()
+        .find(|(_, loaded, _)| loaded.source_id == dependency.source.source_id)?;
+    if loaded.source_hash != dependency.source.source_hash
+        || mizar_session::hash_text(&loaded.text) != dependency.source.source_hash
+    {
+        return None;
+    }
+    let mut modules = publication
+        .manifests()
+        .iter()
+        .flat_map(|read| {
+            read.manifest
+                .modules
+                .iter()
+                .map(move |module| (&read.manifest, module))
+        })
+        .filter(|(_, module)| {
+            module.module.package_id == dependency.source.package_id.as_str()
+                && module.module.module_path == dependency.source.module_path.as_str()
+                && module.source_file == dependency.source.normalized_path.as_str()
+                && module.source_hash == dependency.source.source_hash
+        });
+    let (manifest, module) = modules.next()?;
+    if modules.next().is_some() {
+        return None;
+    }
+    let domain = CanonicalHashDomain::new(
+        HashClass::Artifact,
+        &dependency.hash.schema_family,
+        dependency.hash.schema_version,
+    );
+    if module.artifact_file == dependency.path && module.artifact_hash == dependency.hash {
+        let mut artifacts = publication.artifacts().iter().filter(|artifact| {
+            artifact.module == module.module
+                && artifact.source_file == module.source_file
+                && artifact.source_hash == dependency.source.source_hash
+                && artifact.provenance.captured_source
+                    == Some((
+                        dependency.source.source_id,
+                        dependency.source.origin.clone(),
+                        dependency.source.source_hash,
+                    ))
+                && artifact.schema_version == dependency.hash.schema_version
+        });
+        let artifact = artifacts.next()?;
+        if artifacts.next().is_some() {
+            return None;
+        }
+        let value = verified_artifact_json(artifact).ok()?;
+        return (domain.hash(&value, &artifact_hash_excluded_paths()) == dependency.hash.digest)
+            .then_some(value);
+    }
+    let mut entries = manifest.development_artifacts.iter().filter(|entry| {
+        entry.path == dependency.path
+            && entry.artifact_hash.as_ref() == Some(&dependency.hash)
+            && entry.diagnostic_hash.is_none()
+            && entry.related_module.as_ref() == Some(&module.module)
+    });
+    entries.next()?;
+    if entries.next().is_some() {
+        return None;
+    }
+    let mut reads = publication.development_artifacts().iter().filter(|read| {
+        read.path.as_str() == dependency.path
+            && domain.hash(&read.value, &[]) == dependency.hash.digest
+    });
+    let read = reads.next()?;
+    if reads.next().is_some() {
+        return None;
+    }
+    Some(read.value.clone())
+}
+
+pub(crate) fn validate_deferred_fix(
+    context: &DeferredActionContext<'_>,
+    record: &mizar_diagnostics::failure_record::DiagnosticRecord,
+    fix: &mizar_diagnostics::fix::FixSuggestion,
+    captured: &CapturedSnapshot,
+) -> bool {
+    let mut registrations = context.registrations.iter().filter(|registration| {
+        registration.publication == context.publication_identity
+            && registration.diagnostic == record.handle()
+            && registration.fix == *fix
+    });
+    let Some(registered) = registrations.next() else {
+        return false;
+    };
+    if registrations.next().is_some() || context.publication.captured() != captured {
+        return false;
+    }
+    validate_registration(context.publication, record, fix, &registered.registration)
+}
+
+fn validate_registration(
+    publication: &mizar_driver::events::SnapshotPublication,
+    record: &mizar_diagnostics::failure_record::DiagnosticRecord,
+    fix: &mizar_diagnostics::fix::FixSuggestion,
+    registration: &DeferredFixRegistration,
+) -> bool {
+    use mizar_diagnostics::explain::{ExplanationResolution, ExplanationSourceRef};
+    let captured = publication.captured();
+    let Some(sources) = captured.native_sources() else {
+        return false;
+    };
+    if record.handle().snapshot != captured.snapshot().id
+        || fix
+            .required_snapshot()
+            .is_some_and(|snapshot| snapshot != captured.snapshot().id)
+    {
+        return false;
+    }
+    if let Some(expected) = fix.required_text_hash() {
+        let Some(first) = fix.edits().first() else {
+            return false;
+        };
+        if registration.text_hash_domain.as_deref() != Some("mizar-session/source-text/v1")
+            || fix
+                .edits()
+                .iter()
+                .any(|edit| edit.range().source_id != first.range().source_id)
+            || !sources.iter().any(|(_, loaded, _)| {
+                loaded.source_id == first.range().source_id
+                    && mizar_session::hash_text(&loaded.text) == expected
+            })
+        {
+            return false;
+        }
+    } else if registration.text_hash_domain.is_some() {
+        return false;
+    }
+    let mut artifacts = Vec::new();
+    for dependency in &registration.artifacts {
+        let Some(value) = dependency_value(publication, dependency) else {
+            return false;
+        };
+        artifacts.push(value);
+    }
+    if fix.safety() == FixSafety::ArtifactAssisted
+        && (registration.artifacts.is_empty()
+            || fix.edits().iter().any(|edit| {
+                !registration
+                    .artifacts
+                    .iter()
+                    .any(|dependency| dependency.source.source_id == edit.range().source_id)
+            })
+            || registration.explanation.is_none() && registration.missing_facts.is_none())
+    {
+        return false;
+    }
+    if let Some((dependency, obligation, entry)) = &registration.missing_facts {
+        let Some(backing) = artifacts.get(*dependency) else {
+            return false;
+        };
+        if obligation.is_empty()
+            || entry.is_empty()
+            || !registration.producer.validates_missing_facts(
+                backing,
+                &registration.artifacts[*dependency],
+                record,
+                fix,
+                obligation,
+                entry,
+            )
+        {
+            return false;
+        }
+    }
+    if let Some(handle) = &registration.explanation {
+        if record.explanation() != Some(handle)
+            || handle
+                .required_snapshot()
+                .is_some_and(|snapshot| snapshot != captured.snapshot().id)
+            || handle.required_artifact_hash().is_some_and(|expected| {
+                !registration
+                    .artifacts
+                    .iter()
+                    .any(|dependency| dependency.hash.digest == expected)
+            })
+        {
+            return false;
+        }
+        let Some(store) = &registration.store else {
+            return false;
+        };
+        let ExplanationResolution::Available(payload) =
+            store.resolve(handle, Some(captured.snapshot().id))
+        else {
+            return false;
+        };
+        let content_valid =
+            match handle.source() {
+                ExplanationSourceRef::PreviewOnly => false,
+                ExplanationSourceRef::Artifact { path, content_hash } => {
+                    registration.content.is_none()
+                        && registration.artifacts.iter().zip(&artifacts).any(
+                            |(dependency, value)| {
+                                dependency.path == *path
+                                    && dependency.hash.digest == *content_hash
+                                    && registration.producer.validates_encoding(
+                                        "content",
+                                        &format!(
+                                            "{}@{}",
+                                            dependency.hash.schema_family,
+                                            dependency.hash.schema_version
+                                        ),
+                                        &mizar_artifact::store::canonical_json_bytes(value),
+                                        &payload,
+                                        handle,
+                                    )
+                            },
+                        )
+                }
+                ExplanationSourceRef::CacheRecord {
+                    content_hash: Some(expected),
+                    ..
+                } => registration
+                    .content
+                    .as_ref()
+                    .is_some_and(|(encoding, bytes)| {
+                        action_backing_hash("content", encoding, bytes) == *expected
+                            && registration
+                                .producer
+                                .validates_encoding("content", encoding, bytes, &payload, handle)
+                    }),
+                _ => false,
+            };
+        if !content_valid
+            || match (handle.summary_hash(), &registration.summary) {
+                (None, None) => false,
+                (Some(expected), Some((encoding, bytes))) => {
+                    action_backing_hash("summary", encoding, bytes) != expected
+                        || !registration
+                            .producer
+                            .validates_encoding("summary", encoding, bytes, &payload, handle)
+                }
+                _ => true,
+            }
+        {
+            return false;
+        }
+    } else if registration.store.is_some()
+        || registration.content.is_some()
+        || registration.summary.is_some()
+    {
+        return false;
+    }
+    if fix.safety() == FixSafety::CommandOnly {
+        registration.command.as_ref() == fix.command()
+            && registration.command.is_some()
+            && registration.explanation.is_some()
+            && fix.edits().is_empty()
+    } else {
+        registration.command.is_none() && fix.command().is_none()
+    }
+}
+
 impl Server {
+    /// Installs the bounded diagnostic-command host before capability negotiation.
+    pub fn enable_diagnostic_commands(&mut self) -> bool {
+        if self.initialization_params().is_some() {
+            return false;
+        }
+        self.diagnostic_commands_enabled = true;
+        true
+    }
+
+    /// Registers producer authority once for an exact current publication and canonical fix.
+    pub fn register_deferred_fix<A: SessionIdAllocator>(
+        &mut self,
+        driver: &CompilerDriver,
+        snapshots: &SnapshotRegistry<A>,
+        diagnostic: &mizar_diagnostics::failure_record::DiagnosticHandle,
+        fix: &mizar_diagnostics::fix::FixSuggestion,
+        registration: DeferredFixRegistration,
+    ) -> bool {
+        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        else {
+            return false;
+        };
+        let Some(record) = selected
+            .publication()
+            .diagnostics()
+            .records()
+            .iter()
+            .find(|record| record.handle() == *diagnostic)
+        else {
+            return false;
+        };
+        if !record.fixes().contains(fix)
+            || !validate_registration(selected.publication(), record, fix, &registration)
+        {
+            return false;
+        }
+        if !self
+            .lsp_snapshot(driver, snapshots)
+            .is_some_and(|(current, freshness)| {
+                freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(&selected, &current)
+            })
+        {
+            return false;
+        }
+        let publication = selected.publication_identity();
+        if self.deferred_fixes.iter().any(|registered| {
+            registered.publication == publication
+                && registered.diagnostic == *diagnostic
+                && registered.fix.id() == fix.id()
+        }) {
+            return false;
+        }
+        self.deferred_fixes
+            .retain(|registered| registered.publication == publication);
+        self.deferred_fixes.push(RegisteredDeferredFix {
+            publication: publication.to_owned(),
+            diagnostic: *diagnostic,
+            fix: fix.clone(),
+            registration,
+        });
+        true
+    }
+
+    /// Executes only the fixed bounded explanation operation, retaining its original inputs.
+    pub fn handle_message_with_diagnostic_commands<A: SessionIdAllocator>(
+        &mut self,
+        message: Value,
+        driver: &CompilerDriver,
+        snapshots: &SnapshotRegistry<A>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Option<Value> {
+        if message["method"] != "workspace/executeCommand" {
+            return self.handle_message_with_metadata(message, driver, snapshots);
+        }
+        let mut response = self.handle_message(message.clone())?;
+        if response["error"]["code"] != -32801 {
+            return Some(response);
+        }
+        let mut outcome = Err((-32801, "Diagnostic command is no longer current".to_owned()));
+        if cancelled() {
+            outcome = Err((-32800, "Request cancelled".to_owned()));
+        } else if let Some((selected, LspSnapshotFreshness::Current)) =
+            self.lsp_snapshot(driver, snapshots)
+        {
+            let context = DeferredActionContext {
+                publication: selected.publication(),
+                publication_identity: selected.publication_identity(),
+                registrations: &self.deferred_fixes,
+                supports_edits: true,
+                commands: self.initialization_params().is_some_and(|params| {
+                    let capability = &params["capabilities"]["textDocument"]["codeAction"];
+                    capability["dataSupport"] == true
+                        && capability["resolveSupport"]["properties"]
+                            .as_array()
+                            .is_some_and(|properties| {
+                                properties.iter().any(|property| property == "command")
+                            })
+                }),
+            };
+            outcome = match execute_deferred_command(
+                selected.publication().diagnostics(),
+                selected.native_open_buffers().captured(),
+                selected.publication_identity(),
+                &context,
+                &message["params"]["arguments"][0],
+            ) {
+                Ok(Some(result)) => Ok(result),
+                Ok(None) => outcome,
+                Err(error) => Err((-32603, error)),
+            };
+            if cancelled() {
+                outcome = Err((-32800, "Request cancelled".to_owned()));
+            } else if !self
+                .lsp_snapshot(driver, snapshots)
+                .is_some_and(|(latest, freshness)| {
+                    freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(&selected, &latest)
+                })
+            {
+                outcome = Err((-32801, "Diagnostic command is no longer current".to_owned()));
+            }
+        }
+        response.as_object_mut()?.remove("error");
+        match outcome {
+            Ok(result) => response["result"] = result,
+            Err((code, message)) => response["error"] = json!({"code":code,"message":message}),
+        }
+        Some(response)
+    }
+
     /// Converts the current complete publication using its original retained native maps.
     /// Missing or stale publications return `None`; unrepresentable records fail the batch.
     /// Diagnostic data references the unchanged index, retaining anchor shape and provenance.
@@ -65,12 +547,17 @@ impl Server {
         let capabilities = self
             .initialization_params()
             .map(|params| &params["capabilities"]["textDocument"]["codeAction"]);
-        if !capabilities.is_some_and(|capabilities| {
-            capabilities["dataSupport"] == true
-                && capabilities["resolveSupport"]["properties"]
-                    .as_array()
-                    .is_some_and(|properties| properties.iter().any(|property| property == "edit"))
-        }) {
+        let supports = |property: &str| {
+            capabilities.is_some_and(|capabilities| {
+                capabilities["dataSupport"] == true
+                    && capabilities["resolveSupport"]["properties"]
+                        .as_array()
+                        .is_some_and(|properties| properties.iter().any(|item| item == property))
+            })
+        };
+        let supports_edits = supports("edit");
+        let supports_commands = supports("command");
+        if !supports_edits && !(self.diagnostic_commands_enabled && supports_commands) {
             return Ok((!resolve).then(|| json!([])));
         }
         let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
@@ -85,13 +572,21 @@ impl Server {
         let Some(uri) = uri.as_str() else {
             return Ok(None);
         };
-        let mut actions = convert_code_actions(
+        let context = DeferredActionContext {
+            publication: selected.publication(),
+            publication_identity: selected.publication_identity(),
+            registrations: &self.deferred_fixes,
+            supports_edits,
+            commands: self.diagnostic_commands_enabled && supports_commands,
+        };
+        let mut actions = convert_code_actions_with_deferred(
             selected.publication().diagnostics(),
             selected.native_open_buffers().captured(),
             selected.publication_identity(),
             uri,
             (!resolve).then_some(&params["range"]),
             resolve.then_some(params),
+            Some(&context),
         )?;
         if !self
             .lsp_snapshot(driver, snapshots)
@@ -312,6 +807,7 @@ pub(crate) fn code_action_range(text: &str, range: &Value) -> Option<[(u64, u64)
     (endpoints[0] <= endpoints[1]).then_some(endpoints)
 }
 
+#[cfg(test)]
 fn convert_code_actions(
     index: &BuildDiagnosticIndex,
     captured: &CapturedSnapshot,
@@ -319,6 +815,26 @@ fn convert_code_actions(
     uri: &str,
     selection: Option<&Value>,
     resolve_action: Option<&Value>,
+) -> Result<Vec<Value>, String> {
+    convert_code_actions_with_deferred(
+        index,
+        captured,
+        publication_identity,
+        uri,
+        selection,
+        resolve_action,
+        None,
+    )
+}
+
+pub(crate) fn convert_code_actions_with_deferred(
+    index: &BuildDiagnosticIndex,
+    captured: &CapturedSnapshot,
+    publication_identity: &str,
+    uri: &str,
+    selection: Option<&Value>,
+    resolve_action: Option<&Value>,
+    context: Option<&DeferredActionContext<'_>>,
 ) -> Result<Vec<Value>, String> {
     let publications = convert_index(index, captured)?;
     let Some(publication) = publications
@@ -368,6 +884,12 @@ fn convert_code_actions(
             }
         }
         for fix in record.fixes() {
+            let command = fix.safety() == FixSafety::CommandOnly;
+            let deferred = fix.required_text_hash().is_some()
+                || matches!(
+                    fix.safety(),
+                    FixSafety::ArtifactAssisted | FixSafety::CommandOnly
+                );
             if !matches!(
                 fix.applicability(),
                 FixApplicability::MachineApplicable
@@ -375,18 +897,29 @@ fn convert_code_actions(
                     | FixApplicability::HasPlaceholders
             ) || !matches!(
                 fix.safety(),
-                FixSafety::LocalTextEdit | FixSafety::SnapshotBound
-            ) || fix.required_text_hash().is_some()
-                || fix
-                    .required_snapshot()
-                    .is_some_and(|snapshot| snapshot != index.snapshot())
+                FixSafety::LocalTextEdit
+                    | FixSafety::SnapshotBound
+                    | FixSafety::ArtifactAssisted
+                    | FixSafety::CommandOnly
+            ) || fix
+                .required_snapshot()
+                .is_some_and(|snapshot| snapshot != index.snapshot())
                 || fix.safety() == FixSafety::SnapshotBound && fix.required_snapshot().is_none()
-                || fix.edits().is_empty()
+                || command && !context.is_some_and(|context| context.commands)
+                || !command
+                    && (fix.edits().is_empty()
+                        || context.is_some_and(|context| !context.supports_edits))
+                || deferred
+                    && !context.is_some_and(|context| {
+                        context.publication_identity == publication_identity
+                            && validate_deferred_fix(context, record, fix, captured)
+                    })
             {
                 continue;
             }
             let data = json!({"publication": publication_identity, "snapshot": diagnostic["data"]["snapshot"], "id": record.handle().id.get(),
-                "fix": fix.id().identity(), "uri": uri, "version": publication["params"]["version"]});
+                "fix": fix.id().identity(), "uri": uri, "version": publication["params"]["version"],
+                "canonical": blake3::hash(format!("{fix:?}").as_bytes()).to_hex().to_string()});
             if resolve_action.is_some_and(|action| action.get("data") != Some(&data)) {
                 continue;
             }
@@ -442,13 +975,56 @@ fn convert_code_actions(
             if valid {
                 let mut action = json!({"title":fix.title(),"kind":"quickfix","data":data});
                 if resolve_action.is_some() {
-                    action["edit"] = json!({"documentChanges":changes});
+                    if command {
+                        action["command"] = json!({"title":fix.title(),"command":"mizar.executeDiagnosticCommand","arguments":[action["data"].clone()]});
+                    } else {
+                        action["edit"] = json!({"documentChanges":changes});
+                    }
                 }
                 actions.push(action);
             }
         }
     }
     Ok(actions)
+}
+
+pub(crate) fn execute_deferred_command(
+    index: &BuildDiagnosticIndex,
+    captured: &CapturedSnapshot,
+    publication_identity: &str,
+    context: &DeferredActionContext<'_>,
+    data: &Value,
+) -> Result<Option<Value>, String> {
+    let Some(uri) = data["uri"].as_str() else {
+        return Ok(None);
+    };
+    let actions = convert_code_actions_with_deferred(
+        index,
+        captured,
+        publication_identity,
+        uri,
+        None,
+        Some(&json!({"data":data})),
+        Some(context),
+    )?;
+    if actions.len() != 1 || actions[0].get("command").is_none() {
+        return Ok(None);
+    }
+    let Some(registered) = context.registrations.iter().find(|registration| {
+        registration.publication == publication_identity
+            && registration.diagnostic.id.get() == data["id"].as_u64().unwrap_or(0)
+            && registration.fix.id().identity() == data["fix"].as_str().unwrap_or("")
+    }) else {
+        return Ok(None);
+    };
+    let Some(store) = &registered.registration.store else {
+        return Ok(None);
+    };
+    let params = json!({"snapshot":data["snapshot"],"diagnosticId":data["id"]});
+    let Ok(result) = crate::explain::convert_explanation(index, captured, store, &params) else {
+        return Ok(None);
+    };
+    Ok((result["status"] == "available" && result["freshness"] == "current").then_some(result))
 }
 
 #[cfg(test)]

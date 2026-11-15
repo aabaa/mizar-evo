@@ -17,6 +17,7 @@ name = "mizar"
 path = "src/main.rs"
 
 [dependencies]
+blake3 = "1"
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-build = { path = "../mizar-build" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }

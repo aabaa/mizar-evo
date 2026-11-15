@@ -3,6 +3,9 @@ mod explain;
 pub mod range_mapper;
 pub mod server;
 
+pub use diagnostics::{
+    DeferredActionProducer, DeferredArtifactDependency, DeferredFixRegistration,
+};
 pub use server::Server;
 
 pub use range_mapper::{

@@ -3,7 +3,7 @@
 
 ## Responsibility
 
-LSP は architecture12 の [Fix Suggestions](../../architecture/en/12.diagnostics_and_lsp.md#fix-suggestions) と [Code Actions](../../architecture/en/12.diagnostics_and_lsp.md#code-actions) に従い、既存の構造化 fix 提案を editor の code action に変換する。提案の生成は Diagnostics が所有し、LSP は producer、証明受理、artifact を変更せず action を提示する。
+LSP は architecture12 の [Fix Suggestions](../../architecture/en/12.diagnostics_and_lsp.md#fix-suggestions) と [Code Actions](../../architecture/en/12.diagnostics_and_lsp.md#code-actions) に従い、既存の構造化 fix 提案を editor の code action に変換する。提案の生成は Diagnostics が所有し、LSP は認証済み producer 登録を通して action を提示し、diagnostic payload schema、証明受理、artifact を変更しない。
 
 ## Request sources and conversion
 
@@ -35,14 +35,18 @@ server は code action を提示し、提案 edit を自ら適用しない。適
 
 承認済みの hash・provenance・command 契約は [validator contracts](code_action_validators.md) が所有し、有効化には認証済み producer 登録と validator が必要です。
 
+`register_deferred_fix` は publication、diagnostic、canonical fix に不変の producer 権威を関連付けます。`DeferredActionProducer` が対応する backing encoding と認証済み missing-facts selector を所有し、LSP が承認済み hash、元の source、manifest 到達可能な artifact dependency を全て検証します。hash 宣言は Session source-text の byte domain を用い、登録の欠落・曖昧さ・未対応・不一致はフィルタします。locator は完全な canonical fix にも結び付き、fix id の再利用では変更内容を認可しません。
+
+`enable_diagnostic_commands` は初期化前に bounded 実行 host を設定し、`mizar.executeDiagnosticCommand` のみを advertise します。`handle_message_with_diagnostic_commands` は metadata と実行を処理します。resolve が単一 locator argument を持つ固定 command を再構築します。実行は再検証後に保持した ExplanationStore を読み、返却前に currentness と cancellation を再確認します。preview-only/query-service backing はこの境界で action 権威を持ちません。VC 表示・reverify は検証済み data と atomic effect admission を提供する操作所有者が現れるまでフィルタします。暗黙の編集や client の操作/path 引数は受け入れません。
+
 `src/diagnostics.rs` は既存の metadata/build host を通して公開済み fix を変換する。publication host のない通常の stdio 経路は action を返さない。要求では生きている文書の version と元の source association を使う。primary 診断 range の半開区間の重なりで fix を選び、空 range は非空区間内の点、または一致する点として扱う。
 
-server は quickfix の resolve を通知する。client は code-action data と edit の resolve に対応する必要があり、初回 action は title/kind/data だけを持つ。locator は不透明な process-local publication 識別子に結び付き、build ID、raw text、文書 version が同じでも識別子を再利用しない。`codeAction/resolve` は data を locator として現在の index から action を再構築し、再検証後だけ version 付き `edit.documentChanges` を返す。利用不能または置換済み action は ContentModified で失敗する。client が渡す edit、command、診断内容は権限の根拠にならない。
+server は quickfix の resolve を通知する。client は code-action data と提示する edit/command の resolve に対応する必要があり、初回 action は title/kind/data だけを持つ。locator は不透明な process-local publication 識別子に結び付き、build ID、raw text、文書 version が同じでも識別子を再利用しない。`codeAction/resolve` は data を locator として現在の index から action を再構築し、再検証後だけ version 付き `edit.documentChanges` または固定 command を返す。利用不能または置換済み action は ContentModified で失敗する。client が渡す edit、command、診断内容は権限の根拠にならない。
 
-明示された expected text が一致する local/snapshot-bound 提案は、edit を持つ 3 種の applicability で提示できる。informational 提案、未知の class、この境界で利用できない hash/artifact/command の検証を要する提案は除外する。所有する validator がない限り、不透明な hash を source hash や artifact hash と解釈しない。command の wire encoding、explanation query の挙動、新しい action class、公開 diagnostic code/name/alias は定義せず、tasks18/19 は別単位のままとする。
+明示された expected text が一致する local/snapshot-bound 提案は、edit を持つ 3 種の applicability で提示できる。informational 提案、未知の class、および必要な認証済み登録または validator がない hash/artifact/command 提案は除外する。所有する validator がない限り、不透明な hash を source hash や artifact hash と解釈しない。新しい action class、公開 diagnostic code/name/alias、explanation query の意味は追加しない。
 
 この規則は、未決の OpenBuffer artifact provenance/storage と Session SourceId encoding から独立して、既存の提案と snapshot association を消費する。それらを前提とも決定ともせず、producer、diagnostics、artifact、snapshot の挙動を変更しない。
 
 ## Test design
 
-task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。既存の production 診断はまだ fix を付けないため、native publication test は currentness を独立して検証する。frame 付き stdio では publication が利用できない経路を検証する。未検証の artifact/command consumer は保留のままで、§23.6/SCA-003 の credit は変わらない。
+task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。既存の production 診断はまだ fix を付けないため、native publication test は currentness を独立して検証する。frame 付き stdio では publication が利用できない経路を検証する。Task38 の typed consumer test が認証済み hash/artifact/backing 登録と command 再構築・再検証を扱い、native payload 配信は Task39 が所有する。未対応 producer と効果を伴う command の所有者は保留し、§23.6/SCA-003 の credit は変わらない。
