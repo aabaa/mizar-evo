@@ -226,7 +226,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 ### Hardening and cross-cutting follow-ups
 
-20. **Determinism and freshness suite.** [ ]
+20. **Determinism and freshness suite.** [x]
     - Contract: [LSP-DETERMINISM-FRESHNESS](../../task_contracts/en/LSP-DETERMINISM-FRESHNESS.md).
     - Property coverage that identical snapshots produce identical
       published diagnostics and feature responses, and that stale data is

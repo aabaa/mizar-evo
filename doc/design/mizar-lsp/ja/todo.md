@@ -227,7 +227,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
 
 ### 強化と横断フォローアップ
 
-20. **決定性と鮮度のスイート。** [ ]
+20. **決定性と鮮度のスイート。** [x]
     - 契約: [LSP-DETERMINISM-FRESHNESS](../../task_contracts/ja/LSP-DETERMINISM-FRESHNESS.md)。
     - 同一の snapshot が同一の公開診断と機能応答を生み、古いデータが
       常にマークされることのプロパティ的検証。

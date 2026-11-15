@@ -991,6 +991,134 @@ mod tests {
     }
 
     #[test]
+    fn nonempty_diagnostic_arrival_permutations_are_canonical() {
+        let fixture = CapturedFixture::new(&[
+            ("file:///z.miz", "😀 alpha\r\nbeta", 8),
+            ("file:///a.miz", "épsilon\n🙂 tail", 3),
+        ]);
+        let drafts = [
+            (0, 1, "alpha", "alpha"),
+            (0, 2, "beta", "beta"),
+            (1, 3, "emoji", "🙂"),
+        ]
+        .map(|(source, code, key, needle)| {
+            syntax_draft(
+                fixture.snapshot(),
+                code,
+                key,
+                &format!("{key} failure"),
+                span(
+                    SourceAnchor::Range(loaded_range(&fixture, source, needle)),
+                    DiagnosticSpanRole::Primary,
+                    None,
+                    None,
+                ),
+                vec![],
+                vec![],
+            )
+        });
+        let orders = [
+            [0, 0, 1, 2],
+            [0, 0, 2, 1],
+            [0, 1, 0, 2],
+            [0, 1, 2, 0],
+            [0, 2, 0, 1],
+            [0, 2, 1, 0],
+            [1, 0, 0, 2],
+            [1, 0, 2, 0],
+            [1, 2, 0, 0],
+            [2, 0, 0, 1],
+            [2, 0, 1, 0],
+            [2, 1, 0, 0],
+        ];
+        let raw_sources = ["😀 alpha\r\nbeta", "épsilon\n🙂 tail"];
+        let mut expected = None;
+        for order in orders {
+            let index = index(
+                fixture.snapshot(),
+                order
+                    .into_iter()
+                    .map(|ordinal| drafts[ordinal].clone())
+                    .collect(),
+            );
+            assert_eq!(
+                index
+                    .records()
+                    .iter()
+                    .map(|record| record.stable_detail_key())
+                    .collect::<Vec<_>>(),
+                vec!["alpha", "beta", "emoji"]
+            );
+            assert_eq!(
+                index
+                    .records()
+                    .iter()
+                    .map(|record| record.handle().id.get())
+                    .collect::<Vec<_>>(),
+                vec![0, 1, 2]
+            );
+            assert!(
+                index
+                    .records()
+                    .iter()
+                    .all(|record| record.handle().snapshot == fixture.snapshot())
+            );
+            let records_before = index.records().to_vec();
+            let notifications = convert_index(&index, &fixture.captured).unwrap();
+            assert_eq!(notifications.len(), 2);
+            assert_eq!(notifications[0]["params"]["uri"], fixture.uri(1));
+            assert_eq!(notifications[0]["params"]["version"], 3);
+            assert_eq!(
+                notifications[0]["params"]["diagnostics"][0]["message"],
+                "emoji failure"
+            );
+            assert_eq!(
+                notifications[0]["params"]["diagnostics"][0]["range"],
+                json!({"start":{"line":1,"character":0},"end":{"line":1,"character":2}})
+            );
+            assert_eq!(notifications[1]["params"]["uri"], fixture.uri(0));
+            assert_eq!(notifications[1]["params"]["version"], 8);
+            assert_eq!(
+                notifications[1]["params"]["diagnostics"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|diagnostic| diagnostic["message"].as_str().unwrap())
+                    .collect::<Vec<_>>(),
+                vec!["alpha failure", "beta failure"]
+            );
+            assert_eq!(
+                notifications[1]["params"]["diagnostics"][0]["range"],
+                json!({"start":{"line":0,"character":3},"end":{"line":0,"character":8}})
+            );
+            assert_eq!(
+                notifications[1]["params"]["diagnostics"][1]["range"],
+                json!({"start":{"line":1,"character":0},"end":{"line":1,"character":4}})
+            );
+            assert_eq!(index.records(), records_before);
+            let bytes = notifications
+                .iter()
+                .map(serde_json::to_vec)
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap();
+            let actual = (notifications, bytes);
+            if let Some(expected) = &expected {
+                assert_eq!(&actual, expected);
+            } else {
+                expected = Some(actual);
+            }
+        }
+        for (source, expected_raw) in raw_sources.into_iter().enumerate() {
+            let SourceOriginInput::OpenBuffer { text, .. } =
+                &fixture.captured.native_sources().unwrap()[source].2.origin
+            else {
+                unreachable!()
+            };
+            assert_eq!(text.as_ref(), expected_raw);
+        }
+    }
+
+    #[test]
     fn conversion_fails_the_whole_batch_for_source_load_unknown_and_invalid_spans() {
         let fixture = CapturedFixture::new(&[("file:///source.miz", "ab😀c", 1)]);
         let sid = fixture.source_ids[0];

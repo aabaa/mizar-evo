@@ -6452,3 +6452,273 @@ mod task9_publication_api_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod determinism_freshness_matrix_tests {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+    use crate::LspPosition;
+    use std::sync::Arc;
+
+    fn request(method: &str, params: Value) -> Value {
+        json!({"jsonrpc":"2.0", "id":77, "method":method, "params":params})
+    }
+
+    fn feature_replies(
+        fixture: &mut RegistryFixture,
+        uri: &str,
+        position: LspPosition,
+        reverse: bool,
+    ) -> [Value; 3] {
+        let messages = [
+            request(
+                "textDocument/hover",
+                json!({"textDocument":{"uri":uri},
+                "position":{"line":position.line,"character":position.character}}),
+            ),
+            request(
+                "textDocument/semanticTokens/full",
+                json!({"textDocument":{"uri":uri}}),
+            ),
+            request(
+                "textDocument/codeAction",
+                json!({"textDocument":{"uri":uri},
+                "range":{"start":{"line":0,"character":0},"end":{"line":0,"character":0}},
+                "context":{"diagnostics":[]}}),
+            ),
+        ];
+        let mut replies = [Value::Null, Value::Null, Value::Null];
+        for index in if reverse { [2, 1, 0] } else { [0, 1, 2] } {
+            replies[index] = fixture
+                .server
+                .handle_message_with_metadata(
+                    messages[index].clone(),
+                    &fixture.driver,
+                    &fixture.snapshots,
+                )
+                .unwrap();
+        }
+        replies
+    }
+
+    fn notifications(fixture: &RegistryFixture) -> Option<Vec<Value>> {
+        fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+    }
+
+    fn frames(fixture: &RegistryFixture) -> (usize, Vec<u8>) {
+        let mut bytes = Vec::new();
+        let count = fixture
+            .server
+            .publish_snapshot_diagnostics_to_writer(&fixture.driver, &fixture.snapshots, &mut bytes)
+            .unwrap();
+        (count, bytes)
+    }
+
+    #[test]
+    fn genuine_replay_is_invariant_across_six_layouts_and_query_order() {
+        let base = "theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;";
+        for newline in ["\n", "\r\n"] {
+            for spaces in ["", " ", "  "] {
+                let mut fixture = RegistryFixture::new();
+                for (_, _, uri) in fixture.sources.clone() {
+                    fixture.did_change_text(&uri, 2, format!(":: café{newline}{spaces}{base}"));
+                }
+                assert!(fixture.build().1);
+                let (baseline, freshness) = fixture
+                    .server
+                    .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                    .unwrap();
+                assert_eq!(freshness, LspSnapshotFreshness::Current);
+                let baseline_id = baseline.publication().captured().snapshot().id;
+                let baseline_diagnostics = notifications(&fixture).unwrap();
+                assert_eq!(baseline_diagnostics.len(), 2);
+                assert!(baseline_diagnostics.iter().all(
+                    |n| n["params"]["version"] == 2 && n["params"]["diagnostics"] == json!([])
+                ));
+                let baseline_frames = frames(&fixture);
+                assert_eq!(baseline_frames.0, 2);
+                assert!(!baseline_frames.1.is_empty());
+                let uris = fixture
+                    .sources
+                    .iter()
+                    .map(|source| source.2.clone())
+                    .collect::<Vec<_>>();
+                let position = LspPosition {
+                    line: 1,
+                    character: u32::try_from(spaces.len() + base.find("thus X").unwrap() + 5)
+                        .unwrap(),
+                };
+                let baseline_features = uris
+                    .iter()
+                    .map(|uri| feature_replies(&mut fixture, uri, position, false))
+                    .collect::<Vec<_>>();
+                assert!(baseline_features.iter().all(|[hover, tokens, actions]| {
+                    hover["result"]["contents"]["value"]
+                        .as_str()
+                        .is_some_and(|s| !s.is_empty())
+                        && hover["result"]["range"].is_object()
+                        && !tokens["result"]["data"].as_array().unwrap().is_empty()
+                        && actions["result"] == json!([])
+                }));
+                fixture.sources.reverse();
+                fixture.input_template.vc_descriptors.reverse();
+                assert!(fixture.build().1);
+                let (replay, freshness) = fixture
+                    .server
+                    .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                    .unwrap();
+                assert_eq!(freshness, LspSnapshotFreshness::Current);
+                assert_eq!(replay.publication().captured().snapshot().id, baseline_id);
+                assert_eq!(notifications(&fixture).unwrap(), baseline_diagnostics);
+                assert_eq!(frames(&fixture), baseline_frames);
+                for (index, uri) in uris.iter().enumerate().rev() {
+                    assert_eq!(
+                        feature_replies(&mut fixture, uri, position, true),
+                        baseline_features[index]
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn invalidation_orders_keep_original_publication_readable_and_suppress_diagnostics() {
+        let orders: [&[u8]; 8] = [
+            &[0, 1, 2],
+            &[0, 2, 1],
+            &[1, 0, 2],
+            &[1, 2, 0],
+            &[2, 0, 1],
+            &[2, 1, 0],
+            &[3],
+            &[4],
+        ];
+        for order in orders {
+            let mut fixture = RegistryFixture::new();
+            assert!(fixture.build().1);
+            let uri = fixture.sources[0].2.clone();
+            let (retained, freshness) = fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap();
+            assert_eq!(freshness, LspSnapshotFreshness::Current);
+            let initial_text = fixture.server.document(&uri).unwrap().1.to_owned();
+            // The original fixture is one ASCII line; stale lookup keeps these original coordinates.
+            let position = LspPosition {
+                line: 0,
+                character: u32::try_from(initial_text.find("thus X").unwrap() + 5).unwrap(),
+            };
+            let original = feature_replies(&mut fixture, &uri, position, false);
+            let original_hover = original[0]["result"]["contents"]["value"].as_str().unwrap();
+            assert!(original[0]["result"]["range"].is_object());
+            for step in order {
+                let version = fixture.server.document(&uri).unwrap().0;
+                match step {
+                    0 => {
+                        fixture.did_change_version_only(&uri, version + 1);
+                        assert_eq!(fixture.server.document(&uri).unwrap().0, version + 1);
+                    }
+                    1 => {
+                        fixture.did_change_text(
+                            &uri,
+                            version + 1,
+                            format!("\u{feff}{initial_text}"),
+                        );
+                        assert_eq!(fixture.server.document(&uri).unwrap().0, version + 1);
+                        assert_eq!(
+                            fixture.server.document(&uri).unwrap().1,
+                            format!("\u{feff}{initial_text}")
+                        );
+                    }
+                    2 => fixture.did_close_and_reopen(&uri, version),
+                    3 => {
+                        fixture.capture();
+                    }
+                    4 => {
+                        fixture
+                            .publisher
+                            .mark_obsolete(retained.publication().captured().snapshot().id)
+                            .unwrap();
+                    }
+                    _ => unreachable!(),
+                }
+                let (selected, freshness) = fixture
+                    .server
+                    .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                    .unwrap();
+                assert_eq!(freshness, LspSnapshotFreshness::StaleArtifact);
+                assert!(Arc::ptr_eq(&retained, &selected));
+                assert_eq!(notifications(&fixture), None);
+                assert_eq!(frames(&fixture), (0, Vec::new()));
+                let replies = feature_replies(&mut fixture, &uri, position, true);
+                let stale = &replies[0]["result"];
+                let text = stale["contents"]["value"].as_str().unwrap();
+                assert!(
+                    text.contains("stale_artifact")
+                        && text.contains(&uri)
+                        && text.contains("version 1")
+                );
+                assert!(text.contains(original_hover));
+                assert_eq!(stale.get("range"), None);
+                assert_eq!(
+                    feature_replies(&mut fixture, &uri, position, false)[1],
+                    replies[1]
+                );
+                // A separate syntax-only connection is the oracle for live buffer input.
+                let mut live = Server::default();
+                live.handle_message(request(
+                    "initialize",
+                    json!({"processId":null,"rootUri":null,"capabilities":{}}),
+                ));
+                live.handle_message(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{
+                    "textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":fixture.server.document(&uri).unwrap().1}}}));
+                assert_eq!(
+                    live.handle_message(request(
+                        "textDocument/semanticTokens/full",
+                        json!({"textDocument":{"uri":uri}})
+                    ))
+                    .unwrap(),
+                    replies[1]
+                );
+            }
+            if !order.contains(&4) {
+                assert!(fixture.build().1);
+                let (rebuilt, freshness) = fixture
+                    .server
+                    .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                    .unwrap();
+                assert_eq!(freshness, LspSnapshotFreshness::Current);
+                assert_eq!(
+                    rebuilt.publication().captured().snapshot().id,
+                    retained.publication().captured().snapshot().id
+                );
+                assert_eq!(notifications(&fixture).unwrap().len(), 2);
+                assert_eq!(frames(&fixture).0, 2);
+                let position = LspPosition {
+                    character: position.character
+                        + u32::from(
+                            fixture
+                                .server
+                                .document(&uri)
+                                .unwrap()
+                                .1
+                                .starts_with('\u{feff}'),
+                        ),
+                    ..position
+                };
+                let fresh = feature_replies(&mut fixture, &uri, position, false);
+                assert!(fresh[0]["result"]["range"].is_object());
+                assert!(
+                    !fresh[0]["result"]["contents"]["value"]
+                        .as_str()
+                        .unwrap()
+                        .contains("stale_artifact")
+                );
+                assert_eq!(feature_replies(&mut fixture, &uri, position, true), fresh);
+            }
+        }
+    }
+}
