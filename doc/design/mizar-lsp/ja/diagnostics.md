@@ -35,7 +35,7 @@ source の診断を選択するときは aggregator の [canonical record order]
 
 ## Implementation boundary
 
-task8 は公開設計だけを定める。task7 の完全 registry、task9 の実装、task10 の scheduling は未完了のままである。coherent な完全 snapshot producer は `27e55711e` で実装され、registry/IR-retention/atomic-activation の単位は別途凍結する。既存 native frontend path は syntax-only のままとする。新 transport payload、診断割当、producer 動作を導入しない。
+task8 は公開設計だけを定める。task7 は保持された完全 registry と atomic activation を提供する。task9 の配送実装と task10 の scheduling は未完了のままである。既存 native frontend path は syntax-only のままとする。新 transport payload、診断割当、producer 動作を導入しない。
 
 ## Test design
 

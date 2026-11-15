@@ -40,7 +40,7 @@ Acquire and release LSP-owned Session leases through SnapshotRegistry with the a
 
 ## Implementation boundary
 
-Task7 first implements only the retained native source association above. The full current/stale artifact registry, IR retention and coherent LspSnapshot remain separate; tasks8–11 bind diagnostics, scheduling and lifecycle cleanup. Do not create placeholder full snapshots, metadata indexes, manifests, event producers or runtime identities; this prerequisite does not complete task7, ENTRY/SCA-003 or Steps6–8.
+`Server::submit_originating_snapshot` consumes the original capture and the publisher used by its genuine producer. It resolves the completed publication manifest-first, matches the submission’s sealed typed outputs to the original artifact objects, and acquires independent PublishedLspSnapshot Session and IR retention before replacing one immutable `Arc<LspSnapshot>`. `Server::lsp_snapshot` rechecks the originating session with the live Driver/Session guard and returns that whole set with explicit Current/StaleArtifact status; readers retain its original sources, metadata and outputs through replacement. Retention ends at the last association/reader. This completes task7; task9 diagnostic delivery and task10 scheduling remain separate, with no ENTRY/SCA-003 or Steps6–8 completion credit.
 
 ## Test design
 

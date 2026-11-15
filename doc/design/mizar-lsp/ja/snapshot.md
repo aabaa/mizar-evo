@@ -40,7 +40,7 @@ LSP 所有の Session lease は SnapshotRegistry により、実際の Published
 
 ## Implementation boundary
 
-task7 はまず上記の retained native source association だけを実装する。完全な current/stale artifact registry、IR retention、coherent LspSnapshot は別途とし、task8–11 は診断/scheduling/lifecycle cleanup を担当する。仮の完全 snapshot、metadata index、manifest、event producer、runtime identity は作らず、この前提作業で task7、ENTRY/SCA-003、Steps6–8 を完了としない。
+`Server::submit_originating_snapshot` は元の capture と真正 producer が使用した publisher を受け取る。完了 publication を manifest-first で解決し、submission の sealed typed output を元 artifact object と照合し、独立した PublishedLspSnapshot Session lease と IR retention を取得してから、一つの immutable `Arc<LspSnapshot>` を置換する。`Server::lsp_snapshot` は live Driver/Session guard で元 session を再検証し、完全な set と明示的な Current/StaleArtifact status を返す。reader は置換後も元 source・metadata・output を保持し、最後の association/reader が終了すると retention を解放する。これで task7 を完了とする。task9 の診断配送と task10 の scheduling は別途とし、ENTRY/SCA-003、Steps6–8 の完了 credit は与えない。
 
 ## Test design
 

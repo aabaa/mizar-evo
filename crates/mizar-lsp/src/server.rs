@@ -15,6 +15,7 @@ pub struct Server {
     exit_code: Option<i32>,
     documents: BTreeMap<String, (i32, String, std::sync::Arc<()>)>,
     native_open_buffers: Option<std::sync::Arc<NativeOpenBufferSnapshot>>,
+    lsp_snapshot: Option<std::sync::Arc<LspSnapshot>>,
 }
 
 /// A native capture tied to the exact Server open incarnations that supplied its text.
@@ -53,7 +54,289 @@ impl Drop for NativeOpenBufferSnapshot {
     }
 }
 
+/// Editor freshness of a complete retained artifact read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LspSnapshotFreshness {
+    Current,
+    StaleArtifact,
+}
+
+/// One original completed publication, its source association and independently pinned IR.
+pub struct LspSnapshot {
+    session: mizar_session::BuildSessionId,
+    publication: std::sync::Arc<mizar_driver::events::SnapshotPublication>,
+    native_open_buffers: std::sync::Arc<NativeOpenBufferSnapshot>,
+    publisher: std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+    outputs: Vec<mizar_ir::storage::AnyPhaseOutputRef>,
+    retain_owner: mizar_ir::storage::RetainOwner,
+    release_published: Option<Box<dyn FnOnce() + Send + Sync>>,
+}
+
+impl LspSnapshot {
+    /// The producer's complete original payload, including its manifest-backed metadata.
+    pub fn publication(&self) -> &std::sync::Arc<mizar_driver::events::SnapshotPublication> {
+        &self.publication
+    }
+
+    pub fn native_open_buffers(&self) -> &std::sync::Arc<NativeOpenBufferSnapshot> {
+        &self.native_open_buffers
+    }
+
+    pub fn outputs(&self) -> &[mizar_ir::storage::AnyPhaseOutputRef] {
+        &self.outputs
+    }
+}
+
+impl Drop for LspSnapshot {
+    fn drop(&mut self) {
+        for output in &self.outputs {
+            assert!(
+                self.publisher
+                    .storage()
+                    .release(output.output(), &self.retain_owner)
+                    .expect("LSP sealed output release failed"),
+                "LSP sealed output retention missing"
+            );
+        }
+        self.release_published
+            .take()
+            .expect("LSP published snapshot cleanup missing")();
+    }
+}
+
 impl Server {
+    /// Reads one whole retained publication and reports current editor/IR eligibility.
+    pub fn lsp_snapshot<A: mizar_session::SessionIdAllocator>(
+        &self,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+    ) -> Option<(std::sync::Arc<LspSnapshot>, LspSnapshotFreshness)> {
+        let snapshot = self.lsp_snapshot.as_ref()?;
+        let current = self.initialized.is_some()
+            && !self.shutdown
+            && self.exit_code.is_none()
+            && driver
+                .validate_current_native_diagnostics(snapshot.session, snapshots)
+                .is_ok()
+            && self.native_open_buffer_snapshot().is_some_and(|native| {
+                std::sync::Arc::ptr_eq(&native, &snapshot.native_open_buffers)
+            })
+            && snapshot.outputs.iter().all(|output| {
+                snapshot.publisher.storage().validate_handle(output).is_ok()
+                    && snapshot
+                        .publisher
+                        .validate_published_output(
+                            snapshot.publication.captured().snapshot().id,
+                            output,
+                        )
+                        .is_ok()
+            });
+        Some((
+            snapshot.clone(),
+            if current {
+                LspSnapshotFreshness::Current
+            } else {
+                LspSnapshotFreshness::StaleArtifact
+            },
+        ))
+    }
+
+    /// Submits the original native capture and activates only its genuine complete publication.
+    /// Supply the same publisher/storage used by this submission's configured phase providers;
+    /// activation checks the original typed artifact objects against its actual output handles.
+    /// LSP acquires its own Session lease and IR retain owner, without transferring Driver's owners.
+    pub fn submit_originating_snapshot<
+        A: mizar_session::SessionIdAllocator + Send + Sync + 'static,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &mut self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        capture: NativeOpenBufferCapture,
+        allocator: &A,
+        snapshots: &std::sync::Arc<mizar_session::SnapshotRegistry<A>>,
+        publisher: &std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, bool),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        let association = capture.snapshot.clone();
+        let (submission, _) = self.submit_originating_native_frontend_diagnostics(
+            driver, capture, allocator, snapshots, input,
+        )?;
+        let activated =
+            self.activate_lsp_snapshot(driver, &submission, association, snapshots, publisher);
+        Ok((submission, activated))
+    }
+
+    fn activate_lsp_snapshot<A: mizar_session::SessionIdAllocator + Send + Sync + 'static>(
+        &mut self,
+        driver: &mizar_driver::driver::CompilerDriver,
+        submission: &mizar_driver::driver::BuildSubmission,
+        association: std::sync::Arc<NativeOpenBufferSnapshot>,
+        snapshots: &std::sync::Arc<mizar_session::SnapshotRegistry<A>>,
+        publisher: &std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
+    ) -> bool {
+        use mizar_driver::{events::BuildEventKind, request::PublicationDecision};
+        let candidate = (|| {
+            if !self
+                .native_open_buffer_snapshot()
+                .is_some_and(|current| std::sync::Arc::ptr_eq(&current, &association))
+                || submission.publication_decision != PublicationDecision::Current
+                || driver
+                    .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                    .is_err()
+            {
+                return None;
+            }
+            let events = driver.events(submission.session.id());
+            let mut publications = events
+                .events()
+                .iter()
+                .filter_map(|event| match &event.kind {
+                    BuildEventKind::SnapshotPublished { snapshot }
+                        if event.identity.session == submission.session.id()
+                            && event.identity.snapshot
+                                == Some(association.captured.snapshot().id)
+                            && event.identity.publication == PublicationDecision::Current =>
+                    {
+                        Some(snapshot)
+                    }
+                    _ => None,
+                });
+            let publication = publications.next()?;
+            if publications.next().is_some()
+                || publication.captured() != &association.captured
+                || submission.session.captured() != &association.captured
+                || !std::ptr::eq(
+                    publication.captured().native_sources()?,
+                    association.captured.native_sources()?,
+                )
+            {
+                return None;
+            }
+            let run = submission.scheduler_run.as_ref()?;
+            let commits = run
+                .phase_results
+                .values()
+                .flatten()
+                .filter(|result| result.artifact_commit.is_some())
+                .collect::<Vec<_>>();
+            // Consume the producer's original manifest reads before resolving any typed output.
+            if publication.manifests().is_empty()
+                || publication.manifests().len() != commits.len()
+                || publication.manifests().len() != publication.artifacts().len()
+                || publication.manifests().iter().any(|manifest| {
+                    manifest.manifest.modules.len() != 1
+                        || commits
+                            .iter()
+                            .filter(|result| {
+                                result.artifact_commit.as_ref().is_some_and(|commit| {
+                                    commit.manifest() == &manifest.manifest
+                                        && commit.write().artifact_hash == manifest.artifact_hash
+                                })
+                            })
+                            .count()
+                            != 1
+                })
+            {
+                return None;
+            }
+            for (manifest, artifact) in publication.manifests().iter().zip(publication.artifacts())
+            {
+                let result = commits.iter().find(|result| {
+                    result
+                        .artifact_commit
+                        .as_ref()
+                        .is_some_and(|commit| commit.manifest() == &manifest.manifest)
+                })?;
+                let [output] = result.output_refs.as_slice() else {
+                    return None;
+                };
+                let handle = publisher
+                    .storage()
+                    .typed_handle(
+                        output,
+                        &mizar_ir::identity::OutputKind::new("SourceTheoremArtifactData"),
+                    )
+                    .ok()?;
+                let original = publisher.storage().get(&handle).ok()?;
+                if !std::sync::Arc::ptr_eq(&original, artifact)
+                    || manifest.manifest.modules[0].module != artifact.module
+                {
+                    return None;
+                }
+            }
+            let mut outputs = Vec::new();
+            for output in run
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+            {
+                publisher.storage().validate_handle(output).ok()?;
+                publisher
+                    .validate_published_output(association.captured.snapshot().id, output)
+                    .ok()?;
+                if !outputs.contains(output) {
+                    outputs.push(output.clone());
+                }
+            }
+            if outputs.is_empty() {
+                return None;
+            }
+            let lease = snapshots
+                .acquire_lease(
+                    association.captured.snapshot().id,
+                    mizar_session::RetentionReason::PublishedLspSnapshot,
+                )
+                .ok()?;
+            let retain_owner = mizar_ir::storage::RetainOwner::new(format!(
+                "lsp:{:p}:{:?}",
+                std::sync::Arc::as_ptr(snapshots),
+                lease.lease_id
+            ));
+            let registry = snapshots.clone();
+            let mut candidate = LspSnapshot {
+                session: submission.session.id(),
+                publication: publication.clone(),
+                native_open_buffers: association,
+                publisher: publisher.clone(),
+                outputs: Vec::new(),
+                retain_owner,
+                release_published: Some(Box::new(move || {
+                    registry
+                        .release_lease(lease.snapshot, lease.lease_id)
+                        .expect("LSP PublishedLspSnapshot lease release failed");
+                })),
+            };
+            for output in outputs {
+                publisher
+                    .storage()
+                    .retain(output.output(), candidate.retain_owner.clone())
+                    .ok()?;
+                candidate.outputs.push(output);
+            }
+            driver
+                .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                .ok()?;
+            for output in &candidate.outputs {
+                publisher
+                    .validate_published_output(
+                        candidate.publication.captured().snapshot().id,
+                        output,
+                    )
+                    .ok()?;
+            }
+            Some(std::sync::Arc::new(candidate))
+        })();
+        let Some(candidate) = candidate else {
+            return false;
+        };
+        self.lsp_snapshot = Some(candidate);
+        true
+    }
+
     /// Captures current raw editor text and its original open incarnations together.
     pub fn capture_native_open_buffers<
         A: mizar_session::SessionIdAllocator + Send + Sync + 'static,
@@ -4615,5 +4898,957 @@ mod tests {
             }
         }
         std::fs::remove_dir_all(input().plan_request.workspace_root.as_str()).unwrap();
+    }
+}
+
+#[cfg(test)]
+pub(super) mod full_snapshot_registry_a {
+    use super::*;
+    use mizar_atp::problem::{
+        ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
+        QuantifierPolicy, SoftTypeStrategy,
+    };
+    use mizar_build::{
+        module_index::{
+            ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage,
+            build_module_index,
+        },
+        planner::{
+            DependencySelection, PlanRequest, WorkspacePackage, lockfile_content_hash,
+            parse_lockfile, parse_package_manifest, produce_build_plan,
+            workspace_config_content_hash,
+        },
+        task_graph::{
+            EvidenceCandidateId, ModuleDependencyOverlay, VcOrderKey, VcTaskDescriptor,
+            VcTaskDescriptorId,
+        },
+    };
+    use mizar_driver::{
+        driver::{BuildSubmission, CompilerDriver, DriverSubmitInput},
+        registry::PhaseRegistryBuilder,
+        request::{
+            BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
+            BuildRequestGeneration, BuildRequestOrigin, BuildTargets, DependencyInputSet,
+            SourceInputSet, VerifierConfigInput,
+        },
+    };
+    use mizar_ir::{
+        identity::{OutputKind, PipelinePhase, SnapshotHandleRegistry, WorkUnit},
+        publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+        storage::IrStorageService,
+    };
+    use mizar_session::{
+        DiskSourceLoader, InMemorySessionIdAllocator, ModulePath, PackageId, SessionIdAllocator,
+        SnapshotRegistry, ToolchainInfo, WorkspaceRoot,
+    };
+    use serde_json::{Value, json};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+        },
+    };
+
+    static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
+
+    #[derive(Clone, Default)]
+    pub(super) struct RegistryObservingAllocator {
+        inner: Arc<InMemorySessionIdAllocator>,
+        pub(super) leases: Arc<std::sync::Mutex<Vec<mizar_session::SnapshotLeaseId>>>,
+    }
+
+    impl SessionIdAllocator for RegistryObservingAllocator {
+        fn next_session_id(&self) -> Result<mizar_session::BuildSessionId, mizar_session::IdError> {
+            self.inner.next_session_id()
+        }
+        fn next_request_id(&self) -> Result<mizar_session::BuildRequestId, mizar_session::IdError> {
+            self.inner.next_request_id()
+        }
+        fn next_source_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SourceId, mizar_session::IdError> {
+            self.inner.next_source_id(snapshot)
+        }
+        fn next_source_map_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SourceMapId, mizar_session::IdError> {
+            self.inner.next_source_map_id(snapshot)
+        }
+        fn next_lease_id(
+            &self,
+            snapshot: mizar_session::BuildSnapshotId,
+        ) -> Result<mizar_session::SnapshotLeaseId, mizar_session::IdError> {
+            let id = self.inner.next_lease_id(snapshot)?;
+            self.leases.lock().unwrap().push(id);
+            Ok(id)
+        }
+    }
+
+    pub(super) struct RegistryFixture {
+        pub(super) server: Server,
+        pub(super) ids: RegistryObservingAllocator,
+        pub(super) snapshots: Arc<SnapshotRegistry<RegistryObservingAllocator>>,
+        pub(super) driver: CompilerDriver,
+        pub(super) publisher: Arc<PhaseOutputPublisher>,
+        pub(super) draft: BuildRequestDraft,
+        pub(super) index: mizar_build::module_index::ModuleIndex,
+        pub(super) sources: Vec<(DiskSourceLoader, PackageId, String)>,
+        pub(super) input_template: DriverSubmitInput<StaticSourceLayout>,
+        root: PathBuf,
+        raw: [String; 2],
+        generation: u64,
+    }
+
+    impl RegistryFixture {
+        pub(super) fn new() -> Self {
+            let sequence = NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed);
+            let root = std::env::temp_dir().join(format!(
+                "mizar-lsp-full-snapshot-{}-{sequence}",
+                std::process::id()
+            ));
+            let package_root = root.join("alpha");
+            fs::create_dir_all(package_root.join("src")).unwrap();
+            fs::create_dir(package_root.join("artifacts")).unwrap();
+            let raw = [
+                "theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;"
+                    .to_owned(),
+                "theorem Leaf: for X being set holds X = X proof let X be set; thus X = X; end;"
+                    .to_owned(),
+            ];
+            for (module, text) in ["main", "leaf"].into_iter().zip(raw.iter()) {
+                fs::write(package_root.join(format!("src/{module}.miz")), text).unwrap();
+            }
+            let workspace = WorkspaceRoot::new(root.to_string_lossy().into_owned());
+            let plan_request = PlanRequest {
+                workspace_root: workspace.clone(),
+                dependency_selection: DependencySelection::Normal,
+                toolchain: ToolchainInfo::new("mizar-evo-test"),
+            };
+            let packages = vec![WorkspacePackage {
+                member_path: "alpha".into(),
+                manifest: parse_package_manifest(
+                    "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+                )
+                .unwrap(),
+            }];
+            let lock = parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n").unwrap();
+            let layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                package_id: PackageId::new("alpha"),
+                files: ["main", "leaf"]
+                    .map(|module| {
+                        WorkspaceSourceFile::new(
+                            format!("src/{module}.miz"),
+                            format!("{module}.miz"),
+                        )
+                    })
+                    .to_vec(),
+            }]);
+            let plan =
+                produce_build_plan(plan_request.clone(), packages.clone(), lock.clone()).unwrap();
+            let index = build_module_index(&plan, &layout, &[]).unwrap();
+            let dependency_overlay = ModuleDependencyOverlay::complete(Vec::new());
+            let mut input_template = DriverSubmitInput::new(
+                plan_request.clone(),
+                packages.clone(),
+                lock.clone(),
+                layout.clone(),
+            );
+            input_template.dependency_overlay = dependency_overlay;
+            input_template.vc_descriptors = ["main", "leaf"]
+                .map(|module| {
+                    VcTaskDescriptor::new(
+                        VcTaskDescriptorId::new(format!("snapshot-{module}")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new(module)),
+                        VcOrderKey::new("00000000000000000000"),
+                        vec![],
+                        vec![EvidenceCandidateId::new("native-reflexivity")],
+                    )
+                })
+                .to_vec();
+            let draft = BuildRequestDraft {
+                lane: BuildLaneId::new(1),
+                origin: BuildRequestOrigin::Batch(BatchRequest {
+                    invocation: BatchInvocation::default(),
+                }),
+                generation: BuildRequestGeneration::new(0),
+                workspace_root: workspace,
+                profile: BuildProfile::new("check"),
+                targets: BuildTargets::default(),
+                source_inputs: SourceInputSet::default(),
+                dependency_inputs: DependencyInputSet::new(
+                    vec![],
+                    lockfile_content_hash(&plan.lockfile),
+                    plan.toolchain.clone(),
+                ),
+                verifier_config: VerifierConfigInput::new(workspace_config_content_hash(
+                    &plan.verifier_config,
+                    &plan.build_config,
+                )),
+            };
+            let ids = RegistryObservingAllocator::default();
+            let snapshots = Arc::new(SnapshotRegistry::with_allocator(ids.clone()));
+            let mut server = Server::default();
+            initialize(&mut server);
+            let sources = ["main", "leaf"].into_iter().map(|module| {
+                let uri = file_uri(&package_root.join(format!("src/{module}.miz")));
+                server.handle_message(notification("textDocument/didOpen", json!({"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":raw[usize::from(module == "leaf") ]}})));
+                (DiskSourceLoader::new(&package_root), PackageId::new("alpha"), uri)
+            }).collect::<Vec<_>>();
+            let builder = complete_registry_builder();
+            let publisher = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::new()),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            let driver = CompilerDriver::new(builder.build().unwrap())
+                .with_output_publisher(publisher.clone());
+            Self {
+                server,
+                ids,
+                snapshots,
+                driver,
+                publisher,
+                draft,
+                index,
+                sources,
+                input_template,
+                root,
+                raw,
+                generation: 1,
+            }
+        }
+
+        pub(super) fn driver_input(&self) -> DriverSubmitInput<StaticSourceLayout> {
+            let mut input = DriverSubmitInput::new(
+                self.input_template.plan_request.clone(),
+                self.input_template.workspace_packages.clone(),
+                self.input_template.lockfile.clone(),
+                self.input_template.source_layout.clone(),
+            );
+            input.dependency_overlay = self.input_template.dependency_overlay.clone();
+            input.vc_descriptors = self.input_template.vc_descriptors.clone();
+            input
+        }
+        pub(super) fn capture(&mut self) -> NativeOpenBufferCapture {
+            let mut draft = self.draft.clone();
+            draft.generation = BuildRequestGeneration::new(self.generation);
+            self.generation += 1;
+            let capture = self
+                .server
+                .capture_native_open_buffers(
+                    draft,
+                    &self.ids,
+                    &self.snapshots,
+                    &self.index,
+                    self.sources.clone(),
+                )
+                .unwrap();
+            // A publication generation owns its actual publisher, as in the Driver fixture.
+            // Reusing equal-id output coordinates would attempt to store them twice.
+            let publisher = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::new()),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            publisher.register_current_snapshot(capture.snapshot.captured().snapshot().id);
+            for module in ["main", "leaf"] {
+                for (phase, kind) in [
+                    ("SourceLoad", "SourceUnit"),
+                    ("Frontend", "FrontendOutput"),
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                    ("KernelCheck", "SourceTheoremCandidateCheck"),
+                    ("KernelCheck", "SourceTheoremCandidateWitnessFile"),
+                    ("ArtifactCommit", "SourceTheoremArtifactData"),
+                ] {
+                    publisher.allow_work_unit(AllowedWorkUnit::new(
+                        PipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        WorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                    ));
+                }
+            }
+            self.publisher = publisher;
+            let previous = std::mem::replace(
+                &mut self.driver,
+                CompilerDriver::new(PhaseRegistryBuilder::new().build().unwrap()),
+            );
+            self.driver = previous.with_output_publisher(self.publisher.clone());
+            capture
+        }
+        pub(super) fn build(&mut self) -> (BuildSubmission, bool) {
+            let capture = self.capture();
+            let input = self.driver_input();
+            self.server
+                .submit_originating_snapshot(
+                    &mut self.driver,
+                    capture,
+                    &self.ids,
+                    &self.snapshots,
+                    &self.publisher,
+                    input,
+                )
+                .unwrap()
+        }
+        pub(super) fn submit_captured(
+            &mut self,
+            capture: NativeOpenBufferCapture,
+        ) -> (BuildSubmission, Option<Vec<Value>>) {
+            let input = self.driver_input();
+            self.server
+                .submit_originating_native_frontend_diagnostics(
+                    &mut self.driver,
+                    capture,
+                    &self.ids,
+                    &self.snapshots,
+                    input,
+                )
+                .unwrap()
+        }
+        pub(super) fn frontend_only_driver(&self) -> CompilerDriver {
+            let mut builder = PhaseRegistryBuilder::new();
+            builder.register_source_load().register_frontend(vec![]);
+            CompilerDriver::new(builder.build().unwrap())
+                .with_output_publisher(self.publisher.clone())
+        }
+        pub(super) fn did_change_version_only(&mut self, uri: &str, version: i32) {
+            self.server.handle_message(notification(
+                "textDocument/didChange",
+                json!({"textDocument":{"uri":uri,"version":version},"contentChanges":[]}),
+            ));
+        }
+        pub(super) fn did_change_text(&mut self, uri: &str, version: i32, text: String) {
+            self.server.handle_message(notification("textDocument/didChange", json!({"textDocument":{"uri":uri,"version":version},"contentChanges":[{"text":text}]})));
+        }
+        pub(super) fn did_close_and_reopen(&mut self, uri: &str, version: i32) {
+            let text = self.server.document(uri).unwrap().1.to_owned();
+            self.server.handle_message(notification(
+                "textDocument/didClose",
+                json!({"textDocument":{"uri":uri}}),
+            ));
+            self.server.handle_message(notification("textDocument/didOpen", json!({"textDocument":{"uri":uri,"languageId":"mizar","version":version,"text":text}})));
+        }
+    }
+
+    impl Drop for RegistryFixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    fn file_uri(path: &Path) -> String {
+        format!("file://{}", path.to_string_lossy().replace('\\', "/"))
+    }
+    fn initialize(server: &mut Server) {
+        server.handle_message(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}}));
+    }
+    fn notification(method: &str, params: Value) -> Value {
+        json!({"jsonrpc":"2.0","method":method,"params":params})
+    }
+
+    fn complete_registry_builder() -> PhaseRegistryBuilder {
+        let profile = LogicProfile::try_new(
+            "snapshot-native",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation(
+                "snapshot-generation-v1".into(),
+                "snapshot-vc-v1".into(),
+            )
+            .register_source_theorem_vc_discharge(Default::default())
+            .register_source_theorem_atp_solve(
+                Default::default(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+            )
+            .unwrap()
+            .register_source_theorem_candidate_check_with_witness_files(
+                Default::default(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+                Default::default(),
+                "proof-witnesses/snapshot".into(),
+            )
+            .unwrap();
+        builder
+            .register_source_theorem_artifact_commit(
+                Default::default(),
+                profile,
+                ConcreteFormat::Tptp,
+                Default::default(),
+                (
+                    "proof-witnesses/snapshot".into(),
+                    "main.mizir.json".into(),
+                    "artifacts".into(),
+                ),
+            )
+            .unwrap();
+        builder
+    }
+
+    #[test]
+    fn genuine_complete_payload_manifest_first_activates_one_coherent_snapshot() {
+        let mut fixture = RegistryFixture::new();
+        let (submission, activated) = fixture.build();
+        assert!(activated);
+        let (snapshot, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("published snapshot");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        let publication = snapshot.publication();
+        assert_eq!(publication.captured(), submission.session.captured());
+        assert_eq!(publication.manifests().len(), 2);
+        assert_eq!(publication.artifacts().len(), 2);
+        assert_eq!(
+            publication.diagnostics().snapshot(),
+            submission.session.captured().snapshot().id
+        );
+        assert!(Arc::ptr_eq(
+            snapshot.native_open_buffers(),
+            &fixture.server.native_open_buffer_snapshot().unwrap()
+        ));
+        assert!(!snapshot.outputs().is_empty());
+        for output in snapshot.outputs() {
+            fixture.publisher.storage().validate_handle(output).unwrap();
+        }
+    }
+
+    #[test]
+    fn accepted_monotonic_edits_including_version_only_invalidate_currentness() {
+        let mut fixture = RegistryFixture::new();
+        fixture.build();
+        let uri = fixture.sources[0].2.clone();
+        let changed_text = format!("{}\n", fixture.server.document(&uri).unwrap().1);
+        fixture.did_change_text(&uri, 2, changed_text);
+        assert_eq!(fixture.server.document(&uri).unwrap().0, 2);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        fixture.did_change_version_only(&uri, 1);
+        assert_eq!(fixture.server.document(&uri).unwrap().0, 2);
+        fixture.did_change_version_only(&uri, 3);
+        assert_eq!(fixture.server.document(&uri).unwrap().0, 3);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+    }
+
+    #[test]
+    fn equal_id_edits_and_identical_tuple_reopen_do_not_revive_old_current_snapshot() {
+        let mut fixture = RegistryFixture::new();
+        fixture.build();
+        let uri = fixture.sources[0].2.clone();
+        let original = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .0;
+        let old_id = original.publication().captured().snapshot().id;
+        fixture.did_change_version_only(&uri, 2);
+        assert_eq!(original.publication().captured().snapshot().id, old_id);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        let (version_submission, activated) = fixture.build();
+        assert!(activated);
+        assert_eq!(version_submission.session.captured().snapshot().id, old_id);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::Current
+        );
+        let equivalent_raw = format!("\u{feff}{}", fixture.raw[0]);
+        fixture.did_change_text(&uri, 3, equivalent_raw.clone());
+        assert_eq!(original.publication().captured().snapshot().id, old_id);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        let (raw_submission, activated) = fixture.build();
+        assert!(activated);
+        assert_eq!(raw_submission.session.captured().snapshot().id, old_id);
+        let (before_reopen, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert!(original.publisher.validate_current_snapshot(old_id).is_ok());
+        fixture.did_close_and_reopen(&uri, 3);
+        assert_eq!(
+            fixture.server.document(&uri),
+            Some((3, equivalent_raw.as_str()))
+        );
+        assert!(std::sync::Arc::ptr_eq(
+            &before_reopen,
+            &fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .0
+        ));
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        assert!(fixture.server.native_open_buffer_snapshot().is_none());
+    }
+
+    #[test]
+    fn retained_snapshot_after_edit_keeps_original_source_and_is_never_current() {
+        let mut fixture = RegistryFixture::new();
+        fixture.build();
+        let (retained, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        let source_before = retained
+            .native_open_buffers()
+            .captured()
+            .native_sources()
+            .unwrap();
+        let original_source_text = Arc::clone(&source_before[0].1.text);
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_version_only(&uri, 2);
+        let (read_after, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(freshness, LspSnapshotFreshness::StaleArtifact);
+        assert!(Arc::ptr_eq(&retained, &read_after));
+        let source_after = read_after
+            .native_open_buffers()
+            .captured()
+            .native_sources()
+            .unwrap();
+        assert_eq!(source_after.len(), source_before.len());
+        assert!(Arc::ptr_eq(&source_after[0].1.text, &original_source_text));
+        assert_eq!(source_after[0].2.origin, source_before[0].2.origin);
+        let snapshot_id = read_after.publication().captured().snapshot().id;
+        fixture.publisher.mark_obsolete(snapshot_id).unwrap();
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        assert!(
+            fixture
+                .publisher
+                .validate_published_output(snapshot_id, &read_after.outputs()[0])
+                .is_err()
+        );
+        assert_eq!(fixture.server.document(&uri).unwrap().0, 2);
+    }
+}
+
+#[cfg(test)]
+pub(super) mod full_snapshot_registry_b {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+
+    #[test]
+    fn reader_spanning_replacement_observes_one_complete_immutable_set() {
+        let mut fixture = RegistryFixture::new();
+        let (old_submission, old_activated) = fixture.build();
+        assert!(old_activated);
+        let (old_reader, old_freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("first complete snapshot");
+        assert_eq!(old_freshness, LspSnapshotFreshness::Current);
+        let old_publication = old_reader.publication().clone();
+        let old_association = old_reader.native_open_buffers().clone();
+        assert_eq!(old_publication.manifests().len(), 2);
+        assert_eq!(old_publication.artifacts().len(), 2);
+        assert_eq!(old_publication.captured(), old_association.captured());
+        assert_eq!(
+            old_publication.captured(),
+            old_submission.session.captured()
+        );
+
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_version_only(&uri, 2);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        let (new_submission, new_activated) = fixture.build();
+        assert!(new_activated);
+        let (new_reader, new_freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("replacement complete snapshot");
+        assert_eq!(new_freshness, LspSnapshotFreshness::Current);
+        assert!(!std::sync::Arc::ptr_eq(&old_reader, &new_reader));
+        assert_eq!(new_reader.publication().manifests().len(), 2);
+        assert_eq!(new_reader.publication().artifacts().len(), 2);
+        assert_eq!(
+            new_reader.publication().captured(),
+            new_submission.session.captured()
+        );
+        assert_eq!(
+            new_reader.publication().captured(),
+            new_reader.native_open_buffers().captured()
+        );
+
+        // The in-flight reader still holds the entire old publication and association.
+        assert!(std::sync::Arc::ptr_eq(
+            old_reader.publication(),
+            &old_publication
+        ));
+        assert!(std::sync::Arc::ptr_eq(
+            old_reader.native_open_buffers(),
+            &old_association
+        ));
+        assert_eq!(old_reader.publication().manifests().len(), 2);
+        assert_eq!(old_reader.publication().artifacts().len(), 2);
+        assert_eq!(
+            old_reader.publication().captured(),
+            old_submission.session.captured()
+        );
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .0
+                .publication()
+                .captured(),
+            new_submission.session.captured()
+        );
+    }
+
+    #[test]
+    fn session_and_ir_retention_release_once_after_last_association_and_reader() {
+        let mut fixture = RegistryFixture::new();
+        let lease_start = fixture.ids.leases.lock().unwrap().len();
+        let (submission, activated) = fixture.build();
+        assert!(activated);
+        let snapshot_id = submission.session.captured().snapshot().id;
+        let published_lease = *fixture.ids.leases.lock().unwrap().last().unwrap();
+        assert!(fixture.ids.leases.lock().unwrap().len() > lease_start);
+        let (reader, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("published snapshot");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        let outputs = reader.outputs().to_vec();
+        assert!(!outputs.is_empty());
+        let storage = fixture.publisher.storage().clone();
+        for output in &outputs {
+            storage.validate_handle(output).unwrap();
+        }
+
+        let uri = fixture.sources[0].2.clone();
+        let changed_text = format!("{}\n", fixture.server.document(&uri).unwrap().1);
+        fixture.did_change_text(&uri, 2, changed_text);
+        let other_capture = fixture.capture();
+        let other_id = other_capture.snapshot.captured().snapshot().id;
+        assert_ne!(other_id, snapshot_id);
+        // A wrong-snapshot release checks this exact live lease without consuming it.
+        assert!(matches!(
+            fixture.snapshots.release_lease(other_id, published_lease),
+            Err(mizar_session::SnapshotError::LeaseReleaseMismatch { lease_id, actual_snapshot, .. })
+                if lease_id == published_lease && actual_snapshot == snapshot_id
+        ));
+        drop(other_capture);
+        assert_eq!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact
+        );
+        let held = storage.collect(mizar_ir::storage::CollectInput {
+            snapshot: snapshot_id,
+            protected_outputs: Vec::new(),
+        });
+        assert!(held.retained_outputs >= outputs.len());
+        for output in &outputs {
+            storage.validate_handle(output).unwrap();
+        }
+
+        // The server association is released first; the reader remains the last owner.
+        drop(fixture.server.lsp_snapshot.take());
+        assert!(matches!(
+            fixture.snapshots.release_lease(other_id, published_lease),
+            Err(mizar_session::SnapshotError::LeaseReleaseMismatch { lease_id, actual_snapshot, .. })
+                if lease_id == published_lease && actual_snapshot == snapshot_id
+        ));
+        let still_held = storage.collect(mizar_ir::storage::CollectInput {
+            snapshot: snapshot_id,
+            protected_outputs: Vec::new(),
+        });
+        assert!(still_held.retained_outputs >= outputs.len());
+        for output in &outputs {
+            storage.validate_handle(output).unwrap();
+        }
+        drop(reader);
+        assert!(matches!(
+            fixture.snapshots.release_lease(snapshot_id, published_lease),
+            Err(mizar_session::SnapshotError::UnknownSnapshotLease { lease_id })
+                if lease_id == published_lease
+        ));
+
+        let released = storage.collect(mizar_ir::storage::CollectInput {
+            snapshot: snapshot_id,
+            protected_outputs: Vec::new(),
+        });
+        assert!(released.outputs_dropped >= outputs.len());
+        for output in &outputs {
+            assert!(storage.validate_handle(output).is_err());
+        }
+        let collected_again = storage.collect(mizar_ir::storage::CollectInput {
+            snapshot: snapshot_id,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(collected_again.outputs_dropped, 0);
+        assert!(matches!(
+            fixture.snapshots.release_lease(snapshot_id, published_lease),
+            Err(mizar_session::SnapshotError::UnknownSnapshotLease { lease_id })
+                if lease_id == published_lease
+        ));
+    }
+
+    #[test]
+    fn partial_index_and_artifact_boundary_inputs_do_not_activate_or_clear() {
+        use mizar_driver::events::BuildEventKind;
+
+        let mut fixture = RegistryFixture::new();
+        let (full_submission, activated) = fixture.build();
+        assert!(activated);
+        let (retained, _) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        let original_publication = retained.publication().clone();
+        let original_diagnostic_count = original_publication.diagnostics().records().len();
+
+        // Genuine frontend/index-only submission. It returns a diagnostic index but no
+        // coherent SnapshotPublished payload and cannot replace the prior publication.
+        let capture = fixture.capture();
+        let association = fixture.server.native_open_buffer_snapshot().unwrap();
+        let frontend_driver = fixture.frontend_only_driver();
+        let complete_driver = std::mem::replace(&mut fixture.driver, frontend_driver);
+        let (partial, notifications) = fixture.submit_captured(capture);
+        // Native notifications are derived from the genuine returned BuildDiagnosticIndex.
+        assert_eq!(
+            notifications
+                .expect("genuine native diagnostic index")
+                .len(),
+            2
+        );
+        let partial_events = fixture.driver.events(partial.session.id());
+        assert!(
+            !partial_events
+                .events()
+                .iter()
+                .any(|event| { matches!(&event.kind, BuildEventKind::SnapshotPublished { .. }) })
+        );
+        let run = partial.scheduler_run.as_ref().expect("frontend run");
+        assert!(
+            run.phase_results
+                .values()
+                .flatten()
+                .all(|result| { result.artifact_commit.is_none() })
+        );
+        assert!(!fixture.server.activate_lsp_snapshot(
+            &fixture.driver,
+            &partial,
+            association,
+            &fixture.snapshots,
+            &fixture.publisher,
+        ));
+        fixture.driver = complete_driver;
+
+        // A genuine full-pipeline submission with a malformed leaf yields an artifact boundary
+        // for the successful module but no complete cohort publication.
+        let leaf_uri = fixture.sources[1].2.clone();
+        fixture.did_change_text(&leaf_uri, 2, "theorem Leaf: invalid Mizar.".to_owned());
+        let (artifact_partial, artifact_activated) = fixture.build();
+        assert!(!artifact_activated);
+        let artifact_events = fixture.driver.events(artifact_partial.session.id());
+        assert!(
+            artifact_events
+                .events()
+                .iter()
+                .any(|event| { matches!(&event.kind, BuildEventKind::ArtifactBoundary { .. }) })
+        );
+        assert!(
+            !artifact_events
+                .events()
+                .iter()
+                .any(|event| { matches!(&event.kind, BuildEventKind::SnapshotPublished { .. }) })
+        );
+        assert!(!fixture.server.activate_lsp_snapshot(
+            &fixture.driver,
+            &artifact_partial,
+            fixture.server.native_open_buffer_snapshot().unwrap(),
+            &fixture.snapshots,
+            &fixture.publisher,
+        ));
+
+        let (still_selected, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("previous complete publication remains retained");
+        assert!(std::sync::Arc::ptr_eq(&retained, &still_selected));
+        assert_eq!(freshness, LspSnapshotFreshness::StaleArtifact);
+        assert_eq!(
+            still_selected.publication().diagnostics().records().len(),
+            original_diagnostic_count
+        );
+        assert_eq!(
+            still_selected.publication().captured(),
+            full_submission.session.captured()
+        );
+        assert_eq!(still_selected.publication().manifests().len(), 2);
+        assert_eq!(still_selected.publication().artifacts().len(), 2);
+        assert!(std::sync::Arc::ptr_eq(
+            still_selected.publication(),
+            &original_publication
+        ));
+    }
+
+    #[test]
+    fn superseded_equal_id_driver_submission_makes_old_payload_stale_and_unactivatable() {
+        let mut fixture = RegistryFixture::new();
+        let (old_submission, activated) = fixture.build();
+        assert!(activated);
+        let association = fixture.server.native_open_buffer_snapshot().unwrap();
+        let (old_reader, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+
+        // Capture the same accepted source inputs directly through Session and submit a newer
+        // request on the same lane. The Server's accepted-document association is untouched.
+        let source_inputs = old_submission
+            .session
+            .captured()
+            .native_sources()
+            .unwrap()
+            .iter()
+            .zip(&fixture.sources)
+            .map(|((_, _, input), (loader, _, _))| (loader.clone(), input.clone()))
+            .collect();
+        let mut newer_draft = fixture.draft.clone();
+        newer_draft.generation = mizar_driver::request::BuildRequestGeneration::new(2);
+        let newer_session = newer_draft
+            .capture_sources(&fixture.ids, &fixture.snapshots, source_inputs)
+            .unwrap();
+        assert_eq!(
+            newer_session.captured().snapshot().id,
+            old_submission.session.captured().snapshot().id
+        );
+        assert_eq!(
+            newer_session.request().lane,
+            old_submission.session.request().lane
+        );
+        let newer_submission = fixture
+            .driver
+            .submit_captured_with_import_discovery(
+                newer_session,
+                &fixture.ids,
+                &fixture.snapshots,
+                fixture.driver_input(),
+            )
+            .unwrap();
+        assert_eq!(
+            newer_submission.session.request().lane,
+            old_submission.session.request().lane
+        );
+        assert_eq!(
+            newer_submission.session.captured().snapshot().id,
+            old_submission.session.captured().snapshot().id
+        );
+        assert!(std::sync::Arc::ptr_eq(
+            &association,
+            &fixture.server.native_open_buffer_snapshot().unwrap()
+        ));
+        let (selected, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(std::sync::Arc::ptr_eq(&selected, &old_reader));
+        assert_eq!(freshness, LspSnapshotFreshness::StaleArtifact);
+        assert!(!fixture.server.activate_lsp_snapshot(
+            &fixture.driver,
+            &old_submission,
+            association,
+            &fixture.snapshots,
+            &fixture.publisher,
+        ));
+        assert!(std::sync::Arc::ptr_eq(
+            &fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .0,
+            &old_reader
+        ));
     }
 }

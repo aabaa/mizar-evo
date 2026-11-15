@@ -35,7 +35,7 @@ The existing explicit native frontend path groups notifications by URI in ordere
 
 ## Implementation boundary
 
-Task8 defines publication only. Task7's full registry, task9's implementation and task10's scheduling remain open. The coherent full-snapshot producer landed in `27e55711e`; the registry/IR-retention/atomic-activation unit is frozen separately, and the existing native frontend path remains syntax-only. No new transport payload, diagnostic allocation or producer behavior is introduced.
+Task8 defines publication only. Task7 provides the retained full registry and atomic activation; task9's delivery implementation and task10's scheduling remain open. The existing native frontend path remains syntax-only. No new transport payload, diagnostic allocation or producer behavior is introduced.
 
 ## Test design
 
