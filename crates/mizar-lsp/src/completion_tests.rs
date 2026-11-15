@@ -189,6 +189,10 @@ fn lexical_cues_filter_syntax_candidates_and_restart_after_semicolon() {
     }
     assert_eq!(
         at_end("Pkg.Mod"),
+        Some((Context::QualifiedSymbols, "Pkg.Mod".into()))
+    );
+    assert_eq!(
+        at_end("import Pkg.Mod"),
         Some((Context::Keywords, "Pkg.Mod".into()))
     );
 }
@@ -204,6 +208,26 @@ fn comments_strings_and_invalid_utf16_boundaries_refuse_completion() {
             completion_context(text, position(text, byte)),
             None,
             "{text:?}"
+        );
+    }
+
+    let multiline_comment = "be ::= comment\n\n=::";
+    assert_eq!(
+        completion_context(
+            multiline_comment,
+            LspPosition {
+                line: 1,
+                character: 0,
+            },
+        ),
+        None,
+        "an empty line inside a multiline comment is not a completion context",
+    );
+    for text in ["be :: comment\n", "be ::: comment\n"] {
+        assert_eq!(
+            at_end(text),
+            Some((Context::Types, String::new())),
+            "line and documentation comments leave their newline usable: {text:?}",
         );
     }
 
@@ -701,15 +725,21 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
     assert_eq!(labels(&before_version_only), labels(&after_version_only));
     assert_eq!(labels(&after_version_only), ["object", "set"]);
 
-    // Keep the cursor at the retained source's original EOF while the live editor
-    // replaces only its final terminator with a citation cue of identical length.
-    let edited = format!("{}by  ", &original[..original.len() - 4]);
-    assert_eq!(edited.len(), original.len());
+    // Keep the citation cursor at the retained source's EOF while adding an
+    // in-scope proof label that has never appeared in the selected publication.
+    let edited_prefix = original
+        .replace("X = X proof", "X=X proof")
+        .replace("thus X = X; end;", "L:X=X;thus X=X by ");
+    assert_eq!(edited_prefix.len(), original.len());
+    let edited = format!("{edited_prefix}Main; end;");
+    let (parsed, _) = import_fixture(&edited, "main", &[]);
+    assert!(parsed.diagnostics.is_empty(), "{:?}", parsed.diagnostics);
     fixture.did_change_text(&uri, 3, edited.clone());
     let stale_items =
         fixture
             .server
             .snapshot_completion(&fixture.driver, &fixture.snapshots, &uri, eof);
+    assert_eq!(labels(&stale_items), ["Main"], "unpublished L is excluded");
     let stale_main = stale_items
         .iter()
         .find(|item| item["label"] == "Main")
@@ -778,10 +808,10 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
             .contains(&format!("stale_artifact: Source: {uri} (version 1)"))
     );
 
-    // A publication rebuilt from the restored genuine source replaces the stale
-    // selection. At the restored source's completion cue, syntax remains available
-    // and the selected publication is current with no stale provenance.
-    fixture.did_change_text(&uri, 5, original.clone());
+    // Renaming the genuine theorem replaces the selected publication and its
+    // semantic candidate identity while keeping the source shape unchanged.
+    let replacement_source = original.replacen("theorem Main:", "theorem Next:", 1);
+    fixture.did_change_text(&uri, 5, replacement_source.clone());
     let (_, replacement_activated) = fixture.build();
     assert!(replacement_activated);
     let (replacement, replacement_freshness) = fixture
@@ -797,14 +827,9 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
         &fixture.driver,
         &fixture.snapshots,
         &uri,
-        position(&original, be_offset),
+        position(&replacement_source, be_offset),
     );
     assert_eq!(labels(&replacement_items), ["object", "set"]);
-    assert!(
-        replacement_items
-            .iter()
-            .all(|item| item["data"]["identity"] != stale_identity)
-    );
     assert!(replacement_items.iter().all(|item| {
         !item["detail"]
             .as_str()
@@ -812,7 +837,34 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
             .contains("stale_artifact")
     }));
 
-    fixture.did_change_text(&uri, 6, format!("{original}\nby "));
+    let replacement_stale_source = format!(
+        "{}by  ",
+        &replacement_source[..replacement_source.len() - 4]
+    );
+    assert_eq!(replacement_stale_source.len(), replacement_source.len());
+    fixture.did_change_text(&uri, 6, replacement_stale_source);
+    let replacement_stale_items =
+        fixture
+            .server
+            .snapshot_completion(&fixture.driver, &fixture.snapshots, &uri, eof);
+    let replacement_next = replacement_stale_items
+        .iter()
+        .find(|item| item["label"] == "Next")
+        .expect("replacement publication supplies its renamed theorem label");
+    assert!(
+        replacement_stale_items
+            .iter()
+            .all(|item| item["label"] != "Main")
+    );
+    assert_ne!(replacement_next["data"]["identity"], stale_identity);
+    assert!(
+        replacement_next["detail"]
+            .as_str()
+            .unwrap()
+            .contains(&format!("stale_artifact: Source: {uri} (version 5)"))
+    );
+
+    fixture.did_change_text(&uri, 7, format!("{original}\nby "));
     let beyond_original = fixture.server.snapshot_completion(
         &fixture.driver,
         &fixture.snapshots,
@@ -827,7 +879,7 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
         "valid current coordinates outside the retained source cannot supply semantic candidates"
     );
 
-    fixture.did_change_text(&uri, 7, "be ".into());
+    fixture.did_change_text(&uri, 8, "be ".into());
     let recovered = fixture.server.snapshot_completion(
         &fixture.driver,
         &fixture.snapshots,
@@ -1158,6 +1210,10 @@ fn resolver_import_aliases_and_facades_preserve_public_spelling_and_identity() {
     assert_eq!(labels(&complete("be Gr", &view)), ["Grp"]);
     assert_eq!(labels(&complete("be Grp.", &view)), ["Inner"]);
     assert_eq!(labels(&complete("be Grp.Inner.", &view)), ["MyMode"]);
+    assert_eq!(
+        labels(&complete("Grp.", &view)),
+        ["+", "Inner", "base", "related"]
+    );
     let terms = complete("= Grp.", &view);
     assert!(labels(&terms).contains(&"base"));
     assert!(!labels(&terms).contains(&"HiddenMode"));
@@ -1354,11 +1410,16 @@ fn imported_citations_keep_theorem_definition_signatures_and_exclude_unpublished
             target_kind: "definition".into(),
         });
     summary.refresh_interface_hash().unwrap();
-    let (_, imports) = import_fixture(
-        "import alpha.main as Grp;\ndefinition\nend;",
+    let (client, imports) = import_fixture(
+        concat!(
+            "import alpha.main as Grp;\n",
+            "theorem Client: for X being set holds X = X proof ",
+            "let X be set; L: X = X; thus X = X by Grp.Main, Grp.Main; end;",
+        ),
         "client",
         std::slice::from_ref(&summary),
     );
+    assert!(client.diagnostics.is_empty(), "{:?}", client.diagnostics);
     let imports = imports.unwrap_or_else(|| {
         panic!(
             "label import unavailable identity {:?}, symbols {:?}, labels {:?}",
@@ -1375,15 +1436,20 @@ fn imported_citations_keep_theorem_definition_signatures_and_exclude_unpublished
             summary.exported_labels
         )
     });
-    for text in ["by Grp.", "by Grp.Main, Grp."] {
-        let context = at_end(text).unwrap();
+    for cue in ["by Grp.", "by Grp.Main, Grp."] {
+        let offset = client.source.source_text.find(cue).unwrap() + cue.len();
+        let context = completion_context(
+            &client.source.source_text,
+            position(&client.source.source_text, offset),
+        )
+        .unwrap();
         let mut items = syntax_items(&context);
         append_semantic_items(
             &mut items,
             &summary,
             None,
             Some(&imports),
-            (0, 0),
+            (offset, offset),
             &context,
             "Source: imports (version 1)",
         );

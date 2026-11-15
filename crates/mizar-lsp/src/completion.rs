@@ -18,6 +18,7 @@ enum Context {
     Formulas,
     Expressions,
     Citations,
+    QualifiedSymbols,
     Keywords,
 }
 
@@ -50,7 +51,10 @@ fn completion_context(text: &str, position: LspPosition) -> Option<(Context, Str
     let raw = text.replace('\r', "\n");
     let source = mizar_lexer::preprocess_source_for_lexing(&raw);
     if source.comments.iter().any(|comment| {
-        comment.span.start <= offset && offset <= comment.span.end && !raw[..offset].ends_with('\n')
+        comment.span.start <= offset
+            && offset <= comment.span.end
+            && (comment.kind == mizar_lexer::CommentKind::MultiLine
+                || !raw[..offset].ends_with('\n'))
     }) {
         return None;
     }
@@ -128,6 +132,7 @@ fn completion_context(text: &str, position: LspPosition) -> Option<(Context, Str
             }
             Some("=" | ":=" | "equals") => Context::Terms,
             Some("(" | ",") => Context::Expressions,
+            _ if tokens.is_empty() && prefix.contains('.') => Context::QualifiedSymbols,
             _ => Context::Keywords,
         }
     };
@@ -139,7 +144,7 @@ fn syntax_items(context: &(Context, String)) -> Vec<Value> {
         Context::Types => &["object", "set"],
         Context::Terms => &["the"],
         Context::Formulas | Context::Expressions => &["ex", "for", "not"],
-        Context::Citations | Context::Keywords => &[],
+        Context::Citations | Context::QualifiedSymbols | Context::Keywords => &[],
     };
     keywords.iter().filter(|word| word.starts_with(&context.1)).map(|word|
         json!({"label":word,"kind":14,"insertText":word,"insertTextFormat":1,"detail":"keyword","data":{"rank":2,"identity":word}})).collect()
@@ -147,6 +152,7 @@ fn syntax_items(context: &(Context, String)) -> Vec<Value> {
 
 fn accepts(context: Context, kind: UserSymbolKind) -> bool {
     match context {
+        Context::QualifiedSymbols => true,
         Context::Types => matches!(
             kind,
             UserSymbolKind::Mode | UserSymbolKind::Structure | UserSymbolKind::Attribute
