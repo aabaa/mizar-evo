@@ -8,6 +8,17 @@ use std::{
 use mizar_ir::publisher::OutputAuthorization;
 use serde_json::{Value, json};
 
+#[path = "build_bridge.rs"]
+mod build_bridge;
+pub use build_bridge::BuildBridgeError;
+
+#[cfg(test)]
+#[path = "build_bridge_event_tests.rs"]
+mod build_bridge_event_tests;
+#[cfg(test)]
+#[path = "build_bridge_timing_tests.rs"]
+mod build_bridge_timing_tests;
+
 /// One LSP connection and its exact client-owned document text.
 #[derive(Default)]
 pub struct Server {
@@ -17,6 +28,7 @@ pub struct Server {
     documents: BTreeMap<String, (i32, String, std::sync::Arc<()>)>,
     native_open_buffers: Option<std::sync::Arc<NativeOpenBufferSnapshot>>,
     lsp_snapshot: Option<std::sync::Arc<LspSnapshot>>,
+    build_bridge: Option<build_bridge::BuildBridge>,
 }
 
 /// A native capture tied to the exact Server open incarnations that supplied its text.
@@ -868,6 +880,9 @@ impl Server {
                         }
                         self.shutdown = true;
                         self.native_open_buffers = None;
+                        if let Some(bridge) = &mut self.build_bridge {
+                            bridge.slot = None;
+                        }
                         Value::Null
                     }
                     "exit"
@@ -894,6 +909,9 @@ impl Server {
             if params.is_none_or(Value::is_null) {
                 self.exit_code = Some(if self.shutdown { 0 } else { 1 });
                 self.native_open_buffers = None;
+                if let Some(bridge) = &mut self.build_bridge {
+                    bridge.slot = None;
+                }
             }
             return None;
         }
@@ -916,6 +934,7 @@ impl Server {
                         uri.to_owned(),
                         (version, text.to_owned(), std::sync::Arc::new(())),
                     );
+                    self.admit_build();
                 }
             }
             "textDocument/didChange" => {
@@ -946,10 +965,11 @@ impl Server {
                     }) {
                         self.native_open_buffers = None;
                     }
+                    self.admit_build();
                 }
             }
             "textDocument/didClose" => {
-                self.documents.remove(uri);
+                let removed = self.documents.remove(uri).is_some();
                 if self.native_open_buffers.as_ref().is_some_and(|snapshot| {
                     snapshot
                         .lifetimes
@@ -957,6 +977,9 @@ impl Server {
                         .any(|(original, _)| original == uri)
                 }) {
                     self.native_open_buffers = None;
+                }
+                if removed {
+                    self.admit_build();
                 }
             }
             _ => {}

@@ -20,7 +20,7 @@
 | server | [server.md](server.md)（task 4） | `src/server.rs` | [x] |
 | snapshot | `snapshot.md`（task 6） | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md`（task 8） | `src/diagnostics.rs` | [x] |
-| build_bridge | `build_bridge.md`（task 10） | `src/build_bridge.rs` | [ ] |
+| build_bridge | `build_bridge.md`（task 10） | `src/build_bridge.rs` | [x] |
 | metadata | `metadata.md`（task 12） | `src/metadata.rs` | [ ] |
 | navigation | `navigation.md`（task 14） | `src/navigation.rs` | [ ] |
 | code_action | `code_action.md`（task 16） | `src/code_action.rs` | [ ] |
@@ -150,7 +150,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 依存: 6。仕様: [internal 01](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md)
       「Watch and LSP Build」。
 
-11. **build bridge。** [ ]
+11. **build bridge。** [x]
     - `mizar-driver` を通じたビルドのスケジューリングとイベント消費を
       実装する。置き換えられたセッションはクリーンにキャンセルされる。
     - テスト: 編集バーストのフィクスチャがデバウンスされる。イベントが

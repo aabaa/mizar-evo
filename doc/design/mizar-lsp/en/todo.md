@@ -21,7 +21,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 | server | [server.md](server.md) (task 4) | `src/server.rs` | [x] |
 | snapshot | [snapshot.md](snapshot.md) (task 6) | `src/snapshot.rs` | [ ] |
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [x] |
-| build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [ ] |
+| build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [x] |
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [ ] |
 | navigation | `navigation.md` (task 14) | `src/navigation.rs` | [ ] |
 | code_action | `code_action.md` (task 16) | `src/code_action.rs` | [ ] |
@@ -150,7 +150,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Deps: 6. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
       "Watch and LSP Build".
 
-11. **Build bridge.** [ ]
+11. **Build bridge.** [x]
     - Implement build scheduling and event consumption through
       `mizar-driver`; superseded sessions cancel cleanly.
     - Tests: edit-burst fixtures debounce; events map to the right

@@ -41,8 +41,9 @@ Consequently Disk-side changes are not reflected in LSP results until the next a
 
 ## Implementation boundary
 
-No code or tests change in task10. Task7's full registry/IR retention/atomic activation, task9 publication and task11 implementation remain separate; module completion and SCA-003 credit do not change. OpenBuffer provenance, artifact storage and Session SourceId encoding belong to the parked Driver unit: this scheduling policy neither depends on nor decides them, and grants no OpenBuffer artifact-production capability.
+`src/build_bridge.rs` implements task11 through `Server::with_build_bridge`, `drive_build_bridge`, `next_build_deadline` and `build_bridge_events`. The host supplies a lane-exclusive Driver and its matching publisher, injects a monotonic clock, drives incoming traffic and returned deadlines, and resolves the complete open-URI coordinate set only at flush. Configure the bridge before accepting document traffic. The existing stdio lifecycle does not install a compiler host; native host/watch integration remains under DRIVER-G-012.
+Event replay retains the original capture and does not activate a registry or deliver diagnostics; task7 and task9 keep those boundaries. OpenBuffer provenance, artifact storage and Session SourceId encoding belong to the parked Driver unit: this scheduling policy neither depends on nor decides them, and grants no OpenBuffer artifact-production capability. SCA-003 credit stays unchanged.
 
 ## Test design
 
-This design unit adds zero executable cases. Task11 retains edit-burst debounce, correct event-to-snapshot association and supersede-cancellation fixtures under the policy above; existing lifecycle, capture, Driver and publication test intent stays with its owners.
+Task11 fixtures use injected time for accepted-event admission, edit bursts, quiet/cap deadlines and terminal discard; genuine native captures and Driver submissions check failure consumption, original event association and lane separation. Driver's current synchronous submission returns terminal sessions; the running-session deadline predicate is tested separately, while cooperative cancellation behavior remains Driver-owned. Existing lifecycle, capture and publication test intent stays with its owners.

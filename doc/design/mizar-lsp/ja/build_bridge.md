@@ -41,8 +41,9 @@ bridge は自分の LSP lane のみ submit/cancel/consume し、Watch-origin req
 
 ## Implementation boundary
 
-Task10 は code/test を変更しない。task7 の full registry/IR retention/atomic activation、task9 publication、task11 implementation は別単位のままとし、module 完了と SCA-003 credit は変えない。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。
+`src/build_bridge.rs` は `Server::with_build_bridge`、`drive_build_bridge`、`next_build_deadline`、`build_bridge_events` により task11 を実装する。host は lane 専用 Driver と対応する publisher、単調時計を渡し、受信 traffic と返された deadline で駆動し、flush 時だけ全 open URI の座標を解決する。文書 traffic の受理前に bridge を構成する。既存 stdio lifecycle は compiler host を設置せず、native host/watch 統合は DRIVER-G-012 に残る。
+event replay は元の capture を保持し、registry activation や診断送信は行わない。これらは task7 と task9 の境界に残す。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。SCA-003 credit は変更しない。
 
 ## Test design
 
-本設計単位は executable case を追加しない。task11 は上記方針に基づく edit-burst debounce、正しい event/snapshot 対応、supersede cancel の fixture を引き続き担当し、既存 lifecycle/capture/Driver/publication の test intent は各所有者に残す。
+task11 の fixture は注入時計で accepted-event admission、編集 burst、quiet/cap deadline、terminal discard を検証し、実際の native capture と Driver submission で失敗時の消費、元の event association、lane 分離を検証する。現行 Driver の同期 submission は terminal session を返すため、running-session の deadline predicate は別に検証し、協調 cancellation の振る舞いは Driver の所有に残す。既存 lifecycle/capture/publication の test intent は各所有者に残す。
