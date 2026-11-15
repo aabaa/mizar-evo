@@ -207,12 +207,14 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
       ラウンドトリップする。
     - 依存: 9、16、`mizar-diagnostics` task 13。仕様: `code_action.md`。
 
-18. **仕様: `explain.md`。** [ ]
+18. **仕様: `explain.md`。** [x]
     - explanation クエリの仕様を執筆する（英語と日本語、コードなし）:
       explanation ハンドルのオンデマンドな上限付きペイロードへの解決、
       レイテンシ/サイズの制限。
     - 依存: 8。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
       「Explanation Queries」。
+    - 完了: [設計契約](../../task_contracts/ja/LSP-EXPLAIN-DESIGN.md)、
+      [英語仕様](../en/explain.md)、[日本語仕様](explain.md)。
 
 19. **explanation クエリ。** [ ]
     - `mizar-diagnostics` の explanation ストア上で explanation

@@ -206,12 +206,14 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       conversion.
     - Deps: 9, 16, `mizar-diagnostics` task 13. Spec: `code_action.md`.
 
-18. **Spec: `explain.md`.** [ ]
+18. **Spec: `explain.md`.** [x]
     - Write the explanation-query spec (English and Japanese, no code):
       resolving explanation handles to bounded payloads on demand, and
       latency/size limits.
     - Deps: 8. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
       "Explanation Queries".
+    - Completion: [design contract](../../task_contracts/en/LSP-EXPLAIN-DESIGN.md),
+      [English specification](explain.md), [Japanese specification](../ja/explain.md).
 
 19. **Explanation queries.** [ ]
     - Implement explanation requests over the `mizar-diagnostics`
