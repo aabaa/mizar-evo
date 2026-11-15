@@ -49,7 +49,7 @@ fn native_theorem_module_candidates_preserve_captured_pairs_and_original_owners(
             let mut builder = PhaseRegistryBuilder::new();
             builder.register_source_load();
             let submission = CompilerDriver::new(builder.build().unwrap())
-                .submit_captured(session, &ids, &snapshots, input).unwrap();
+                .submit_captured(session, &ids, &snapshots, input, Default::default()).unwrap();
             let (inputs, _) = native_disk_lookup_context(&submission, &ids);
             let module = mizar_build::module_index::ModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
             let (_, loaded, captured_input) = &inputs.captured.unwrap().native_sources().unwrap()[0];
@@ -371,7 +371,7 @@ fn native_theorem_module_publication_seals_genuine_pair_and_streams() {
                 builder.register_source_load();
                 builder.register_frontend(vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone())
-                    .submit_captured(session, &ids, &snapshots, submit).unwrap();
+                    .submit_captured(session, &ids, &snapshots, submit, Default::default()).unwrap();
                 let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
                 let parent = submission.scheduler_run.as_ref().unwrap().phase_results.values().flatten()
                     .flat_map(|result| &result.output_refs)
@@ -563,7 +563,7 @@ fn native_theorem_module_publication_preserves_refusals_and_publisher_boundaries
         builder.register_frontend(vec![]);
         let submission = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
         let parents = submission
@@ -943,7 +943,7 @@ fn native_theorem_module_summary_candidate_preserves_captured_rows_and_identity(
             let mut builder = PhaseRegistryBuilder::new();
             builder.register_source_load();
             let submission = CompilerDriver::new(builder.build().unwrap())
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             let (inputs, _) = native_disk_lookup_context(&submission, &ids);
             let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
@@ -1127,7 +1127,7 @@ fn native_theorem_module_summary_candidate_preserves_lower_results_and_binding_r
             builder.register_source_load();
             submissions.push(
                 CompilerDriver::new(builder.build().unwrap())
-                    .submit_captured(session, &ids, &snapshots, input)
+                    .submit_captured(session, &ids, &snapshots, input, Default::default())
                     .unwrap(),
             );
         }

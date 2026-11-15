@@ -51,7 +51,7 @@ fn native_frontend_resolver_binding_preserves_scheduled_captured_pairs() {
                 builder.register_source_load();
                 builder.register_frontend(vec![]);
                 let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
-                let submission = driver.submit_captured(session, &ids, &snapshots, submit).unwrap();
+                let submission = driver.submit_captured(session, &ids, &snapshots, submit, Default::default()).unwrap();
                 let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
                 let parent = submission.scheduler_run.as_ref().unwrap().phase_results.values().flatten()
                     .flat_map(|result| &result.output_refs)
@@ -570,7 +570,7 @@ fn native_frontend_resolver_binding_rejects_bad_associations_and_preserves_lower
     builder.register_frontend(vec![]);
     let submission = CompilerDriver::new(builder.build().unwrap())
         .with_output_publisher(owner.clone())
-        .submit_captured(session, &ids, &snapshots, submit)
+        .submit_captured(session, &ids, &snapshots, submit, Default::default())
         .unwrap();
     let (inputs, input) = native_disk_lookup_context(&submission, &ids);
     let results = submission

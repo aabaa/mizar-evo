@@ -46,7 +46,7 @@ fn current_storage_comparison_binds_native_disk_blob_readbacks_after_removal() {
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         let run = submission.scheduler_run.as_ref().unwrap();
         let mut source = None;
@@ -207,17 +207,31 @@ fn current_disk_diagnostic_index_preserves_original_native_runs_and_retained_sou
                 };
                 let (submission, index) = if indexed {
                     driver
-                        .submit_captured_with_diagnostic_index(
+                        .submit_captured(
                             session.clone(),
                             &ids,
                             &snapshots,
                             input,
+                            SubmitOptions {
+                                diagnostic_index: Some(DiagnosticIndexMode::Disk),
+                                ..Default::default()
+                            },
                         )
+                        .map(|mut submission| {
+                            let index = submission.diagnostic_index.take();
+                            (submission, index)
+                        })
                         .unwrap()
                 } else {
                     (
                         driver
-                            .submit_captured(session.clone(), &ids, &snapshots, input)
+                            .submit_captured(
+                                session.clone(),
+                                &ids,
+                                &snapshots,
+                                input,
+                                Default::default(),
+                            )
                             .unwrap(),
                         None,
                     )
@@ -426,7 +440,20 @@ fn current_disk_diagnostic_guard_reads_live_driver_lane_request_and_publisher() 
             input.cancellation.supersede_snapshot(snapshot);
         }
         let (mut submission, index) = driver
-            .submit_captured_with_diagnostic_index(session.clone(), &ids, &snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    diagnostic_index: Some(DiagnosticIndexMode::Disk),
+                    ..Default::default()
+                },
+            )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })
             .unwrap();
         let supported = matches!(mode, "lane" | "request" | "publisher");
         assert_eq!(index.is_some(), supported, "{mode}");
@@ -476,7 +503,20 @@ fn current_disk_diagnostic_guard_reads_live_driver_lane_request_and_publisher() 
             driver = driver.with_output_publisher(fresh.clone());
             let (_, input) = fixture.submit_request(vec![], vec![]);
             let (_, next_index) = driver
-                .submit_captured_with_diagnostic_index(next.clone(), &ids, &snapshots, input)
+                .submit_captured(
+                    next.clone(),
+                    &ids,
+                    &snapshots,
+                    input,
+                    SubmitOptions {
+                        diagnostic_index: Some(DiagnosticIndexMode::Disk),
+                        ..Default::default()
+                    },
+                )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                })
                 .unwrap();
             assert!(next_index.is_some());
             assert!(
@@ -541,7 +581,9 @@ fn current_disk_diagnostic_guard_reads_live_driver_lane_request_and_publisher() 
     let mut driver =
         CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
     let (request, input) = fixture.submit_request(vec![], vec![]);
-    let legacy = driver.submit(request, &ids, &snapshots, input).unwrap();
+    let legacy = driver
+        .submit(request, &ids, &snapshots, input, Default::default())
+        .unwrap();
     let stored = driver.session(legacy.session.id()).unwrap();
     assert_eq!(stored, &legacy.session);
     assert_eq!(stored.captured().snapshot().id, snapshot);
@@ -629,20 +671,33 @@ fn current_disk_diagnostic_submission_preserves_captured_precondition_errors() {
         if mode == "duplicate" {
             let (_, input) = fixture.submit_request(vec![], vec![]);
             original
-                .submit_captured(selected.clone(), &ids, registry, input)
+                .submit_captured(selected.clone(), &ids, registry, input, Default::default())
                 .unwrap();
             let (_, input) = fixture.submit_request(vec![], vec![]);
             indexed
-                .submit_captured(selected.clone(), &ids, registry, input)
+                .submit_captured(selected.clone(), &ids, registry, input, Default::default())
                 .unwrap();
         }
         let (_, input) = fixture.submit_request(vec![], vec![]);
         let expected = original
-            .submit_captured(selected.clone(), &ids, registry, input)
+            .submit_captured(selected.clone(), &ids, registry, input, Default::default())
             .unwrap_err();
         let (_, input) = fixture.submit_request(vec![], vec![]);
         let actual = indexed
-            .submit_captured_with_diagnostic_index(selected, &ids, registry, input)
+            .submit_captured(
+                selected,
+                &ids,
+                registry,
+                input,
+                SubmitOptions {
+                    diagnostic_index: Some(DiagnosticIndexMode::Disk),
+                    ..Default::default()
+                },
+            )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })
             .unwrap_err();
         assert_eq!(actual, expected);
         assert!(matches!(
@@ -780,17 +835,31 @@ fn current_native_diagnostic_index_preserves_open_and_mixed_original_runs() {
             }
             let (submission, index) = if indexed {
                 driver
-                    .submit_captured_with_native_diagnostic_index(
+                    .submit_captured(
                         session.clone(),
                         &ids,
                         &snapshots,
                         input,
+                        SubmitOptions {
+                            diagnostic_index: Some(DiagnosticIndexMode::Native),
+                            ..Default::default()
+                        },
                     )
+                    .map(|mut submission| {
+                        let index = submission.diagnostic_index.take();
+                        (submission, index)
+                    })
                     .unwrap()
             } else {
                 (
                     driver
-                        .submit_captured(session.clone(), &ids, &snapshots, input)
+                        .submit_captured(
+                            session.clone(),
+                            &ids,
+                            &snapshots,
+                            input,
+                            Default::default(),
+                        )
                         .unwrap(),
                     None,
                 )
@@ -1036,7 +1105,20 @@ fn current_native_diagnostic_guard_rejects_generated_and_superseded_open_session
                 .is_err()
         );
         let (submission, index) = driver
-            .submit_captured_with_native_diagnostic_index(session.clone(), &ids, &snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    diagnostic_index: Some(DiagnosticIndexMode::Native),
+                    ..Default::default()
+                },
+            )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })
             .unwrap();
         assert_eq!(
             submission.session.state(),
@@ -1074,7 +1156,7 @@ fn current_native_diagnostic_guard_rejects_generated_and_superseded_open_session
             assert_eq!(
                 submission,
                 ordinary
-                    .submit_captured(session.clone(), &ids, &snapshots, input)
+                    .submit_captured(session.clone(), &ids, &snapshots, input, Default::default())
                     .unwrap()
             );
             continue;
@@ -1109,7 +1191,20 @@ fn current_native_diagnostic_guard_rejects_generated_and_superseded_open_session
             driver = driver.with_output_publisher(fresh.clone());
             let (_, input) = fixture.submit_request(vec![], vec![]);
             let (_, next_index) = driver
-                .submit_captured_with_native_diagnostic_index(next.clone(), &ids, &snapshots, input)
+                .submit_captured(
+                    next.clone(),
+                    &ids,
+                    &snapshots,
+                    input,
+                    SubmitOptions {
+                        diagnostic_index: Some(DiagnosticIndexMode::Native),
+                        ..Default::default()
+                    },
+                )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                })
                 .unwrap();
             assert!(next_index.is_some());
             assert_eq!(
@@ -1182,11 +1277,30 @@ fn current_native_diagnostic_submission_preserves_captured_precondition_errors()
     let mut indexed = CompilerDriver::new(source_registry());
     let (_, input) = fixture.submit_request(vec![], vec![]);
     let expected = original
-        .submit_captured(session.clone(), &ids, &invalid_registry, input)
+        .submit_captured(
+            session.clone(),
+            &ids,
+            &invalid_registry,
+            input,
+            Default::default(),
+        )
         .unwrap_err();
     let (_, input) = fixture.submit_request(vec![], vec![]);
     let actual = indexed
-        .submit_captured_with_native_diagnostic_index(session, &ids, &invalid_registry, input)
+        .submit_captured(
+            session,
+            &ids,
+            &invalid_registry,
+            input,
+            SubmitOptions {
+                diagnostic_index: Some(DiagnosticIndexMode::Native),
+                ..Default::default()
+            },
+        )
+        .map(|mut submission| {
+            let index = submission.diagnostic_index.take();
+            (submission, index)
+        })
         .unwrap_err();
     assert_eq!(actual, expected);
     assert!(matches!(

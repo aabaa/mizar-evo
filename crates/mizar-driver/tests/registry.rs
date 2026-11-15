@@ -7,7 +7,7 @@ use mizar_build::task_graph::{PipelinePhase, WorkUnit};
 use mizar_driver::registry::{
     PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
     PhaseOwner, PhaseRegistry, PhaseRegistryBuilder, PhaseRegistryError, PhaseResult, PhaseService,
-    PhaseServiceAvailability, required_phase_services,
+    PhaseServiceAvailability, StageConfig, assemble_registry, required_phase_services,
 };
 use mizar_ir::{
     dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
@@ -21,6 +21,190 @@ use mizar_ir::{
     storage::{BlobDecodeError, BlobDecoder, IrSideTables, IrStorageService, SchemaVersion},
 };
 use mizar_session::{BuildSnapshotId, Hash};
+
+#[test]
+fn frontend_preset_registers_exactly_source_load_and_frontend() {
+    let config = StageConfig::frontend(vec![]);
+    let actual = assemble_registry(&config).unwrap();
+    let mut expected = PhaseRegistryBuilder::new();
+    expected.register_source_load().register_frontend(vec![]);
+    assert_eq!(config.through, PipelinePhase::Frontend);
+    assert_eq!(
+        actual.descriptors().collect::<Vec<_>>(),
+        expected.build().unwrap().descriptors().collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn preset_and_explicit_settings_match_manual_recipes_at_each_supported_cutoff() {
+    use mizar_driver::facade::*;
+    let mut config = snapshot_stage_settings();
+    config.artifact_roots = vec![(
+        mizar_session::PackageId::new("explicit"),
+        "explicit-root".into(),
+    )];
+    config.generation_schema = "explicit-generation".into();
+    config.vc_schema = "explicit-vc".into();
+    config.discharge_policy.computation_limit.max_steps = 37;
+    config.logic_profile = LogicProfile::try_new(
+        "explicit-smt",
+        LogicFragment::SmtLibUninterpreted,
+        EqualitySupport::Unsupported,
+        QuantifierPolicy::PropositionalOnly,
+        SoftTypeStrategy::BackendSorts,
+        NativePropertySupport::Unsupported,
+        [ConcreteFormat::SmtLib].into_iter().collect(),
+    )
+    .unwrap();
+    config.concrete_format = ConcreteFormat::SmtLib;
+    config.verifier_policy = VerifierPolicy::interactive();
+    config.witness_path_prefix = "proof-witnesses/explicit".into();
+    config.main_path = "explicit.mizir.json".into();
+    config.output_parent = "explicit-artifacts".into();
+    for (mut actual_config, config) in [
+        (
+            StageConfig::source_theorem(vec![]),
+            snapshot_stage_settings(),
+        ),
+        (config.clone(), config),
+    ] {
+        // Expected descriptors use the independent manual recipe, not the root's stage loop.
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(config.artifact_roots.clone())
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation(
+                config.generation_schema.clone(),
+                config.vc_schema.clone(),
+            )
+            .register_source_theorem_vc_discharge(config.discharge_policy.clone())
+            .register_source_theorem_atp_solve(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+            )
+            .unwrap()
+            .register_source_theorem_candidate_check_with_witness_files(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+                config.verifier_policy.clone(),
+                config.witness_path_prefix.clone(),
+            )
+            .unwrap()
+            .register_source_theorem_artifact_commit(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+                config.verifier_policy.clone(),
+                (
+                    config.witness_path_prefix.clone(),
+                    config.main_path.clone(),
+                    config.output_parent.clone(),
+                ),
+            )
+            .unwrap();
+        let expected = builder.build().unwrap();
+        let descriptors = expected.descriptors().collect::<Vec<_>>();
+        for (index, descriptor) in descriptors.iter().enumerate() {
+            actual_config.through = *descriptor.phases.last().unwrap();
+            let actual = assemble_registry(&actual_config).unwrap();
+            assert_eq!(
+                actual.descriptors().collect::<Vec<_>>(),
+                descriptors[..=index]
+            );
+        }
+    }
+}
+
+#[test]
+fn stage_root_rejects_unsupported_cutoffs_and_invalid_publication_paths() {
+    for cutoff in [
+        PipelinePhase::PackageResolve,
+        PipelinePhase::BackendRun,
+        PipelinePhase::DocumentationExtract,
+    ] {
+        let mut config = snapshot_stage_settings();
+        config.through = cutoff;
+        assert!(
+            assemble_registry(&config)
+                .err()
+                .unwrap()
+                .contains("unsupported source pipeline cutoff")
+        );
+    }
+    for (witness, main, output, error) in [
+        (
+            "elsewhere",
+            "main.mizir.json",
+            "artifacts",
+            "witness path prefix",
+        ),
+        (
+            "proof-witnesses/../escape",
+            "main.mizir.json",
+            "artifacts",
+            "witness path prefix",
+        ),
+        (
+            "proof-witnesses/snapshot",
+            "main.json",
+            "artifacts",
+            "artifact main path",
+        ),
+        (
+            "proof-witnesses/snapshot",
+            "../main.mizir.json",
+            "artifacts",
+            "artifact main path",
+        ),
+        (
+            "proof-witnesses/snapshot",
+            "main.mizir.json",
+            "../escape",
+            "artifact output parent",
+        ),
+    ] {
+        let mut config = snapshot_stage_settings();
+        config.witness_path_prefix = witness.into();
+        config.main_path = main.into();
+        config.output_parent = output.into();
+        assert!(assemble_registry(&config).err().unwrap().contains(error));
+    }
+}
+
+fn snapshot_stage_settings() -> StageConfig {
+    use mizar_driver::facade::*;
+    StageConfig {
+        through: PipelinePhase::ArtifactCommit,
+        artifact_roots: vec![],
+        generation_schema: "snapshot-generation-v1".into(),
+        vc_schema: "snapshot-vc-v1".into(),
+        discharge_policy: Default::default(),
+        logic_profile: LogicProfile::try_new(
+            "snapshot-native",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap(),
+        concrete_format: ConcreteFormat::Tptp,
+        verifier_policy: Default::default(),
+        witness_path_prefix: "proof-witnesses/snapshot".into(),
+        main_path: "main.mizir.json".into(),
+        output_parent: "artifacts".into(),
+    }
+}
 
 #[test]
 fn phase_service_table_covers_pipeline_phases_with_classified_gaps() {

@@ -18,13 +18,28 @@ fn import_discovery_preserves_legacy_submit_and_supplied_overlay_precedence() {
         let mut driver = fixture.scheduled_driver();
         if mode == "legacy" {
             let error = driver
-                .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+                .submit(
+                    request,
+                    &fixture.ids,
+                    &SnapshotRegistry::new(),
+                    input,
+                    Default::default(),
+                )
                 .unwrap_err();
             assert!(matches!(error, DriverSubmitError::TaskGraph { .. }));
             continue;
         }
         let submission = driver
-            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         let graph = submission.task_graph.as_ref().unwrap();
         let main = fixture.task(TaskKind::Frontend, "main");
@@ -143,23 +158,36 @@ fn import_discovered_native_index_preserves_captured_import_runs_and_original_ba
             if !indexed {
                 reference = Some(
                     driver
-                        .submit_captured_with_import_discovery(
+                        .submit_captured(
                             session.clone(),
                             &ids,
                             &snapshots,
                             input,
+                            SubmitOptions {
+                                discover_imports: true,
+                                ..Default::default()
+                            },
                         )
                         .unwrap(),
                 );
                 continue;
             }
             let (submission, index) = driver
-                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                .submit_captured(
                     session.clone(),
                     &ids,
                     &snapshots,
                     input,
+                    SubmitOptions {
+                        discover_imports: true,
+                        diagnostic_index: Some(DiagnosticIndexMode::Native),
+                        ..Default::default()
+                    },
                 )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                })
                 .unwrap();
             assert_eq!(submission, reference.take().unwrap());
             let graph = submission.task_graph.as_ref().unwrap();
@@ -380,15 +408,34 @@ fn import_discovered_native_index_preserves_discovery_failure_and_supplied_overl
                 _ => ModuleDependencyOverlay::unavailable(),
             };
             let result = if indexed {
-                driver.submit_captured_with_import_discovery_and_native_diagnostic_index(
-                    session.clone(),
-                    &ids,
-                    &snapshots,
-                    input,
-                )
+                driver
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            discover_imports: true,
+                            diagnostic_index: Some(DiagnosticIndexMode::Native),
+                            ..Default::default()
+                        },
+                    )
+                    .map(|mut submission| {
+                        let index = submission.diagnostic_index.take();
+                        (submission, index)
+                    })
             } else {
                 driver
-                    .submit_captured_with_import_discovery(session.clone(), &ids, &snapshots, input)
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            discover_imports: true,
+                            ..Default::default()
+                        },
+                    )
                     .map(|submission| (submission, None))
             };
             if !indexed {
@@ -505,15 +552,34 @@ fn import_discovered_native_index_preserves_native_eligibility_currentness_and_e
                 ModuleDependencyOverlay::unavailable()
             };
             let result = if indexed {
-                driver.submit_captured_with_import_discovery_and_native_diagnostic_index(
-                    session.clone(),
-                    &ids,
-                    registry,
-                    input,
-                )
+                driver
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        registry,
+                        input,
+                        SubmitOptions {
+                            discover_imports: true,
+                            diagnostic_index: Some(DiagnosticIndexMode::Native),
+                            ..Default::default()
+                        },
+                    )
+                    .map(|mut submission| {
+                        let index = submission.diagnostic_index.take();
+                        (submission, index)
+                    })
             } else {
                 driver
-                    .submit_captured_with_import_discovery(session.clone(), &ids, registry, input)
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        registry,
+                        input,
+                        SubmitOptions {
+                            discover_imports: true,
+                            ..Default::default()
+                        },
+                    )
                     .map(|submission| (submission, None))
             };
             if !indexed {

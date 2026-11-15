@@ -612,9 +612,21 @@ impl Server {
         };
         use mizar_driver::registry::PhaseStatus;
         let (submission, index) = driver
-            .submit_captured_with_import_discovery_and_native_diagnostic_index(
-                session, allocator, snapshots, input,
-            )?;
+            .submit_captured(
+                session,
+                allocator,
+                snapshots,
+                input,
+                mizar_driver::driver::SubmitOptions {
+                    discover_imports: true,
+                    diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                    ..Default::default()
+                },
+            )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })?;
         let notifications = (|| {
             if self.initialized.is_none() || self.shutdown || self.exit_code.is_some() {
                 return None;
@@ -2398,15 +2410,25 @@ mod tests {
                 input.dependency_overlay = ModuleDependencyOverlay::complete(vec![]);
                 let result = match route {
                     "ordinary" => driver
-                        .submit_captured(session.clone(), &ids, registry, input)
+                        .submit_captured(session.clone(), &ids, registry, input, Default::default())
                         .map(|s| (s, None)),
                     "index" => driver
-                        .submit_captured_with_native_diagnostic_index(
+                        .submit_captured(
                             session.clone(),
                             &ids,
                             registry,
                             input,
+                            mizar_driver::driver::SubmitOptions {
+                                diagnostic_index: Some(
+                                    mizar_driver::driver::DiagnosticIndexMode::Native,
+                                ),
+                                ..Default::default()
+                            },
                         )
+                        .map(|mut submission| {
+                            let index = submission.diagnostic_index.take();
+                            (submission, index)
+                        })
                         .map(|(s, index)| {
                             assert_eq!(
                                 index.is_some(),
@@ -2838,16 +2860,30 @@ mod tests {
         let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (mut ordinary_driver, _) = drivers();
         let ordinary = ordinary_driver
-            .submit_captured(session.clone(), &ids, &snapshots, input())
-            .unwrap();
-        let (mut indexed_driver, _) = drivers();
-        let (_, index) = indexed_driver
-            .submit_captured_with_native_diagnostic_index(
+            .submit_captured(
                 session.clone(),
                 &ids,
                 &snapshots,
                 input(),
+                Default::default(),
             )
+            .unwrap();
+        let (mut indexed_driver, _) = drivers();
+        let (_, index) = indexed_driver
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input(),
+                mizar_driver::driver::SubmitOptions {
+                    diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                    ..Default::default()
+                },
+            )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })
             .unwrap();
         let index = index.unwrap();
         let (mut driver, _) = drivers();
@@ -2921,7 +2957,13 @@ mod tests {
         let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (mut ordinary_driver, _) = drivers();
         let ordinary = ordinary_driver
-            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input(),
+                Default::default(),
+            )
             .unwrap();
         let uri = server.documents.keys().next().unwrap().clone();
         let original = server.document(&uri).unwrap().1.to_owned();
@@ -2978,7 +3020,7 @@ mod tests {
             if mode == "invalid-registry" {
                 let (mut ordinary_driver, _) = drivers();
                 let expected = ordinary_driver
-                    .submit_captured(session.clone(), &ids, registry, input())
+                    .submit_captured(session.clone(), &ids, registry, input(), Default::default())
                     .unwrap_err();
                 assert!(matches!(
                     expected,
@@ -3010,7 +3052,13 @@ mod tests {
         let (session, input, drivers) = native_wire_fixture(&mut server, &ids, &snapshots);
         let (mut ordinary_driver, _) = drivers();
         let ordinary = ordinary_driver
-            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input(),
+                Default::default(),
+            )
             .unwrap();
         let mut complete_prefix = None;
         for mode in ["header", "body", "flush", "obsolete"] {
@@ -3946,7 +3994,13 @@ mod tests {
             let (mut ordinary_driver, owner) = drivers();
             owner.register_current_snapshot(session.captured().snapshot().id);
             let ordinary = ordinary_driver
-                .submit_captured(session.clone(), &ids, &snapshots, input())
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    input(),
+                    Default::default(),
+                )
                 .unwrap();
             let diagnostics = vec![
                 json!({"range": {"start": {"line": 0, "character": 9}, "end": {"line": 0, "character": 12}},
@@ -4096,7 +4150,13 @@ mod tests {
                 let (mut ordinary_driver, owner) = drivers();
                 owner.register_current_snapshot(session.captured().snapshot().id);
                 let ordinary = ordinary_driver
-                    .submit_captured(session.clone(), &ids, &snapshots, input())
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        input(),
+                        Default::default(),
+                    )
                     .unwrap();
                 // Equal raw tuples remain viable through the old API, even on another Server.
                 let (mut old_driver, owner) = drivers();
@@ -4337,8 +4397,13 @@ mod tests {
                 (driver, owner)
             };
             let (mut ordinary_driver, _) = make_driver();
-            let ordinary =
-                ordinary_driver.submit_captured(session.clone(), &ids, registry, input());
+            let ordinary = ordinary_driver.submit_captured(
+                session.clone(),
+                &ids,
+                registry,
+                input(),
+                Default::default(),
+            );
             let (mut driver, owner) = make_driver();
             let mut writer = NativeWireWriter {
                 fail: (mode == "flush").then_some("flush"),
@@ -4486,7 +4551,13 @@ mod tests {
         let (mut ordinary_driver, owner) = drivers();
         owner.register_current_snapshot(session.captured().snapshot().id);
         let ordinary = ordinary_driver
-            .submit_captured(session.clone(), &ids, &snapshots, input())
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                input(),
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(ordinary.build_plan.as_ref(), Some(&plan));
         assert_eq!(ordinary.module_index.as_ref(), Some(&index));
@@ -4608,12 +4679,21 @@ mod tests {
             let (mut reference_driver, reference_owner) = drivers();
             reference_owner.register_current_snapshot(snapshot);
             let (expected_submission, index) = reference_driver
-                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                .submit_captured(
                     session.clone(),
                     &ids,
                     &snapshots,
                     discovered_input(),
+                    mizar_driver::driver::SubmitOptions {
+                        discover_imports: true,
+                        diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                        ..Default::default()
+                    },
                 )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                })
                 .unwrap();
             let graph = expected_submission.task_graph.as_ref().unwrap();
             let frontend = |name| {
@@ -4735,12 +4815,21 @@ mod tests {
             let (mut reference, owner) = drivers();
             owner.register_current_snapshot(session.captured().snapshot().id);
             let expected = reference
-                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                .submit_captured(
                     session.clone(),
                     &ids,
                     &snapshots,
                     submit_input(),
-                );
+                    mizar_driver::driver::SubmitOptions {
+                        discover_imports: true,
+                        diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                        ..Default::default()
+                    },
+                )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                });
             let (mut driver, owner) = drivers();
             owner.register_current_snapshot(session.captured().snapshot().id);
             let actual = server.submit_native_frontend_diagnostics(
@@ -4837,12 +4926,21 @@ mod tests {
             let (mut reference, owner) = drivers();
             owner.register_current_snapshot(snapshot);
             let expected = reference
-                .submit_captured_with_import_discovery_and_native_diagnostic_index(
+                .submit_captured(
                     session.clone(),
                     &ids,
                     &snapshots,
                     submit_input(),
-                );
+                    mizar_driver::driver::SubmitOptions {
+                        discover_imports: true,
+                        diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                        ..Default::default()
+                    },
+                )
+                .map(|mut submission| {
+                    let index = submission.diagnostic_index.take();
+                    (submission, index)
+                });
             let (mut driver, owner) = drivers();
             owner.register_current_snapshot(snapshot);
             if matches!(mode, "raw-reopened" | "originating-reopened") {
@@ -4911,10 +5009,6 @@ mod tests {
 #[cfg(test)]
 pub(super) mod full_snapshot_registry_a {
     use super::*;
-    use mizar_atp::problem::{
-        ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
-        QuantifierPolicy, SoftTypeStrategy,
-    };
     use mizar_build::{
         module_index::{
             ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage,
@@ -5106,13 +5200,15 @@ pub(super) mod full_snapshot_registry_a {
                 server.handle_message(notification("textDocument/didOpen", json!({"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":raw[usize::from(module == "leaf") ]}})));
                 (DiskSourceLoader::new(&package_root), PackageId::new("alpha"), uri)
             }).collect::<Vec<_>>();
-            let builder = complete_registry_builder();
+            let registry = mizar_driver::facade::assemble_registry(
+                &mizar_driver::facade::StageConfig::source_theorem(vec![]),
+            )
+            .unwrap();
             let publisher = Arc::new(PhaseOutputPublisher::new(
                 Arc::new(IrStorageService::new()),
                 Arc::new(SnapshotHandleRegistry::new()),
             ));
-            let driver = CompilerDriver::new(builder.build().unwrap())
-                .with_output_publisher(publisher.clone());
+            let driver = CompilerDriver::new(registry).with_output_publisher(publisher.clone());
             Self {
                 server,
                 ids,
@@ -5262,63 +5358,6 @@ pub(super) mod full_snapshot_registry_a {
     }
     fn notification(method: &str, params: Value) -> Value {
         json!({"jsonrpc":"2.0","method":method,"params":params})
-    }
-
-    fn complete_registry_builder() -> PhaseRegistryBuilder {
-        let profile = LogicProfile::try_new(
-            "snapshot-native",
-            LogicFragment::Fof,
-            EqualitySupport::Supported,
-            QuantifierPolicy::FirstOrder,
-            SoftTypeStrategy::ScopedGuardPredicates,
-            NativePropertySupport::Supported,
-            [ConcreteFormat::Tptp].into_iter().collect(),
-        )
-        .unwrap();
-        let mut builder = PhaseRegistryBuilder::new();
-        builder
-            .register_source_load()
-            .register_frontend(vec![])
-            .register_source_theorem_module_resolver()
-            .register_source_theorem_signature_collection()
-            .register_source_theorem_type_checking()
-            .register_source_theorem_registration_resolution()
-            .register_source_theorem_overload_resolution()
-            .register_source_theorem_elaboration()
-            .register_source_theorem_algorithm_preparation()
-            .register_source_theorem_vc_generation(
-                "snapshot-generation-v1".into(),
-                "snapshot-vc-v1".into(),
-            )
-            .register_source_theorem_vc_discharge(Default::default())
-            .register_source_theorem_atp_solve(
-                Default::default(),
-                profile.clone(),
-                ConcreteFormat::Tptp,
-            )
-            .unwrap()
-            .register_source_theorem_candidate_check_with_witness_files(
-                Default::default(),
-                profile.clone(),
-                ConcreteFormat::Tptp,
-                Default::default(),
-                "proof-witnesses/snapshot".into(),
-            )
-            .unwrap();
-        builder
-            .register_source_theorem_artifact_commit(
-                Default::default(),
-                profile,
-                ConcreteFormat::Tptp,
-                Default::default(),
-                (
-                    "proof-witnesses/snapshot".into(),
-                    "main.mizir.json".into(),
-                    "artifacts".into(),
-                ),
-            )
-            .unwrap();
-        builder
     }
 
     #[test]
@@ -5822,11 +5861,15 @@ pub(super) mod full_snapshot_registry_b {
         );
         let newer_submission = fixture
             .driver
-            .submit_captured_with_import_discovery(
+            .submit_captured(
                 newer_session,
                 &fixture.ids,
                 &fixture.snapshots,
                 fixture.driver_input(),
+                mizar_driver::driver::SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
             )
             .unwrap();
         assert_eq!(

@@ -145,11 +145,15 @@ fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_wor
                 allow_frontend(&publisher, &fixture.task(TaskKind::SourceLoad, module).unit);
             }
             let submission = driver
-                .submit_with_import_discovery(
+                .submit(
                     request,
                     &fixture.ids,
                     &SnapshotRegistry::new(),
                     input,
+                    SubmitOptions {
+                        discover_imports: true,
+                        ..Default::default()
+                    },
                 )
                 .unwrap();
             assert_eq!(
@@ -413,6 +417,7 @@ fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_wor
                             &fixture.ids,
                             &SnapshotRegistry::new(),
                             old_input,
+                            Default::default(),
                         )
                         .unwrap();
                     assert_eq!(
@@ -465,7 +470,16 @@ fn discovered_source_import_cycles_fail_graph_validation_without_overlay_fallbac
         );
         let mut driver = fixture.scheduled_driver();
         let error = driver
-            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap_err();
         let DriverSubmitError::TaskGraph {
             session,
@@ -511,7 +525,16 @@ fn discovered_workspace_leaf_orders_frontend_without_semantic_coverage() {
     input.worker_count = 4;
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            SubmitOptions {
+                discover_imports: true,
+                ..Default::default()
+            },
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -615,7 +638,16 @@ fn discovered_imports_order_intermediates_branches_and_leave_independent_modules
         input.worker_count = 4;
         let mut driver = fixture.scheduled_driver();
         let submission = driver
-            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -714,7 +746,16 @@ fn discovered_imports_discard_all_edges_on_untrusted_source_input() {
         }
         let mut driver = fixture.scheduled_driver();
         let error = driver
-            .submit_with_import_discovery(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap_err();
         let DriverSubmitError::TaskGraph {
             session,

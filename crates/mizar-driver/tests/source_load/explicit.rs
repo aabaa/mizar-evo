@@ -93,7 +93,7 @@ fn explicit_native_lock_content_association_preserves_real_source_consumers() {
             builder.register_frontend(vec![]);
             let mut driver = CompilerDriver::new(builder.build().unwrap());
             let submission = driver
-                .submit_captured_with_import_discovery(
+                .submit_captured(
                     session,
                     &ids,
                     &snapshots,
@@ -103,6 +103,10 @@ fn explicit_native_lock_content_association_preserves_real_source_consumers() {
                         input.lockfile.clone(),
                         input.source_layout.clone(),
                     ),
+                    SubmitOptions {
+                        discover_imports: true,
+                        ..Default::default()
+                    },
                 )
                 .unwrap();
             let captured = submission.session.captured();
@@ -452,7 +456,7 @@ fn explicit_native_config_content_association_preserves_real_source_consumers() 
             builder.register_frontend(vec![]);
             let mut driver = CompilerDriver::new(builder.build().unwrap());
             let submission = driver
-                .submit_captured_with_import_discovery(
+                .submit_captured(
                     session,
                     &ids,
                     &snapshots,
@@ -462,6 +466,10 @@ fn explicit_native_config_content_association_preserves_real_source_consumers() 
                         input.lockfile.clone(),
                         input.source_layout.clone(),
                     ),
+                    SubmitOptions {
+                        discover_imports: true,
+                        ..Default::default()
+                    },
                 )
                 .unwrap();
             let captured = submission.session.captured();

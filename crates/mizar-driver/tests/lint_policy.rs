@@ -240,9 +240,45 @@ fn driver_lib_exposes_only_completed_modules() {
     let source = read_to_string(&lib_rs);
     let mut violations = Vec::new();
 
+    // The approved inline facade contains only pinned re-exports; keep the root inventory strict.
+    let start = source.find("pub mod facade {").expect("completed facade");
+    let mut depth = 0;
+    let end = source[start..]
+        .char_indices()
+        .find_map(|(offset, ch)| {
+            match ch {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(start + offset + 1);
+                    }
+                }
+                _ => {}
+            }
+            None
+        })
+        .expect("closed facade");
+    assert!(
+        source[..start]
+            .rsplit('\n')
+            .next()
+            .unwrap()
+            .trim()
+            .is_empty()
+    );
+    assert!(source[end..].split('\n').next().unwrap().trim().is_empty());
+    let facade = &source[start..end];
+    assert!(
+        !lib_has_unexpected_code_line(facade),
+        "unplanned facade item"
+    );
+    let first = source[..start].lines().count();
+    let facade_lines = first..first + facade.lines().count();
+
     for (index, line) in source.lines().enumerate() {
         let trimmed = line.trim();
-        if lib_has_unexpected_code_line(trimmed) {
+        if !facade_lines.contains(&index) && lib_has_unexpected_code_line(trimmed) {
             violations.push(format!("src/lib.rs:{}", index + 1));
         }
     }
@@ -317,6 +353,8 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "pub fn run() {}",
         "pub use frontend_adapter::*;",
         "pub use frontend_adapter::unplanned_codec;",
+        "pub mod facade { pub fn unplanned() {} }",
+        "pub mod facade { pub use crate::driver::*; }",
     ] {
         assert!(lib_has_unexpected_code_line(line), "{line}");
     }
@@ -680,6 +718,26 @@ fn public_enum_name(line: &str) -> Option<&str> {
 }
 
 fn lib_has_unexpected_code_line(line: &str) -> bool {
+    if line.starts_with("pub mod facade {") {
+        let compact = line
+            .chars()
+            .filter(|ch| !ch.is_whitespace())
+            .collect::<String>();
+        return compact
+            != concat!(
+                "pubmodfacade{",
+                "pubusecrate::driver::{BuildSubmission,CompilerDriver,DiagnosticIndexMode,DriverSubmitError,DriverSubmitInput,NativeCacheMode,NativeCacheOptions,SubmitOptions,WatchSubmission,WatchSubmitControl,WatchSubmitError,WatchSubmitFailure,};",
+                "pubusecrate::registry::{PhaseRegistry,PhaseRegistryBuilder,StageConfig,assemble_registry,};",
+                "pubusecrate::request::{BatchInvocation,BatchRequest,BuildLaneId,BuildProfile,BuildRequest,BuildRequestDraft,BuildRequestGeneration,BuildRequestOrigin,BuildSession,BuildTargets,CapturedSnapshot,DependencyInputSet,LspFocus,LspPriority,LspRequest,PendingBuildRequest,PublicationDecision,SourceInputSet,VerifierConfigInput,WatchRequest,};",
+                "pubusemizar_atp::problem::{ConcreteFormat,EqualitySupport,LogicFragment,LogicProfile,NativePropertySupport,QuantifierPolicy,SoftTypeStrategy,};",
+                "pubusemizar_build::task_graph::PipelinePhase;",
+                "pubusemizar_cache::cache_store::CacheStoreRoot;",
+                "pubusemizar_ir::{cache_adapter::IrCacheAdapter,publisher::PhaseOutputPublisher};",
+                "pubusemizar_proof::policy::VerifierPolicy;",
+                "pubusemizar_vc::{discharge::DischargePolicy,vc_ir::{GenerationSchemaVersion,VcSchemaVersion},};",
+                "}",
+            );
+    }
     let ignored_prefixes = ["//", "#![", "#[", "//!"];
     line != "pub mod request;"
         && line != "pub mod cli;"

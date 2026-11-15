@@ -234,7 +234,7 @@ fn native_theorem_summary_publication_seals_whole_genuine_summary_and_bytes() {
                 let (_, submit) = fixture.submit_request(vec![], vec![]);
                 let replay = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(replay_owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 assert_eq!(replay.session.captured(), session.captured());
                 let replay_run = replay.scheduler_run.as_ref().unwrap();

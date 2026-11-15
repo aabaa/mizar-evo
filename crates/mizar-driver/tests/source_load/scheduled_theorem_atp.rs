@@ -108,7 +108,7 @@ fn scheduled_theorem_atp_solve_matches_genuine_publication() {
                 )];
                 let baseline_submission = CompilerDriver::new(baseline_builder.build().unwrap())
                     .with_output_publisher(baseline.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&baseline_submission, ids);
                 let outputs = baseline_submission
@@ -260,7 +260,7 @@ fn scheduled_theorem_atp_solve_matches_genuine_publication() {
                 fixture.write(&[0xff]);
                 fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
                 let submission = driver
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (actual_inputs, _) = native_disk_lookup_context(&submission, ids);
                 let graph = submission.task_graph.as_ref().unwrap();
@@ -553,7 +553,7 @@ fn scheduled_theorem_atp_solve_preserves_resource_refusals() {
                 )];
                 CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner)
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap()
             };
             let outputs = |submission: &mizar_driver::driver::BuildSubmission| {

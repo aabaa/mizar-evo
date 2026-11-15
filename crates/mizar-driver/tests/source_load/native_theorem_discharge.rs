@@ -733,7 +733,7 @@ fn native_theorem_discharge_storage_replays_genuine_outputs() {
         builder.register_source_load().register_frontend(vec![]);
         let submission = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, original) = native_disk_lookup_context(&submission, &ids);
         let parent = submission
@@ -1315,7 +1315,13 @@ fn native_theorem_discharge_publication_preserves_genuine_outputs() {
                     let (_, submit) = fixture.submit_request(vec![], vec![]);
                     let submission = CompilerDriver::new(builder.build().unwrap())
                         .with_output_publisher(owner.clone())
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     let (inputs, original) = native_disk_lookup_context(&submission, ids);
                     let outputs = submission
@@ -1694,7 +1700,7 @@ fn native_theorem_discharge_publication_preserves_refusals() {
                 let (_, submit) = fixture.submit_request(vec![], vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission

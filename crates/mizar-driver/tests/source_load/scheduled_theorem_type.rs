@@ -133,7 +133,13 @@ fn scheduled_theorem_type_checking_matches_genuine_publication() {
                         CompletionOrder::Reverse
                     };
                     let submission = driver
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     assert_eq!(
                         submission.status,

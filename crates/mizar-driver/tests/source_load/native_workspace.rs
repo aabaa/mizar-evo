@@ -80,7 +80,13 @@ fn native_workspace_inputs_feed_protected_prefix_like_explicit_clean_inputs() {
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -286,7 +292,16 @@ fn native_workspace_inputs_drive_listed_cross_package_import_discovery() {
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured_with_import_discovery(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         let graph = submission.task_graph.as_ref().unwrap();
         let run = submission.scheduler_run.as_ref().unwrap();

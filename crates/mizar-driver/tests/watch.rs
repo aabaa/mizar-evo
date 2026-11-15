@@ -60,6 +60,7 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let first_snapshot = first.submission.session.captured().snapshot().id;
@@ -80,6 +81,7 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
             &snapshots,
             submit_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect("changed watch snapshot resubmits");
     let second_snapshot = second.submission.session.captured().snapshot().id;
@@ -133,6 +135,7 @@ fn same_snapshot_watch_generation_supersedes_replay_without_ir_replacement() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let second = driver
@@ -142,6 +145,7 @@ fn same_snapshot_watch_generation_supersedes_replay_without_ir_replacement() {
             &snapshots,
             submit_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect("same snapshot generation resubmits");
 
@@ -174,6 +178,7 @@ fn omitted_previous_session_uses_lane_current_watch_session() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let second = driver
@@ -183,6 +188,7 @@ fn omitted_previous_session_uses_lane_current_watch_session() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("omitted previous session is derived from the lane current session");
 
@@ -216,6 +222,7 @@ fn same_snapshot_replacement_does_not_register_or_revive_publisher_state() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("initial watch submission succeeds without publisher");
     let second = driver
@@ -225,6 +232,7 @@ fn same_snapshot_replacement_does_not_register_or_revive_publisher_state() {
             &snapshots,
             submit_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect("same-snapshot watch generation resubmits");
     let snapshot = second.submission.session.captured().snapshot().id;
@@ -257,6 +265,7 @@ fn missing_watch_owner_seams_are_classified_without_fake_watcher_or_publisher() 
                 file_watcher: WatchOwnerSeam::Deferred,
                 lsp_bridge: WatchOwnerSeam::Unavailable,
             },
+            Default::default(),
         )
         .expect("missing non-critical owner seams are classified on result");
 
@@ -296,6 +305,7 @@ fn captured_submit_errors_supersede_previous_and_record_replacement() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let first_snapshot = first.submission.session.captured().snapshot().id;
@@ -307,6 +317,7 @@ fn captured_submit_errors_supersede_previous_and_record_replacement() {
             &snapshots,
             invalid_module_index_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect_err("module-index diagnostics are returned as a captured submit error");
     let WatchSubmitError::Submit(failure) = error else {
@@ -348,6 +359,7 @@ fn snapshot_capture_failure_does_not_supersede_previous_session() {
             &snapshots,
             submit_input(),
             watch_control(None, Some(&publisher)),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let mut invalid = watch_request(9, lane, BuildRequestGeneration::new(1));
@@ -360,6 +372,7 @@ fn snapshot_capture_failure_does_not_supersede_previous_session() {
             &snapshots,
             submit_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect_err("snapshot capture fails before supersession");
     let WatchSubmitError::Submit(failure) = error else {
@@ -389,13 +402,7 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
     let unknown = ids.next_session_id().unwrap();
     let mut unknown_driver = CompilerDriver::default();
     assert!(matches!(
-        unknown_driver.submit_watch_change(
-            watch_request(10, BuildLaneId::new(406), BuildRequestGeneration::new(0)),
-            &ids,
-            &snapshots,
-            submit_input(),
-            watch_control(Some(unknown), None),
-        ),
+        unknown_driver.submit_watch_change(watch_request(10, BuildLaneId::new(406), BuildRequestGeneration::new(0)), &ids, &snapshots, submit_input(), watch_control(Some(unknown), None), Default::default()),
         Err(WatchSubmitError::PreviousSessionUnknown { session }) if session == unknown
     ));
 
@@ -407,36 +414,31 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("previous watch submission succeeds");
     assert!(matches!(
-        lane_driver.submit_watch_change(
-            watch_request(
+        lane_driver.submit_watch_change(watch_request(
                 12,
                 BuildLaneId::new(408),
                 BuildRequestGeneration::new(1),
-            ),
-            &ids,
-            &snapshots,
-            submit_input(),
-            watch_control(Some(previous.submission.session.id()), None),
-        ),
+            ), &ids, &snapshots, submit_input(), watch_control(Some(previous.submission.session.id()), None), Default::default()),
         Err(WatchSubmitError::PreviousSessionLaneMismatch { session })
             if session == previous.submission.session.id()
     ));
 
     let mut batch_driver = CompilerDriver::default();
     let batch = batch_driver
-        .submit(batch_request(), &ids, &snapshots, submit_input())
-        .expect("batch submission succeeds");
-    assert!(matches!(
-        batch_driver.submit_watch_change(
-            watch_request(13, BuildLaneId::new(403), BuildRequestGeneration::new(1)),
+        .submit(
+            batch_request(),
             &ids,
             &snapshots,
             submit_input(),
-            watch_control(Some(batch.session.id()), None),
-        ),
+            Default::default(),
+        )
+        .expect("batch submission succeeds");
+    assert!(matches!(
+        batch_driver.submit_watch_change(watch_request(13, BuildLaneId::new(403), BuildRequestGeneration::new(1)), &ids, &snapshots, submit_input(), watch_control(Some(batch.session.id()), None), Default::default()),
         Err(WatchSubmitError::PreviousSessionNotWatch { session }) if session == batch.session.id()
     ));
 
@@ -448,20 +450,15 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("previous watch submission succeeds");
     assert!(matches!(
-        generation_driver.submit_watch_change(
-            watch_request(
+        generation_driver.submit_watch_change(watch_request(
                 15,
                 BuildLaneId::new(409),
                 BuildRequestGeneration::new(1),
-            ),
-            &ids,
-            &snapshots,
-            submit_input(),
-            watch_control(Some(previous.submission.session.id()), None),
-        ),
+            ), &ids, &snapshots, submit_input(), watch_control(Some(previous.submission.session.id()), None), Default::default()),
         Err(WatchSubmitError::NonMonotonicGeneration { session })
             if session == previous.submission.session.id()
     ));
@@ -474,6 +471,7 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("older watch submission succeeds");
     let current = not_current_driver
@@ -483,20 +481,15 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &snapshots,
             submit_input(),
             watch_control(Some(older.submission.session.id()), None),
+            Default::default(),
         )
         .expect("newer watch submission succeeds");
     assert!(matches!(
-        not_current_driver.submit_watch_change(
-            watch_request(
+        not_current_driver.submit_watch_change(watch_request(
                 23,
                 BuildLaneId::new(413),
                 BuildRequestGeneration::new(2),
-            ),
-            &ids,
-            &snapshots,
-            submit_input(),
-            watch_control(Some(older.submission.session.id()), None),
-        ),
+            ), &ids, &snapshots, submit_input(), watch_control(Some(older.submission.session.id()), None), Default::default()),
         Err(WatchSubmitError::PreviousSessionNotCurrent { session, current: lane_current })
             if session == older.submission.session.id() && lane_current == current.submission.session.id()
     ));
@@ -509,20 +502,15 @@ fn previous_watch_session_validation_rejects_wrong_session_inputs() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("current watch submission succeeds");
     assert!(matches!(
-        stale_driver.submit_watch_change(
-            watch_request(
+        stale_driver.submit_watch_change(watch_request(
                 25,
                 BuildLaneId::new(414),
                 BuildRequestGeneration::new(0),
-            ),
-            &ids,
-            &snapshots,
-            submit_input(),
-            watch_control(None, None),
-        ),
+            ), &ids, &snapshots, submit_input(), watch_control(None, None), Default::default()),
         Err(WatchSubmitError::NonMonotonicGeneration { session })
             if session == current.submission.session.id()
     ));
@@ -543,6 +531,7 @@ fn publisher_replacement_failure_is_reported_without_fake_output() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect("initial watch submission can proceed with missing publisher gap");
     let old_snapshot = first.submission.session.captured().snapshot().id;
@@ -554,6 +543,7 @@ fn publisher_replacement_failure_is_reported_without_fake_output() {
             &snapshots,
             submit_input(),
             watch_control(Some(first.submission.session.id()), Some(&publisher)),
+            Default::default(),
         )
         .expect("driver records publisher rejection in watch result");
 
@@ -578,6 +568,7 @@ fn non_watch_requests_are_rejected_before_driver_submission() {
             &snapshots,
             submit_input(),
             watch_control(None, None),
+            Default::default(),
         )
         .expect_err("batch request is not a watch change");
 

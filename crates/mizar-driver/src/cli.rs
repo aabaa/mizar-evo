@@ -369,7 +369,13 @@ where
         Err(output) => return output,
     };
 
-    match driver.submit(prepared.request, ids, snapshots, prepared.submit_input) {
+    match driver.submit(
+        prepared.request,
+        ids,
+        snapshots,
+        prepared.submit_input,
+        Default::default(),
+    ) {
         Ok(submission) => output_from_submission(&invocation, driver, &submission),
         Err(error) => output_from_submit_error(&invocation, driver, error),
     }

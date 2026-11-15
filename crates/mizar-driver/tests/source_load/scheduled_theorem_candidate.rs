@@ -130,7 +130,13 @@ fn scheduled_theorem_candidate_check_matches_genuine_publication() {
                         submissions.push(
                             CompilerDriver::new(builder.build().unwrap())
                                 .with_output_publisher(current.clone())
-                                .submit_captured(session.clone(), ids, snapshots, submit)
+                                .submit_captured(
+                                    session.clone(),
+                                    ids,
+                                    snapshots,
+                                    submit,
+                                    Default::default(),
+                                )
                                 .unwrap(),
                         );
                     }
@@ -783,7 +789,7 @@ fn scheduled_theorem_candidate_check_preserves_resource_refusals() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let refs = submission
@@ -1577,7 +1583,7 @@ fn scheduled_theorem_candidate_witness_files_preserve_pair_and_rights() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (source_inputs, original) = native_disk_lookup_context(&submission, ids);
                 let refs = submission

@@ -22,6 +22,131 @@ use catalog::{
     phases_are_contiguous, registry_query_identity_fingerprint,
 };
 
+/// Driver-owned composition settings for the existing source pipeline adapters.
+#[derive(Debug, Clone)]
+pub struct StageConfig {
+    pub through: PipelinePhase,
+    pub artifact_roots: Vec<(PackageId, PathBuf)>,
+    pub generation_schema: mizar_vc::vc_ir::GenerationSchemaVersion,
+    pub vc_schema: mizar_vc::vc_ir::VcSchemaVersion,
+    pub discharge_policy: mizar_vc::discharge::DischargePolicy,
+    pub logic_profile: mizar_atp::problem::LogicProfile,
+    pub concrete_format: mizar_atp::problem::ConcreteFormat,
+    pub verifier_policy: mizar_proof::policy::VerifierPolicy,
+    pub witness_path_prefix: String,
+    pub main_path: String,
+    pub output_parent: String,
+}
+
+impl StageConfig {
+    pub fn frontend(artifact_roots: Vec<(PackageId, PathBuf)>) -> Self {
+        Self {
+            through: PipelinePhase::Frontend,
+            ..Self::source_theorem(artifact_roots)
+        }
+    }
+
+    pub fn source_theorem(artifact_roots: Vec<(PackageId, PathBuf)>) -> Self {
+        use mizar_atp::problem::{
+            ConcreteFormat, EqualitySupport, LogicFragment, LogicProfile, NativePropertySupport,
+            QuantifierPolicy, SoftTypeStrategy,
+        };
+        Self {
+            through: PipelinePhase::ArtifactCommit,
+            artifact_roots,
+            generation_schema: "snapshot-generation-v1".into(),
+            vc_schema: "snapshot-vc-v1".into(),
+            discharge_policy: Default::default(),
+            logic_profile: LogicProfile::try_new(
+                "snapshot-native",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp].into_iter().collect(),
+            )
+            .expect("fixed source theorem profile is valid"),
+            concrete_format: ConcreteFormat::Tptp,
+            verifier_policy: Default::default(),
+            witness_path_prefix: "proof-witnesses/snapshot".into(),
+            main_path: "main.mizir.json".into(),
+            output_parent: "artifacts".into(),
+        }
+    }
+}
+
+/// Assemble only the existing source adapters up to the selected stage.
+pub fn assemble_registry(config: &StageConfig) -> Result<PhaseRegistry, String> {
+    use PipelinePhase::*;
+    let stages = [
+        SourceLoad,
+        Frontend,
+        ModuleResolve,
+        SignatureCollection,
+        TypeChecking,
+        RegistrationResolution,
+        OverloadResolution,
+        Elaboration,
+        AlgorithmPreparation,
+        VcGenerate,
+        VcDischarge,
+        AtpSolve,
+        KernelCheck,
+        ArtifactCommit,
+    ];
+    let cutoff = stages
+        .iter()
+        .position(|phase| *phase == config.through)
+        .ok_or_else(|| format!("unsupported source pipeline cutoff: {:?}", config.through))?;
+    let mut builder = PhaseRegistryBuilder::new();
+    for stage in &stages[..=cutoff] {
+        match stage {
+            SourceLoad => builder.register_source_load(),
+            Frontend => builder.register_frontend(config.artifact_roots.clone()),
+            ModuleResolve => builder.register_source_theorem_module_resolver(),
+            SignatureCollection => builder.register_source_theorem_signature_collection(),
+            TypeChecking => builder.register_source_theorem_type_checking(),
+            RegistrationResolution => builder.register_source_theorem_registration_resolution(),
+            OverloadResolution => builder.register_source_theorem_overload_resolution(),
+            Elaboration => builder.register_source_theorem_elaboration(),
+            AlgorithmPreparation => builder.register_source_theorem_algorithm_preparation(),
+            VcGenerate => builder.register_source_theorem_vc_generation(
+                config.generation_schema.clone(),
+                config.vc_schema.clone(),
+            ),
+            VcDischarge => {
+                builder.register_source_theorem_vc_discharge(config.discharge_policy.clone())
+            }
+            AtpSolve => builder.register_source_theorem_atp_solve(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+            )?,
+            KernelCheck => builder.register_source_theorem_candidate_check_with_witness_files(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+                config.verifier_policy.clone(),
+                config.witness_path_prefix.clone(),
+            )?,
+            ArtifactCommit => builder.register_source_theorem_artifact_commit(
+                config.discharge_policy.clone(),
+                config.logic_profile.clone(),
+                config.concrete_format,
+                config.verifier_policy.clone(),
+                (
+                    config.witness_path_prefix.clone(),
+                    config.main_path.clone(),
+                    config.output_parent.clone(),
+                ),
+            )?,
+            _ => unreachable!("source adapter stage list is fixed"),
+        };
+    }
+    builder.build().map_err(|error| error.to_string())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhaseDescriptor {
     pub service_name: String,

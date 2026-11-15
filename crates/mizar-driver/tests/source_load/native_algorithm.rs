@@ -77,7 +77,7 @@ fn native_algorithm_core_caller_preserves_genuine_outputs() {
                 builder.register_frontend(vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session, &ids, &snapshots, submit)
+                    .submit_captured(session, &ids, &snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
                 let parent = submission
@@ -721,7 +721,7 @@ fn native_algorithm_core_storage_replays_genuine_outputs() {
                 builder.register_frontend(vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session, &ids, &snapshots, submit)
+                    .submit_captured(session, &ids, &snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
                 let parent = submission
@@ -1365,7 +1365,7 @@ fn native_algorithm_core_publication_seals_genuine_core_and_streams() {
                 builder.register_frontend(vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session, &ids, &snapshots, submit)
+                    .submit_captured(session, &ids, &snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
                 let parent = submission
@@ -1876,7 +1876,7 @@ fn native_algorithm_vc_caller_preserves_genuine_raw_generation() {
             builder.register_frontend(vec![]);
             let submission = CompilerDriver::new(builder.build().unwrap())
                 .with_output_publisher(owner.clone())
-                .submit_captured(session, &ids, &snapshots, submit)
+                .submit_captured(session, &ids, &snapshots, submit, Default::default())
                 .unwrap();
             let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
             let parent = submission
@@ -2273,7 +2273,7 @@ fn native_algorithm_vc_storage_replays_genuine_graphs() {
         builder.register_frontend(vec![]);
         let submission = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
         let parent = submission
@@ -2868,7 +2868,7 @@ fn native_algorithm_vc_publication_seals_genuine_graph_and_streams() {
         builder.register_frontend(vec![]);
         let submission = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
         let parent = submission
@@ -3474,7 +3474,7 @@ fn native_algorithm_module_summary_candidate_preserves_captured_projection_and_r
             let mut registry = PhaseRegistryBuilder::new();
             registry.register_source_load();
             let submission = CompilerDriver::new(registry.build().unwrap())
-                .submit_captured(session, &ids, &snapshots, submit)
+                .submit_captured(session, &ids, &snapshots, submit, Default::default())
                 .unwrap();
             let (inputs, _) = native_disk_lookup_context(&submission, &ids);
             let module = BuildModuleId::new(PackageId::new("alpha"), ModulePath::new("main"));
@@ -3811,7 +3811,7 @@ fn native_algorithm_summary_frontend_caller_preserves_genuine_results_and_refusa
         registry.register_frontend(vec![]);
         let submission = CompilerDriver::new(registry.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
         let handles: Vec<_> = submission
@@ -4364,7 +4364,7 @@ fn native_algorithm_summary_publication_preserves_real_bytes_and_refusals() {
         registry.register_frontend(vec![]);
         let submission = CompilerDriver::new(registry.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, &ids, &snapshots, submit)
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&submission, &ids);
         let handles: Vec<_> = submission

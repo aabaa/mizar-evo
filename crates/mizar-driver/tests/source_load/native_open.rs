@@ -417,7 +417,16 @@ fn native_open_edits_match_independent_clean_real_prefixes_across_replay_control
             );
         }
         let submission = driver
-            .submit_captured_with_import_discovery(session, &ids, &snapshots, input)
+            .submit_captured(
+                session,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -661,7 +670,7 @@ fn native_open_edits_match_independent_clean_real_prefixes_across_replay_control
                 }
                 let (unused, obsolete_input) = obsolete.take().unwrap();
                 let obsolete = driver
-                    .submit_captured(unused, &ids, &snapshots, obsolete_input)
+                    .submit_captured(unused, &ids, &snapshots, obsolete_input, Default::default())
                     .unwrap();
                 assert_eq!(
                     obsolete.status,
@@ -769,7 +778,13 @@ fn native_open_buffer_input_feeds_protected_prefix_like_explicit_clean_input() {
         current.lockfile = input.lockfile.clone();
         current.source_layout = input.source_layout.clone();
         let submission = driver
-            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.status,

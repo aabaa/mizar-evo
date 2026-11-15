@@ -66,6 +66,8 @@ exception を記録しない:
 - `WatchSubmitError`;
 - `DriverSubmissionStatus`;
 - `DriverCancelReason`;
+- `DiagnosticIndexMode`;
+- `NativeCacheMode`;
 - `DriverSubmitError`。
 
 Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
@@ -97,7 +99,7 @@ struct CompilerDriver {
 }
 
 impl CompilerDriver {
-    fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput)
+    fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput, options: SubmitOptions)
         -> Result<BuildSubmission, DriverSubmitError>;
 
     fn submit_watch_change(
@@ -105,6 +107,7 @@ impl CompilerDriver {
         request: BuildRequestDraft,
         input: DriverSubmitInput,
         control: WatchSubmitControl,
+        options: SubmitOptions,
     )
         -> Result<WatchSubmission, WatchSubmitError>;
 
@@ -137,6 +140,11 @@ failure と再解釈しない。
 protocol-agnostic な event stream を返す。driver は replay 可能な session event を保存するが、
 CLI-rendered diagnostics、LSP payload、artifact publication token、scheduler synthetic output を
 event payload として公開してはならない。
+
+## Submission options
+
+`submit`、`submit_captured`、`submit_watch_change` は共通の `SubmitOptions` を取り、既定値は通常提出を保つ。`discover_imports`、`diagnostic_index`、`native_cache`、`retained_frontend` が既存経路を選ぶ。`NativeCacheOptions` は policy/store を借用し、`NativeCacheMode::{ReadOnly, ConfiguredReadOnly, PersistentSource, PersistentPrefix}` を選択する。診断は `DiagnosticIndexMode::{Disk, Native}` で選び、`BuildSubmission.diagnostic_index` に返す。
+Draft は既定または discovery、watch は既定だけを許す。cache なしの captured は既定、discovery、Disk 診断、native 診断、discovery と native 診断を許す。cache ありは cache mode のみを許し、ReadOnly だけ保持 oracle を併用できる。他の組合せは allocation/capture や lane 変更前に `InvalidSubmitOptions` を返す。有効な option の既存 error 優先順位は保持する。
 
 ## Submit Input
 
@@ -335,7 +343,7 @@ driver は diagnostic batch と readiness event を transport してよい。dia
 ## Current native Disk diagnostic index
 
 `validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` は全 Disk 制約を保ち、[共有 native-session 条件](#current-native-diagnostic-index)へ委譲する。この Disk 専用 API は OpenBuffer/Generated capture を引き続き非対応とし、未知・非対応・obsolete は共有条件に従い Err とする。
-`submit_captured_with_diagnostic_index(session, allocator, snapshots, input) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` は既存 submit_captured をそのまま実行し、その元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。この Disk 専用 method は Open/Generated capture を除外し、overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
+`submit_captured` の `diagnostic_index: Some(DiagnosticIndexMode::Disk)` はその元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。この Disk 専用 method は Open/Generated capture を除外し、overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
 
 ## Testing Requirements
 
@@ -376,14 +384,14 @@ prefix の例外経路では service がない task の ValidatedHit を Unavail
 
 ## Import-discovered native diagnostic index
 
-`submit_captured_with_import_discovery_and_native_diagnostic_index<A: SessionIdAllocator, L: SourceLayoutProvider>(&mut self, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>) -> Result<(BuildSubmission, Option<BuildDiagnosticIndex>), DriverSubmitError>` は既存 submit_captured_with_import_discovery を一度呼び、既存 native guard と元 run の Diagnostics 集約を使う。error/submission、実 ImportsOnly、省略可能な空 Unavailable、指定 overlay の優先順位、全 discovery 失敗時の fallback は不変で、edge 推測や意味的 Complete への昇格をしない。
-private current_diagnostic_index は実 submission/registry を借用し、既存 Disk/native 検証関数を受ける。呼出し元は従来の通常 Disk 入口、通常 native 入口、この opt-in 入口の三つ。実 scheduler run を要求し、元 phase_results batch の収集前と、実 snapshot での既存 Diagnostics from_batches 後に検証する。None/error は元 submission を保持する。別 run/index の保存・複製や新表現を作らず、旧入口は従来の submit_captured、各 guard と集約順序を保つ。
+discovery と native 診断を指定した `submit_captured` は discovery 提出を一度実行し、既存 native guard と元 run の Diagnostics 集約を使う。error/submission、実 ImportsOnly、省略可能な空 Unavailable、指定 overlay の優先順位、全 discovery 失敗時の fallback は不変で、edge 推測や意味的 Complete への昇格をしない。
+private current_diagnostic_index は実 submission/registry を借用し、既存 Disk/native 検証関数を受ける。選択した診断 mode が guard を決める。実 scheduler run を要求し、元 phase_results batch の収集前と、実 snapshot での既存 Diagnostics from_batches 後に検証する。None/error は元 submission を保持する。別 run/index の保存・複製や新表現を作らず、各 mode の guard と集約順序を保つ。
 既存 Fixture/capture/publisher/service を再利用して三つの実 family を追記する。Disk/Open/混在の import-aware 実行と既存 discovery submission 全体・元 aggregate・独立 record 条件・実 NoKey、架空の正 Complete を使わない discovery 失敗/指定 overlay 優先、成立する対照を伴う適格性/currentness/構造化 submit error。disk 編集後も source ID/raw map を保持し、既存 import/URI/map/Disk-only/共通 guard/error matrix を重複しない。新 setup 関数を使うなら三 family 全てで共有し、旧 test はそのまま保つ。
 明示的接続だけであり、import 意味論・diagnostic identity/code/filter policy・source 再読込・cache/受理権限を加えない。opaque context/metadata hash に runtime 認証を与えない。現 editor tuple/lifetime/map と host/wire binding は LSP、完全な意味 import/runtime/current-build publication/広い gate は保留する。
 
 ## Pregraph import discovery
 
-`CompilerDriver::submit_with_import_discovery` は plan/index 構築後、graph 構築前の disk source 事前検証を明示的に選択する。空の Unavailable overlay だけを置き換え、他の coverage や供給済み edge は優先する。通常の `submit` は意図的な Unavailable を含め全 overlay を維持する。既存 frontend adapter が source 取得と暫定 path 解決を担当し、driver core はその overlay だけを受け取る。事前検証は phase 実行ではなく、出力・診断を公開しない。allocator と source identity は局所的に保持する。
+`SubmitOptions.discover_imports` は plan/index 構築後、graph 構築前の disk source 事前検証を明示的に選択する。空の Unavailable overlay だけを置き換え、他の coverage や供給済み edge は優先する。通常の `submit` は意図的な Unavailable を含め全 overlay を維持する。既存 frontend adapter が source 取得と暫定 path 解決を担当し、driver core はその overlay だけを受け取る。事前検証は phase 実行ではなく、出力・診断を公開しない。allocator と source identity は局所的に保持する。
 全 workspace module に一意な捕捉 disk version と workspace plan/index identity を要求し、安全な package/source path の workspace 内包含と、load 後の package/module/path/edition/hash/origin の捕捉値との一致を確認する。session loader、frontend preprocessing、resolver の暫定 import mapping を使う。読込不能・変更・未対応・重複/欠落・preprocess 診断・未解決があれば推定 edge 全体を破棄して Unavailable を維持し、既存 graph 検証により schedule を停止する。解決済み artifact target に workspace edge は不要。成功時は重複のない workspace ImportSummary edge を ImportsOnly として渡し、意味的 Complete coverage は付与しない。graph の self/cycle/reference 検証は維持する。
 予定された SourceLoad は disk と捕捉値を再照合し、Frontend は実際の parsed import、保持した親と対応済み summary を publication 前に検証する。事前検証は reexport、意味的 import、公開診断、proof/cache/artifact 成功や open-buffer 取得を許可しない。事前検証後の変更を捕捉 key の下で公開できない。
 
@@ -397,7 +405,7 @@ summary のみ/Disk の結果を承認しない。物理 storage、現在 snapsh
 
 ## Captured native submission
 
-`submit_captured(session, allocator, snapshots, input)` と `submit_captured_with_import_discovery` は実 Native 捕捉 session を消費する。非 Native/非 SnapshotCaptured、同 Driver に保存済みの session ID、registry request 非 current は lane 変更前に `InvalidCapturedSession { session }` で拒否する。準備済み clone は Driver ごとに一度だけ submit 可能。従来 submit の ID/捕捉経路は維持する。
+`submit_captured(session, allocator, snapshots, input, options)` は実 Native 捕捉 session を消費する。非 Native/非 SnapshotCaptured、同 Driver に保存済みの session ID、registry request 非 current は lane 変更前に `InvalidCapturedSession { session }` で拒否する。準備済み clone は Driver ごとに一度だけ submit 可能。従来 submit の ID/捕捉経路は維持する。
 caller の publisher owner が実 snapshot/work unit を事前承認する。Driver は再取得、ID 推定、snapshot 登録/復活や権限付与をしない。既存 planning/prefix status、lane/request guard、cancel と resource/error 処理を適用する。
 既存の借用[サービス入力](frontend_adapter.md#native-captured-sources)で Native resource を運ぶ。実 Native dispatch だけが親束縛、結果/Frontend 親検証と最終保持に published 承認を採用し、従来の四つの current/package 検証は維持する。実 source/version/root の完全な束縛は必須。後続 service と LSP current 診断は未対応。
 
@@ -408,14 +416,14 @@ raw/version 変更は canonical snapshot ID を維持したまま storage 来歴
 ## Current native diagnostic index
 
 `validate_current_native_diagnostics(session, snapshots) -> Result<(), String>` が共有 live session 適格性を所有する。Driver 自身の保存 record だけを読み、protected native capture、非空かつ全て Disk/OpenBuffer（混在可）の version、Finished(Succeeded/Failed/Blocked)、既存 Driver lane/request-snapshot の Current 判定、および当該 snapshot を認可する明示 publisher を要求する。未知・非対応・cancelled/非終端・obsolete・publisher 欠落は Err。Generated/将来 origin は非対応とし、loaded version/path の妥当性は protected capture の責務に残す。
-`submit_captured_with_native_diagnostic_index(session, allocator, snapshots, input)` は Disk wrapper と同じ既存の引数/戻り型と元 run 集約契約を使い、既存 submit_captured を先に実行し、Diagnostics from_batches の前後で native guard を呼ぶ。実際の同じ呼出しの phase-result batch だけを入力とし、実 scheduler run を要求する。guard/集約失敗は元 submission のまま None、通常 submit error はそのまま伝える。実 Failed/Blocked 診断や clean 空 index に後続意味・証明成功を要求しない。
+`submit_captured` の `diagnostic_index: Some(DiagnosticIndexMode::Native)` は元 run 集約契約を使い、Diagnostics from_batches の前後で native guard を呼ぶ。実際の同じ呼出しの phase-result batch だけを入力とし、実 scheduler run を要求する。guard/集約失敗は元 submission のまま None、通常 submit error はそのまま伝える。実 Failed/Blocked 診断や clean 空 index に後続意味・証明成功を要求しない。
 record identity/filter/dedup/sort は既存 Diagnostics に残す。
 実 OpenBuffer/混在 native batch、実 Frontend failure/clean 空結果、通常 submission との一致、既存集約 oracle と独立 record/source/raw-map 条件、実 NoKey をテストする。既存 Disk/共通 live guard/error テストを変更せず、native origin 除外と live OpenBuffer supersession を追加し、URI/capture/map matrix は重複しない。file 編集/削除後も capture 済み raw text/map を保ち、native SourceLoad の本文再読込や error producer を捏造しない。
 検証するのは current Driver session の適格性だけである。Server buffer、最新 editor URI/version/text、source-map/IR lifetime、file/config freshness、任意 batch/index の真正性、PublishedLspSnapshot は保証しない。後続 LSP consumer が元 raw descriptor/map を現文書へ対応付け、受け渡し前に再検査する。返す index は一時点の immutable data で、scheduling/cache/proof/artifact/publication や完全 native host の達成を意味しない。
 
 ## Explicit native Disk cached SourceLoad scheduling
 
-`CompilerDriver::submit_captured_with_native_disk_cache<A: SessionIdAllocator, L: SourceLayoutProvider>(&mut self, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>, policy: &mizar_proof::policy::VerifierPolicy, store: &mizar_cache::cache_store::CacheStoreRoot) -> Result<BuildSubmission, DriverSubmitError>` は明示的な source-only 最適化である。通常の captured-session 検証、planning、graph、scheduler、最後の lane/publisher guard を使う。既存 entry point と両登録 service の実 NoKey は維持する。この経路は caller の cache decision を実 SourceLoad decision で置き換え、文字列参照を typed output として受理しない。
+`NativeCacheMode::ReadOnly` は明示的な source-only 最適化である。通常の captured-session 検証、planning、graph、scheduler、最後の lane/publisher guard を使う。既存 entry point と両登録 service の実 NoKey は維持する。この経路は caller の cache decision を実 SourceLoad decision で置き換え、文字列参照を typed output として受理しない。
 CacheSchedulingPolicy::Enabled、dispatch provider なし、正確な組込み SourceLoad/Frontend descriptor と具体的 service 型、空でない全 Disk native capture、current な supplied publisher、明示的 native lock/config content 比較の成功時だけ lookup する。他 profile は cache decision なしで通常実行する。既存 crate-local service lookup から登録 object の Any::type_id が SourceLoadService/FrontendService と一致することを要求し、自由に名乗れる descriptor だけで実装を認証しない。既存 entry point にこの新制約は加えない。Store と immutable policy は caller が選び、内容一致と明示的関連付けは完全な active configuration、released toolchain、file/dependency freshness、global runtime provenance を証明しない。
 実 graph の構築後、正確な module と一意な captured version から既存 source_input_hash を使い、dependency/parent なしの SourceLoad input を作る。同じ supplied publisher の IrCacheAdapter と既存 guarded native Disk lookup を使う。実 Rehydrated SourceUnit の current physical 検証と IR retain に成功した場合だけ、実 handle、空 diagnostics、架空の query observation なしの source-only Complete PhaseResult と、その実 identity/hash を投影した scheduler decision を作る。miss/error、未対応 binding、retain 失敗では通常 SourceLoad 実行を可能に保ち、scheduler 前の phase service 実行や Store 書込みはしない。
 準備した cached result は正確な task ID の下で private に保持する。通常 graph の dependency readiness が SourceLoad skip を受理してからだけ default Frontend が消費し、新 callback/readiness policy は追加しない。最終報告に残すのは該当 task が実際に CacheHit で終了した結果だけであり、disabled/cancelled/superseded/obsolete/未受理 skip に cached PhaseResult を出さない。最後の physical/publisher/lane guard は stale result 全体を抑止し続ける。後続・未登録 service の結果や prefix から build 成功を作らない。
@@ -425,7 +433,7 @@ CacheSchedulingPolicy::Enabled、dispatch provider なし、正確な組込み S
 
 ## Package-configured native Disk cache scheduling
 
-`CompilerDriver::submit_captured_with_configured_native_disk_cache<A: SessionIdAllocator, L: SourceLayoutProvider>(&mut self, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>, policy: &mizar_proof::policy::VerifierPolicy, store: &mizar_cache::cache_store::CacheStoreRoot) -> Result<BuildSubmission, DriverSubmitError>` は package 設定を選択的に使い、直前の実 SourceLoad cache 経路の全 eligibility 検査、lookup、scheduler acceptance、既定 Frontend 消費、scoped retain/release を共有する。既存の caller-selected 経路と通常 entry は不変とし、既存 optional cache tuple の private な選択で分岐する。別 loop/runtime object は作らない。
+`NativeCacheMode::ConfiguredReadOnly` は package 設定を選択的に使い、直前の実 SourceLoad cache 経路の全 eligibility 検査、lookup、scheduler acceptance、既定 Frontend 消費、scoped retain/release を共有する。既存の caller-selected 経路と通常 entry は不変とし、名前付き cache mode で分岐する。別 loop/runtime object は作らない。
 各 SourceLoad module の lookup 前に、唯一の PackagePlan と Workspace source、その package の build_config.incremental、既存 crate-local safe_relative を通る非 dot の cache_dir を要求する。直接構築された config にも Build の既存 lexical path profile を保ち、parser を再実装しない。既存 guard の crate visibility だけを共有し、本体の拡張や public path API は行わない。
 Store.root() は native Path equality により Path::new(build_plan.workspace_root.as_str()).join(package_workspace_root).join(cache_dir) と一致しなければならない。canonicalize、新規 filesystem access、directory 作成はしない。package 不在/重複、registry source、無効/disabled 設定、root 不一致では当該 task の cache 準備を保留し、通常実行と global caller cache policy を維持する。importer/先頭 aggregate/registry default の設定を代用しない。filesystem alias は fallback し得るが、storage freshness の証明や path syntax/symlink policy の変更ではない。対応 store が未作成なら通常 lookup/miss fallback に進む。
 実 parsed package 設定と native capture、scheduled production/encoder/Store 挿入から、実 source skip と既定 Frontend parent/result を検証する。resident/blob、default/nested directory、global disable/miss/foreign store と有効な旧経路 control、package opt-out/直接構築の無効 path、複数 package の別設定/directory、入力順/worker を扱う。clean 実行の payload/map/診断と比較し、旧 tests は不変とする。inline を優先し、新 private setup helper は実三 consumer 系統で共有する一つまでとし、他の test type/adapter は追加しない。
@@ -433,7 +441,7 @@ Store.root() は native Path equality により Path::new(build_plan.workspace_r
 
 ## Persistent native Disk SourceLoad cache
 
-`CompilerDriver::submit_captured_with_persistent_native_disk_cache<A: SessionIdAllocator, L: SourceLayoutProvider>(&mut self, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>, policy: &mizar_proof::policy::VerifierPolicy, store: &mizar_cache::cache_store::CacheStoreRoot) -> Result<BuildSubmission, DriverSubmitError>` は configured lookup と best-effort 保存を明示的に選ぶ。既存 private cache tuple に write flag だけを加え、旧二 method は false、新 entry は configured=true/write=true とする。通常 method は不変とし、共通 configured eligibility と唯一の version/input 構築後、lookup 前に local な (実 TaskId, clone した PhaseInput) 候補を集める。独立 guard/scheduler/source 実行や保持 runtime state は作らない。
+`NativeCacheMode::PersistentSource` は configured lookup と best-effort 保存を明示的に選ぶ。名前付き mode が configured lookup と SourceLoad 保存を選ぶ。通常 method は不変とし、共通 configured eligibility と唯一の version/input 構築後、lookup 前に local な (実 TaskId, clone した PhaseInput) 候補を集める。独立 guard/scheduler/source 実行や保持 runtime state は作らない。
 scheduler と既存の全 physical/publisher/lane result filtering 後、最終 task state に Cancelled が一つでもあれば保存を全て保留する。各候補は当該 source task が Completed、唯一の Complete result と唯一の output を必要とする。CacheHit/blocked/skipped/cancelled は cold producer ではない。下流 Frontend failure と有効な完了 SourceLoad は両立し、当該 source record の保存を妨げない。後続 service 不在は build 未完了のままである。
 同じ実 capture/plan/index/allocator/publisher を SourceLoadInputs と IrCacheAdapter に渡し、実 typed SourceUnit を回収して encode_native_disk_cache_record を呼ぶ。既存の完全 native binding/current physical output/storage/side-table 検証を維持し、Encoded(record) だけを Store.insert へ渡す。各挿入の直前、encode 後に、新しい lane/request/snapshot currentness、publisher current-output authorization、physical handle validity を要求する。不成立なら後続保存を止め、encode 失敗/skipped では当該候補だけを省く。snapshot registration/grant、新しい key/codec/hash/schema、Frontend cache は導入しない。
 Store 挿入は内部最適化の best-effort とし、error/rejected outcome で build を失敗させたり、診断/submission/status/policy/proof result を変更したりせず、成功を捏造しない。Store の complete-record validation、同一内容の再挿入、divergence/atomic write を維持する。currentness は handoff 時点の検査で、Store I/O と lane/publisher は atomic ではなく、既に完了した record は rollback しない。既存 SourceLoad の complete な zero-artifact-dependency footprint により artifact emission 前の内部保存が可能だが、artifact/witness publication ではない。
@@ -442,7 +450,7 @@ Store 不在から test-side insert なしで、実 cold 実行と native key �
 
 ## Persistent native leaf Frontend cache
 
-`CompilerDriver::submit_captured_with_persistent_native_prefix_cache` は既存 source-only persistence と同じ引数・戻り値で、設定済み SourceLoad と実行後の Frontend の保存を明示的に有効にする。既存 entry の Frontend write flag は false のまま、共通 configured guard、pending source task/input、scheduler、最終 physical/publisher/lane filtering を共有する。Frontend の事前 lookup や追加実行は行わない。
+`NativeCacheMode::PersistentPrefix` は設定済み SourceLoad と実行後の Frontend の保存を明示的に有効にする。この mode が両保存を選び、共通 configured guard、pending source task/input、scheduler、最終 physical/publisher/lane filtering を共有する。Frontend の事前 lookup や追加実行は行わない。
 最終 Cancelled task があれば全保存を抑止する。pending source は Completed または CacheHit で、Complete result と実出力が各一つ必要。同じ work unit、単独 Frontend phase の task が一つ存在し、graph dependency は当該 source task と実際の Workspace/PackageResolve root（phase PackageResolve）の正確に二つを要求する。root と Frontend は Completed、Frontend の診断なし Complete result と出力は各一つとし、他 dependency は拒否する。pending input identity と実際の sealed published source parent から PhaseInput を構成し、他 task・文字列・oracle・obsolete 出力で代用しない。
 同じ publisher から実 typed FrontendOutput を取得し、実 capture/plan/index/allocator と変更しない encode_native_disk_frontend_cache_record に渡す。current physical parent/output、lineage、raw source/maps、leaf/no-import/dependency/diagnostic、完全 payload の既存検証が権威を持つ。Encoded のみ Store.insert に渡し、直前に lane/request/snapshot と parent/output の current authorization・physical validity を再確認する。guard 喪失は以降の保存を停止し、encoding 不成立は候補を飛ばす。
 挿入失敗・拒否は status、診断、proof 結果を変えない。内部 zero-artifact-dependency record は artifact 受理・公開を示さず、currentness と Store I/O は atomic でなく、先行保存も rollback しない。source-only entry と既存 read-only entry の保存範囲は維持する。
@@ -451,7 +459,7 @@ cold Frontend expectations、retained scheduler skip、完全 runtime/toolchain/
 
 ## Retained native Frontend cache scheduling
 
-`CompilerDriver::submit_captured_with_retained_native_frontend_cache<A: SessionIdAllocator, L: SourceLayoutProvider>(&mut self, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>, cache: (&mizar_proof::policy::VerifierPolicy, &mizar_cache::cache_store::CacheStoreRoot), oracle: (&crate::registry::PhaseInput, &mizar_ir::cache_adapter::IrCacheAdapter, &crate::registry::PhaseResult)) -> Result<BuildSubmission, DriverSubmitError>` は、同じ保護されたnative Disk captureと現在のSourceIdに対し、呼出側が供給する実際の保持済みFrontend oracleを明示的に対応付ける。policy/Storeは既存tupleへまとめ、既存private submission-options tupleのdiscover_imports/preparedに借用result oracleのOptionを追加し、旧入口では常にNoneとする。既存cache tupleの五要素は維持する。呼出側選択の既存read-only SourceLoad cache経路を用い、configured rootや永続化は変更しない。通常入口、登録済みNoKeyとquery observationは維持する。
+`NativeCacheMode::ReadOnly` と `retained_frontend` は、同じ保護されたnative Disk captureと現在のSourceIdに対し、呼出側が供給する実際の保持済みFrontend oracleを明示的に対応付ける。option は policy、Store と任意の result oracle を借用する。呼出側選択の既存read-only SourceLoad cache経路を用い、configured rootや永続化は変更しない。通常入口、登録済みNoKeyとquery observationは維持する。
 既存native cache適格性、実組込みservice型、lock/config本文比較、SourceLoad lookupとscheduler設定を再利用する。実SourceLoad Rehydrated出力の物理/current検証とretain成功後だけFrontend lookupを試す。oracle work unitの実SourceLoad task、Workspace/PackageResolve/[PackageResolve] root、同unitの[Frontend] taskが各一つであり、Frontend依存がそのsource taskとrootの二つだけであることを要求する。曖昧性や他の依存形は対象外。source missや不適格時はFrontend準備を行わず通常実行とする。rootやphaseをschedulerより先に実行しない。
 そのsource taskの実際の一意な捕捉version/source hashと、自身のseal済みpublished source handleからtarget Frontend PhaseInputを作り、供給された実PhaseResultがComplete、diagnosticなし、出力が正確に一件であることを要求する。oracle adapter storageでそのFrontend typed handleを取得し、既存rehydrate_native_disk_frontend_cacheへhandleとtarget adapterを渡す。phase型はFrontend adapter所有のままとし、Driverは既存PhaseResult protocolを消費し、既存永続化と同じく呼出先からhandle型を推論する。alias/reexport、lint抑制、core authority guardの緩和は行わない。capture/SourceId/dispatch identity/同一source-parent ID、recordに依存しないoracle全bytes/keys/side tables、currentな物理publisher、producer/decoder/leaf guardは変更しない。一般的published handleだけでは実executorを証明できず、実producerとoracleの並行寿命は呼出側の責任。同一Frontend出力を未格納の別storageで復元でき、既存duplicate-output失敗は準備を見送るだけとし、dedupやpermission/publicationの回避策を作らない。
 物理/current検証と明示retainに成功した実Frontend Rehydrated handleだけが、実erased handle、空diagnostics、cache_observation=NoneのComplete private PhaseResultと、実identity/hashを投影したscheduler decisionを正確なFrontend TaskIdへ設定できる。miss/error/retain失敗時は通常実行を残し、呼出側の文字列decisionからhandleを受理しない。両payloadは既存local ownership tuple内の実erased handleで扱い、新type/field/adapterは作らない。各skipは通常のgraph readiness、開始前取消、publication freshnessを独立に通過する必要があり、準備からroot完了やsource受理を推定しない。

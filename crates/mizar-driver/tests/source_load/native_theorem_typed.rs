@@ -76,7 +76,7 @@ fn native_theorem_typed_ast_storage_replay_preserves_genuine_outputs() {
         builder.register_frontend(vec![]);
         let submission = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(owner.clone())
-            .submit_captured(session, ids, snapshots, submit)
+            .submit_captured(session, ids, snapshots, submit, Default::default())
             .unwrap();
         let parent = submission
             .scheduler_run

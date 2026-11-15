@@ -238,7 +238,13 @@ fn scheduled_theorem_vc_generation_matches_genuine_publication() {
                             CompletionOrder::Reverse
                         };
                         let submission = driver
-                            .submit_captured(session.clone(), ids, snapshots, submit)
+                            .submit_captured(
+                                session.clone(),
+                                ids,
+                                snapshots,
+                                submit,
+                                Default::default(),
+                            )
                             .unwrap();
                         assert_eq!(
                             submission.status,
@@ -775,7 +781,7 @@ fn scheduled_theorem_vc_generation_preserves_resource_refusals() {
                 let (_, submit) = fixture.submit_request(vec![], vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner)
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let graph = submission.task_graph.as_ref().unwrap();
                 let task = graph
@@ -927,7 +933,13 @@ fn scheduled_theorem_vc_descriptors_bind_genuine_sets_and_preserve_missing_proof
                         CompletionOrder::Canonical
                     };
                     let submission = driver
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     assert_eq!(submission.session.captured(), &captured);
                     assert_eq!(
@@ -1243,7 +1255,13 @@ fn scheduled_theorem_vc_discharge_matches_genuine_publication() {
                     let (_, submit) = fixture.submit_request(vec![], vec![]);
                     let baseline_submission = CompilerDriver::new(builder.build().unwrap())
                         .with_output_publisher(baseline.clone())
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     let (inputs, original) = native_disk_lookup_context(&baseline_submission, ids);
                     let outputs = baseline_submission
@@ -1400,7 +1418,13 @@ fn scheduled_theorem_vc_discharge_matches_genuine_publication() {
                             },
                         )];
                         let submission = driver
-                            .submit_captured(session.clone(), ids, snapshots, submit)
+                            .submit_captured(
+                                session.clone(),
+                                ids,
+                                snapshots,
+                                submit,
+                                Default::default(),
+                            )
                             .unwrap();
                         assert_eq!(submission.session.captured(), session.captured());
                         assert_eq!(
@@ -1789,7 +1813,7 @@ fn scheduled_theorem_vc_discharge_preserves_resource_refusals() {
                 }
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 if earlier_refusal {
                     let graph = submission.task_graph.as_ref().unwrap();

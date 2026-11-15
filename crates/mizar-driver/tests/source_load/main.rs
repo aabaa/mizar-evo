@@ -37,8 +37,9 @@ use mizar_diagnostics::{
 };
 use mizar_driver::{
     driver::{
-        CompilerDriver, DriverSubmissionStatus, DriverSubmitError, DriverSubmitInput,
-        PhaseDispatchInputProvider,
+        CompilerDriver, DiagnosticIndexMode, DriverSubmissionStatus, DriverSubmitError,
+        DriverSubmitInput, NativeCacheMode, NativeCacheOptions, PhaseDispatchInputProvider,
+        SubmitOptions,
     },
     events::BuildEventKind,
     registry::{
@@ -175,7 +176,9 @@ impl Fixture {
         let registry = builder.build().unwrap();
         let mut driver = CompilerDriver::new(registry);
         let (request, input) = self.submit_request(captured_artifacts, indexed_artifacts);
-        let submission = driver.submit(request, ids, snapshots, input).unwrap();
+        let submission = driver
+            .submit(request, ids, snapshots, input, Default::default())
+            .unwrap();
         assert_eq!(
             submission.status,
             DriverSubmissionStatus::BlockedByMissingPhaseServices
@@ -327,7 +330,13 @@ impl WorkspaceLeafFixture {
             files,
         }]);
         let submission = CompilerDriver::new(source_registry())
-            .submit(request, &ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -929,7 +938,7 @@ fn native_disk_record_submission(
         CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
     fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
     let submission = driver
-        .submit_captured(session, ids, snapshots, input)
+        .submit_captured(session, ids, snapshots, input, Default::default())
         .unwrap();
     let result = submission
         .scheduler_run
@@ -1037,7 +1046,7 @@ fn native_disk_frontend_record_submission(
     let mut driver =
         CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
     let submission = driver
-        .submit_captured(session, ids, snapshots, input)
+        .submit_captured(session, ids, snapshots, input, Default::default())
         .unwrap();
     let (_, source_input) = native_disk_lookup_context(&submission, ids);
     let results = &submission.scheduler_run.as_ref().unwrap().phase_results;
@@ -1247,12 +1256,34 @@ fn configured_native_cache_case(
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = match route {
-            0 | 1 => driver.submit_captured(session, &ids, &snapshots, input),
-            2 => driver.submit_captured_with_native_disk_cache(
-                session, &ids, &snapshots, input, &policy, &store,
+            0 | 1 => driver.submit_captured(session, &ids, &snapshots, input, Default::default()),
+            2 => driver.submit_captured(
+                session,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    native_cache: Some(NativeCacheOptions {
+                        policy: &policy,
+                        store: &store,
+                        mode: NativeCacheMode::ReadOnly,
+                    }),
+                    ..Default::default()
+                },
             ),
-            _ => driver.submit_captured_with_configured_native_disk_cache(
-                session, &ids, &snapshots, input, &policy, &store,
+            _ => driver.submit_captured(
+                session,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    native_cache: Some(NativeCacheOptions {
+                        policy: &policy,
+                        store: &store,
+                        mode: NativeCacheMode::ConfiguredReadOnly,
+                    }),
+                    ..Default::default()
+                },
             ),
         }
         .unwrap();
@@ -1627,11 +1658,22 @@ fn persistent_native_cache_case(
                 }
             }
             let submission = if actual {
-                driver.submit_captured_with_persistent_native_disk_cache(
-                    session, &ids, &snapshots, input, &policy, &store,
+                driver.submit_captured(
+                    session,
+                    &ids,
+                    &snapshots,
+                    input,
+                    SubmitOptions {
+                        native_cache: Some(NativeCacheOptions {
+                            policy: &policy,
+                            store: &store,
+                            mode: NativeCacheMode::PersistentSource,
+                        }),
+                        ..Default::default()
+                    },
                 )
             } else {
-                driver.submit_captured(session, &ids, &snapshots, input)
+                driver.submit_captured(session, &ids, &snapshots, input, Default::default())
             }
             .unwrap();
             if case == "publisher" {
@@ -2220,18 +2262,51 @@ fn persistent_native_frontend_case(
                     }
                 }
                 let submission = if !actual {
-                    driver.submit_captured(session, &ids, &snapshots, input)
+                    driver.submit_captured(session, &ids, &snapshots, input, Default::default())
                 } else if case == "source-only" {
-                    driver.submit_captured_with_persistent_native_disk_cache(
-                        session, &ids, &snapshots, input, &policy, &store,
+                    driver.submit_captured(
+                        session,
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            native_cache: Some(NativeCacheOptions {
+                                policy: &policy,
+                                store: &store,
+                                mode: NativeCacheMode::PersistentSource,
+                            }),
+                            ..Default::default()
+                        },
                     )
                 } else if case == "read-only" {
-                    driver.submit_captured_with_configured_native_disk_cache(
-                        session, &ids, &snapshots, input, &policy, &store,
+                    driver.submit_captured(
+                        session,
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            native_cache: Some(NativeCacheOptions {
+                                policy: &policy,
+                                store: &store,
+                                mode: NativeCacheMode::ConfiguredReadOnly,
+                            }),
+                            ..Default::default()
+                        },
                     )
                 } else {
-                    driver.submit_captured_with_persistent_native_prefix_cache(
-                        session, &ids, &snapshots, input, &policy, &store,
+                    driver.submit_captured(
+                        session,
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            native_cache: Some(NativeCacheOptions {
+                                policy: &policy,
+                                store: &store,
+                                mode: NativeCacheMode::PersistentPrefix,
+                            }),
+                            ..Default::default()
+                        },
                     )
                 }
                 .unwrap();
@@ -2687,7 +2762,13 @@ fn retained_native_frontend_cache_case(case: &str, threshold: usize, reverse: bo
     let (mut warm_driver, warm_owner) = make_driver();
     // Keep the genuine captured session before the ordinary producer finishes it.
     let warm = warm_driver
-        .submit_captured(saved.clone(), &ids, &snapshots, warm_input)
+        .submit_captured(
+            saved.clone(),
+            &ids,
+            &snapshots,
+            warm_input,
+            Default::default(),
+        )
         .unwrap();
     let warm_run = warm.scheduler_run.as_ref().unwrap();
     let graph = warm.task_graph.as_ref().unwrap();
@@ -2882,7 +2963,13 @@ fn retained_native_frontend_cache_case(case: &str, threshold: usize, reverse: bo
         clean_input.dependency_overlay = input.dependency_overlay.clone();
         clean_input.workspace_packages = input.workspace_packages.clone();
         let clean = clean_driver
-            .submit_captured(saved.clone(), &ids, &snapshots, clean_input)
+            .submit_captured(
+                saved.clone(),
+                &ids,
+                &snapshots,
+                clean_input,
+                Default::default(),
+            )
             .unwrap();
         let (mut driver, mut owner) = make_driver();
         if negative && case == "duplicate" {
@@ -2966,13 +3053,20 @@ fn retained_native_frontend_cache_case(case: &str, threshold: usize, reverse: bo
             .chain(std::iter::once(fs::read(&frontend_path).ok()))
             .collect::<Vec<_>>();
         let submission = driver
-            .submit_captured_with_retained_native_frontend_cache(
+            .submit_captured(
                 saved.clone(),
                 &ids,
                 &snapshots,
                 input,
-                (&policy, selected_store),
-                (&selected_input, selected_oracle, selected_result),
+                SubmitOptions {
+                    retained_frontend: Some((&selected_input, selected_oracle, selected_result)),
+                    native_cache: Some(NativeCacheOptions {
+                        policy: &policy,
+                        store: selected_store,
+                        mode: NativeCacheMode::ReadOnly,
+                    }),
+                    ..Default::default()
+                },
             )
             .unwrap();
         assert_eq!(submission.session.captured(), &captured);
@@ -3296,7 +3390,13 @@ fn with_native_summary_parent(
         .register_source_theorem_module_resolver();
     let submission = CompilerDriver::new(builder.build().unwrap())
         .with_output_publisher(owner.clone())
-        .submit_captured(session.clone(), &ids, &snapshots, submit)
+        .submit_captured(
+            session.clone(),
+            &ids,
+            &snapshots,
+            submit,
+            Default::default(),
+        )
         .unwrap();
     let outputs = submission
         .scheduler_run
@@ -3466,7 +3566,7 @@ fn with_native_theorem_witness_kernel(
             )];
             let submission = CompilerDriver::new(builder.build().unwrap())
                 .with_output_publisher(owner.clone())
-                .submit_captured(session.clone(), ids, snapshots, submit)
+                .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                 .unwrap();
             let (inputs, original) = native_disk_lookup_context(&submission, ids);
             let refs = submission
@@ -3728,7 +3828,13 @@ fn with_native_theorem_artifact_context(
     )];
     let submission = CompilerDriver::new(builder.build().unwrap())
         .with_output_publisher(owner.clone())
-        .submit_captured(session.clone(), &ids, &snapshots, submit)
+        .submit_captured(
+            session.clone(),
+            &ids,
+            &snapshots,
+            submit,
+            Default::default(),
+        )
         .unwrap();
     let (inputs, original) = native_disk_lookup_context(&submission, &ids);
     assert_eq!(inputs.validate_native_lock_content(), Ok(()));

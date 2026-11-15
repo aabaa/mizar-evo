@@ -16,6 +16,12 @@ token, or LSP bridge is unavailable, the registry records an
 `external_dependency_gap` or `deferred` item instead of registering a fake
 adapter, stub API, provisional token, or temporary wiring.
 
+## Production composition
+
+`StageConfig` groups the cutoff, artifact roots, VC schemas, discharge/ATP/verifier settings, and witness/main/output paths. `StageConfig::frontend(roots)` selects SourceLoad/Frontend; `StageConfig::source_theorem(roots)` selects the existing bounded chain through ArtifactCommit. Its opt-in defaults are snapshot-generation-v1/snapshot-vc-v1, snapshot-native FOF with supported equality/native properties, first-order quantifiers, scoped guard predicates and TPTP, owner default policies, proof-witnesses/snapshot, main.mizir.json and artifacts.
+`assemble_registry(&config)` delegates to the existing registration methods and builder validation. Supported cutoffs are the existing source-adapter phases; PackageResolve, BackendRun and DocumentationExtract are unavailable here. Configuration does not register a snapshot, supply publication authority, execute services, change scheduler ordering, or generalize bounded adapters. Existing transport/path validation errors propagate; the manual builder remains available for custom service injection.
+The inline `mizar_driver::facade` module re-exports driver/request/registry entry types and their existing owner configuration types. It adds no dependency or semantic authority.
+
 ## Ownership Boundary
 
 `registry` owns:

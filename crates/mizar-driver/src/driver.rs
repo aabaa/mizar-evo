@@ -65,6 +65,73 @@ pub struct BuildSubmission {
     pub dispatch_gap_phases: Vec<PipelinePhase>,
     pub status: DriverSubmissionStatus,
     pub publication_decision: PublicationDecision,
+    pub diagnostic_index: Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
+}
+
+/// Submission choices shared by draft, captured, and watch lifecycle entries.
+#[derive(Clone, Copy, Default)]
+pub struct SubmitOptions<'a> {
+    pub discover_imports: bool,
+    pub diagnostic_index: Option<DiagnosticIndexMode>,
+    pub native_cache: Option<NativeCacheOptions<'a>>,
+    pub retained_frontend: Option<(
+        &'a crate::registry::PhaseInput,
+        &'a mizar_ir::cache_adapter::IrCacheAdapter,
+        &'a crate::registry::PhaseResult,
+    )>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DiagnosticIndexMode {
+    Disk,
+    Native,
+}
+
+#[derive(Clone, Copy)]
+pub struct NativeCacheOptions<'a> {
+    pub policy: &'a mizar_proof::policy::VerifierPolicy,
+    pub store: &'a mizar_cache::cache_store::CacheStoreRoot,
+    pub mode: NativeCacheMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NativeCacheMode {
+    ReadOnly,
+    ConfiguredReadOnly,
+    PersistentSource,
+    PersistentPrefix,
+}
+
+impl SubmitOptions<'_> {
+    fn validate(self, captured: bool, watch: bool) -> Result<(), DriverSubmitError> {
+        let invalid = if watch {
+            self.discover_imports
+                || self.diagnostic_index.is_some()
+                || self.native_cache.is_some()
+                || self.retained_frontend.is_some()
+        } else if !captured {
+            self.diagnostic_index.is_some()
+                || self.native_cache.is_some()
+                || self.retained_frontend.is_some()
+        } else if let Some(cache) = self.native_cache {
+            self.discover_imports
+                || self.diagnostic_index.is_some()
+                || (self.retained_frontend.is_some() && cache.mode != NativeCacheMode::ReadOnly)
+        } else {
+            self.retained_frontend.is_some()
+                || (self.discover_imports
+                    && self.diagnostic_index == Some(DiagnosticIndexMode::Disk))
+        };
+        if invalid {
+            Err(DriverSubmitError::InvalidSubmitOptions {
+                reason: "unsupported submission option combination",
+            })
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub struct DriverSubmitInput<L>
@@ -249,6 +316,9 @@ pub enum DriverCancelReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DriverSubmitError {
+    InvalidSubmitOptions {
+        reason: &'static str,
+    },
     NativeSourceVersionsProvided {
         request: Box<BuildRequestDraft>,
     },
@@ -320,11 +390,20 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
         control: WatchSubmitControl<'_>,
+        options: SubmitOptions<'_>,
     ) -> Result<WatchSubmission, WatchSubmitError>
     where
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
+        options.validate(false, true).map_err(|error| {
+            WatchSubmitError::Submit(Box::new(WatchSubmitFailure {
+                error: Box::new(error),
+                superseded: None,
+                snapshot_replacement: None,
+                gaps: watch_mode_gaps(&control),
+            }))
+        })?;
         if !matches!(&request.origin, BuildRequestOrigin::Watch(_)) {
             return Err(WatchSubmitError::NonWatchRequest {
                 origin: request_origin_name(&request.origin),
@@ -333,7 +412,7 @@ impl CompilerDriver {
 
         let previous_watch = self.validate_watch_previous(control.previous_session, &request)?;
         let gaps = watch_mode_gaps(&control);
-        let submission = match self.submit(request, allocator, snapshots, input) {
+        let submission = match self.submit(request, allocator, snapshots, input, options) {
             Ok(submission) => submission,
             Err(error) => {
                 let captured = submit_error_session(&error).cloned();
@@ -372,59 +451,26 @@ impl CompilerDriver {
         })
     }
 
-    /// Discovers lexical import ordering only when the supplied overlay is empty and unavailable.
-    pub fn submit_with_import_discovery<A, L>(
-        &mut self,
-        request: BuildRequestDraft,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-    ) -> Result<BuildSubmission, DriverSubmitError>
-    where
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    {
-        let pending = request
-            .allocate(allocator)
-            .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
-        let session = pending
-            .capture_snapshot(snapshots)
-            .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (true, false, None),
-            None,
-        )
-    }
-
     pub fn submit<A, L>(
         &mut self,
         request: BuildRequestDraft,
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
+        options: SubmitOptions<'_>,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
+        options.validate(false, false)?;
         let pending = request
             .allocate(allocator)
             .map_err(|error| DriverSubmitError::RequestIdAllocation { error })?;
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, false, None),
-            None,
-        )
+        self.submit_inner(session, allocator, snapshots, input, options, false)
     }
 
     pub fn submit_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
@@ -433,137 +479,25 @@ impl CompilerDriver {
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
+        options: SubmitOptions<'_>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, None),
-            None,
-        )
-    }
-
-    /// Uses genuine native Disk SourceLoad cache records for captured scheduling.
-    pub fn submit_captured_with_native_disk_cache<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-        policy: &mizar_proof::policy::VerifierPolicy,
-        store: &mizar_cache::cache_store::CacheStoreRoot,
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, None),
-            Some((policy, store, false, false, false)),
-        )
-    }
-
-    /// Uses package-configured native Disk SourceLoad cache records for scheduling.
-    pub fn submit_captured_with_configured_native_disk_cache<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-        policy: &mizar_proof::policy::VerifierPolicy,
-        store: &mizar_cache::cache_store::CacheStoreRoot,
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, None),
-            Some((policy, store, true, false, false)),
-        )
-    }
-
-    /// Uses configured native Disk SourceLoad records and persists accepted cold outputs.
-    pub fn submit_captured_with_persistent_native_disk_cache<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-        policy: &mizar_proof::policy::VerifierPolicy,
-        store: &mizar_cache::cache_store::CacheStoreRoot,
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, None),
-            Some((policy, store, true, true, false)),
-        )
-    }
-
-    /// Persists configured native Disk SourceLoad and completed leaf Frontend outputs.
-    pub fn submit_captured_with_persistent_native_prefix_cache<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-        policy: &mizar_proof::policy::VerifierPolicy,
-        store: &mizar_cache::cache_store::CacheStoreRoot,
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, None),
-            Some((policy, store, true, true, true)),
-        )
-    }
-
-    /// Schedules native Disk cache hits against one genuine retained Frontend oracle.
-    pub fn submit_captured_with_retained_native_frontend_cache<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-        cache: (
-            &mizar_proof::policy::VerifierPolicy,
-            &mizar_cache::cache_store::CacheStoreRoot,
-        ),
-        oracle: (
-            &crate::registry::PhaseInput,
-            &mizar_ir::cache_adapter::IrCacheAdapter,
-            &crate::registry::PhaseResult,
-        ),
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (false, true, Some(oracle)),
-            Some((cache.0, cache.1, false, false, false)),
-        )
+        options.validate(true, false)?;
+        let mut submission =
+            self.submit_inner(session, allocator, snapshots, input, options, true)?;
+        submission.diagnostic_index = match options.diagnostic_index {
+            Some(DiagnosticIndexMode::Disk) => self.current_diagnostic_index(
+                &submission,
+                snapshots,
+                Self::validate_current_disk_diagnostics,
+            ),
+            Some(DiagnosticIndexMode::Native) => self.current_diagnostic_index(
+                &submission,
+                snapshots,
+                Self::validate_current_native_diagnostics,
+            ),
+            None => None,
+        };
+        Ok(submission)
     }
 
     /// Checks live session currentness for a native Disk diagnostic handoff.
@@ -633,82 +567,6 @@ impl CompilerDriver {
             .map_err(|error| error.to_string())
     }
 
-    /// Aggregates only this submission's original phase batches while its session is current.
-    pub fn submit_captured_with_diagnostic_index<A: SessionIdAllocator, L: SourceLayoutProvider>(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-    ) -> Result<
-        (
-            BuildSubmission,
-            Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
-        ),
-        DriverSubmitError,
-    > {
-        let submission = self.submit_captured(session, allocator, snapshots, input)?;
-        let index = self.current_diagnostic_index(
-            &submission,
-            snapshots,
-            Self::validate_current_disk_diagnostics,
-        );
-        Ok((submission, index))
-    }
-
-    /// Aggregates only this submission's original phase batches while its session is current.
-    pub fn submit_captured_with_native_diagnostic_index<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-    ) -> Result<
-        (
-            BuildSubmission,
-            Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
-        ),
-        DriverSubmitError,
-    > {
-        let submission = self.submit_captured(session, allocator, snapshots, input)?;
-        let index = self.current_diagnostic_index(
-            &submission,
-            snapshots,
-            Self::validate_current_native_diagnostics,
-        );
-        Ok((submission, index))
-    }
-
-    /// Discovers imports, then aggregates only the original current native phase batches.
-    pub fn submit_captured_with_import_discovery_and_native_diagnostic_index<
-        A: SessionIdAllocator,
-        L: SourceLayoutProvider,
-    >(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-    ) -> Result<
-        (
-            BuildSubmission,
-            Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
-        ),
-        DriverSubmitError,
-    > {
-        let submission =
-            self.submit_captured_with_import_discovery(session, allocator, snapshots, input)?;
-        let index = self.current_diagnostic_index(
-            &submission,
-            snapshots,
-            Self::validate_current_native_diagnostics,
-        );
-        Ok((submission, index))
-    }
-
     fn current_diagnostic_index<A: SessionIdAllocator>(
         &self,
         submission: &BuildSubmission,
@@ -733,50 +591,25 @@ impl CompilerDriver {
         })
     }
 
-    pub fn submit_captured_with_import_discovery<A: SessionIdAllocator, L: SourceLayoutProvider>(
-        &mut self,
-        session: BuildSession,
-        allocator: &A,
-        snapshots: &SnapshotRegistry<A>,
-        input: DriverSubmitInput<L>,
-    ) -> Result<BuildSubmission, DriverSubmitError> {
-        self.submit_inner(
-            session,
-            allocator,
-            snapshots,
-            input,
-            (true, true, None),
-            None,
-        )
-    }
-
     fn submit_inner<A, L>(
         &mut self,
         mut session: BuildSession,
         allocator: &A,
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
-        (discover_imports, prepared, oracle): (
-            bool,
-            bool,
-            Option<(
-                &crate::registry::PhaseInput,
-                &mizar_ir::cache_adapter::IrCacheAdapter,
-                &crate::registry::PhaseResult,
-            )>,
-        ),
-        native_disk_cache: Option<(
-            &mizar_proof::policy::VerifierPolicy,
-            &mizar_cache::cache_store::CacheStoreRoot,
-            bool,
-            bool,
-            bool,
-        )>,
+        options: SubmitOptions<'_>,
+        prepared: bool,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
         L: SourceLayoutProvider,
     {
+        let SubmitOptions {
+            discover_imports,
+            native_cache,
+            retained_frontend: oracle,
+            ..
+        } = options;
         if prepared
             && (session.captured.native_sources().is_none()
                 || session.state != BuildSessionState::SnapshotCaptured
@@ -807,6 +640,7 @@ impl CompilerDriver {
                 dispatch_gap_phases: Vec::new(),
                 status: DriverSubmissionStatus::SupersededBeforeSubmission,
                 publication_decision,
+                diagnostic_index: None,
             });
         }
 
@@ -1169,6 +1003,7 @@ impl CompilerDriver {
                 dispatch_gap_phases: Vec::new(),
                 status: DriverSubmissionStatus::BlockedByMissingPhaseServices,
                 publication_decision,
+                diagnostic_index: None,
             });
         }
 
@@ -1177,7 +1012,7 @@ impl CompilerDriver {
         scheduler_input.mode = scheduler_mode;
         scheduler_input.priority_hints = priority_hints;
         scheduler_input.cache = cache_policy;
-        scheduler_input.cache_decisions = if native_disk_cache.is_some() {
+        scheduler_input.cache_decisions = if native_cache.is_some() {
             CacheSchedulingPlan::empty()
         } else {
             cache_decisions
@@ -1216,8 +1051,11 @@ impl CompilerDriver {
         );
         let mut cached_sources = Vec::new();
         let mut pending_sources = Vec::new();
-        if let Some((policy, store, configured, persist_source, persist_frontend)) =
-            native_disk_cache
+        if let Some(NativeCacheOptions {
+            policy,
+            store,
+            mode,
+        }) = native_cache
             && cache_policy == CacheSchedulingPolicy::Enabled
             && phase_dispatch_inputs.is_none()
             && built_in_prefix
@@ -1274,7 +1112,7 @@ impl CompilerDriver {
                     let mizar_build::task_graph::WorkUnit::Module { module } = &task.unit else {
                         continue;
                     };
-                    if configured {
+                    if mode != NativeCacheMode::ReadOnly {
                         let mut packages = build_plan
                             .packages
                             .iter()
@@ -1319,7 +1157,10 @@ impl CompilerDriver {
                             Vec::new(),
                         ),
                     );
-                    if persist_source || persist_frontend {
+                    if matches!(
+                        mode,
+                        NativeCacheMode::PersistentSource | NativeCacheMode::PersistentPrefix
+                    ) {
                         pending_sources.push((task.id.clone(), input.clone()));
                     }
                     let Ok(CacheRehydrateOutcome::Rehydrated(handle)) =
@@ -1629,8 +1470,15 @@ impl CompilerDriver {
         {
             phase_results.clear();
         }
-        if let Some((policy, store, _, persist_source, persist_frontend)) = native_disk_cache
-            && (persist_source || persist_frontend)
+        if let Some(NativeCacheOptions {
+            policy,
+            store,
+            mode,
+        }) = native_cache
+            && matches!(
+                mode,
+                NativeCacheMode::PersistentSource | NativeCacheMode::PersistentPrefix
+            )
             && !scheduler_run
                 .task_states
                 .iter()
@@ -1645,7 +1493,7 @@ impl CompilerDriver {
                 allocator,
             };
             let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher.clone());
-            for (task, input) in pending_sources.iter().filter(|_| persist_source) {
+            for (task, input) in &pending_sources {
                 if !scheduler_run.task_states.iter().any(|record| {
                     &record.task_id == task
                         && record.state == mizar_build::scheduler::TaskState::Completed
@@ -1690,7 +1538,7 @@ impl CompilerDriver {
                 }
                 let _ = store.insert(&record);
             }
-            if persist_frontend {
+            if mode == NativeCacheMode::PersistentPrefix {
                 use crate::registry::{PhaseInput, PhaseStatus};
                 use mizar_ir::dispatch_input::{
                     PhaseDispatchInputBundle, SealedParentOutputHandle,
@@ -1931,6 +1779,7 @@ impl CompilerDriver {
             dispatch_gap_phases,
             status,
             publication_decision,
+            diagnostic_index: None,
         })
     }
 

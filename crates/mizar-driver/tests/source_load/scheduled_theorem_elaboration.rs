@@ -146,7 +146,13 @@ fn scheduled_theorem_elaboration_matches_genuine_publication() {
                         CompletionOrder::Reverse
                     };
                     let submission = driver
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     assert_eq!(
                         submission.status,
@@ -597,7 +603,7 @@ fn scheduled_theorem_elaboration_preserves_resource_refusals() {
                 let (_, submit) = fixture.submit_request(vec![], vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner)
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let graph = submission.task_graph.as_ref().unwrap();
                 let task = graph

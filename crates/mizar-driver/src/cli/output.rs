@@ -114,6 +114,9 @@ pub(super) fn output_from_submit_error(
     error: DriverSubmitError,
 ) -> CliOutput {
     match error {
+        DriverSubmitError::InvalidSubmitOptions { .. } => {
+            internal_error_output(invocation, "invalid_submit_options")
+        }
         DriverSubmitError::NativeSourceVersionsProvided { .. }
         | DriverSubmitError::InvalidCapturedSession { .. } => {
             internal_error_output(invocation, "invalid_native_submission")

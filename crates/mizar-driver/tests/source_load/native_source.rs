@@ -64,7 +64,13 @@ fn native_source_layout_feeds_protected_prefix_like_explicit_clean_layout() {
             let mut driver =
                 CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
             let submission = driver
-                .submit_captured(session.clone(), &ids, &snapshots, current)
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    current,
+                    Default::default(),
+                )
                 .unwrap();
             assert_eq!(
                 submission.status,
@@ -277,7 +283,16 @@ fn native_source_layout_drives_nested_cross_package_import_discovery() {
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured_with_import_discovery(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         let graph = submission.task_graph.as_ref().unwrap();
         let run = submission.scheduler_run.as_ref().unwrap();

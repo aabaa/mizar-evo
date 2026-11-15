@@ -279,6 +279,7 @@ fn direct_driver_projection(
             &ids,
             &snapshots,
             phase_zero_submit_input(worker_count, completion_order),
+            Default::default(),
         )
         .expect("phase-zero submission succeeds");
     let stream = driver.events(submission.session.id());
@@ -298,6 +299,7 @@ fn deferred_multi_task_projection(
             &ids,
             &snapshots,
             source_module_submit_input(worker_count, completion_order),
+            Default::default(),
         )
         .expect("multi-task submission is classified before scheduler dispatch");
     let stream = driver.events(submission.session.id());
@@ -595,6 +597,7 @@ fn watch_suppression_projection(seed: u8) -> WatchProjection {
             &snapshots,
             phase_zero_submit_input(1, CompletionOrder::Canonical),
             watch_control(None),
+            Default::default(),
         )
         .expect("initial watch submission succeeds");
     let second = driver
@@ -604,6 +607,7 @@ fn watch_suppression_projection(seed: u8) -> WatchProjection {
             &snapshots,
             phase_zero_submit_input(4, CompletionOrder::Reverse),
             watch_control(Some(first.submission.session.id())),
+            Default::default(),
         )
         .expect("superseding watch submission succeeds");
 

@@ -928,7 +928,13 @@ fn native_theorem_vcs_core_preparation_publication_preserves_genuine_outputs() {
                         let (_, submit) = fixture.submit_request(vec![], vec![]);
                         let submission = CompilerDriver::new(builder.build().unwrap())
                             .with_output_publisher(independent.clone())
-                            .submit_captured(session.clone(), ids, snapshots, submit)
+                            .submit_captured(
+                                session.clone(),
+                                ids,
+                                snapshots,
+                                submit,
+                                Default::default(),
+                            )
                             .unwrap();
                         let frontend = submission
                             .scheduler_run

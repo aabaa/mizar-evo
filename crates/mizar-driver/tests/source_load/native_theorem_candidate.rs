@@ -116,7 +116,7 @@ fn native_theorem_candidate_core_vc_discharge_caller_matches_genuine_inputs() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -466,7 +466,7 @@ fn native_theorem_candidate_core_vc_discharge_caller_preserves_refusals() {
                 let (_, submit) = fixture.submit_request(vec![], vec![]);
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -1636,7 +1636,13 @@ fn native_theorem_candidate_publication_seals_genuine_payload() {
                     )];
                     let submission = CompilerDriver::new(builder.build().unwrap())
                         .with_output_publisher(owner.clone())
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     let (inputs, original) = native_disk_lookup_context(&submission, ids);
                     let outputs = submission
@@ -2070,7 +2076,7 @@ fn native_theorem_candidate_publication_preserves_refusals() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -2370,7 +2376,7 @@ fn native_theorem_candidate_check_four_parent_caller_matches_genuine_check() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -2733,7 +2739,7 @@ fn native_theorem_candidate_check_four_parent_caller_preserves_refusals() {
                 )];
                 CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner)
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap()
             };
             let outputs = |submission: &mizar_driver::driver::BuildSubmission| {
@@ -3453,7 +3459,7 @@ fn native_theorem_candidate_check_storage_replays_genuine_inputs() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -3845,7 +3851,7 @@ fn native_theorem_candidate_check_storage_preserves_refusals() {
             )];
             let submission = CompilerDriver::new(builder.build().unwrap())
                 .with_output_publisher(owner.clone())
-                .submit_captured(session.clone(), ids, snapshots, submit)
+                .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                 .unwrap();
             let (inputs, original) = native_disk_lookup_context(&submission, ids);
             let outputs = submission
@@ -4562,7 +4568,13 @@ fn native_theorem_candidate_check_publication_seals_genuine_payload() {
                     )];
                     let submission = CompilerDriver::new(builder.build().unwrap())
                         .with_output_publisher(owner.clone())
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     let (inputs, original) = native_disk_lookup_context(&submission, ids);
                     let outputs = submission
@@ -5173,7 +5185,7 @@ fn native_theorem_candidate_check_publication_preserves_refusals() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let outputs = submission
@@ -5721,7 +5733,7 @@ fn native_theorem_candidate_selection_matches_genuine_check() {
                 )];
                 let submission = CompilerDriver::new(builder.build().unwrap())
                     .with_output_publisher(owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, submit)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                     .unwrap();
                 let (inputs, original) = native_disk_lookup_context(&submission, ids);
                 let refs = submission
@@ -6181,7 +6193,7 @@ fn native_theorem_candidate_selection_preserves_refusals() {
             )];
             let submission = CompilerDriver::new(builder.build().unwrap())
                 .with_output_publisher(owner.clone())
-                .submit_captured(session.clone(), ids, snapshots, submit)
+                .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
                 .unwrap();
             let (inputs, original) = native_disk_lookup_context(&submission, ids);
             let refs = submission
@@ -6592,7 +6604,13 @@ fn native_theorem_candidate_selection_preserves_refusals() {
                 )];
                 let wrong_submission = CompilerDriver::new(wrong_builder.build().unwrap())
                     .with_output_publisher(wrong_owner.clone())
-                    .submit_captured(session.clone(), ids, snapshots, wrong_submit)
+                    .submit_captured(
+                        session.clone(),
+                        ids,
+                        snapshots,
+                        wrong_submit,
+                        Default::default(),
+                    )
                     .unwrap();
                 let (wrong_inputs, wrong_original) =
                     native_disk_lookup_context(&wrong_submission, ids);

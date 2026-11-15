@@ -14,6 +14,12 @@ phase adapter、producer output、artifact publication token、LSP bridge が未
 fake adapter、stub API、provisional token、一時的な仮配線を登録せず、
 `external_dependency_gap` または `deferred` として記録する。
 
+## Production composition
+
+`StageConfig` は cutoff、artifact root、VC schema、discharge/ATP/verifier 設定、witness/main/output path を束ねる。`StageConfig::frontend(roots)` は SourceLoad/Frontend、`StageConfig::source_theorem(roots)` は既存 bounded chain の ArtifactCommit までを選ぶ。opt-in 既定値は snapshot-generation-v1/snapshot-vc-v1、snapshot-native FOF、equality/native property 対応、first-order quantifier、scoped guard predicate、TPTP、owner の既定 policy、proof-witnesses/snapshot、main.mizir.json、artifacts である。
+`assemble_registry(&config)` は既存登録 method と builder 検証へ委譲する。cutoff は既存 source adapter phase に限り、PackageResolve、BackendRun、DocumentationExtract は対象外。設定は snapshot 登録、公開権限付与、service 実行、scheduler 順序変更や bounded adapter の一般化を行わない。既存 transport/path 検証 error を伝播し、custom service 注入には従来の builder を使える。
+inline `mizar_driver::facade` module は driver/request/registry の入口型と既存 owner 設定型を re-export する。依存や意味的権限を追加しない。
+
 ## 所有境界
 
 `registry` が所有するもの:

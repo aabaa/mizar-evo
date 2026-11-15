@@ -98,7 +98,13 @@ fn scheduled_theorem_signature_matches_genuine_summary_and_worker_replay() {
                         CompletionOrder::Reverse
                     };
                     let submission = driver
-                        .submit_captured(session.clone(), ids, snapshots, submit)
+                        .submit_captured(
+                            session.clone(),
+                            ids,
+                            snapshots,
+                            submit,
+                            Default::default(),
+                        )
                         .unwrap();
                     assert_eq!(
                         submission.status,

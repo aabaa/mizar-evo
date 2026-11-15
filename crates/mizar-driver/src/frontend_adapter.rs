@@ -13829,7 +13829,13 @@ mod snapshot_payload_tests {
         let mut driver =
             CompilerDriver::new(registry(true)).with_output_publisher(publisher.clone());
         let submission = driver
-            .submit_captured(session, &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .unwrap();
         (submission, publisher)
     }
@@ -14051,7 +14057,13 @@ mod snapshot_publication_tests {
         let (session, input, owner) = fixture.prepare(1);
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("genuine complete build submits");
 
         assert_eq!(
@@ -14109,7 +14121,13 @@ mod snapshot_publication_tests {
             fixture.prepare_with_open_buffers(1, &[("main", 7), ("leaf", 7)]);
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("genuine OpenBuffer build submits");
 
         assert_eq!(snapshot_events(&driver, session.id()).len(), 1);
@@ -14157,12 +14175,24 @@ mod snapshot_publication_tests {
         );
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
         driver
-            .submit_captured(older.clone(), &fixture.ids, &fixture.snapshots, older_input)
+            .submit_captured(
+                older.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                older_input,
+                Default::default(),
+            )
             .unwrap();
         let retained = snapshot_events(&driver, older.id()).remove(0);
         driver = driver.with_output_publisher(newer_owner);
         driver
-            .submit_captured(newer.clone(), &fixture.ids, &fixture.snapshots, newer_input)
+            .submit_captured(
+                newer.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                newer_input,
+                Default::default(),
+            )
             .unwrap();
         assert!(
             driver
@@ -14199,6 +14229,7 @@ mod snapshot_publication_tests {
                 &fixture.ids,
                 &fixture.snapshots,
                 buffer_input,
+                Default::default(),
             )
             .expect("genuine OpenBuffer build submits");
         let buffer_publication = snapshot_events(&driver, buffer.id()).remove(0);
@@ -14210,7 +14241,13 @@ mod snapshot_publication_tests {
         );
         driver = driver.with_output_publisher(disk_owner.clone());
         let disk_submission = driver
-            .submit_captured(disk.clone(), &fixture.ids, &fixture.snapshots, disk_input)
+            .submit_captured(
+                disk.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                disk_input,
+                Default::default(),
+            )
             .expect("genuine Disk build submits after the editor transition");
         let disk_publication = fixture.resolve(&disk_submission, &disk_owner).unwrap();
 
@@ -14246,7 +14283,13 @@ mod snapshot_publication_tests {
         let (session, input, owner) = fixture.prepare_with_open_buffers(1, &[("main", 7)]);
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
         let _submission = driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("genuine mixed-origin build submits");
         assert_eq!(snapshot_events(&driver, session.id()).len(), 1);
         let publication = snapshot_events(&driver, session.id()).remove(0);
@@ -14289,7 +14332,13 @@ mod snapshot_publication_tests {
             .unwrap();
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
         driver
-            .submit_captured(older.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                older.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .unwrap();
         assert!(snapshot_events(&driver, older.id()).is_empty());
     }
@@ -14310,7 +14359,13 @@ mod snapshot_publication_tests {
             let mut driver =
                 CompilerDriver::new(registry(!missing_commit)).with_output_publisher(owner);
             driver
-                .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+                .submit_captured(
+                    session.clone(),
+                    &fixture.ids,
+                    &fixture.snapshots,
+                    input,
+                    Default::default(),
+                )
                 .unwrap();
             assert!(snapshot_events(&driver, session.id()).is_empty());
         }
@@ -14348,6 +14403,7 @@ mod snapshot_publication_tests {
                 &fixture.ids,
                 &fixture.snapshots,
                 input,
+                Default::default(),
             )
             .expect("a stale captured request still records its build result");
 
@@ -14364,12 +14420,20 @@ mod snapshot_publication_tests {
         let (session, input, owner) = fixture.prepare(1);
         let mut driver = CompilerDriver::new(registry(false)).with_output_publisher(owner.clone());
         let (submission, index) = driver
-            .submit_captured_with_native_diagnostic_index(
+            .submit_captured(
                 session.clone(),
                 &fixture.ids,
                 &fixture.snapshots,
                 input,
+                crate::driver::SubmitOptions {
+                    diagnostic_index: Some(crate::driver::DiagnosticIndexMode::Native),
+                    ..Default::default()
+                },
             )
+            .map(|mut submission| {
+                let index = submission.diagnostic_index.take();
+                (submission, index)
+            })
             .expect("partial genuine pipeline submits");
         assert!(snapshot_events(&driver, session.id()).is_empty());
         assert!(
@@ -14387,7 +14451,13 @@ mod snapshot_publication_tests {
         let (session, input, owner) = fixture.prepare(1);
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner);
         let submission = driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("partial artifact build with a malformed module submits");
         let stream = driver.events(session.id());
         assert!(snapshot_events(&driver, session.id()).is_empty());
@@ -14409,7 +14479,13 @@ mod snapshot_publication_tests {
         let registry = builder.build().expect("frontend-only registry is valid");
         let mut driver = CompilerDriver::new(registry).with_output_publisher(owner);
         driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("genuine frontend-only pipeline submits");
         assert!(snapshot_events(&driver, session.id()).is_empty());
     }
@@ -14420,7 +14496,13 @@ mod snapshot_publication_tests {
         let (session, input, owner) = fixture.prepare(1);
         let mut driver = CompilerDriver::new(registry(true)).with_output_publisher(owner.clone());
         driver
-            .submit_captured(session.clone(), &fixture.ids, &fixture.snapshots, input)
+            .submit_captured(
+                session.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
             .expect("genuine complete build submits");
         let retained = snapshot_events(&driver, session.id())
             .into_iter()

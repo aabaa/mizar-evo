@@ -55,7 +55,7 @@ fn native_disk_cache_request_projects_real_storage_and_replays_without_local_ids
                 CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
             fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
             let submission = driver
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             let captured = submission.session.captured();
             let phase_input = PhaseInput::new(
@@ -324,7 +324,7 @@ fn native_disk_cache_request_keeps_captured_and_explicit_policy_identities_disti
             .unwrap();
         let mut driver = CompilerDriver::new(source_registry());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         let captured = submission.session.captured();
         let phase_input = PhaseInput::new(
@@ -429,7 +429,7 @@ fn native_disk_cache_request_rejects_unbound_dispatch_capture_roots_and_policy_m
         .unwrap();
     let mut driver = CompilerDriver::new(source_registry());
     let submission = driver
-        .submit_captured(session, &ids, &snapshots, input)
+        .submit_captured(session, &ids, &snapshots, input, Default::default())
         .unwrap();
     let captured = submission.session.captured();
     let phase_input = PhaseInput::new(
@@ -1991,7 +1991,7 @@ fn native_disk_cache_lookup_misses_changed_source_maps_context_and_policy() {
         fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
         let mut driver = CompilerDriver::new(source_registry());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, submit_input)
+            .submit_captured(session, &ids, &snapshots, submit_input, Default::default())
             .unwrap();
         let (inputs, input) = native_disk_lookup_context(&submission, &ids);
         let policy = match mode {
@@ -2229,7 +2229,7 @@ fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
                 fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
                 if old {
                     let submission = driver
-                        .submit_captured(session, &ids, &snapshots, input)
+                        .submit_captured(session, &ids, &snapshots, input, Default::default())
                         .unwrap();
                     let (inputs, phase_input) = native_disk_lookup_context(&submission, &ids);
                     assert_eq!(inputs.validate_native_lock_content(), Ok(()));
@@ -2285,7 +2285,13 @@ fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
                 clean_builder.register_frontend(vec![]);
                 let clean = CompilerDriver::new(clean_builder.build().unwrap())
                     .with_output_publisher(clean_owner.clone())
-                    .submit_captured(session.clone(), &ids, &snapshots, clean_input)
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        clean_input,
+                        Default::default(),
+                    )
                     .unwrap();
                 let source_task = source_task(&clean);
                 let frontend_task = clean
@@ -2321,8 +2327,19 @@ fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
                         .discard_obsolete_completed_task(source_task.id.clone());
                 }
                 let submission = driver
-                    .submit_captured_with_native_disk_cache(
-                        session, &ids, &snapshots, input, &policy, &store,
+                    .submit_captured(
+                        session,
+                        &ids,
+                        &snapshots,
+                        input,
+                        SubmitOptions {
+                            native_cache: Some(NativeCacheOptions {
+                                policy: &policy,
+                                store: &store,
+                                mode: NativeCacheMode::ReadOnly,
+                            }),
+                            ..Default::default()
+                        },
                     )
                     .unwrap();
                 let run = submission.scheduler_run.as_ref().unwrap();
@@ -2602,15 +2619,27 @@ fn native_disk_cache_edits_match_independent_clean_prefixes_across_replay_contro
                     &mut driver
                 };
                 let submission = if clean || warmup {
-                    active.submit_captured(session, &ids, selected_snapshots, input)
-                } else {
-                    active.submit_captured_with_native_disk_cache(
+                    active.submit_captured(
                         session,
                         &ids,
                         selected_snapshots,
                         input,
-                        &policy,
-                        &store,
+                        Default::default(),
+                    )
+                } else {
+                    active.submit_captured(
+                        session,
+                        &ids,
+                        selected_snapshots,
+                        input,
+                        SubmitOptions {
+                            native_cache: Some(NativeCacheOptions {
+                                policy: &policy,
+                                store: &store,
+                                mode: NativeCacheMode::ReadOnly,
+                            }),
+                            ..Default::default()
+                        },
                     )
                 }
                 .unwrap();
@@ -2996,8 +3025,19 @@ fn native_disk_cache_edits_match_independent_clean_prefixes_across_replay_contro
         assert_eq!(unused.state(), BuildSessionState::SnapshotCaptured);
         assert!(driver.session(unused.id()).is_none());
         let obsolete = driver
-            .submit_captured_with_native_disk_cache(
-                unused, &ids, &snapshots, input, &policy, &store,
+            .submit_captured(
+                unused,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    native_cache: Some(NativeCacheOptions {
+                        policy: &policy,
+                        store: &store,
+                        mode: NativeCacheMode::ReadOnly,
+                    }),
+                    ..Default::default()
+                },
             )
             .unwrap();
         assert_eq!(
@@ -3768,7 +3808,7 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         let captured = submission.session.captured();
         let version = captured
@@ -4121,7 +4161,7 @@ fn native_disk_frontend_lookup_misses_changed_source_raw_policy_and_context() {
             let mut driver =
                 CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
             let submission = driver
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             let (_, source_input) = native_disk_lookup_context(&submission, &ids);
             let refs = submission

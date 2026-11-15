@@ -21,7 +21,7 @@ fn scheduled_workspace_intermediate_consumes_only_its_own_public_symbols() {
         input.worker_count = 4;
         let mut driver = fixture.scheduled_driver();
         let submission = driver
-            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input, Default::default())
             .unwrap();
         assert_eq!(
             submission.session.captured().snapshot().id,
@@ -233,7 +233,13 @@ fn scheduled_artifact_importing_intermediate_exports_only_its_own_symbol() {
             indexed.clone(),
         );
         let baseline = CompilerDriver::new(source_registry())
-            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
             .unwrap();
         fixture
             .publisher
@@ -251,7 +257,13 @@ fn scheduled_artifact_importing_intermediate_exports_only_its_own_symbol() {
         let mut driver = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(fixture.publisher.clone());
         let submission = driver
-            .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.session.captured().snapshot().id,
@@ -371,7 +383,13 @@ fn workspace_leaf_is_not_injected_by_ordinary_no_provider_submit() {
     );
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default(),
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -417,7 +435,13 @@ fn scheduled_complete_import_overlay_hands_off_real_leaf_output() {
     input.worker_count = 4;
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default(),
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -502,7 +526,13 @@ fn scheduled_import_overlay_cannot_invent_a_source_import() {
         fixture.scheduled_request(complete_leaf_import_overlay(), Vec::new(), Vec::new());
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default(),
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -544,7 +574,13 @@ fn scheduled_import_overlay_does_not_synthesize_a_cached_leaf_output() {
     )]);
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default(),
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -594,7 +630,13 @@ fn scheduled_import_overlay_keeps_supplied_dispatch_provider_authoritative() {
     input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
     let mut driver = fixture.scheduled_driver();
     let submission = driver
-        .submit(request, &fixture.ids, &SnapshotRegistry::new(), input)
+        .submit(
+            request,
+            &fixture.ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default(),
+        )
         .unwrap();
     assert_eq!(
         submission.session.captured().snapshot().id,
@@ -676,7 +718,7 @@ fn scheduled_source_frontend_prefix_publishes_real_parent_and_blocks_later_servi
         };
         let (request, input) = make_request();
         let baseline = CompilerDriver::new(source_registry())
-            .submit(request, &ids, &snapshots, input)
+            .submit(request, &ids, &snapshots, input, Default::default())
             .unwrap();
         assert_eq!(
             baseline.status,
@@ -737,7 +779,9 @@ fn scheduled_source_frontend_prefix_publishes_real_parent_and_blocks_later_servi
                     .collect(),
             );
         }
-        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request, &ids, &snapshots, input, Default::default())
+            .unwrap();
         assert_eq!(submission.session.captured().snapshot().id, snapshot);
         assert_eq!(
             submission.status,
@@ -868,7 +912,9 @@ fn scheduled_frontend_import_failure_retains_diagnostics_and_blocks_dependents()
     builder.register_frontend(Vec::new());
     let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
     let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
-    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    let submission = driver
+        .submit(request, &ids, &snapshots, input, Default::default())
+        .unwrap();
     assert_eq!(submission.session.captured().snapshot().id, snapshot);
     assert_eq!(
         submission.status,
@@ -961,7 +1007,9 @@ fn scheduled_prefix_requires_current_publisher_and_both_builtin_services() {
             driver = driver.with_output_publisher(publisher);
         }
         let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
-        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request, &ids, &snapshots, input, Default::default())
+            .unwrap();
         assert_eq!(
             submission.session.captured().snapshot().id,
             snapshot,
@@ -1005,7 +1053,9 @@ fn scheduled_prefix_respects_source_and_frontend_publication_rights() {
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
         let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
-        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request, &ids, &snapshots, input, Default::default())
+            .unwrap();
         assert_eq!(submission.session.captured().snapshot().id, snapshot);
         assert_eq!(
             submission.session.state(),
@@ -1069,7 +1119,9 @@ fn scheduled_prefix_never_replaces_supplied_dispatch_inputs() {
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
         let (request, mut input) = fixture.submit_request(Vec::new(), Vec::new());
         input.phase_dispatch_inputs = Some(Box::new(mode));
-        let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request, &ids, &snapshots, input, Default::default())
+            .unwrap();
         assert_eq!(submission.session.captured().snapshot().id, snapshot);
         let (expected_state, expected_status, expected_task_state) = match mode {
             SuppliedInput::None => (
@@ -1130,7 +1182,9 @@ fn scheduled_frontend_rejects_cache_hit_without_retained_source_parent() {
             Vec::new(),
         )),
     )]);
-    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    let submission = driver
+        .submit(request, &ids, &snapshots, input, Default::default())
+        .unwrap();
     assert_eq!(submission.session.captured().snapshot().id, snapshot);
     assert_eq!(
         submission.status,
@@ -1222,7 +1276,9 @@ fn scheduled_frontend_uses_sorted_captured_dependency_summary_hashes() {
     builder.register_frontend(vec![(PackageId::new("dep"), artifact_root)]);
     let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
     let (request, input) = fixture.submit_request(captured, indexed);
-    let submission = driver.submit(request, &ids, &snapshots, input).unwrap();
+    let submission = driver
+        .submit(request, &ids, &snapshots, input, Default::default())
+        .unwrap();
     assert_eq!(submission.session.captured().snapshot().id, snapshot);
     let graph = submission.task_graph.as_ref().unwrap();
     let frontend = graph
@@ -1452,7 +1508,7 @@ fn prepared_native_prefix_uses_frozen_disk_and_open_sources_with_real_storage_an
             fixture.write(b"changed disk content");
             fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
             let submission = driver
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             assert_eq!(
                 submission.status,
@@ -1691,7 +1747,7 @@ fn native_scheduled_diagnostics_cancellation_generated_and_denied_publication_re
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher.clone());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         let run = submission.scheduler_run.as_ref().unwrap();
         let results = run.phase_results.values().flatten().collect::<Vec<_>>();
@@ -1957,17 +2013,23 @@ fn native_capture_and_prepared_submission_fail_closed_without_replacing_pending_
     cancelled.cancel();
     let cancelled_id = cancelled.id();
     assert!(
-        matches!(driver.submit_captured(cancelled, &ids, &snapshots, input), Err(DriverSubmitError::InvalidCapturedSession { session }) if session.id() == cancelled_id)
+        matches!(driver.submit_captured(cancelled, &ids, &snapshots, input, Default::default()), Err(DriverSubmitError::InvalidCapturedSession { session }) if session.id() == cancelled_id)
     );
     assert!(driver.session(cancelled_id).is_none());
     let (_, input) = fixture.submit_request(vec![], vec![]);
     assert!(matches!(
-        driver.submit_captured(session.clone(), &ids, &SnapshotRegistry::new(), input),
+        driver.submit_captured(
+            session.clone(),
+            &ids,
+            &SnapshotRegistry::new(),
+            input,
+            Default::default()
+        ),
         Err(DriverSubmitError::InvalidCapturedSession { .. })
     ));
     let (_, input) = fixture.submit_request(vec![], vec![]);
     let submission = driver
-        .submit_captured(session.clone(), &ids, &snapshots, input)
+        .submit_captured(session.clone(), &ids, &snapshots, input, Default::default())
         .unwrap();
     assert_eq!(
         submission.status,
@@ -1975,7 +2037,7 @@ fn native_capture_and_prepared_submission_fail_closed_without_replacing_pending_
     );
     let (_, input) = fixture.submit_request(vec![], vec![]);
     assert!(matches!(
-        driver.submit_captured(session, &ids, &snapshots, input),
+        driver.submit_captured(session, &ids, &snapshots, input, Default::default()),
         Err(DriverSubmitError::InvalidCapturedSession { .. })
     ));
     let (legacy_request, input) = fixture.submit_request(vec![], vec![]);
@@ -1985,7 +2047,7 @@ fn native_capture_and_prepared_submission_fail_closed_without_replacing_pending_
         .capture_snapshot(&snapshots)
         .unwrap();
     assert!(matches!(
-        driver.submit_captured(legacy, &ids, &snapshots, input),
+        driver.submit_captured(legacy, &ids, &snapshots, input, Default::default()),
         Err(DriverSubmitError::InvalidCapturedSession { .. })
     ));
 }
@@ -2082,7 +2144,13 @@ fn computation_replay_native_inputs_retain_metadata_in_protected_driver_plans() 
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -2217,7 +2285,8 @@ fn workspace_lock_paths_reject_actual_native_inputs_before_source_phases() {
         builder.register_frontend(vec![]);
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
-        let result = driver.submit_captured(session.clone(), &ids, &snapshots, input);
+        let result =
+            driver.submit_captured(session.clone(), &ids, &snapshots, input, Default::default());
         if path == "alpha" {
             let submission = result.unwrap();
             assert_eq!(
@@ -2367,7 +2436,7 @@ fn lock_content_hash_from_actual_files_feeds_genuine_snapshot_and_source_load_ca
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         assert_eq!(
             submission.status,
@@ -2540,7 +2609,7 @@ fn config_content_hash_from_native_plans_feeds_genuine_snapshot_and_source_load_
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         assert_eq!(
             submission.status,
@@ -2763,7 +2832,13 @@ fn package_toolchain_native_inputs_retain_association_in_protected_driver_plans(
         let mut driver =
             CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
         let submission = driver
-            .submit_captured(session.clone(), &ids, &snapshots, current)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                current,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -3212,7 +3287,7 @@ fn native_public_theorem_formula_text_candidates_preserve_captured_original_owne
             let mut builder = PhaseRegistryBuilder::new();
             builder.register_source_load();
             let submission = CompilerDriver::new(builder.build().unwrap())
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             let (inputs, _) = native_disk_lookup_context(&submission, &ids);
             let module = mizar_build::module_index::ModuleId::new(
@@ -3531,7 +3606,13 @@ fn locked_toolchain_metadata_native_capture_matches_clean_consumers_and_rejects_
             let mut driver =
                 CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
             let submission = driver
-                .submit_captured(session.clone(), &ids, &snapshots, current)
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    current,
+                    Default::default(),
+                )
                 .unwrap();
             assert_eq!(
                 submission.status,

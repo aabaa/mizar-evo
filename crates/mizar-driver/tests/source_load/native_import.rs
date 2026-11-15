@@ -138,11 +138,15 @@ fn native_import_discovery_replays_raw_versions_with_fresh_owners_and_rejects_co
             );
             producer_input.dependency_overlay = ModuleDependencyOverlay::unavailable();
             let produced = producer
-                .submit_captured_with_import_discovery(
+                .submit_captured(
                     producer_session.clone(),
                     &producer_ids,
                     &producer_snapshots,
                     producer_input,
+                    SubmitOptions {
+                        discover_imports: true,
+                        ..Default::default()
+                    },
                 )
                 .unwrap();
             for module in ["leaf", "main"] {
@@ -292,11 +296,15 @@ fn native_import_discovery_replays_raw_versions_with_fresh_owners_and_rejects_co
             );
             conflicting_input.dependency_overlay = ModuleDependencyOverlay::unavailable();
             let rejected = conflicting
-                .submit_captured_with_import_discovery(
+                .submit_captured(
                     session.clone(),
                     &ids,
                     &snapshots,
                     conflicting_input,
+                    SubmitOptions {
+                        discover_imports: true,
+                        ..Default::default()
+                    },
                 )
                 .unwrap();
             assert!(
@@ -324,7 +332,16 @@ fn native_import_discovery_replays_raw_versions_with_fresh_owners_and_rejects_co
         fs::remove_file(fixture.root.join("alpha/src/leaf.miz")).unwrap();
         driver = driver.with_output_publisher(publisher.clone());
         let submission = driver
-            .submit_captured_with_import_discovery(session, &ids, &snapshots, input)
+            .submit_captured(
+                session,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
+            )
             .unwrap();
         assert_eq!(
             submission.status,
@@ -376,7 +393,7 @@ fn native_import_discovery_replays_raw_versions_with_fresh_owners_and_rejects_co
     }
     let (_, input) = fixture.submit_request(vec![], vec![]);
     let obsolete = driver
-        .submit_captured(oldest.unwrap(), &ids, &snapshots, input)
+        .submit_captured(oldest.unwrap(), &ids, &snapshots, input, Default::default())
         .unwrap();
     assert_eq!(
         obsolete.status,

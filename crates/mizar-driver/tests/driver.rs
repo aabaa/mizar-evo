@@ -56,7 +56,13 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
     let mut driver = CompilerDriver::default();
 
     let submission = driver
-        .submit(request(1), &ids, &snapshots, submit_input(Vec::new()))
+        .submit(
+            request(1),
+            &ids,
+            &snapshots,
+            submit_input(Vec::new()),
+            Default::default(),
+        )
         .expect("root-only workspace submits");
 
     assert_eq!(
@@ -135,6 +141,7 @@ fn non_phase_zero_descriptor_fixtures_block_on_dispatch_gap() {
                 WorkspaceSourceFile::new("src/main.miz", "main.miz"),
                 WorkspaceSourceFile::new("src/util.miz", "util.miz"),
             ]),
+            Default::default(),
         )
         .expect("registered descriptor fixtures classify dispatch readiness");
 
@@ -183,7 +190,7 @@ fn registered_services_execute_from_scheduler_selected_dispatch() {
     input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
 
     let submission = driver
-        .submit(request(4), &ids, &snapshots, input)
+        .submit(request(4), &ids, &snapshots, input, Default::default())
         .expect("registered services dispatch from scheduler callback");
 
     assert_eq!(
@@ -256,7 +263,7 @@ fn invalid_phase_dispatch_bundle_fails_without_dispatch_gap() {
     input.phase_dispatch_inputs = Some(Box::new(WrongSnapshotPhaseInputs));
 
     let submission = driver
-        .submit(request(5), &ids, &snapshots, input)
+        .submit(request(5), &ids, &snapshots, input, Default::default())
         .expect("invalid dispatch input is reported through scheduler outcome");
 
     assert_eq!(
@@ -290,7 +297,7 @@ fn phase_dispatch_provider_error_fails_without_dispatch_gap() {
     input.phase_dispatch_inputs = Some(Box::new(ErrorPhaseInputs));
 
     let submission = driver
-        .submit(request(6), &ids, &snapshots, input)
+        .submit(request(6), &ids, &snapshots, input, Default::default())
         .expect("provider dispatch error is reported through scheduler outcome");
 
     assert_eq!(
@@ -324,7 +331,7 @@ fn phase_dispatch_provider_none_blocks_as_dispatch_gap() {
     input.phase_dispatch_inputs = Some(Box::new(NonePhaseInputs));
 
     let submission = driver
-        .submit(request(7), &ids, &snapshots, input)
+        .submit(request(7), &ids, &snapshots, input, Default::default())
         .expect("missing provider bundle is reported as dispatch gap");
 
     assert_eq!(
@@ -359,7 +366,7 @@ fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
         let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
         input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
         let submission = driver
-            .submit(request(41), &ids, &snapshots, input)
+            .submit(request(41), &ids, &snapshots, input, Default::default())
             .expect("probe run builds task graph");
         task_id_for_phase(&submission, PipelinePhase::SourceLoad)
     };
@@ -378,7 +385,7 @@ fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
     )]);
 
     let submission = driver
-        .submit(request(41), &ids, &snapshots, input)
+        .submit(request(41), &ids, &snapshots, input, Default::default())
         .expect("cache hit skips dispatch input gap for source task");
 
     assert_eq!(
@@ -421,6 +428,7 @@ fn partial_registry_with_extra_or_wrong_service_keeps_missing_service_preflight(
             &ids,
             &snapshots,
             submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+            Default::default(),
         )
         .unwrap();
     let snapshot = baseline.session.captured().snapshot().id;
@@ -474,6 +482,7 @@ fn partial_registry_with_extra_or_wrong_service_keeps_missing_service_preflight(
                 &ids,
                 &snapshots,
                 submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+                Default::default(),
             )
             .unwrap();
         assert_eq!(submission.session.captured().snapshot().id, snapshot);
@@ -526,7 +535,7 @@ fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
         input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
 
         let submission = driver
-            .submit(request(42), &ids, &snapshots, input)
+            .submit(request(42), &ids, &snapshots, input, Default::default())
             .expect("terminal registry status maps through scheduler callback");
 
         let artifact = task_id_for_phase(&submission, PipelinePhase::ArtifactCommit);
@@ -562,7 +571,9 @@ fn recoverable_frontend_diagnostics_do_not_release_semantic_dependents() {
     ));
     let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
     input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
-    let submission = driver.submit(request(83), &ids, &snapshots, input).unwrap();
+    let submission = driver
+        .submit(request(83), &ids, &snapshots, input, Default::default())
+        .unwrap();
 
     let frontend = task_id_for_phase(&submission, PipelinePhase::Frontend);
     let module_resolve = task_id_for_phase(&submission, PipelinePhase::ModuleResolve);
@@ -603,6 +614,7 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
             &ids,
             &snapshots,
             submit_input(vec![WorkspaceSourceFile::new("../bad.miz", "../bad.miz")]),
+            Default::default(),
         )
         .expect_err("invalid source layout reports module-index diagnostics");
     let failed_session = match error {
@@ -626,6 +638,7 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
             &ids,
             &snapshots,
             submit_input(Vec::new()),
+            Default::default(),
         )
         .expect("older same-lane request is classified after failed newer bootstrap");
 
@@ -664,6 +677,7 @@ fn stale_same_lane_submission_is_suppressed_before_scheduler_submission() {
             &ids,
             &snapshots,
             submit_input(Vec::new()),
+            Default::default(),
         )
         .expect("newer same-lane request submits");
     let stale = driver
@@ -672,6 +686,7 @@ fn stale_same_lane_submission_is_suppressed_before_scheduler_submission() {
             &ids,
             &snapshots,
             submit_input(Vec::new()),
+            Default::default(),
         )
         .expect("stale same-lane request is classified");
 
@@ -714,6 +729,7 @@ fn missing_phase_services_block_before_scheduler_outputs_are_interpreted() {
             &ids,
             &snapshots,
             submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+            Default::default(),
         )
         .expect("missing services are classified, not fatal");
 
@@ -758,7 +774,7 @@ fn scheduler_cancellation_finishes_without_partial_publication() {
     input.cancellation = CancellationPolicy::default().with_current_snapshot(snapshot(99));
 
     let submission = driver
-        .submit(request(8), &ids, &snapshots, input)
+        .submit(request(8), &ids, &snapshots, input, Default::default())
         .expect("phase-0 cancellation submits through mizar-build scheduler");
 
     assert_eq!(
@@ -1473,6 +1489,7 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
                 &ids,
                 &snapshots,
                 input,
+                Default::default(),
             )
             .unwrap();
         let run = submission.scheduler_run.unwrap();
@@ -1534,7 +1551,13 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
                 submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
             stale_input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
             let stale = driver
-                .submit(request(81), &ids, &snapshots, stale_input)
+                .submit(
+                    request(81),
+                    &ids,
+                    &snapshots,
+                    stale_input,
+                    Default::default(),
+                )
                 .unwrap();
             assert_eq!(
                 stale.session.captured().snapshot().id,
@@ -1621,6 +1644,7 @@ fn noncomplete_publication_retains_batches_without_outputs() {
                 &InMemorySessionIdAllocator::new(),
                 &SnapshotRegistry::new(),
                 input,
+                Default::default(),
             )
             .unwrap();
         let run = submission.scheduler_run.unwrap();
@@ -1681,6 +1705,7 @@ fn scheduled_theorem_resolver_prefix_requires_exact_real_services() {
                 &ids,
                 &snapshots,
                 submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+                Default::default(),
             )
             .unwrap();
         assert!(
@@ -1768,6 +1793,7 @@ fn scheduled_theorem_signature_prefix_requires_exact_four_services_and_current_p
                 &ids,
                 &snapshots,
                 submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]),
+                Default::default(),
             )
             .unwrap();
         assert!(
@@ -1890,7 +1916,9 @@ fn scheduled_theorem_type_checking_prefix_requires_real_five_services_and_preser
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real" | "missing-type" | "provider-none" | "provider-error" | "provider-snapshot"
@@ -2040,7 +2068,9 @@ fn scheduled_theorem_registration_resolution_prefix_requires_real_six_services_a
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real"
@@ -2202,7 +2232,9 @@ fn scheduled_theorem_overload_resolution_prefix_requires_real_seven_services_and
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real" | "missing-overload" | "provider-none" | "provider-error" | "provider-snapshot"
@@ -2368,7 +2400,9 @@ fn scheduled_theorem_elaboration_prefix_requires_real_eight_services_and_preserv
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real"
@@ -2546,7 +2580,9 @@ fn scheduled_theorem_algorithm_preparation_prefix_requires_real_nine_services_an
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real"
@@ -2738,7 +2774,9 @@ fn scheduled_theorem_vc_generation_prefix_requires_real_ten_services_and_preserv
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real" | "missing-vc" | "provider-none" | "provider-error" | "provider-snapshot"
@@ -2945,7 +2983,9 @@ fn scheduled_theorem_vc_discharge_prefix_requires_real_eleven_services_and_prese
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real"
@@ -3185,7 +3225,9 @@ fn scheduled_theorem_atp_solve_prefix_requires_real_twelve_services_and_preserve
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         let admitted = matches!(
             case,
             "real"
@@ -3438,7 +3480,9 @@ fn scheduled_theorem_candidate_check_prefix_requires_real_thirteen_services_and_
             "provider-snapshot" => Some(Box::new(WrongSnapshotPhaseInputs)),
             _ => None,
         };
-        let submission = driver.submit(request(1), &ids, &snapshots, input).unwrap();
+        let submission = driver
+            .submit(request(1), &ids, &snapshots, input, Default::default())
+            .unwrap();
         if case.starts_with("duplicate-") {
             let graph = submission.task_graph.as_ref().unwrap();
             for (kind, count) in [
@@ -3517,4 +3561,201 @@ fn scheduled_theorem_candidate_check_prefix_requires_real_thirteen_services_and_
             );
         }
     }
+}
+
+#[test]
+fn invalid_submit_options_reject_before_allocation_capture_and_lane_changes() {
+    use mizar_driver::driver::{
+        DiagnosticIndexMode, DriverSubmitError, NativeCacheMode, NativeCacheOptions, SubmitOptions,
+        WatchOwnerSeam, WatchSubmitControl, WatchSubmitError,
+    };
+    use mizar_session::SessionIdAllocator;
+
+    let ids = InMemorySessionIdAllocator::new();
+    let pristine_ids = InMemorySessionIdAllocator::new();
+    let capture_ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut driver = CompilerDriver::default();
+    let mut initial = request(90);
+    initial.origin = BuildRequestOrigin::Watch(mizar_driver::request::WatchRequest {
+        watch_root: initial.workspace_root.clone(),
+        changed_paths: Vec::new(),
+    });
+    let baseline = driver
+        .submit(
+            initial.clone(),
+            &capture_ids,
+            &snapshots,
+            submit_input(vec![]),
+            Default::default(),
+        )
+        .unwrap();
+    let mut newer = initial;
+    newer.generation = BuildRequestGeneration::new(2);
+    let captured = newer
+        .clone()
+        .allocate(&capture_ids)
+        .unwrap()
+        .capture_snapshot(&snapshots)
+        .unwrap();
+    let publisher = Arc::new(PhaseOutputPublisher::new(
+        Arc::new(IrStorageService::new()),
+        Arc::new(SnapshotHandleRegistry::new()),
+    ));
+    let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher);
+    let oracle_input = PhaseInput::new(
+        mizar_build::task_graph::WorkUnit::Workspace,
+        PhaseDispatchInputBundle::without_parent_outputs(
+            captured.captured().snapshot().id,
+            Hash::from_bytes([90; Hash::BYTE_LEN]),
+            Vec::new(),
+        ),
+    );
+    let oracle_result = PhaseResult::complete();
+    let oracle = Some((&oracle_input, &adapter, &oracle_result));
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let store = mizar_cache::cache_store::CacheStoreRoot::new("unused-invalid-options-store");
+    let default = SubmitOptions::default();
+    let discover = SubmitOptions {
+        discover_imports: true,
+        ..default
+    };
+    let diagnostics = SubmitOptions {
+        diagnostic_index: Some(DiagnosticIndexMode::Native),
+        ..default
+    };
+    let disk_discovery = SubmitOptions {
+        diagnostic_index: Some(DiagnosticIndexMode::Disk),
+        ..discover
+    };
+    let retained = SubmitOptions {
+        retained_frontend: oracle,
+        ..default
+    };
+    // Options plus lifecycle entries that reject them; existing suites cover accepted routes.
+    let mut cases = vec![
+        (discover, false, false),
+        (diagnostics, true, false),
+        (disk_discovery, true, true),
+        (retained, true, true),
+    ];
+    for mode in [
+        NativeCacheMode::ReadOnly,
+        NativeCacheMode::ConfiguredReadOnly,
+        NativeCacheMode::PersistentSource,
+        NativeCacheMode::PersistentPrefix,
+    ] {
+        let cache = SubmitOptions {
+            native_cache: Some(NativeCacheOptions {
+                policy: &policy,
+                store: &store,
+                mode,
+            }),
+            ..Default::default()
+        };
+        cases.push((cache, true, false));
+        cases.push((
+            SubmitOptions {
+                discover_imports: true,
+                ..cache
+            },
+            true,
+            true,
+        ));
+        for diagnostic in [DiagnosticIndexMode::Disk, DiagnosticIndexMode::Native] {
+            cases.push((
+                SubmitOptions {
+                    diagnostic_index: Some(diagnostic),
+                    ..cache
+                },
+                true,
+                true,
+            ));
+        }
+        if mode != NativeCacheMode::ReadOnly {
+            cases.push((
+                SubmitOptions {
+                    retained_frontend: oracle,
+                    ..cache
+                },
+                true,
+                true,
+            ));
+        }
+    }
+    let control = WatchSubmitControl {
+        previous_session: Some(baseline.session.id()),
+        output_publisher: None,
+        file_watcher: WatchOwnerSeam::OwnerProvided,
+        lsp_bridge: WatchOwnerSeam::OwnerProvided,
+    };
+    let snapshot = captured.captured().snapshot().id;
+    for (options, draft_rejects, captured_rejects) in cases {
+        if draft_rejects {
+            assert!(matches!(
+                driver.submit(
+                    newer.clone(),
+                    &ids,
+                    &snapshots,
+                    submit_input(vec![]),
+                    options
+                ),
+                Err(DriverSubmitError::InvalidSubmitOptions { .. })
+            ));
+        }
+        if captured_rejects {
+            assert!(matches!(
+                driver.submit_captured(
+                    captured.clone(),
+                    &ids,
+                    &snapshots,
+                    submit_input(vec![]),
+                    options
+                ),
+                Err(DriverSubmitError::InvalidSubmitOptions { .. })
+            ));
+        }
+        let failure = driver
+            .submit_watch_change(
+                newer.clone(),
+                &ids,
+                &snapshots,
+                submit_input(vec![]),
+                control,
+                options,
+            )
+            .unwrap_err();
+        let WatchSubmitError::Submit(failure) = failure else {
+            panic!("expected options failure")
+        };
+        assert!(matches!(
+            *failure.error,
+            DriverSubmitError::InvalidSubmitOptions { .. }
+        ));
+        assert!(failure.superseded.is_none());
+        assert!(failure.snapshot_replacement.is_none());
+        assert_eq!(
+            driver.session(baseline.session.id()),
+            Some(&baseline.session)
+        );
+        assert!(driver.session(captured.id()).is_none());
+        assert!(snapshots.is_current_for_request(snapshot, captured.request().id));
+    }
+    assert_eq!(ids.next_request_id(), pristine_ids.next_request_id());
+    assert_eq!(ids.next_session_id(), pristine_ids.next_session_id());
+    assert_eq!(
+        ids.next_lease_id(snapshot),
+        pristine_ids.next_lease_id(snapshot)
+    );
+    newer.generation = BuildRequestGeneration::new(1);
+    let next = driver
+        .submit(
+            newer,
+            &capture_ids,
+            &snapshots,
+            submit_input(vec![]),
+            Default::default(),
+        )
+        .unwrap();
+    assert_eq!(next.publication_decision, PublicationDecision::Current);
 }

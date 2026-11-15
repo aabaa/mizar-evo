@@ -44,7 +44,7 @@ fn native_toolchain_context_binds_source_and_frontend_with_valid_own_parents() {
             builder.register_frontend(vec![]);
             let mut driver = CompilerDriver::new(builder.build().unwrap());
             let submission = driver
-                .submit_captured(session, &ids, &snapshots, input)
+                .submit_captured(session, &ids, &snapshots, input, Default::default())
                 .unwrap();
             let captured = submission.session.captured();
             let snapshot = captured.snapshot();
@@ -285,11 +285,15 @@ fn native_toolchain_context_blocks_discovery_before_inferred_import_edges() {
                     ToolchainInfo::new("opaque native/toolchain@other-context");
             }
             let mut driver = CompilerDriver::new(source_registry());
-            let result = driver.submit_captured_with_import_discovery(
+            let result = driver.submit_captured(
                 session.clone(),
                 &ids,
                 &snapshots,
                 current,
+                SubmitOptions {
+                    discover_imports: true,
+                    ..Default::default()
+                },
             );
             if mismatch {
                 rejected.push((

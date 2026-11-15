@@ -139,7 +139,13 @@ fn scheduled_cross_package_workspace_parent_uses_target_owned_lexical_identity()
         };
         let (request, input) = make_request();
         let baseline = CompilerDriver::new(source_registry())
-            .submit(request, &ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             baseline.status,
@@ -261,7 +267,13 @@ fn scheduled_cross_package_workspace_parent_uses_target_owned_lexical_identity()
         let (request, mut input) = make_request();
         input.worker_count = 4;
         let submission = driver
-            .submit(request, &ids, &SnapshotRegistry::new(), input)
+            .submit(
+                request,
+                &ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
             .unwrap();
         assert_eq!(
             submission.session.captured().snapshot().id,

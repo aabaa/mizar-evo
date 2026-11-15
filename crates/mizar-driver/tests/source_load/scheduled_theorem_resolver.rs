@@ -76,7 +76,13 @@ fn scheduled_theorem_resolver_matches_genuine_publication_and_worker_replay() {
         builder.register_source_load().register_frontend(vec![]);
         let baseline = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(baseline_owner.clone())
-            .submit_captured(session.clone(), &ids, &snapshots, submit)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                submit,
+                Default::default(),
+            )
             .unwrap();
         let (inputs, source_input) = native_disk_lookup_context(&baseline, &ids);
         let parent = baseline
@@ -146,7 +152,13 @@ fn scheduled_theorem_resolver_matches_genuine_publication_and_worker_replay() {
             let mut driver =
                 CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
             let submission = driver
-                .submit_captured(session.clone(), &ids, &snapshots, submit)
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    submit,
+                    Default::default(),
+                )
                 .unwrap();
             assert_eq!(
                 submission.status,
@@ -752,7 +764,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             prepass_input.dependency_overlay = input.dependency_overlay.clone();
             let prepass = CompilerDriver::new(prepass_builder.build().unwrap())
                 .with_output_publisher(prepass_owner.clone())
-                .submit_captured(session.clone(), &ids, &snapshots, prepass_input)
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    prepass_input,
+                    Default::default(),
+                )
                 .unwrap();
             assert_eq!(prepass.session.captured(), &captured);
             let task = prepass
@@ -969,7 +987,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     _ => None,
                 };
                 let negative = negative_driver
-                    .submit_captured(session.clone(), &ids, &snapshots, negative_input)
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        negative_input,
+                        Default::default(),
+                    )
                     .unwrap();
                 assert!(negative.missing_services.is_empty(), "{case}");
                 let failed = matches!(case, "provider-error" | "provider-snapshot");
@@ -1055,10 +1079,16 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         }
         let replay_session = (backend_free && stage == 3).then(|| session.clone());
         let clean = clean_driver
-            .submit_captured(session.clone(), &ids, &snapshots, clean_input)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                clean_input,
+                Default::default(),
+            )
             .unwrap();
         let actual = driver
-            .submit_captured(session, &ids, &snapshots, input)
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
             .unwrap();
         for submission in [&actual, &clean] {
             assert_eq!(
@@ -2903,6 +2933,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                                     &ids,
                                     &snapshots,
                                     replay_input,
+                                    Default::default(),
                                 )
                                 .unwrap();
                             if case == "stale" {
@@ -3308,6 +3339,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         file_watcher: mizar_driver::driver::WatchOwnerSeam::OwnerProvided,
                         lsp_bridge: mizar_driver::driver::WatchOwnerSeam::OwnerProvided,
                     },
+                    Default::default(),
                 )
                 .unwrap();
             assert_eq!(
