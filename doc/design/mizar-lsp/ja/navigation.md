@@ -31,7 +31,9 @@ schema、summary の形、format、validating reader は Artifact が引き続�
 
 ## Implementation boundary
 
-task14 は read の仕様だけを定める。task7 の registry/atomic activation、task9 の診断公開、task13 の hover、task15 の navigation 実装は別単位のままである。task15 は metadata producer に律速される増分実装であり、この仕様は Rust API、transport encoding、lookup algorithm を選択しない。
+task14 が固定した read の境界に従い、task15 は metadata producer の着地に合わせて navigation を増分で実装する。registry/atomic activation、診断公開、hover はそれぞれ別の owner が引き続き所有する。
+
+task15 の syntax-only token 増分 は、現在の open-buffer の正確な text を既存 lexer の前処理と shell 分類へ渡し、`textDocument/semanticTokens/full` を提供する。legend は `keyword`、`operator`、`number`、`comment`、modifier は空で、役割が不明な identifier は省略する。raw LF、CRLF、単独 CR で区切った各行の UTF-16 token を返す。artifact class による補強は行わず、保持された stale metadata は現在の構文 token に影響しない。定義、参照、document symbol、resolved token の補強は保留し、task15 は未完了のままとする。
 
 navigation は公開済み入力と既存の snapshot association を使い、保留中の OpenBuffer artifact provenance/storage、Session SourceId encoding、registry activation の判断を前提としない。ここではそれらを決定しない。
 

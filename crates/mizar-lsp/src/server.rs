@@ -23,6 +23,9 @@ mod build_bridge_timing_tests;
 #[cfg(test)]
 #[path = "hover_tests.rs"]
 mod hover_tests;
+#[cfg(test)]
+#[path = "semantic_token_tests.rs"]
+mod semantic_token_tests;
 
 /// One LSP connection and its exact client-owned document text.
 #[derive(Default)]
@@ -870,6 +873,7 @@ impl Server {
                 }
                 self.initialized = Some(params.clone());
                 json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true,
+                    "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true},
                     "textDocumentSync": {"openClose": true, "change": 1}}})
             } else {
                 if self.initialized.is_none() {
@@ -879,6 +883,113 @@ impl Server {
                     return error(id.clone(), -32600, "Invalid Request");
                 }
                 match method {
+                    "textDocument/semanticTokens/full" => {
+                        let Some(uri) = params
+                            .and_then(|params| params.pointer("/textDocument/uri"))
+                            .and_then(Value::as_str)
+                            .filter(|uri| !uri.is_empty())
+                        else {
+                            return error(id.clone(), -32602, "Invalid params");
+                        };
+                        let Some((_, text, _)) = self.documents.get(uri) else {
+                            return Some(json!({"jsonrpc": "2.0", "id": id, "result": null}));
+                        };
+                        // The lexer ends line comments at LF. This byte-preserving
+                        // view also terminates them at raw CR; output uses raw text.
+                        let source =
+                            mizar_lexer::preprocess_source_for_lexing(&text.replace('\r', "\n"));
+                        let mut spans = source
+                            .comments
+                            .iter()
+                            .map(|comment| (comment.span, 3u32))
+                            .collect::<Vec<_>>();
+                        for raw in mizar_lexer::scan_raw_recoverable(&source.lexical_text).tokens {
+                            if matches!(
+                                raw.kind,
+                                mizar_lexer::RawTokenKind::Layout
+                                    | mizar_lexer::RawTokenKind::Error
+                            ) {
+                                continue;
+                            }
+                            let Ok(tokens) = mizar_lexer::lex(&raw.lexeme) else {
+                                continue;
+                            };
+                            for token in tokens {
+                                let kind = match token.kind {
+                                    mizar_lexer::TokenKind::ReservedWord => 0,
+                                    mizar_lexer::TokenKind::ReservedSymbol => 1,
+                                    mizar_lexer::TokenKind::Numeral => 2,
+                                    _ => continue,
+                                };
+                                let span = mizar_lexer::SourceSpan::new(
+                                    raw.span.start + token.span.start,
+                                    raw.span.start + token.span.end,
+                                );
+                                let Some(ranges) =
+                                    source.preprocess_map.source_ranges_for_lexical(span)
+                                else {
+                                    return error(id.clone(), -32603, "Invalid token source map");
+                                };
+                                spans.extend(ranges.into_iter().map(|span| (span, kind)));
+                            }
+                        }
+                        spans.sort_by_key(|(span, kind)| (span.start, span.end, *kind));
+                        // Lines belong to this exact raw buffer; CRLF is one break.
+                        let mut lines = Vec::new();
+                        let mut start = 0;
+                        while start < text.len() {
+                            let end = text[start..]
+                                .find(['\r', '\n'])
+                                .map_or(text.len(), |offset| start + offset);
+                            lines.push((start, end));
+                            start = end;
+                            if text.as_bytes().get(start) == Some(&b'\r') {
+                                start += 1;
+                            }
+                            if text.as_bytes().get(start) == Some(&b'\n') {
+                                start += 1;
+                            }
+                        }
+                        let mut data = Vec::new();
+                        let (mut previous_line, mut previous_column) = (0, 0);
+                        for (span, kind) in spans {
+                            if text.get(span.start..span.end).is_none() {
+                                return error(id.clone(), -32603, "Invalid token source range");
+                            }
+                            let first = lines.partition_point(|(_, end)| *end <= span.start);
+                            for (line, &(line_start, line_end)) in lines
+                                .iter()
+                                .enumerate()
+                                .skip(first)
+                                .take_while(|(_, (line_start, _))| *line_start < span.end)
+                            {
+                                let start = span.start.max(line_start);
+                                let end = span.end.min(line_end);
+                                if start >= end {
+                                    continue;
+                                }
+                                let column = text[line_start..start].encode_utf16().count();
+                                let length = text[start..end].encode_utf16().count();
+                                let coordinates = [line, column, length].map(|value| {
+                                    u32::try_from(value)
+                                        .ok()
+                                        .filter(|value| *value <= i32::MAX as u32)
+                                });
+                                let [Some(line), Some(column), Some(length)] = coordinates else {
+                                    return error(id.clone(), -32603, "Token position overflow");
+                                };
+                                let delta_line = line - previous_line;
+                                let delta_column = if delta_line == 0 {
+                                    column - previous_column
+                                } else {
+                                    column
+                                };
+                                data.extend([delta_line, delta_column, length, kind, 0]);
+                                (previous_line, previous_column) = (line, column);
+                            }
+                        }
+                        json!({"data": data})
+                    }
                     "textDocument/hover" => {
                         let valid = params.is_some_and(|params| {
                             params
@@ -1139,7 +1250,7 @@ mod tests {
         assert_eq!(
             response,
             json!({"jsonrpc": "2.0", "id": 7, "result": {
-            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}}}})
+            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}}}})
         );
     }
 
@@ -1796,7 +1907,7 @@ mod tests {
                 server.handle_message(request("initialize", original.clone())),
                 Some(json!({
                     "jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                        "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
+                        "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                     }}
                 }))
             );
@@ -1918,7 +2029,7 @@ mod tests {
             vec![
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32602, "message": "Invalid params"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}}),
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": null}),
@@ -1961,7 +2072,7 @@ mod tests {
             server.handle_message(request("initialize", params.clone())),
             Some(
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "hoverProvider": true, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}})
             )
         );

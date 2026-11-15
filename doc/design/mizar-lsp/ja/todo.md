@@ -185,6 +185,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
       [英語仕様](../en/navigation.md)、[日本語仕様](navigation.md)。
 
 15. **ナビゲーション機能。** [ ] — メタデータの生産者が律速。
+    - 着地済み増分: [syntax-only semantic tokens](../../task_contracts/en/LSP-NAVIGATION-TOKENS.md)。定義、参照、document symbol、resolved token の補強は残る。
     - 定義、参照、document symbol、semantic token を、生産側の層
       （resolver メタデータ、checker の式メタデータ）の着地に合わせて
       増分で実装する。1 変更につき 1 機能増分。最後の増分が着地した

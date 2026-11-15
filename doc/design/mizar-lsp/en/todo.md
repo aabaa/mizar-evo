@@ -184,6 +184,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       [English specification](navigation.md), [Japanese specification](../ja/navigation.md).
 
 15. **Navigation features.** [ ] — paced by metadata producers.
+    - Landed increment: [syntax-only semantic tokens](../../task_contracts/en/LSP-NAVIGATION-TOKENS.md); definitions, references, document symbols and resolved token enrichment remain.
     - Implement definitions, references, document symbols, and semantic
       tokens incrementally as the producing layers land (resolver
       metadata, checker expression metadata); one feature increment per

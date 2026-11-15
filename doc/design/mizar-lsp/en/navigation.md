@@ -31,7 +31,9 @@ Artifact retains schema, summary shape, format and validating-reader ownership; 
 
 ## Implementation boundary
 
-Task14 specifies reads only. Task7 registry/atomic activation, task9 diagnostic publication, task13 hover and task15 navigation implementation remain separate. Task15 is incremental and paced by metadata producers; this specification chooses no Rust API, transport encoding or lookup algorithm.
+Task14 fixes the read boundary; task15 implements navigation incrementally as metadata producers land. Registry/atomic activation, diagnostic publication and hover retain their separate owners.
+
+Task15's syntax-only token increment serves `textDocument/semanticTokens/full` from the exact current open-buffer text through existing lexer preprocessing and shell classification. Its legend is `keyword`, `operator`, `number`, `comment`, with no modifiers; unknown identifier roles are omitted. Raw LF, CRLF and lone CR delimit single-line UTF-16 tokens. No artifact class enrichment is applied, so retained stale metadata cannot affect current syntax tokens. Definitions, references, document symbols and resolved token enrichment remain deferred; task15 remains open.
 
 Navigation consumes published inputs and existing snapshot associations without presuming parked OpenBuffer artifact provenance/storage, Session SourceId encoding or registry activation decisions. None is decided here.
 
