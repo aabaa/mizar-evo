@@ -14,6 +14,10 @@ disk/open-buffer の CRLF は正規化、generated text は保持される。map
 caller が正確な snapshot/map を対応付ける。loaded-only API は原文 editor 座標、
 document freshness、edit applicability を保証しない。
 
+## Public enum policy
+
+`RangeMapError` は `#[non_exhaustive]` を維持する。将来の変換失敗を追加しても downstream match を壊さず、crate 内の match は exhaustive に保つ。
+
 ## Raw OpenBuffer 座標
 
 `lsp_range_from_open_buffer` は最初に loaded range を LineMap で検査する。

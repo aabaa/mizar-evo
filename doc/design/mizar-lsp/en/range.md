@@ -14,6 +14,10 @@ disk/open-buffer loading normalizes CRLF; generated text is retained. The mapper
 Callers bind the exact snapshot/map before conversion; loaded-only APIs establish no
 raw editor coordinates, document freshness or edit applicability.
 
+## Public enum policy
+
+`RangeMapError` remains `#[non_exhaustive]`: future conversion failures can extend the boundary without breaking downstream matches. Internal matches remain exhaustive.
+
 ## Raw OpenBuffer coordinates
 
 `lsp_range_from_open_buffer` first validates the loaded range through its LineMap.

@@ -32,6 +32,10 @@ A retained artifact read may remain stale_artifact after an edit. Preserve its o
 
 A full LspSnapshot requires the coherent completed build boundary and original manifest-backed metadata described by [internal03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#lsp-snapshot-publication). Read the manifest first, retain one complete immutable set, then atomically replace the handler-visible snapshot. ArtifactCommitted alone, Frontend completion and a diagnostic index do not establish that boundary. Driver's genuine coherent SnapshotPublished producer landed in `27e55711e`; `LSP-SNAPSHOT-REGISTRY-ACTIVATION` freezes the downstream registry, IR retention and atomic activation unit.
 
+## Public enum policy
+
+`LspSnapshotFreshness` deliberately remains exhaustive: Current/StaleArtifact classify a complete retained read; pending/unavailable are not retained-read states. A new variant must force callers to revisit freshness handling at compile time.
+
 ## Currentness and retention
 
 Keep [Driver lane/request publication](../../mizar-driver/en/request.md) separate from [IR publisher currentness](../../mizar-ir/en/publisher.md#snapshot-and-work-unit-validation). SnapshotHandleRegistry registers identity/lineage, not currentness. When build ids differ, an owner-authorized publisher replacement can obsolete the prior id. Equal-id editor edits still invalidate the editor association; do not call IR replace_current_snapshot with equal ids or revive an obsolete id.

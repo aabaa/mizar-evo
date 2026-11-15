@@ -20,6 +20,10 @@ coalesce するのは admitted request のみ。submitted request 同士や slot
 capture は admission 時でなく flush 時に行う。capture 失敗は slot を消費して自動再試行せず、割当済 generation を再利用しない。従前の lane-current session を変更も cancel もせず、診断を消去せず、pending 状態を捏造しない。失敗の利用者通知は未規定である。
 capture 成功後に submission が失敗しても、新 generation は lane の generation に留まり旧 generation に戻さない。既存の構造化 Driver submission error と cleanup 所有は変えない。
 
+## Public enum policy
+
+`BuildBridgeError` は意図的に exhaustive を維持する。Capture/Submit は bridge の二つの失敗段階を区別し、Driver error は Submit 内に保持する。新たな段階の追加時には compile time に caller の失敗処理の再検討を要求する。
+
 ## Supersede and terminal lifecycle
 
 編集の継続は t_last のみを更新し、Driver request を行わず、running generation g を cancel しない。置換 capture が成功し Driver が置換を lane-current として受理した後、g に属する session が非終端なら `cancel(session_g, DriverCancelReason::Superseded, snapshots)` をその session に正確に1回要求し、既に終端なら何もしない。capture 失敗では g を cancel しない。

@@ -32,6 +32,10 @@ current な syntax-only overlay は完全 artifact より前に存在できる�
 
 完全 LspSnapshot は [internal03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md#lsp-スナップショットの公開) の coherent completed build 境界と元 manifest-backed metadata を必要とする。manifest を先に読み、一つの完全 immutable set を保持してから handler-visible snapshot を atomic に置換する。ArtifactCommitted のみ、Frontend 完了、診断 index ではこの境界を確立しない。Driver の真正な coherent SnapshotPublished producer は `27e55711e` で実装され、`LSP-SNAPSHOT-REGISTRY-ACTIVATION` が後続 registry・IR retention・atomic activation の単位を凍結する。
 
+## Public enum policy
+
+`LspSnapshotFreshness` は意図的に exhaustive を維持する。Current/StaleArtifact は完全な retained read の分類であり、pending/unavailable はその状態ではない。variant の追加時には compile time に caller の freshness 処理の再検討を要求する。
+
 ## Currentness and retention
 
 [Driver lane/request publication](../../mizar-driver/ja/request.md) と [IR publisher currentness](../../mizar-ir/ja/publisher.md#snapshot-and-work-unit-validation) を区別する。SnapshotHandleRegistry は identity/lineage を登録し、currentness を持たない。build id が異なる場合は、owner が許可した publisher replacement で旧 id を obsolete にできる。id が等しい editor edit でも editor association を無効化し、等しい id に IR replace_current_snapshot を呼んだり obsolete id を復活させたりしない。

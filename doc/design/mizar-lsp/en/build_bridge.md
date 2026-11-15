@@ -20,6 +20,10 @@ Use [Server's native capture](snapshot.md#retained-native-sources) and existing 
 Capture is at flush time, never admission time. A failed capture consumes the slot without automatic retry, does not reuse its allocated generation, leaves the previous lane-current session unchanged and uncancelled, clears no diagnostics and fabricates no pending state. User notification of this failure is unspecified.
 If submission fails after capture succeeds, the new generation remains the lane's generation; do not revert to the old one. Driver's existing structured submission errors and cleanup ownership remain unchanged.
 
+## Public enum policy
+
+`BuildBridgeError` deliberately remains exhaustive: Capture/Submit distinguish the bridge's two failure stages, with Driver errors preserved inside Submit. A new stage must force callers to revisit failure handling at compile time.
+
 ## Supersede and terminal lifecycle
 
 Continued editing only updates t_last; it makes no Driver request and does not cancel running generation g. After replacement capture succeeds and Driver accepts the replacement as lane-current, request `cancel(session_g, DriverCancelReason::Superseded, snapshots)` exactly once for the session belonging to g if nonterminal; do nothing if already terminal. Failed capture never cancels g.

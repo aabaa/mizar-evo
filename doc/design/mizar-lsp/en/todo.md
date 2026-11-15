@@ -235,6 +235,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Deps: 11, 13. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
 21. **Public-enum forward-compatibility policy.** [ ]
+    - Contract: [LSP-PUBLIC-ENUM-POLICY](../../task_contracts/en/LSP-PUBLIC-ENUM-POLICY.md).
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 11. Spec: all module specs.
 
