@@ -191,13 +191,15 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
       時点でチェックを付ける。
     - 依存: 13、14。仕様: `navigation.md`。
 
-16. **仕様: `code_action.md`。** [ ]
+16. **仕様: `code_action.md`。** [x]
     - code action の仕様を執筆する（英語と日本語、コードなし）: 構造化
       fix 提案の LSP code action への変換、適用可能性のフィルタリング、
       自動適用禁止の規則。
     - 依存: 8。仕様: アーキテクチャ 12「Fix Suggestion」、
       [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
       「Code Actions」。
+    - 完了: [設計契約](../../task_contracts/ja/LSP-CODE-ACTION-DESIGN.md)、
+      [英語仕様](../en/code_action.md)、[日本語仕様](code_action.md)。
 
 17. **code action。** [ ]
     - `mizar-diagnostics` の fix ペイロードから code action を実装する。

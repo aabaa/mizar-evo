@@ -190,13 +190,15 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       change. Checked off when the last increment lands.
     - Deps: 13, 14. Spec: `navigation.md`.
 
-16. **Spec: `code_action.md`.** [ ]
+16. **Spec: `code_action.md`.** [x]
     - Write the code-action spec (English and Japanese, no code):
       conversion of structured fix suggestions into LSP code actions,
       applicability filtering, and the no-auto-apply rule.
     - Deps: 8. Spec: architecture 12 "Fix Suggestion",
       [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
       "Code Actions".
+    - Completion: [design contract](../../task_contracts/en/LSP-CODE-ACTION-DESIGN.md),
+      [English specification](code_action.md), [Japanese specification](../ja/code_action.md).
 
 17. **Code actions.** [ ]
     - Implement code actions from `mizar-diagnostics` fix payloads.
