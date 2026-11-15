@@ -49,4 +49,4 @@ These rules consume existing suggestions and snapshot associations independently
 
 Task17 tests cover existing fix safety/applicability classes, deferred resolution, versioned multi-source edits, independent raw UTF-16 edit round trips and invalid/stale refusal. Native publication tests cover currentness independently: existing production diagnostics do not yet attach fixes. Framed stdio covers the unavailable-publication path. Task38 typed consumer tests cover authenticated hash/artifact/backing registration and command reconstruction/revalidation; native payload delivery remains Task39. Unsupported producers and effectful command owners stay filtered; §23.6/SCA-003 credit does not change.
 
-[Native producer prerequisites](native_payload_producers.md) are a separate proposal awaiting owner approval before producer implementation and Task39 redispatch.
+[Native producer prerequisites](native_payload_producers.md) use the approved Q1 A/Q2 A/Q3 B/Q4 A/Q5 A package and separate [ranged host adapter](ranged_diagnostic_host.md); Task39 redispatch follows producer implementation.

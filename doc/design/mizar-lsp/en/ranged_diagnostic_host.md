@@ -1,0 +1,21 @@
+# Ranged diagnostic host input
+Canonical language: English; [Japanese companion](../ja/ranged_diagnostic_host.md).
+
+## Admission and ownership
+
+This defines approved producer Q3-B, paired with the E0041 profile in [native producers](native_payload_producers.md). It is an in-memory diagnostic publication, distinct from a successful manifest-backed [full snapshot](snapshot.md#freshness-and-replacement) and from a version-keyed syntax overlay. It grants no semantic metadata, artifact or proof authority.
+The explicit originating submission consumes the protected native capture, calls Driver once and admits only its own immutable BuildDiagnosticIndex from a terminal Succeeded/Failed/Blocked session under the existing native currentness guard. Every record and anchor must be ranged and convertible against the original captured sources. Non-range SourceLoad, partial/nonterminal/obsolete/foreign input is unavailable; preserve the prior selection on refusal.
+Retain the original capture Arc, source text/maps, URI/version/incarnation, exact aggregated records and producer-backed context/store together. The capture owns its existing OpenBufferOverlay retention until the last publication/reader reference; no IR outputs or completed manifest are synthesized. A non-reused process-local identity distinguishes every activation, including equal snapshot ids.
+
+## Host selection and bindings
+
+The adapter atomically selects one diagnostic publication for action/explanation/command reads. A later admitted diagnostic or full publication replaces that selection; unrelated metadata/navigation still select only the full snapshot. Existing public full-snapshot accessors retain their success-only meaning. Failed admission leaves the previous host selection intact.
+Driver supplies genuine canonical diagnostic drafts with deterministic producer occurrence keys. The host joins only the exact canonical attached producer command and handle to retained owner-authenticated context, never ordinals, code/span/title guesses or mere handle co-occurrence. It installs the exact store and equivalent approved deferred registration before exposing that command. Unsupported dependencies/encodings/associations withhold the affected payload independently.
+A source-error input has no manifest authority: artifact-assisted, artifact-dependent and missing-facts actions remain unavailable. The only command operation is the approved read-only explain reference; local edits and bounded retained CacheRecord reads reuse existing validation and wire conversion. No alternate command carrier or client authority is introduced.
+The explicit host explanation entry reads the selected retained producer store; existing caller-store explanation entry remains compatible and validates handles. Store contents cannot manufacture currentness or fix authority.
+
+## Currentness and retention
+
+Current action delivery requires the same selected publication identity, live native Driver guard and exact original editor tuples/incarnations. Revalidate at offer/resolve/execute and after async reads, preserving cancellation and existing errors. Version-only changes, normalized-equal edits and identical-tuple reopen invalidate actions permanently for that association.
+An editor edit may leave the diagnostic publication selected for retained explanation reads: retain its original content, URI/version and raw maps and report stale_artifact. Never remap old offsets into live text. Obsolete requested snapshot or replacement during a read returns stale_handle; replacement never lends old backing to new equal-id records. Terminal connection state permits no current action delivery.
+Dropping selection follows existing retained-read lifetime; outstanding readers keep their whole original association and store. There is no persistent cache format, eviction policy, OpenBuffer artifact provenance choice, or serialized SourceId change.
