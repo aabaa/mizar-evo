@@ -1,7 +1,5 @@
 //! On-demand resolution of handles from one retained diagnostic publication.
 
-use std::sync::Arc;
-
 use mizar_diagnostics::{
     aggregator::BuildDiagnosticIndex,
     explain::{ExplanationResolution, ExplanationStore, ExplanationSubject},
@@ -64,12 +62,12 @@ impl Server {
         let result = if cancelled() {
             None
         } else {
-            let selected = self.lsp_snapshot(driver, snapshots);
+            let selected = self.diagnostic_host(driver, snapshots);
             let result = selected.as_ref().map_or_else(
                 || Ok(unavailable("no_snapshot")),
                 |(selected, _)| {
                     convert_explanation(
-                        selected.publication().diagnostics(),
+                        selected.diagnostics(),
                         selected.native_open_buffers().captured(),
                         store,
                         &message["params"],
@@ -83,11 +81,11 @@ impl Server {
                     let Some((selected, freshness)) = selected else {
                         return result;
                     };
-                    let Some((latest, latest_freshness)) = self.lsp_snapshot(driver, snapshots)
+                    let Some((latest, latest_freshness)) = self.diagnostic_host(driver, snapshots)
                     else {
                         return stale_handle();
                     };
-                    if !Arc::ptr_eq(&selected, &latest) {
+                    if !selected.same_publication(&latest) {
                         return stale_handle();
                     }
                     if result["freshness"] == "current"

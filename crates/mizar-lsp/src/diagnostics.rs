@@ -56,6 +56,28 @@ pub trait DeferredActionProducer: Send + Sync {
     }
 }
 
+impl DeferredActionProducer
+    for (
+        mizar_diagnostics::explain::ExplanationHandle,
+        mizar_diagnostics::explain::ExplanationPayload,
+    )
+{
+    fn validates_encoding(
+        &self,
+        role: &str,
+        encoding: &str,
+        bytes: &[u8],
+        payload: &mizar_diagnostics::explain::ExplanationPayload,
+        handle: &mizar_diagnostics::explain::ExplanationHandle,
+    ) -> bool {
+        matches!(role, "content" | "summary")
+            && encoding == mizar_driver::NATIVE_EXPORT_SEMICOLON_ENCODING
+            && handle == &self.0
+            && payload == &self.1
+            && bytes == self.1.text().as_bytes()
+    }
+}
+
 /// Immutable host inputs associated with one canonical fix at registration.
 pub struct DeferredFixRegistration {
     /// Exact byte-domain key `mizar-session/source-text/v1`, separately from manifest spelling.
@@ -82,7 +104,7 @@ pub(crate) struct RegisteredDeferredFix {
 }
 
 pub(crate) struct DeferredActionContext<'a> {
-    pub(crate) publication: &'a mizar_driver::events::SnapshotPublication,
+    pub(crate) publication: Option<&'a mizar_driver::events::SnapshotPublication>,
     pub(crate) publication_identity: &'a str,
     pub(crate) registrations: &'a [RegisteredDeferredFix],
     pub(crate) supports_edits: bool,
@@ -207,20 +229,30 @@ pub(crate) fn validate_deferred_fix(
     let Some(registered) = registrations.next() else {
         return false;
     };
-    if registrations.next().is_some() || context.publication.captured() != captured {
+    if registrations.next().is_some()
+        || context
+            .publication
+            .is_some_and(|publication| publication.captured() != captured)
+    {
         return false;
     }
-    validate_registration(context.publication, record, fix, &registered.registration)
+    validate_registration(
+        context.publication,
+        captured,
+        record,
+        fix,
+        &registered.registration,
+    )
 }
 
-fn validate_registration(
-    publication: &mizar_driver::events::SnapshotPublication,
+pub(crate) fn validate_registration(
+    publication: Option<&mizar_driver::events::SnapshotPublication>,
+    captured: &CapturedSnapshot,
     record: &mizar_diagnostics::failure_record::DiagnosticRecord,
     fix: &mizar_diagnostics::fix::FixSuggestion,
     registration: &DeferredFixRegistration,
 ) -> bool {
     use mizar_diagnostics::explain::{ExplanationResolution, ExplanationSourceRef};
-    let captured = publication.captured();
     let Some(sources) = captured.native_sources() else {
         return false;
     };
@@ -252,7 +284,9 @@ fn validate_registration(
     }
     let mut artifacts = Vec::new();
     for dependency in &registration.artifacts {
-        let Some(value) = dependency_value(publication, dependency) else {
+        let Some(value) =
+            publication.and_then(|publication| dependency_value(publication, dependency))
+        else {
             return false;
         };
         artifacts.push(value);
@@ -266,6 +300,11 @@ fn validate_registration(
                     .any(|dependency| dependency.source.source_id == edit.range().source_id)
             })
             || registration.explanation.is_none() && registration.missing_facts.is_none())
+    {
+        return false;
+    }
+    if publication.is_none()
+        && (fix.safety() == FixSafety::ArtifactAssisted || registration.missing_facts.is_some())
     {
         return false;
     }
@@ -395,12 +434,12 @@ impl Server {
         fix: &mizar_diagnostics::fix::FixSuggestion,
         registration: DeferredFixRegistration,
     ) -> bool {
-        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        let Some((selected, LspSnapshotFreshness::Current)) =
+            self.diagnostic_host(driver, snapshots)
         else {
             return false;
         };
         let Some(record) = selected
-            .publication()
             .diagnostics()
             .records()
             .iter()
@@ -409,14 +448,20 @@ impl Server {
             return false;
         };
         if !record.fixes().contains(fix)
-            || !validate_registration(selected.publication(), record, fix, &registration)
+            || !validate_registration(
+                selected.publication(),
+                selected.native_open_buffers().captured(),
+                record,
+                fix,
+                &registration,
+            )
         {
             return false;
         }
         if !self
-            .lsp_snapshot(driver, snapshots)
+            .diagnostic_host(driver, snapshots)
             .is_some_and(|(current, freshness)| {
-                freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(&selected, &current)
+                freshness == LspSnapshotFreshness::Current && selected.same_publication(&current)
             })
         {
             return false;
@@ -459,7 +504,7 @@ impl Server {
         if cancelled() {
             outcome = Err((-32800, "Request cancelled".to_owned()));
         } else if let Some((selected, LspSnapshotFreshness::Current)) =
-            self.lsp_snapshot(driver, snapshots)
+            self.diagnostic_host(driver, snapshots)
         {
             let context = DeferredActionContext {
                 publication: selected.publication(),
@@ -477,7 +522,7 @@ impl Server {
                 }),
             };
             outcome = match execute_deferred_command(
-                selected.publication().diagnostics(),
+                selected.diagnostics(),
                 selected.native_open_buffers().captured(),
                 selected.publication_identity(),
                 &context,
@@ -490,9 +535,9 @@ impl Server {
             if cancelled() {
                 outcome = Err((-32800, "Request cancelled".to_owned()));
             } else if !self
-                .lsp_snapshot(driver, snapshots)
+                .diagnostic_host(driver, snapshots)
                 .is_some_and(|(latest, freshness)| {
-                    freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(&selected, &latest)
+                    freshness == LspSnapshotFreshness::Current && selected.same_publication(&latest)
                 })
             {
                 outcome = Err((-32801, "Diagnostic command is no longer current".to_owned()));
@@ -506,7 +551,7 @@ impl Server {
         Some(response)
     }
 
-    /// Converts the current complete publication using its original retained native maps.
+    /// Converts the selected current diagnostic publication using its original retained native maps.
     /// Missing or stale publications return `None`; unrepresentable records fail the batch.
     /// Diagnostic data references the unchanged index, retaining anchor shape and provenance.
     pub fn snapshot_diagnostic_notifications<A: SessionIdAllocator>(
@@ -514,18 +559,19 @@ impl Server {
         driver: &CompilerDriver,
         snapshots: &SnapshotRegistry<A>,
     ) -> Result<Option<Vec<Value>>, String> {
-        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        let Some((selected, LspSnapshotFreshness::Current)) =
+            self.diagnostic_host(driver, snapshots)
         else {
             return Ok(None);
         };
         let notifications = convert_index(
-            selected.publication().diagnostics(),
+            selected.diagnostics(),
             selected.native_open_buffers().captured(),
         )?;
         Ok(self
-            .lsp_snapshot(driver, snapshots)
+            .diagnostic_host(driver, snapshots)
             .filter(|(current, freshness)| {
-                *freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(current, &selected)
+                *freshness == LspSnapshotFreshness::Current && current.same_publication(&selected)
             })
             .map(|_| notifications))
     }
@@ -560,7 +606,8 @@ impl Server {
         if !supports_edits && !(self.diagnostic_commands_enabled && supports_commands) {
             return Ok((!resolve).then(|| json!([])));
         }
-        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        let Some((selected, LspSnapshotFreshness::Current)) =
+            self.diagnostic_host(driver, snapshots)
         else {
             return Ok((!resolve).then(|| json!([])));
         };
@@ -580,7 +627,7 @@ impl Server {
             commands: self.diagnostic_commands_enabled && supports_commands,
         };
         let mut actions = convert_code_actions_with_deferred(
-            selected.publication().diagnostics(),
+            selected.diagnostics(),
             selected.native_open_buffers().captured(),
             selected.publication_identity(),
             uri,
@@ -589,9 +636,9 @@ impl Server {
             Some(&context),
         )?;
         if !self
-            .lsp_snapshot(driver, snapshots)
+            .diagnostic_host(driver, snapshots)
             .is_some_and(|(current, state)| {
-                state == LspSnapshotFreshness::Current && Arc::ptr_eq(&current, &selected)
+                state == LspSnapshotFreshness::Current && current.same_publication(&selected)
             })
         {
             return Ok((!resolve).then(|| json!([])));
@@ -611,12 +658,13 @@ impl Server {
         snapshots: &SnapshotRegistry<A>,
         output: &mut impl Write,
     ) -> io::Result<usize> {
-        let Some((selected, LspSnapshotFreshness::Current)) = self.lsp_snapshot(driver, snapshots)
+        let Some((selected, LspSnapshotFreshness::Current)) =
+            self.diagnostic_host(driver, snapshots)
         else {
             return Ok(0);
         };
         let frames = convert_index(
-            selected.publication().diagnostics(),
+            selected.diagnostics(),
             selected.native_open_buffers().captured(),
         )
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?
@@ -627,9 +675,10 @@ impl Server {
         let mut count = 0;
         for body in frames {
             if !self
-                .lsp_snapshot(driver, snapshots)
+                .diagnostic_host(driver, snapshots)
                 .is_some_and(|(current, freshness)| {
-                    freshness == LspSnapshotFreshness::Current && Arc::ptr_eq(&current, &selected)
+                    freshness == LspSnapshotFreshness::Current
+                        && current.same_publication(&selected)
                 })
             {
                 break;
@@ -643,7 +692,7 @@ impl Server {
     }
 }
 
-fn convert_index(
+pub(crate) fn convert_index(
     index: &BuildDiagnosticIndex,
     captured: &CapturedSnapshot,
 ) -> Result<Vec<Value>, String> {

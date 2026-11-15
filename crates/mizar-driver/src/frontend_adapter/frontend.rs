@@ -1,4 +1,208 @@
 use super::*;
+use mizar_diagnostics::{
+    explain::{
+        ExplanationHandle, ExplanationHandleId, ExplanationHandleInput, ExplanationKind,
+        ExplanationPayload, ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef,
+        ExplanationSubject,
+    },
+    failure_record::DiagnosticRecord,
+    fix::{
+        FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
+        FixSuggestionInput,
+    },
+};
+use mizar_session::{BuildSnapshotId, LoadedSource, SourceRange};
+
+/// Encoding of the bounded native export-terminator diagnostic context.
+pub const NATIVE_EXPORT_SEMICOLON_ENCODING: &str = "mizar-frontend/export-semicolon-context/v1";
+const EXPORT_INSERTION_DETAIL: &str = "frontend.export_semicolon_insertion";
+
+fn export_backing_hash(role: &str, bytes: &[u8]) -> Hash {
+    let mut hash = blake3::Hasher::new();
+    hash.update(b"mizar-lsp/action-backing/v1");
+    for bytes in [
+        role.as_bytes(),
+        NATIVE_EXPORT_SEMICOLON_ENCODING.as_bytes(),
+        bytes,
+    ] {
+        hash.update(&(bytes.len() as u64).to_le_bytes());
+        hash.update(bytes);
+    }
+    Hash::from_bytes(*hash.finalize().as_bytes())
+}
+
+fn export_semicolon_payload(
+    insertion: SourceRange,
+    snapshot: BuildSnapshotId,
+    code: DiagnosticCode,
+    stable_detail_key: &str,
+) -> Option<(Vec<FixSuggestion>, ExplanationHandle, ExplanationPayload)> {
+    use mizar_artifact::store::{CanonicalJson as J, canonical_json_string};
+    let source = insertion
+        .source_id
+        .to_nonportable_provenance_string()
+        .bytes()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let key = format!(
+        "mizar_frontend.export_semicolon.source_{source}.at_{}",
+        insertion.start
+    );
+    let bytes = canonical_json_string(
+        &J::object([
+            ("category", J::string("syntax.missing_semicolon")),
+            ("site", J::string("export-before-item")),
+            ("expected", J::string(";")),
+            (
+                "insertion_offset",
+                J::integer(i64::try_from(insertion.start).ok()?),
+            ),
+        ])
+        .ok()?,
+    );
+    let summary_hash = export_backing_hash("summary", bytes.as_bytes());
+    let handle = ExplanationHandle::new(ExplanationHandleInput {
+        id: ExplanationHandleId::new(format!("{key}.context")).ok()?,
+        kind: ExplanationKind::DiagnosticContext,
+        subject: ExplanationSubject::Diagnostic {
+            code,
+            stable_detail_key: stable_detail_key.to_owned(),
+        },
+        source: ExplanationSourceRef::CacheRecord {
+            cache_key: format!("{key}.context"),
+            content_hash: Some(export_backing_hash("content", bytes.as_bytes())),
+        },
+        required_snapshot: Some(snapshot),
+        required_artifact_hash: None,
+        summary_hash: Some(summary_hash),
+        preview: None,
+    })
+    .ok()?;
+    let payload = ExplanationPayload::from_preview(
+        ExplanationPreview::new(ExplanationPreviewFormat::StructuredText, bytes),
+        Some(summary_hash),
+    );
+    let mut fixes = Vec::new();
+    for (role, applicability, safety, edits, command, title) in [
+        (
+            "insert",
+            FixApplicability::MaybeIncorrect,
+            FixSafety::LocalTextEdit,
+            vec![FixEdit::new(insertion, ";", Some(String::new())).ok()?],
+            None,
+            "Insert missing export terminator",
+        ),
+        (
+            "explain",
+            FixApplicability::MachineApplicable,
+            FixSafety::CommandOnly,
+            Vec::new(),
+            Some(FixCommandRef::new("mizar_frontend.export_semicolon.explain.v1").ok()?),
+            "Explain missing export terminator",
+        ),
+    ] {
+        let identity = format!("{key}.{role}");
+        fixes.push(
+            FixSuggestion::new(FixSuggestionInput {
+                id: FixSuggestionId::new(identity.clone()).ok()?,
+                producer_key: Some(identity),
+                title: title.to_owned(),
+                applicability,
+                safety,
+                edits,
+                command,
+                required_snapshot: Some(snapshot),
+                required_text_hash: None,
+            })
+            .ok()?,
+        );
+    }
+    Some((fixes, handle, payload))
+}
+
+fn native_export_payload(
+    record: &DiagnosticRecord,
+    loaded: &LoadedSource,
+) -> Option<(Vec<FixSuggestion>, ExplanationHandle, ExplanationPayload)> {
+    let DiagnosticDetailValue::Source(insertion) =
+        record.details().entries().get(EXPORT_INSERTION_DETAIL)?
+    else {
+        return None;
+    };
+    let DiagnosticPrimaryLocation::Span(primary) = record.primary_location() else {
+        return None;
+    };
+    let primary = primary.range();
+    let descriptor =
+        mizar_diagnostics::registry::DiagnosticRegistry::builtin().lookup(record.code())?;
+    if record.code() != DiagnosticCode::from_parts(DiagnosticSeverity::Error, 41).ok()?
+        || record.phase() != DiagnosticPhase::Frontend
+        || record.category() != FailureCategory::ParseError
+        || record.stable_detail_key() != descriptor.semantic_name
+        || record.freshness().source_snapshot() != record.handle().snapshot
+        || !record.freshness().is_current()
+        || insertion.source_id != loaded.source_id
+        || insertion.start != insertion.end
+        || insertion.start != primary.start
+        || primary.source_id != loaded.source_id
+        || loaded.line_map.source() != loaded.text.as_ref()
+        || loaded.line_map.source_id() != loaded.source_id
+    {
+        return None;
+    }
+    loaded.line_map.validate_range(*insertion).ok()?;
+    loaded.line_map.validate_range(primary).ok()?;
+    export_semicolon_payload(
+        *insertion,
+        record.handle().snapshot,
+        record.code(),
+        record.stable_detail_key(),
+    )
+}
+
+/// Validates a genuine native record's exact context association against its retained source.
+/// Admission of records remains the original native capture owner's responsibility.
+pub fn native_export_semicolon_context(
+    record: &DiagnosticRecord,
+    loaded: &LoadedSource,
+) -> Option<ExplanationPayload> {
+    let (_, expected, payload) = native_export_payload(record, loaded)?;
+    let actual = record.explanation()?;
+    (actual.id() == expected.id()
+        && actual.kind() == expected.kind()
+        && actual.subject() == expected.subject()
+        && actual.source() == expected.source()
+        && actual.required_snapshot() == expected.required_snapshot()
+        && actual.required_artifact_hash() == expected.required_artifact_hash()
+        && actual.summary_hash() == expected.summary_hash())
+    .then_some(payload)
+}
+
+/// Authenticates the exact attached read-only command independently of display text.
+pub fn native_export_semicolon_command(
+    record: &DiagnosticRecord,
+    fix: &FixSuggestion,
+    loaded: &LoadedSource,
+) -> bool {
+    if native_export_semicolon_context(record, loaded).is_none() {
+        return false;
+    }
+    let Some((fixes, _, _)) = native_export_payload(record, loaded) else {
+        return false;
+    };
+    let expected = &fixes[1];
+    let matches = |candidate: &FixSuggestion| {
+        candidate.id() == expected.id()
+            && candidate.producer_key() == expected.producer_key()
+            && candidate.applicability() == expected.applicability()
+            && candidate.safety() == expected.safety()
+            && candidate.edits() == expected.edits()
+            && candidate.command() == expected.command()
+            && candidate.required_snapshot() == expected.required_snapshot()
+            && candidate.required_text_hash() == expected.required_text_hash()
+    };
+    matches(fix) && record.fixes().iter().any(matches)
+}
 
 pub(crate) struct FrontendService {
     pub(crate) artifact_roots: Vec<(PackageId, PathBuf)>,
@@ -1141,7 +1345,7 @@ fn convert_frontend_diagnostics(
             let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number).ok()?;
             let descriptor = registry.lookup(code)?;
             let local_code = format!("{prefix}.{leaf}");
-            let details = DiagnosticDetails::from_entries([
+            let mut details = DiagnosticDetails::from_entries([
                 (
                     "frontend.class",
                     DiagnosticDetailValue::String(class.to_owned()),
@@ -1159,6 +1363,36 @@ fn convert_frontend_diagnostics(
                         None,
                     )]
                 });
+            let native = diagnostic
+                .export_semicolon_insertion
+                .filter(|insertion| {
+                    number == 41
+                        && prefix == "syntax"
+                        && class == "syntax"
+                        && insertion.source_id == source.source_id
+                        && insertion.start == insertion.end
+                        && insertion.start == primary.range().start
+                        && source.line_map.validate_range(*insertion).is_ok()
+                })
+                .and_then(|insertion| {
+                    let payload = export_semicolon_payload(
+                        insertion,
+                        snapshot,
+                        code,
+                        descriptor.semantic_name,
+                    )?;
+                    details
+                        .insert(
+                            EXPORT_INSERTION_DETAIL,
+                            DiagnosticDetailValue::Source(insertion),
+                        )
+                        .ok()?;
+                    Some(payload)
+                });
+            let (fixes, explanation) = native.map_or_else(
+                || (Vec::new(), None),
+                |(fixes, handle, _)| (fixes, Some(handle)),
+            );
             DiagnosticDraft::new(DiagnosticDraftInput {
                 source_snapshot: snapshot,
                 code,
@@ -1170,8 +1404,8 @@ fn convert_frontend_diagnostics(
                 secondary_spans: secondary,
                 notes,
                 details,
-                fixes: Vec::new(),
-                explanation: None,
+                fixes,
+                explanation,
             })
             .ok()
         })
@@ -1198,7 +1432,288 @@ mod tests {
 
     static NEXT_SOURCE: AtomicUsize = AtomicUsize::new(0);
 
+    struct EmptyLexicalProvider;
+    impl mizar_frontend::lexical_env::LexicalSummaryProvider for EmptyLexicalProvider {
+        fn resolve_imports(
+            &self,
+            _: &mizar_frontend::lexical_env::LexicalEnvironmentRequest<'_>,
+        ) -> Result<
+            mizar_frontend::lexical_env::ResolvedImports,
+            mizar_frontend::lexical_env::FrontendLexicalEnvironmentError,
+        > {
+            Ok(mizar_frontend::lexical_env::ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: Vec::new(),
+            })
+        }
+    }
+
+    fn native_drafts(text: &str) -> (BuildSnapshotId, LoadedSource, Vec<DiagnosticDraft>) {
+        let (snapshot, loaded) = loaded_source(text);
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(".")),
+            EmptyLexicalProvider,
+            MizarParserSeam,
+        )
+        .run_loaded(source_unit_from_loaded(
+            loaded.clone(),
+            "src/test.miz".into(),
+        ))
+        .unwrap();
+        let drafts =
+            convert_frontend_diagnostics(&output.source, snapshot, &output.diagnostics).unwrap();
+        (snapshot, loaded, drafts)
+    }
+
+    fn native_index(
+        snapshot: BuildSnapshotId,
+        drafts: Vec<DiagnosticDraft>,
+    ) -> mizar_diagnostics::aggregator::BuildDiagnosticIndex {
+        use mizar_diagnostics::sink::{DiagnosticProducerScope, DiagnosticSink};
+        let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+            DiagnosticPhase::Frontend,
+            snapshot,
+            "native-export-test",
+        ));
+        for draft in drafts {
+            sink.emit(draft).unwrap();
+        }
+        mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
+            snapshot,
+            vec![sink.into_batch()],
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn native_export_payload_only_attaches_at_complete_export_before_item() {
+        for text in [
+            "export Std\ndefinition end;",
+            "\u{feff}:: é\r\nexport Std, Other\r\ndefinition end;\r\n",
+        ] {
+            let (snapshot, loaded, drafts) = native_drafts(text);
+            let index = native_index(snapshot, drafts);
+            let record = index
+                .records()
+                .iter()
+                .find(|record| record.explanation().is_some())
+                .unwrap();
+            let offset = loaded.text.find("definition").unwrap();
+            let insertion = &record
+                .fixes()
+                .iter()
+                .find(|fix| !fix.edits().is_empty())
+                .unwrap()
+                .edits()[0];
+            assert_eq!(
+                insertion.range(),
+                SourceRange {
+                    source_id: loaded.source_id,
+                    start: offset,
+                    end: offset
+                }
+            );
+            assert_eq!(insertion.replacement(), ";");
+            assert_eq!(insertion.expected_text(), Some(""));
+            let DiagnosticPrimaryLocation::Span(primary) = record.primary_location() else {
+                panic!("range");
+            };
+            assert_eq!(primary.range().start, offset);
+            assert!(primary.range().end > offset);
+            let payload = native_export_semicolon_context(record, &loaded).unwrap();
+            assert_eq!(
+                payload.text(),
+                format!(
+                    "{{\"category\":\"syntax.missing_semicolon\",\"expected\":\";\",\"insertion_offset\":{offset},\"site\":\"export-before-item\"}}\n"
+                )
+            );
+            assert_eq!(payload.format(), ExplanationPreviewFormat::StructuredText);
+            assert!(!payload.truncated());
+            let ExplanationSourceRef::CacheRecord { content_hash, .. } =
+                record.explanation().unwrap().source()
+            else {
+                panic!("cache");
+            };
+            assert_eq!(
+                *content_hash,
+                Some(export_backing_hash("content", payload.text().as_bytes()))
+            );
+            assert_eq!(
+                payload.summary_hash(),
+                Some(export_backing_hash("summary", payload.text().as_bytes()))
+            );
+            assert_ne!(*content_hash, payload.summary_hash());
+            assert!(
+                record
+                    .fixes()
+                    .iter()
+                    .any(|fix| native_export_semicolon_command(record, fix, &loaded))
+            );
+        }
+        for text in [
+            "export Std",
+            "export Std,\ndefinition end;",
+            "export Std.\ndefinition end;",
+            "export\ndefinition end;",
+            "import Std\ndefinition end;",
+            "theorem T lemma L;",
+        ] {
+            let (_, _, drafts) = native_drafts(text);
+            assert!(!drafts.is_empty(), "{text}");
+            assert!(
+                drafts
+                    .iter()
+                    .all(|draft| draft.fixes().is_empty() && draft.explanation().is_none()),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn native_export_occurrences_keep_canonical_record_and_command_associations() {
+        let (snapshot, loaded, mut drafts) =
+            native_drafts("export Std\nexport Other\ndefinition end;");
+        let forward = native_index(snapshot, drafts.clone());
+        drafts.reverse();
+        let reverse = native_index(snapshot, drafts);
+        assert_eq!(forward, reverse);
+        assert_eq!(forward.len(), 2);
+        let first = &forward.records()[0];
+        let second = &forward.records()[1];
+        assert_ne!(
+            first.explanation().unwrap().id(),
+            second.explanation().unwrap().id()
+        );
+        let command = first
+            .fixes()
+            .iter()
+            .find(|fix| native_export_semicolon_command(first, fix, &loaded))
+            .unwrap();
+        assert!(!native_export_semicolon_command(second, command, &loaded));
+        assert_ne!(
+            native_export_semicolon_context(first, &loaded).unwrap(),
+            native_export_semicolon_context(second, &loaded).unwrap()
+        );
+        let ids = InMemorySessionIdAllocator::new();
+        ids.next_source_id(snapshot).unwrap();
+        let mut foreign = loaded.clone();
+        foreign.source_id = ids.next_source_id(snapshot).unwrap();
+        assert!(native_export_semicolon_context(first, &foreign).is_none());
+        assert!(!native_export_semicolon_command(first, command, &foreign));
+    }
+
+    #[test]
+    fn native_export_invalid_backing_refuses_context_without_removing_local_edit() {
+        let (snapshot, loaded, drafts) = native_drafts("export Std\ndefinition end;");
+        let index = native_index(snapshot, drafts);
+        let record = &index.records()[0];
+        let handle = record.explanation().unwrap();
+        let make = |explanation, fixes| {
+            DiagnosticRecord::from_draft(
+                DiagnosticDraft::new(DiagnosticDraftInput {
+                    source_snapshot: snapshot,
+                    code: record.code(),
+                    phase: record.phase(),
+                    category: record.category(),
+                    stable_detail_key: record.stable_detail_key().to_owned(),
+                    message: record.message().to_owned(),
+                    primary_location: record.primary_location().clone(),
+                    secondary_spans: record.secondary_spans().to_vec(),
+                    notes: record.notes().to_vec(),
+                    details: record.details().clone(),
+                    fixes,
+                    explanation,
+                })
+                .unwrap(),
+                record.handle(),
+                record.freshness().clone(),
+                Vec::new(),
+            )
+            .unwrap()
+        };
+        for variant in 0..7 {
+            let mut input = ExplanationHandleInput {
+                id: handle.id().clone(),
+                kind: handle.kind(),
+                subject: handle.subject().clone(),
+                source: handle.source().clone(),
+                required_snapshot: handle.required_snapshot(),
+                required_artifact_hash: None,
+                summary_hash: handle.summary_hash(),
+                preview: None,
+            };
+            match variant {
+                0 => input.id = ExplanationHandleId::new("foreign").unwrap(),
+                1 => input.kind = ExplanationKind::Internal,
+                2 => {
+                    input.source = ExplanationSourceRef::CacheRecord {
+                        cache_key: "foreign".to_owned(),
+                        content_hash: Some(Hash::from_bytes([1; 32])),
+                    }
+                }
+                3 => {
+                    input.source = ExplanationSourceRef::CacheRecord {
+                        cache_key: match handle.source() {
+                            ExplanationSourceRef::CacheRecord { cache_key, .. } => {
+                                cache_key.clone()
+                            }
+                            _ => unreachable!(),
+                        },
+                        content_hash: None,
+                    }
+                }
+                4 => input.summary_hash = Some(Hash::from_bytes([1; 32])),
+                5 => input.required_snapshot = None,
+                6 => input.required_artifact_hash = Some(Hash::from_bytes([1; 32])),
+                _ => unreachable!(),
+            }
+            let invalid = make(
+                Some(ExplanationHandle::new(input).unwrap()),
+                record.fixes().to_vec(),
+            );
+            assert!(native_export_semicolon_context(&invalid, &loaded).is_none());
+            assert!(invalid.fixes().iter().any(|fix| !fix.edits().is_empty()));
+            assert!(
+                invalid
+                    .fixes()
+                    .iter()
+                    .all(|fix| !native_export_semicolon_command(&invalid, fix, &loaded))
+            );
+        }
+        let no_handle = make(None, record.fixes().to_vec());
+        assert!(native_export_semicolon_context(&no_handle, &loaded).is_none());
+        let no_command = make(
+            Some(handle.clone()),
+            record
+                .fixes()
+                .iter()
+                .filter(|fix| !fix.edits().is_empty())
+                .cloned()
+                .collect(),
+        );
+        assert!(native_export_semicolon_context(&no_command, &loaded).is_some());
+        let command = record
+            .fixes()
+            .iter()
+            .find(|fix| fix.command().is_some())
+            .unwrap();
+        assert!(!native_export_semicolon_command(
+            &no_command,
+            command,
+            &loaded
+        ));
+    }
+
     fn source() -> (BuildSnapshotId, SourceUnit) {
+        let (snapshot, loaded) = loaded_source("éx\n");
+        (
+            snapshot,
+            source_unit_from_loaded(loaded, "src/test.miz".into()),
+        )
+    }
+
+    fn loaded_source(text: &str) -> (BuildSnapshotId, LoadedSource) {
         let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
             "mizar-session-build-snapshot-v1:{}",
             "28".repeat(32)
@@ -1210,7 +1725,7 @@ mod tests {
             NEXT_SOURCE.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir_all(root.join("src")).unwrap();
-        fs::write(root.join("src/test.miz"), "éx\n").unwrap();
+        fs::write(root.join("src/test.miz"), text).unwrap();
         let input = SourceInput {
             package_id: PackageId::new("test"),
             module_path: ModulePath::new("test"),
@@ -1220,12 +1735,13 @@ mod tests {
                 path: "src/test.miz".into(),
             },
         };
-        let source = FrontendSourceLoader::new(DiskSourceLoader::new(&root))
-            .load_source_unit(
-                SourceUnitRequest { snapshot, input },
-                &InMemorySessionIdAllocator::new(),
-            )
-            .unwrap();
+        let source = mizar_session::SourceLoader::load(
+            &DiskSourceLoader::new(&root),
+            snapshot,
+            input,
+            &InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
         fs::remove_dir_all(root).unwrap();
         (snapshot, source)
     }
@@ -1242,6 +1758,7 @@ mod tests {
             }),
             secondary: Vec::new(),
             recovery_note: None,
+            export_semicolon_insertion: None,
         }
     }
 

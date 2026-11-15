@@ -284,7 +284,7 @@ fn loaded_hash_and_utf16_conversion_keep_raw_incarnation_guards() {
     let mut reg = registration(Arc::new(TestProducer::default()));
     reg.text_hash_domain = Some(TEXT_HASH_DOMAIN.to_owned());
     let context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -408,7 +408,7 @@ fn required_text_hash_is_sole_source_only_and_unhashed_multisource_keeps_text_ch
     };
     let correct_registrations = vec![make_registered(correct)];
     let correct_context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &correct_registrations,
         supports_edits: true,
@@ -424,7 +424,7 @@ fn required_text_hash_is_sole_source_only_and_unhashed_multisource_keeps_text_ch
     mismatch.text_hash_domain = Some("unknown-domain".to_owned());
     let mismatch_registrations = vec![make_registered(mismatch)];
     let mismatch_context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &mismatch_registrations,
         supports_edits: true,
@@ -440,7 +440,7 @@ fn required_text_hash_is_sole_source_only_and_unhashed_multisource_keeps_text_ch
         TestProducer::default(),
     )))];
     let missing_context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &missing_registrations,
         supports_edits: true,
@@ -470,7 +470,7 @@ fn required_text_hash_is_sole_source_only_and_unhashed_multisource_keeps_text_ch
         registration: wrong_digest_registration,
     }];
     let wrong_digest_context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &wrong_digest_registrations,
         supports_edits: true,
@@ -499,7 +499,7 @@ fn required_text_hash_is_sole_source_only_and_unhashed_multisource_keeps_text_ch
     let mut declared = registration(Arc::new(TestProducer::default()));
     declared.text_hash_domain = Some(TEXT_HASH_DOMAIN.to_owned());
     let multi_context = DeferredActionContext {
-        publication: selected.publication(),
+        publication: Some(selected.publication()),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -710,7 +710,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         producer: producer.clone(),
     };
     let good_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -787,7 +787,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         registration: selector_registration,
     }];
     let selector_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &selector_registrations,
         supports_edits: true,
@@ -820,7 +820,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         registration: bad_selector,
     }];
     let bad_selector_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &bad_selector_registrations,
         supports_edits: true,
@@ -874,7 +874,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         },
     ];
     let duplicate_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &duplicate_registrations,
         supports_edits: true,
@@ -894,7 +894,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         Some(publication.captured().snapshot().id),
     );
     let wrong_handle_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -960,7 +960,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
             wrong.artifacts[1].hash.digest = Hash::from_bytes(digest);
         }
         let wrong_context = DeferredActionContext {
-            publication,
+            publication: Some(publication),
             publication_identity: PUBLICATION,
             registrations: &[RegisteredDeferredFix {
                 publication: PUBLICATION.to_owned(),
@@ -993,7 +993,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         producer: producer.clone(),
     };
     let wrong_content_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -1030,7 +1030,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         .schema_family
         .push_str("-wrong");
     let wrong_schema_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -1063,7 +1063,7 @@ fn registered_backing_and_selector_require_exact_sources_and_all_dependencies() 
         producer: producer.clone(),
     };
     let wrong_summary_context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[RegisteredDeferredFix {
             publication: PUBLICATION.to_owned(),
@@ -1196,7 +1196,7 @@ fn bindings_commands_and_lifecycle_are_revalidated_without_effectful_owner() {
         registration: command_registration,
     }];
     let context = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &registrations,
         supports_edits: true,
@@ -1259,7 +1259,7 @@ fn bindings_commands_and_lifecycle_are_revalidated_without_effectful_owner() {
         .is_none()
     );
     let no_command_support = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &registrations,
         supports_edits: false,
@@ -1279,7 +1279,7 @@ fn bindings_commands_and_lifecycle_are_revalidated_without_effectful_owner() {
         .is_empty()
     );
     let no_owner = DeferredActionContext {
-        publication,
+        publication: Some(publication),
         publication_identity: PUBLICATION,
         registrations: &[],
         supports_edits: true,

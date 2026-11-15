@@ -47,6 +47,7 @@ pub struct Server {
     native_open_buffers: Option<std::sync::Arc<NativeOpenBufferSnapshot>>,
     diagnostic_overlays: BTreeMap<(String, i32), std::sync::Arc<LspDiagnosticOverlay>>,
     lsp_snapshot: Option<std::sync::Arc<LspSnapshot>>,
+    ranged_diagnostics: Option<std::sync::Arc<RangedDiagnosticPublication>>,
     build_bridge: Option<build_bridge::BuildBridge>,
 }
 
@@ -171,6 +172,225 @@ impl LspSnapshot {
 
     pub(crate) fn publication_identity(&self) -> &str {
         self.retain_owner.as_str()
+    }
+}
+
+/// One retained source-error publication; no manifest or semantic output authority.
+pub(crate) struct RangedDiagnosticPublication {
+    session: mizar_session::BuildSessionId,
+    index: mizar_diagnostics::aggregator::BuildDiagnosticIndex,
+    association: std::sync::Arc<NativeOpenBufferSnapshot>,
+    identity: String,
+    store: std::sync::Arc<mizar_diagnostics::explain::ExplanationStore>,
+}
+
+pub(crate) enum DiagnosticHostRead {
+    Full(std::sync::Arc<LspSnapshot>),
+    Ranged(std::sync::Arc<RangedDiagnosticPublication>),
+}
+
+impl DiagnosticHostRead {
+    pub(crate) fn publication(&self) -> Option<&mizar_driver::events::SnapshotPublication> {
+        match self {
+            Self::Full(snapshot) => Some(snapshot.publication()),
+            Self::Ranged(_) => None,
+        }
+    }
+
+    pub(crate) fn diagnostics(&self) -> &mizar_diagnostics::aggregator::BuildDiagnosticIndex {
+        match self {
+            Self::Full(snapshot) => snapshot.publication().diagnostics(),
+            Self::Ranged(snapshot) => &snapshot.index,
+        }
+    }
+
+    pub(crate) fn native_open_buffers(&self) -> &std::sync::Arc<NativeOpenBufferSnapshot> {
+        match self {
+            Self::Full(snapshot) => snapshot.native_open_buffers(),
+            Self::Ranged(snapshot) => &snapshot.association,
+        }
+    }
+
+    pub(crate) fn publication_identity(&self) -> &str {
+        match self {
+            Self::Full(snapshot) => snapshot.publication_identity(),
+            Self::Ranged(snapshot) => &snapshot.identity,
+        }
+    }
+
+    pub(crate) fn same_publication(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Full(left), Self::Full(right)) => std::sync::Arc::ptr_eq(left, right),
+            (Self::Ranged(left), Self::Ranged(right)) => std::sync::Arc::ptr_eq(left, right),
+            _ => false,
+        }
+    }
+}
+
+impl Server {
+    pub(crate) fn diagnostic_host<A: mizar_session::SessionIdAllocator>(
+        &self,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+    ) -> Option<(DiagnosticHostRead, LspSnapshotFreshness)> {
+        if let Some(selected) = &self.ranged_diagnostics {
+            let current = self
+                .native_open_buffer_snapshot()
+                .is_some_and(|association| {
+                    std::sync::Arc::ptr_eq(&association, &selected.association)
+                })
+                && driver
+                    .validate_current_native_diagnostics(selected.session, snapshots)
+                    .is_ok();
+            return Some((
+                DiagnosticHostRead::Ranged(selected.clone()),
+                if current {
+                    LspSnapshotFreshness::Current
+                } else {
+                    LspSnapshotFreshness::StaleArtifact
+                },
+            ));
+        }
+        self.lsp_snapshot(driver, snapshots)
+            .map(|(snapshot, freshness)| (DiagnosticHostRead::Full(snapshot), freshness))
+    }
+
+    /// Retains only the ranged terminal diagnostics of this original native capture.
+    /// This publishes no successful build, manifest, metadata or IR output.
+    pub fn submit_originating_diagnostic_publication<
+        A: mizar_session::SessionIdAllocator,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &mut self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        mut capture: NativeOpenBufferCapture,
+        allocator: &A,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, bool),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        let association = capture.snapshot.clone();
+        let eligible = self
+            .native_open_buffer_snapshot()
+            .is_some_and(|current| std::sync::Arc::ptr_eq(&current, &association));
+        let session = capture
+            .session
+            .take()
+            .expect("native capture session missing");
+        capture.release_active = None;
+        let (submission, notifications) =
+            self.native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
+        if !eligible || notifications.is_none() {
+            return Ok((submission, false));
+        }
+        let Some(index) = submission.diagnostic_index.clone() else {
+            return Ok((submission, false));
+        };
+        if crate::diagnostics::convert_index(&index, &association.captured).is_err() {
+            return Ok((submission, false));
+        }
+        let sources = association
+            .captured
+            .native_sources()
+            .expect("native sources missing");
+        let mut store = mizar_diagnostics::explain::ExplanationStore::default();
+        for record in index.records() {
+            if let Some((_, loaded, _)) = sources.iter().find(|(_, loaded, _)| {
+                matches!(record.primary_location(), mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::Span(span)
+                    if span.range().source_id == loaded.source_id)
+            }) && let Some(payload) = mizar_driver::native_export_semicolon_context(record, loaded)
+                && let Some(handle) = record.explanation()
+            {
+                store.insert_payload(handle, payload);
+            }
+        }
+        static NEXT_DIAGNOSTIC_PUBLICATION: std::sync::atomic::AtomicU64 =
+            std::sync::atomic::AtomicU64::new(0);
+        let Some(id) = NEXT_DIAGNOSTIC_PUBLICATION
+            .try_update(
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+                |id| id.checked_add(1),
+            )
+            .ok()
+        else {
+            return Ok((submission, false));
+        };
+        let candidate = std::sync::Arc::new(RangedDiagnosticPublication {
+            session: submission.session.id(),
+            index,
+            association: association.clone(),
+            identity: format!("lsp-diagnostic:{id}"),
+            store: std::sync::Arc::new(store),
+        });
+        let mut registrations = Vec::new();
+        for record in candidate.index.records() {
+            let Some((_, loaded, _)) = sources.iter().find(|(_, loaded, _)| {
+                matches!(record.primary_location(), mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::Span(span)
+                    if span.range().source_id == loaded.source_id)
+            }) else { continue; };
+            let Some(payload) = mizar_driver::native_export_semicolon_context(record, loaded)
+            else {
+                continue;
+            };
+            let Some(handle) = record.explanation() else {
+                continue;
+            };
+            for fix in record
+                .fixes()
+                .iter()
+                .filter(|fix| mizar_driver::native_export_semicolon_command(record, fix, loaded))
+            {
+                let bytes = payload.text().as_bytes().to_vec();
+                let encoding = mizar_driver::NATIVE_EXPORT_SEMICOLON_ENCODING.to_owned();
+                let registration = crate::diagnostics::DeferredFixRegistration {
+                    text_hash_domain: None,
+                    artifacts: Vec::new(),
+                    explanation: Some(handle.clone()),
+                    content: Some((encoding.clone(), bytes.clone())),
+                    summary: Some((encoding, bytes)),
+                    missing_facts: None,
+                    command: fix.command().cloned(),
+                    store: Some(candidate.store.clone()),
+                    producer: std::sync::Arc::new((handle.clone(), payload.clone())),
+                };
+                if crate::diagnostics::validate_registration(
+                    None,
+                    &candidate.association.captured,
+                    record,
+                    fix,
+                    &registration,
+                ) {
+                    registrations.push(crate::diagnostics::RegisteredDeferredFix {
+                        publication: candidate.identity.clone(),
+                        diagnostic: record.handle(),
+                        fix: fix.clone(),
+                        registration,
+                    });
+                }
+            }
+        }
+        self.ranged_diagnostics = Some(candidate);
+        self.deferred_fixes = registrations;
+        Ok((submission, true))
+    }
+
+    /// Reads the selected producer-owned retained context without a caller-supplied store.
+    pub fn handle_message_with_native_explanations<A: mizar_session::SessionIdAllocator>(
+        &mut self,
+        message: Value,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Option<Value> {
+        let store = self
+            .ranged_diagnostics
+            .as_ref()
+            .map(|selected| selected.store.clone())
+            .unwrap_or_default();
+        self.handle_message_with_explanations(message, driver, snapshots, &store, cancelled)
     }
 }
 
@@ -522,6 +742,7 @@ impl Server {
             }
         }
         self.deferred_fixes.clear();
+        self.ranged_diagnostics = None;
         self.lsp_snapshot = Some(candidate);
         true
     }
@@ -7534,5 +7755,823 @@ mod diagnostic_overlay_tests {
             artifact_bytes
         );
         assert_eq!(run_batch(cli_args, cli_input), cli_before);
+    }
+}
+
+#[cfg(test)]
+mod native_payload_producer_tests {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+    use serde_json::{Value, json};
+
+    const RAW_SOURCE: &str =
+        "\u{feff}:: 前置 café 😀\r\n:: export profile\r\nexport Std theorem T;";
+
+    fn enable_native_action_capabilities(fixture: &mut RegistryFixture) {
+        let documents = fixture
+            .sources
+            .iter()
+            .map(|(_, _, uri)| {
+                let (version, text) = fixture.server.document(uri).unwrap();
+                (uri.clone(), version, text.to_owned())
+            })
+            .collect::<Vec<_>>();
+        let mut server = Server::default();
+        assert!(server.enable_diagnostic_commands());
+        server
+            .handle_message(json!({
+                "jsonrpc":"2.0", "id":1, "method":"initialize",
+                "params":{"processId":null,"rootUri":null,"capabilities":{
+                    "textDocument":{"codeAction":{"dataSupport":true,
+                        "resolveSupport":{"properties":["edit","command"]}}}
+                }}
+            }))
+            .unwrap();
+        for (uri, version, text) in documents {
+            server.handle_message(json!({"jsonrpc":"2.0", "method":"textDocument/didOpen",
+                "params":{"textDocument":{"uri":uri,"languageId":"mizar",
+                    "version":version,"text":text}}}));
+        }
+        fixture.server = server;
+    }
+
+    fn publish_export_error(
+        fixture: &mut RegistryFixture,
+    ) -> (mizar_driver::driver::BuildSubmission, String) {
+        enable_native_action_capabilities(fixture);
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&uri, 2, RAW_SOURCE.to_owned());
+        fixture.driver = fixture.frontend_only_driver();
+        let capture = fixture.capture();
+        let input = fixture.driver_input();
+        let (submission, selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                capture,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("native source-error publication");
+        assert!(
+            selected,
+            "genuine current terminal capture must be selected"
+        );
+        assert!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .is_none()
+        );
+        (submission, uri)
+    }
+
+    fn notifications(fixture: &RegistryFixture) -> Vec<Value> {
+        fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .expect("ranged diagnostic conversion")
+            .expect("selected current diagnostic publication")
+    }
+
+    fn export_diagnostic(fixture: &RegistryFixture, uri: &str) -> Value {
+        notifications(fixture)
+            .into_iter()
+            .find(|notification| notification["params"]["uri"] == uri)
+            .expect("main diagnostic notification")["params"]["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|diagnostic| diagnostic["code"] == "E0041")
+            .expect("native missing-export-semicolon diagnostic")
+            .clone()
+    }
+
+    fn explain(fixture: &mut RegistryFixture, diagnostic: &Value, id: u64) -> Value {
+        let request = json!({"jsonrpc":"2.0", "id":id, "method":"mizar/explain",
+            "params":{"snapshot":diagnostic["data"]["snapshot"],
+                "diagnosticId":diagnostic["data"]["id"]}});
+        fixture
+            .server
+            .handle_message_with_native_explanations(
+                request,
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .expect("explanation response")
+    }
+
+    fn code_actions(fixture: &mut RegistryFixture, uri: &str, id: u64) -> Value {
+        let (_, text) = fixture.server.document(uri).unwrap();
+        let last_line = text.split('\n').count().saturating_sub(1);
+        let last_line_text = text
+            .split('\n')
+            .next_back()
+            .unwrap_or_default()
+            .trim_end_matches('\r');
+        let end_character = last_line_text.encode_utf16().count();
+        let request = json!({"jsonrpc":"2.0", "id":id, "method":"textDocument/codeAction",
+            "params":{"textDocument":{"uri":uri},
+                "range":{"start":{"line":0,"character":0},
+                    "end":{"line":last_line,"character":end_character}},
+                "context":{"diagnostics":[]}}});
+        fixture
+            .server
+            .handle_message_with_metadata(request, &fixture.driver, &fixture.snapshots)
+            .expect("code action response")["result"]
+            .clone()
+    }
+
+    fn resolve(fixture: &mut RegistryFixture, action: &Value, id: u64) -> Value {
+        fixture
+            .server
+            .handle_message_with_metadata(
+                json!({"jsonrpc":"2.0", "id":id, "method":"codeAction/resolve",
+                    "params":action}),
+                &fixture.driver,
+                &fixture.snapshots,
+            )
+            .expect("resolve response")["result"]
+            .clone()
+    }
+
+    fn native_actions(fixture: &mut RegistryFixture, uri: &str) -> (Value, Value, Value) {
+        let diagnostic = export_diagnostic(fixture, uri);
+        let actions = code_actions(fixture, uri, 20);
+        let local = actions
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|action| {
+                action["data"]["fix"]
+                    .as_str()
+                    .is_some_and(|fix| fix.ends_with(".insert"))
+            })
+            .expect("advisory insertion action");
+        let command = actions
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|action| {
+                action["data"]["fix"]
+                    .as_str()
+                    .is_some_and(|fix| fix.ends_with(".explain"))
+            })
+            .expect("bound explanation command action");
+        (diagnostic, local.clone(), command.clone())
+    }
+
+    #[test]
+    fn genuine_export_error_delivers_raw_mapped_edit_bounded_context_and_command() {
+        let mut fixture = RegistryFixture::new();
+        let (submission, uri) = publish_export_error(&mut fixture);
+        assert!(submission.diagnostic_index.is_some());
+        let frames = notifications(&fixture);
+        let mut wire = Vec::new();
+        let written = fixture
+            .server
+            .publish_snapshot_diagnostics_to_writer(&fixture.driver, &fixture.snapshots, &mut wire)
+            .expect("ranged diagnostic frames");
+        assert_eq!(written, frames.len());
+        assert!(wire.starts_with(b"Content-Length: "));
+        assert!(
+            wire.windows(uri.len())
+                .any(|window| window == uri.as_bytes())
+        );
+        let (diagnostic, local, command) = native_actions(&mut fixture, &uri);
+        assert_eq!(
+            diagnostic["range"]["start"],
+            json!({"line":2,"character":11})
+        );
+        assert_eq!(diagnostic["range"]["end"], json!({"line":2,"character":18}));
+
+        let resolved_edit = resolve(&mut fixture, &local, 21);
+        let edit = &resolved_edit["edit"]["documentChanges"][0];
+        assert_eq!(edit["textDocument"]["uri"], uri);
+        assert_eq!(edit["textDocument"]["version"], 2);
+        assert_eq!(
+            edit["edits"][0]["range"]["start"],
+            json!({"line":2,"character":11})
+        );
+        assert_eq!(
+            edit["edits"][0]["range"]["end"],
+            json!({"line":2,"character":11})
+        );
+        assert_eq!(edit["edits"][0]["newText"], ";");
+
+        let explanation = explain(&mut fixture, &diagnostic, 22);
+        assert_eq!(explanation["result"]["status"], "available");
+        assert_eq!(
+            explanation["result"]["payload"]["format"],
+            "structured_text"
+        );
+        let payload_text = explanation["result"]["payload"]["text"].as_str().unwrap();
+        assert!(payload_text.len() <= 256, "native context remains bounded");
+        let payload: Value = serde_json::from_str(payload_text).unwrap();
+        let raw_insertion = RAW_SOURCE.find("theorem").unwrap();
+        let expected_loaded_offset = raw_insertion - '\u{feff}'.len_utf8() - 2;
+        let loaded = fixture
+            .server
+            .ranged_diagnostics
+            .as_ref()
+            .unwrap()
+            .association
+            .captured
+            .native_sources()
+            .unwrap()
+            .iter()
+            .find(|(_, _, input)| {
+                matches!(
+                    &input.origin,
+                    mizar_session::SourceOriginInput::OpenBuffer { uri: source_uri, .. }
+                        if source_uri == &uri
+                )
+            })
+            .map(|(_, loaded, _)| loaded)
+            .unwrap();
+        assert_eq!(payload["category"], "syntax.missing_semicolon");
+        assert_eq!(payload["site"], "export-before-item");
+        assert_eq!(payload["expected"], ";");
+        assert_eq!(payload["insertion_offset"], expected_loaded_offset);
+        assert_eq!(loaded.text.find("theorem"), Some(expected_loaded_offset));
+        assert_eq!(
+            payload_text,
+            format!("{}\n", payload),
+            "context is canonical JSON"
+        );
+        assert_eq!(explanation["result"]["locations"][0]["uri"], uri);
+        assert_eq!(explanation["result"]["locations"][0]["version"], 2);
+        assert_eq!(
+            explanation["result"]["locations"][0]["range"]["start"],
+            json!({"line":2,"character":11})
+        );
+        let cancelled = fixture
+            .server
+            .handle_message_with_native_explanations(
+                json!({"jsonrpc":"2.0", "id":25, "method":"mizar/explain",
+                    "params":{"snapshot":diagnostic["data"]["snapshot"],
+                        "diagnosticId":diagnostic["data"]["id"]}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| true,
+            )
+            .unwrap();
+        assert_eq!(cancelled["error"]["code"], -32800);
+
+        let resolved_command = resolve(&mut fixture, &command, 23);
+        let command = &resolved_command["command"];
+        assert_eq!(command["command"], "mizar.executeDiagnosticCommand");
+        let executed = fixture
+            .server
+            .handle_message_with_diagnostic_commands(
+                json!({"jsonrpc":"2.0", "id":24, "method":"workspace/executeCommand",
+                    "params":{"command":command["command"],"arguments":command["arguments"]}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .unwrap();
+        assert_eq!(executed["result"]["status"], "available");
+        assert_eq!(executed["result"]["payload"]["text"], payload_text);
+        assert!(
+            fixture
+                .server
+                .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn stale_genuine_payload_refuses_actions_but_retains_original_explanation() {
+        for transition in [
+            "version-only",
+            "normalized-equal",
+            "preceding-line",
+            "close-reopen",
+        ] {
+            let mut fixture = RegistryFixture::new();
+            let (_, uri) = publish_export_error(&mut fixture);
+            let (diagnostic, local, command) = native_actions(&mut fixture, &uri);
+            let original = explain(&mut fixture, &diagnostic, 30);
+            let retained_text = original["result"]["payload"]["text"].clone();
+            match transition {
+                "version-only" => fixture.did_change_version_only(&uri, 3),
+                "normalized-equal" => fixture.did_change_text(
+                    &uri,
+                    3,
+                    RAW_SOURCE
+                        .trim_start_matches('\u{feff}')
+                        .replace("\r\n", "\n"),
+                ),
+                "preceding-line" => fixture.did_change_text(
+                    &uri,
+                    3,
+                    format!(
+                        "\u{feff}:: inserted preceding line\r\n{}",
+                        RAW_SOURCE.trim_start_matches('\u{feff}')
+                    ),
+                ),
+                "close-reopen" => fixture.did_close_and_reopen(&uri, 2),
+                _ => unreachable!(),
+            }
+            let after = explain(&mut fixture, &diagnostic, 31);
+            assert_eq!(after["result"]["status"], "available", "{transition}");
+            assert_eq!(
+                after["result"]["freshness"], "stale_artifact",
+                "{transition}"
+            );
+            assert_eq!(
+                after["result"]["payload"]["text"], retained_text,
+                "{transition}"
+            );
+            assert_eq!(after["result"]["locations"][0]["uri"], uri, "{transition}");
+            assert_eq!(
+                after["result"]["locations"][0]["version"], 2,
+                "{transition}"
+            );
+            assert_eq!(
+                after["result"]["locations"][0]["range"]["start"],
+                json!({"line":2,"character":11}),
+                "{transition}"
+            );
+            assert_eq!(
+                after["result"]["locations"][0]["range"]["end"],
+                json!({"line":2,"character":18}),
+                "{transition}"
+            );
+            assert_eq!(
+                code_actions(&mut fixture, &uri, 32),
+                json!([]),
+                "{transition}"
+            );
+            assert!(
+                resolve(&mut fixture, &local, 33).is_null(),
+                "stale edit locator: {transition}"
+            );
+            assert!(
+                resolve(&mut fixture, &command, 34).is_null(),
+                "stale command locator: {transition}"
+            );
+            let execute = fixture.server.handle_message_with_diagnostic_commands(
+                json!({"jsonrpc":"2.0", "id":35, "method":"workspace/executeCommand",
+                    "params":{"command":"mizar.executeDiagnosticCommand",
+                        "arguments":[command["data"]]}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            );
+            assert_eq!(execute.unwrap()["error"]["code"], -32801, "{transition}");
+        }
+    }
+
+    #[test]
+    fn equal_id_replacement_cannot_reuse_old_locator_or_backing() {
+        let mut fixture = RegistryFixture::new();
+        let (_, uri) = publish_export_error(&mut fixture);
+        let (old_diagnostic, _local, old_command) = native_actions(&mut fixture, &uri);
+        let old_snapshot = old_diagnostic["data"]["snapshot"].clone();
+        let old_id = old_diagnostic["data"]["id"].as_u64().unwrap();
+        let old_identity = fixture
+            .server
+            .ranged_diagnostics
+            .as_ref()
+            .unwrap()
+            .identity
+            .clone();
+        let old_snapshot_id = fixture
+            .server
+            .ranged_diagnostics
+            .as_ref()
+            .unwrap()
+            .index
+            .snapshot();
+        let old_publication =
+            std::sync::Arc::clone(fixture.server.ranged_diagnostics.as_ref().unwrap());
+        let old_store = old_publication.store.clone();
+        let old_handle = old_publication
+            .index
+            .records()
+            .iter()
+            .find(|record| record.handle().id.get() == old_id)
+            .and_then(|record| record.explanation())
+            .expect("original canonical explanation handle")
+            .clone();
+        let prior_native = fixture.server.native_open_buffer_snapshot().unwrap();
+        let capture = fixture.capture();
+        assert_eq!(
+            capture.snapshot.captured().snapshot().id,
+            prior_native.captured().snapshot().id
+        );
+        let input = fixture.driver_input();
+        let (submission, installed) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                capture,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("equal-id replacement submission");
+        assert!(installed);
+        assert_eq!(
+            submission.session.captured().snapshot().id,
+            prior_native.captured().snapshot().id
+        );
+        assert_ne!(
+            fixture.server.ranged_diagnostics.as_ref().unwrap().identity,
+            old_identity
+        );
+        let selected = fixture.server.ranged_diagnostics.as_ref().unwrap().clone();
+        assert!(!std::sync::Arc::ptr_eq(&selected.store, &old_store));
+        let new_handle = selected
+            .index
+            .records()
+            .iter()
+            .find(|record| record.code().to_string() == "E0041")
+            .and_then(|record| record.explanation())
+            .expect("replacement canonical explanation handle");
+        assert_ne!(old_handle.source(), new_handle.source());
+        assert!(!matches!(
+            selected
+                .store
+                .resolve(&old_handle, Some(selected.index.snapshot())),
+            mizar_diagnostics::explain::ExplanationResolution::Available(_)
+        ));
+        assert!(matches!(
+            old_store.resolve(&old_handle, Some(old_snapshot_id)),
+            mizar_diagnostics::explain::ExplanationResolution::Available(_)
+        ));
+        let original_sources = old_publication
+            .association
+            .captured()
+            .native_sources()
+            .unwrap();
+        let (_, old_loaded, old_input) = original_sources
+            .iter()
+            .find(|(_, _, input)| {
+                matches!(
+                    &input.origin,
+                    mizar_session::SourceOriginInput::OpenBuffer { uri: source_uri, .. }
+                        if source_uri == &uri
+                )
+            })
+            .expect("retained original OpenBuffer source");
+        assert!(old_loaded.text.starts_with(":: 前置 café 😀\n"));
+        assert_eq!(old_loaded.line_map.source(), old_loaded.text.as_ref());
+        assert!(matches!(
+            &old_input.origin,
+            mizar_session::SourceOriginInput::OpenBuffer {
+                uri: old_uri,
+                actual_version: 2,
+                text,
+                ..
+            } if old_uri == &uri && text.as_ref() == RAW_SOURCE
+        ));
+
+        let old_read = fixture
+            .server
+            .handle_message_with_native_explanations(
+                json!({"jsonrpc":"2.0", "id":40, "method":"mizar/explain",
+                "params":{"snapshot":old_snapshot,"diagnosticId":old_id}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .unwrap();
+        assert_eq!(old_read["result"]["status"], "available");
+        assert_eq!(old_read["result"]["freshness"], "current");
+        assert_eq!(old_read["result"]["locations"][0]["uri"], uri);
+        let mizar_diagnostics::explain::ExplanationResolution::Available(new_payload) = selected
+            .store
+            .resolve(new_handle, Some(selected.index.snapshot()))
+        else {
+            panic!("replacement publication retains its own backing")
+        };
+        assert_eq!(old_read["result"]["payload"]["text"], new_payload.text());
+        let old_action = fixture
+            .server
+            .handle_message_with_metadata(
+                json!({"jsonrpc":"2.0", "id":41, "method":"codeAction/resolve",
+                "params":old_command}),
+                &fixture.driver,
+                &fixture.snapshots,
+            )
+            .unwrap();
+        assert!(old_action["result"].is_null());
+        let old_execute = fixture
+            .server
+            .handle_message_with_diagnostic_commands(
+                json!({"jsonrpc":"2.0", "id":42, "method":"workspace/executeCommand",
+                "params":{"command":"mizar.executeDiagnosticCommand",
+                    "arguments":[old_command["data"]]}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .unwrap();
+        assert_eq!(old_execute["error"]["code"], -32801);
+
+        let changed_source = RAW_SOURCE.replace("前置", "更新");
+        fixture.did_change_text(&uri, 3, changed_source);
+        let changed_capture = fixture.capture();
+        let changed_input = fixture.driver_input();
+        let (_, changed_selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                changed_capture,
+                &fixture.ids,
+                &fixture.snapshots,
+                changed_input,
+            )
+            .expect("changed-source native replacement");
+        assert!(changed_selected);
+        let obsolete_request = fixture
+            .server
+            .handle_message_with_native_explanations(
+                json!({"jsonrpc":"2.0", "id":43, "method":"mizar/explain",
+                    "params":{"snapshot":old_snapshot,"diagnosticId":old_id}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .unwrap();
+        assert_eq!(obsolete_request["result"]["status"], "stale_handle");
+    }
+
+    #[test]
+    fn incomplete_command_registration_keeps_diagnostic_edit_and_explanation_independent() {
+        use mizar_diagnostics::explain::{
+            ExplanationPayload, ExplanationPreviewFormat, ExplanationStore,
+        };
+
+        for (case, id) in [
+            ("content-encoding", 50),
+            ("content-bytes", 60),
+            ("summary-encoding", 70),
+            ("summary-bytes", 80),
+            ("store-format", 90),
+            ("store-truncated", 100),
+            ("store-hash", 110),
+        ] {
+            let mut fixture = RegistryFixture::new();
+            let (_, uri) = publish_export_error(&mut fixture);
+            let (diagnostic, _local, _command) = native_actions(&mut fixture, &uri);
+            let selected = fixture.server.ranged_diagnostics.as_ref().unwrap().clone();
+            let registration_handle = fixture
+                .server
+                .deferred_fixes
+                .iter()
+                .find(|registered| registered.registration.command.is_some())
+                .and_then(|registered| registered.registration.explanation.as_ref())
+                .expect("native command registration has its exact handle")
+                .clone();
+            let original_payload = match selected
+                .store
+                .resolve(&registration_handle, Some(selected.index.snapshot()))
+            {
+                mizar_diagnostics::explain::ExplanationResolution::Available(payload) => payload,
+                _ => panic!("native publication store contains the registered payload"),
+            };
+            let registration = &mut fixture
+                .server
+                .deferred_fixes
+                .iter_mut()
+                .find(|registered| registered.registration.command.is_some())
+                .expect("native command registration")
+                .registration;
+            match case {
+                "content-encoding" => {
+                    registration.content.as_mut().unwrap().0.push_str(".wrong");
+                }
+                "content-bytes" => {
+                    registration.content.as_mut().unwrap().1.push(b'!');
+                }
+                "summary-encoding" => {
+                    registration.summary.as_mut().unwrap().0.push_str(".wrong");
+                }
+                "summary-bytes" => {
+                    registration.summary.as_mut().unwrap().1.push(b'!');
+                }
+                "store-format" | "store-truncated" | "store-hash" => {
+                    let (format, text, hash, max_bytes) = match case {
+                        "store-format" => (
+                            ExplanationPreviewFormat::PlainText,
+                            original_payload.text().to_owned(),
+                            original_payload.summary_hash(),
+                            1024,
+                        ),
+                        "store-truncated" => (
+                            ExplanationPreviewFormat::StructuredText,
+                            original_payload.text().to_owned(),
+                            original_payload.summary_hash(),
+                            mizar_diagnostics::explain::TRUNCATION_MARKER.len(),
+                        ),
+                        "store-hash" => (
+                            ExplanationPreviewFormat::StructuredText,
+                            original_payload.text().to_owned(),
+                            Some(mizar_session::hash_text("wrong summary hash")),
+                            1024,
+                        ),
+                        _ => unreachable!(),
+                    };
+                    let payload = ExplanationPayload::with_bounds(format, text, hash, max_bytes, 8)
+                        .expect("bounded altered payload");
+                    let mut store = ExplanationStore::new();
+                    store.insert_payload(&registration_handle, payload);
+                    registration.store = Some(std::sync::Arc::new(store));
+                }
+                _ => unreachable!(),
+            }
+
+            let actions = code_actions(&mut fixture, &uri, id);
+            assert_eq!(
+                actions.as_array().unwrap().len(),
+                1,
+                "{case}: unsupported command payload is withheld independently"
+            );
+            let local = resolve(&mut fixture, &actions[0], id + 1);
+            assert_eq!(
+                local["edit"]["documentChanges"][0]["edits"][0]["newText"], ";",
+                "{case}: independent local edit survives"
+            );
+            let explanation = explain(&mut fixture, &diagnostic, id + 2);
+            assert_eq!(explanation["result"]["status"], "available", "{case}");
+            assert_eq!(
+                explanation["result"]["payload"]["text"],
+                original_payload.text(),
+                "{case}"
+            );
+            assert_eq!(export_diagnostic(&fixture, &uri)["code"], "E0041", "{case}");
+        }
+    }
+
+    #[test]
+    fn obsolete_capture_and_missing_host_do_not_admit_native_payloads() {
+        let mut fixture = RegistryFixture::new();
+        enable_native_action_capabilities(&mut fixture);
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&uri, 2, RAW_SOURCE.to_owned());
+        fixture.driver = fixture.frontend_only_driver();
+        let obsolete = fixture.capture();
+        let newer = fixture.capture();
+        let snapshot = newer
+            .snapshot
+            .captured()
+            .snapshot()
+            .id
+            .to_published_schema_string()
+            .unwrap();
+        let input = fixture.driver_input();
+        let (_, selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                obsolete,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("obsolete capture remains a real but ineligible submission");
+        assert!(!selected);
+        assert!(
+            fixture
+                .server
+                .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .is_none()
+        );
+        assert!(fixture.server.ranged_diagnostics.is_none());
+
+        let mut no_host = Server::default();
+        no_host.handle_message(json!({"jsonrpc":"2.0","id":1,"method":"initialize",
+            "params":{"processId":null,"rootUri":null,"capabilities":{}}}));
+        let unavailable = no_host
+            .handle_message_with_native_explanations(
+                json!({"jsonrpc":"2.0","id":2,"method":"mizar/explain",
+                "params":{"snapshot":snapshot,"diagnosticId":0}}),
+                &fixture.driver,
+                &fixture.snapshots,
+                &|| false,
+            )
+            .unwrap();
+        assert_eq!(unavailable["result"]["reason"], "no_snapshot");
+    }
+
+    #[test]
+    fn foreign_capture_refusal_preserves_selected_native_publication_and_source() {
+        let mut selected_fixture = RegistryFixture::new();
+        let (_, uri) = publish_export_error(&mut selected_fixture);
+        let selected =
+            std::sync::Arc::clone(selected_fixture.server.ranged_diagnostics.as_ref().unwrap());
+        let selected_identity = selected.identity.clone();
+        let selected_store = std::sync::Arc::clone(&selected.store);
+        let selected_loaded = selected
+            .association
+            .captured()
+            .native_sources()
+            .unwrap()
+            .iter()
+            .find(|(_, _, input)| {
+                matches!(
+                    &input.origin,
+                    mizar_session::SourceOriginInput::OpenBuffer { uri: source_uri, .. }
+                        if source_uri == &uri
+                )
+            })
+            .map(|(_, loaded, _)| loaded.text.clone())
+            .unwrap();
+
+        let mut foreign = RegistryFixture::new();
+        let foreign_uri = foreign.sources[0].2.clone();
+        foreign.did_change_text(&foreign_uri, 2, RAW_SOURCE.to_owned());
+        foreign.driver = foreign.frontend_only_driver();
+        let foreign_capture = foreign.capture();
+        let foreign_input = foreign.driver_input();
+        let (_, installed) = selected_fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut foreign.driver,
+                foreign_capture,
+                &foreign.ids,
+                &foreign.snapshots,
+                foreign_input,
+            )
+            .expect("genuine foreign capture submission");
+        assert!(
+            !installed,
+            "foreign association cannot select the publication"
+        );
+        let still_selected = selected_fixture.server.ranged_diagnostics.as_ref().unwrap();
+        assert_eq!(still_selected.identity, selected_identity);
+        assert!(std::sync::Arc::ptr_eq(still_selected, &selected));
+        assert!(std::sync::Arc::ptr_eq(
+            &still_selected.store,
+            &selected_store
+        ));
+        let retained_source = still_selected
+            .association
+            .captured()
+            .native_sources()
+            .unwrap()
+            .iter()
+            .find(|(_, _, input)| {
+                matches!(
+                    &input.origin,
+                    mizar_session::SourceOriginInput::OpenBuffer { uri: source_uri, .. }
+                        if source_uri == &uri
+                )
+            })
+            .map(|(_, loaded, _)| loaded.text.clone())
+            .unwrap();
+        assert_eq!(retained_source, selected_loaded);
+
+        selected_fixture.did_change_text(
+            &uri,
+            3,
+            "theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;"
+                .to_owned(),
+        );
+        let clean_capture = selected_fixture.capture();
+        let clean_input = selected_fixture.driver_input();
+        let (_, clean_selected) = selected_fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut selected_fixture.driver,
+                clean_capture,
+                &selected_fixture.ids,
+                &selected_fixture.snapshots,
+                clean_input,
+            )
+            .expect("genuine clean native replacement");
+        assert!(clean_selected, "eligible clean capture atomically selects");
+        let clean = selected_fixture.server.ranged_diagnostics.as_ref().unwrap();
+        assert_ne!(clean.identity, selected_identity);
+        assert!(clean.index.is_empty());
+        assert!(clean.store.is_empty());
+        assert!(selected_fixture.server.deferred_fixes.is_empty());
+        assert!(!std::sync::Arc::ptr_eq(&selected, clean));
+        assert_eq!(
+            selected
+                .association
+                .captured()
+                .native_sources()
+                .unwrap()
+                .iter()
+                .find(|(_, _, input)| {
+                    matches!(
+                        &input.origin,
+                        mizar_session::SourceOriginInput::OpenBuffer { uri: source_uri, .. }
+                            if source_uri == &uri
+                    )
+                })
+                .map(|(_, loaded, _)| loaded.text.clone())
+                .unwrap(),
+            selected_loaded,
+            "replaced publication keeps original source readable while retained"
+        );
     }
 }

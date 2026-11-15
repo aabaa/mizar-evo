@@ -38,6 +38,8 @@ diagnostic record である。
 | `secondary` | opener / context / candidate span のための任意の source anchor |
 | `recovery_note` | parser が継続できた recovery action の短い説明。任意 |
 
+`export_semicolon_insertion: Option<SourceRange>` は完結した export path/list の次の認識済み item の直前だけで parser が認証した空の挿入境界を保持し、constructor は None を既定とします。Primary 診断 range は次 token のままで、recovery を変えません。
+
 `SyntaxDiagnostic::new` は secondary anchor と recovery note を持たない diagnostic
 を作る。`with_secondary` は既存の secondary anchor を置き換えずに追加する。
 `with_recovery_note` は parser recovery advice または action text を記録する。

@@ -435,3 +435,5 @@ Native raw-input checks belong to the source codec. All typed SourceIds rebind
 without loader/provider/lexer/parser execution, registration or publication.
 Stored diagnostics retain order, duplicates, substantive fields and anchors;
 this adds no diagnostic adoption, freshness or accepted artifact semantics.
+
+Parser-owned `export_semicolon_insertion` survives the diagnostic merge in original loaded-source coordinates. Evidence-bearing diagnostics are not serialized by the existing frontend storage codec; decoded older diagnostics carry None.

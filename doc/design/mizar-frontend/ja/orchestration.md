@@ -268,3 +268,5 @@ OpenBuffer 形式。共有復元は取得済み input origin から domain を�
 raw input の検証は source codec が担当し、全 typed SourceId を再束縛する。
 loader/provider/lexer/parser・登録・publication は実行しない。診断の順序・
 重複・各 field・anchor を保ち、診断採用・鮮度・artifact 受理の意味は追加しない。
+
+Parser 所有の `export_semicolon_insertion` は元 loaded-source 座標で診断 merge を通して保持します。根拠を持つ診断は既存 frontend storage codec で serialize せず、旧形式から decode した診断は None とします。

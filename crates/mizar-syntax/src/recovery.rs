@@ -27,6 +27,8 @@ pub struct SyntaxDiagnostic {
     pub primary: SourceRange,
     pub secondary: Vec<SourceAnchor>,
     pub recovery_note: Option<Arc<str>>,
+    /// Authenticated insertion for a complete export followed by another item.
+    pub export_semicolon_insertion: Option<SourceRange>,
 }
 
 impl SyntaxDiagnostic {
@@ -41,6 +43,7 @@ impl SyntaxDiagnostic {
             primary,
             secondary: Vec::new(),
             recovery_note: None,
+            export_semicolon_insertion: None,
         }
     }
 

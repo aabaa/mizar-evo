@@ -27,6 +27,13 @@ fn parser_diagnoses_missing_export_semicolon_before_next_item() {
         SyntaxDiagnosticCode::MissingSemicolon
     );
     assert_eq!(output.diagnostics[0].primary, theorem_range);
+    assert_eq!(
+        output.diagnostics[0].export_semicolon_insertion,
+        Some(SourceRange {
+            end: theorem_range.start,
+            ..theorem_range
+        })
+    );
     let ast = output.ast.expect("missing export semicolon should recover");
     let item_list = single_node(&ast, |kind| matches!(kind, SurfaceNodeKind::ItemList));
     assert_eq!(item_list.children.len(), 2);

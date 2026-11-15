@@ -39,6 +39,8 @@ optional `SurfaceAst`.
 | `secondary` | optional source anchors for opener/context/candidate spans |
 | `recovery_note` | optional short explanation of the recovery action that let parsing continue |
 
+`export_semicolon_insertion: Option<SourceRange>` retains the parser-authenticated empty insertion boundary only for a complete export path/list before a recognized item; constructors default to None. The primary diagnostic range remains the next token; this evidence changes no recovery.
+
 `SyntaxDiagnostic::new` creates a diagnostic with no secondary anchors and no
 recovery note. `with_secondary` appends secondary anchors without replacing
 existing ones. `with_recovery_note` records parser recovery advice or action

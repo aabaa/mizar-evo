@@ -45,3 +45,5 @@ handle は作成時の snapshot または artifact hash の範囲内だけで有
 query fixture は既存 subject の選択、store の結果、上限付き payload の厳密な保持と native UTF-16 変換を検証する。実際の公開 fixture は host 選択と freshness、型付き fixture は元の source location を確認する。explanation content と stale location を合わせた host 配信の検証は native explanation producer の接続を待つ。cancellation、不正要求、framed stdio の劣化も対象とする。§23.6 は partial、SCA-003 は変更しない。
 
 [Native producer の前提](native_payload_producers.md) は承認済み Q1 A/Q2 A/Q3 B/Q4 A/Q5 A と別の [ranged host adapter](ranged_diagnostic_host.md) に従い、Task39 再 dispatch は producer 実装後です。
+
+`handle_message_with_native_explanations` は選択された ranged publication の retained producer store を使います。両 explanation entry は publication identity、stale 元座標、cancellation の検証を共有し、caller-store entry の互換性を保ちます。

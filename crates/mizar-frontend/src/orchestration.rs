@@ -150,6 +150,14 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
     }
 
     fn canonical_storage_bytes(&self, input: Option<&SourceInput>) -> Option<Vec<u8>> {
+        // Native correction evidence is retained in memory, never in the phase codec.
+        if self
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.export_semicolon_insertion.is_some())
+        {
+            return None;
+        }
         let open_input =
             input.filter(|input| matches!(input.origin, SourceOriginInput::OpenBuffer { .. }));
         let prefix = if open_input.is_some() {
@@ -337,6 +345,7 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
                     )?),
                     secondary,
                     recovery_note,
+                    export_semicolon_insertion: None,
                 })
             })
             .collect::<Option<Vec<_>>>()?;
@@ -508,6 +517,8 @@ pub struct FrontendDiagnostic {
     pub secondary: Vec<SourceAnchor>,
     /// Optional recovery note from lower phases.
     pub recovery_note: Option<String>,
+    /// Parser-authenticated empty export terminator insertion in loaded coordinates.
+    pub export_semicolon_insertion: Option<SourceRange>,
 }
 
 /// Location for a frontend diagnostic.
@@ -631,6 +642,7 @@ impl FrontendParserDiagnostic for mizar_syntax::SyntaxDiagnostic {
             location: DiagnosticLocation::SourceRange(self.primary),
             secondary: self.secondary,
             recovery_note: self.recovery_note.map(|note| note.to_string()),
+            export_semicolon_insertion: self.export_semicolon_insertion,
         })
     }
 }
@@ -784,6 +796,7 @@ fn frontend_preprocess_diagnostic(diagnostic: &PreprocessDiagnostic) -> Frontend
         location: DiagnosticLocation::SourceRange(diagnostic.primary),
         secondary: diagnostic.secondary.clone(),
         recovery_note: None,
+        export_semicolon_insertion: None,
     }
 }
 
@@ -811,6 +824,7 @@ fn frontend_lexical_environment_diagnostic(
         location: DiagnosticLocation::SourceRange(diagnostic.primary),
         secondary: diagnostic.secondary.clone(),
         recovery_note: None,
+        export_semicolon_insertion: None,
     }
 }
 
@@ -822,6 +836,7 @@ fn frontend_lexing_diagnostic(diagnostic: &LexingDiagnostic) -> FrontendDiagnost
         location: DiagnosticLocation::SourceRange(diagnostic.primary),
         secondary: diagnostic.secondary.clone(),
         recovery_note: lexing_recovery_note(&diagnostic.payload),
+        export_semicolon_insertion: None,
     }
 }
 
@@ -861,6 +876,7 @@ fn source_load_diagnostic(input: &SourceInput, source: &SourceLoadError) -> Fron
         location: DiagnosticLocation::SourceLoad(source_load_location(input)),
         secondary: Vec::new(),
         recovery_note: None,
+        export_semicolon_insertion: None,
     }
 }
 
@@ -1020,6 +1036,39 @@ mod tests {
     use crate::preprocess::PreprocessDiagnosticKind;
     use mizar_session::{GeneratedSpanAnchor, GeneratedSpanOrigin};
     const A23_PREFIX: &[u8] = b"mizar-frontend-output-disk-v1";
+
+    #[test]
+    fn export_insertion_preserves_loaded_coordinates_without_extending_storage() {
+        let fixture = PackageFixture::new();
+        fixture.write(
+            "src/sample.miz",
+            "\u{feff}:: é\r\nexport Std, Other\r\ndefinition\r\nend;\r\n",
+        );
+        let output = frontend_for_fixture(&fixture, MizarParserSeam)
+            .run(
+                fixture.request("src/sample.miz"),
+                &InMemorySessionIdAllocator::new(),
+            )
+            .unwrap();
+        let diagnostic = output
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.export_semicolon_insertion.is_some())
+            .unwrap();
+        let insertion = diagnostic.export_semicolon_insertion.unwrap();
+        assert_eq!(
+            insertion.start,
+            output.source.source_text.find("definition").unwrap()
+        );
+        assert_eq!(insertion.end, insertion.start);
+        let DiagnosticLocation::SourceRange(primary) = diagnostic.location else {
+            panic!("range");
+        };
+        assert_eq!(primary.start, insertion.start);
+        assert!(primary.end > insertion.end);
+        assert_eq!(insertion.source_id, output.source.source_id);
+        assert!(output.canonical_disk_bytes().is_none());
+    }
 
     #[test]
     fn current_storage_comparison_binds_actual_nested_frontend_source() {
@@ -1510,6 +1559,7 @@ mod tests {
                     Vec::new()
                 },
                 recovery_note: (index == 0).then(|| " recovery β ".to_owned()),
+                export_semicolon_insertion: None,
             })
             .collect();
         output.diagnostics.push(output.diagnostics[0].clone());
@@ -1624,6 +1674,7 @@ mod tests {
             }),
             secondary: vec![],
             recovery_note: None,
+            export_semicolon_insertion: None,
         });
         let bytes = output.canonical_disk_bytes().unwrap();
         let fields = a23_fields(&bytes);
@@ -1818,6 +1869,7 @@ mod tests {
             }),
             secondary: vec![],
             recovery_note: None,
+            export_semicolon_insertion: None,
         });
         let bytes = output.canonical_disk_bytes().unwrap();
         let restored = FrontendOutput::from_canonical_disk_bytes(
@@ -1849,6 +1901,7 @@ mod tests {
             }),
             secondary: vec![],
             recovery_note: None,
+            export_semicolon_insertion: None,
         });
         let overhead = output.canonical_disk_bytes().unwrap().len();
         let limit = 64 * 1024 * 1024;
@@ -2719,6 +2772,7 @@ mod tests {
             location: DiagnosticLocation::SourceRange(primary),
             secondary: Vec::new(),
             recovery_note: None,
+            export_semicolon_insertion: None,
         };
 
         let sorted = sort_collected_diagnostics(vec![
@@ -3264,6 +3318,7 @@ mod tests {
             location: DiagnosticLocation::SourceRange(primary),
             secondary,
             recovery_note: recovery_note.map(str::to_owned),
+            export_semicolon_insertion: None,
         }
     }
 
@@ -3285,6 +3340,7 @@ mod tests {
             location: DiagnosticLocation::SourceLoad(location),
             secondary: Vec::new(),
             recovery_note: None,
+            export_semicolon_insertion: None,
         }
     }
 

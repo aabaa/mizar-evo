@@ -142,6 +142,10 @@ pub(crate) use checking::{
 };
 pub(crate) use core::{SourceTheoremAlgorithmPreparationService, SourceTheoremElaborationService};
 pub(crate) use frontend::FrontendService;
+pub use frontend::{
+    NATIVE_EXPORT_SEMICOLON_ENCODING, native_export_semicolon_command,
+    native_export_semicolon_context,
+};
 pub(crate) use resolver::SourceTheoremModuleResolverService;
 use source::DependencyLexicalProvider;
 pub(crate) use source::SourceLoadService;

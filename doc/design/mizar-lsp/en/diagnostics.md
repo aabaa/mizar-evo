@@ -50,3 +50,5 @@ Notifications use URI order and the captured document version, including empty l
 Task9 tests cover genuine coherent publication, stale-index suppression, deterministic order, exact-source conversion, retained record identity, explicit batch failures and framed delivery. They grant no task11 or §23.6/SCA-003 completion credit.
 
 `server.rs::diagnostic_overlay_tests` uses genuine native Frontend work and coherent publications for per-document version keys, source filtering, replacement/clean clearing, original-source currentness, last-reader lease retention and selective full-publication eviction. It compares the original semantic index, actual CLI output and serialized VerifiedArtifact before/after nonempty overlays; no host-integration credit follows.
+
+The separate [ranged diagnostic host input](ranged_diagnostic_host.md) admits genuine terminal source-error records without a full semantic snapshot. Diagnostic notification/writer methods select that publication when present, preserving canonical data handles, original maps and whole-batch conversion checks.

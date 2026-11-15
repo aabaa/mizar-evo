@@ -5,7 +5,7 @@
 
 **承認済み package (2026-11-16): Q1 A、Q2 A、Q3 B、Q4 A、Q5 A。** 選択された定義が現行の権威で、未選択の代替案は非アクティブです。選択された経路は別の [ranged diagnostic host input](ranged_diagnostic_host.md) が定義します。 Task39 の上流前提だけを定義します。Tasks17/19/38 は [actions](code_action.md)、[explanations](explain.md)、**承認済み Q1–Q5 A の [validator 契約](code_action_validators.md#status-and-authority)** に従います。本提案はその producer を供給し、承認済み契約を再検討しません。
 権威: 仕様 [§22.1.3](../../../spec/en/22.error_handling_and_diagnostics.md#2213-fix-suggestions-and-help-annotations)、[§22.2.3](../../../spec/en/22.error_handling_and_diagnostics.md#2223-frontend-diagnostic-adoption)、[§23.6.1](../../../spec/en/23.package_management_and_build_system.md#2361-hover-code-actions-and-diagnostics)、architecture12 の [phase producers](../../architecture/en/12.diagnostics_and_lsp.md#producers)、internal03 の [phase production](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#phase-diagnostic-production)。構造化 payload は Diagnostics の [fix](../../mizar-diagnostics/en/fix.md#attachment-to-records) と [explanation](../../mizar-diagnostics/en/explain.md#attachment-and-deduplication) 所有者に従い、表示用 help/preview 文言を producer 権威にしません。
-観測された不足: Driver の `frontend_adapter/frontend.rs::convert_frontend_diagnostics` と semantic 診断変換は fixes を空、explanation をなしで渡し、SourceLoad 変換も同様です。既存の `FixSuggestion`、`ExplanationHandle`、`ExplanationStore` は bounded payload を保持できますが、型と typed テストの存在は native producer や認証された受け渡しの証拠ではありません。
+Driver は以下の承認済み typed export-terminator profile だけに構造化 payload を付けます。他の frontend site、semantic 変換、SourceLoad は payload を持たず、汎用 carrier や typed fixture の存在だけでは native producer の証拠にしません。
 
 ## Producer profile と所有権
 

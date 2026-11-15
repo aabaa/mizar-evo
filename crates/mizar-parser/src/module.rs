@@ -2722,6 +2722,7 @@ impl Parser {
         let mut children = vec![self.token_node_ids[head]];
         let mut recovery_nodes = Vec::new();
         let mut cursor = head + 1;
+        let mut complete = true;
 
         if let Some(path) = self.parse_module_path_at(cursor) {
             children.push(path.id);
@@ -2736,6 +2737,7 @@ impl Parser {
                         cursor = path.next_position;
                     }
                     None => {
+                        complete = false;
                         self.diagnose_malformed_export(
                             cursor,
                             "expected module path after `,` in export statement",
@@ -2750,6 +2752,7 @@ impl Parser {
                 }
             }
         } else {
+            complete = false;
             self.diagnose_malformed_export(
                 cursor,
                 "expected module path after `export` in export statement",
@@ -2777,6 +2780,16 @@ impl Parser {
             }
         } else {
             self.diagnose_missing_semicolon(cursor);
+            if complete && cursor < self.request.tokens.len() && self.is_item_start_at(cursor) {
+                let next = self.request.tokens[cursor].span;
+                self.diagnostics
+                    .last_mut()
+                    .unwrap()
+                    .export_semicolon_insertion = Some(SourceRange {
+                    end: next.start,
+                    ..next
+                });
+            }
         }
 
         let id = self.events.emit(SyntaxEvent::Node {

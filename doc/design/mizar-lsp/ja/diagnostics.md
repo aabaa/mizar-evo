@@ -50,3 +50,5 @@ source の診断を選択するときは aggregator の [canonical record order]
 task9 の test は真正な coherent 公開、stale index 抑止、決定的順序、正確な source 変換、保持 record identity、明示的 batch 失敗、frame 配送を検証する。task11 や §23.6/SCA-003 の完了 credit は与えない。
 
 `server.rs::diagnostic_overlay_tests` は真正な native Frontend work と coherent publication により、document/version key、source filtering、置換/clean clearing、元 source の currentness、最後の reader までの lease 保持、完全公開時の選択的除去を検証する。非空 overlay の前後で元 semantic index、実際の CLI 出力、直列化した VerifiedArtifact を比較し、host integration の credit は与えない。
+
+別の [ranged diagnostic host input](ranged_diagnostic_host.md) は full semantic snapshot なしで実 terminal source-error record を受け入れます。診断 notification/writer は選択されたその publication を使い、canonical data handle、元 map、batch 全体の変換検証を保持します。

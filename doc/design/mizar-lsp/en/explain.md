@@ -45,3 +45,5 @@ Responses carry status (`available`, `unavailable`, `stale_handle`), freshness, 
 Query fixtures exercise existing subject selection, store outcomes, exact bounded payload preservation and native UTF-16 conversion. Genuine publication fixtures check host selection and freshness; typed fixtures check original source locations. Combined host delivery of explanation content and stale locations awaits native explanation producers. Cancellation, malformed requests and framed stdio degradation are covered. §23.6 remains partial and SCA-003 unchanged.
 
 [Native producer prerequisites](native_payload_producers.md) use the approved Q1 A/Q2 A/Q3 B/Q4 A/Q5 A package and separate [ranged host adapter](ranged_diagnostic_host.md); Task39 redispatch follows producer implementation.
+
+`handle_message_with_native_explanations` uses the selected ranged publication’s retained producer store. Both explanation entries share selected-publication identity, stale-source mapping and cancellation checks; the caller-store entry remains compatible.

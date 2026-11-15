@@ -70,3 +70,7 @@ pub use frontend_adapter::native_theorem_typed_ast_from_storage_bytes;
 pub use frontend_adapter::native_theorem_typed_ast_storage_bytes;
 pub use frontend_adapter::native_theorem_vc_from_storage_bytes;
 pub use frontend_adapter::native_theorem_vc_storage_bytes;
+pub use frontend_adapter::{
+    NATIVE_EXPORT_SEMICOLON_ENCODING, native_export_semicolon_command,
+    native_export_semicolon_context,
+};
