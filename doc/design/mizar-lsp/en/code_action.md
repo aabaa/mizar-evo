@@ -33,6 +33,8 @@ The server offers code actions and never applies suggestion edits on its own. Ed
 
 ## Implementation boundary
 
+Pending-owner-approval hash, provenance and command options are owned by the [validator proposal](code_action_validators.md); they authorize no consumer activation.
+
 `src/diagnostics.rs` converts published fixes through the existing metadata/build host. The ordinary stdio path without a publication host returns no actions. Requests use the live document version and original source association; primary diagnostic ranges select fixes by half-open overlap, with empty ranges treated as points inside a nonempty interval or coincident points.
 
 The server advertises quickfix resolution. Clients must support code-action data and resolving edits; initial actions contain title/kind/data only. The locator binds an opaque process-local publication identity that is never reused, even when build ID, raw text and document version repeat. `codeAction/resolve` treats data as a locator and reconstructs the action from the current index, returning versioned `edit.documentChanges` only after revalidation. Unavailable or replaced actions fail with ContentModified. Client-supplied edits, commands and diagnostic contents grant no authority.

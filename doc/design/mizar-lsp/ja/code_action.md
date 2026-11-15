@@ -33,6 +33,8 @@ server は code action を提示し、提案 edit を自ら適用しない。適
 
 ## Implementation boundary
 
+所有者の承認待ちの hash・provenance・command 選択肢は [validator proposal](code_action_validators.md) が所有し、consumer の有効化を認可しません。
+
 `src/diagnostics.rs` は既存の metadata/build host を通して公開済み fix を変換する。publication host のない通常の stdio 経路は action を返さない。要求では生きている文書の version と元の source association を使う。primary 診断 range の半開区間の重なりで fix を選び、空 range は非空区間内の点、または一致する点として扱う。
 
 server は quickfix の resolve を通知する。client は code-action data と edit の resolve に対応する必要があり、初回 action は title/kind/data だけを持つ。locator は不透明な process-local publication 識別子に結び付き、build ID、raw text、文書 version が同じでも識別子を再利用しない。`codeAction/resolve` は data を locator として現在の index から action を再構築し、再検証後だけ version 付き `edit.documentChanges` を返す。利用不能または置換済み action は ContentModified で失敗する。client が渡す edit、command、診断内容は権限の根拠にならない。
