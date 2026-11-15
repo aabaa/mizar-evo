@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_open_buffer_payloads_publish_internal_blobs_with_genuine_parent_authority() {
@@ -220,7 +221,7 @@ fn native_open_buffer_payloads_publish_internal_blobs_with_genuine_parent_author
     for handle in [source_handle.erase(), output_handle.erase()] {
         assert!(matches!(handle.placement(), StoragePlacement::Blob { .. }));
         assert!(matches!(
-            publisher.validate_current_output(snapshot.id, &handle),
+            publisher.validate_output(snapshot.id, &handle, OutputAuthorization::CurrentPackage),
             Err(PublishError::OutputNotCurrentPackage { .. })
         ));
         assert!(
@@ -383,7 +384,7 @@ fn native_open_edits_match_independent_clean_real_prefixes_across_replay_control
             for target in [old_snapshot, snapshot] {
                 assert!(
                     old_owner
-                        .validate_published_output(target, &old_output)
+                        .validate_output(target, &old_output, OutputAuthorization::Published)
                         .is_err()
                 );
                 assert!(

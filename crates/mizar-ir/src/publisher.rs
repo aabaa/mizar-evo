@@ -62,6 +62,16 @@ pub enum PublicationTarget {
     InternalOnly,
 }
 
+/// Publication authorization required for a sealed output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OutputAuthorization {
+    /// Require current/package publication.
+    CurrentPackage,
+    /// Accept current/package or genuine OpenBuffer/InternalOnly publication.
+    Published,
+}
+
 /// Explicit crate-local allowed work-unit context.
 #[derive(Debug, Clone, PartialEq, Eq, std::hash::Hash)]
 pub struct AllowedWorkUnit {
@@ -317,45 +327,13 @@ impl PhaseOutputPublisher {
         )
     }
 
-    /// Validates that a sealed output was published as a current/package result.
-    pub fn validate_current_output(
-        &self,
-        snapshot: BuildSnapshotId,
-        output: &AnyPhaseOutputRef,
-    ) -> Result<(), PublishError> {
-        let state = self.state.lock().expect("publisher mutex poisoned");
-        validate_snapshot_state(
-            &state,
-            snapshot,
-            OutputOrigin::PackageSource,
-            PublicationTarget::CurrentPackage,
-        )?;
-        if output.snapshot() != snapshot {
-            return Err(PublishError::OutputSnapshotMismatch {
-                snapshot,
-                output: output.output(),
-                output_snapshot: output.snapshot(),
-            });
-        }
-        let root = CurrentOutputRoot {
-            output: output.output(),
-            generation: output.generation(),
-        };
-        if !state.current_outputs.contains(&root) {
-            return Err(PublishError::OutputNotCurrentPackage {
-                snapshot,
-                output: output.output(),
-            });
-        }
-        Ok(())
-    }
-
-    /// Validates current/package or genuine OpenBuffer/InternalOnly publication.
+    /// Validates a sealed output against the requested publication authorization.
     /// Physical handle validity and native source/version binding remain separate checks.
-    pub fn validate_published_output(
+    pub fn validate_output(
         &self,
         snapshot: BuildSnapshotId,
         output: &AnyPhaseOutputRef,
+        authorization: OutputAuthorization,
     ) -> Result<(), PublishError> {
         let state = self.state.lock().expect("publisher mutex poisoned");
         validate_snapshot_state(
@@ -375,13 +353,20 @@ impl PhaseOutputPublisher {
             output: output.output(),
             generation: output.generation(),
         };
-        if !state.current_outputs.contains(&root) && !state.open_buffer_outputs.contains(&root) {
-            return Err(PublishError::OutputNotPublished {
+        if state.current_outputs.contains(&root) {
+            return Ok(());
+        }
+        match authorization {
+            OutputAuthorization::CurrentPackage => Err(PublishError::OutputNotCurrentPackage {
                 snapshot,
                 output: output.output(),
-            });
+            }),
+            OutputAuthorization::Published if state.open_buffer_outputs.contains(&root) => Ok(()),
+            OutputAuthorization::Published => Err(PublishError::OutputNotPublished {
+                snapshot,
+                output: output.output(),
+            }),
         }
-        Ok(())
     }
 
     /// Registers an explicit allowed work-unit context.
@@ -1105,30 +1090,34 @@ mod tests {
             if authorized {
                 assert!(
                     owner
-                        .validate_published_output(target, handle.any())
+                        .validate_output(target, handle.any(), OutputAuthorization::Published)
                         .is_ok()
                 );
             } else {
                 assert!(matches!(
-                    owner.validate_published_output(target, handle.any()),
+                    owner.validate_output(target, handle.any(), OutputAuthorization::Published),
                     Err(PublishError::OutputNotPublished { .. })
                 ));
             }
             assert!(matches!(
-                foreign.validate_published_output(target, handle.any()),
+                foreign.validate_output(target, handle.any(), OutputAuthorization::Published),
                 Err(PublishError::OutputNotPublished { .. })
             ));
             assert!(matches!(
-                owner.validate_published_output(other, handle.any()),
+                owner.validate_output(other, handle.any(), OutputAuthorization::Published),
                 Err(PublishError::OutputSnapshotMismatch { .. })
             ));
             assert!(matches!(
-                owner.validate_published_output(snapshot(42), handle.any()),
+                owner.validate_output(snapshot(42), handle.any(), OutputAuthorization::Published),
                 Err(PublishError::UnknownSnapshot { .. })
             ));
             if origin == OutputOrigin::OpenBuffer {
                 assert!(matches!(
-                    owner.validate_current_output(target, handle.any()),
+                    owner.validate_output(
+                        target,
+                        handle.any(),
+                        OutputAuthorization::CurrentPackage
+                    ),
                     Err(PublishError::OutputNotCurrentPackage { .. })
                 ));
             }
@@ -1145,18 +1134,26 @@ mod tests {
         )
         .unwrap();
         assert!(matches!(
-            owner.validate_published_output(target, late.any()),
+            owner.validate_output(target, late.any(), OutputAuthorization::Published),
             Err(PublishError::ObsoleteSnapshot { .. })
         ));
         owner.register_current_snapshot(target);
-        assert!(owner.validate_published_output(target, late.any()).is_ok());
+        assert!(
+            owner
+                .validate_output(target, late.any(), OutputAuthorization::Published)
+                .is_ok()
+        );
         owner.replace_current_snapshot(target, other).unwrap();
         assert!(matches!(
-            owner.validate_published_output(target, late.any()),
+            owner.validate_output(target, late.any(), OutputAuthorization::Published),
             Err(PublishError::ObsoleteSnapshot { .. })
         ));
         owner.register_current_snapshot(target);
-        assert!(owner.validate_published_output(target, late.any()).is_err());
+        assert!(
+            owner
+                .validate_output(target, late.any(), OutputAuthorization::Published)
+                .is_err()
+        );
     }
 
     #[test]
@@ -1202,7 +1199,7 @@ mod tests {
         assert_eq!(original.output(), direct.output());
         assert_ne!(original.any().generation(), direct.any().generation());
         assert!(matches!(
-            owner.validate_published_output(target, direct.any()),
+            owner.validate_output(target, direct.any(), OutputAuthorization::Published),
             Err(PublishError::OutputNotPublished { .. })
         ));
         let failed = publish_text(
@@ -1216,7 +1213,7 @@ mod tests {
         );
         assert!(matches!(failed, Err(PublishError::Storage { .. })));
         assert!(matches!(
-            owner.validate_published_output(target, direct.any()),
+            owner.validate_output(target, direct.any(), OutputAuthorization::Published),
             Err(PublishError::OutputNotPublished { .. })
         ));
         assert!(matches!(
@@ -1806,7 +1803,7 @@ mod tests {
             .validate_current_snapshot(new_snapshot)
             .expect("new snapshot is current");
         assert!(matches!(
-            publisher.validate_current_output(old_snapshot, old_output.any()),
+            publisher.validate_output(old_snapshot, old_output.any(), OutputAuthorization::CurrentPackage),
             Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == old_snapshot
         ));
 

@@ -175,7 +175,7 @@ uncacheable, incompatible, or corrupt records are misses before any
 
 ## Public Enum Forward-Compatibility
 
-`OutputOrigin`, `PublicationTarget`, and `PublishError` are
+`OutputOrigin`, `PublicationTarget`, `OutputAuthorization`, and `PublishError` are
 `#[non_exhaustive]` for downstream crates. Future origin classes, publication
 targets, and fail-closed rejection reasons may be added without breaking
 external exhaustive matches. This module has no intentional exhaustive
@@ -218,14 +218,15 @@ Task 8 must cover:
 
 ## Published output authorization
 
-`validate_published_output(snapshot, &AnyPhaseOutputRef) -> Result<(), PublishError>`
+`validate_output(snapshot, &AnyPhaseOutputRef, OutputAuthorization) -> Result<(), PublishError>`
 checks current publisher state, the output snapshot and an exact output/generation
-record from this publisher. CurrentPackage successes retain their existing roots;
-successfully sealed OpenBuffer/InternalOnly outputs have a separate private
-publication record, never a current/package root. Other InternalOnly origins and
-direct storage sealing are not authorized by this method. Missing authorization
-returns `OutputNotPublished { snapshot, output }`; old APIs/errors stay unchanged.
-Failed sealing records nothing. Physical handle validity remains a storage check;
-records do not pin storage or revive collected generations. This is publisher
-provenance, not source validity, document-version freshness, cache acceptance,
-proof status or artifact authority. Obsolete/superseded snapshots remain rejected.
+record from this publisher, in that order. `OutputAuthorization::CurrentPackage`
+requires a current/package root and returns `OutputNotCurrentPackage` when absent.
+`OutputAuthorization::Published` also admits successfully sealed OpenBuffer/InternalOnly
+records and returns `OutputNotPublished` when neither record exists. These separate
+private publication records never create current/package roots. Other InternalOnly
+origins and direct storage sealing gain no authorization. Failed sealing records
+nothing. Physical handle validity remains a storage check; records do not pin storage
+or revive collected generations. This is publisher provenance, not source validity,
+document-version freshness, cache acceptance, proof status or artifact authority.
+Obsolete/superseded snapshots remain rejected. Existing errors and precedence remain.

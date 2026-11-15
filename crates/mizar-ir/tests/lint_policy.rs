@@ -27,6 +27,7 @@ const PUBLIC_ENUM_DOCS: &[(&str, &str, &str)] = &[
         "dispatch_input.md",
     ),
     ("identity.rs", "IdentityError", "identity.md"),
+    ("publisher.rs", "OutputAuthorization", "publisher.md"),
     ("publisher.rs", "OutputOrigin", "publisher.md"),
     ("projection.rs", "ProjectionError", "projection.md"),
     (

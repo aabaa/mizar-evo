@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
@@ -730,7 +731,11 @@ fn committed_source_theorem_witness_matches_genuine_staged_candidate() {
                 fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
                 assert!(
                     owner
-                        .validate_current_output(six.snapshot, output.any())
+                        .validate_output(
+                            six.snapshot,
+                            output.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_err()
                 );
                 assert_eq!(*owner.storage().get(&output).unwrap(), artifact.artifact);

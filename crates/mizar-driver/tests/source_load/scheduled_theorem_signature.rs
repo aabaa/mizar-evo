@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn scheduled_theorem_signature_matches_genuine_summary_and_worker_replay() {
@@ -228,11 +229,15 @@ fn scheduled_theorem_signature_matches_genuine_summary_and_worker_replay() {
                     }
                     previous = Some((result.clone(), cache));
                     owner
-                        .validate_published_output(input.snapshot, actual)
+                        .validate_output(input.snapshot, actual, OutputAuthorization::Published)
                         .unwrap();
                     assert_eq!(
                         owner
-                            .validate_current_output(input.snapshot, actual)
+                            .validate_output(
+                                input.snapshot,
+                                actual,
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_ok(),
                         !open
                     );

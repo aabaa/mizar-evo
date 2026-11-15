@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn scheduled_theorem_registration_resolution_matches_genuine_publication() {
@@ -354,10 +355,16 @@ fn scheduled_theorem_registration_resolution_matches_genuine_publication() {
                         .collect()
                     );
                     owner
-                        .validate_published_output(old.snapshot, actual)
+                        .validate_output(old.snapshot, actual, OutputAuthorization::Published)
                         .unwrap();
                     assert_eq!(
-                        owner.validate_current_output(old.snapshot, actual).is_ok(),
+                        owner
+                            .validate_output(
+                                old.snapshot,
+                                actual,
+                                OutputAuthorization::CurrentPackage
+                            )
+                            .is_ok(),
                         !open
                     );
                     if let Some(previous) = &previous {

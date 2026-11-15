@@ -177,5 +177,6 @@ snapshot 一致、物理 storage 検証、[publisher 承認](publisher.md#publis
 の後に `Result<Self, DispatchInputError>` を返す。current/package または実際の
 current-snapshot OpenBuffer/InternalOnly publication を受け付ける。旧 current 入口は
 internal 出力を拒否し、rehydrated 入口は従来どおり事前の cache-owner 検証を必要とする。
-三つの入口は検証手順だけを共有して error 順序を維持し、editor 鮮度・source 正当性・
+publisher を使う入口は共通 validator へ `OutputAuthorization::CurrentPackage` または
+`OutputAuthorization::Published` を明示する。三つの入口は検証手順と error 順序を維持し、editor 鮮度・source 正当性・
 proof 権限・cache 受理を推定しない。

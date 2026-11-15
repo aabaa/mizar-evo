@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_artifact_draft_matches_source_rows() {
@@ -583,11 +584,19 @@ fn native_theorem_artifact_draft_preserves_refusals_and_fresh_root() {
                         );
                         for parent in six.parent_outputs() {
                             owner
-                                .validate_published_output(six.snapshot, parent.as_output_ref())
+                                .validate_output(
+                                    six.snapshot,
+                                    parent.as_output_ref(),
+                                    OutputAuthorization::Published,
+                                )
                                 .unwrap();
                             assert!(
                                 owner
-                                    .validate_current_output(six.snapshot, parent.as_output_ref())
+                                    .validate_output(
+                                        six.snapshot,
+                                        parent.as_output_ref(),
+                                        OutputAuthorization::CurrentPackage
+                                    )
                                     .is_err()
                             );
                         }
@@ -1102,7 +1111,11 @@ fn native_theorem_artifact_main_matches_real_draft() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -1224,7 +1237,11 @@ fn native_theorem_artifact_main_preserves_refusals() {
                     for parent in six.parent_outputs() {
                         assert!(
                             owner
-                                .validate_current_output(six.snapshot, parent.as_output_ref())
+                                .validate_output(
+                                    six.snapshot,
+                                    parent.as_output_ref(),
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_err()
                         );
                     }
@@ -1341,13 +1358,17 @@ fn native_theorem_artifact_main_preserves_refusals() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_published_output(six.snapshot, reference)
+                        .validate_output(six.snapshot, reference, OutputAuthorization::Published)
                         .unwrap();
                 }
                 if !open {
                     for parent in six.parent_outputs() {
                         owner
-                            .validate_current_output(six.snapshot, parent.as_output_ref())
+                            .validate_output(
+                                six.snapshot,
+                                parent.as_output_ref(),
+                                OutputAuthorization::CurrentPackage,
+                            )
                             .unwrap();
                     }
                 }
@@ -1610,7 +1631,7 @@ fn native_theorem_artifact_main_preserves_witness_and_fresh_root() {
             for reference in refs {
                 owner.storage().validate_handle(reference).unwrap();
                 owner
-                    .validate_current_output(six.snapshot, reference)
+                    .validate_output(six.snapshot, reference, OutputAuthorization::CurrentPackage)
                     .unwrap();
             }
             let collected = owner.storage().collect(CollectInput {
@@ -1902,7 +1923,11 @@ fn native_theorem_artifact_written_types_match_source_handoffs() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -2185,7 +2210,11 @@ fn native_theorem_artifact_written_types_preserve_raw_roots_and_main() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -2406,12 +2435,16 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_published_output(six.snapshot, reference)
+                        .validate_output(six.snapshot, reference, OutputAuthorization::Published)
                         .unwrap();
                     if case == "buffer" {
                         assert!(
                             owner
-                                .validate_current_output(six.snapshot, reference)
+                                .validate_output(
+                                    six.snapshot,
+                                    reference,
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_err()
                         );
                     }
@@ -2420,7 +2453,11 @@ fn native_theorem_artifact_written_types_preserve_profiles_and_refusals() {
                     assert_eq!(six.parent_outputs().len(), 6);
                     for parent in six.parent_outputs() {
                         owner
-                            .validate_current_output(six.snapshot, parent.as_output_ref())
+                            .validate_output(
+                                six.snapshot,
+                                parent.as_output_ref(),
+                                OutputAuthorization::CurrentPackage,
+                            )
                             .unwrap();
                     }
                 }
@@ -2735,7 +2772,11 @@ fn native_theorem_artifact_statements_match_checked_formula() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -3058,7 +3099,11 @@ fn native_theorem_artifact_statements_preserve_main_and_identity() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -3382,12 +3427,16 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_published_output(six.snapshot, reference)
+                        .validate_output(six.snapshot, reference, OutputAuthorization::Published)
                         .unwrap();
                     if case == "buffer" {
                         assert!(
                             owner
-                                .validate_current_output(six.snapshot, reference)
+                                .validate_output(
+                                    six.snapshot,
+                                    reference,
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_err()
                         );
                     }
@@ -3395,7 +3444,11 @@ fn native_theorem_artifact_statements_preserve_refusals() {
                 if case != "buffer" {
                     for parent in six.parent_outputs() {
                         owner
-                            .validate_current_output(six.snapshot, parent.as_output_ref())
+                            .validate_output(
+                                six.snapshot,
+                                parent.as_output_ref(),
+                                OutputAuthorization::CurrentPackage,
+                            )
                             .unwrap();
                     }
                 }
@@ -3741,7 +3794,11 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                                 .validate_handle(parent.as_output_ref())
                                 .is_ok()
                                 && owner
-                                    .validate_current_output(six.snapshot, parent.as_output_ref())
+                                    .validate_output(
+                                        six.snapshot,
+                                        parent.as_output_ref(),
+                                        OutputAuthorization::CurrentPackage,
+                                    )
                                     .is_ok()
                         })
                 };
@@ -4001,16 +4058,20 @@ fn native_theorem_artifact_manifest_matches_real_transaction() {
                     _ => unreachable!(),
                 }
                 owner
-                    .validate_current_output(six.snapshot, output.any())
+                    .validate_output(
+                        six.snapshot,
+                        output.any(),
+                        OutputAuthorization::CurrentPackage,
+                    )
                     .unwrap();
                 owner
-                    .validate_published_output(six.snapshot, output.any())
+                    .validate_output(six.snapshot, output.any(), OutputAuthorization::Published)
                     .unwrap();
                 assert!(freshness(Some(&guard)));
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_published_output(six.snapshot, reference)
+                        .validate_output(six.snapshot, reference, OutputAuthorization::Published)
                         .unwrap();
                 }
                 assert_eq!(
@@ -4211,11 +4272,15 @@ fn native_theorem_artifact_manifest_preserves_refusals() {
                         ))
                     );
                     owner
-                        .validate_published_output(six.snapshot, output.any())
+                        .validate_output(six.snapshot, output.any(), OutputAuthorization::Published)
                         .unwrap();
                     assert!(
                         owner
-                            .validate_current_output(six.snapshot, output.any())
+                            .validate_output(
+                                six.snapshot,
+                                output.any(),
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_err()
                     );
                     assert_eq!(
@@ -4444,7 +4509,11 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                                 .validate_handle(parent.as_output_ref())
                                 .is_ok()
                                 && owner
-                                    .validate_current_output(six.snapshot, parent.as_output_ref())
+                                    .validate_output(
+                                        six.snapshot,
+                                        parent.as_output_ref(),
+                                        OutputAuthorization::CurrentPackage,
+                                    )
                                     .is_ok()
                         })
                 };
@@ -4533,7 +4602,11 @@ fn native_theorem_artifact_manifest_preserves_commit_and_files() {
                 assert_eq!(*owner.storage().get(&output).unwrap(), draft.artifact);
                 assert_eq!(
                     owner
-                        .validate_current_output(six.snapshot, output.any())
+                        .validate_output(
+                            six.snapshot,
+                            output.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok(),
                     case != "obsolete"
                 );
@@ -4854,7 +4927,11 @@ fn native_theorem_artifact_ir_preserves_late_denial_and_duplicates() {
                 if let Some((draft, _, _, _, output)) = &previous {
                     assert_eq!(*owner.storage().get(output).unwrap(), draft.artifact);
                     owner
-                        .validate_current_output(six.snapshot, output.any())
+                        .validate_output(
+                            six.snapshot,
+                            output.any(),
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                     assert_eq!(
                         [
@@ -4877,7 +4954,11 @@ fn native_theorem_artifact_ir_preserves_late_denial_and_duplicates() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(

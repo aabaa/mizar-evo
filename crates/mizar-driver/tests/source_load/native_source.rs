@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_source_layout_feeds_protected_prefix_like_explicit_clean_layout() {
@@ -902,7 +903,11 @@ fn native_source_ir_lifetime_reconstructed_owners_keep_real_frontend_inputs() {
         );
         assert!(
             target
-                .validate_current_output(input.snapshot, handle.any())
+                .validate_output(
+                    input.snapshot,
+                    handle.any(),
+                    OutputAuthorization::CurrentPackage
+                )
                 .is_ok()
         );
         assert!(

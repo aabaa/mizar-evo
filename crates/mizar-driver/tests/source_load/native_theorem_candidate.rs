@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_candidate_core_vc_discharge_caller_matches_genuine_inputs() {
@@ -1912,11 +1913,15 @@ fn native_theorem_candidate_publication_seals_genuine_payload() {
                     }
                     assert_eq!(*storage.get(&sealed).unwrap(), pair);
                     owner
-                        .validate_published_output(old.snapshot, sealed.any())
+                        .validate_output(old.snapshot, sealed.any(), OutputAuthorization::Published)
                         .unwrap();
                     assert_eq!(
                         owner
-                            .validate_current_output(old.snapshot, sealed.any())
+                            .validate_output(
+                                old.snapshot,
+                                sealed.any(),
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_ok(),
                         !open
                     );
@@ -3297,7 +3302,11 @@ fn native_theorem_candidate_check_four_parent_caller_preserves_refusals() {
                             .to_string()
                     } else {
                         owner
-                            .validate_published_output(old.snapshot, &parents[0])
+                            .validate_output(
+                                old.snapshot,
+                                &parents[0],
+                                OutputAuthorization::Published,
+                            )
                             .unwrap_err()
                             .to_string()
                     };
@@ -4956,11 +4965,15 @@ fn native_theorem_candidate_check_publication_seals_genuine_payload() {
                     }
                     assert_eq!(*storage.get(&sealed).unwrap(), checked);
                     owner
-                        .validate_published_output(old.snapshot, sealed.any())
+                        .validate_output(old.snapshot, sealed.any(), OutputAuthorization::Published)
                         .unwrap();
                     assert_eq!(
                         owner
-                            .validate_current_output(old.snapshot, sealed.any())
+                            .validate_output(
+                                old.snapshot,
+                                sealed.any(),
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_ok(),
                         !open
                     );
@@ -6837,7 +6850,11 @@ fn native_theorem_candidate_selection_preserves_refusals() {
                 assert_eq!(
                     wrong_query(&verifier).unwrap_err(),
                     wrong_owner
-                        .validate_published_output(old.snapshot, &wrong_core_ref)
+                        .validate_output(
+                            old.snapshot,
+                            &wrong_core_ref,
+                            OutputAuthorization::Published
+                        )
                         .unwrap_err()
                         .to_string()
                 );
@@ -7144,11 +7161,15 @@ fn native_theorem_candidate_witness_file_matches_current_kernel() {
                     assert!(!open);
                 }
                 owner
-                    .validate_published_output(four.snapshot, file.any())
+                    .validate_output(four.snapshot, file.any(), OutputAuthorization::Published)
                     .unwrap();
                 assert_eq!(
                     owner
-                        .validate_current_output(four.snapshot, file.any())
+                        .validate_output(
+                            four.snapshot,
+                            file.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok(),
                     !open
                 );

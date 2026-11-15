@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn scheduled_workspace_intermediate_consumes_only_its_own_public_symbols() {
@@ -1530,11 +1531,13 @@ fn prepared_native_prefix_uses_frozen_disk_and_open_sources_with_real_storage_an
                 );
                 assert!(
                     publisher
-                        .validate_published_output(snapshot, handle)
+                        .validate_output(snapshot, handle, OutputAuthorization::Published)
                         .is_ok()
                 );
                 assert_eq!(
-                    publisher.validate_current_output(snapshot, handle).is_ok(),
+                    publisher
+                        .validate_output(snapshot, handle, OutputAuthorization::CurrentPackage)
+                        .is_ok(),
                     !open
                 );
             }

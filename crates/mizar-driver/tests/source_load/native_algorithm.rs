@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_algorithm_core_caller_preserves_genuine_outputs() {
@@ -1600,12 +1601,12 @@ fn native_algorithm_core_publication_seals_genuine_core_and_streams() {
                     );
                     assert!(
                         owner
-                            .validate_published_output(snapshot, sealed.any())
+                            .validate_output(snapshot, sealed.any(), OutputAuthorization::Published)
                             .is_ok()
                     );
                     assert_eq!(
                         owner
-                            .validate_current_output(snapshot, sealed.any())
+                            .validate_output(snapshot, sealed.any(), OutputAuthorization::CurrentPackage)
                             .is_ok(),
                         !open
                     );
@@ -3137,12 +3138,12 @@ fn native_algorithm_vc_publication_seals_genuine_graph_and_streams() {
             );
             assert!(
                 owner
-                    .validate_published_output(snapshot, sealed.any())
+                    .validate_output(snapshot, sealed.any(), OutputAuthorization::Published)
                     .is_ok()
             );
             assert_eq!(
                 owner
-                    .validate_current_output(snapshot, sealed.any())
+                    .validate_output(snapshot, sealed.any(), OutputAuthorization::CurrentPackage)
                     .is_ok(),
                 !open
             );
@@ -3836,7 +3837,9 @@ fn native_algorithm_summary_frontend_caller_preserves_genuine_results_and_refusa
             parent.placement() == &StoragePlacement::Resident,
             threshold != 0
         );
-        owner.validate_published_output(snapshot, parent).unwrap();
+        owner
+            .validate_output(snapshot, parent, OutputAuthorization::Published)
+            .unwrap();
         let input = PhaseInput::new(
             unit,
             PhaseDispatchInputBundle::new(
@@ -3955,7 +3958,9 @@ fn native_algorithm_summary_frontend_caller_preserves_genuine_results_and_refusa
                 );
             }
             assert_eq!(*owner.storage().get(&typed).unwrap(), output);
-            owner.validate_published_output(snapshot, parent).unwrap();
+            owner
+                .validate_output(snapshot, parent, OutputAuthorization::Published)
+                .unwrap();
             let collected = owner.storage().collect(CollectInput {
                 snapshot,
                 protected_outputs: vec![source_parent.output(), parent.output()],
@@ -4220,7 +4225,7 @@ fn native_algorithm_summary_frontend_caller_preserves_genuine_results_and_refusa
             "obsolete" => assert_eq!(
                 association_error,
                 owner
-                    .validate_published_output(snapshot, &handle.erase())
+                    .validate_output(snapshot, &handle.erase(), OutputAuthorization::Published)
                     .unwrap_err()
                     .to_string()
             ),
@@ -4536,9 +4541,13 @@ fn native_algorithm_summary_publication_preserves_real_bytes_and_refusals() {
             kind.clone(),
             parent.work_unit().clone(),
         ));
-        owner.validate_published_output(snapshot, parent).unwrap();
+        owner
+            .validate_output(snapshot, parent, OutputAuthorization::Published)
+            .unwrap();
         assert_eq!(
-            owner.validate_current_output(snapshot, parent).is_ok(),
+            owner
+                .validate_output(snapshot, parent, OutputAuthorization::CurrentPackage)
+                .is_ok(),
             !open
         );
         fixture.write(b"open theorem Changed: 0 = 1;\n");
@@ -4581,11 +4590,11 @@ fn native_algorithm_summary_publication_preserves_real_bytes_and_refusals() {
             _ => panic!("unexpected summary storage placement"),
         }
         owner
-            .validate_published_output(snapshot, sealed.any())
+            .validate_output(snapshot, sealed.any(), OutputAuthorization::Published)
             .unwrap();
         assert_eq!(
             owner
-                .validate_current_output(snapshot, sealed.any())
+                .validate_output(snapshot, sealed.any(), OutputAuthorization::CurrentPackage)
                 .is_ok(),
             !open
         );
@@ -4758,7 +4767,7 @@ fn native_algorithm_summary_publication_preserves_real_bytes_and_refusals() {
             "obsolete" => assert_eq!(
                 expected,
                 Err(owner
-                    .validate_published_output(snapshot, &handle.erase())
+                    .validate_output(snapshot, &handle.erase(), OutputAuthorization::Published)
                     .unwrap_err()
                     .to_string())
             ),

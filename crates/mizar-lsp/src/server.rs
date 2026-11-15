@@ -5,6 +5,7 @@ use std::{
     io::{self, BufRead, Write},
 };
 
+use mizar_ir::publisher::OutputAuthorization;
 use serde_json::{Value, json};
 
 /// One LSP connection and its exact client-owned document text.
@@ -125,9 +126,10 @@ impl Server {
                 snapshot.publisher.storage().validate_handle(output).is_ok()
                     && snapshot
                         .publisher
-                        .validate_published_output(
+                        .validate_output(
                             snapshot.publication.captured().snapshot().id,
                             output,
+                            OutputAuthorization::Published,
                         )
                         .is_ok()
             });
@@ -276,7 +278,11 @@ impl Server {
             {
                 publisher.storage().validate_handle(output).ok()?;
                 publisher
-                    .validate_published_output(association.captured.snapshot().id, output)
+                    .validate_output(
+                        association.captured.snapshot().id,
+                        output,
+                        OutputAuthorization::Published,
+                    )
                     .ok()?;
                 if !outputs.contains(output) {
                     outputs.push(output.clone());
@@ -322,9 +328,10 @@ impl Server {
                 .ok()?;
             for output in &candidate.outputs {
                 publisher
-                    .validate_published_output(
+                    .validate_output(
                         candidate.publication.captured().snapshot().id,
                         output,
+                        OutputAuthorization::Published,
                     )
                     .ok()?;
             }
@@ -4932,6 +4939,7 @@ pub(super) mod full_snapshot_registry_a {
             SourceInputSet, VerifierConfigInput,
         },
     };
+    use mizar_ir::publisher::OutputAuthorization;
     use mizar_ir::{
         identity::{OutputKind, PipelinePhase, SnapshotHandleRegistry, WorkUnit},
         publisher::{AllowedWorkUnit, PhaseOutputPublisher},
@@ -5491,7 +5499,11 @@ pub(super) mod full_snapshot_registry_a {
         assert!(
             fixture
                 .publisher
-                .validate_published_output(snapshot_id, &read_after.outputs()[0])
+                .validate_output(
+                    snapshot_id,
+                    &read_after.outputs()[0],
+                    OutputAuthorization::Published
+                )
                 .is_err()
         );
         assert_eq!(fixture.server.document(&uri).unwrap().0, 2);

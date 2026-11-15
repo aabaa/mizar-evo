@@ -43,7 +43,7 @@ use mizar_ir::{
     identity::{
         NamedInputHash, OutputKind, PipelinePhase as IrPipelinePhase, WorkUnit as IrWorkUnit,
     },
-    publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+    publisher::{OutputAuthorization, OutputOrigin, PublicationTarget, PublishOutputInput},
     storage::{BlobDecodeError, BlobDecoder, IrSideTables, SchemaVersion, SideTableRecord},
 };
 use mizar_session::{
@@ -55,6 +55,18 @@ use crate::registry::{
     PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
     PhaseOwner, PhaseResult, PhaseService, PhaseStatus,
 };
+
+fn source_publication_route(origin: &SourceOrigin) -> (OutputOrigin, PublicationTarget) {
+    match origin {
+        SourceOrigin::OpenBuffer { .. } => {
+            (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly)
+        }
+        _ => (
+            OutputOrigin::PackageSource,
+            PublicationTarget::CurrentPackage,
+        ),
+    }
+}
 
 pub(crate) fn source_input_hash(version: &mizar_session::SourceVersion) -> Hash {
     SourceUnitCacheKey {
@@ -325,7 +337,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .ok()?;
             publisher
-                .validate_published_output(self.snapshot.id, output)
+                .validate_output(self.snapshot.id, output, OutputAuthorization::Published)
                 .ok()?;
             let artifact = publisher.storage().get(&handle).ok()?;
             let value = verified_artifact_json(&artifact).ok()?;
@@ -617,7 +629,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(handle.any())
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_current_output(input.snapshot, handle.any())
+            .validate_output(
+                input.snapshot,
+                handle.any(),
+                OutputAuthorization::CurrentPackage,
+            )
             .map_err(|error| error.to_string())?;
         if handle.phase().as_str() != request.phase.as_str()
             || handle.work_unit().as_str() != request.work_unit.as_str()
@@ -747,7 +763,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_current_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::CurrentPackage)
             .map_err(|error| error.to_string())?;
         if parent.phase().as_str() != "SourceLoad"
             || parent.work_unit().as_str() != request.work_unit.as_str()
@@ -798,7 +814,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(handle.any())
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_current_output(input.snapshot, handle.any())
+            .validate_output(
+                input.snapshot,
+                handle.any(),
+                OutputAuthorization::CurrentPackage,
+            )
             .map_err(|error| error.to_string())?;
         if handle.phase().as_str() != "Frontend"
             || handle.work_unit().as_str() != request.work_unit.as_str()
@@ -1018,7 +1038,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_current_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::CurrentPackage)
             .map_err(|error| error.to_string())?;
         if parent.phase().as_str() != "SourceLoad"
             || parent.work_unit().as_str() != request.work_unit.as_str()
@@ -1488,7 +1508,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -1571,7 +1591,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(result)
@@ -1629,7 +1649,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(result))
     }
@@ -1665,7 +1685,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -1775,7 +1795,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(checked.2))
     }
@@ -1879,8 +1899,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -1919,16 +1940,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -1969,7 +1982,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -2076,7 +2089,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(closure))
     }
@@ -2202,8 +2215,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -2246,16 +2260,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -2310,7 +2316,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -2399,7 +2405,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(metadata))
@@ -2523,9 +2529,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -2564,16 +2571,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -2610,7 +2609,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -2725,7 +2724,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(core))
     }
@@ -2807,8 +2806,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -2845,16 +2845,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -2897,7 +2889,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -2981,7 +2973,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some((flow, handoff)))
     }
@@ -3095,8 +3087,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -3139,16 +3132,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -3197,7 +3182,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -3258,7 +3243,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(vcs))
@@ -3393,9 +3378,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -3441,16 +3431,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -3496,7 +3478,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -3569,7 +3551,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(handoff))
@@ -3697,7 +3679,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some((result, decision)))
@@ -3744,7 +3726,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(output))
@@ -3906,9 +3888,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -3955,16 +3942,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -4027,7 +4006,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -4093,7 +4072,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(pair))
@@ -4281,9 +4260,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -4329,16 +4313,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -4413,7 +4389,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -4568,7 +4544,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some((result, decision)))
@@ -4815,9 +4791,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -4867,16 +4848,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -4949,7 +4922,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -5092,7 +5065,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(selection))
@@ -5199,9 +5172,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -5236,16 +5214,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     digest: source_input_hash(version),
                 }],
                 side_tables: IrSideTables::default(),
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -5467,7 +5437,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some((selection, (products, file, reference))))
@@ -5626,7 +5600,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent)
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent)
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                 .map_err(|error| error.to_string())?;
             if parent.snapshot() != input.snapshot
                 || parent.work_unit() != &work_unit
@@ -6454,7 +6428,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         std::fs::create_dir(staging.1).map_err(|error| error.to_string())?;
@@ -6588,7 +6566,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         cleanup.release();
@@ -6669,7 +6651,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         let written = write_published_artifact(staging.2, &path, &value, &domain, &excluded)
@@ -6702,7 +6688,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_published_output(input.snapshot, parent.as_output_ref())
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         cleanup.release();
@@ -6816,7 +6806,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     let parent = parent.as_output_ref();
                     storage.validate_handle(parent).is_ok()
                         && publisher
-                            .validate_published_output(input.snapshot, parent)
+                            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
                             .is_ok()
                 })
         };
@@ -7060,7 +7050,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -7139,7 +7129,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(summary)
     }
@@ -7178,7 +7168,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -7280,7 +7270,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(core))
     }
@@ -7334,7 +7324,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(core))
     }
@@ -7362,7 +7352,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(vcs))
     }
@@ -7390,7 +7380,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         Ok(Some(vcs))
     }
@@ -7418,7 +7408,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let WorkUnit::Module { module } = &input.work_unit else {
             return Err("native algorithm vc publication requires a module".to_owned());
@@ -7523,8 +7513,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -7566,16 +7557,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -7603,7 +7586,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let WorkUnit::Module { module } = &input.work_unit else {
             return Err("native theorem vc publication requires a module".to_owned());
@@ -7689,8 +7672,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -7732,16 +7716,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -7828,8 +7804,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -7868,16 +7845,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -7940,8 +7909,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -7978,16 +7948,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -8053,8 +8015,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -8088,16 +8051,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 parents: vec![parent.clone()],
                 named_input_hashes,
                 side_tables: IrSideTables::default(),
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -8147,7 +8102,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
         let work_unit = IrWorkUnit::new(format!(
             "{:?}:{:?}",
@@ -8225,8 +8180,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -8260,16 +8216,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 parents: vec![parent.clone()],
                 named_input_hashes,
                 side_tables: IrSideTables::default(),
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -8358,8 +8306,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
         publisher
-            .validate_published_output(input.snapshot, parent)
+            .validate_output(input.snapshot, parent, OutputAuthorization::Published)
             .map_err(|error| error.to_string())?;
+        let (origin, target) = source_publication_route(&version.origin);
         publisher
             .publish(PublishOutputInput {
                 slot: publisher.allocate(
@@ -8399,16 +8348,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )],
                     ..IrSideTables::default()
                 },
-                origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    OutputOrigin::OpenBuffer
-                } else {
-                    OutputOrigin::PackageSource
-                },
-                target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                    PublicationTarget::InternalOnly
-                } else {
-                    PublicationTarget::CurrentPackage
-                },
+                origin,
+                target,
             })
             .map(Some)
             .map_err(|error| error.to_string())
@@ -9956,7 +9897,11 @@ impl PhaseService for SourceTheoremArtifactCommitService {
             .is_err()
             || [vc_parent, kernel].iter().any(|parent| {
                 publisher
-                    .validate_published_output(input.snapshot, parent.as_output_ref())
+                    .validate_output(
+                        input.snapshot,
+                        parent.as_output_ref(),
+                        OutputAuthorization::Published,
+                    )
                     .is_err()
             })
         {
@@ -10344,6 +10289,7 @@ impl PhaseService for SourceLoadService {
         let decode_input = source_input;
         let source_id = source.source_id;
         let expected_source = source.clone();
+        let (origin, target) = source_publication_route(&version.origin);
         let handle = publisher.publish(PublishOutputInput {
             slot: publisher.allocate(
                 snapshot,
@@ -10381,16 +10327,8 @@ impl PhaseService for SourceLoadService {
                 )],
                 ..IrSideTables::default()
             },
-            origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                OutputOrigin::OpenBuffer
-            } else {
-                OutputOrigin::PackageSource
-            },
-            target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                PublicationTarget::InternalOnly
-            } else {
-                PublicationTarget::CurrentPackage
-            },
+            origin,
+            target,
         });
         match handle {
             Ok(handle) => PhaseResult {
@@ -10654,9 +10592,9 @@ impl PhaseService for FrontendService {
                     .captured
                     .is_some_and(|capture| capture.native_sources().is_some())
                 {
-                    publisher.validate_published_output(snapshot, handle)
+                    publisher.validate_output(snapshot, handle, OutputAuthorization::Published)
                 } else {
-                    publisher.validate_current_output(snapshot, handle)
+                    publisher.validate_output(snapshot, handle, OutputAuthorization::CurrentPackage)
                 })
                 .is_ok()
                     && publisher.storage().validate_handle(handle).is_ok()
@@ -11314,6 +11252,7 @@ impl PhaseService for FrontendService {
         if !parents_current() {
             return blocking();
         }
+        let (origin, target) = source_publication_route(&version.origin);
         let handle = publisher.publish(PublishOutputInput {
             slot: publisher.allocate(
                 snapshot,
@@ -11353,16 +11292,8 @@ impl PhaseService for FrontendService {
                 )],
                 ..IrSideTables::default()
             },
-            origin: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                OutputOrigin::OpenBuffer
-            } else {
-                OutputOrigin::PackageSource
-            },
-            target: if matches!(version.origin, SourceOrigin::OpenBuffer { .. }) {
-                PublicationTarget::InternalOnly
-            } else {
-                PublicationTarget::CurrentPackage
-            },
+            origin,
+            target,
         });
         match handle {
             Ok(handle) => PhaseResult {

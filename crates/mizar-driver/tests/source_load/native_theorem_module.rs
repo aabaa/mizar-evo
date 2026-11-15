@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_module_candidates_preserve_captured_pairs_and_original_owners() {
@@ -494,8 +495,8 @@ fn native_theorem_module_publication_seals_genuine_pair_and_streams() {
                                 "mizar-driver/native-theorem-module-storage-side-table/v1", &bytes)))],
                         ..mizar_ir::storage::IrSideTables::default()
                     });
-                    assert!(owner.validate_published_output(snapshot, sealed.any()).is_ok());
-                    assert_eq!(owner.validate_current_output(snapshot, sealed.any()).is_ok(), !open);
+                    assert!(owner.validate_output(snapshot, sealed.any(), OutputAuthorization::Published).is_ok());
+                    assert_eq!(owner.validate_output(snapshot, sealed.any(), OutputAuthorization::CurrentPackage).is_ok(), !open);
                 }
                 assert_eq!((inputs.snapshot.clone(), inputs.build_plan.clone(), inputs.module_index.clone(),
                     loaded.clone(), captured_input.clone(), output.clone(), arena.clone(), collection.env().clone(), input.clone(), parent.clone()), before);

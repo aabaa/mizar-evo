@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_vc_caller_preserves_genuine_raw_generation() {
@@ -1320,12 +1321,16 @@ fn native_theorem_vc_publication_seals_genuine_graph_and_streams() {
                     );
                     assert!(
                         owner
-                            .validate_published_output(snapshot, sealed.any())
+                            .validate_output(snapshot, sealed.any(), OutputAuthorization::Published)
                             .is_ok()
                     );
                     assert_eq!(
                         owner
-                            .validate_current_output(snapshot, sealed.any())
+                            .validate_output(
+                                snapshot,
+                                sealed.any(),
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_ok(),
                         !open
                     );

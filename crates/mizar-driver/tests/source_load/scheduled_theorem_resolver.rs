@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn scheduled_theorem_resolver_matches_genuine_publication_and_worker_replay() {
@@ -429,7 +430,9 @@ fn scheduled_theorem_resolver_requires_current_resources_and_honors_cancellation
                 panic!("one producer output")
             };
             assert_eq!(actual.phase(), &IrPipelinePhase::new("ModuleResolve"));
-            owner.validate_published_output(snapshot, actual).unwrap();
+            owner
+                .validate_output(snapshot, actual, OutputAuthorization::Published)
+                .unwrap();
             owner.storage().validate_handle(actual).unwrap();
         } else {
             assert!(result.output_refs.is_empty(), "{case}");
@@ -1112,7 +1115,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 for target in [old_snapshot, snapshot] {
                     assert!(
                         old_owner
-                            .validate_current_output(target, old_output)
+                            .validate_output(
+                                target,
+                                old_output,
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_err()
                     );
                 }
@@ -2465,7 +2472,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     assert_eq!(file_output.lineage(), clean_file.lineage());
                     assert_eq!(file_output.placement(), clean_file.placement());
                     owner
-                        .validate_published_output(snapshot, file_output)
+                        .validate_output(snapshot, file_output, OutputAuthorization::Published)
                         .unwrap();
                     let [artifact_row] = run.phase_results[&artifact.id].as_slice() else {
                         panic!("one genuine Artifact row")
@@ -2533,7 +2540,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         StoragePlacement::Blob { .. }
                     ));
                     owner
-                        .validate_current_output(snapshot, artifact_output)
+                        .validate_output(
+                            snapshot,
+                            artifact_output,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                     let cache = driver
                         .registry()
@@ -2984,7 +2995,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                                 "{case}"
                             );
                             owner
-                                .validate_current_output(snapshot, artifact_output)
+                                .validate_output(
+                                    snapshot,
+                                    artifact_output,
+                                    OutputAuthorization::CurrentPackage,
+                                )
                                 .unwrap();
                         };
                         run_replay_case("copied");
@@ -3238,7 +3253,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             assert_eq!(driver.events(actual.session.id()), recorded);
             assert!(
                 owner
-                    .validate_current_output(snapshot, &row.output_refs[0])
+                    .validate_output(
+                        snapshot,
+                        &row.output_refs[0],
+                        OutputAuthorization::CurrentPackage
+                    )
                     .is_err()
             );
             let handle = owner

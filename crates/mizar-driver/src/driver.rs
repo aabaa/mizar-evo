@@ -25,7 +25,7 @@ use mizar_build::{
     },
 };
 pub use mizar_ir::dispatch_input::PhaseDispatchInputProvider;
-use mizar_ir::publisher::{PhaseOutputPublisher, PublishError};
+use mizar_ir::publisher::{OutputAuthorization, PhaseOutputPublisher, PublishError};
 use mizar_session::{
     BuildSessionId, BuildSnapshotId, IdError, SessionIdAllocator, SnapshotRegistry,
 };
@@ -1334,7 +1334,11 @@ impl CompilerDriver {
                         task.id.as_str()
                     ));
                     if publisher
-                        .validate_current_output(input.snapshot, handle.any())
+                        .validate_output(
+                            input.snapshot,
+                            handle.any(),
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .is_err()
                         || publisher.storage().validate_handle(handle.any()).is_err()
                         || publisher
@@ -1456,7 +1460,11 @@ impl CompilerDriver {
                         frontend.id.as_str()
                     ));
                     if publisher
-                        .validate_current_output(input.snapshot, frontend_handle.any())
+                        .validate_output(
+                            input.snapshot,
+                            frontend_handle.any(),
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .is_err()
                         || publisher
                             .storage()
@@ -1601,13 +1609,17 @@ impl CompilerDriver {
                 .is_ok()
                 && phase_results.values().flatten().all(|result| {
                     result.output_refs.iter().all(|output| {
-                        (if session.captured.native_sources().is_some() {
-                            publisher
-                                .validate_published_output(session.captured.snapshot.id, output)
-                        } else {
-                            publisher.validate_current_output(session.captured.snapshot.id, output)
-                        })
-                        .is_ok()
+                        publisher
+                            .validate_output(
+                                session.captured.snapshot.id,
+                                output,
+                                if session.captured.native_sources().is_some() {
+                                    OutputAuthorization::Published
+                                } else {
+                                    OutputAuthorization::CurrentPackage
+                                },
+                            )
+                            .is_ok()
                             && publisher.storage().validate_handle(output).is_ok()
                     })
                 })
@@ -1666,7 +1678,11 @@ impl CompilerDriver {
                 if self.lanes.publication_decision(snapshots, &session)
                     != PublicationDecision::Current
                     || publisher
-                        .validate_current_output(input.snapshot, output)
+                        .validate_output(
+                            input.snapshot,
+                            output,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .is_err()
                     || publisher.storage().validate_handle(output).is_err()
                 {
@@ -1775,7 +1791,11 @@ impl CompilerDriver {
                         != PublicationDecision::Current
                         || [source_output, output].iter().any(|output| {
                             publisher
-                                .validate_current_output(input.snapshot, output)
+                                .validate_output(
+                                    input.snapshot,
+                                    output,
+                                    OutputAuthorization::CurrentPackage,
+                                )
                                 .is_err()
                                 || publisher.storage().validate_handle(output).is_err()
                         })
@@ -1825,7 +1845,11 @@ impl CompilerDriver {
                     }
                     let publisher = self.output_publisher.as_ref()?;
                     publisher
-                        .validate_published_output(session.captured.snapshot.id, output)
+                        .validate_output(
+                            session.captured.snapshot.id,
+                            output,
+                            OutputAuthorization::Published,
+                        )
                         .ok()?;
                     publisher.storage().validate_handle(output).ok()?;
                     let finished = driver_scheduler_run.events.iter().find(|event| {

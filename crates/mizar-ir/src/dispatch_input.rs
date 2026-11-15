@@ -9,7 +9,7 @@ use mizar_session::{BuildSnapshotId, Hash};
 
 use crate::{
     identity::PhaseOutputId,
-    publisher::{PhaseOutputPublisher, PublishError},
+    publisher::{OutputAuthorization, PhaseOutputPublisher, PublishError},
     storage::{AnyPhaseOutputRef, IrStorageService, StorageError},
 };
 
@@ -164,7 +164,7 @@ impl SealedParentOutputHandle {
             publisher.storage(),
             snapshot,
             handle,
-            Some((publisher, false)),
+            Some((publisher, OutputAuthorization::CurrentPackage)),
         )
     }
 
@@ -178,7 +178,7 @@ impl SealedParentOutputHandle {
             publisher.storage(),
             snapshot,
             handle,
-            Some((publisher, true)),
+            Some((publisher, OutputAuthorization::Published)),
         )
     }
 
@@ -195,7 +195,7 @@ impl SealedParentOutputHandle {
         storage: &IrStorageService,
         snapshot: BuildSnapshotId,
         handle: AnyPhaseOutputRef,
-        publisher: Option<(&PhaseOutputPublisher, bool)>,
+        publisher: Option<(&PhaseOutputPublisher, OutputAuthorization)>,
     ) -> Result<Self, DispatchInputError> {
         reject_parent_snapshot(snapshot, &handle)?;
         storage
@@ -203,15 +203,12 @@ impl SealedParentOutputHandle {
             .map_err(|error| DispatchInputError::Storage {
                 error: Box::new(error),
             })?;
-        if let Some((publisher, published)) = publisher {
-            let result = if published {
-                publisher.validate_published_output(snapshot, &handle)
-            } else {
-                publisher.validate_current_output(snapshot, &handle)
-            };
-            result.map_err(|error| DispatchInputError::Publisher {
-                error: Box::new(error),
-            })?;
+        if let Some((publisher, authorization)) = publisher {
+            publisher
+                .validate_output(snapshot, &handle, authorization)
+                .map_err(|error| DispatchInputError::Publisher {
+                    error: Box::new(error),
+                })?;
         }
         Ok(Self { handle })
     }

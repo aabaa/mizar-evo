@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_preparation_core_caller_preserves_genuine_outputs() {
@@ -302,7 +303,11 @@ fn native_theorem_preparation_core_caller_preserves_refusals() {
                 "wrong" => "native theorem preparation parent binding mismatch".to_owned(),
                 "frontend-core" => "native theorem preparation ancestry mismatch".to_owned(),
                 "obsolete" => owner
-                    .validate_published_output(old.snapshot, core_parent.any())
+                    .validate_output(
+                        old.snapshot,
+                        core_parent.any(),
+                        OutputAuthorization::Published,
+                    )
                     .unwrap_err()
                     .to_string(),
                 "collected" => owner
@@ -1115,11 +1120,19 @@ fn native_theorem_preparation_publication_seals_genuine_payload_and_streams() {
                             duplicate
                         );
                         owner
-                            .validate_published_output(old.snapshot, sealed.any())
+                            .validate_output(
+                                old.snapshot,
+                                sealed.any(),
+                                OutputAuthorization::Published,
+                            )
                             .unwrap();
                         assert_eq!(
                             owner
-                                .validate_current_output(old.snapshot, sealed.any())
+                                .validate_output(
+                                    old.snapshot,
+                                    sealed.any(),
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_ok(),
                             !open
                         );

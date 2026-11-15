@@ -12,7 +12,7 @@ use mizar_build::{
 };
 use mizar_ir::{
     dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest},
-    publisher::PhaseOutputPublisher,
+    publisher::{OutputAuthorization, PhaseOutputPublisher},
 };
 
 use crate::{
@@ -1137,16 +1137,21 @@ fn dispatch_registry_phase(
                 })();
                 let valid_outputs = result.output_refs.iter().all(|output| {
                     publisher.is_some_and(|publisher| {
-                        (if source_load.is_some_and(|inputs| {
-                            inputs
-                                .captured
-                                .is_some_and(|capture| capture.native_sources().is_some())
-                        }) {
-                            publisher.validate_published_output(task.snapshot, output)
-                        } else {
-                            publisher.validate_current_output(task.snapshot, output)
-                        })
-                        .is_ok()
+                        publisher
+                            .validate_output(
+                                task.snapshot,
+                                output,
+                                if source_load.is_some_and(|inputs| {
+                                    inputs
+                                        .captured
+                                        .is_some_and(|capture| capture.native_sources().is_some())
+                                }) {
+                                    OutputAuthorization::Published
+                                } else {
+                                    OutputAuthorization::CurrentPackage
+                                },
+                            )
+                            .is_ok()
                             && publisher.storage().validate_handle(output).is_ok()
                     })
                 });
@@ -1225,7 +1230,11 @@ fn dispatch_registry_phase(
                             && output.output_kind() == &kind
                             && output.schema_version() == SchemaVersion::new(1)
                             && publisher
-                                .validate_published_output(task.snapshot, output)
+                                .validate_output(
+                                    task.snapshot,
+                                    output,
+                                    OutputAuthorization::Published,
+                                )
                                 .is_ok()
                     })();
                     if !eligible {

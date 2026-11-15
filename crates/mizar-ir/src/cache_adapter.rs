@@ -758,7 +758,7 @@ mod tests {
 
     use crate::{
         identity::{OutputIdentityInput, PhaseOutputLineage, SnapshotHandleRegistry},
-        publisher::AllowedWorkUnit,
+        publisher::{AllowedWorkUnit, OutputAuthorization},
         storage::{
             BlobDecodeError, CollectInput, IrStorageService, SealOutputInput, StorageError,
             StoragePolicy,
@@ -1820,7 +1820,7 @@ mod tests {
             .replace_current_snapshot(old_snapshot, new_snapshot)
             .expect("snapshot replacement succeeds");
         assert!(matches!(
-            publisher.validate_current_output(old_snapshot, handle.any()),
+            publisher.validate_output(old_snapshot, handle.any(), OutputAuthorization::CurrentPackage),
             Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == old_snapshot
         ));
 

@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_vcs_core_preparation_caller_preserves_genuine_outputs() {
@@ -988,11 +989,19 @@ fn native_theorem_vcs_core_preparation_publication_preserves_genuine_outputs() {
                             duplicate
                         );
                         owner
-                            .validate_published_output(old.snapshot, sealed.any())
+                            .validate_output(
+                                old.snapshot,
+                                sealed.any(),
+                                OutputAuthorization::Published,
+                            )
                             .unwrap();
                         assert_eq!(
                             owner
-                                .validate_current_output(old.snapshot, sealed.any())
+                                .validate_output(
+                                    old.snapshot,
+                                    sealed.any(),
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_ok(),
                             !open
                         );

@@ -20,7 +20,7 @@ use mizar_session::{BuildSnapshotId, Hash};
 
 use crate::{
     identity::PhaseOutputId,
-    publisher::{PhaseOutputPublisher, PublishError},
+    publisher::{OutputAuthorization, PhaseOutputPublisher, PublishError},
     storage::{AnyPhaseOutputRef, StorageError},
 };
 
@@ -218,7 +218,7 @@ impl ArtifactProjectionService {
                 });
             }
             self.publisher
-                .validate_published_output(snapshot, output)
+                .validate_output(snapshot, output, OutputAuthorization::Published)
                 .map_err(|error| ProjectionError::Publisher {
                     error: Box::new(error),
                 })?;
@@ -923,7 +923,11 @@ mod tests {
         );
         assert_eq!(publisher.storage().get(&handle).unwrap(), before);
         publisher
-            .validate_current_output(snapshot, &handle.erase())
+            .validate_output(
+                snapshot,
+                &handle.erase(),
+                OutputAuthorization::CurrentPackage,
+            )
             .unwrap();
     }
 
@@ -988,7 +992,11 @@ mod tests {
         }
         assert_eq!(publisher.storage().get(&handle).unwrap(), before);
         publisher
-            .validate_current_output(snapshot, &handle.erase())
+            .validate_output(
+                snapshot,
+                &handle.erase(),
+                OutputAuthorization::CurrentPackage,
+            )
             .unwrap();
         let mut input = project_input(snapshot, handle.erase());
         input.statements.push(statement.clone());

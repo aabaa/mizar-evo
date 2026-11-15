@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_summary_publication_seals_whole_genuine_summary_and_bytes() {
@@ -188,17 +189,25 @@ fn native_theorem_summary_publication_seals_whole_genuine_summary_and_bytes() {
                     _ => panic!("unexpected storage placement"),
                 }
                 owner
-                    .validate_published_output(input.snapshot, sealed.any())
+                    .validate_output(input.snapshot, sealed.any(), OutputAuthorization::Published)
                     .unwrap();
                 assert_eq!(
                     owner
-                        .validate_current_output(input.snapshot, sealed.any())
+                        .validate_output(
+                            input.snapshot,
+                            sealed.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok(),
                     !open
                 );
                 assert!(
                     owner
-                        .validate_published_output(snapshot_id(0xf8), sealed.any())
+                        .validate_output(
+                            snapshot_id(0xf8),
+                            sealed.any(),
+                            OutputAuthorization::Published
+                        )
                         .is_err()
                 );
                 let replay_owner = publisher(

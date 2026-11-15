@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_discharge_core_vc_caller_matches_genuine_discharge() {
@@ -1589,11 +1590,19 @@ fn native_theorem_discharge_publication_preserves_genuine_outputs() {
                             duplicate
                         );
                         owner
-                            .validate_published_output(old.snapshot, sealed.any())
+                            .validate_output(
+                                old.snapshot,
+                                sealed.any(),
+                                OutputAuthorization::Published,
+                            )
                             .unwrap();
                         assert_eq!(
                             owner
-                                .validate_current_output(old.snapshot, sealed.any())
+                                .validate_output(
+                                    old.snapshot,
+                                    sealed.any(),
+                                    OutputAuthorization::CurrentPackage
+                                )
                                 .is_ok(),
                             !open
                         );

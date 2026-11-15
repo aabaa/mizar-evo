@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_theorem_typed_ast_storage_replay_preserves_genuine_outputs() {
@@ -1064,11 +1065,19 @@ fn native_theorem_typed_ast_publication_seals_genuine_payload_and_streams() {
                                 duplicate
                             );
                             owner
-                                .validate_published_output(input.snapshot, sealed.any())
+                                .validate_output(
+                                    input.snapshot,
+                                    sealed.any(),
+                                    OutputAuthorization::Published,
+                                )
                                 .unwrap();
                             assert_eq!(
                                 owner
-                                    .validate_current_output(input.snapshot, sealed.any())
+                                    .validate_output(
+                                        input.snapshot,
+                                        sealed.any(),
+                                        OutputAuthorization::CurrentPackage
+                                    )
                                     .is_ok(),
                                 !open
                             );

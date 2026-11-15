@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn native_disk_cache_request_projects_real_storage_and_replays_without_local_ids() {
@@ -1073,7 +1074,11 @@ fn native_disk_cache_record_rejects_physical_current_capture_and_output_bindings
         }
         assert!(
             other_owner
-                .validate_current_output(snapshot, other_handle.any())
+                .validate_output(
+                    snapshot,
+                    other_handle.any(),
+                    OutputAuthorization::CurrentPackage
+                )
                 .is_ok()
         );
         assert!(
@@ -1147,7 +1152,11 @@ fn native_disk_cache_record_rejects_physical_current_capture_and_output_bindings
     ));
     assert!(
         collected_owner
-            .validate_current_output(collected_snapshot.id, collected_handle.any())
+            .validate_output(
+                collected_snapshot.id,
+                collected_handle.any(),
+                OutputAuthorization::CurrentPackage
+            )
             .is_ok()
     );
     assert!(
@@ -1162,7 +1171,11 @@ fn native_disk_cache_record_rejects_physical_current_capture_and_output_bindings
     );
     assert!(
         collected_owner
-            .validate_current_output(collected_snapshot.id, collected_handle.any())
+            .validate_output(
+                collected_snapshot.id,
+                collected_handle.any(),
+                OutputAuthorization::CurrentPackage
+            )
             .is_ok()
     );
     assert!(
@@ -1334,7 +1347,11 @@ fn native_disk_expected_cache_payload_rebinds_current_resident_source() {
                 );
                 assert!(
                     target
-                        .validate_current_output(snapshot, handle.any())
+                        .validate_output(
+                            snapshot,
+                            handle.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok()
                 );
             }
@@ -1478,7 +1495,11 @@ fn native_disk_expected_cache_payload_rejects_current_bytes_and_raw_maps_before_
         assert_eq!(adapter.successful_rehydrations(), 0);
         assert!(
             target
-                .validate_current_output(handle.snapshot(), handle.any())
+                .validate_output(
+                    handle.snapshot(),
+                    handle.any(),
+                    OutputAuthorization::CurrentPackage
+                )
                 .is_err()
         );
         // Equal first slot IDs in independent fresh stores detect any hidden allocation.
@@ -2120,7 +2141,11 @@ fn native_disk_cache_lookup_rejects_binding_currentness_and_foreign_producer() {
         assert_eq!(adapter.successful_rehydrations(), 0);
         assert!(
             target
-                .validate_current_output(input.snapshot, source_handle.any())
+                .validate_output(
+                    input.snapshot,
+                    source_handle.any(),
+                    OutputAuthorization::CurrentPackage
+                )
                 .is_err()
         );
     }
@@ -2833,7 +2858,9 @@ fn native_disk_cache_edits_match_independent_clean_prefixes_across_replay_contro
                             matches!(handle.placement(), StoragePlacement::Blob { .. }),
                             threshold == 0
                         );
-                        owner.validate_published_output(snapshot, handle).unwrap();
+                        owner
+                            .validate_output(snapshot, handle, OutputAuthorization::Published)
+                            .unwrap();
                     }
                     let diagnostics =
                         source_result
@@ -3409,12 +3436,20 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
                     );
                     assert!(
                         owner
-                            .validate_published_output(snapshot, negative_source.any())
+                            .validate_output(
+                                snapshot,
+                                negative_source.any(),
+                                OutputAuthorization::Published
+                            )
                             .is_ok()
                     );
                     assert_eq!(
                         owner
-                            .validate_current_output(snapshot, negative_source.any())
+                            .validate_output(
+                                snapshot,
+                                negative_source.any(),
+                                OutputAuthorization::CurrentPackage
+                            )
                             .is_ok(),
                         case != "internal-source-parent",
                     );
@@ -3499,7 +3534,11 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
                 );
                 assert!(
                     owner
-                        .validate_current_output(snapshot, rejected_handle.any())
+                        .validate_output(
+                            snapshot,
+                            rejected_handle.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok()
                 );
                 assert!(
@@ -3578,7 +3617,11 @@ fn native_disk_frontend_record_rejects_current_physical_parent_capture_and_profi
                 assert!(owner.storage().validate_handle(missing).is_err());
                 assert!(
                     owner
-                        .validate_current_output(snapshot, handle.any())
+                        .validate_output(
+                            snapshot,
+                            handle.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
                         .is_ok()
                 );
                 &adapter

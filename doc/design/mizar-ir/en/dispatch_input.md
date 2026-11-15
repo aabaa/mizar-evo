@@ -182,6 +182,7 @@ returns `Result<Self, DispatchInputError>` after snapshot matching, physical
 storage validation and [publisher authorization](publisher.md#published-output-authorization).
 It accepts current/package or genuine current-snapshot OpenBuffer/InternalOnly
 publications. The old current constructor still rejects internal outputs; the
-rehydrated constructor still requires prior cache-owner validation. All three
-constructors share only this validation sequence, retaining their error order.
+rehydrated constructor still requires prior cache-owner validation. The publisher-backed constructors select `OutputAuthorization::CurrentPackage` or
+`OutputAuthorization::Published` explicitly in the shared validator. All three
+constructors retain their validation sequence and error order.
 No editor freshness, source validity, proof authority or cache acceptance is inferred.

@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_worker_controls() {
@@ -159,7 +160,11 @@ fn discovered_real_frontend_prefix_is_stable_across_replay_capture_order_and_wor
             if let Some((old_snapshot, output)) = obsolete_output {
                 assert!(publisher.validate_current_snapshot(old_snapshot).is_err());
                 for target in [old_snapshot, snapshot] {
-                    assert!(publisher.validate_current_output(target, &output).is_err());
+                    assert!(
+                        publisher
+                            .validate_output(target, &output, OutputAuthorization::CurrentPackage)
+                            .is_err()
+                    );
                     assert!(
                         SealedParentOutputHandle::from_current_output(
                             &publisher,

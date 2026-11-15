@@ -1,4 +1,5 @@
 use super::*;
+use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
 fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
@@ -440,7 +441,9 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                     output.lineage().named_input_hashes,
                     kernel.lineage().named_input_hashes
                 );
-                owner.validate_current_output(six.snapshot, output).unwrap();
+                owner
+                    .validate_output(six.snapshot, output, OutputAuthorization::CurrentPackage)
+                    .unwrap();
                 match *output.placement() {
                     StoragePlacement::Resident => assert_eq!(threshold, usize::MAX),
                     StoragePlacement::Blob { len, .. } => {
@@ -520,7 +523,11 @@ fn registered_source_theorem_artifact_commit_matches_real_owner_products() {
                 for reference in refs {
                     owner.storage().validate_handle(reference).unwrap();
                     owner
-                        .validate_current_output(six.snapshot, reference)
+                        .validate_output(
+                            six.snapshot,
+                            reference,
+                            OutputAuthorization::CurrentPackage,
+                        )
                         .unwrap();
                 }
                 assert_eq!(
@@ -892,7 +899,7 @@ fn registered_source_theorem_artifact_commit_preserves_refusals() {
                         value
                     );
                     owner
-                        .validate_current_output(six.snapshot, &output)
+                        .validate_output(six.snapshot, &output, OutputAuthorization::CurrentPackage)
                         .unwrap();
                     assert_eq!(
                         [

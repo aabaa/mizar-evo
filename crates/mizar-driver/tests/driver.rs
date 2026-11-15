@@ -39,7 +39,8 @@ use mizar_ir::{
         WorkUnit as IrWorkUnit,
     },
     publisher::{
-        AllowedWorkUnit, OutputOrigin, PhaseOutputPublisher, PublicationTarget, PublishOutputInput,
+        AllowedWorkUnit, OutputAuthorization, OutputOrigin, PhaseOutputPublisher,
+        PublicationTarget, PublishOutputInput,
     },
     storage::{BlobDecodeError, BlobDecoder, IrSideTables, IrStorageService, SchemaVersion},
 };
@@ -1556,7 +1557,11 @@ fn scheduled_publication_preserves_real_outputs_and_rejects_invalid_results() {
                 assert_eq!(result.output_refs.len(), 1);
                 let output = &result.output_refs[0];
                 publisher
-                    .validate_current_output(submission.session.captured().snapshot().id, output)
+                    .validate_output(
+                        submission.session.captured().snapshot().id,
+                        output,
+                        OutputAuthorization::CurrentPackage,
+                    )
                     .unwrap();
                 let typed = publisher
                     .storage()

@@ -154,7 +154,7 @@ corrupt record は、`PhaseOutputRef<T>` を復元する前に miss となる。
 
 ## Public enum forward-compatibility
 
-`OutputOrigin`、`PublicationTarget`、`PublishError` は downstream crate 向けに
+`OutputOrigin`、`PublicationTarget`、`OutputAuthorization`、`PublishError` は downstream crate 向けに
 `#[non_exhaustive]` とする。これにより、将来の origin class、publication target、
 fail-closed rejection reason を、外部の exhaustive match を壊さずに追加できる。この
 module には意図的に exhaustive とする public enum 例外はない。`mizar-ir` 内部の
@@ -195,13 +195,15 @@ Task 8 は以下を cover しなければならない:
 
 ## Published output authorization
 
-`validate_published_output(snapshot, &AnyPhaseOutputRef) -> Result<(), PublishError>`
-は現在の publisher 状態、output snapshot、当 publisher に記録された正確な
-output/generation を照合する。CurrentPackage 成功は既存 root を維持し、実際に
-seal 成功した OpenBuffer/InternalOnly は別の private publication 記録を持つ。
-current/package root は作らず、他の InternalOnly origin と直接 storage seal は
-承認しない。未承認は `OutputNotPublished { snapshot, output }`。旧 API/error は不変。
-seal 失敗は記録を作らない。物理 handle の有効性は storage が確認し、記録は
-storage を保持せず、回収済み generation を復活させない。これは publisher 由来の
-確認であり、source 正当性・document version 鮮度・cache 受理・proof status・
-artifact 権限ではない。obsolete/superseded snapshot は拒否する。
+`validate_output(snapshot, &AnyPhaseOutputRef, OutputAuthorization) -> Result<(), PublishError>`
+は現在の publisher 状態、output snapshot、当 publisher の正確な output/generation
+記録をこの順に照合する。`OutputAuthorization::CurrentPackage` は current/package
+root を要求し、不在時は `OutputNotCurrentPackage` を返す。
+`OutputAuthorization::Published` は seal 成功した OpenBuffer/InternalOnly の別の
+private 記録も受け付け、両方の記録が不在なら `OutputNotPublished` を返す。
+この記録は current/package root を作らず、他の InternalOnly origin や直接 storage
+seal は承認しない。seal 失敗は記録を作らない。物理 handle の有効性は storage が
+確認し、記録は storage を保持せず、回収済み generation を復活させない。
+これは publisher 由来の確認であり、source 正当性・document version 鮮度・cache 受理・
+proof status・artifact 権限ではない。obsolete/superseded snapshot は拒否し、
+従来の error と優先順位を維持する。
