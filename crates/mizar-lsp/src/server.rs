@@ -919,7 +919,10 @@ impl Server {
                             let mut string_content = quote.is_some();
                             for ch in raw.lexeme.chars() {
                                 if let Some(delimiter) = quote {
-                                    if escaped {
+                                    if matches!(ch, '\n' | '\r') {
+                                        quote = None;
+                                        escaped = false;
+                                    } else if escaped {
                                         escaped = false;
                                     } else if ch == '\\' {
                                         escaped = true;

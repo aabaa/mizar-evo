@@ -110,6 +110,35 @@ theorem"#,
         );
     }
 
+    // A backslash immediately before LF, CRLF, or lone CR does not keep the
+    // string open. The next-line @latex argument remains string content, and
+    // scanning recovers for recognized tokens on the following line.
+    for (id, quote, newline) in [
+        (12, '"', "\n"),
+        (13, '"', "\r\n"),
+        (14, '"', "\r"),
+        (15, '\'', "\n"),
+        (16, '\'', "\r\n"),
+        (17, '\'', "\r"),
+    ] {
+        let uri = format!("file:///escaped-newline-{id}.miz");
+        let text = format!(
+            "@latex({quote}unterminated\\{newline}@latex({quote}\\{quote} theorem 9 = x{quote}){newline}theorem X : 1 = 2 ;"
+        );
+        open(&mut server, &uri, &text);
+        assert_eq!(
+            tokens(&mut server, id, Some(&uri)),
+            json!({"data":[
+                2,0,7,0,0,
+                0,10,1,1,0,
+                0,2,1,2,0,
+                0,2,1,1,0,
+                0,2,1,2,0,
+                0,2,1,1,0
+            ]})
+        );
+    }
+
     // A comma remains the argument boundary across comments and layout.
     let uri = "file:///comma-string.miz";
     open(
@@ -199,6 +228,30 @@ fn incomplete_raw_input_keeps_recognized_tokens_and_omits_unknowns() {
         tokens(&mut server, 3, Some(uri)),
         json!({"data":[0,0,7,0,0, 0,10,1,1,0, 0,2,1,2,0, 0,2,1,1,0]})
     );
+
+    for (id, quote, newline) in [
+        (3, '"', "\n"),
+        (4, '"', "\r\n"),
+        (5, '"', "\r"),
+        (6, '\'', "\n"),
+        (7, '\'', "\r\n"),
+        (8, '\'', "\r"),
+    ] {
+        let uri = format!("file:///unterminated-string-{id}.miz");
+        let text = format!("@latex({quote}unterminated{newline}theorem X : 1 = 2 ;");
+        open(&mut server, &uri, &text);
+        assert_eq!(
+            tokens(&mut server, id, Some(&uri)),
+            json!({"data":[
+                1,0,7,0,0,
+                0,10,1,1,0,
+                0,2,1,2,0,
+                0,2,1,1,0,
+                0,2,1,2,0,
+                0,2,1,1,0
+            ]})
+        );
+    }
 }
 
 #[test]
