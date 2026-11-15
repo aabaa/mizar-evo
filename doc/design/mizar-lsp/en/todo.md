@@ -240,6 +240,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Deps: 11. Spec: all module specs.
 
 22. **Source/spec correspondence audit.** [ ]
+    - Contract: [LSP-SOURCE-SPEC-AUDIT](../../task_contracts/en/LSP-SOURCE-SPEC-AUDIT.md).
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 21. Spec: all module specs and this TODO.

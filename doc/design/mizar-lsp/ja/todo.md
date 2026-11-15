@@ -240,6 +240,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 依存: 11。仕様: 全モジュール仕様。
 
 22. **ソース/仕様対応監査。** [ ]
+    - 契約: [LSP-SOURCE-SPEC-AUDIT](../../task_contracts/ja/LSP-SOURCE-SPEC-AUDIT.md)。
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 21。仕様: 全モジュール仕様と本 TODO。
