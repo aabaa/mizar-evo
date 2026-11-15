@@ -38,6 +38,7 @@ pub struct Server {
     exit_code: Option<i32>,
     documents: BTreeMap<String, (i32, String, std::sync::Arc<()>)>,
     native_open_buffers: Option<std::sync::Arc<NativeOpenBufferSnapshot>>,
+    diagnostic_overlays: BTreeMap<(String, i32), std::sync::Arc<LspDiagnosticOverlay>>,
     lsp_snapshot: Option<std::sync::Arc<LspSnapshot>>,
     build_bridge: Option<build_bridge::BuildBridge>,
 }
@@ -75,6 +76,57 @@ impl Drop for NativeOpenBufferSnapshot {
         self.release_overlay
             .take()
             .expect("native overlay cleanup missing")();
+    }
+}
+
+/// Original Frontend records and source maps for one open document.
+pub struct LspDiagnosticOverlay {
+    index: std::sync::Arc<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
+    association: std::sync::Arc<NativeOpenBufferSnapshot>,
+    source_position: usize,
+    session: mizar_session::BuildSessionId,
+}
+
+impl LspDiagnosticOverlay {
+    pub fn document(&self) -> &str {
+        let mizar_session::SourceOriginInput::OpenBuffer { uri, .. } = &self.source().2.origin
+        else {
+            unreachable!("diagnostic overlay requires an open buffer")
+        };
+        uri
+    }
+
+    pub fn version(&self) -> i32 {
+        let mizar_session::SourceOriginInput::OpenBuffer { actual_version, .. } =
+            &self.source().2.origin
+        else {
+            unreachable!("diagnostic overlay requires an open buffer")
+        };
+        i32::try_from(*actual_version).expect("eligible overlay version must fit i32")
+    }
+
+    pub fn diagnostics(
+        &self,
+    ) -> impl Iterator<Item = &mizar_diagnostics::failure_record::DiagnosticRecord> {
+        self.index.records().iter().filter(|record| {
+            matches!(record.primary_location(),
+                mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::Span(span)
+                    if span.range().source_id == self.source().1.source_id)
+        })
+    }
+
+    pub fn source(
+        &self,
+    ) -> &(
+        mizar_session::DiskSourceLoader,
+        mizar_session::LoadedSource,
+        mizar_session::SourceInput,
+    ) {
+        &self
+            .association
+            .captured
+            .native_sources()
+            .expect("native overlay sources missing")[self.source_position]
     }
 }
 
@@ -133,6 +185,80 @@ impl Drop for LspSnapshot {
 }
 
 impl Server {
+    /// Selects current Frontend diagnostics without granting semantic publication authority.
+    pub fn diagnostic_overlay<A: mizar_session::SessionIdAllocator>(
+        &self,
+        uri: &str,
+        version: i32,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+    ) -> Option<std::sync::Arc<LspDiagnosticOverlay>> {
+        let overlay = self.diagnostic_overlays.get(&(uri.to_owned(), version))?;
+        if self.initialized.is_none()
+            || self.shutdown
+            || self.exit_code.is_some()
+            || !self.native_association_current(&overlay.association)
+            || driver
+                .validate_current_native_diagnostics(overlay.session, snapshots)
+                .is_err()
+        {
+            return None;
+        }
+        Some(overlay.clone())
+    }
+
+    /// Stores only the original eligible index produced by the originating native capture.
+    pub fn submit_originating_diagnostic_overlay<
+        A: mizar_session::SessionIdAllocator,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &mut self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        mut capture: NativeOpenBufferCapture,
+        allocator: &A,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, bool),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        let association = capture.snapshot.clone();
+        let eligible = self
+            .native_open_buffers
+            .as_ref()
+            .is_some_and(|current| std::sync::Arc::ptr_eq(current, &association))
+            && self.native_association_current(&association);
+        let session = capture
+            .session
+            .take()
+            .expect("native capture session missing");
+        capture.release_active = None;
+        let (mut submission, notifications) =
+            self.native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
+        let index = submission.diagnostic_index.take();
+        let installed = eligible && notifications.is_some();
+        if installed {
+            let index =
+                std::sync::Arc::new(index.expect("eligible native diagnostic index missing"));
+            for source_position in 0..association
+                .captured
+                .native_sources()
+                .expect("native sources missing")
+                .len()
+            {
+                let overlay = std::sync::Arc::new(LspDiagnosticOverlay {
+                    index: index.clone(),
+                    association: association.clone(),
+                    source_position,
+                    session: submission.session.id(),
+                });
+                self.diagnostic_overlays
+                    .insert((overlay.document().to_owned(), overlay.version()), overlay);
+            }
+        }
+        Ok((submission, installed))
+    }
+
     /// Reads one whole retained publication and reports current editor/IR eligibility.
     pub fn lsp_snapshot<A: mizar_session::SessionIdAllocator>(
         &self,
@@ -372,6 +498,22 @@ impl Server {
         let Some(candidate) = candidate else {
             return false;
         };
+        for (_, _, input) in candidate
+            .native_open_buffers
+            .captured
+            .native_sources()
+            .expect("native sources missing")
+        {
+            if let mizar_session::SourceOriginInput::OpenBuffer {
+                uri,
+                actual_version,
+                ..
+            } = &input.origin
+                && let Ok(version) = i32::try_from(*actual_version)
+            {
+                self.diagnostic_overlays.remove(&(uri.clone(), version));
+            }
+        }
         self.lsp_snapshot = Some(candidate);
         true
     }
@@ -467,14 +609,16 @@ impl Server {
     /// Selects one complete original source cohort while its editor association is current.
     pub fn native_open_buffer_snapshot(&self) -> Option<std::sync::Arc<NativeOpenBufferSnapshot>> {
         let snapshot = self.native_open_buffers.as_ref()?;
-        if !snapshot.lifetimes.iter().all(|(uri, original)| {
+        self.native_association_current(snapshot)
+            .then(|| snapshot.clone())
+    }
+
+    fn native_association_current(&self, snapshot: &NativeOpenBufferSnapshot) -> bool {
+        snapshot.lifetimes.iter().all(|(uri, original)| {
             self.document_lifetime(uri)
                 .is_some_and(|current| std::sync::Weak::ptr_eq(original, &current))
-        }) || !snapshot
-            .captured
-            .native_sources()?
-            .iter()
-            .all(|(_, _, input)| match &input.origin {
+        }) && snapshot.captured.native_sources().is_some_and(|sources| {
+            sources.iter().all(|(_, _, input)| match &input.origin {
                 mizar_session::SourceOriginInput::OpenBuffer {
                     uri,
                     expected_version,
@@ -488,10 +632,7 @@ impl Server {
                 }
                 _ => false,
             })
-        {
-            return None;
-        }
-        Some(snapshot.clone())
+        })
     }
 
     /// Submits the original capture, withholding notifications after an incarnation changes.
@@ -637,33 +778,48 @@ impl Server {
         (mizar_driver::driver::BuildSubmission, Option<Vec<Value>>),
         mizar_driver::driver::DriverSubmitError,
     > {
+        let (mut submission, notifications) =
+            self.native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
+        submission.diagnostic_index = None;
+        Ok((submission, notifications))
+    }
+
+    fn native_frontend_diagnostics<
+        A: mizar_session::SessionIdAllocator,
+        L: mizar_build::module_index::SourceLayoutProvider,
+    >(
+        &self,
+        driver: &mut mizar_driver::driver::CompilerDriver,
+        session: mizar_driver::request::BuildSession,
+        allocator: &A,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        input: mizar_driver::driver::DriverSubmitInput<L>,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, Option<Vec<Value>>),
+        mizar_driver::driver::DriverSubmitError,
+    > {
         use mizar_build::task_graph::{PipelinePhase as BuildPhase, TaskKind, WorkUnit};
         use mizar_diagnostics::{
             failure_record::{DiagnosticFreshness, DiagnosticPrimaryLocation, PipelinePhase},
             registry::DiagnosticSeverity,
         };
         use mizar_driver::registry::PhaseStatus;
-        let (submission, index) = driver
-            .submit_captured(
-                session,
-                allocator,
-                snapshots,
-                input,
-                mizar_driver::driver::SubmitOptions {
-                    discover_imports: true,
-                    diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
-                    ..Default::default()
-                },
-            )
-            .map(|mut submission| {
-                let index = submission.diagnostic_index.take();
-                (submission, index)
-            })?;
+        let submission = driver.submit_captured(
+            session,
+            allocator,
+            snapshots,
+            input,
+            mizar_driver::driver::SubmitOptions {
+                discover_imports: true,
+                diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                ..Default::default()
+            },
+        )?;
         let notifications = (|| {
             if self.initialized.is_none() || self.shutdown || self.exit_code.is_some() {
                 return None;
             }
-            let index = index.as_ref()?;
+            let index = submission.diagnostic_index.as_ref()?;
             let snapshot = submission.session.captured().snapshot().id;
             if !index.obsolete_drafts().is_empty() {
                 return None;
@@ -1120,6 +1276,7 @@ impl Server {
                         }
                         self.shutdown = true;
                         self.native_open_buffers = None;
+                        self.diagnostic_overlays.clear();
                         if let Some(bridge) = &mut self.build_bridge {
                             bridge.slot = None;
                         }
@@ -1149,6 +1306,7 @@ impl Server {
             if params.is_none_or(Value::is_null) {
                 self.exit_code = Some(if self.shutdown { 0 } else { 1 });
                 self.native_open_buffers = None;
+                self.diagnostic_overlays.clear();
                 if let Some(bridge) = &mut self.build_bridge {
                     bridge.slot = None;
                 }
@@ -1197,6 +1355,13 @@ impl Server {
                         buffer.1 = text.to_owned();
                     }
                     buffer.0 = version;
+                    self.diagnostic_overlays.retain(|_, overlay| {
+                        !overlay
+                            .association
+                            .lifetimes
+                            .iter()
+                            .any(|(source, _)| source == uri)
+                    });
                     if self.native_open_buffers.as_ref().is_some_and(|snapshot| {
                         snapshot
                             .lifetimes
@@ -1219,6 +1384,13 @@ impl Server {
                     self.native_open_buffers = None;
                 }
                 if removed {
+                    self.diagnostic_overlays.retain(|_, overlay| {
+                        !overlay
+                            .association
+                            .lifetimes
+                            .iter()
+                            .any(|(source, _)| source == uri)
+                    });
                     self.admit_build();
                 }
             }
@@ -6732,5 +6904,538 @@ mod determinism_freshness_matrix_tests {
                 assert_eq!(feature_replies(&mut fixture, &uri, position, true), fresh);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod diagnostic_overlay_tests {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+    use mizar_diagnostics::failure_record::DiagnosticPrimaryLocation;
+    use std::sync::Arc;
+
+    fn submit_overlay(
+        fixture: &mut RegistryFixture,
+        capture: NativeOpenBufferCapture,
+    ) -> Result<
+        (mizar_driver::driver::BuildSubmission, bool),
+        mizar_driver::driver::DriverSubmitError,
+    > {
+        let input = fixture.driver_input();
+        fixture.server.submit_originating_diagnostic_overlay(
+            &mut fixture.driver,
+            capture,
+            &fixture.ids,
+            &fixture.snapshots,
+            input,
+        )
+    }
+
+    fn overlay(
+        fixture: &RegistryFixture,
+        uri: &str,
+        version: i32,
+    ) -> Option<Arc<LspDiagnosticOverlay>> {
+        fixture
+            .server
+            .diagnostic_overlay(uri, version, &fixture.driver, &fixture.snapshots)
+    }
+
+    #[test]
+    fn error_and_clean_cohort_reads_preserve_original_source_records_and_order() {
+        let mut fixture = RegistryFixture::new();
+        let error_uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&error_uri, 2, "theorem Main: invalid Mizar.".to_owned());
+        let capture = fixture.capture();
+        let (submission, installed) =
+            submit_overlay(&mut fixture, capture).expect("native frontend diagnostic submission");
+        assert!(installed);
+        assert!(submission.diagnostic_index.is_none());
+        let error = overlay(&fixture, &error_uri, 2).expect("exact error key");
+        assert_eq!(error.document(), error_uri);
+        assert_eq!(error.version(), 2);
+        let error_source_id = error.source().1.source_id;
+        let expected = error
+            .index
+            .handles_for_source(error_source_id)
+            .unwrap_or_default()
+            .iter()
+            .map(|handle| error.index.record_by_id(handle.id).unwrap())
+            .collect::<Vec<_>>();
+        let actual = error.diagnostics().collect::<Vec<_>>();
+        assert!(!actual.is_empty());
+        assert_eq!(actual, expected);
+        assert!(actual.iter().all(|record| {
+            matches!(record.primary_location(), DiagnosticPrimaryLocation::Span(span)
+                if span.range().source_id == error_source_id)
+        }));
+        assert!(overlay(&fixture, &error_uri, 1).is_none());
+        assert!(overlay(&fixture, "file:///not-open.miz", 2).is_none());
+        let clean_uri = fixture.sources[1].2.clone();
+        let clean = overlay(&fixture, &clean_uri, 1).expect("clean cohort member");
+        assert_eq!(clean.document(), clean_uri);
+        assert_eq!(clean.version(), 1);
+        assert_eq!(clean.diagnostics().count(), 0);
+        assert!(Arc::ptr_eq(&error.index, &clean.index));
+        let original_sources = fixture
+            .driver
+            .session(submission.session.id())
+            .unwrap()
+            .captured()
+            .native_sources()
+            .unwrap();
+        assert!(std::ptr::eq(
+            error.source(),
+            &original_sources[error.source_position]
+        ));
+        assert!(std::ptr::eq(
+            clean.source(),
+            &original_sources[clean.source_position]
+        ));
+        assert!(overlay(&fixture, &clean_uri, 2).is_none());
+    }
+
+    #[test]
+    fn replacement_clean_clearing_and_failed_work_preserve_old_readers() {
+        let mut fixture = RegistryFixture::new();
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&uri, 2, "theorem Main: invalid Mizar.".to_owned());
+        let capture = fixture.capture();
+        let (_, installed) =
+            submit_overlay(&mut fixture, capture).expect("first eligible submission");
+        assert!(installed);
+        let old = overlay(&fixture, &uri, 2).expect("first reader");
+        let old_records = old.diagnostics().cloned().collect::<Vec<_>>();
+        assert!(!old_records.is_empty());
+
+        let capture = fixture.capture();
+        let (_, replaced) =
+            submit_overlay(&mut fixture, capture).expect("same version eligible replacement");
+        assert!(replaced);
+        let same_version = overlay(&fixture, &uri, 2).expect("same-version replacement");
+        assert!(!Arc::ptr_eq(&old, &same_version));
+        assert_eq!(old.diagnostics().cloned().collect::<Vec<_>>(), old_records);
+
+        fixture.did_change_text(
+            &uri,
+            3,
+            "theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;"
+                .to_owned(),
+        );
+        let capture = fixture.capture();
+        let (_, cleared) =
+            submit_overlay(&mut fixture, capture).expect("clean eligible replacement");
+        assert!(cleared);
+        let clean = overlay(&fixture, &uri, 3).expect("clean empty replacement");
+        assert_eq!(clean.diagnostics().count(), 0);
+        assert!(overlay(&fixture, &uri, 2).is_none());
+        assert_eq!(old.diagnostics().cloned().collect::<Vec<_>>(), old_records);
+
+        let stale = fixture.capture();
+        let _newer_capture = fixture.capture();
+        let (_, ineligible) = submit_overlay(&mut fixture, stale)
+            .expect("old native capture remains a real submission");
+        assert!(!ineligible);
+        assert!(Arc::ptr_eq(
+            &clean,
+            fixture
+                .server
+                .diagnostic_overlays
+                .get(&(uri.clone(), 3))
+                .unwrap()
+        ));
+
+        let capture = fixture.capture();
+        let mut unavailable = mizar_driver::driver::CompilerDriver::new(
+            mizar_driver::registry::PhaseRegistryBuilder::new()
+                .build()
+                .unwrap(),
+        );
+        let input = fixture.driver_input();
+        let invalid_registry = mizar_session::SnapshotRegistry::with_allocator(fixture.ids.clone());
+        assert!(
+            fixture
+                .server
+                .submit_originating_diagnostic_overlay(
+                    &mut unavailable,
+                    capture,
+                    &fixture.ids,
+                    &invalid_registry,
+                    input,
+                )
+                .is_err()
+        );
+        assert!(Arc::ptr_eq(
+            &clean,
+            fixture
+                .server
+                .diagnostic_overlays
+                .get(&(uri.clone(), 3))
+                .unwrap()
+        ));
+    }
+
+    #[test]
+    fn currentness_tracks_versions_incarnations_and_server_lifecycle() {
+        for action in [
+            "version",
+            "normalized",
+            "close-reopen",
+            "invalid",
+            "unrelated",
+        ] {
+            let mut fixture = RegistryFixture::new();
+            let uri = fixture.sources[0].2.clone();
+            let capture = fixture.capture();
+            assert!(submit_overlay(&mut fixture, capture).unwrap().1);
+            let retained = overlay(&fixture, &uri, 1).unwrap();
+            let old_snapshot_id = retained.association.captured.snapshot().id;
+            match action {
+                "version" => fixture.did_change_version_only(&uri, 2),
+                "normalized" => fixture.did_change_text(
+                    &uri,
+                    2,
+                    format!("\u{feff}{}", fixture.server.document(&uri).unwrap().1),
+                ),
+                "close-reopen" => fixture.did_close_and_reopen(&uri, 1),
+                "invalid" => {
+                    let _ = fixture.server.handle_message(json!({
+                        "jsonrpc":"2.0", "method":"textDocument/didChange",
+                        "params":{"textDocument":{"uri":uri,"version":0},"contentChanges":[{"text":"ignored"}]}
+                    }));
+                }
+                "unrelated" => {
+                    let _ = fixture.server.handle_message(json!({
+                        "jsonrpc":"2.0", "method":"textDocument/didChange",
+                        "params":{"textDocument":{"uri":"file:///unrelated.miz","version":2},"contentChanges":[{"text":"ignored"}]}
+                    }));
+                }
+                _ => unreachable!(),
+            }
+            if matches!(action, "version" | "normalized") {
+                assert!(
+                    overlay(&fixture, &uri, 1).is_none(),
+                    "before recapture: {action}"
+                );
+                let next = fixture.capture();
+                assert_eq!(
+                    old_snapshot_id,
+                    next.snapshot.captured().snapshot().id,
+                    "version-only and BOM-normalized text retain the original build id"
+                );
+            }
+            if matches!(action, "invalid" | "unrelated") {
+                assert!(Arc::ptr_eq(&retained, &overlay(&fixture, &uri, 1).unwrap()));
+            } else {
+                assert!(overlay(&fixture, &uri, 1).is_none(), "{action}");
+            }
+            assert_eq!(retained.document(), uri);
+            match &retained.source().2.origin {
+                mizar_session::SourceOriginInput::OpenBuffer {
+                    actual_version,
+                    text,
+                    ..
+                } => {
+                    assert_eq!(*actual_version, 1);
+                    assert!(text.starts_with("theorem Main:"));
+                    assert!(!text.starts_with('\u{feff}'));
+                }
+                _ => panic!("retained overlay must keep its original open source"),
+            }
+        }
+
+        let mut fixture = RegistryFixture::new();
+        let uri = fixture.sources[0].2.clone();
+        let capture = fixture.capture();
+        assert!(submit_overlay(&mut fixture, capture).unwrap().1);
+        let retained = overlay(&fixture, &uri, 1).unwrap();
+        let mut other = Server::default();
+        other.handle_message(json!({"jsonrpc":"2.0","id":1,"method":"initialize",
+            "params":{"processId":null,"rootUri":null,"capabilities":{}}}));
+        for (_, _, source_uri) in &fixture.sources {
+            let (version, text) = fixture.server.document(source_uri).unwrap();
+            other.handle_message(json!({"jsonrpc":"2.0","method":"textDocument/didOpen",
+                "params":{"textDocument":{"uri":source_uri,"languageId":"mizar",
+                    "version":version,"text":text}}}));
+        }
+        assert!(
+            other
+                .diagnostic_overlay(&uri, 1, &fixture.driver, &fixture.snapshots)
+                .is_none()
+        );
+        // Fresh authorized outputs for a genuine producer on the second connection.
+        drop(fixture.capture());
+        let mut other_driver = fixture.frontend_only_driver();
+        let capture = other
+            .capture_native_open_buffers(
+                fixture.draft.clone(),
+                &fixture.ids,
+                &fixture.snapshots,
+                &fixture.index,
+                fixture.sources.clone(),
+            )
+            .unwrap();
+        let (_, installed) = other
+            .submit_originating_diagnostic_overlay(
+                &mut other_driver,
+                capture,
+                &fixture.ids,
+                &fixture.snapshots,
+                fixture.driver_input(),
+            )
+            .unwrap();
+        assert!(installed);
+        let other_reader = other
+            .diagnostic_overlay(&uri, 1, &other_driver, &fixture.snapshots)
+            .unwrap();
+        assert!(!Arc::ptr_eq(&retained, &other_reader));
+        assert!(Arc::ptr_eq(&retained, &overlay(&fixture, &uri, 1).unwrap()));
+        let _ = fixture.server.handle_message(json!({
+            "jsonrpc":"2.0", "id":9, "method":"shutdown", "params":null
+        }));
+        assert!(overlay(&fixture, &uri, 1).is_none());
+        assert_eq!(retained.document(), uri);
+        assert!(Arc::ptr_eq(
+            &other_reader,
+            &other
+                .diagnostic_overlay(&uri, 1, &other_driver, &fixture.snapshots)
+                .unwrap()
+        ));
+
+        let mut exiting = RegistryFixture::new();
+        let uri = exiting.sources[0].2.clone();
+        let capture = exiting.capture();
+        assert!(submit_overlay(&mut exiting, capture).unwrap().1);
+        let retained = overlay(&exiting, &uri, 1).unwrap();
+        let _ = exiting
+            .server
+            .handle_message(json!({"jsonrpc":"2.0","method":"exit","params":null}));
+        assert!(overlay(&exiting, &uri, 1).is_none());
+        assert_eq!(retained.document(), uri);
+    }
+
+    #[test]
+    fn retained_open_buffer_lease_releases_after_last_overlay_reader() {
+        let mut fixture = RegistryFixture::new();
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&uri, 2, "theorem Main: invalid Mizar.".to_owned());
+        let capture = fixture.capture();
+        let (_, installed) =
+            submit_overlay(&mut fixture, capture).expect("eligible syntax overlay");
+        assert!(installed);
+        let reader = overlay(&fixture, &uri, 2).unwrap();
+        let snapshot_id = reader.association.captured().snapshot().id;
+        let lease = *fixture.ids.leases.lock().unwrap().last().unwrap();
+
+        fixture.did_change_text(
+            &uri,
+            3,
+            "theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;"
+                .to_owned(),
+        );
+        let capture = fixture.capture();
+        let other_snapshot = capture.snapshot.captured().snapshot().id;
+        let _ = submit_overlay(&mut fixture, capture).unwrap();
+        assert!(overlay(&fixture, &uri, 2).is_none());
+        assert!(reader.source().1.text.contains("invalid Mizar"));
+        assert!(matches!(
+            fixture.snapshots.release_lease(other_snapshot, lease),
+            Err(mizar_session::SnapshotError::LeaseReleaseMismatch { lease_id, actual_snapshot, .. })
+                if lease_id == lease && actual_snapshot == snapshot_id
+        ));
+        drop(reader);
+        assert!(matches!(
+            fixture.snapshots.release_lease(snapshot_id, lease),
+            Err(mizar_session::SnapshotError::UnknownSnapshotLease { lease_id }) if lease_id == lease
+        ));
+    }
+
+    #[test]
+    fn full_publication_clears_matching_keys_and_partial_work_does_not_clear() {
+        let mut fixture = RegistryFixture::new();
+        let main_uri = fixture.sources[0].2.clone();
+        let leaf_uri = fixture.sources[1].2.clone();
+        let capture = fixture.capture();
+        let (_, installed) =
+            submit_overlay(&mut fixture, capture).expect("eligible clean overlays");
+        assert!(installed);
+        let leaf = overlay(&fixture, &leaf_uri, 1).unwrap();
+        let original_id = leaf.association.captured().snapshot().id;
+        let (full, activated) = fixture.build();
+        assert!(activated);
+        assert_eq!(full.session.captured().snapshot().id, original_id);
+        assert!(fixture.server.diagnostic_overlays.is_empty());
+        assert_eq!(leaf.document(), leaf_uri);
+        assert_eq!(leaf.diagnostics().count(), 0);
+
+        let capture = fixture.capture();
+        assert!(submit_overlay(&mut fixture, capture).unwrap().1);
+        fixture.input_template.source_layout =
+            mizar_build::module_index::StaticSourceLayout::new(vec![
+                mizar_build::module_index::WorkspaceSourcePackage {
+                    package_id: mizar_session::PackageId::new("alpha"),
+                    files: vec![mizar_build::module_index::WorkspaceSourceFile::new(
+                        "src/main.miz",
+                        "main.miz",
+                    )],
+                },
+            ]);
+        fixture.input_template.vc_descriptors.truncate(1);
+        fixture.sources.truncate(1);
+        let (_, activated) = fixture.build();
+        assert!(activated);
+        assert!(
+            !fixture
+                .server
+                .diagnostic_overlays
+                .contains_key(&(main_uri, 1))
+        );
+        assert!(
+            fixture
+                .server
+                .diagnostic_overlays
+                .contains_key(&(leaf_uri.clone(), 1))
+        );
+        assert_eq!(leaf.document(), leaf_uri);
+
+        let mut partial_fixture = RegistryFixture::new();
+        let partial_main_uri = partial_fixture.sources[0].2.clone();
+        let partial_leaf_uri = partial_fixture.sources[1].2.clone();
+        partial_fixture.did_change_text(
+            &partial_leaf_uri,
+            2,
+            "theorem Leaf: invalid Mizar.".to_owned(),
+        );
+        let capture = partial_fixture.capture();
+        assert!(submit_overlay(&mut partial_fixture, capture).unwrap().1);
+        let current = overlay(&partial_fixture, &partial_main_uri, 1).unwrap();
+        let (partial, activated) = partial_fixture.build();
+        assert!(!activated);
+        assert!(
+            partial_fixture
+                .server
+                .diagnostic_overlays
+                .contains_key(&(partial_main_uri, 1))
+        );
+        assert!(
+            partial_fixture
+                .server
+                .diagnostic_overlays
+                .contains_key(&(partial_leaf_uri, 2))
+        );
+        assert_eq!(current.version(), 1);
+        assert!(
+            partial_fixture
+                .driver
+                .events(partial.session.id())
+                .events()
+                .iter()
+                .all(|event| !matches!(
+                    &event.kind,
+                    mizar_driver::events::BuildEventKind::SnapshotPublished { .. }
+                ))
+        );
+    }
+
+    #[test]
+    fn syntax_overlay_does_not_change_semantic_publication_cli_or_artifact_bytes() {
+        use mizar_artifact::verified_artifact::write_verified_artifact;
+        use mizar_build::module_index::WorkspaceSourceFile;
+        use mizar_driver::cli::{CliBatchInput, CliSnapshotInputs, run_batch};
+
+        let mut fixture = RegistryFixture::new();
+        let (submission, activated) = fixture.build();
+        assert!(activated);
+        let (semantic_reader, _) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .expect("genuine semantic publication");
+        let semantic_index = semantic_reader.publication().diagnostics().clone();
+        assert!(semantic_index.is_empty());
+        let artifact_bytes = semantic_reader
+            .publication()
+            .artifacts()
+            .iter()
+            .map(|artifact| write_verified_artifact(artifact).unwrap())
+            .collect::<Vec<_>>();
+        assert!(
+            semantic_reader
+                .publication()
+                .artifacts()
+                .iter()
+                .all(|artifact| artifact.diagnostics.is_empty())
+        );
+        let request = submission.session.request();
+        let cli_input = CliBatchInput::new(
+            "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+            "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n",
+            "alpha",
+            request
+                .source_inputs
+                .versions
+                .iter()
+                .map(|version| {
+                    WorkspaceSourceFile::new(
+                        version.normalized_path.as_str(),
+                        format!("{}.miz", version.module_path.as_str()),
+                    )
+                })
+                .collect(),
+            CliSnapshotInputs::new(
+                request.source_inputs.clone(),
+                request.dependency_inputs.clone(),
+                request.verifier_config,
+            ),
+        );
+        let workspace = fixture.draft.workspace_root.as_str().to_owned();
+        let cli_args = [
+            "mizar",
+            "build",
+            "--workspace",
+            workspace.as_str(),
+            "--message-format",
+            "json",
+        ];
+        let cli_before = run_batch(cli_args, cli_input.clone());
+        assert_ne!(cli_before.exit_code, mizar_driver::cli::CliExitCode::Usage);
+
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_text(&uri, 2, "theorem Main: invalid Mizar.".to_owned());
+        let capture = fixture.capture();
+        fixture.driver = fixture.frontend_only_driver();
+        let (overlay_submission, installed) =
+            submit_overlay(&mut fixture, capture).expect("syntax-only frontend run");
+        assert!(installed);
+        assert!(overlay_submission.diagnostic_index.is_none());
+        let syntax = overlay(&fixture, &uri, 2).unwrap();
+        assert!(syntax.diagnostics().next().is_some());
+        assert!(
+            !fixture
+                .driver
+                .events(overlay_submission.session.id())
+                .events()
+                .iter()
+                .any(|event| matches!(
+                    event.kind,
+                    mizar_driver::events::BuildEventKind::SnapshotPublished { .. }
+                ))
+        );
+        let (still_selected, freshness) = fixture
+            .server
+            .lsp_snapshot(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(Arc::ptr_eq(&semantic_reader, &still_selected));
+        assert_eq!(freshness, LspSnapshotFreshness::StaleArtifact);
+        assert_eq!(semantic_reader.publication().diagnostics(), &semantic_index);
+        assert_eq!(
+            semantic_reader
+                .publication()
+                .artifacts()
+                .iter()
+                .map(|artifact| write_verified_artifact(artifact).unwrap())
+                .collect::<Vec<_>>(),
+            artifact_bytes
+        );
+        assert_eq!(run_batch(cli_args, cli_input), cli_before);
     }
 }

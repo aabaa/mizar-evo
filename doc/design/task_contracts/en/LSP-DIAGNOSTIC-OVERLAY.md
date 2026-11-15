@@ -1,6 +1,6 @@
 # Task LSP-DIAGNOSTIC-OVERLAY: lightweight diagnostic storage
 Canonical language: English; [Japanese pointer](../ja/LSP-DIAGNOSTIC-OVERLAY.md).
-Status: specified. Tier: full.
+Status: implemented. Tier: full.
 Owner: [LSP plan](../../mizar-lsp/en/00.crate_plan.md); consumer: [task42](../../mizar-lsp/en/todo.md).
 
 ## Authority and readiness
