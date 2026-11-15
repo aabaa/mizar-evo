@@ -175,12 +175,14 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
       マーク。
     - 依存: 12、`mizar-artifact` task 11。仕様: `metadata.md`。
 
-14. **仕様: `navigation.md`。** [ ]
+14. **仕様: `navigation.md`。** [x]
     - ナビゲーションの仕様を執筆する（英語と日本語、コードなし）:
       artifact メタデータと snapshot データ上の定義、参照、document
       symbol、semantic token。
     - 依存: 12。仕様: アーキテクチャ 12、
       [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
+    - 完了: [設計契約](../../task_contracts/ja/LSP-NAVIGATION-DESIGN.md)、
+      [英語仕様](../en/navigation.md)、[日本語仕様](navigation.md)。
 
 15. **ナビゲーション機能。** [ ] — メタデータの生産者が律速。
     - 定義、参照、document symbol、semantic token を、生産側の層

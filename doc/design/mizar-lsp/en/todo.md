@@ -174,12 +174,14 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Tests: hover fixtures over fixture artifacts; stale data marked.
     - Deps: 12, `mizar-artifact` task 11. Spec: `metadata.md`.
 
-14. **Spec: `navigation.md`.** [ ]
+14. **Spec: `navigation.md`.** [x]
     - Write the navigation spec (English and Japanese, no code):
       definitions, references, document symbols, and semantic tokens over
       artifact metadata and snapshot data.
     - Deps: 12. Spec: architecture 12,
       [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
+    - Completion: [design contract](../../task_contracts/en/LSP-NAVIGATION-DESIGN.md),
+      [English specification](navigation.md), [Japanese specification](../ja/navigation.md).
 
 15. **Navigation features.** [ ] — paced by metadata producers.
     - Implement definitions, references, document symbols, and semantic
