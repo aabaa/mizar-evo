@@ -36,8 +36,10 @@ Under [LSP Snapshot Errors](../../internal/en/03.diagnostics_model_and_lsp_bridg
 
 ## Implementation boundary
 
-Task18 specifies query behavior only. Task9 publication, task17 code actions, task19 explanation-query implementation and mizar-diagnostics task15's ExplanationStore implementation remain separate. Change no producer, diagnostics, artifact or snapshot behavior.
+`Server::handle_message_with_explanations` serves `mizar/explain` over one retained publication and a host-supplied immutable `ExplanationStore`. Params contain `snapshot` in published schema form and exactly one `diagnosticId` ordinal, `exprId` or `vcId` subject string. Subject queries select existing diagnostic-attached handles; missing or ambiguous matches are unavailable. The store reads registered bounded payloads; no producer files or services are opened by LSP. Ordinary stdio without this host reports unavailable.
+
+Responses carry status (`available`, `unavailable`, `stale_handle`), freshness, source snapshot, original URI/version/ranges, optional existing preview and bounded payload format/text/truncation/summary hash. Obsolete requested snapshots yield `stale_handle`; retained reads after editor invalidation remain `stale_artifact` with original source coordinates. The host cancellation predicate is checked before work and before returning, yielding RequestCancelled without mutating published state.
 
 ## Test design
 
-This design unit changes no code or tests. Task19 retains its query-fixture, bounded-payload and missing-backing-data degradation obligations, with dependencies on tasks17/18 and mizar-diagnostics task15. Task19 and the explain module remain open; §23.6/SCA-003 credit does not change.
+Query fixtures exercise existing subject selection, store outcomes, exact bounded payload preservation and native UTF-16 conversion. Genuine publication fixtures check host selection and freshness; typed fixtures check original source locations. Combined host delivery of explanation content and stale locations awaits native explanation producers. Cancellation, malformed requests and framed stdio degradation are covered. §23.6 remains partial and SCA-003 unchanged.

@@ -36,8 +36,10 @@ handle は作成時の snapshot または artifact hash の範囲内だけで有
 
 ## Implementation boundary
 
-task18 は query の挙動だけを定める。task9 の公開、task17 の code action、task19 の explanation-query 実装、mizar-diagnostics task15 の ExplanationStore 実装は別単位のままである。producer、diagnostics、artifact、snapshot の挙動を変更しない。
+`Server::handle_message_with_explanations` は保持中の公開単位と host が渡す不変の `ExplanationStore` から `mizar/explain` を処理する。params は published schema 形式の `snapshot` と、`diagnosticId` ordinal、`exprId`、`vcId` subject string のいずれか一つを含む。subject query は既存の診断に付いた handle を選び、欠落・曖昧な一致は unavailable とする。store は登録済みの上限付き payload を読み、LSP は producer file や service を開かない。この host を持たない通常の stdio は unavailable を返す。
+
+応答は status (`available`、`unavailable`、`stale_handle`)、freshness、元 snapshot、元 URI/version/range、任意の既存 preview と上限付き payload の format/text/truncation/summary hash を持つ。旧 snapshot の要求は `stale_handle`、編集後の保持中の読み取りは元座標の `stale_artifact` とする。host の cancellation predicate を処理前と応答前に確認し、公開状態を変えずに RequestCancelled を返す。
 
 ## Test design
 
-この設計単位はコードもテストも変更しない。task19 は tasks17/18 と mizar-diagnostics task15 を依存として、query fixture、上限付き payload、裏付け data 欠落時の劣化という既存の義務を保持する。task19 と explain module は未完のままで、§23.6/SCA-003 の credit は変更しない。
+query fixture は既存 subject の選択、store の結果、上限付き payload の厳密な保持と native UTF-16 変換を検証する。実際の公開 fixture は host 選択と freshness、型付き fixture は元の source location を確認する。explanation content と stale location を合わせた host 配信の検証は native explanation producer の接続を待つ。cancellation、不正要求、framed stdio の劣化も対象とする。§23.6 は partial、SCA-003 は変更しない。

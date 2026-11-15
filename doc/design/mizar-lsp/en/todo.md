@@ -25,7 +25,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [x] |
 | navigation | `navigation.md` (task 14) | `src/navigation.rs` | [ ] |
 | code_action | `code_action.md` (task 16) | `src/code_action.rs` | [ ] |
-| explain | `explain.md` (task 18) | `src/explain.rs` | [ ] |
+| explain | `explain.md` (task 18) | `src/explain.rs` | [x] |
 
 `mizar-lsp` owns the editor-facing protocol bridge: open-buffer source
 snapshots and document versions, `SourceRange` → LSP UTF-16 conversion,
@@ -217,12 +217,13 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Completion: [design contract](../../task_contracts/en/LSP-EXPLAIN-DESIGN.md),
       [English specification](explain.md), [Japanese specification](../ja/explain.md).
 
-19. **Explanation queries.** [ ]
+19. **Explanation queries.** [x]
     - Implement explanation requests over the `mizar-diagnostics`
       explanation store.
     - Tests: query fixtures; bounded payloads; missing backing data
       degrades cleanly.
     - Deps: 17, 18, `mizar-diagnostics` task 15. Spec: `explain.md`.
+    - Contract: [LSP-EXPLANATION-QUERIES](../../task_contracts/en/LSP-EXPLANATION-QUERIES.md); absent producer/backing data remains unavailable.
 
 ### Hardening and cross-cutting follow-ups
 

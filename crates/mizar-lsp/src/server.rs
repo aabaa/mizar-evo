@@ -21,6 +21,9 @@ mod build_bridge_event_tests;
 #[path = "build_bridge_timing_tests.rs"]
 mod build_bridge_timing_tests;
 #[cfg(test)]
+#[path = "explain_tests.rs"]
+mod explain_tests;
+#[cfg(test)]
 #[path = "hover_tests.rs"]
 mod hover_tests;
 #[cfg(test)]
@@ -892,6 +895,12 @@ impl Server {
                     return error(id.clone(), -32600, "Invalid Request");
                 }
                 match method {
+                    "mizar/explain" => {
+                        if !params.is_some_and(crate::explain::valid_explanation_params) {
+                            return error(id.clone(), -32602, "Invalid params");
+                        }
+                        crate::explain::unavailable("no_backing_host")
+                    }
                     "textDocument/semanticTokens/full" => {
                         let Some(uri) = params
                             .and_then(|params| params.pointer("/textDocument/uri"))

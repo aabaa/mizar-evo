@@ -298,6 +298,32 @@ fn stdio_code_action_without_publication_returns_an_empty_list() {
 }
 
 #[test]
+fn stdio_explanation_query_returns_framed_unavailable_without_host_backing() {
+    let mut process = Process::new(&["lsp".into()], false);
+    let snapshot = format!("mizar-session-build-snapshot-v1:{}", "00".repeat(32));
+    for message in [
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}}),
+        json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
+        json!({"jsonrpc":"2.0","id":2,"method":"mizar/explain","params":{"snapshot":snapshot,"diagnosticId":1}}),
+        json!({"jsonrpc":"2.0","id":3,"method":"shutdown","params":null}),
+    ] {
+        process.send(&frame(message));
+    }
+    assert_eq!(process.response()["id"], 1);
+    let unavailable = process.response();
+    assert_eq!(unavailable["id"], 2);
+    assert_eq!(unavailable["result"]["status"], "unavailable");
+    assert_eq!(unavailable["result"]["freshness"], "unavailable");
+    assert_eq!(unavailable["result"]["reason"], "no_backing_host");
+    assert_eq!(process.response()["id"], 3);
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"exit"})));
+    let (status, responses, errors) = process.finish();
+    assert_eq!(status.code(), Some(0));
+    assert!(responses.is_empty());
+    assert!(errors.is_empty());
+}
+
+#[test]
 fn early_exit_and_fatal_frames_return_one_without_protocol_noise() {
     for bytes in [
         frame(json!({"jsonrpc":"2.0","method":"exit"})),

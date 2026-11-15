@@ -24,7 +24,7 @@
 | metadata | `metadata.md`（task 12） | `src/metadata.rs` | [x] |
 | navigation | `navigation.md`（task 14） | `src/navigation.rs` | [ ] |
 | code_action | `code_action.md`（task 16） | `src/code_action.rs` | [ ] |
-| explain | `explain.md`（task 18） | `src/explain.rs` | [ ] |
+| explain | `explain.md`（task 18） | `src/explain.rs` | [x] |
 
 `mizar-lsp` はエディタ向けプロトコルブリッジを所有する: open バッファの
 ソース snapshot と文書バージョン、`SourceRange` → LSP UTF-16 変換、現在の
@@ -218,12 +218,13 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/ja/LSP-LIFECYCLE-FO
     - 完了: [設計契約](../../task_contracts/ja/LSP-EXPLAIN-DESIGN.md)、
       [英語仕様](../en/explain.md)、[日本語仕様](explain.md)。
 
-19. **explanation クエリ。** [ ]
+19. **explanation クエリ。** [x]
     - `mizar-diagnostics` の explanation ストア上で explanation
       リクエストを実装する。
     - テスト: クエリのフィクスチャ。上限付きペイロード。裏付けデータ
       欠落時の明確な劣化。
     - 依存: 17、18、`mizar-diagnostics` task 15。仕様: `explain.md`。
+    - 契約: [LSP-EXPLANATION-QUERIES](../../task_contracts/ja/LSP-EXPLANATION-QUERIES.md)。producer/裏付け data の欠落は unavailable のままとする。
 
 ### 強化と横断フォローアップ
 

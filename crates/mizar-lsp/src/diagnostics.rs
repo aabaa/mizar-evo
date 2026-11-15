@@ -456,6 +456,11 @@ mod tests {
     use super::*;
     use mizar_diagnostics::{
         aggregator::{BuildDiagnosticIndex, DiagnosticAggregationInput},
+        explain::{
+            ExplanationHandle, ExplanationHandleId, ExplanationHandleInput, ExplanationKind,
+            ExplanationPayload, ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef,
+            ExplanationStore, ExplanationSubject,
+        },
         failure_record::{
             DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput, DiagnosticNote,
             DiagnosticNoteKind, DiagnosticPrimaryLocation, DiagnosticSpan, DiagnosticSpanRole,
@@ -661,6 +666,668 @@ mod tests {
             source_id: fixture.source_ids[source],
             start,
             end: start + needle.len(),
+        }
+    }
+
+    fn explained_draft(
+        fixture: &CapturedFixture,
+        stable_key: &str,
+        message: &str,
+        start: usize,
+        end: usize,
+        explanation: Option<ExplanationHandle>,
+    ) -> DiagnosticDraft {
+        DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: fixture.snapshot(),
+            code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+            phase: PipelinePhase::Parser,
+            category: FailureCategory::ParseError,
+            stable_detail_key: stable_key.to_owned(),
+            message: message.to_owned(),
+            primary_location: DiagnosticPrimaryLocation::Span(span(
+                ordinary_range(fixture.source_ids[0], start, end),
+                DiagnosticSpanRole::Primary,
+                None,
+                None,
+            )),
+            secondary_spans: vec![],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes: vec![],
+            explanation,
+        })
+        .unwrap()
+    }
+
+    fn diagnostic_handle(
+        stable_key: &str,
+        id: &str,
+        source: ExplanationSourceRef,
+        preview: Option<ExplanationPreview>,
+        summary_hash: Option<Hash>,
+    ) -> ExplanationHandle {
+        ExplanationHandle::new(ExplanationHandleInput {
+            id: ExplanationHandleId::new(id).unwrap(),
+            kind: ExplanationKind::DiagnosticContext,
+            subject: ExplanationSubject::Diagnostic {
+                code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+                stable_detail_key: stable_key.to_owned(),
+            },
+            source,
+            required_snapshot: None,
+            required_artifact_hash: None,
+            summary_hash,
+            preview,
+        })
+        .unwrap()
+    }
+
+    fn subject_handle(subject: ExplanationSubject, id: &str) -> ExplanationHandle {
+        ExplanationHandle::new(ExplanationHandleInput {
+            id: ExplanationHandleId::new(id).unwrap(),
+            kind: ExplanationKind::DiagnosticContext,
+            subject,
+            source: ExplanationSourceRef::PreviewOnly,
+            required_snapshot: None,
+            required_artifact_hash: None,
+            summary_hash: None,
+            preview: Some(ExplanationPreview::new(
+                ExplanationPreviewFormat::PlainText,
+                id,
+            )),
+        })
+        .unwrap()
+    }
+
+    fn explain_params(snapshot: BuildSnapshotId, selector: Value) -> Value {
+        let mut params = json!({"snapshot": snapshot.to_published_schema_string().unwrap()});
+        let object = params.as_object_mut().unwrap();
+        let selector = selector.as_object().unwrap();
+        object.extend(selector.clone());
+        params
+    }
+
+    fn hash_text(hash: Hash) -> String {
+        hash.as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect()
+    }
+
+    #[test]
+    fn explanation_queries_select_attached_handles_and_preserve_preview_text() {
+        use crate::explain::convert_explanation;
+
+        let fixture = CapturedFixture::new(&[("alpha.miz", "αβγ", 7)]);
+        let first_range = loaded_range(&fixture, 0, "α");
+        let second_range = loaded_range(&fixture, 0, "γ");
+        let first_preview = ExplanationPreview::new(
+            ExplanationPreviewFormat::StructuredText,
+            "reason: selected\n  detail: α\n",
+        );
+        let first = diagnostic_handle(
+            "first",
+            "first_explanation",
+            ExplanationSourceRef::PreviewOnly,
+            Some(first_preview.clone()),
+            None,
+        );
+        let second = diagnostic_handle(
+            "second",
+            "second_explanation",
+            ExplanationSourceRef::PreviewOnly,
+            Some(ExplanationPreview::new(
+                ExplanationPreviewFormat::PlainText,
+                "second",
+            )),
+            None,
+        );
+        let original = vec![
+            explained_draft(
+                &fixture,
+                "first",
+                "z diagnostic ordering must not select the query target",
+                first_range.start,
+                first_range.end,
+                Some(first),
+            ),
+            explained_draft(
+                &fixture,
+                "second",
+                "a diagnostic ordering must not select the query target",
+                second_range.start,
+                second_range.end,
+                Some(second),
+            ),
+        ];
+        let selected_index = index(fixture.snapshot(), original);
+        let store = ExplanationStore::new();
+        let first_id = selected_index
+            .records()
+            .iter()
+            .find(|r| r.stable_detail_key() == "first")
+            .unwrap()
+            .handle()
+            .id
+            .get();
+        let response = convert_explanation(
+            &selected_index,
+            &fixture.captured,
+            &store,
+            &explain_params(fixture.snapshot(), json!({"diagnosticId": first_id})),
+        )
+        .unwrap();
+        assert_eq!(response["status"], "available");
+        assert_eq!(response["freshness"], "current");
+        assert_eq!(
+            response["snapshot"],
+            fixture.snapshot().to_published_schema_string().unwrap()
+        );
+        assert_eq!(
+            response["preview"],
+            json!({"format":"structured_text","text":"reason: selected\n  detail: α\n","truncated":false})
+        );
+        assert_eq!(
+            response["payload"],
+            json!({"format":"structured_text","text":"reason: selected\n  detail: α\n","truncated":false,"summaryHash":null})
+        );
+        assert_eq!(response["locations"].as_array().unwrap().len(), 1);
+        assert_eq!(response["locations"][0]["uri"], fixture.uri(0));
+        assert_eq!(response["locations"][0]["version"], 7);
+        assert_eq!(
+            response["locations"][0]["range"],
+            json!({"start":{"line":0,"character":0},"end":{"line":0,"character":1}})
+        );
+
+        let other = CapturedFixture::new(&[("other.miz", "other", 1)]);
+        let stale = convert_explanation(
+            &selected_index,
+            &fixture.captured,
+            &store,
+            &explain_params(other.snapshot(), json!({"diagnosticId": first_id})),
+        )
+        .unwrap();
+        assert_eq!(stale["status"], "stale_handle");
+        assert_eq!(stale["freshness"], "unavailable");
+        assert_eq!(stale["snapshot"], Value::Null);
+        assert_eq!(stale["locations"], json!([]));
+    }
+
+    #[test]
+    fn explanation_degrades_for_missing_targets_and_preserves_backing_store_results() {
+        use crate::explain::convert_explanation;
+
+        let fixture = CapturedFixture::new(&[("alpha.miz", "alpha beta", 3)]);
+        let alpha = loaded_range(&fixture, 0, "alpha");
+        let preview = ExplanationPreview::with_bounds(
+            ExplanationPreviewFormat::StructuredText,
+            "preview stays available\n",
+            128,
+            4,
+        )
+        .unwrap();
+        let hash = Hash::from_bytes([6; Hash::BYTE_LEN]);
+        let handle = diagnostic_handle(
+            "backed",
+            "backed_explanation",
+            ExplanationSourceRef::Artifact {
+                path: "explanations/alpha.json".to_owned(),
+                content_hash: hash,
+            },
+            Some(preview.clone()),
+            Some(hash),
+        );
+        let artifact_index = index(
+            fixture.snapshot(),
+            vec![explained_draft(
+                &fixture,
+                "backed",
+                "backed diagnostic",
+                alpha.start,
+                alpha.end,
+                Some(handle.clone()),
+            )],
+        );
+        let diagnostic_id = artifact_index.records()[0].handle().id.get();
+        let query = explain_params(fixture.snapshot(), json!({"diagnosticId": diagnostic_id}));
+        let missing = convert_explanation(
+            &artifact_index,
+            &fixture.captured,
+            &ExplanationStore::new(),
+            &query,
+        )
+        .unwrap();
+        assert_eq!(missing["status"], "unavailable");
+        assert_eq!(missing["reason"], "backing_data_missing");
+        assert_eq!(missing["preview"]["text"], "preview stays available\n");
+        assert_eq!(missing["payload"], Value::Null);
+
+        let previewless = diagnostic_handle(
+            "previewless",
+            "previewless_explanation",
+            ExplanationSourceRef::PreviewOnly,
+            None,
+            None,
+        );
+        let previewless_index = index(
+            fixture.snapshot(),
+            vec![explained_draft(
+                &fixture,
+                "previewless",
+                "previewless diagnostic",
+                alpha.start,
+                alpha.end,
+                Some(previewless),
+            )],
+        );
+        let previewless = convert_explanation(
+            &previewless_index,
+            &fixture.captured,
+            &ExplanationStore::new(),
+            &explain_params(
+                fixture.snapshot(),
+                json!({"diagnosticId":previewless_index.records()[0].handle().id.get()}),
+            ),
+        )
+        .unwrap();
+        assert_eq!(previewless["status"], "unavailable");
+        assert_eq!(previewless["reason"], "preview_unavailable");
+
+        let mut store = ExplanationStore::new();
+        let payload_text = "{\"steps\":[\"read\",\"infer\"]}\n";
+        store.insert_payload(
+            &handle,
+            ExplanationPayload::with_bounds(
+                ExplanationPreviewFormat::StructuredText,
+                payload_text,
+                Some(hash),
+                128,
+                4,
+            )
+            .unwrap(),
+        );
+        let available =
+            convert_explanation(&artifact_index, &fixture.captured, &store, &query).unwrap();
+        assert_eq!(
+            available["payload"],
+            json!({"format":"structured_text","text":payload_text,"truncated":false,"summaryHash":hash_text(hash)})
+        );
+        assert_eq!(available["preview"]["text"], preview.text());
+
+        for (text, max_bytes, max_lines, expected) in [
+            ("λβ\nignored line", 64, 1, "λβ [truncated]"),
+            ("λβγδεζηθ", 15, 4, "λ [truncated]"),
+        ] {
+            let bounded = ExplanationPayload::with_bounds(
+                ExplanationPreviewFormat::StructuredText,
+                text,
+                Some(hash),
+                max_bytes,
+                max_lines,
+            )
+            .unwrap();
+            store.insert_payload(&handle, bounded);
+            let bounded_response =
+                convert_explanation(&artifact_index, &fixture.captured, &store, &query).unwrap();
+            assert_eq!(
+                bounded_response["payload"],
+                json!({"format":"structured_text","text":expected,"truncated":true,"summaryHash":hash_text(hash)})
+            );
+        }
+
+        store.insert_payload(
+            &handle,
+            ExplanationPayload::from_preview(preview, Some(Hash::from_bytes([7; Hash::BYTE_LEN]))),
+        );
+        let mismatch =
+            convert_explanation(&artifact_index, &fixture.captured, &store, &query).unwrap();
+        assert_eq!(mismatch["status"], "unavailable");
+        assert_eq!(mismatch["reason"], "summary_hash_mismatch");
+
+        let sources = [
+            ExplanationSourceRef::CacheRecord {
+                cache_key: "cache.alpha".to_owned(),
+                content_hash: Some(hash),
+            },
+            ExplanationSourceRef::QueryService {
+                service_key: "resolver".to_owned(),
+                query_key: "query.alpha".to_owned(),
+            },
+        ];
+        let mut drafts = Vec::new();
+        let mut registered = ExplanationStore::new();
+        for (ordinal, source) in sources.into_iter().enumerate() {
+            let key = format!("backing_{ordinal}");
+            let handle = diagnostic_handle(&key, &key, source, None, None);
+            registered.insert_payload(
+                &handle,
+                ExplanationPayload::with_bounds(
+                    ExplanationPreviewFormat::PlainText,
+                    format!("registered-{ordinal}"),
+                    None,
+                    128,
+                    4,
+                )
+                .unwrap(),
+            );
+            drafts.push(explained_draft(
+                &fixture,
+                &key,
+                &key,
+                alpha.start,
+                alpha.end,
+                Some(handle),
+            ));
+        }
+        let backing_index = index(fixture.snapshot(), drafts);
+        for (ordinal, key) in ["backing_0", "backing_1"].into_iter().enumerate() {
+            let record = backing_index
+                .records()
+                .iter()
+                .find(|record| record.stable_detail_key() == key)
+                .unwrap();
+            let response = convert_explanation(
+                &backing_index,
+                &fixture.captured,
+                &registered,
+                &explain_params(
+                    fixture.snapshot(),
+                    json!({"diagnosticId":record.handle().id.get()}),
+                ),
+            )
+            .unwrap();
+            assert_eq!(response["payload"]["text"], format!("registered-{ordinal}"));
+            assert_eq!(response["status"], "available");
+        }
+    }
+
+    #[test]
+    fn explanation_locations_keep_original_utf16_mappings_and_reject_invalid_ranges() {
+        use crate::explain::convert_explanation;
+
+        let fixture = CapturedFixture::new(&[("alpha.miz", "\u{feff}a\r\n😀e\u{301}z\rQ", 11)]);
+        let sid = fixture.source_ids[0];
+        let loaded = loaded_text(&fixture, 0);
+        let a = loaded_range(&fixture, 0, "a");
+        let newline = loaded_range(&fixture, 0, "a\n").end;
+        let emoji = loaded_range(&fixture, 0, "😀");
+        let combining = loaded_range(&fixture, 0, "e\u{301}");
+        let q = loaded_range(&fixture, 0, "Q");
+        let eof = loaded.len();
+        let generated_range = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Range(combining),
+            "generated source range",
+        )
+        .unwrap();
+        let generated_point = GeneratedSpanOrigin::new(
+            GeneratedSpanAnchor::Point {
+                source_id: sid,
+                offset: eof,
+            },
+            "generated EOF point",
+        )
+        .unwrap();
+        let anchors = [
+            (
+                "bom",
+                SourceAnchor::Range(a),
+                json!({"start":{"line":0,"character":1},"end":{"line":0,"character":2}}),
+            ),
+            (
+                "crlf",
+                SourceAnchor::Point {
+                    source_id: sid,
+                    offset: newline,
+                },
+                json!({"start":{"line":1,"character":0},"end":{"line":1,"character":0}}),
+            ),
+            (
+                "supplementary",
+                SourceAnchor::Point {
+                    source_id: sid,
+                    offset: emoji.end,
+                },
+                json!({"start":{"line":1,"character":2},"end":{"line":1,"character":2}}),
+            ),
+            (
+                "combining",
+                SourceAnchor::Range(combining),
+                json!({"start":{"line":1,"character":2},"end":{"line":1,"character":4}}),
+            ),
+            (
+                "lone_cr",
+                SourceAnchor::Range(q),
+                json!({"start":{"line":2,"character":0},"end":{"line":2,"character":1}}),
+            ),
+            (
+                "eof",
+                SourceAnchor::Point {
+                    source_id: sid,
+                    offset: eof,
+                },
+                json!({"start":{"line":2,"character":1},"end":{"line":2,"character":1}}),
+            ),
+            (
+                "generated_range",
+                SourceAnchor::Generated(generated_range),
+                json!({"start":{"line":1,"character":2},"end":{"line":1,"character":4}}),
+            ),
+            (
+                "generated_point",
+                SourceAnchor::Generated(generated_point),
+                json!({"start":{"line":2,"character":1},"end":{"line":2,"character":1}}),
+            ),
+        ];
+        let drafts = anchors
+            .iter()
+            .map(|(key, anchor, _)| {
+                let handle =
+                    diagnostic_handle(key, key, ExplanationSourceRef::PreviewOnly, None, None);
+                DiagnosticDraft::new(DiagnosticDraftInput {
+                    source_snapshot: fixture.snapshot(),
+                    code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+                    phase: PipelinePhase::Parser,
+                    category: FailureCategory::ParseError,
+                    stable_detail_key: (*key).to_owned(),
+                    message: (*key).to_owned(),
+                    primary_location: DiagnosticPrimaryLocation::Span(span(
+                        anchor.clone(),
+                        DiagnosticSpanRole::Primary,
+                        None,
+                        matches!(*key, "crlf" | "supplementary" | "eof" | "generated_point")
+                            .then_some(ZeroWidthSpanIntent::InsertionPoint),
+                    )),
+                    secondary_spans: vec![],
+                    notes: vec![],
+                    details: DiagnosticDetails::new(),
+                    fixes: vec![],
+                    explanation: Some(handle),
+                })
+                .unwrap()
+            })
+            .collect();
+        let location_index = index(fixture.snapshot(), drafts);
+        let store = ExplanationStore::new();
+        for (key, _, expected_range) in &anchors {
+            let record = location_index
+                .records()
+                .iter()
+                .find(|record| record.stable_detail_key() == *key)
+                .unwrap();
+            let response = convert_explanation(
+                &location_index,
+                &fixture.captured,
+                &store,
+                &explain_params(
+                    fixture.snapshot(),
+                    json!({"diagnosticId":record.handle().id.get()}),
+                ),
+            )
+            .unwrap();
+            assert_eq!(response["locations"][0]["range"], *expected_range);
+            assert_eq!(response["locations"][0]["uri"], fixture.uri(0));
+            assert_eq!(response["locations"][0]["version"], 11);
+        }
+
+        let unknown = loop {
+            let candidate = fixture.ids.next_source_id(fixture.snapshot()).unwrap();
+            if !fixture.source_ids.contains(&candidate) {
+                break candidate;
+            }
+        };
+        for (bad_source, offset) in [(sid, eof + 1), (unknown, 0)] {
+            let invalid = self::index(
+                fixture.snapshot(),
+                vec![
+                    DiagnosticDraft::new(DiagnosticDraftInput {
+                        source_snapshot: fixture.snapshot(),
+                        code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 1).unwrap(),
+                        phase: PipelinePhase::Parser,
+                        category: FailureCategory::ParseError,
+                        stable_detail_key: "invalid".to_owned(),
+                        message: "invalid".to_owned(),
+                        primary_location: DiagnosticPrimaryLocation::Span(span(
+                            SourceAnchor::Point {
+                                source_id: bad_source,
+                                offset,
+                            },
+                            DiagnosticSpanRole::Primary,
+                            None,
+                            Some(ZeroWidthSpanIntent::InsertionPoint),
+                        )),
+                        secondary_spans: vec![],
+                        notes: vec![],
+                        details: DiagnosticDetails::new(),
+                        fixes: vec![],
+                        explanation: Some(diagnostic_handle(
+                            "invalid",
+                            "invalid",
+                            ExplanationSourceRef::PreviewOnly,
+                            None,
+                            None,
+                        )),
+                    })
+                    .unwrap(),
+                ],
+            );
+            let id = invalid.records()[0].handle().id.get();
+            assert!(
+                convert_explanation(
+                    &invalid,
+                    &fixture.captured,
+                    &store,
+                    &explain_params(fixture.snapshot(), json!({"diagnosticId":id}))
+                )
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn explanation_subject_queries_reject_absent_ambiguous_and_unexplained_targets() {
+        use crate::explain::convert_explanation;
+
+        let fixture = CapturedFixture::new(&[("alpha.miz", "alpha beta gamma", 1)]);
+        let alpha = loaded_range(&fixture, 0, "alpha");
+        let beta = loaded_range(&fixture, 0, "beta");
+        let gamma = loaded_range(&fixture, 0, "gamma");
+        let repeated = ExplanationSubject::Expression("ambiguous_expression".to_owned());
+        let drafts = vec![
+            explained_draft(
+                &fixture,
+                "plain",
+                "no explanation attached",
+                alpha.start,
+                alpha.end,
+                None,
+            ),
+            explained_draft(
+                &fixture,
+                "expr_a",
+                "first subject",
+                beta.start,
+                beta.end,
+                Some(subject_handle(repeated.clone(), "expr_a")),
+            ),
+            explained_draft(
+                &fixture,
+                "expr_b",
+                "second subject",
+                gamma.start,
+                gamma.end,
+                Some(subject_handle(repeated, "expr_b")),
+            ),
+        ];
+        let index = index(fixture.snapshot(), drafts);
+        let store = ExplanationStore::new();
+
+        for (subject, key, selector) in [
+            (
+                ExplanationSubject::Expression("unique_expression".into()),
+                "expression",
+                json!({"exprId":"unique_expression"}),
+            ),
+            (
+                ExplanationSubject::VerificationCondition("condition".into()),
+                "condition",
+                json!({"vcId":"condition"}),
+            ),
+        ] {
+            let selected = self::index(
+                fixture.snapshot(),
+                vec![explained_draft(
+                    &fixture,
+                    key,
+                    key,
+                    alpha.start,
+                    alpha.end,
+                    Some(subject_handle(subject, key)),
+                )],
+            );
+            let response = convert_explanation(
+                &selected,
+                &fixture.captured,
+                &store,
+                &explain_params(fixture.snapshot(), selector),
+            )
+            .unwrap();
+            assert_eq!(response["status"], "available");
+            assert_eq!(response["payload"]["text"], key);
+        }
+
+        let unexplained_id = index
+            .records()
+            .iter()
+            .find(|record| record.stable_detail_key() == "plain")
+            .unwrap()
+            .handle()
+            .id
+            .get();
+        let unexplained = convert_explanation(
+            &index,
+            &fixture.captured,
+            &store,
+            &explain_params(fixture.snapshot(), json!({"diagnosticId": unexplained_id})),
+        )
+        .unwrap();
+        assert_eq!(unexplained["status"], "unavailable");
+        assert_eq!(unexplained["reason"], "target_unavailable");
+
+        for selector in [
+            json!({"exprId":"not-present"}),
+            json!({"exprId":"ambiguous_expression"}),
+            json!({"diagnosticId":u64::MAX}),
+        ] {
+            let response = convert_explanation(
+                &index,
+                &fixture.captured,
+                &store,
+                &explain_params(fixture.snapshot(), selector),
+            )
+            .unwrap();
+            assert_eq!(response["status"], "unavailable");
+            assert_eq!(response["reason"], "target_unavailable");
+            assert_eq!(response["locations"], json!([]));
         }
     }
 

@@ -1,4 +1,5 @@
 mod diagnostics;
+mod explain;
 pub mod range_mapper;
 pub mod server;
 
