@@ -49,6 +49,6 @@ server は quickfix の resolve を通知する。client は code-action data �
 
 ## Test design
 
-task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。既存の production 診断はまだ fix を付けないため、native publication test は currentness を独立して検証する。frame 付き stdio では publication が利用できない経路を検証する。Task38 の typed consumer test が認証済み hash/artifact/backing 登録と command 再構築・再検証を扱い、native payload 配信は Task39 が所有する。未対応 producer と効果を伴う command の所有者は保留し、§23.6/SCA-003 の credit は変わらない。
+Task17 の test は既存の fix safety/applicability class、遅延 resolve、version 付き複数 source edit、独立した raw UTF-16 edit round-trip、不正/stale な入力の拒否を検証する。frame 付き stdio では publication が利用できない経路を検証する。Task38 の typed consumer test は認証済み hash/artifact/backing 登録と command 再構築・再検証を扱う。Task39 は実際の OpenBuffer export-error payload を Driver と ranged host 経由で扱い、無効化前に元の挿入 edit を resolve し explanation command を実行した後、stale locator を拒否しつつ元の explanation location と content を保持する。typed conversion fixture はこの native evidence と区別する。未対応 producer と効果を伴う command の所有者は保留し、§23.6/SCA-003 の credit は変わらない。
 
-[Native producer の前提](native_payload_producers.md) は承認済み Q1 A/Q2 A/Q3 B/Q4 A/Q5 A と別の [ranged host adapter](ranged_diagnostic_host.md) に従い、Task39 再 dispatch は producer 実装後です。
+[Native producer](native_payload_producers.md) と別の [ranged host adapter](ranged_diagnostic_host.md) が、承認済み Q1 A/Q2 A/Q3 B/Q4 A/Q5 A に従って上流の生成を所有する。

@@ -7765,7 +7765,7 @@ mod native_payload_producer_tests {
     use serde_json::{Value, json};
 
     const RAW_SOURCE: &str =
-        "\u{feff}:: 前置 café 😀\r\n:: export profile\r\nexport Std theorem T;";
+        "\u{feff}:: 前置 café 😀\r\n:: export profile\r\nexport Std ::=😀=:: theorem T;";
 
     fn enable_native_action_capabilities(fixture: &mut RegistryFixture) {
         let documents = fixture
@@ -7943,9 +7943,9 @@ mod native_payload_producer_tests {
         let (diagnostic, local, command) = native_actions(&mut fixture, &uri);
         assert_eq!(
             diagnostic["range"]["start"],
-            json!({"line":2,"character":11})
+            json!({"line":2,"character":20})
         );
-        assert_eq!(diagnostic["range"]["end"], json!({"line":2,"character":18}));
+        assert_eq!(diagnostic["range"]["end"], json!({"line":2,"character":27}));
 
         let resolved_edit = resolve(&mut fixture, &local, 21);
         let edit = &resolved_edit["edit"]["documentChanges"][0];
@@ -7953,11 +7953,11 @@ mod native_payload_producer_tests {
         assert_eq!(edit["textDocument"]["version"], 2);
         assert_eq!(
             edit["edits"][0]["range"]["start"],
-            json!({"line":2,"character":11})
+            json!({"line":2,"character":20})
         );
         assert_eq!(
             edit["edits"][0]["range"]["end"],
-            json!({"line":2,"character":11})
+            json!({"line":2,"character":20})
         );
         assert_eq!(edit["edits"][0]["newText"], ";");
 
@@ -8005,7 +8005,7 @@ mod native_payload_producer_tests {
         assert_eq!(explanation["result"]["locations"][0]["version"], 2);
         assert_eq!(
             explanation["result"]["locations"][0]["range"]["start"],
-            json!({"line":2,"character":11})
+            json!({"line":2,"character":20})
         );
         let cancelled = fixture
             .server
@@ -8055,7 +8055,74 @@ mod native_payload_producer_tests {
             let (_, uri) = publish_export_error(&mut fixture);
             let (diagnostic, local, command) = native_actions(&mut fixture, &uri);
             let original = explain(&mut fixture, &diagnostic, 30);
-            let retained_text = original["result"]["payload"]["text"].clone();
+            let original_result = original["result"].clone();
+            assert_eq!(original_result["status"], "available", "{transition}");
+            assert_eq!(original_result["freshness"], "current", "{transition}");
+            assert_eq!(original_result["snapshot"], diagnostic["data"]["snapshot"]);
+            let raw_theorem_line = RAW_SOURCE
+                .trim_start_matches('\u{feff}')
+                .split("\r\n")
+                .nth(2)
+                .expect("raw export source theorem line");
+            let raw_start = raw_theorem_line
+                .find("theorem")
+                .expect("raw theorem keyword");
+            let expected_start = raw_theorem_line[..raw_start].encode_utf16().count() as u32;
+            let expected_end = expected_start + "theorem".encode_utf16().count() as u32;
+            assert_eq!(
+                diagnostic["range"]["start"],
+                json!({"line":2,"character":expected_start})
+            );
+            assert_eq!(
+                diagnostic["range"]["end"],
+                json!({"line":2,"character":expected_end})
+            );
+            let original_location = &original_result["locations"][0];
+            assert_eq!(original_location["uri"], uri, "{transition}");
+            assert_eq!(original_location["version"], 2, "{transition}");
+            assert_eq!(
+                original_location["range"]["start"],
+                diagnostic["range"]["start"]
+            );
+            assert_eq!(
+                original_location["range"]["end"],
+                diagnostic["range"]["end"]
+            );
+
+            let resolved_edit = resolve(&mut fixture, &local, 36);
+            let edit = &resolved_edit["edit"]["documentChanges"][0];
+            assert_eq!(edit["textDocument"]["uri"], uri, "{transition}");
+            assert_eq!(edit["textDocument"]["version"], 2, "{transition}");
+            assert_eq!(
+                edit["edits"][0]["range"]["start"],
+                diagnostic["range"]["start"]
+            );
+            assert_eq!(
+                edit["edits"][0]["range"]["end"],
+                diagnostic["range"]["start"]
+            );
+            assert_eq!(edit["edits"][0]["newText"], ";", "{transition}");
+
+            let resolved_command = resolve(&mut fixture, &command, 37);
+            let native_command = &resolved_command["command"];
+            assert_eq!(native_command["command"], "mizar.executeDiagnosticCommand");
+            let executed = fixture
+                .server
+                .handle_message_with_diagnostic_commands(
+                    json!({"jsonrpc":"2.0", "id":38, "method":"workspace/executeCommand",
+                        "params":{"command":native_command["command"],
+                            "arguments":native_command["arguments"]}}),
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &|| false,
+                )
+                .unwrap();
+            assert_eq!(executed["result"]["status"], "available", "{transition}");
+            assert_eq!(
+                executed["result"]["payload"], original_result["payload"],
+                "{transition}"
+            );
+
             match transition {
                 "version-only" => fixture.did_change_version_only(&uri, 3),
                 "normalized-equal" => fixture.did_change_text(
@@ -8077,47 +8144,49 @@ mod native_payload_producer_tests {
                 _ => unreachable!(),
             }
             let after = explain(&mut fixture, &diagnostic, 31);
-            assert_eq!(after["result"]["status"], "available", "{transition}");
-            assert_eq!(
-                after["result"]["freshness"], "stale_artifact",
-                "{transition}"
-            );
-            assert_eq!(
-                after["result"]["payload"]["text"], retained_text,
-                "{transition}"
-            );
-            assert_eq!(after["result"]["locations"][0]["uri"], uri, "{transition}");
-            assert_eq!(
-                after["result"]["locations"][0]["version"], 2,
-                "{transition}"
-            );
-            assert_eq!(
-                after["result"]["locations"][0]["range"]["start"],
-                json!({"line":2,"character":11}),
-                "{transition}"
-            );
-            assert_eq!(
-                after["result"]["locations"][0]["range"]["end"],
-                json!({"line":2,"character":18}),
-                "{transition}"
-            );
+            let mut expected_stale_result = original_result.clone();
+            expected_stale_result["freshness"] = json!("stale_artifact");
+            assert_eq!(after["result"], expected_stale_result, "{transition}");
+            if transition == "preceding-line" {
+                let current_text = fixture.server.document(&uri).unwrap().1;
+                let current_theorem_line = current_text.split('\n').nth(3).unwrap();
+                let current_start = current_theorem_line
+                    [..current_theorem_line.find("theorem").unwrap()]
+                    .encode_utf16()
+                    .count();
+                assert_ne!(
+                    json!({"line":3,"character":current_start}),
+                    original_location["range"]["start"],
+                    "the live theorem coordinate moved while the retained location stayed original"
+                );
+            }
             assert_eq!(
                 code_actions(&mut fixture, &uri, 32),
                 json!([]),
                 "{transition}"
             );
-            assert!(
-                resolve(&mut fixture, &local, 33).is_null(),
+            let stale_edit = fixture.server.handle_message_with_metadata(
+                json!({"jsonrpc":"2.0", "id":33, "method":"codeAction/resolve", "params":local}),
+                &fixture.driver,
+                &fixture.snapshots,
+            ).unwrap();
+            assert_eq!(
+                stale_edit["error"]["code"], -32801,
                 "stale edit locator: {transition}"
             );
-            assert!(
-                resolve(&mut fixture, &command, 34).is_null(),
+            let stale_command = fixture.server.handle_message_with_metadata(
+                json!({"jsonrpc":"2.0", "id":34, "method":"codeAction/resolve", "params":command}),
+                &fixture.driver,
+                &fixture.snapshots,
+            ).unwrap();
+            assert_eq!(
+                stale_command["error"]["code"], -32801,
                 "stale command locator: {transition}"
             );
             let execute = fixture.server.handle_message_with_diagnostic_commands(
                 json!({"jsonrpc":"2.0", "id":35, "method":"workspace/executeCommand",
-                    "params":{"command":"mizar.executeDiagnosticCommand",
-                        "arguments":[command["data"]]}}),
+                    "params":{"command":native_command["command"],
+                        "arguments":native_command["arguments"]}}),
                 &fixture.driver,
                 &fixture.snapshots,
                 &|| false,
