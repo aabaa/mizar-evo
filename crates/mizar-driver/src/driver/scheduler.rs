@@ -546,7 +546,6 @@ fn dispatch_registry_phase(
                     return None;
                 }
                 let publisher = publisher?;
-                publisher.validate_current_snapshot(task.snapshot).ok()?;
                 let inputs = source_load?;
                 if inputs.snapshot.id != task.snapshot {
                     return None;
@@ -573,6 +572,32 @@ fn dispatch_registry_phase(
                     return None;
                 }
                 let key = crate::frontend_adapter::source_input_hash(version);
+                // A cancelled native invocation observes its real entry checkpoint before
+                // obsolete parent/publisher access; it cannot consume or publish outputs.
+                if matches!(
+                    task.task.phases.as_slice(),
+                    [PipelinePhase::SourceLoad] | [PipelinePhase::Frontend]
+                ) && task
+                    .cancellation
+                    .as_ref()
+                    .is_some_and(|token| token.snapshot == task.snapshot)
+                    && inputs
+                        .captured
+                        .is_some_and(|capture| capture.native_sources().is_some())
+                    && std::any::Any::type_id(registry.service_for_phase(task.task.phases[0]).ok()?)
+                        == if task.task.phases[0] == PipelinePhase::SourceLoad {
+                            std::any::TypeId::of::<SourceLoadService>()
+                        } else {
+                            std::any::TypeId::of::<FrontendService>()
+                        }
+                {
+                    return Some(PhaseDispatchInputBundle::without_parent_outputs(
+                        task.snapshot,
+                        key,
+                        Vec::new(),
+                    ));
+                }
+                publisher.validate_current_snapshot(task.snapshot).ok()?;
                 if task.task.phases == [PipelinePhase::SourceLoad] {
                     return Some(PhaseDispatchInputBundle::without_parent_outputs(
                         task.snapshot,
@@ -1192,9 +1217,17 @@ fn dispatch_registry_phase(
                             && publisher.storage().validate_handle(output).is_ok()
                     })
                 });
-                let valid_snapshot = publisher.is_none_or(|publisher| {
-                    publisher.validate_current_snapshot(task.snapshot).is_ok()
-                });
+                let cancelled_without_outputs = status == PhaseStatus::Cancelled
+                    && task
+                        .cancellation
+                        .as_ref()
+                        .is_some_and(|token| token.snapshot == task.snapshot)
+                    && result.output_refs.is_empty()
+                    && result.artifact_commit.is_none();
+                let valid_snapshot = cancelled_without_outputs
+                    || publisher.is_none_or(|publisher| {
+                        publisher.validate_current_snapshot(task.snapshot).is_ok()
+                    });
                 if !valid_outputs
                     || !valid_snapshot
                     || result

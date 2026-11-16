@@ -1,4 +1,10 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::{
+        Arc,
+        atomic::{AtomicU8, Ordering},
+    },
+};
 
 use crate::task_graph::{BuildTask, TaskGraph, TaskId, TaskKind};
 use mizar_session::BuildSnapshotId;
@@ -29,6 +35,36 @@ pub struct CancellationState {
     checkpoint_cancelled_tasks: BTreeSet<TaskId>,
     obsolete_completed_tasks: BTreeSet<TaskId>,
     commit_started_tasks: BTreeSet<TaskId>,
+}
+
+/// Cooperative cancellation shared only by one scheduler execution.
+#[derive(Debug, Clone, Default)]
+pub struct CancellationSignal(Arc<AtomicU8>);
+
+impl CancellationSignal {
+    /// Records the first accepted reason without replacing it on repeated requests.
+    pub fn request(&self, reason: CancellationReason) -> bool {
+        let value = match reason {
+            CancellationReason::SupersededSnapshot => 1,
+            CancellationReason::ExplicitRequest => 2,
+            CancellationReason::Shutdown => 3,
+            CancellationReason::BudgetPolicy => 4,
+        };
+        self.0
+            .compare_exchange(0, value, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+    }
+
+    #[must_use]
+    pub fn requested_reason(&self) -> Option<CancellationReason> {
+        match self.0.load(Ordering::Acquire) {
+            1 => Some(CancellationReason::SupersededSnapshot),
+            2 => Some(CancellationReason::ExplicitRequest),
+            3 => Some(CancellationReason::Shutdown),
+            4 => Some(CancellationReason::BudgetPolicy),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

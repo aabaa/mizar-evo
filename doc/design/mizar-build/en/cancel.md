@@ -245,3 +245,7 @@ No exhaustive public enum exceptions are owned by this module.
 | `CancellationReason` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `CancellationDecision` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `CancellationCheckpoint` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+
+## Per-execution signal
+
+`CancellationSignal` is a cloneable first-request-wins control created separately for each SchedulerExecution. `request(reason)` records the original SupersededSnapshot, ExplicitRequest or Shutdown reason; `requested_reason()` observes it. It composes snapshot/task policy without mutating that policy or cancelling another execution sharing the snapshot id. At the next admitted service entry the scheduler snapshots the reason into the existing CancellationToken. Control is supported between progress calls, with no interruption/latency promise inside a non-cooperative invocation; atomic artifact transactions already started retain their existing exemption.

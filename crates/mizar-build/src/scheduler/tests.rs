@@ -825,6 +825,170 @@ fn cache_fallback_decisions_execute_normally() {
 }
 
 #[test]
+fn stepped_dispatch_preserves_synchronous_canonical_results() {
+    for completion_order in [CompletionOrder::Canonical, CompletionOrder::Reverse] {
+        let graph = multi_module_graph();
+        let input = SchedulerInput {
+            worker_count: 2,
+            completion_order,
+            ..SchedulerInput::new(graph)
+        };
+        let synchronous =
+            run_scheduler_with_dispatcher(input.clone(), &mut |_: SchedulerDispatchTask<'_>| {
+                SchedulerDispatchOutcome::complete()
+            })
+            .expect("synchronous run");
+        let mut execution = SchedulerExecution::start(input).expect("valid execution");
+        assert!(execution.pending_task().is_none());
+        let mut dispatched = BTreeSet::new();
+        while !execution.is_finished() {
+            if let Some(task) = execution.pending_task() {
+                assert_eq!(execution.states[&task.id].state, TaskState::Running);
+            }
+            execution.advance(&mut |task: SchedulerDispatchTask<'_>| {
+                assert!(dispatched.insert(task.task.id.clone()), "no task reruns");
+                SchedulerDispatchOutcome::complete()
+            });
+        }
+        assert!(execution.pending_task().is_none());
+        assert_eq!(execution.finish(), Some(synchronous));
+    }
+}
+
+#[test]
+fn admitted_frontend_observes_execution_cancellation_at_dispatch() {
+    use crate::cancel::CancellationReason;
+
+    for reason in [
+        CancellationReason::Shutdown,
+        CancellationReason::ExplicitRequest,
+        CancellationReason::SupersededSnapshot,
+    ] {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let mut input = SchedulerInput::new(graph);
+        // A publication-only legacy token must not replace the execution's reason.
+        input
+            .cancellation
+            .discard_obsolete_completed_task(frontend.clone());
+        let mut execution = SchedulerExecution::start(input).expect("execution");
+        let signal = execution.cancellation_signal();
+        let mut observed = Vec::new();
+        while !execution.is_finished() {
+            if execution
+                .pending_task()
+                .is_some_and(|task| task.id == frontend)
+            {
+                assert!(signal.request(reason));
+                assert!(!signal.request(CancellationReason::ExplicitRequest));
+                assert!(
+                    !execution.is_finished(),
+                    "request alone does not drain work"
+                );
+            }
+            execution.advance(&mut |task: SchedulerDispatchTask<'_>| {
+                if let Some(token) = task.cancellation {
+                    assert_eq!(task.task.id, frontend);
+                    observed.push(token.reason);
+                    SchedulerDispatchOutcome {
+                        status: SchedulerDispatchStatus::Cancelled,
+                        diagnostics: Vec::new(),
+                    }
+                } else {
+                    SchedulerDispatchOutcome::complete()
+                }
+            });
+        }
+        let run = execution.finish().expect("drained execution");
+        assert_eq!(observed, vec![reason]);
+        assert_eq!(state_for(&run, &frontend), TaskState::Cancelled);
+        assert_eq!(
+            run.resource_telemetry
+                .iter()
+                .filter(|entry| {
+                    entry.task_id == frontend && entry.status == ResourceAdmissionStatus::Released
+                })
+                .count(),
+            1
+        );
+        assert!(run.failure_records.is_empty());
+    }
+}
+
+#[test]
+fn execution_cancellation_isolated_before_admission_at_equal_snapshot() {
+    use crate::cancel::CancellationReason;
+
+    let graph = sample_graph();
+    let mut cancelled =
+        SchedulerExecution::start(SchedulerInput::new(graph.clone())).expect("execution");
+    let mut independent =
+        SchedulerExecution::start(SchedulerInput::new(graph.clone())).expect("execution");
+    cancelled
+        .cancellation_signal()
+        .request(CancellationReason::Shutdown);
+    assert_eq!(independent.cancellation_signal().requested_reason(), None);
+    cancelled.advance(&mut |_: SchedulerDispatchTask<'_>| {
+        panic!("cancelled ready work must not dispatch")
+    });
+    assert!(cancelled.is_finished());
+    assert!(
+        cancelled
+            .finish()
+            .expect("drained")
+            .events
+            .iter()
+            .all(|event| { event.kind != SchedulerEventKind::TaskStarted })
+    );
+    while !independent.is_finished() {
+        independent
+            .advance(&mut |_: SchedulerDispatchTask<'_>| SchedulerDispatchOutcome::complete());
+    }
+    let expected = run_scheduler_with_dispatcher(
+        SchedulerInput::new(graph),
+        &mut |_: SchedulerDispatchTask<'_>| SchedulerDispatchOutcome::complete(),
+    )
+    .expect("synchronous run");
+    assert_eq!(independent.finish(), Some(expected));
+}
+
+#[test]
+fn execution_cancellation_discards_results_except_started_atomic_commit() {
+    use crate::cancel::CancellationReason;
+
+    for (kind, committed) in [
+        (TaskKind::Frontend, false),
+        (TaskKind::ArtifactCommit, true),
+    ] {
+        let graph = sample_graph();
+        let selected = task_id_for_kind(&graph, kind);
+        let mut input = SchedulerInput::new(graph);
+        if committed {
+            input.cancellation.mark_commit_started(selected.clone());
+        }
+        let mut execution = SchedulerExecution::start(input).expect("execution");
+        let signal = execution.cancellation_signal();
+        while !execution.is_finished() {
+            execution.advance(&mut |task: SchedulerDispatchTask<'_>| {
+                if task.task.id == selected {
+                    signal.request(CancellationReason::Shutdown);
+                }
+                SchedulerDispatchOutcome::complete()
+            });
+        }
+        let run = execution.finish().expect("drained");
+        assert_eq!(
+            state_for(&run, &selected),
+            if committed {
+                TaskState::Completed
+            } else {
+                TaskState::Cancelled
+            }
+        );
+    }
+}
+
+#[test]
 fn dispatcher_runs_only_for_scheduler_started_tasks_in_deterministic_order() {
     let graph = sample_graph();
     let snapshot = graph.snapshot;

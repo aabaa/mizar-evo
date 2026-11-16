@@ -236,3 +236,7 @@ task 14 は以下の focused Rust coverage を追加する:
 | `CancellationReason` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `CancellationDecision` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `CancellationCheckpoint` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+
+## Per-execution signal
+
+`CancellationSignal` は各 SchedulerExecution が個別に生成する clone 可能な first-request-wins control。`request(reason)` は元の SupersededSnapshot・ExplicitRequest・Shutdown 理由を記録し、`requested_reason()` が観測する。snapshot/task policy を変更せず合成し、同じ snapshot id の別実行を cancel しない。次の admitted service entry で scheduler が既存 CancellationToken に理由を snapshot する。progress call 間で制御でき、非協調呼出内の割込み/latency は保証しない。開始済み atomic artifact transaction は既存の例外を維持する。

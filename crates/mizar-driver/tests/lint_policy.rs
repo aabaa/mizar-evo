@@ -380,6 +380,9 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "pub mod events;",
         "mod frontend_adapter;",
         "pub mod request;",
+        "pub use frontend_adapter::NATIVE_EXPORT_SEMICOLON_ENCODING;",
+        "pub use frontend_adapter::native_export_semicolon_command;",
+        "pub use frontend_adapter::native_export_semicolon_context;",
         "pub mod registry;",
         "pub use frontend_adapter::native_algorithm_core_from_storage_bytes;",
         "pub use frontend_adapter::native_algorithm_core_storage_bytes;",
@@ -779,6 +782,9 @@ fn lib_has_unexpected_code_line(line: &str) -> bool {
         && line != "pub use frontend_adapter::native_theorem_typed_ast_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_vc_from_storage_bytes;"
         && line != "pub use frontend_adapter::native_theorem_vc_storage_bytes;"
+        && line != "pub use frontend_adapter::NATIVE_EXPORT_SEMICOLON_ENCODING;"
+        && line != "pub use frontend_adapter::native_export_semicolon_command;"
+        && line != "pub use frontend_adapter::native_export_semicolon_context;"
         && !line.is_empty()
         && !ignored_prefixes
             .iter()

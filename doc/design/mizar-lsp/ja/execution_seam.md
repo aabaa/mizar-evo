@@ -5,7 +5,11 @@
 
 **承認済み: Q1–Q5 すべて option A、owner 判断 2026-11-16。** A パッケージを実装してから Task40 Audit G5 を再 dispatch する。Task40 は保留のまま。本書は実行の前提条件を定義し、bridge scheduling や Task41 の presentation 判断は決めない。以下の選択肢は元の提案の記録であり、B は実装範囲外。
 根拠: [bridge lifecycle/deadlines](build_bridge.md)、Driver の [session states/capture](../../mizar-driver/ja/request.md#buildsession)、[supersession](../../mizar-driver/ja/request.md#supersession)、[scheduler boundary](../../mizar-driver/ja/driver.md#scheduler-boundary)、[cancellation](../../mizar-driver/ja/driver.md#cancellation)、[events](../../mizar-driver/ja/events.md)、internal01 の [協調キャンセル](../../internal/ja/01.compiler_driver_and_pipeline_scheduler.md#キャンセル)。言語・証明・診断の振る舞いと scheduler policy は既存 owner に属する。
-現状の `CompilerDriver::submit_captured` は同期的な `submit_inner` に入り、scheduled dispatch 完了後に `session.finish(outcome)` を実行し、最後に `store_session` が record を公開する。`cancel` が届くのは保存済み record だけで、active なものは直ちに終端化する。その排他的可変借用中に bridge は replacement/Shutdown を処理できない。background thread だけ、捏造した Running record、終端 return 後の cancellation は、欠けている実行中の制御境界の証拠にはならない。
+この seam 以前の `CompilerDriver::submit_captured` は同期的な `submit_inner` に入り、scheduled dispatch 完了後に `session.finish(outcome)` を実行し、最後に `store_session` が record を公開する。`cancel` が届くのは保存済み record だけで、active なものは直ちに終端化する。その排他的可変借用中に bridge は replacement/Shutdown を処理できない。background thread だけ、捏造した Running record、終端 return 後の cancellation は、欠けている実行中の制御境界の証拠にはならない。
+
+## Implemented A package
+
+Driver [実行 API](../../mizar-driver/ja/driver.md#nonterminal-captured-execution) が受理済み実行を保持し、Build [継続](../../mizar-build/ja/scheduler.md#resumable-execution) が実際の admitted task を保持する。構成済み host は [bridge progress](build_bridge.md#implementation-boundary) を使う。progress call 間に制御でき、service-entry checkpoint が実行ごとの正確な理由を観測する。以後の組合せ cancellation 証拠は Task40 が所有する。
 
 ## Required observable boundary
 

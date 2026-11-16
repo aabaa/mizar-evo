@@ -262,18 +262,9 @@ driver は scheduler record を build event と session status へ map してよ
 
 `cancel(session, reason, snapshots)` は冪等である。
 
-session が unknown または terminal なら、driver は no-op outcome を返す。session が active なら、
-D-011 は state を `Cancelling` 経由で terminal session state へ移し、対応する terminal build event を
-追加する。explicit request と shutdown は `Cancelled` として finish する。supersession は
-`Superseded` として finish する。combined lane/snapshot publication guard が `Suppressed` を
-返した場合に suppressed-publication event を emit する。
+unknown・terminal・重複 request は no-op。live execution は最初の理由を `Cancelling` として受理し、自分の Build 継続だけを signal する。同じ snapshot id でも制御を共有しない。signal は既存 Build policy と合成され、実際の SourceFrontend を含む phase-entry cancellation token に投影される。Shutdown を supersession として表現しない。非協調 phase call 内の latency は保証しない。
 
-現在の `mizar-build::CancellationPolicy` は snapshot supersession と task-scoped explicit
-cancellation を表現できるが、driver-owned snapshot-wide explicit-request / shutdown mutator を
-公開していない。したがって D-011 は `DriverCancelReason::Superseded` だけを
-`supersede_snapshot` で伝播し、explicit-request / shutdown は false supersession reason を
-発明せず build policy には入れない。snapshot-wide explicit / shutdown policy propagation は
-`external_dependency_gap` として記録する。
+owner work の排出後だけ `Cancelled`（explicit/Shutdown）または `Superseded` として完了し、terminal event を一つ emit する。cancel 前に保存済みの完了結果は維持する。capture・input・phase result・lease は排出まで保持し、cleanup はその実行の cache/staging resource だけを解放する。遅延 handoff は lane/session と snapshot/publisher guard を再検証する。
 
 watch/LSP supersession では、新しい session が lane-current になり、古い session は cancel
 されるか `Superseded` として finish する。obsolete completed result は、event や diagnostic が
@@ -466,3 +457,7 @@ cold Frontend expectations、retained scheduler skip、完全 runtime/toolchain/
 準備済み結果を報告へ残すのは、その正確なtaskが最終的にCacheHitとなった場合だけ。既存の全結果mapに対する物理/publisher/lane guardでobsolete結果を抑止する。target source/Frontendを個別のactive Driver/session/task ownerでconsumerと最終検証まで保持し、scheduler errorと通常return（取消・supersessionを含む）で全ownerをreleaseする。retainはcurrentnessを与えず、return後の寿命は通常どおり呼出側管理。旧read-only経路とこの入口はStoreへ書かない。
 既存の実Fixture/capture_sources/組込みproducer/encoder/Storeと独立clean実行を用いるretained_native_frontend_cache_*三familyを追記し、新private setup helperは最大一つで全三familyから使う。resident/blobの全aggregate、map、全side/parent/diagnostics、実CacheHitだけのsource/Frontend TaskStarted不在、捕捉入力不変性、再実行・入力順・worker数を確認する。有効positiveを併設してsource/Frontend miss、foreign/stale/回収済みoracle、binding/context/provider/disableと依存形のfallback、実際の資源不足・取消・obsolete時のreleaseを実collectionで確認し、下位matrixとNoKey testを再利用する。既存scheduler-Err release loopは静的にレビューする。この有効graphの公開経路からは、その分岐に達する不正outcome/decisionやroot欠如を供給できない。oracle PhaseResultは実scheduled結果から借用し、positiveなComplete結果を再構築しない。不正status/diagnostic/出力件数のcontrolはそのadversarial derivativeで作る。実dataの改変はnegative controlに限る。
 これは同一captureの明示保持スケジュール連携であり、coldな独立Frontend期待値、fresh capture/process再利用、atomic runtime寿命、完全active configuration/toolchain/dependency真正性、import/Open cache、semantic/proof/artifact service、STEP6C全体やSteps6–8の完了を与えない。oracle対応と既存leaf footprintの範囲で、これらを引き続き保留する。
+
+## Nonterminal captured execution
+
+`start_captured` は captured validation・native import discovery・構造化された早期失敗を維持し、実 scheduler 継続を保存してから Running metadata を返す。`pending_task` は admitted task を公開し、`progress` は最大一つの task を dispatch して排出後だけ terminal submission を返す。unknown/pending は None、terminal progress は保持済み submission の replay。`terminal_submission` は currentness と publisher validity を再検証して result/index を返す。非終端 start は借用 cache/retained-frontend option を拒否する。同期/cache/watch caller は共通の preparation・scheduler core・finalization を維持する。

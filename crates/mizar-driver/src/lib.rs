@@ -47,10 +47,13 @@ pub mod facade {
     };
 }
 
+pub use frontend_adapter::NATIVE_EXPORT_SEMICOLON_ENCODING;
 pub use frontend_adapter::native_algorithm_core_from_storage_bytes;
 pub use frontend_adapter::native_algorithm_core_storage_bytes;
 pub use frontend_adapter::native_algorithm_vc_from_storage_bytes;
 pub use frontend_adapter::native_algorithm_vc_storage_bytes;
+pub use frontend_adapter::native_export_semicolon_command;
+pub use frontend_adapter::native_export_semicolon_context;
 pub use frontend_adapter::native_theorem_candidate_check_from_storage_bytes;
 pub use frontend_adapter::native_theorem_candidate_check_storage_bytes;
 pub use frontend_adapter::native_theorem_candidate_from_storage_bytes;
@@ -70,7 +73,3 @@ pub use frontend_adapter::native_theorem_typed_ast_from_storage_bytes;
 pub use frontend_adapter::native_theorem_typed_ast_storage_bytes;
 pub use frontend_adapter::native_theorem_vc_from_storage_bytes;
 pub use frontend_adapter::native_theorem_vc_storage_bytes;
-pub use frontend_adapter::{
-    NATIVE_EXPORT_SEMICOLON_ENCODING, native_export_semicolon_command,
-    native_export_semicolon_context,
-};

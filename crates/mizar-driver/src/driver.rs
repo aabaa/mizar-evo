@@ -5,7 +5,7 @@ use std::{
 
 use mizar_build::{
     cache_seam::CacheSchedulingPlan,
-    cancel::CancellationPolicy,
+    cancel::{CancellationPolicy, CancellationReason},
     module_index::{
         DependencyArtifactIndex, ModuleIndex, ModuleIndexDiagnostics, SourceLayoutProvider,
         build_module_index,
@@ -16,8 +16,8 @@ use mizar_build::{
     resource::ResourceBudget,
     scheduler::{
         CacheSchedulingPolicy, CompletionOrder, PriorityHints, SchedulerDiagnostic,
-        SchedulerDiagnostics, SchedulerEvent, SchedulerInput, SchedulerMode, TaskStateRecord,
-        run_scheduler_with_dispatcher,
+        SchedulerDiagnostics, SchedulerEvent, SchedulerExecution, SchedulerInput, SchedulerMode,
+        TaskStateRecord,
     },
     task_graph::{
         BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskGraph, TaskGraphDiagnostics,
@@ -160,6 +160,7 @@ where
 pub struct CompilerDriver {
     sessions: HashMap<BuildSessionId, DriverSessionRecord>,
     lanes: DriverLanes,
+    executions: HashMap<BuildSessionId, DriverExecution>,
     registry: PhaseRegistry,
     output_publisher: Option<Arc<PhaseOutputPublisher>>,
 }
@@ -273,6 +274,31 @@ struct DriverSessionRecord {
     session: BuildSession,
     cancellation: CancellationPolicy,
     events: BuildEventStream,
+    terminal_submission: Option<BuildSubmission>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SubmissionMode {
+    Draft,
+    Captured,
+    Deferred,
+}
+
+struct DriverExecution {
+    scheduler: SchedulerExecution,
+    build_plan: BuildPlan,
+    module_index: ModuleIndex,
+    task_graph: TaskGraph,
+    missing_services: Vec<DriverMissingPhaseService>,
+    phase_inputs: Option<Box<dyn PhaseDispatchInputProvider<BuildTask>>>,
+    phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
+    diagnostic_index: Option<DiagnosticIndexMode>,
+    cached_sources: Vec<(
+        TaskId,
+        mizar_ir::identity::PhaseOutputId,
+        mizar_ir::storage::RetainOwner,
+    )>,
+    pending_sources: Vec<(TaskId, crate::registry::PhaseInput)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -358,6 +384,7 @@ impl CompilerDriver {
         Self {
             sessions: HashMap::new(),
             lanes: DriverLanes::default(),
+            executions: HashMap::new(),
             registry,
             output_publisher: None,
         }
@@ -470,7 +497,14 @@ impl CompilerDriver {
         let session = pending
             .capture_snapshot(snapshots)
             .map_err(|error| DriverSubmitError::SnapshotCapture { error })?;
-        self.submit_inner(session, allocator, snapshots, input, options, false)
+        self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            options,
+            SubmissionMode::Draft,
+        )
     }
 
     pub fn submit_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
@@ -482,8 +516,14 @@ impl CompilerDriver {
         options: SubmitOptions<'_>,
     ) -> Result<BuildSubmission, DriverSubmitError> {
         options.validate(true, false)?;
-        let mut submission =
-            self.submit_inner(session, allocator, snapshots, input, options, true)?;
+        let mut submission = self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            options,
+            SubmissionMode::Captured,
+        )?;
         submission.diagnostic_index = match options.diagnostic_index {
             Some(DiagnosticIndexMode::Disk) => self.current_diagnostic_index(
                 &submission,
@@ -498,6 +538,170 @@ impl CompilerDriver {
             None => None,
         };
         Ok(submission)
+    }
+
+    /// Accepts captured work and yields at a scheduler-owned dispatch boundary.
+    pub fn start_captured<A: SessionIdAllocator, L: SourceLayoutProvider>(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        options: SubmitOptions<'_>,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        options.validate(true, false)?;
+        if options.native_cache.is_some() || options.retained_frontend.is_some() {
+            return Err(DriverSubmitError::InvalidSubmitOptions {
+                reason: "nonterminal execution requires owned submission options",
+            });
+        }
+        let mut submission = self.submit_inner(
+            session,
+            allocator,
+            snapshots,
+            input,
+            options,
+            SubmissionMode::Deferred,
+        )?;
+        if submission.session.is_terminal() {
+            submission.diagnostic_index = options.diagnostic_index.and_then(|mode| {
+                self.current_diagnostic_index(
+                    &submission,
+                    snapshots,
+                    match mode {
+                        DiagnosticIndexMode::Disk => Self::validate_current_disk_diagnostics,
+                        DiagnosticIndexMode::Native => Self::validate_current_native_diagnostics,
+                    },
+                )
+            });
+            self.sessions
+                .get_mut(&submission.session.id)
+                .expect("accepted session is stored")
+                .terminal_submission = Some(submission.clone());
+        }
+        Ok(submission)
+    }
+
+    /// The actual admitted task whose service will execute on a later progress call.
+    pub fn pending_task(&self, session: BuildSessionId) -> Option<&BuildTask> {
+        self.executions.get(&session)?.scheduler.pending_task()
+    }
+
+    /// Advances one owner dispatch boundary, returning a terminal submission after drainage.
+    pub fn progress<A: SessionIdAllocator>(
+        &mut self,
+        session: BuildSessionId,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+    ) -> Result<Option<BuildSubmission>, DriverSubmitError> {
+        let Some(mut execution) = self.executions.remove(&session) else {
+            return Ok(self.terminal_submission(session, snapshots));
+        };
+        let record = self
+            .sessions
+            .get_mut(&session)
+            .expect("execution has a session");
+        if self.lanes.publication_decision(snapshots, &record.session)
+            != PublicationDecision::Current
+        {
+            execution
+                .scheduler
+                .cancellation_signal()
+                .request(CancellationReason::SupersededSnapshot);
+            record.session.cancel();
+        }
+        let session_inputs = record.session.clone();
+        let mut dispatcher = RegistrySchedulerDispatcher::new(
+            &self.registry,
+            execution.phase_inputs.as_deref(),
+            self.output_publisher.as_ref(),
+            Some(crate::registry::SourceLoadInputs {
+                snapshot: &session_inputs.captured.snapshot,
+                captured: Some(&session_inputs.captured),
+                build_plan: &execution.build_plan,
+                module_index: &execution.module_index,
+                allocator,
+            }),
+        );
+        dispatcher.phase_results = execution.phase_results;
+        execution.scheduler.advance(&mut dispatcher);
+        execution.phase_results = dispatcher.phase_results;
+        if !execution.scheduler.is_finished() {
+            self.executions.insert(session, execution);
+            return Ok(None);
+        }
+        let diagnostic_index = execution.diagnostic_index;
+        let record = self
+            .sessions
+            .get(&session)
+            .expect("execution has a session");
+        let mut submission = self.finish_submission(
+            record.session.clone(),
+            allocator,
+            snapshots,
+            record.cancellation.clone(),
+            execution,
+            None,
+        )?;
+        submission.diagnostic_index = diagnostic_index.and_then(|mode| {
+            self.current_diagnostic_index(
+                &submission,
+                snapshots,
+                match mode {
+                    DiagnosticIndexMode::Disk => Self::validate_current_disk_diagnostics,
+                    DiagnosticIndexMode::Native => Self::validate_current_native_diagnostics,
+                },
+            )
+        });
+        self.sessions
+            .get_mut(&session)
+            .expect("finished session is stored")
+            .terminal_submission = Some(submission);
+        Ok(self.terminal_submission(session, snapshots))
+    }
+
+    /// Replays a drained submission with current publication and output guards.
+    pub fn terminal_submission<A: SessionIdAllocator>(
+        &self,
+        session: BuildSessionId,
+        snapshots: &SnapshotRegistry<A>,
+    ) -> Option<BuildSubmission> {
+        let record = self.sessions.get(&session)?;
+        let mut submission = record.terminal_submission.clone()?;
+        submission.session = record.session.clone();
+        submission.publication_decision =
+            self.lanes.publication_decision(snapshots, &record.session);
+        let valid = submission.publication_decision == PublicationDecision::Current
+            && self.output_publisher.as_ref().is_none_or(|publisher| {
+                publisher
+                    .validate_current_snapshot(record.session.captured.snapshot.id)
+                    .is_ok()
+                    && submission.scheduler_run.as_ref().is_none_or(|run| {
+                        run.phase_results.values().flatten().all(|result| {
+                            result.output_refs.iter().all(|output| {
+                                publisher
+                                    .validate_output(
+                                        record.session.captured.snapshot.id,
+                                        output,
+                                        if record.session.captured.native_sources().is_some() {
+                                            OutputAuthorization::Published
+                                        } else {
+                                            OutputAuthorization::CurrentPackage
+                                        },
+                                    )
+                                    .is_ok()
+                                    && publisher.storage().validate_handle(output).is_ok()
+                            })
+                        })
+                    })
+            });
+        if !valid {
+            submission.diagnostic_index = None;
+            if let Some(run) = &mut submission.scheduler_run {
+                run.phase_results.clear();
+            }
+        }
+        Some(submission)
     }
 
     /// Checks live session currentness for a native Disk diagnostic handoff.
@@ -598,7 +802,7 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         input: DriverSubmitInput<L>,
         options: SubmitOptions<'_>,
-        prepared: bool,
+        mode: SubmissionMode,
     ) -> Result<BuildSubmission, DriverSubmitError>
     where
         A: SessionIdAllocator,
@@ -610,7 +814,7 @@ impl CompilerDriver {
             retained_frontend: oracle,
             ..
         } = options;
-        if prepared
+        if mode != SubmissionMode::Draft
             && (session.captured.native_sources().is_none()
                 || session.state != BuildSessionState::SnapshotCaptured
                 || self.sessions.contains_key(&session.id)
@@ -1212,7 +1416,7 @@ impl CompilerDriver {
                             artifact_commit: None,
                         }],
                     );
-                    cached_sources.push((task.id.clone(), handle.erase(), owner));
+                    cached_sources.push((task.id.clone(), handle.output(), owner));
                     let Some((oracle_input, oracle_adapter, oracle_result)) = oracle else {
                         continue;
                     };
@@ -1341,16 +1545,16 @@ impl CompilerDriver {
                             artifact_commit: None,
                         }],
                     );
-                    cached_sources.push((frontend.id.clone(), frontend_handle.erase(), owner));
+                    cached_sources.push((frontend.id.clone(), frontend_handle.output(), owner));
                 }
             }
         }
-        let scheduler_run = match run_scheduler_with_dispatcher(scheduler_input, &mut dispatcher) {
-            Ok(scheduler_run) => scheduler_run,
+        let mut execution = match SchedulerExecution::start(scheduler_input) {
+            Ok(execution) => execution,
             Err(diagnostics) => {
-                for (_, handle, owner) in &cached_sources {
+                for (_, output, owner) in &cached_sources {
                     if let Some(publisher) = self.output_publisher.as_ref() {
-                        let _ = publisher.storage().release(handle.output(), owner);
+                        let _ = publisher.storage().release(*output, owner);
                     }
                 }
                 session.finish(BuildSessionOutcome::Failed);
@@ -1372,7 +1576,107 @@ impl CompilerDriver {
             }
         };
 
-        let outcome = scheduler_outcome(&scheduler_run);
+        if mode == SubmissionMode::Deferred {
+            execution.advance(&mut dispatcher);
+        }
+        if mode == SubmissionMode::Deferred && !execution.is_finished() {
+            let phase_results = std::mem::take(&mut dispatcher.phase_results);
+            drop(dispatcher);
+            let publication_decision = self.lanes.publication_decision(snapshots, &session);
+            let events = submission_events(
+                &session,
+                publication_decision,
+                DriverEventDetails {
+                    planning: Some(PlanningEventStatus::Ready),
+                    missing_services: &missing_services,
+                    ..DriverEventDetails::default()
+                },
+            );
+            self.store_session(session.clone(), cancellation, events);
+            self.executions.insert(
+                session.id,
+                DriverExecution {
+                    scheduler: execution,
+                    build_plan: build_plan.clone(),
+                    module_index: module_index.clone(),
+                    task_graph: task_graph.clone(),
+                    missing_services: missing_services.clone(),
+                    phase_inputs: phase_dispatch_inputs,
+                    phase_results,
+                    diagnostic_index: options.diagnostic_index,
+                    cached_sources,
+                    pending_sources,
+                },
+            );
+            return Ok(BuildSubmission {
+                session,
+                build_plan: Some(build_plan),
+                module_index: Some(module_index),
+                task_graph: Some(task_graph),
+                scheduler_run: None,
+                missing_services,
+                dispatch_gap_phases: Vec::new(),
+                status: DriverSubmissionStatus::SchedulerValidated,
+                publication_decision,
+                diagnostic_index: None,
+            });
+        }
+        while !execution.is_finished() {
+            execution.advance(&mut dispatcher);
+        }
+        let phase_results = std::mem::take(&mut dispatcher.phase_results);
+        drop(dispatcher);
+        self.finish_submission(
+            session,
+            allocator,
+            snapshots,
+            cancellation,
+            DriverExecution {
+                scheduler: execution,
+                build_plan,
+                module_index,
+                task_graph,
+                missing_services,
+                phase_inputs: phase_dispatch_inputs,
+                phase_results,
+                diagnostic_index: options.diagnostic_index,
+                cached_sources,
+                pending_sources,
+            },
+            native_cache,
+        )
+    }
+
+    fn finish_submission<A: SessionIdAllocator>(
+        &mut self,
+        mut session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        cancellation: CancellationPolicy,
+        execution: DriverExecution,
+        native_cache: Option<NativeCacheOptions<'_>>,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        let DriverExecution {
+            scheduler,
+            build_plan,
+            module_index,
+            task_graph,
+            missing_services,
+            mut phase_results,
+            cached_sources,
+            pending_sources,
+            ..
+        } = execution;
+        let cancel_reason = match scheduler.cancellation_signal().requested_reason() {
+            Some(CancellationReason::SupersededSnapshot) => Some(DriverCancelReason::Superseded),
+            Some(CancellationReason::ExplicitRequest) => Some(DriverCancelReason::ExplicitRequest),
+            Some(CancellationReason::Shutdown) => Some(DriverCancelReason::Shutdown),
+            _ => None,
+        };
+        let scheduler_run = scheduler.finish().expect("drained scheduler execution");
+        let outcome = cancel_reason
+            .map(cancellation_outcome)
+            .unwrap_or_else(|| scheduler_outcome(&scheduler_run));
 
         let dispatch_gap_phases = dispatch_gap_phases(&task_graph, &scheduler_run);
         let status = if matches!(outcome, BuildSessionOutcome::Blocked)
@@ -1384,7 +1688,6 @@ impl CompilerDriver {
         } else {
             DriverSubmissionStatus::SchedulerValidated
         };
-        let mut phase_results = dispatcher.phase_results;
         for (task, _, _) in &cached_sources {
             if !scheduler_run.task_states.iter().any(|record| {
                 &record.task_id == task
@@ -1444,6 +1747,12 @@ impl CompilerDriver {
                         .collect::<Vec<_>>()
                 })
                 .collect::<Vec<_>>();
+        if cancel_reason.is_some() {
+            for result in phase_results.values_mut().flatten() {
+                result.output_refs.clear();
+                result.artifact_commit = None;
+            }
+        }
         let publisher_current = self.output_publisher.as_ref().is_none_or(|publisher| {
             publisher
                 .validate_current_snapshot(session.captured.snapshot.id)
@@ -1765,9 +2074,9 @@ impl CompilerDriver {
                 snapshot_publication: snapshot_publication.as_ref(),
             },
         );
-        for (_, handle, owner) in &cached_sources {
+        for (_, output, owner) in &cached_sources {
             if let Some(publisher) = self.output_publisher.as_ref() {
-                let _ = publisher.storage().release(handle.output(), owner);
+                let _ = publisher.storage().release(*output, owner);
             }
         }
         self.store_session(session.clone(), cancellation, events);
@@ -1805,6 +2114,25 @@ impl CompilerDriver {
             return DriverCancelOutcome {
                 session,
                 changed: false,
+                state: Some(record.session.state),
+            };
+        }
+
+        if let Some(execution) = self.executions.get(&session) {
+            let changed = execution
+                .scheduler
+                .cancellation_signal()
+                .request(match reason {
+                    DriverCancelReason::ExplicitRequest => CancellationReason::ExplicitRequest,
+                    DriverCancelReason::Superseded => CancellationReason::SupersededSnapshot,
+                    DriverCancelReason::Shutdown => CancellationReason::Shutdown,
+                });
+            if changed {
+                record.session.cancel();
+            }
+            return DriverCancelOutcome {
+                session,
+                changed,
                 state: Some(record.session.state),
             };
         }
@@ -1957,6 +2285,7 @@ impl CompilerDriver {
                 session,
                 cancellation,
                 events,
+                terminal_submission: None,
             },
         );
     }

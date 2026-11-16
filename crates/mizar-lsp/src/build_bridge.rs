@@ -37,6 +37,7 @@ pub(super) struct BuildBridge {
     pub(super) slot: Option<(Instant, Instant)>,
     generation: u64,
     current: Option<BuildSessionId>,
+    nonterminal: bool,
     submitted: Vec<(
         BuildSessionId,
         BuildRequestGeneration,
@@ -81,9 +82,26 @@ impl Server {
             slot: None,
             generation: 0,
             current: None,
+            nonterminal: false,
             submitted: Vec::new(),
         });
         self
+    }
+
+    /// Configures captured acceptance separately from host-driven execution progress.
+    /// Call `progress_build_bridge` between protocol messages, also after Shutdown/exit.
+    pub fn with_nonterminal_build_bridge(
+        self,
+        lane: BuildLaneId,
+        clock: impl Fn() -> Instant + Send + Sync + 'static,
+    ) -> Self {
+        let mut server = self.with_build_bridge(lane, clock);
+        server
+            .build_bridge
+            .as_mut()
+            .expect("configured bridge missing")
+            .nonterminal = true;
+        server
     }
 
     pub(super) fn admit_build(&mut self) {
@@ -99,7 +117,41 @@ impl Server {
     /// The host polls again at this deadline, or drives immediately on incoming traffic.
     pub fn next_build_deadline(&self, driver: &CompilerDriver) -> Option<Instant> {
         let bridge = self.build_bridge.as_ref()?;
+        if bridge.nonterminal
+            && bridge.submitted.iter().any(|(id, _, _)| {
+                driver
+                    .session(*id)
+                    .is_some_and(|session| !session.is_terminal())
+            })
+        {
+            return Some((bridge.clock)());
+        }
         bridge.deadline(bridge.running(driver))
+    }
+
+    /// Advances each owned execution once and returns newly drained submissions.
+    /// Admission and protocol lifetime do not prevent cleanup of outstanding work.
+    pub fn progress_build_bridge<A: SessionIdAllocator>(
+        &mut self,
+        driver: &mut CompilerDriver,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+    ) -> Result<Vec<BuildSubmission>, BuildBridgeError> {
+        let mut finished = Vec::new();
+        if let Some(bridge) = &self.build_bridge {
+            for (id, _, _) in &bridge.submitted {
+                if driver
+                    .session(*id)
+                    .is_some_and(|session| !session.is_terminal())
+                    && let Some(submission) = driver
+                        .progress(*id, allocator, snapshots)
+                        .map_err(BuildBridgeError::Submit)?
+                {
+                    finished.push(submission);
+                }
+            }
+        }
+        Ok(finished)
     }
 
     /// Handles optional traffic, then flushes due admission without activating or publishing.
@@ -140,7 +192,14 @@ impl Server {
             };
             if self.shutdown || self.exit_code.is_some() {
                 bridge.slot = None;
-                if bridge.running(driver) {
+                if bridge.running(driver)
+                    && bridge
+                        .current
+                        .and_then(|id| driver.session(id))
+                        .is_some_and(|session| {
+                            session.state() != mizar_driver::request::BuildSessionState::Cancelling
+                        })
+                {
                     driver.cancel(
                         bridge.current.expect("running session missing"),
                         DriverCancelReason::Shutdown,
@@ -210,17 +269,21 @@ impl Server {
                 .expect("native capture session missing");
             let id = session.id();
             capture.release_active = None;
-            let result = driver.submit_captured(
-                session,
-                allocator,
-                snapshots,
-                input,
-                SubmitOptions {
-                    discover_imports: true,
-                    diagnostic_index: Some(DiagnosticIndexMode::Native),
-                    ..Default::default()
-                },
-            );
+            let nonterminal = self
+                .build_bridge
+                .as_ref()
+                .is_some_and(|bridge| bridge.nonterminal);
+            let options = SubmitOptions {
+                discover_imports: true,
+                diagnostic_index: Some(DiagnosticIndexMode::Native),
+                ..Default::default()
+            };
+            let submit = if nonterminal {
+                CompilerDriver::start_captured
+            } else {
+                CompilerDriver::submit_captured
+            };
+            let result = submit(driver, session, allocator, snapshots, input, options);
             // Stored sessions can include a rejected generation; only original lane-current
             // acceptance permits superseding the previous session, including accepted failures.
             let accepted = driver.session(id).is_some_and(|session| {

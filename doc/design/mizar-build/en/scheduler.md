@@ -494,3 +494,9 @@ No exhaustive public enum exceptions are owned by this module.
 | `SchedulerEventKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `SchedulerDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `SchedulerDispatchStatus` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+
+## Resumable execution
+
+`SchedulerExecution::start(input)` validates once without invoking services. The first `advance(dispatcher)` admits a real resource-owning batch and yields before its first invocation; later calls dispatch at most the previous task and expose the next through `pending_task()`. The continuation retains queues, admitted tasks and resource reservations. `is_finished()` means no eligible/admitted work remains; consuming `finish()` then returns the existing canonical SchedulerRun. Both synchronous scheduler entrypoints drain this core, retaining readiness, batch/reverse ordering and canonical collation.
+
+An execution's [cancellation signal](cancel.md#per-execution-signal) prevents pending/ready dispatch and suppresses obsolete completed results. Already-admitted work receives its reason at the service-entry checkpoint; existing static cancellation and commit-started policy remain authoritative. Each task releases its reservation once before terminal retrieval.

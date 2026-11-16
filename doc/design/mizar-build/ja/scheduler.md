@@ -478,3 +478,9 @@ Task 9 は documentation-only である。Task 10 は focused Rust tests を追�
 | `SchedulerEventKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `SchedulerDiagnosticKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
 | `SchedulerDispatchStatus` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+
+## Resumable execution
+
+`SchedulerExecution::start(input)` は service を呼ばず一度だけ検証する。最初の `advance(dispatcher)` は実 resource を持つ batch を admit し、最初の呼出前に yield する。以後は最大一つの前回 task を dispatch し、次を `pending_task()` で公開する。継続は queue・admitted task・resource reservation を保持する。`is_finished()` は eligible/admitted work が残っていないことを表し、その後の consuming `finish()` が既存の canonical SchedulerRun を返す。同期 scheduler 入口も同じ core を排出し、readiness・batch/reverse order・canonical collation を維持する。
+
+実行ごとの [cancellation signal](cancel.md#per-execution-signal) は pending/ready dispatch を防ぎ、obsolete completed result を抑止する。admitted work は service-entry checkpoint で理由を受け取り、既存の static cancellation と commit-started policy は権威を維持する。各 task は terminal retrieval 前に reservation を一度だけ解放する。

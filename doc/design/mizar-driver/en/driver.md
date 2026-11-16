@@ -275,20 +275,9 @@ must not:
 
 `cancel(session, reason, snapshots)` is idempotent.
 
-If the session is unknown or terminal, the driver returns a no-op outcome. If
-the session is active, D-011 moves it through `Cancelling` to a terminal session
-state and appends the matching terminal build event. Explicit requests and
-shutdown finish as `Cancelled`; supersession finishes as `Superseded`. A
-suppressed-publication event is emitted when the combined lane/snapshot
-publication guard returns `Suppressed`.
+Unknown, terminal and repeated requests are no-ops. A live execution accepts its first reason into `Cancelling` and signals only its own Build continuation; equal snapshot ids do not share controls. The signal composes existing Build policy and is projected into the phase-entry cancellation token, including genuine SourceFrontend checkpoints. Shutdown is never encoded as supersession. No latency guarantee applies inside a non-cooperative phase call.
 
-The current `mizar-build::CancellationPolicy` can express snapshot
-supersession and task-scoped explicit cancellation, but it does not expose a
-driver-owned snapshot-wide explicit-request or shutdown mutator. D-011 therefore
-propagates `DriverCancelReason::Superseded` through `supersede_snapshot`, leaves
-explicit-request/shutdown out of the build policy rather than inventing a false
-supersession reason, and records snapshot-wide explicit/shutdown policy
-propagation as an `external_dependency_gap`.
+Only drained owner work finishes `Cancelled` (explicit/Shutdown) or `Superseded` and emits one terminal event. Completion already stored before cancellation keeps its outcome. Captures, inputs, phase results and leases remain owned through drainage; cleanup releases only that execution's retained cache/staging resources. Delayed handoffs recheck lane/session and snapshot/publisher guards.
 
 For watch/LSP supersession, the newer session becomes lane-current and the
 older session is cancelled or finished as `Superseded`. Obsolete completed
@@ -491,3 +480,7 @@ Only a genuine Frontend Rehydrated handle that passes physical/current validatio
 Keep a prepared result in reporting only if that exact task finally CacheHit. Existing whole-map physical/publisher/lane filtering still suppresses obsolete results. Retain each target source/Frontend under a distinct active Driver/session/task owner through scheduler consumers and final validation; release all acquired owners on scheduler error and normal return, including cancellation/supersession. Retention neither grants currentness nor changes caller-managed post-return lifetime. Existing read-only routes and this entry write no Store records.
 Append three retained_native_frontend_cache_* families using unchanged genuine Fixture/capture_sources/built-ins/encoders/Store and independent clean runs; at most one new private setup helper must serve all three. Cover resident/blob whole aggregates, maps, complete sides/parents/diagnostics, source and Frontend TaskStarted absence only for actual CacheHit, immutable captured inputs and replay/input-order/worker controls. Exercise otherwise viable source/Frontend misses, foreign or stale/collected oracle, binding/context/provider/disabled and dependency-shape fallback, real resource failure/cancellation/obsolete release with actual collection, reusing existing lower matrices and NoKey tests. Review the preserved scheduler-Err release loop statically: this valid-graph public route supplies no invalid outcomes/decisions or missing root to reach that branch. Borrow the genuine oracle PhaseResult from actual scheduled results, never reconstruct a positive Complete result; add malformed status/diagnostic/output-cardinality controls as adversarial derivatives. Adversarial derivatives are negative controls only.
 This is explicit same-capture retained scheduling, not cold record-independent Frontend expectations, fresh-capture/process reuse, atomic runtime lifetime, full active configuration/toolchain/dependency authenticity, import/Open caching, semantic/proof/artifact services, full STEP6C or Steps6–8 completion. The caller-owned oracle association and unchanged leaf footprint retain those deferrals.
+
+## Nonterminal captured execution
+
+`start_captured` preserves captured validation, native import discovery and structured early failures, then stores the actual scheduler continuation before returning Running metadata. `pending_task` exposes its admitted task; `progress` dispatches at most one task and returns a terminal submission only after drainage. Unknown/pending progress returns None; terminal progress replays the retained submission. `terminal_submission` rechecks currentness and publisher validity before returning retained results/index. Borrowed cache/retained-frontend options are rejected by nonterminal start; synchronous/cache/watch callers retain shared preparation, scheduler core and finalization.

@@ -61,6 +61,137 @@ fn prepare_parts(
 }
 
 #[test]
+fn nonterminal_host_progress_preserves_native_capture_and_terminal_replay() {
+    use mizar_build::task_graph::PipelinePhase;
+    use mizar_driver::{registry::PhaseStatus, request::BuildSessionState};
+
+    let mut fixture = RegistryFixture::new();
+    drop(fixture.capture()); // Configure the genuine producer's existing publication rights.
+    let now = Arc::new(AtomicU64::new(0));
+    let clock = now.clone();
+    let base = Instant::now();
+    fixture.server = std::mem::take(&mut fixture.server)
+        .with_nonterminal_build_bridge(BuildLaneId::new(79), move || {
+            base + Duration::from_millis(clock.load(Ordering::SeqCst))
+        });
+    let uri = fixture.sources[0].2.clone();
+    change_version(&mut fixture.server, &uri, 2);
+    now.store(300, Ordering::SeqCst);
+    let (draft, index, sources, input) = prepare_parts(&fixture);
+    let (_, started) = fixture.server.drive_build_bridge(
+        None,
+        &mut fixture.driver,
+        &fixture.ids,
+        &fixture.snapshots,
+        &fixture.publisher,
+        move |_, _| Ok((draft, index, sources, input)),
+    );
+    let started = started.unwrap().unwrap();
+    let id = started.session.id();
+    let task_count = started.task_graph.as_ref().unwrap().tasks().len();
+    assert_eq!(started.session.state(), BuildSessionState::Running);
+    let accepted = fixture.server.build_bridge_events(&fixture.driver);
+    let original = accepted.first().unwrap().1.clone();
+    assert!(
+        accepted
+            .iter()
+            .all(|(event, _)| !matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+    );
+    assert_eq!(
+        fixture.server.next_build_deadline(&fixture.driver),
+        Some(base + Duration::from_millis(300))
+    );
+
+    // Host scheduling interleaves real task progress with ordinary protocol traffic.
+    for _ in 0..=task_count {
+        if fixture
+            .driver
+            .pending_task(id)
+            .is_some_and(|task| task.phases == [PipelinePhase::Frontend])
+        {
+            break;
+        }
+        assert!(
+            fixture
+                .server
+                .progress_build_bridge(&mut fixture.driver, &fixture.ids, &fixture.snapshots)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(!fixture.driver.session(id).unwrap().is_terminal());
+    }
+    assert!(
+        fixture
+            .driver
+            .pending_task(id)
+            .is_some_and(|task| task.phases == [PipelinePhase::Frontend])
+    );
+    let (response, no_flush) = fixture.server.drive_build_bridge::<_, mizar_build::module_index::StaticSourceLayout, _>(
+        Some(serde_json::json!({"jsonrpc":"2.0","id":79,"method":"textDocument/hover","params":{"textDocument":{"uri":uri},"position":{"line":0,"character":0}}})),
+        &mut fixture.driver,
+        &fixture.ids,
+        &fixture.snapshots,
+        &fixture.publisher,
+        |_, _| panic!("protocol request must not capture"),
+    );
+    assert_eq!(response.unwrap()["id"], 79);
+    assert!(no_flush.unwrap().is_none());
+    assert!(!fixture.driver.session(id).unwrap().is_terminal());
+    let terminal = (0..=task_count)
+        .find_map(|_| {
+            let mut finished = fixture
+                .server
+                .progress_build_bridge(&mut fixture.driver, &fixture.ids, &fixture.snapshots)
+                .unwrap();
+            finished.pop()
+        })
+        .expect("native execution must drain within its task count");
+    assert!(terminal.session.is_terminal());
+    assert!(
+        terminal
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .any(|result| result.status == PhaseStatus::Complete && !result.output_refs.is_empty())
+    );
+    assert!(terminal.diagnostic_index.is_some());
+    let replay = fixture.server.build_bridge_events(&fixture.driver);
+    assert!(
+        replay
+            .iter()
+            .all(|(_, capture)| Arc::ptr_eq(capture, &original))
+    );
+    assert_eq!(
+        replay
+            .iter()
+            .filter(|(event, _)| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+            .count(),
+        1
+    );
+    assert!(
+        replay
+            .iter()
+            .any(|(event, _)| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
+    );
+    assert!(
+        fixture
+            .server
+            .progress_build_bridge(&mut fixture.driver, &fixture.ids, &fixture.snapshots)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        fixture
+            .server
+            .next_build_deadline(&fixture.driver)
+            .is_none()
+    );
+}
+
+#[test]
 fn capture_failure_consumes_its_generation_and_keeps_the_previous_session_and_capture() {
     let mut fixture = RegistryFixture::new();
     let (millis, _) = bridge_clock(&mut fixture, 71);

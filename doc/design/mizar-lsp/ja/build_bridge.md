@@ -45,10 +45,11 @@ bridge は自分の LSP lane のみ submit/cancel/consume し、Watch-origin req
 
 ## Implementation boundary
 
-Task40 に欠けている実行の前提条件は[非終端実行 seam 提案](execution_seam.md)で定義する。Q-decision は別実装の前に owner 承認を要する。
+承認済み[非終端実行 seam](execution_seam.md) が Task40 の実行前提を供給し、組合せ cancellation 証拠は別 dispatch に残す。
 `src/build_bridge.rs` は `Server::with_build_bridge`、`drive_build_bridge`、`next_build_deadline`、`build_bridge_events` により task11 を実装する。host は lane 専用 Driver と対応する publisher、単調時計を渡し、受信 traffic と返された deadline で駆動し、flush 時だけ全 open URI の座標を解決する。文書 traffic の受理前に bridge を構成する。既存 stdio lifecycle は compiler host を設置せず、native host/watch 統合は DRIVER-G-012 に残る。
+`with_nonterminal_build_bridge` は構成済み host を `start_captured` に切り替え、`progress_build_bridge` は所有する各 live execution を一段進めて排出済み submission を返す。protocol traffic を処理してから進行する。`next_build_deadline` は Shutdown/exit 後も work が残れば即時進行を要求する。terminal lifecycle は current session を一度 cancel し、admission を止め、排出用 progress/replay を維持する。`with_build_bridge` は同期動作を維持する。
 event replay は元の capture を保持し、registry activation や診断送信は行わない。これらは task7 と task9 の境界に残す。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。SCA-003 credit は変更しない。
 
 ## Test design
 
-task11 の fixture は注入時計で accepted-event admission、編集 burst、quiet/cap deadline、terminal discard を検証し、実際の native capture と Driver submission で失敗時の消費、元の event association、lane 分離を検証する。現行 Driver の同期 submission は terminal session を返すため、running-session の deadline predicate は別に検証し、協調 cancellation の振る舞いは Driver の所有に残す。既存 lifecycle/capture/publication の test intent は各所有者に残す。
+task11 の fixture は注入時計で accepted-event admission、編集 burst、quiet/cap deadline、terminal discard を検証し、実際の native capture と Driver submission で失敗時の消費、元の event association、lane 分離を検証する。同期 control は terminal submission を維持し、opt-in host の前提 test は実 native task の進行と元の terminal replay、および step 間の protocol traffic を検証する。checkpoint cancellation は Driver 前提 test、bridge supersede/Shutdown の組合せ証拠は Task40 が所有する。既存 lifecycle/capture/publication の test intent は各所有者に残す。

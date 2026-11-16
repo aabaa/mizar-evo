@@ -78,6 +78,555 @@ fn import_discovery_preserves_legacy_submit_and_supplied_overlay_precedence() {
     }
 }
 
+fn captured_native_execution_fixture(
+    text: &str,
+) -> (
+    Fixture,
+    InMemorySessionIdAllocator,
+    SnapshotRegistry<InMemorySessionIdAllocator>,
+    mizar_driver::request::BuildSession,
+    DriverSubmitInput<StaticSourceLayout>,
+    BuildSnapshotId,
+) {
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let captured_input = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    };
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(
+                DiskSourceLoader::new(fixture.root.join("alpha")),
+                captured_input,
+            )],
+        )
+        .unwrap();
+    let snapshot = session.captured().snapshot().id;
+    let input = fixture.submit_request(vec![], vec![]).1;
+    (fixture, ids, snapshots, session, input, snapshot)
+}
+
+#[test]
+fn captured_native_execution_yields_and_matches_synchronous_completion() {
+    let (fixture, ids, snapshots, session, input, snapshot) =
+        captured_native_execution_fixture("theorem T: a = a;\n");
+    let (mut sync_driver, _) = import_discovered_native_index_driver(snapshot, &["main"]);
+    let expected = sync_driver
+        .submit_captured(
+            session.clone(),
+            &ids,
+            &snapshots,
+            fixture.submit_request(vec![], vec![]).1,
+            SubmitOptions::default(),
+        )
+        .unwrap();
+
+    let (mut driver, _) = import_discovered_native_index_driver(snapshot, &["main"]);
+    let accepted = driver
+        .start_captured(
+            session.clone(),
+            &ids,
+            &snapshots,
+            input,
+            SubmitOptions::default(),
+        )
+        .unwrap();
+    let session_id = accepted.session.id();
+    assert_eq!(accepted.session.state(), BuildSessionState::Running);
+    assert!(accepted.scheduler_run.is_none());
+    assert_eq!(accepted.session.captured().snapshot().id, snapshot);
+    assert_eq!(
+        accepted.session.captured().native_sources().unwrap()[0]
+            .1
+            .source_hash,
+        session.captured().native_sources().unwrap()[0]
+            .1
+            .source_hash
+    );
+
+    let task_count = accepted.task_graph.as_ref().unwrap().tasks().len();
+    let mut steps = 0;
+    while let Some(task) = driver.pending_task(session_id).cloned() {
+        if matches!(task.kind, TaskKind::SourceLoad | TaskKind::Frontend) {
+            break;
+        }
+        steps += 1;
+        assert!(
+            steps <= task_count + 2,
+            "progress exceeded the graph boundary allowance"
+        );
+        assert!(
+            driver
+                .progress(session_id, &ids, &snapshots)
+                .unwrap()
+                .is_none()
+        );
+    }
+    assert!(matches!(
+        driver.pending_task(session_id).map(|task| task.kind),
+        Some(TaskKind::SourceLoad | TaskKind::Frontend)
+    ));
+
+    let mut terminal = None;
+    while terminal.is_none() {
+        steps += 1;
+        assert!(
+            steps <= task_count + 2,
+            "progress exceeded the graph boundary allowance"
+        );
+        terminal = driver.progress(session_id, &ids, &snapshots).unwrap();
+    }
+    let terminal = terminal.unwrap();
+    assert_eq!(terminal, expected);
+    assert_eq!(
+        driver.terminal_submission(session_id, &snapshots),
+        Some(expected.clone())
+    );
+    assert_eq!(
+        driver.progress(session_id, &ids, &snapshots).unwrap(),
+        Some(expected)
+    );
+    assert_eq!(
+        driver.events(session_id).events(),
+        sync_driver.events(session_id).events()
+    );
+    assert_eq!(
+        driver
+            .events(session_id)
+            .events()
+            .iter()
+            .filter(|event| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+            .count(),
+        1
+    );
+    let finished = driver.cancel(
+        session_id,
+        mizar_driver::driver::DriverCancelReason::ExplicitRequest,
+        &snapshots,
+    );
+    assert!(!finished.changed);
+    assert_eq!(finished.state, Some(terminal.session.state()));
+    let unknown_id = ids.next_session_id().unwrap();
+    let unknown = driver.cancel(
+        unknown_id,
+        mizar_driver::driver::DriverCancelReason::Shutdown,
+        &snapshots,
+    );
+    assert!(!unknown.changed);
+    assert_eq!(unknown.state, None);
+    assert!(!driver.events(unknown_id).known_session);
+
+    let (
+        _failed_fixture,
+        failed_ids,
+        failed_snapshots,
+        failed_session,
+        mut failed_input,
+        failed_snapshot,
+    ) = captured_native_execution_fixture("theorem T: a = a;\n");
+    failed_input.workspace_packages.clear();
+    let failed_session_id = failed_session.id();
+    let (mut failed_driver, _) = import_discovered_native_index_driver(failed_snapshot, &["main"]);
+    let error = failed_driver
+        .start_captured(
+            failed_session,
+            &failed_ids,
+            &failed_snapshots,
+            failed_input,
+            SubmitOptions::default(),
+        )
+        .unwrap_err();
+    let DriverSubmitError::Planning {
+        session: stored_error_session,
+        diagnostics,
+    } = error
+    else {
+        panic!("expected a structured planning failure, got {error:?}");
+    };
+    assert!(!diagnostics.diagnostics().is_empty());
+    assert_eq!(stored_error_session.id(), failed_session_id);
+    assert_eq!(
+        stored_error_session.state(),
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    assert_eq!(
+        failed_driver
+            .session(failed_session_id)
+            .map(|stored| stored.state()),
+        Some(BuildSessionState::Finished(BuildSessionOutcome::Failed))
+    );
+    assert!(failed_driver.pending_task(failed_session_id).is_none());
+    assert!(
+        failed_driver
+            .terminal_submission(failed_session_id, &failed_snapshots)
+            .is_none()
+    );
+    assert!(failed_driver.events(failed_session_id).known_session);
+    drop(fixture);
+}
+
+#[test]
+fn captured_native_frontend_cancellation_reaches_the_real_service_checkpoint() {
+    for (reason, replace_snapshot) in [
+        (
+            mizar_driver::driver::DriverCancelReason::ExplicitRequest,
+            false,
+        ),
+        (mizar_driver::driver::DriverCancelReason::Shutdown, false),
+        (mizar_driver::driver::DriverCancelReason::Superseded, false),
+        (mizar_driver::driver::DriverCancelReason::Superseded, true),
+    ] {
+        let (fixture, ids, snapshots, session, input, snapshot) =
+            captured_native_execution_fixture("theorem T: a = a;\n");
+        let (mut driver, owner) = import_discovered_native_index_driver(snapshot, &["main"]);
+        let accepted = driver
+            .start_captured(session, &ids, &snapshots, input, SubmitOptions::default())
+            .unwrap();
+        let session_id = accepted.session.id();
+        let task_count = accepted.task_graph.as_ref().unwrap().tasks().len();
+        let frontend = accepted
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend)
+            .unwrap()
+            .id
+            .clone();
+        let mut steps = 0;
+        while driver.pending_task(session_id).map(|task| task.id.clone()) != Some(frontend.clone())
+        {
+            steps += 1;
+            assert!(
+                steps <= task_count + 2,
+                "progress exceeded the graph boundary allowance"
+            );
+            assert!(
+                driver
+                    .progress(session_id, &ids, &snapshots)
+                    .unwrap()
+                    .is_none()
+            );
+        }
+        assert_eq!(driver.pending_task(session_id).unwrap().id, frontend);
+
+        let superseding = if replace_snapshot {
+            fixture.write(b"theorem Other: b = b;\n");
+            let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+            draft.generation = BuildRequestGeneration::new(1);
+            draft.source_inputs.versions.clear();
+            let replacement_source = SourceInput {
+                package_id: fixture.version.package_id.clone(),
+                module_path: fixture.version.module_path.clone(),
+                normalized_path: fixture.version.normalized_path.clone(),
+                edition: fixture.version.edition.clone(),
+                origin: SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                },
+            };
+            let replacement = draft
+                .capture_sources(
+                    &ids,
+                    &snapshots,
+                    vec![(
+                        DiskSourceLoader::new(fixture.root.join("alpha")),
+                        replacement_source,
+                    )],
+                )
+                .unwrap();
+            let replacement_snapshot = replacement.captured().snapshot().id;
+            assert_ne!(snapshot, replacement_snapshot);
+            owner
+                .replace_current_snapshot(snapshot, replacement_snapshot)
+                .unwrap();
+            let replacement = driver
+                .start_captured(
+                    replacement,
+                    &ids,
+                    &snapshots,
+                    fixture.submit_request(vec![], vec![]).1,
+                    SubmitOptions::default(),
+                )
+                .unwrap();
+            Some((
+                replacement.session.id(),
+                replacement.task_graph.unwrap().tasks().len(),
+            ))
+        } else {
+            None
+        };
+
+        let outcome = driver.cancel(session_id, reason, &snapshots);
+        assert!(outcome.changed);
+        assert_eq!(outcome.state, Some(BuildSessionState::Cancelling));
+        let mut terminal = None;
+        while terminal.is_none() {
+            steps += 1;
+            assert!(
+                steps <= task_count + 2,
+                "progress exceeded the graph boundary allowance"
+            );
+            terminal = driver.progress(session_id, &ids, &snapshots).unwrap();
+        }
+        let terminal = terminal.unwrap();
+        assert_eq!(
+            terminal.session.state(),
+            BuildSessionState::Finished(
+                if reason == mizar_driver::driver::DriverCancelReason::Superseded {
+                    BuildSessionOutcome::Superseded
+                } else {
+                    BuildSessionOutcome::Cancelled
+                }
+            )
+        );
+        let run = terminal.scheduler_run.as_ref().unwrap();
+        if replace_snapshot {
+            assert!(run.phase_results.is_empty());
+            assert!(run.task_states.iter().any(|task| {
+                task.task_id == frontend
+                    && task.state == mizar_build::scheduler::TaskState::Cancelled
+            }));
+        } else {
+            let cancelled = run.phase_results[&frontend].first().unwrap();
+            assert_eq!(cancelled.status, PhaseStatus::Cancelled);
+            assert!(cancelled.output_refs.is_empty());
+        }
+        let events = driver.events(session_id);
+        assert_eq!(
+            events
+                .events()
+                .iter()
+                .filter(|event| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+                .count(),
+            1
+        );
+        assert!(
+            !events
+                .events()
+                .iter()
+                .any(|event| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
+        );
+        if replace_snapshot {
+            assert!(
+                events
+                    .events()
+                    .iter()
+                    .any(|event| { matches!(event.kind, BuildEventKind::PublicationSuppressed) })
+            );
+            let (replacement_id, replacement_graph_size) = superseding.unwrap();
+            let mut replacement_steps = 0;
+            let mut replacement_terminal = None;
+            while replacement_terminal.is_none() {
+                replacement_steps += 1;
+                assert!(replacement_steps <= replacement_graph_size + 2);
+                replacement_terminal = driver.progress(replacement_id, &ids, &snapshots).unwrap();
+            }
+            let replacement_terminal = replacement_terminal.unwrap();
+            assert!(matches!(
+                replacement_terminal.session.state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+                    | BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+                    | BuildSessionState::Finished(BuildSessionOutcome::Failed)
+            ));
+        }
+        let repeated = driver.cancel(session_id, reason, &snapshots);
+        assert!(!repeated.changed);
+        assert_eq!(repeated.state, Some(terminal.session.state()));
+        assert_eq!(driver.events(session_id).events(), events.events());
+        drop(fixture);
+    }
+}
+
+#[test]
+fn equal_snapshot_native_executions_on_distinct_lanes_keep_signals_and_outputs_isolated() {
+    let fixture = Fixture::new(b"theorem T: a = a;\n");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let capture = |lane, generation| {
+        let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+        draft.lane = BuildLaneId::new(lane);
+        draft.generation = BuildRequestGeneration::new(generation);
+        draft.source_inputs.versions.clear();
+        let captured_input = SourceInput {
+            package_id: fixture.version.package_id.clone(),
+            module_path: fixture.version.module_path.clone(),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: fixture.version.edition.clone(),
+            origin: SourceOriginInput::Disk {
+                path: "src/main.miz".into(),
+            },
+        };
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    captured_input,
+                )],
+            )
+            .unwrap();
+        (session, fixture.submit_request(vec![], vec![]).1)
+    };
+    for (replacement_lane, replacement_generation) in [(1, 1), (2, 0)] {
+        let (old, old_input) = capture(1, 0);
+        let (replacement, replacement_input) = capture(replacement_lane, replacement_generation);
+        let snapshot = old.captured().snapshot().id;
+        assert_eq!(replacement.captured().snapshot().id, snapshot);
+        let (mut driver, owner) = import_discovered_native_index_driver(snapshot, &["main"]);
+        let old_accepted = driver
+            .start_captured(old, &ids, &snapshots, old_input, SubmitOptions::default())
+            .unwrap();
+        let old_id = old_accepted.session.id();
+        let old_graph_size = old_accepted.task_graph.as_ref().unwrap().tasks().len();
+        let old_source_load = old_accepted
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::SourceLoad)
+            .unwrap()
+            .id
+            .clone();
+        let mut old_steps = 0;
+        while driver.pending_task(old_id).map(|task| task.id.clone())
+            != Some(old_source_load.clone())
+        {
+            old_steps += 1;
+            assert!(old_steps <= old_graph_size + 2);
+            assert!(driver.progress(old_id, &ids, &snapshots).unwrap().is_none());
+        }
+
+        let new_accepted = driver
+            .start_captured(
+                replacement,
+                &ids,
+                &snapshots,
+                replacement_input,
+                SubmitOptions::default(),
+            )
+            .unwrap();
+        let new_id = new_accepted.session.id();
+        assert_ne!(old_id, new_id);
+        let new_frontend = new_accepted
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend)
+            .unwrap()
+            .id
+            .clone();
+        let new_graph_size = new_accepted.task_graph.as_ref().unwrap().tasks().len();
+
+        let cancelled = driver.cancel(
+            old_id,
+            mizar_driver::driver::DriverCancelReason::Superseded,
+            &snapshots,
+        );
+        assert!(cancelled.changed);
+        assert_eq!(cancelled.state, Some(BuildSessionState::Cancelling));
+        let mut old_terminal = None;
+        while old_terminal.is_none() {
+            old_steps += 1;
+            assert!(old_steps <= old_graph_size + 2);
+            old_terminal = driver.progress(old_id, &ids, &snapshots).unwrap();
+        }
+        let old_terminal = old_terminal.unwrap();
+        assert_eq!(
+            old_terminal.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Superseded)
+        );
+        let old_run = old_terminal.scheduler_run.as_ref().unwrap();
+        assert!(old_run.task_states.iter().any(|task| {
+            task.task_id == old_source_load
+                && task.state == mizar_build::scheduler::TaskState::Cancelled
+        }));
+        assert!(
+            old_run
+                .phase_results
+                .values()
+                .flatten()
+                .all(|result| { result.output_refs.is_empty() })
+        );
+        let old_events = driver.events(old_id);
+        assert_eq!(
+            old_events
+                .events()
+                .iter()
+                .filter(|event| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+                .count(),
+            1
+        );
+        if replacement_lane == 1 {
+            assert!(matches!(
+                old_terminal.publication_decision,
+                mizar_driver::request::PublicationDecision::Suppressed(_)
+            ));
+            assert!(
+                old_events
+                    .events()
+                    .iter()
+                    .any(|event| { matches!(event.kind, BuildEventKind::PublicationSuppressed) })
+            );
+        } else {
+            assert_eq!(
+                old_terminal.publication_decision,
+                mizar_driver::request::PublicationDecision::Current
+            );
+            assert!(
+                !old_events
+                    .events()
+                    .iter()
+                    .any(|event| { matches!(event.kind, BuildEventKind::PublicationSuppressed) })
+            );
+        }
+
+        let mut new_steps = 0;
+        let mut new_terminal = None;
+        while new_terminal.is_none() {
+            new_steps += 1;
+            assert!(new_steps <= new_graph_size + 2);
+            new_terminal = driver.progress(new_id, &ids, &snapshots).unwrap();
+        }
+        let new_terminal = new_terminal.unwrap();
+        let new_run = new_terminal.scheduler_run.as_ref().unwrap();
+        let new_frontend_result = &new_run.phase_results[&new_frontend][0];
+        assert_eq!(new_frontend_result.status, PhaseStatus::Complete);
+        for output in new_run
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+        {
+            owner.storage().validate_handle(output).unwrap();
+        }
+        assert_eq!(
+            driver
+                .events(new_id)
+                .events()
+                .iter()
+                .filter(|event| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+                .count(),
+            1
+        );
+    }
+}
+
 #[test]
 fn import_discovered_native_index_preserves_captured_import_runs_and_original_batches() {
     use mizar_diagnostics::aggregator::BuildDiagnosticIndex;
