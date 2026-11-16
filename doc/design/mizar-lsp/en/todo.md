@@ -307,7 +307,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Audit G4: after genuine diagnostic producers attach fixes/explanation handles and backing content, test positive host delivery and stale original-source locations together; keep typed conversion fixtures distinct. Producer work stays upstream.
     - Deps: 17, 19, native payload producers. Spec: [action tests](code_action.md#test-design), [explanation tests](explain.md#test-design).
 
-40. **[Running-session bridge cancellation evidence](../../task_contracts/en/LSP-RUNNING-BRIDGE-CANCELLATION.md).** [ ]
+40. **[Running-session bridge cancellation evidence](../../task_contracts/en/LSP-RUNNING-BRIDGE-CANCELLATION.md).** [x]
     - Audit G5: test supersede and Shutdown cancellation through genuine nonterminal sessions when Driver supports that execution seam; preserve failure/no-cancel and lane isolation controls. No synthetic acceptance or scheduler policy change.
     - Deps: 11, owner-supported nonterminal Driver execution. Spec: [bridge cancellation](build_bridge.md#supersede-and-terminal-lifecycle).
 

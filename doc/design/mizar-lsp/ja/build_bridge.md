@@ -45,11 +45,12 @@ bridge は自分の LSP lane のみ submit/cancel/consume し、Watch-origin req
 
 ## Implementation boundary
 
-承認済み[非終端実行 seam](execution_seam.md) が Task40 の実行前提を供給し、組合せ cancellation 証拠は別 dispatch に残す。
+承認済み[非終端実行 seam](execution_seam.md) が bridge cancellation test に実際の captured execution を供給する。
 `src/build_bridge.rs` は `Server::with_build_bridge`、`drive_build_bridge`、`next_build_deadline`、`build_bridge_events` により task11 を実装する。host は lane 専用 Driver と対応する publisher、単調時計を渡し、受信 traffic と返された deadline で駆動し、flush 時だけ全 open URI の座標を解決する。文書 traffic の受理前に bridge を構成する。既存 stdio lifecycle は compiler host を設置せず、native host/watch 統合は DRIVER-G-012 に残る。
 `with_nonterminal_build_bridge` は構成済み host を `start_captured` に切り替え、`progress_build_bridge` は所有する各 live execution を一段進めて排出済み submission を返す。protocol traffic を処理してから進行する。`next_build_deadline` は Shutdown/exit 後も work が残れば即時進行を要求する。terminal lifecycle は current session を一度 cancel し、admission を止め、排出用 progress/replay を維持する。`with_build_bridge` は同期動作を維持する。
 event replay は元の capture を保持し、registry activation や診断送信は行わない。これらは task7 と task9 の境界に残す。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。SCA-003 credit は変更しない。
 
 ## Test design
 
-task11 の fixture は注入時計で accepted-event admission、編集 burst、quiet/cap deadline、terminal discard を検証し、実際の native capture と Driver submission で失敗時の消費、元の event association、lane 分離を検証する。同期 control は terminal submission を維持し、opt-in host の前提 test は実 native task の進行と元の terminal replay、および step 間の protocol traffic を検証する。checkpoint cancellation は Driver 前提 test、bridge supersede/Shutdown の組合せ証拠は Task40 が所有する。既存 lifecycle/capture/publication の test intent は各所有者に残す。
+task11 の fixture は注入時計で accepted-event admission、編集 burst、quiet/cap deadline、terminal discard を検証し、実際の native capture と Driver submission で失敗時の消費、元の event association、lane 分離を検証する。同期 control は terminal submission を維持し、opt-in host の前提 test は実 native task の進行と元の terminal replay、および step 間の protocol traffic を検証する。
+Task40 test は実際に admitted された native Frontend task で停止し、編集と capture 失敗では実行を維持し、同一 snapshot の置換受理で Superseded、Shutdown/exit で admission 破棄と Shutdown を要求する。progress 前の Cancelling、実 work の cancellation、drain 後の単一終端 event、元の capture/replay、obsolete publication の不在を検証し、非 cancel の置換と別 lane は独立した実行・publisher 権限を維持する。checkpoint 自体は Driver test が所有し、running predicate の timing fixture は別の証拠とする。
