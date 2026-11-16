@@ -338,6 +338,10 @@ driver は diagnostic batch と readiness event を transport してよい。dia
 `validate_current_disk_diagnostics(session, snapshots) -> Result<(), String>` は全 Disk 制約を保ち、[共有 native-session 条件](#current-native-diagnostic-index)へ委譲する。この Disk 専用 API は OpenBuffer/Generated capture を引き続き非対応とし、未知・非対応・obsolete は共有条件に従い Err とする。
 `submit_captured` の `diagnostic_index: Some(DiagnosticIndexMode::Disk)` はその元の実 phase-result batch だけを Diagnostics from_batches で集約する。集約の前後で guard と実 scheduler run を要求し、不成立や集約失敗は submission を変えず None、元の提出 error は保持する。実 Failed/Blocked phase の診断と clean run の空 index を許し、scheduler message から draft を推測せず意味・証明成功を要求しない。この Disk 専用 method は Open/Generated capture を除外し、overlay・current LSP 公開・後続 consumer は保留する。index は immutable snapshot data であり、後の受け渡し前に live guard を再検査し、file/version/map/routing 条件は別途満たす。
 
+## Captured source-load failures
+
+実失敗を保持する capture は診断専用 `SourceLoadFailed` 経路で terminal Failed となり、planning/scheduler work/output/manifest/full snapshot event を作らない。既存 snapshot supersession による抑止は維持する。Native index mode は保持 request を既存 source-load producer mapping と Diagnostics で集約し、前後で同じ native guard を検査する。Disk mode は scheduler-only 契約を維持する。Replay は失敗 path を再読込しない。成功 native source がない初回 capture の権限は追加しない。
+
 ## Testing Requirements
 
 Task D-008 と D-011 の source test は次を cover しなければならない:

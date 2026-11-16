@@ -58,6 +58,21 @@ pub struct NativeOpenBufferCapture {
     release_active: Option<Box<dyn FnOnce() + Send + Sync>>,
 }
 
+impl NativeOpenBufferCapture {
+    /// Retains genuine failed Disk requests under this original native association.
+    pub fn capture_source_load_failures(
+        mut self,
+        allocator: &dyn mizar_session::SessionIdAllocator,
+        sources: Vec<(mizar_session::DiskSourceLoader, mizar_session::SourceInput)>,
+    ) -> Result<Self, String> {
+        self.session
+            .as_mut()
+            .expect("native capture session missing")
+            .capture_source_load_failures(allocator, sources)?;
+        Ok(self)
+    }
+}
+
 impl Drop for NativeOpenBufferCapture {
     fn drop(&mut self) {
         if let Some(release) = self.release_active.take() {
@@ -175,7 +190,7 @@ impl LspSnapshot {
     }
 }
 
-/// One retained source-error publication; no manifest or semantic output authority.
+/// One retained diagnostic publication; no manifest or semantic output authority.
 pub(crate) struct RangedDiagnosticPublication {
     session: mizar_session::BuildSessionId,
     index: mizar_diagnostics::aggregator::BuildDiagnosticIndex,
@@ -255,7 +270,7 @@ impl Server {
             .map(|(snapshot, freshness)| (DiagnosticHostRead::Full(snapshot), freshness))
     }
 
-    /// Retains only the ranged terminal diagnostics of this original native capture.
+    /// Retains terminal diagnostics of this original native capture, including captured failures.
     /// This publishes no successful build, manifest, metadata or IR output.
     pub fn submit_originating_diagnostic_publication<
         A: mizar_session::SessionIdAllocator,
@@ -282,13 +297,45 @@ impl Server {
         capture.release_active = None;
         let (submission, notifications) =
             self.native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
-        if !eligible || notifications.is_none() {
+        let source_load_failed = matches!(
+            submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        if !eligible
+            || (notifications.is_none() && !source_load_failed)
+            || self.initialized.is_none()
+            || self.shutdown
+            || self.exit_code.is_some()
+            || driver
+                .validate_current_native_diagnostics(submission.session.id(), snapshots)
+                .is_err()
+        {
             return Ok((submission, false));
         }
         let Some(index) = submission.diagnostic_index.clone() else {
             return Ok((submission, false));
         };
-        if crate::diagnostics::convert_index(&index, &association.captured).is_err() {
+        let valid = if source_load_failed {
+            use mizar_diagnostics::failure_record::{
+                DiagnosticFreshness, DiagnosticPrimaryLocation,
+            };
+            index.snapshot() == association.captured.snapshot().id
+                && index.obsolete_drafts().is_empty()
+                && !index.records().is_empty()
+                && index.records().iter().all(|record| {
+                    matches!(
+                        record.primary_location(),
+                        DiagnosticPrimaryLocation::SourceLoad { .. }
+                    ) && record.secondary_spans().is_empty()
+                        && record.freshness()
+                            == &DiagnosticFreshness::Current {
+                                source_snapshot: index.snapshot(),
+                            }
+                })
+        } else {
+            crate::diagnostics::convert_index(&index, &association.captured).is_ok()
+        };
+        if !valid {
             return Ok((submission, false));
         }
         let sources = association
@@ -8641,6 +8688,871 @@ mod native_payload_producer_tests {
                 .unwrap(),
             selected_loaded,
             "replaced publication keeps original source readable while retained"
+        );
+    }
+}
+
+#[cfg(test)]
+mod genuine_source_load_diagnostic_host_tests {
+    use super::full_snapshot_registry_a::RegistryFixture;
+    use super::*;
+    use mizar_session::{
+        DiskSourceLoader, ModulePath, PackageId, SourceInput, SourceLoader, SourceOriginInput,
+    };
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
+
+    fn disk_input(
+        capture: &NativeOpenBufferCapture,
+        loader: &DiskSourceLoader,
+        package_id: PackageId,
+        module: &str,
+        path: PathBuf,
+    ) -> SourceInput {
+        let mut input = capture
+            .snapshot
+            .captured()
+            .native_sources()
+            .expect("original native sources")
+            .first()
+            .expect("fixture has a native source")
+            .2
+            .clone();
+        input.package_id = package_id;
+        input.module_path = ModulePath::new(module);
+        input.normalized_path = loader
+            .normalize_path(loader.package_root(), &path)
+            .expect("existing path normalizes before the real loader attempt");
+        input.origin = SourceOriginInput::Disk { path };
+        input
+    }
+
+    fn submit(
+        fixture: &mut RegistryFixture,
+        capture: NativeOpenBufferCapture,
+    ) -> mizar_driver::driver::BuildSubmission {
+        let input = fixture.driver_input();
+        let (submission, selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                capture,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+            )
+            .expect("terminal source-load diagnostic submission");
+        assert!(selected, "genuine current source-load failure is admitted");
+        submission
+    }
+
+    fn source_load_capture(
+        fixture: &mut RegistryFixture,
+        relative_path: &str,
+        module: &str,
+    ) -> NativeOpenBufferCapture {
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let path = loader.package_root().join(relative_path);
+        fs::write(&path, b"placeholder").unwrap();
+        let capture = fixture.capture();
+        let input = disk_input(&capture, &loader, package, module, path.clone());
+        fs::remove_file(&path).unwrap();
+        let capture = capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader, input)])
+            .expect("real Disk request fails during capture");
+        fs::write(&path, b"theorem Recreated;\n").unwrap();
+        capture
+    }
+
+    #[test]
+    fn genuine_source_load_missing_and_invalid_utf8_survive_recreation_and_retained_reads() {
+        let mut fixture = RegistryFixture::new();
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let missing = loader.package_root().join("src/missing_extra.miz");
+        let invalid = loader.package_root().join("src/invalid_extra.miz");
+        let unreadable = loader.package_root().join("src/unreadable_extra.miz");
+        fs::write(&missing, b"placeholder").unwrap();
+        fs::write(&invalid, [0xff, 0xfe]).unwrap();
+        fs::create_dir(&unreadable).unwrap();
+        let capture = fixture.capture();
+        let original_capture = capture.snapshot.clone();
+        let requests = vec![
+            (
+                loader.clone(),
+                disk_input(
+                    &capture,
+                    &loader,
+                    package.clone(),
+                    "MissingExtra",
+                    missing.clone(),
+                ),
+            ),
+            (
+                loader.clone(),
+                disk_input(
+                    &capture,
+                    &loader,
+                    package.clone(),
+                    "InvalidExtra",
+                    invalid.clone(),
+                ),
+            ),
+            (
+                loader.clone(),
+                disk_input(
+                    &capture,
+                    &loader,
+                    package.clone(),
+                    "UnreadableExtra",
+                    unreadable.clone(),
+                ),
+            ),
+        ];
+        fs::remove_file(&missing).unwrap();
+        let capture = capture
+            .capture_source_load_failures(&fixture.ids, requests)
+            .expect("real Disk loader failures are retained");
+
+        // A later successful read must not replace either captured error.
+        fs::write(&missing, b"theorem Recreated;\n").unwrap();
+        fs::write(&invalid, b"theorem Recreated;\n").unwrap();
+        fs::remove_dir(&unreadable).unwrap();
+        fs::write(&unreadable, b"theorem Recreated;\n").unwrap();
+        let submission = submit(&mut fixture, capture);
+        assert_eq!(
+            submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert_eq!(
+            submission.session.state(),
+            mizar_driver::request::BuildSessionState::Finished(
+                mizar_driver::request::BuildSessionOutcome::Failed
+            )
+        );
+        assert!(submission.build_plan.is_none());
+        assert!(submission.task_graph.is_none());
+        assert!(submission.scheduler_run.is_none());
+        assert!(submission.diagnostic_index.is_some());
+
+        let (host, freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .expect("retained host evidence");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert!(
+            host.publication().is_none(),
+            "failed load has no full publication"
+        );
+        assert!(
+            fixture
+                .server
+                .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+                .is_err()
+        );
+        assert_eq!(
+            submission.diagnostic_index.as_ref(),
+            Some(host.diagnostics()),
+            "the terminal submission and retained host expose the same exact index"
+        );
+        assert_eq!(host.diagnostics().records().len(), 3);
+        let mut observed = host
+            .diagnostics()
+            .records()
+            .iter()
+            .map(|record| {
+                let mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                    package_id,
+                    path,
+                } = record.primary_location()
+                else {
+                    panic!("source-load diagnostics have no fabricated source span")
+                };
+                assert!(record.secondary_spans().is_empty());
+                (
+                    record.code().to_string(),
+                    record.stable_detail_key().to_owned(),
+                    package_id.as_str().to_owned(),
+                    path.to_string(),
+                )
+            })
+            .collect::<Vec<_>>();
+        observed.sort();
+        assert_eq!(
+            observed,
+            vec![
+                (
+                    "E0601".into(),
+                    "source.invalid_utf8".into(),
+                    "alpha".into(),
+                    "src/invalid_extra.miz".into()
+                ),
+                (
+                    "E0602".into(),
+                    "source.unreadable_file".into(),
+                    "alpha".into(),
+                    "src/missing_extra.miz".into()
+                ),
+                (
+                    "E0602".into(),
+                    "source.unreadable_file".into(),
+                    "alpha".into(),
+                    "src/unreadable_extra.miz".into()
+                ),
+            ]
+        );
+        assert_eq!(
+            host.native_open_buffers()
+                .captured()
+                .native_sources()
+                .unwrap(),
+            original_capture.captured().native_sources().unwrap(),
+            "failed requests add no source text, hash, version, or source identity"
+        );
+        assert!(
+            std::sync::Arc::ptr_eq(&original_capture, host.native_open_buffers()),
+            "host read keeps the exact original native capture association"
+        );
+        assert!(
+            std::ptr::eq(
+                original_capture
+                    .captured()
+                    .native_sources()
+                    .unwrap()
+                    .as_ptr(),
+                submission
+                    .session
+                    .captured()
+                    .native_sources()
+                    .unwrap()
+                    .as_ptr()
+            ),
+            "submission replay shares the captured native source cohort"
+        );
+        assert!(
+            fixture
+                .driver
+                .events(submission.session.id())
+                .events()
+                .iter()
+                .all(|event| !matches!(
+                    event.kind,
+                    mizar_driver::events::BuildEventKind::SnapshotPublished { .. }
+                ))
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn genuine_source_load_outside_root_symlink_retains_canonical_failure() {
+        use std::os::unix::fs::symlink;
+
+        let mut fixture = RegistryFixture::new();
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let escaped = loader.package_root().join("src/escaped_extra.miz");
+        let outside = loader
+            .package_root()
+            .parent()
+            .unwrap()
+            .join("escaped_extra.miz");
+        fs::write(&escaped, b"temporary in-root source").unwrap();
+        fs::write(&outside, b"outside source").unwrap();
+        let capture = fixture.capture();
+        let request = disk_input(&capture, &loader, package, "EscapedExtra", escaped.clone());
+        fs::remove_file(&escaped).unwrap();
+        symlink(&outside, &escaped).unwrap();
+        let capture = capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader, request)])
+            .expect("real canonicalization rejects the outside-root target");
+        let submission = submit(&mut fixture, capture);
+        assert_eq!(
+            submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        let (host, freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .expect("retained source-load host evidence");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        let record = host
+            .diagnostics()
+            .records()
+            .first()
+            .expect("outside-root failure record");
+        assert_eq!(record.code().to_string(), "E0603");
+        assert_eq!(record.stable_detail_key(), "source.outside_package_root");
+        assert!(record.message().contains("package root"));
+        assert!(matches!(
+            record.primary_location(),
+            mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                package_id,
+                path,
+            } if package_id.as_str() == "alpha" && path.to_string() == "src/escaped_extra.miz"
+        ));
+        assert!(record.secondary_spans().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn genuine_source_load_generic_loader_failure_keeps_exact_source_identity() {
+        use std::os::unix::fs::symlink;
+
+        let mut fixture = RegistryFixture::new();
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let source = loader.package_root().join("src/generic_extra.miz");
+        let canonical = loader.package_root().join("src/canonical_extra.miz");
+        fs::write(&source, b"theorem GenericExtra;\n").unwrap();
+        fs::write(&canonical, b"theorem GenericExtra;\n").unwrap();
+        let capture = fixture.capture();
+        let request = disk_input(&capture, &loader, package, "GenericExtra", source.clone());
+        fs::remove_file(&source).unwrap();
+        symlink(&canonical, &source).unwrap();
+        let capture = capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader, request)])
+            .expect("the native loader's invalid-source-path error is retained");
+        let submission = submit(&mut fixture, capture);
+        let (host, freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .expect("retained source-load host evidence");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        let record = host
+            .diagnostics()
+            .records()
+            .first()
+            .expect("generic source-load failure record");
+        assert_eq!(
+            submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert_eq!(record.code().to_string(), "E0600");
+        assert_eq!(record.stable_detail_key(), "source.invalid_source_path");
+        assert!(matches!(
+            record.primary_location(),
+            mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                package_id,
+                path,
+            } if package_id.as_str() == "alpha" && path.to_string() == "src/generic_extra.miz"
+        ));
+        assert!(record.secondary_spans().is_empty());
+        assert!(host.publication().is_none());
+    }
+
+    #[test]
+    fn genuine_source_load_version_only_replacement_keeps_old_reader_distinct() {
+        let mut fixture = RegistryFixture::new();
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let uri = fixture.sources[0].2.clone();
+        let path = loader.package_root().join("src/retained_extra.miz");
+        fs::write(&path, b"placeholder").unwrap();
+
+        let first_capture = fixture.capture();
+        let first_input = disk_input(
+            &first_capture,
+            &loader,
+            package.clone(),
+            "RetainedExtra",
+            path.clone(),
+        );
+        fs::remove_file(&path).unwrap();
+        let first_capture = first_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader.clone(), first_input)])
+            .unwrap();
+        fs::write(&path, b"theorem Recreated;\n").unwrap();
+        let first_submission = submit(&mut fixture, first_capture);
+        let (old_host, old_freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(old_freshness, LspSnapshotFreshness::Current);
+        let old_identity = old_host.publication_identity().to_owned();
+        let old_records = old_host.diagnostics().clone();
+        let old_sources = old_host
+            .native_open_buffers()
+            .captured()
+            .native_sources()
+            .unwrap()
+            .to_vec();
+        let current_replay = fixture
+            .driver
+            .terminal_submission(first_submission.session.id(), &fixture.snapshots)
+            .expect("terminal source-load replay");
+        assert_eq!(
+            current_replay.diagnostic_index.as_ref(),
+            Some(old_host.diagnostics()),
+            "current replay keeps the exact retained failure index after file recreation"
+        );
+
+        fixture.did_change_version_only(&uri, 2);
+        assert_eq!(
+            fixture
+                .server
+                .diagnostic_host(&fixture.driver, &fixture.snapshots)
+                .unwrap()
+                .1,
+            LspSnapshotFreshness::StaleArtifact,
+            "version-only edit makes retained source-load diagnostics stale"
+        );
+        let second_capture = fixture.capture();
+        let second_input = disk_input(
+            &second_capture,
+            &loader,
+            package,
+            "RetainedExtra",
+            path.clone(),
+        );
+        fs::remove_file(&path).unwrap();
+        let second_capture = second_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader, second_input)])
+            .unwrap();
+        fs::write(&path, b"theorem Recreated Again;\n").unwrap();
+        let second_submission = submit(&mut fixture, second_capture);
+        let (new_host, new_freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(new_freshness, LspSnapshotFreshness::Current);
+        assert_eq!(
+            old_host.native_open_buffers().captured().snapshot().id,
+            new_host.native_open_buffers().captured().snapshot().id,
+            "a version-only edit and equal source text retain the same snapshot identity"
+        );
+        let stale_replay = fixture
+            .driver
+            .terminal_submission(first_submission.session.id(), &fixture.snapshots)
+            .expect("old terminal submission remains readable");
+        assert!(
+            stale_replay.diagnostic_index.is_none(),
+            "superseded replay must not expose a stale failure index"
+        );
+        assert_eq!(
+            first_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert_eq!(
+            second_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(!old_host.same_publication(&new_host));
+        assert_ne!(old_identity, new_host.publication_identity());
+        assert_eq!(old_host.diagnostics(), &old_records);
+        assert_eq!(
+            old_host
+                .native_open_buffers()
+                .captured()
+                .native_sources()
+                .unwrap(),
+            old_sources.as_slice(),
+            "old readers retain the original source text, maps, version and lease association"
+        );
+        assert_eq!(new_host.diagnostics().records().len(), 1);
+        assert_eq!(old_host.diagnostics().records().len(), 1);
+    }
+
+    #[test]
+    fn genuine_source_load_duplicate_and_successful_supplements_preserve_selection() {
+        let mut fixture = RegistryFixture::new();
+        let loader = fixture.sources[0].0.clone();
+        let package = fixture.sources[0].1.clone();
+        let uri = fixture.sources[0].2.clone();
+        let failed_path = loader.package_root().join("src/selected_extra.miz");
+        fs::write(&failed_path, b"placeholder").unwrap();
+        let failed_capture = fixture.capture();
+        let failed_input = disk_input(
+            &failed_capture,
+            &loader,
+            package.clone(),
+            "SelectedExtra",
+            failed_path.clone(),
+        );
+        fs::remove_file(&failed_path).unwrap();
+        let failed_capture = failed_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader.clone(), failed_input)])
+            .unwrap();
+        fs::write(&failed_path, b"theorem Recreated;\n").unwrap();
+        submit(&mut fixture, failed_capture);
+        let (selected, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+
+        let success_path = loader.package_root().join("src/success_extra.miz");
+        fs::write(&success_path, b"theorem SuccessExtra;\n").unwrap();
+        let duplicate_capture = fixture.capture();
+        let duplicate = disk_input(
+            &duplicate_capture,
+            &loader,
+            package.clone(),
+            "DuplicateExtra",
+            success_path.clone(),
+        );
+        let duplicate_error = match duplicate_capture.capture_source_load_failures(
+            &fixture.ids,
+            vec![
+                (loader.clone(), duplicate.clone()),
+                (loader.clone(), duplicate),
+            ],
+        ) {
+            Err(error) => error,
+            Ok(_) => panic!("duplicate supplemental descriptors must be rejected"),
+        };
+        assert!(duplicate_error.contains("duplicate"));
+        let (after_duplicate, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(selected.same_publication(&after_duplicate));
+
+        let success_capture = fixture.capture();
+        let successful = disk_input(
+            &success_capture,
+            &loader,
+            package.clone(),
+            "SuccessfulExtra",
+            success_path,
+        );
+        let success_error = match success_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader.clone(), successful)])
+        {
+            Err(error) => error,
+            Ok(_) => panic!("an unexpectedly successful Disk load must be rejected"),
+        };
+        assert!(success_error.contains("unexpectedly loaded"));
+        let (after_success, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(selected.same_publication(&after_success));
+        assert_eq!(
+            selected.diagnostics(),
+            after_success.diagnostics(),
+            "rejected captures cannot replace the prior selected diagnostic index"
+        );
+
+        let workspace = PathBuf::from(fixture.input_template.plan_request.workspace_root.as_str());
+        let foreign_root = workspace.join("foreign");
+        fs::create_dir_all(foreign_root.join("src")).unwrap();
+        let foreign_path = foreign_root.join("src/foreign_loader_extra.miz");
+        fs::write(&foreign_path, b"theorem ForeignLoaderExtra;\n").unwrap();
+        let foreign_loader = DiskSourceLoader::new(&foreign_root);
+        let foreign_capture = fixture.capture();
+        let foreign_input = disk_input(
+            &foreign_capture,
+            &foreign_loader,
+            package.clone(),
+            "ForeignLoaderExtra",
+            foreign_path,
+        );
+        let foreign_error = match foreign_capture
+            .capture_source_load_failures(&fixture.ids, vec![(foreign_loader, foreign_input)])
+        {
+            Err(error) => error,
+            Ok(_) => panic!("a foreign loader root must be rejected"),
+        };
+        assert!(foreign_error.contains("unbound"));
+        let (after_foreign_loader, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(selected.same_publication(&after_foreign_loader));
+
+        let unbound_path = loader.package_root().join("src/unbound_package_extra.miz");
+        fs::write(&unbound_path, b"theorem UnboundPackageExtra;\n").unwrap();
+        let package_capture = fixture.capture();
+        let package_input = disk_input(
+            &package_capture,
+            &loader,
+            PackageId::new("beta"),
+            "UnboundPackageExtra",
+            unbound_path,
+        );
+        let package_error = match package_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader.clone(), package_input)])
+        {
+            Err(error) => error,
+            Ok(_) => panic!("an uncaptured package binding must be rejected"),
+        };
+        assert!(package_error.contains("unbound"));
+        let (after_foreign_package, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(selected.same_publication(&after_foreign_package));
+
+        let unsupported_capture = fixture.capture();
+        let unsupported_input = unsupported_capture
+            .snapshot
+            .captured()
+            .native_sources()
+            .unwrap()[0]
+            .2
+            .clone();
+        let unsupported_error = match unsupported_capture
+            .capture_source_load_failures(&fixture.ids, vec![(loader.clone(), unsupported_input)])
+        {
+            Err(error) => error,
+            Ok(_) => panic!("open-buffer descriptors cannot claim a supplemental Disk load"),
+        };
+        assert!(unsupported_error.contains("must be Disk"));
+        let (after_unsupported_origin, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(selected.same_publication(&after_unsupported_origin));
+
+        let newer = source_load_capture(&mut fixture, "src/newer_extra.miz", "NewerExtra");
+        let new_input = fixture.driver_input();
+        let (new_submission, new_selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                newer,
+                &fixture.ids,
+                &fixture.snapshots,
+                new_input,
+            )
+            .expect("newer genuine source-load publication");
+        assert_eq!(
+            new_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(new_selected);
+        let (new_host, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(!selected.same_publication(&new_host));
+        let stale = source_load_capture(&mut fixture, "src/stale_extra.miz", "StaleExtra");
+        fixture.did_change_version_only(&uri, 2);
+        let stale_input = fixture.driver_input();
+        let (stale_submission, stale_selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                stale,
+                &fixture.ids,
+                &fixture.snapshots,
+                stale_input,
+            )
+            .expect("stale genuine source-load request remains terminal");
+        assert_eq!(
+            stale_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(
+            !stale_selected,
+            "stale editor request cannot replace newer admission"
+        );
+        let (after_stale, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(new_host.same_publication(&after_stale));
+
+        let invalidated = source_load_capture(
+            &mut fixture,
+            "src/invalidated_extra.miz",
+            "InvalidatedExtra",
+        );
+        fixture
+            .publisher
+            .mark_obsolete(invalidated.snapshot.captured().snapshot().id)
+            .unwrap();
+        assert!(std::sync::Arc::ptr_eq(
+            &fixture.server.native_open_buffer_snapshot().unwrap(),
+            &invalidated.snapshot
+        ));
+        let publisher_input = fixture.driver_input();
+        let (publisher_submission, publisher_selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                invalidated,
+                &fixture.ids,
+                &fixture.snapshots,
+                publisher_input,
+            )
+            .expect("publisher-obsolete genuine source-load request");
+        assert_eq!(
+            publisher_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(
+            !publisher_selected,
+            "obsolete publisher cannot grant admission to the current capture"
+        );
+        assert!(publisher_submission.diagnostic_index.is_none());
+        let (after_publisher_replacement, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(new_host.same_publication(&after_publisher_replacement));
+
+        let terminal = source_load_capture(&mut fixture, "src/terminal_extra.miz", "TerminalExtra");
+        fixture.server.handle_message(json!({
+            "jsonrpc":"2.0", "id":77, "method":"shutdown", "params":null
+        }));
+        let terminal_input = fixture.driver_input();
+        let (terminal_submission, terminal_selected) = fixture
+            .server
+            .submit_originating_diagnostic_publication(
+                &mut fixture.driver,
+                terminal,
+                &fixture.ids,
+                &fixture.snapshots,
+                terminal_input,
+            )
+            .expect("terminal-server genuine source-load request");
+        assert_eq!(
+            terminal_submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(
+            !terminal_selected,
+            "shutdown Server cannot admit a new publication"
+        );
+        let (after_shutdown, _) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert!(new_host.same_publication(&after_shutdown));
+    }
+
+    #[test]
+    fn genuine_source_load_same_path_in_two_captured_packages_stays_distinct_and_ordered() {
+        let mut fixture = RegistryFixture::new();
+        let beta_root =
+            PathBuf::from(fixture.input_template.plan_request.workspace_root.as_str()).join("beta");
+        fs::create_dir_all(beta_root.join("src")).unwrap();
+        fs::write(beta_root.join("src/main.miz"), b"theorem BetaMain;\n").unwrap();
+
+        let exemplar_capture = fixture.capture();
+        let exemplar = exemplar_capture
+            .snapshot
+            .captured()
+            .native_sources()
+            .unwrap()[0]
+            .2
+            .clone();
+        drop(exemplar_capture);
+
+        let alpha_loader = fixture.sources[0].0.clone();
+        let beta_loader = DiskSourceLoader::new(&beta_root);
+        let mut alpha_input = exemplar.clone();
+        alpha_input.package_id = PackageId::new("alpha");
+        alpha_input.module_path = ModulePath::new("Main");
+        alpha_input.normalized_path = alpha_loader
+            .normalize_path(alpha_loader.package_root(), Path::new("src/main.miz"))
+            .unwrap();
+        alpha_input.origin = SourceOriginInput::Disk {
+            path: PathBuf::from("src/main.miz"),
+        };
+        let mut beta_input = exemplar;
+        beta_input.package_id = PackageId::new("beta");
+        beta_input.module_path = ModulePath::new("Main");
+        beta_input.normalized_path = beta_loader
+            .normalize_path(beta_loader.package_root(), Path::new("src/main.miz"))
+            .unwrap();
+        beta_input.origin = SourceOriginInput::Disk {
+            path: PathBuf::from("src/main.miz"),
+        };
+
+        let mut session = fixture
+            .draft
+            .clone()
+            .capture_sources(
+                &fixture.ids,
+                &fixture.snapshots,
+                vec![
+                    (alpha_loader.clone(), alpha_input),
+                    (beta_loader.clone(), beta_input),
+                ],
+            )
+            .expect("genuine two-package successful native capture");
+        let alpha_failed = alpha_loader.package_root().join("src/shared_extra.miz");
+        let beta_failed = beta_loader.package_root().join("src/shared_extra.miz");
+        fs::write(&alpha_failed, [0xff]).unwrap();
+        fs::write(&beta_failed, [0xfe]).unwrap();
+        let supplemental = session
+            .captured()
+            .native_sources()
+            .unwrap()
+            .iter()
+            .map(|(loader, _, captured_input)| {
+                let path = PathBuf::from("src/shared_extra.miz");
+                let mut input = captured_input.clone();
+                input.module_path = ModulePath::new("SharedExtra");
+                input.normalized_path =
+                    loader.normalize_path(loader.package_root(), &path).unwrap();
+                input.origin = SourceOriginInput::Disk { path };
+                (loader.clone(), input)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(supplemental.len(), 2);
+        session
+            .capture_source_load_failures(&fixture.ids, supplemental)
+            .expect("both package failures are attempted by their genuine native loaders");
+        fs::write(&alpha_failed, b"theorem Recreated;\n").unwrap();
+        fs::write(&beta_failed, b"theorem Recreated;\n").unwrap();
+
+        fixture
+            .publisher
+            .register_current_snapshot(session.captured().snapshot().id);
+        let submission = fixture
+            .driver
+            .submit_captured(
+                session,
+                &fixture.ids,
+                &fixture.snapshots,
+                fixture.driver_input(),
+                mizar_driver::driver::SubmitOptions {
+                    diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
+                    ..Default::default()
+                },
+            )
+            .expect("terminal native source-load submission");
+        assert_eq!(
+            submission.status,
+            mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
+        );
+        assert!(submission.scheduler_run.is_none());
+        let records = submission
+            .diagnostic_index
+            .as_ref()
+            .expect("native source-load diagnostic index")
+            .records();
+        assert_eq!(
+            records.len(),
+            2,
+            "same normalized path stays package-distinct"
+        );
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| match record.primary_location() {
+                    mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                        package_id,
+                        path,
+                    } => {
+                        assert_eq!(record.code().to_string(), "E0601");
+                        assert_eq!(record.stable_detail_key(), "source.invalid_utf8");
+                        assert!(record.secondary_spans().is_empty());
+                        (package_id.as_str().to_owned(), path.to_string())
+                    }
+                    _ => panic!("source-load failure must have no source span"),
+                })
+                .collect::<Vec<_>>(),
+            vec![
+                ("alpha".into(), "src/shared_extra.miz".into()),
+                ("beta".into(), "src/shared_extra.miz".into()),
+            ],
+            "canonical order is stable and deduplication retains each package identity"
         );
     }
 }

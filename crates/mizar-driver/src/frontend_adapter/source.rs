@@ -1247,6 +1247,52 @@ impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalPr
 
 pub(crate) struct SourceLoadService;
 
+impl SourceLoadService {
+    pub(crate) fn failure_draft(
+        snapshot: mizar_session::BuildSnapshotId,
+        source_input: &SourceInput,
+        error: &SourceLoadError,
+    ) -> Option<DiagnosticDraft> {
+        let (number, name) = match error {
+            SourceLoadError::InvalidUtf8 { .. } => (601, "invalid_utf8"),
+            SourceLoadError::UnreadableSourceFile { .. } => (602, "unreadable_file"),
+            SourceLoadError::SourcePathOutsidePackageRoot { .. } => (603, "outside_package_root"),
+            SourceLoadError::UnsupportedFileExtension { .. } => (600, "unsupported_file_extension"),
+            SourceLoadError::DuplicateModulePath { .. } => (600, "duplicate_module_path"),
+            SourceLoadError::StaleLspDocumentVersion { .. } => (600, "stale_lsp_document_version"),
+            SourceLoadError::UnmappedOpenBufferUri { .. } => (600, "unmapped_open_buffer_uri"),
+            SourceLoadError::GeneratedSourceWithoutMetadata { .. } => {
+                (600, "generated_source_without_metadata")
+            }
+            SourceLoadError::SourceIdAllocation { .. } => (600, "source_id_allocation"),
+            SourceLoadError::UnsupportedSourceOrigin { .. } => (600, "unsupported_source_origin"),
+            SourceLoadError::InvalidSourcePath { .. } => (600, "invalid_source_path"),
+            _ => return None,
+        };
+        let detail = format!("source.{name}");
+        let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number)
+            .expect("source-load diagnostic code is valid");
+        DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: snapshot,
+            code,
+            phase: DiagnosticPhase::SourceLoad,
+            category: FailureCategory::SourceLoadError,
+            stable_detail_key: detail,
+            message: error.to_string(),
+            primary_location: DiagnosticPrimaryLocation::SourceLoad {
+                package_id: source_input.package_id.clone(),
+                path: source_input.normalized_path.clone(),
+            },
+            secondary_spans: Vec::new(),
+            notes: Vec::new(),
+            details: DiagnosticDetails::new(),
+            fixes: Vec::new(),
+            explanation: None,
+        })
+        .ok()
+    }
+}
+
 impl PhaseService for SourceLoadService {
     fn phase(&self) -> PhaseDescriptor {
         PhaseDescriptor::new(
@@ -1441,55 +1487,7 @@ impl PhaseService for SourceLoadService {
             ) {
                 Ok(loaded) => loaded,
                 Err(error) => {
-                    let (number, name) = match &error {
-                        SourceLoadError::InvalidUtf8 { .. } => (601, "invalid_utf8"),
-                        SourceLoadError::UnreadableSourceFile { .. } => (602, "unreadable_file"),
-                        SourceLoadError::SourcePathOutsidePackageRoot { .. } => {
-                            (603, "outside_package_root")
-                        }
-                        SourceLoadError::UnsupportedFileExtension { .. } => {
-                            (600, "unsupported_file_extension")
-                        }
-                        SourceLoadError::DuplicateModulePath { .. } => {
-                            (600, "duplicate_module_path")
-                        }
-                        SourceLoadError::StaleLspDocumentVersion { .. } => {
-                            (600, "stale_lsp_document_version")
-                        }
-                        SourceLoadError::UnmappedOpenBufferUri { .. } => {
-                            (600, "unmapped_open_buffer_uri")
-                        }
-                        SourceLoadError::GeneratedSourceWithoutMetadata { .. } => {
-                            (600, "generated_source_without_metadata")
-                        }
-                        SourceLoadError::SourceIdAllocation { .. } => (600, "source_id_allocation"),
-                        SourceLoadError::UnsupportedSourceOrigin { .. } => {
-                            (600, "unsupported_source_origin")
-                        }
-                        SourceLoadError::InvalidSourcePath { .. } => (600, "invalid_source_path"),
-                        _ => return blocking(),
-                    };
-                    let detail = format!("source.{name}");
-                    let code = DiagnosticCode::from_parts(DiagnosticSeverity::Error, number)
-                        .expect("source-load diagnostic code is valid");
-                    let draft = DiagnosticDraft::new(DiagnosticDraftInput {
-                        source_snapshot: snapshot,
-                        code,
-                        phase: DiagnosticPhase::SourceLoad,
-                        category: FailureCategory::SourceLoadError,
-                        stable_detail_key: detail,
-                        message: error.to_string(),
-                        primary_location: DiagnosticPrimaryLocation::SourceLoad {
-                            package_id: source_input.package_id.clone(),
-                            path: source_input.normalized_path.clone(),
-                        },
-                        secondary_spans: Vec::new(),
-                        notes: Vec::new(),
-                        details: DiagnosticDetails::new(),
-                        fixes: Vec::new(),
-                        explanation: None,
-                    });
-                    let Ok(draft) = draft else {
+                    let Some(draft) = Self::failure_draft(snapshot, &source_input, &error) else {
                         return blocking();
                     };
                     if diagnostics.emit(draft).is_err() {

@@ -4,8 +4,10 @@
 ## Admission と所有権
 
 本書は [native producers](native_payload_producers.md) の E0041 profile と組になる承認済み Q3-B を定義します。メモリ内の診断 publication であり、成功した manifest-backed [full snapshot](snapshot.md#freshness-and-replacement) や version-keyed syntax overlay とは別です。Semantic metadata、artifact、proof 権威を与えません。
-明示的な originating submission は保護された native capture を消費して Driver を一度呼び、既存 native currentness guard に従う terminal Succeeded/Failed/Blocked session の元の不変 BuildDiagnosticIndex だけを受け入れます。全 record/anchor は元 captured source に対して ranged かつ変換可能である必要があります。Non-range SourceLoad、partial/nonterminal/obsolete/foreign 入力は unavailable とし、拒否時は以前の選択を保持します。
+明示的な originating submission は保護された native capture を消費して Driver を一度呼び、既存 native currentness guard に従う terminal Succeeded/Failed/Blocked session の元の不変 BuildDiagnosticIndex だけを受け入れます。全 record/anchor は元 captured source に対して ranged かつ変換可能である必要があります。下記 captured-failure 経路以外の Non-range SourceLoad と partial/nonterminal/obsolete/foreign 入力は unavailable とし、拒否時は以前の選択を保持します。
 元 capture Arc、source text/maps、URI/version/incarnation、正確な集約済み record、producer-backed context/store を一緒に保持します。最後の publication/reader まで既存 OpenBufferOverlay retention を保ち、IR output や completed manifest を合成しません。再利用しない process-local identity で、snapshot id が同じ場合も activation を区別します。
+
+`NativeOpenBufferCapture::capture_source_load_failures` は元 Driver session に実 Disk request の失敗を[捕捉契約](../../mizar-driver/ja/request.md#native-source-capture)に従って保持する。同じ originating host entry は元 capture/editor association と不変の native guard を要求し、実 `SourceLoadFailed` native index を wire conversion なしで受け入れ package/path を保持する。この経路は実 producer の secondary anchor なし SourceLoad record だけを受け入れ、ranged record は既存 conversion preflight を使う。失敗 source の text を保持せず full snapshot を作らない。Wire converter の SourceLoad batch 全体拒否は維持し、表示実装と Task41 は別 unit とする。
 
 ## Host selection と binding
 

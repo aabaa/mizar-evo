@@ -277,6 +277,7 @@ fn exit_code_for_submission(submission: &BuildSubmission) -> CliExitCode {
         DriverSubmissionStatus::BlockedByMissingPhaseServices
         | DriverSubmissionStatus::BlockedByPhaseDispatchGap => CliExitCode::UnavailableOwner,
         DriverSubmissionStatus::SupersededBeforeSubmission => CliExitCode::Cancelled,
+        DriverSubmissionStatus::SourceLoadFailed => CliExitCode::BuildFailed,
         DriverSubmissionStatus::SchedulerValidated => match submission.session.state {
             BuildSessionState::Finished(BuildSessionOutcome::Succeeded) => CliExitCode::Success,
             BuildSessionState::Finished(

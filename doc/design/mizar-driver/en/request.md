@@ -225,10 +225,13 @@ source-map, or lease ids are reusable.
 
 ## Native source capture
 
+`BuildSession::capture_source_load_failures` supplements an unchanged successful native capture with real, once-only Disk loading failures, retaining request/error pairs privately. It requires original captured package/loader binding and rejects unsupported, duplicate or unexpectedly successful requests atomically. Failed requests acquire no SourceVersion or text; initial all-or-fail capture and its nonempty native currentness requirement remain unchanged. [Diagnostic-only submission](driver.md#captured-source-load-failures) consumes these retained errors without reopening them.
+
+
 `BuildRequestDraft::capture_sources(allocator, registry, sources)` returns protected `BuildSession` or `DriverSubmitError`. Native `(DiskSourceLoader, SourceInput)` descriptors are authoritative; populated summaries fail before IDs with `NativeSourceVersionsProvided { request }`, preserving the draft. Distinct allocator instances of the existing same generic type remain legal.
 After normal request/session allocation, call real `load_snapshot` once. Failure retains original pending context through the capture error; caller retains descriptor clones for retry. Success fills actual summaries and retains original loaders plus returned LoadedSource/SourceInput triples in CapturedSnapshot. Native source IDs/maps use the registry allocator.
 Session identity/request/capture/state and captured snapshot/lease are crate-visible only. Public `id()`, `request()`, `captured()`, `state()`, `snapshot()` and `active_snapshot_lease()` are read-only; native_sources() publicly borrows original (DiskSourceLoader, LoadedSource, SourceInput) tuples or None; storage remains private. Internal lifecycle and forced watch supersession stay unchanged. Clones retain raw resources; terminal states do not automatically release leases/buffers.
-CapturedSnapshot privately stores native tuples in a shared Arc slice, so capture, Driver/result/error clones and LSP readers retain the original tuple/map objects; public borrowed accessors, signatures and value equality stay unchanged.
+CapturedSnapshot privately stores native tuples in a shared Arc slice, so capture, Driver/result/error clones and LSP readers retain the original tuple/map objects; native tuple value equality and public borrowed accessor signatures stay unchanged.
 The publisher owner authorizes actual snapshot/work units before [prepared submission](driver.md#captured-native-submission). Capture grants no publication permission. Registry lookup or equal canonical IDs cannot recover a particular raw/version capture.
 
 The borrowed original tuples carry no live session/editor/publication authority; external consumers use the stored Driver session, live guard and their own current-document checks. No mutable access, new IDs, reload or retention operation is introduced.

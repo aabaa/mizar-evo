@@ -39,7 +39,7 @@ array は `BuildDiagnosticIndex::records` の non-range subsequence の順序を
 
 ## Conditional validation and implementation handoff
 
-owner 判断後、選ばれた carrier/schema/capability/lifecycle を presentation 実装契約で freeze する。推奨を承認と解釈しない。非 A 案に従属する規則が未定なら実装前に owner へ戻す。[ranged host admission](../en/ranged_diagnostic_host.md#admission-and-ownership) は SourceLoad を除外し、現 converter は captured native source を必要とする。wire shape の承認だけでは両 gate を緩めない。genuine source-load capture/retention/host の前提が必要なら別途定義し、package/path と元の native currentness guard を保持し、失敗 source の text を要求したり coherent full snapshot を合成しない。前提の後に表示実装、次に Task41 を進める。caller が任意に作った index は positive host-delivery evidence ではない。
+owner 判断後、選ばれた carrier/schema/capability/lifecycle を presentation 実装契約で freeze する。推奨を承認と解釈しない。非 A 案に従属する規則が未定なら実装前に owner へ戻す。従来の [ranged host admission](../en/ranged_diagnostic_host.md#admission-and-ownership) は SourceLoad を除外し、現 converter は captured native source を必要とする。wire shape の承認だけでは両 gate を緩めない。別途の [source-load 前提](../../mizar-driver/ja/request.md#native-source-capture) が genuine capture/retention/host admission を定義し、package/path と元の native currentness guard を保持し、失敗 source の text を要求したり coherent full snapshot を合成しない。前提の後に表示実装、次に Task41 を進める。caller が任意に作った index は positive host-delivery evidence ではない。
 以下の document-review case は、対応する owner 承認後にのみ executable obligation となる。上限六件。追加には authority clause または .miz test が必要。
 
 | Case | Input と必要な evidence |

@@ -5,7 +5,7 @@ use mizar_session::{
     BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef,
     DiskSourceLoader, Hash, IdError, LoadedSource, ModulePath, NormalizedPath, PackageId,
     SessionIdAllocator, SnapshotError, SnapshotInput, SnapshotLease, SnapshotRegistry, SourceInput,
-    SourceVersion, ToolchainInfo, WorkspaceRoot,
+    SourceLoadError, SourceLoader, SourceOriginInput, SourceVersion, ToolchainInfo, WorkspaceRoot,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,6 +52,7 @@ pub struct CapturedSnapshot {
     pub(crate) snapshot: BuildSnapshot,
     pub(crate) active_snapshot_lease: SnapshotLease,
     native_sources: Option<std::sync::Arc<[(DiskSourceLoader, LoadedSource, SourceInput)]>>,
+    source_load_failures: Vec<(SourceInput, SourceLoadError)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -277,6 +278,7 @@ impl BuildRequestDraft {
             captured: CapturedSnapshot {
                 snapshot,
                 active_snapshot_lease,
+                source_load_failures: Vec::new(),
                 native_sources: Some(
                     loaders
                         .into_iter()
@@ -349,6 +351,7 @@ impl PendingBuildRequest {
                 snapshot,
                 active_snapshot_lease,
                 native_sources: None,
+                source_load_failures: Vec::new(),
             },
             state: BuildSessionState::SnapshotCaptured,
         })
@@ -356,6 +359,10 @@ impl PendingBuildRequest {
 }
 
 impl CapturedSnapshot {
+    pub(crate) fn source_load_failures(&self) -> &[(SourceInput, SourceLoadError)] {
+        &self.source_load_failures
+    }
+
     pub fn snapshot(&self) -> &BuildSnapshot {
         &self.snapshot
     }
@@ -368,6 +375,62 @@ impl CapturedSnapshot {
 }
 
 impl BuildSession {
+    /// Retains genuine additional Disk failures without changing the original capture.
+    pub fn capture_source_load_failures(
+        &mut self,
+        allocator: &dyn SessionIdAllocator,
+        sources: Vec<(DiskSourceLoader, SourceInput)>,
+    ) -> Result<(), String> {
+        let captured = self
+            .captured
+            .native_sources()
+            .filter(|sources| !sources.is_empty());
+        let Some(captured) = captured else {
+            return Err("nonempty native capture required".into());
+        };
+        if self.state != BuildSessionState::SnapshotCaptured
+            || !self.captured.source_load_failures.is_empty()
+            || sources.is_empty()
+        {
+            return Err("invalid supplemental source capture".into());
+        }
+        for (index, (loader, input)) in sources.iter().enumerate() {
+            let SourceOriginInput::Disk { path } = &input.origin else {
+                return Err("supplemental source must be Disk".into());
+            };
+            let relative = std::path::Path::new(input.normalized_path.as_str());
+            if !crate::frontend_adapter::safe_relative(input.normalized_path.as_str())
+                || (path != relative && *path != loader.package_root().join(relative))
+                || !captured.iter().any(|(original, loaded, _)| {
+                    original == loader && loaded.package_id == input.package_id
+                })
+                || captured.iter().any(|(_, loaded, _)| {
+                    loaded.package_id == input.package_id
+                        && (loaded.normalized_path == input.normalized_path
+                            || loaded.module_path == input.module_path)
+                })
+                || sources[..index].iter().any(|(_, previous)| {
+                    previous.package_id == input.package_id
+                        && (previous.normalized_path == input.normalized_path
+                            || previous.module_path == input.module_path)
+                })
+            {
+                return Err("unbound or duplicate supplemental source".into());
+            }
+        }
+        let failures = sources
+            .into_iter()
+            .map(|(loader, input)| {
+                match loader.load(self.captured.snapshot.id, input.clone(), allocator) {
+                    Err(error) => Ok((input, error)),
+                    Ok(_) => Err("supplemental source unexpectedly loaded".to_owned()),
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.captured.source_load_failures = failures;
+        Ok(())
+    }
+
     pub const fn id(&self) -> BuildSessionId {
         self.id
     }

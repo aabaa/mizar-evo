@@ -351,6 +351,7 @@ pub struct DriverCancelOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DriverSubmissionStatus {
+    SourceLoadFailed,
     SchedulerValidated,
     BlockedByMissingPhaseServices,
     BlockedByPhaseDispatchGap,
@@ -565,6 +566,11 @@ impl CompilerDriver {
             SubmissionMode::Captured,
         )?;
         submission.diagnostic_index = match options.diagnostic_index {
+            Some(DiagnosticIndexMode::Disk)
+                if submission.status == DriverSubmissionStatus::SourceLoadFailed =>
+            {
+                None
+            }
             Some(DiagnosticIndexMode::Disk) => self.current_diagnostic_index(
                 &submission,
                 snapshots,
@@ -577,6 +583,12 @@ impl CompilerDriver {
             ),
             None => None,
         };
+        if submission.status == DriverSubmissionStatus::SourceLoadFailed {
+            self.sessions
+                .get_mut(&submission.session.id)
+                .expect("accepted session is stored")
+                .terminal_submission = Some(submission.clone());
+        }
         Ok(submission)
     }
 
@@ -605,6 +617,11 @@ impl CompilerDriver {
         )?;
         if submission.session.is_terminal() {
             submission.diagnostic_index = options.diagnostic_index.and_then(|mode| {
+                if mode == DiagnosticIndexMode::Disk
+                    && submission.status == DriverSubmissionStatus::SourceLoadFailed
+                {
+                    return None;
+                }
                 self.current_diagnostic_index(
                     &submission,
                     snapshots,
@@ -838,22 +855,43 @@ impl CompilerDriver {
         snapshots: &SnapshotRegistry<A>,
         validate: fn(&Self, BuildSessionId, &SnapshotRegistry<A>) -> Result<(), String>,
     ) -> Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex> {
-        submission.scheduler_run.as_ref().and_then(|run| {
-            validate(self, submission.session.id, snapshots).ok()?;
-            let batches = run
+        validate(self, submission.session.id, snapshots).ok()?;
+        let batches = if submission.status == DriverSubmissionStatus::SourceLoadFailed {
+            use mizar_diagnostics::{
+                failure_record::PipelinePhase,
+                sink::{DiagnosticProducerScope, DiagnosticSink},
+            };
+            let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                PipelinePhase::SourceLoad,
+                submission.session.captured.snapshot.id,
+                "SourceLoad",
+            ));
+            for (input, error) in submission.session.captured.source_load_failures() {
+                let draft = crate::frontend_adapter::SourceLoadService::failure_draft(
+                    submission.session.captured.snapshot.id,
+                    input,
+                    error,
+                )?;
+                sink.emit(draft).ok()?;
+            }
+            vec![sink.seal()]
+        } else {
+            submission
+                .scheduler_run
+                .as_ref()?
                 .phase_results
                 .values()
                 .flatten()
                 .flat_map(|result| result.diagnostics.iter().cloned())
-                .collect();
-            let index = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
-                submission.session.captured.snapshot.id,
-                batches,
-            )
-            .ok()?;
-            validate(self, submission.session.id, snapshots).ok()?;
-            Some(index)
-        })
+                .collect()
+        };
+        let index = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
+            submission.session.captured.snapshot.id,
+            batches,
+        )
+        .ok()?;
+        validate(self, submission.session.id, snapshots).ok()?;
+        Some(index)
     }
 
     fn submit_inner<A, L>(
@@ -904,6 +942,46 @@ impl CompilerDriver {
                 missing_services: Vec::new(),
                 dispatch_gap_phases: Vec::new(),
                 status: DriverSubmissionStatus::SupersededBeforeSubmission,
+                publication_decision,
+                diagnostic_index: None,
+            });
+        }
+
+        if !session.captured.source_load_failures().is_empty() {
+            let snapshot = session.captured.snapshot.id;
+            let superseded = input
+                .cancellation
+                .superseded_snapshots()
+                .contains(&snapshot)
+                || input
+                    .cancellation
+                    .current_snapshot()
+                    .is_some_and(|current| current != snapshot);
+            session.finish(if superseded {
+                BuildSessionOutcome::Superseded
+            } else {
+                BuildSessionOutcome::Failed
+            });
+            let publication_decision = self.lanes.publication_decision(snapshots, &session);
+            let events = submission_events(
+                &session,
+                publication_decision,
+                DriverEventDetails::default(),
+            );
+            self.store_session(session.clone(), input.cancellation, events);
+            return Ok(BuildSubmission {
+                session,
+                build_plan: None,
+                module_index: None,
+                task_graph: None,
+                scheduler_run: None,
+                missing_services: Vec::new(),
+                dispatch_gap_phases: Vec::new(),
+                status: if superseded {
+                    DriverSubmissionStatus::SupersededBeforeSubmission
+                } else {
+                    DriverSubmissionStatus::SourceLoadFailed
+                },
                 publication_decision,
                 diagnostic_index: None,
             });
