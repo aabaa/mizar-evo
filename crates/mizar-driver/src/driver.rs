@@ -1067,7 +1067,7 @@ impl CompilerDriver {
         } else {
             dependency_overlay
         };
-        let task_graph = match build_task_graph(TaskGraphInput {
+        let mut task_graph = match build_task_graph(TaskGraphInput {
             graph_version: mizar_build::task_graph::TaskGraphVersion::current(),
             snapshot: session.captured.snapshot.id,
             build_plan: build_plan.clone(),
@@ -1120,6 +1120,7 @@ impl CompilerDriver {
                 });
             }
         };
+        let reflexivity_profile;
         let built_in_prefix = {
             use crate::{
                 frontend_adapter::{
@@ -1127,12 +1128,71 @@ impl CompilerDriver {
                     SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
                     SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
                     SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
+            reflexivity_profile = self.registry.descriptors().len() == 11
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::KernelCheck)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremReflexivityKernelCheckService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && [
+                    (
+                        PipelinePhase::SourceLoad,
+                        std::any::TypeId::of::<SourceLoadService>(),
+                    ),
+                    (
+                        PipelinePhase::Frontend,
+                        std::any::TypeId::of::<FrontendService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, concrete)| {
+                    self.registry
+                        .service_for_phase(phase)
+                        .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                })
+                && {
+                    use mizar_build::task_graph::{TaskKind, WorkUnit};
+                    let mut modules = std::collections::BTreeSet::new();
+                    !task_graph.tasks().iter().any(|task| matches!(task.kind, TaskKind::BackendRun | TaskKind::AtpSolve))
+                        && task_graph.tasks().iter().filter(|task| task.kind == TaskKind::KernelCheck).all(|task| {
+                            let WorkUnit::EvidenceCandidate { module, descriptor, .. } = &task.unit else { return false; };
+                            task.phases == [PipelinePhase::KernelCheck]
+                                && modules.insert((module.package.as_str(), module.path.as_str()))
+                                && task.dependencies.len() == 2
+                                && task_graph.tasks().iter().any(|producer| {
+                                    task.dependencies.contains(&producer.id)
+                                        && producer.kind == TaskKind::VcDischarge
+                                        && producer.phases == [PipelinePhase::VcDischarge]
+                                        && matches!(&producer.unit, WorkUnit::Vc { module: parent_module, descriptor: parent_descriptor }
+                                            if parent_module == module && parent_descriptor == descriptor)
+                                })
+                                && task_graph.tasks().iter().any(|producer| {
+                                    task.dependencies.contains(&producer.id)
+                                        && producer.kind == TaskKind::PackageResolve
+                                        && producer.unit == WorkUnit::Workspace
+                                        && producer.phases == [PipelinePhase::PackageResolve]
+                                })
+                                && task_graph.tasks().iter().filter(|producer| {
+                                    producer.kind == TaskKind::VcGenerate
+                                        && producer.phases == [PipelinePhase::VcGenerate]
+                                        && matches!(&producer.unit, WorkUnit::Module { module: parent_module } if parent_module == module)
+                                }).count() == 1
+                        })
+                };
             let artifact_profile = self.registry.descriptors().len() == 14
                 && self
                     .registry
@@ -1231,7 +1291,9 @@ impl CompilerDriver {
                             modules.insert((module.package.as_str(), module.path.as_str()))
                         })
                 };
-            let vc_profile = (self.registry.descriptors().len() == 10 || discharge_profile)
+            let vc_profile = (self.registry.descriptors().len() == 10
+                || discharge_profile
+                || reflexivity_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::VcGenerate)
@@ -1323,6 +1385,31 @@ impl CompilerDriver {
                         .is_ok()
                 })
         };
+        if built_in_prefix && reflexivity_profile {
+            use mizar_build::task_graph::{TaskEdge, TaskKind, WorkUnit};
+            let replacements = task_graph.tasks().iter().filter_map(|task| {
+                let WorkUnit::EvidenceCandidate { module, .. } = &task.unit else { return None; };
+                if task.kind != TaskKind::KernelCheck { return None; }
+                let producer = task_graph.tasks().iter().find(|producer| {
+                    producer.kind == TaskKind::VcGenerate
+                        && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
+                })?;
+                Some((task.id.clone(), producer.id.clone()))
+            }).collect::<Vec<_>>();
+            for (kernel, vc) in replacements {
+                if let Some(task) = task_graph.tasks.iter_mut().find(|task| task.id == kernel) {
+                    task.dependencies = vec![vc.clone()];
+                }
+                task_graph.edges.retain(|edge| edge.dependent != kernel);
+                task_graph.edges.push(TaskEdge {
+                    dependent: kernel,
+                    dependency: vc,
+                });
+            }
+            task_graph.edges.sort_by(|left, right| {
+                (&left.dependent, &left.dependency).cmp(&(&right.dependent, &right.dependency))
+            });
+        }
         if !missing_services.is_empty() && !built_in_prefix {
             session.finish(BuildSessionOutcome::Blocked);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);

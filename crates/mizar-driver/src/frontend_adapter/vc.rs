@@ -1024,3 +1024,280 @@ pub fn native_theorem_discharge_from_storage_bytes(
     .map(Some)
     .map_err(|error| error.to_string())
 }
+
+pub(crate) struct SourceTheoremReflexivityKernelCheckService {
+    pub(crate) verifier_policy: mizar_proof::policy::VerifierPolicy,
+}
+
+impl PhaseService for SourceTheoremReflexivityKernelCheckService {
+    fn phase(&self) -> PhaseDescriptor {
+        PhaseDescriptor::new(
+            "SourceTheoremReflexivityKernelCheck",
+            PhaseOwner::MizarKernelProof,
+            vec![PipelinePhase::KernelCheck],
+            format!(
+                "mizar-proof/source-theorem-reflexivity-kernel-status/v1;verifier_policy={}",
+                self.verifier_policy.policy_fingerprint().to_lower_hex(),
+            ),
+            "SourceTheoremReflexivityKernelStatus",
+        )
+        .expect("source theorem reflexivity Kernel descriptor is fixed and valid")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "source theorem reflexivity Kernel check has no complete dependency footprint"
+                .to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let Some(publisher) = context.output_publisher else {
+            return blocking();
+        };
+        let Some(inputs) = context.source_load else {
+            return blocking();
+        };
+        if inputs.snapshot.id != input.snapshot
+            || publisher.validate_current_snapshot(input.snapshot).is_err()
+        {
+            return blocking();
+        }
+        let result = (|| -> Option<PhaseResult> {
+            let WorkUnit::EvidenceCandidate { module, .. } = &input.work_unit else {
+                return None;
+            };
+            if input.parent_outputs().len() != 3 {
+                return None;
+            }
+            let mut parents = Vec::new();
+            for (phase, kind) in [
+                (PipelinePhase::Elaboration, "SourceTheoremCore"),
+                (
+                    PipelinePhase::AlgorithmPreparation,
+                    "SourceTheoremPreparation",
+                ),
+                (PipelinePhase::VcGenerate, "SourceTheoremVC"),
+            ] {
+                parents.push(unique(input.parent_outputs().iter().filter(|parent| {
+                    parent.as_output_ref().phase() == &IrPipelinePhase::from(phase)
+                        && parent.as_output_ref().output_kind() == &OutputKind::new(kind)
+                }))?);
+            }
+            let work_unit = IrWorkUnit::new(module_work_unit_label(
+                module.package.as_str(),
+                module.path.as_str(),
+            ));
+            let named = vec![NamedInputHash {
+                name: "source".to_owned(),
+                domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                digest: input.identities().input_hash(),
+            }];
+            let storage = publisher.storage();
+            for parent in &parents {
+                let parent = parent.as_output_ref();
+                storage.validate_handle(parent).ok()?;
+                publisher
+                    .validate_output(input.snapshot, parent, OutputAuthorization::Published)
+                    .ok()?;
+                if parent.snapshot() != input.snapshot
+                    || parent.work_unit() != &work_unit
+                    || parent.schema_version() != SchemaVersion::new(1)
+                    || parent.lineage().named_input_hashes != named
+                {
+                    return None;
+                }
+            }
+            let core_ref = parents[0].as_output_ref();
+            let preparation_ref = parents[1].as_output_ref();
+            let vc_ref = parents[2].as_output_ref();
+            if preparation_ref.lineage().parents != vec![core_ref.output()]
+                || vc_ref.lineage().parents.len() != 2
+                || !vc_ref.lineage().parents.contains(&core_ref.output())
+                || !vc_ref.lineage().parents.contains(&preparation_ref.output())
+            {
+                return None;
+            }
+            let core = storage
+                .typed_handle::<mizar_core::core_ir::CoreIr>(
+                    core_ref,
+                    &OutputKind::new("SourceTheoremCore"),
+                )
+                .ok()?;
+            let core = storage.get(&core).ok()?;
+            let vcs = storage
+                .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
+                .ok()?;
+            let vcs = storage.get(&vcs).ok()?;
+            let [vc] = vcs.vcs() else {
+                return None;
+            };
+            let module_input = PhaseInput::new(
+                WorkUnit::Module {
+                    module: module.clone(),
+                },
+                mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                    input.snapshot,
+                    input.identities().input_hash(),
+                    input.identities().dependency_hashes().to_vec(),
+                    vec![parents[0].clone(), parents[1].clone()],
+                )
+                .ok()?,
+            );
+            let actual_vcs = inputs
+                .native_theorem_vcs_with_core_preparation_parents(
+                    &module_input,
+                    &publisher,
+                    &vc.anchor.generation_schema_version,
+                    vcs.schema_version(),
+                )
+                .ok()??;
+            if actual_vcs != *vcs {
+                return None;
+            }
+            let version = unique(inputs.snapshot.source_versions.iter().filter(|version| {
+                version.package_id == module.package && version.module_path == module.path
+            }))?;
+            if source_input_hash(version) != input.identities().input_hash() {
+                return None;
+            }
+            let (source, _) = inputs.native_source(version)?;
+            let package = inputs
+                .build_plan
+                .packages
+                .iter()
+                .find(|package| package.package_id == module.package)?;
+            let PackagePlanSource::Workspace { root, .. } = &package.source else {
+                return None;
+            };
+            let output = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(
+                    PathBuf::from(inputs.snapshot.workspace_root.as_str()).join(root),
+                )),
+                inputs.dependency_lexical_provider(&[]),
+                MizarParserSeam,
+            )
+            .run_loaded(source)
+            .ok()?;
+            if !output.diagnostics.is_empty() || output.cache_keys.ast.is_none() {
+                return None;
+            }
+            let ast = output.ast.as_ref()?;
+            let resolver_module = mizar_resolve::resolved_ast::ModuleId::new(
+                module.package.clone(),
+                module.path.clone(),
+            );
+            let (arena, env) = mizar_resolve::symbols::source_theorem_module_original_inputs(
+                ast,
+                &resolver_module,
+            )
+            .ok()??;
+            mizar_resolve::symbols::source_theorem_module_candidates(ast, &arena, &env).ok()??;
+            let scope =
+                mizar_resolve::names::SourceVariableScopeResolver::resolve_proof_occurrences(
+                    mizar_resolve::names::SourceVariableScopeInput::new(
+                        ast,
+                        &resolver_module,
+                        &env,
+                    ),
+                )
+                .ok()?;
+            let metadata =
+                mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)
+                    .ok()?;
+            let (scope, labels, resolved) =
+                mizar_resolve::symbols::source_proof_inputs(&arena, &env).ok()?;
+            let check = mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &metadata.2, &scope, &env, &labels, &resolved, None,
+            ).ok()?;
+            let checked = mizar_proof::status::check_source_theorem_reflexivity_with_status(
+                &arena,
+                &check,
+                &env,
+                input.snapshot,
+                vc.id,
+                &self.verifier_policy,
+            )
+            .ok()?;
+            if checked.0 != *core || checked.1 != *vcs {
+                return None;
+            }
+            for parent in &parents {
+                storage.validate_handle(parent.as_output_ref()).ok()?;
+                publisher
+                    .validate_output(
+                        input.snapshot,
+                        parent.as_output_ref(),
+                        OutputAuthorization::Published,
+                    )
+                    .ok()?;
+            }
+            publisher.validate_current_snapshot(input.snapshot).ok()?;
+            let bytes = format!(
+                "{}:{checked:?}",
+                self.verifier_policy.policy_fingerprint().to_lower_hex()
+            )
+            .into_bytes();
+            let retained_bytes = bytes.clone();
+            let retained = checked.clone();
+            let (origin, target) = source_publication_route(&version.origin);
+            let handle = publish_native_output(
+                &publisher,
+                input.snapshot,
+                (
+                    IrPipelinePhase::from(PipelinePhase::KernelCheck),
+                    work_unit,
+                    OutputKind::new("SourceTheoremReflexivityKernelStatus"),
+                ),
+                |slot, phase, work_unit, output_kind| PublishOutputInput {
+                    slot,
+                    snapshot: input.snapshot,
+                    phase,
+                    work_unit,
+                    output_kind,
+                    schema_version: SchemaVersion::new(1),
+                    payload: checked,
+                    canonical_payload: Some(bytes.clone()),
+                    storage_payload: Some(bytes),
+                    decode: BlobDecoder::new(move |bytes| {
+                        if bytes == retained_bytes {
+                            Ok(retained.clone())
+                        } else {
+                            Err(BlobDecodeError::new(
+                                "invalid retained reflexivity Kernel status",
+                            ))
+                        }
+                    }),
+                    parents: parents
+                        .iter()
+                        .map(|parent| parent.as_output_ref().clone())
+                        .collect(),
+                    named_input_hashes: named,
+                    side_tables: IrSideTables::default(),
+                    origin,
+                    target,
+                },
+            )
+            .ok()?;
+            Some(PhaseResult {
+                output_refs: vec![handle.erase()],
+                ..PhaseResult::complete()
+            })
+        })();
+        result.unwrap_or_else(blocking)
+    }
+}

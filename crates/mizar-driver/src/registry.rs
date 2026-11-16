@@ -564,6 +564,15 @@ impl PhaseRegistryBuilder {
         })
     }
 
+    pub fn register_source_theorem_reflexivity_kernel_check(
+        &mut self,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+    ) -> &mut Self {
+        self.register(
+            crate::frontend_adapter::SourceTheoremReflexivityKernelCheckService { verifier_policy },
+        )
+    }
+
     pub fn register_source_theorem_vc_discharge(
         &mut self,
         policy: mizar_vc::discharge::DischargePolicy,

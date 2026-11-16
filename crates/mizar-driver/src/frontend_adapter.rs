@@ -149,7 +149,10 @@ pub use frontend::{
 pub(crate) use resolver::SourceTheoremModuleResolverService;
 use source::DependencyLexicalProvider;
 pub(crate) use source::SourceLoadService;
-pub(crate) use vc::{SourceTheoremVcDischargeService, SourceTheoremVcGenerationService};
+pub(crate) use vc::{
+    SourceTheoremReflexivityKernelCheckService, SourceTheoremVcDischargeService,
+    SourceTheoremVcGenerationService,
+};
 
 mod framing;
 mod publication;

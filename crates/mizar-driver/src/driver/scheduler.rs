@@ -203,6 +203,7 @@ fn dispatch_registry_phase(
                     SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
                     SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
                     SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
                     SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
@@ -240,6 +241,33 @@ fn dispatch_registry_phase(
                     task.task.unit,
                     mizar_build::task_graph::WorkUnit::Module { .. }
                 );
+            let reflexivity_service = registry.descriptors().len() == 11
+                && registry
+                    .service_for_phase(PipelinePhase::KernelCheck)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremReflexivityKernelCheckService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && [
+                    (
+                        PipelinePhase::SourceLoad,
+                        std::any::TypeId::of::<SourceLoadService>(),
+                    ),
+                    (
+                        PipelinePhase::Frontend,
+                        std::any::TypeId::of::<FrontendService>(),
+                    ),
+                ]
+                .into_iter()
+                .all(|(phase, concrete)| {
+                    registry
+                        .service_for_phase(phase)
+                        .is_ok_and(|service| std::any::Any::type_id(service) == concrete)
+                });
             let artifact_service = registry.descriptors().len() == 14
                 && registry
                     .service_for_phase(PipelinePhase::ArtifactCommit)
@@ -456,9 +484,13 @@ fn dispatch_registry_phase(
                     });
             let vc_prefix = (check_and_elaborate || vc_task)
                 && vc_profile
-                && (registry.descriptors().len() == 10 || discharge_profile);
+                && (registry.descriptors().len() == 10 || discharge_profile || reflexivity_service);
             let discharge_prefix = discharge_task && discharge_profile;
             let atp_prefix = atp_task && discharge_profile && atp_service;
+            let reflexivity_prefix = kernel_task
+                && vc_profile
+                && reflexivity_service
+                && task.task.dependencies.len() == 1;
             let kernel_prefix = kernel_task && discharge_profile && atp_service && kernel_service;
             let artifact_prefix = artifact_task
                 && discharge_profile
@@ -519,7 +551,7 @@ fn dispatch_registry_phase(
                         .descriptor_for_phase(PipelinePhase::AtpSolve)
                         .ok()?
                         .clone(),
-                    [PipelinePhase::KernelCheck] if kernel_prefix => registry
+                    [PipelinePhase::KernelCheck] if kernel_prefix || reflexivity_prefix => registry
                         .descriptor_for_phase(PipelinePhase::KernelCheck)
                         .ok()?
                         .clone(),
@@ -566,7 +598,7 @@ fn dispatch_registry_phase(
                         module
                     }
                     mizar_build::task_graph::WorkUnit::EvidenceCandidate { module, .. }
-                        if kernel_prefix =>
+                        if kernel_prefix || reflexivity_prefix =>
                     {
                         module
                     }
@@ -617,7 +649,7 @@ fn dispatch_registry_phase(
                     module.package.as_str(),
                     module.path.as_str(),
                 ));
-                let named = if discharge_prefix || candidate_prefix {
+                let named = if discharge_prefix || candidate_prefix || reflexivity_prefix {
                     vec![mizar_ir::identity::NamedInputHash {
                         name: "source".to_owned(),
                         domain: crate::frontend_adapter::SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
@@ -626,7 +658,7 @@ fn dispatch_registry_phase(
                 } else {
                     Vec::new()
                 };
-                let direct = if discharge_prefix || candidate_prefix {
+                let direct = if discharge_prefix || candidate_prefix || reflexivity_prefix {
                     let (phase, kind) = if candidate_prefix {
                         (PipelinePhase::VcDischarge, "SourceTheoremDischarge")
                     } else {
@@ -688,10 +720,15 @@ fn dispatch_registry_phase(
                 } else {
                     direct
                 };
-                let parents = if (vc_task && vc_prefix) || discharge_prefix || candidate_prefix {
+                let parents = if (vc_task && vc_prefix)
+                    || discharge_prefix
+                    || candidate_prefix
+                    || reflexivity_prefix
+                {
                     let mut dependencies = phase_results.iter().filter_map(|(id, results)| {
                         if !discharge_prefix
                             && !candidate_prefix
+                            && !reflexivity_prefix
                             && !task.task.dependencies.contains(id)
                         {
                             return None;
@@ -726,7 +763,9 @@ fn dispatch_registry_phase(
                                     && output.work_unit() == &unit
                                     && output.schema_version()
                                         == mizar_ir::storage::SchemaVersion::new(1)
-                                    && (!(discharge_prefix || candidate_prefix)
+                                    && (!(discharge_prefix
+                                        || candidate_prefix
+                                        || reflexivity_prefix)
                                         || output.lineage().named_input_hashes == named)
                             })
                         {
@@ -751,6 +790,9 @@ fn dispatch_registry_phase(
                         return None;
                     }
                     let mut parents = vec![core, vc.unwrap_or(preparation)];
+                    if reflexivity_prefix {
+                        parents.insert(1, preparation);
+                    }
                     if candidate_prefix {
                         parents.push(direct?);
                     }

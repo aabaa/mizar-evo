@@ -2004,3 +2004,404 @@ fn scheduled_theorem_vc_discharge_preserves_resource_refusals() {
         );
     }
 }
+
+#[test]
+fn scheduled_reflexivity_kernel_profile_is_exact_and_edit_clean() {
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, TaskKind, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+
+    let sources = [
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "theorem Renamed: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+        "\n theorem Renamed: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end; \n",
+    ];
+    let fixture = Fixture::new(sources[0].as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    for (variant, text) in sources.into_iter().enumerate() {
+        fixture.write(text.as_bytes());
+        let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+        draft.source_inputs.versions.clear();
+        draft.generation = BuildRequestGeneration::new(variant as u64);
+        let source = SourceInput {
+            package_id: PackageId::new("alpha"),
+            module_path: ModulePath::new("main"),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: Edition::new("2025"),
+            origin: SourceOriginInput::Disk {
+                path: "src/main.miz".into(),
+            },
+        };
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(DiskSourceLoader::new(fixture.root.join("alpha")), source)],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let mut runs = Vec::new();
+        for (workers, order) in [
+            (1, CompletionOrder::Canonical),
+            (4, CompletionOrder::Reverse),
+        ] {
+            let owner = publisher(snapshot, 0, &unit);
+            allow_frontend(&owner, &unit);
+            for (phase, kind) in [
+                ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                ("OverloadResolution", "SourceTheoremMetadata"),
+                ("Elaboration", "SourceTheoremCore"),
+                ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                ("VcGenerate", "SourceTheoremVC"),
+                ("KernelCheck", "SourceTheoremReflexivityKernelStatus"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    IrWorkUnit::new("\"alpha\":\"main\""),
+                ));
+            }
+            let verifier_policy = VerifierPolicy::release();
+            let mut builder = PhaseRegistryBuilder::new();
+            builder
+                .register_source_load()
+                .register_frontend(vec![])
+                .register_source_theorem_module_resolver()
+                .register_source_theorem_signature_collection()
+                .register_source_theorem_type_checking()
+                .register_source_theorem_registration_resolution()
+                .register_source_theorem_overload_resolution()
+                .register_source_theorem_elaboration()
+                .register_source_theorem_algorithm_preparation()
+                .register_source_theorem_vc_generation(
+                    GenerationSchemaVersion::new("source-theorem-local-v1"),
+                    VcSchemaVersion::new("vc-v1"),
+                )
+                .register_source_theorem_reflexivity_kernel_check(verifier_policy.clone());
+            let registry = builder.build().unwrap();
+            assert_eq!(registry.descriptors().len(), 11);
+            let descriptor = registry
+                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                .unwrap();
+            assert_eq!(
+                descriptor.service_name,
+                "SourceTheoremReflexivityKernelCheck"
+            );
+            assert_eq!(
+                descriptor.owner,
+                mizar_driver::registry::PhaseOwner::MizarKernelProof
+            );
+            assert_eq!(descriptor.phases, [PipelinePhase::KernelCheck]);
+            assert_eq!(
+                descriptor.output_kind,
+                "SourceTheoremReflexivityKernelStatus"
+            );
+            assert_eq!(
+                descriptor.schema_version,
+                format!(
+                    "mizar-proof/source-theorem-reflexivity-kernel-status/v1;verifier_policy={}",
+                    verifier_policy.policy_fingerprint().to_lower_hex()
+                )
+            );
+            let WorkUnit::Module { module } = &unit else {
+                panic!("module input")
+            };
+            let descriptor_id = VcTaskDescriptorId::new(format!("opaque-reflexivity-{variant}"));
+            let evidence_id = EvidenceCandidateId::new(format!("opaque-evidence-{variant}"));
+            let kernel_input = PhaseInput::new(
+                WorkUnit::EvidenceCandidate {
+                    module: module.clone(),
+                    descriptor: descriptor_id.clone(),
+                    evidence_candidate: evidence_id.clone(),
+                },
+                PhaseDispatchInputBundle::without_parent_outputs(
+                    snapshot,
+                    session.captured().snapshot().source_versions[0].source_hash,
+                    vec![],
+                ),
+            );
+            assert!(matches!(
+                registry
+                    .cache_key_for_phase(PipelinePhase::KernelCheck, &kernel_input)
+                    .unwrap()
+                    .intent,
+                PhaseCacheIntent::NoKey { .. }
+            ));
+            let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+            submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                descriptor_id,
+                module.clone(),
+                VcOrderKey::new(format!("opaque-order-{variant}")),
+                vec![],
+                vec![evidence_id],
+            )];
+            submit.worker_count = workers;
+            submit.completion_order = order;
+            let submission = CompilerDriver::new(registry)
+                .with_output_publisher(owner.clone())
+                .submit_captured(
+                    session.clone(),
+                    &ids,
+                    &snapshots,
+                    submit,
+                    Default::default(),
+                )
+                .unwrap();
+            assert_eq!(submission.session.captured(), session.captured());
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices
+            );
+            assert_eq!(
+                submission
+                    .missing_services
+                    .iter()
+                    .map(|missing| missing.phase)
+                    .collect::<Vec<_>>(),
+                [PipelinePhase::VcDischarge, PipelinePhase::ArtifactCommit]
+            );
+            let graph = submission.task_graph.as_ref().unwrap();
+            let run = submission.scheduler_run.as_ref().unwrap();
+            assert!(
+                !graph
+                    .tasks()
+                    .iter()
+                    .any(|task| matches!(task.kind, TaskKind::AtpSolve | TaskKind::BackendRun))
+            );
+            let kernel_tasks = graph
+                .tasks()
+                .iter()
+                .filter(|task| task.kind == TaskKind::KernelCheck)
+                .collect::<Vec<_>>();
+            let [kernel_task] = kernel_tasks.as_slice() else {
+                panic!("one native KernelCheck per module")
+            };
+            assert_eq!(kernel_task.phases, [PipelinePhase::KernelCheck]);
+            let WorkUnit::EvidenceCandidate { .. } = &kernel_task.unit else {
+                panic!("native evidence candidate unit")
+            };
+            let parents = kernel_task
+                .dependencies
+                .iter()
+                .filter_map(|dependency| graph.tasks().iter().find(|task| &task.id == dependency))
+                .collect::<Vec<_>>();
+            let [vc_task] = parents.as_slice() else {
+                panic!("KernelCheck directly depends only on VcGenerate")
+            };
+            assert_eq!(vc_task.kind, TaskKind::VcGenerate);
+            assert_eq!(vc_task.phases, [PipelinePhase::VcGenerate]);
+            assert_eq!(vc_task.unit, unit);
+            let state = run
+                .task_states
+                .iter()
+                .find(|state| state.task_id == kernel_task.id)
+                .unwrap()
+                .state;
+            assert_eq!(
+                state,
+                TaskState::Completed,
+                "native KernelCheck should run with VcDischarge missing"
+            );
+            let discharge = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::VcDischarge)
+                .unwrap();
+            assert_eq!(
+                run.task_states
+                    .iter()
+                    .find(|state| state.task_id == discharge.id)
+                    .unwrap()
+                    .state,
+                TaskState::Blocked
+            );
+            assert!(!run.phase_results.contains_key(&discharge.id));
+            let rows = run.phase_results.get(&kernel_task.id).unwrap();
+            let [row] = rows.as_slice() else {
+                panic!("one KernelCheck result")
+            };
+            assert_eq!(row.status, PhaseStatus::Complete);
+            let [status_ref] = row.output_refs.as_slice() else {
+                panic!("one sealed reflexivity status")
+            };
+            assert_eq!(
+                status_ref.output_kind(),
+                &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+            );
+            assert_eq!(status_ref.lineage().parents.len(), 3);
+            assert_eq!(status_ref.lineage().named_input_hashes.len(), 1);
+            assert_eq!(status_ref.lineage().named_input_hashes[0].name, "source");
+            let status = owner
+                .storage()
+                .typed_handle::<(
+                    mizar_core::core_ir::CoreIr,
+                    mizar_vc::vc_ir::VcSet,
+                    mizar_kernel::checker::KernelCheckResult,
+                    mizar_proof::policy::PolicyDecision,
+                    mizar_proof::status::ProofStatusProjection,
+                    mizar_vc::dependency_slice::DependencySlice,
+                )>(status_ref, status_ref.output_kind())
+                .unwrap();
+            runs.push((
+                (*owner.storage().get(&status).unwrap()).clone(),
+                status_ref.clone(),
+            ));
+            assert_eq!(
+                graph
+                    .tasks()
+                    .iter()
+                    .filter(|task| task.kind == TaskKind::ArtifactCommit)
+                    .count(),
+                1
+            );
+        }
+        assert_eq!(
+            runs[0].0, runs[1].0,
+            "variant {variant}: independent clean stores agree across worker order"
+        );
+        assert_eq!(runs[0].1.output_kind(), runs[1].1.output_kind());
+    }
+}
+
+#[test]
+fn scheduled_reflexivity_kernel_profile_rejects_nonexact_candidates() {
+    use mizar_build::task_graph::{
+        BackendProfileId, EvidenceCandidateId, TaskKind, VcOrderKey, VcTaskDescriptor,
+        VcTaskDescriptorId,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for case in [
+        "missing",
+        "multiple-evidence",
+        "backend-profile",
+        "missing-vc-service",
+    ] {
+        with_native_summary_parent(
+            text,
+            false,
+            0,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                allow_frontend(&owner, &old.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("KernelCheck", "SourceTheoremReflexivityKernelStatus"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation();
+                if case != "missing-vc-service" {
+                    builder.register_source_theorem_vc_generation(
+                        GenerationSchemaVersion::new("source-theorem-local-v1"),
+                        VcSchemaVersion::new("vc-v1"),
+                    );
+                }
+                builder.register_source_theorem_reflexivity_kernel_check(VerifierPolicy::release());
+                let registry = builder.build().unwrap();
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                if case != "missing" {
+                    let WorkUnit::Module { module } = &old.work_unit else {
+                        panic!("module input")
+                    };
+                    submit.vc_descriptors = vec![VcTaskDescriptor::new(
+                        VcTaskDescriptorId::new("opaque-negative-case"),
+                        module.clone(),
+                        VcOrderKey::new("opaque-order"),
+                        if case == "backend-profile" {
+                            vec![BackendProfileId::new("opaque-backend")]
+                        } else {
+                            vec![]
+                        },
+                        if case == "multiple-evidence" {
+                            vec![
+                                EvidenceCandidateId::new("opaque-evidence-a"),
+                                EvidenceCandidateId::new("opaque-evidence-b"),
+                            ]
+                        } else {
+                            vec![EvidenceCandidateId::new("opaque-evidence")]
+                        },
+                    )];
+                }
+                let submission = CompilerDriver::new(registry)
+                    .with_output_publisher(owner)
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
+                    .unwrap();
+                let graph = submission.task_graph.as_ref().unwrap();
+                let kernel_tasks = graph
+                    .tasks()
+                    .iter()
+                    .filter(|task| task.kind == TaskKind::KernelCheck)
+                    .collect::<Vec<_>>();
+                match case {
+                    "missing" => assert!(kernel_tasks.is_empty()),
+                    "multiple-evidence" => assert_eq!(kernel_tasks.len(), 2),
+                    "backend-profile" => assert!(
+                        graph
+                            .tasks()
+                            .iter()
+                            .any(|task| task.kind == TaskKind::AtpSolve
+                                || task.kind == TaskKind::BackendRun)
+                    ),
+                    "missing-vc-service" => assert_eq!(kernel_tasks.len(), 1),
+                    _ => unreachable!(),
+                }
+                let status_published = submission.scheduler_run.as_ref().is_some_and(|run| {
+                    run.phase_results.values().flatten().any(|row| {
+                        row.output_refs.iter().any(|output| {
+                            output.output_kind()
+                                == &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+                        })
+                    })
+                });
+                assert!(
+                    !status_published,
+                    "{case} must fail closed without a reflexivity status"
+                );
+                if case == "missing" {
+                    assert!(submission.scheduler_run.is_some());
+                } else {
+                    assert_eq!(
+                        submission.status,
+                        DriverSubmissionStatus::BlockedByMissingPhaseServices
+                    );
+                }
+            },
+        );
+    }
+}
