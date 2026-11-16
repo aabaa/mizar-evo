@@ -68,6 +68,8 @@ exception を記録しない:
 - `DriverCancelReason`;
 - `DiagnosticIndexMode`;
 - `NativeCacheMode`;
+- `NativeCheckpoint`;
+- `NativeCheckpointObservations`;
 - `DriverSubmitError`。
 
 Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
@@ -463,3 +465,11 @@ cold Frontend expectations、retained scheduler skip、完全 runtime/toolchain/
 `start_captured` は captured validation・native import discovery・構造化された早期失敗を維持し、実 scheduler 継続を保存してから Running metadata を返す。`pending_task` は admitted task を公開し、`progress` は最大一つの task を dispatch して排出後だけ terminal submission を返す。unknown/pending は None、terminal progress は保持済み submission の replay。`terminal_submission` は currentness と publisher validity を再検証して result/index を返す。非終端 start は借用 cache/retained-frontend option を拒否する。同期/cache/watch caller は共通の preparation・scheduler core・finalization を維持する。
 
 各 deferred execution は snapshot に束縛した publisher view を一つ保持し、設定済み publisher の storage・registry・live authorization を共有する。equal-snapshot replacement は新しい capture SourceId を持つ別の不変 physical output を公開し、canonical output ID は維持する。同期 publication と同一 execution 内の duplicate 拒否は維持する。
+
+## Native checkpoint observations
+
+`start_captured_observed` は `start_captured` と同じ引数・実行経路で native Frontend service-entry の受領観測を opt in する。通常の captured・同期・Watch start は disabled のまま。`native_checkpoint_observations(session)` は `NativeCheckpointObservations::UnknownSession`、`Disabled`、`Enabled(&[NativeCheckpointObservation])` を返し、enabled の空 slice は受領記録なしを意味する。read は非消費で、実行・取消要求・publication を行わない。
+
+各 summary は owner session、実 graph task、`NativeCheckpoint::FrontendServiceEntry`、入力 snapshot、実際に渡した Build cancellation token（reason と cancellation generation を含む）を束縛する。request/lane/request-generation は元 session から解決する。summary は genuine native Frontend TypeId、入力と token の snapshot 一致、Cancelled return、空 diagnostics/outputs、artifact なしを証明する。registry dispatcher は元 return の事実を確認し、既存 result 検証成功後、normalization・obsolete-result suppression 前にだけ記録する。native Frontend の matching-token branch が唯一の Cancelled 起源であり、起源追加時は帰属を一意に維持するか witness を強化する。
+
+summary は実 dispatch/return 順で、既存 session execution/replay record と共に drainage・terminal retrieval・stale replay 後も保持し、その record と共に解放する。compiler payload・output・publication 権限・独立 capture lease は保持しない。disabled/unsupported path・記録不在は受領を意味しない。equal-snapshot session は区別し、取消は最初の reason を維持し、取消前の completion に遡及受領を与えない。checkpoint latency・global retention 保証や Task40 の combined bridge acceptance は追加しない。

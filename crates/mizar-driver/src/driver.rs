@@ -5,7 +5,7 @@ use std::{
 
 use mizar_build::{
     cache_seam::CacheSchedulingPlan,
-    cancel::{CancellationPolicy, CancellationReason},
+    cancel::{CancellationPolicy, CancellationReason, CancellationToken},
     module_index::{
         DependencyArtifactIndex, ModuleIndex, ModuleIndexDiagnostics, SourceLayoutProvider,
         build_module_index,
@@ -66,6 +66,30 @@ pub struct BuildSubmission {
     pub status: DriverSubmissionStatus,
     pub publication_decision: PublicationDecision,
     pub diagnostic_index: Option<mizar_diagnostics::aggregator::BuildDiagnosticIndex>,
+}
+
+/// A native checkpoint whose matching cancellation return was validated.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeCheckpointObservation {
+    pub session: BuildSessionId,
+    pub task: TaskId,
+    pub checkpoint: NativeCheckpoint,
+    pub input_snapshot: BuildSnapshotId,
+    pub cancellation: CancellationToken,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NativeCheckpoint {
+    FrontendServiceEntry,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NativeCheckpointObservations<'a> {
+    UnknownSession,
+    Disabled,
+    Enabled(&'a [NativeCheckpointObservation]),
 }
 
 /// Submission choices shared by draft, captured, and watch lifecycle entries.
@@ -275,6 +299,7 @@ struct DriverSessionRecord {
     cancellation: CancellationPolicy,
     events: BuildEventStream,
     terminal_submission: Option<BuildSubmission>,
+    native_checkpoint_observations: Option<Vec<NativeCheckpointObservation>>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -409,6 +434,20 @@ impl CompilerDriver {
         self.sessions
             .get(&session)
             .map(|record| &record.cancellation)
+    }
+
+    /// Reads retained native cancellation receipts without advancing execution.
+    pub fn native_checkpoint_observations(
+        &self,
+        session: BuildSessionId,
+    ) -> NativeCheckpointObservations<'_> {
+        match self.sessions.get(&session) {
+            None => NativeCheckpointObservations::UnknownSession,
+            Some(record) => match &record.native_checkpoint_observations {
+                None => NativeCheckpointObservations::Disabled,
+                Some(observations) => NativeCheckpointObservations::Enabled(observations),
+            },
+        }
     }
 
     pub fn submit_watch_change<A, L>(
@@ -583,6 +622,23 @@ impl CompilerDriver {
         Ok(submission)
     }
 
+    /// Starts captured work with native checkpoint observations enabled before progress.
+    pub fn start_captured_observed<A: SessionIdAllocator, L: SourceLayoutProvider>(
+        &mut self,
+        session: BuildSession,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        options: SubmitOptions<'_>,
+    ) -> Result<BuildSubmission, DriverSubmitError> {
+        let submission = self.start_captured(session, allocator, snapshots, input, options)?;
+        self.sessions
+            .get_mut(&submission.session.id)
+            .expect("accepted session is stored")
+            .native_checkpoint_observations = Some(Vec::new());
+        Ok(submission)
+    }
+
     /// The actual admitted task whose service will execute on a later progress call.
     pub fn pending_task(&self, session: BuildSessionId) -> Option<&BuildTask> {
         self.executions.get(&session)?.scheduler.pending_task()
@@ -624,6 +680,10 @@ impl CompilerDriver {
                 allocator,
             }),
         );
+        dispatcher.native_checkpoint_observations = record
+            .native_checkpoint_observations
+            .as_mut()
+            .map(|observations| (session, observations));
         dispatcher.phase_results = execution.phase_results;
         execution.scheduler.advance(&mut dispatcher);
         execution.phase_results = dispatcher.phase_results;
@@ -2289,6 +2349,10 @@ impl CompilerDriver {
         cancellation: CancellationPolicy,
         events: BuildEventStream,
     ) {
+        let native_checkpoint_observations = self
+            .sessions
+            .get_mut(&session.id)
+            .and_then(|record| record.native_checkpoint_observations.take());
         self.sessions.insert(
             session.id,
             DriverSessionRecord {
@@ -2296,6 +2360,7 @@ impl CompilerDriver {
                 cancellation,
                 events,
                 terminal_submission: None,
+                native_checkpoint_observations,
             },
         );
     }

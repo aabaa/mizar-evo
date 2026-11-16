@@ -14,10 +14,10 @@ use mizar_ir::{
     dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest},
     publisher::{OutputAuthorization, PhaseOutputPublisher},
 };
-use mizar_session::module_work_unit_label;
+use mizar_session::{BuildSessionId, module_work_unit_label};
 
 use crate::{
-    driver::DriverSchedulerRun,
+    driver::{DriverSchedulerRun, NativeCheckpoint, NativeCheckpointObservation},
     registry::{
         PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseResult,
         PhaseStatus, SourceLoadInputs,
@@ -66,6 +66,8 @@ pub(super) struct RegistrySchedulerDispatcher<'a> {
     publisher: Option<&'a Arc<PhaseOutputPublisher>>,
     source_load: Option<SourceLoadInputs<'a>>,
     pub(super) phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
+    pub(super) native_checkpoint_observations:
+        Option<(BuildSessionId, &'a mut Vec<NativeCheckpointObservation>)>,
 }
 
 impl<'a> RegistrySchedulerDispatcher<'a> {
@@ -81,6 +83,7 @@ impl<'a> RegistrySchedulerDispatcher<'a> {
             publisher,
             source_load,
             phase_results: BTreeMap::new(),
+            native_checkpoint_observations: None,
         }
     }
 }
@@ -93,6 +96,7 @@ impl SchedulerTaskDispatcher for RegistrySchedulerDispatcher<'_> {
             self.publisher,
             self.source_load,
             &mut self.phase_results,
+            &mut self.native_checkpoint_observations,
             task,
         )
     }
@@ -133,6 +137,10 @@ fn dispatch_registry_phase(
     publisher: Option<&Arc<PhaseOutputPublisher>>,
     source_load: Option<SourceLoadInputs<'_>>,
     phase_results: &mut BTreeMap<TaskId, Vec<PhaseResult>>,
+    native_checkpoint_observations: &mut Option<(
+        BuildSessionId,
+        &mut Vec<NativeCheckpointObservation>,
+    )>,
     task: SchedulerDispatchTask<'_>,
 ) -> SchedulerDispatchOutcome {
     if task.task.phases.is_empty() {
@@ -1119,11 +1127,13 @@ fn dispatch_registry_phase(
         } else {
             PhaseInput::new(task.task.unit.clone(), dispatch_input.clone())
         };
+        let input_snapshot = input.snapshot;
+        let delivered_cancellation = task.cancellation.clone();
         match registry.execute_phase_with_resources(
             *phase,
             input,
             PhaseExecutionResources {
-                cancellation: task.cancellation.clone(),
+                cancellation: delivered_cancellation.clone(),
                 output_publisher: publisher.cloned(),
                 source_load,
                 diagnostics: matches!(phase, PipelinePhase::SourceLoad | PipelinePhase::Frontend)
@@ -1243,6 +1253,30 @@ fn dispatch_registry_phase(
                         "invalid_phase_result",
                         "phase result failed snapshot or sealed-output validation",
                     )]);
+                }
+                // The native matching-token entry branch is its sole Cancelled origin.
+                // Any new origin must preserve or strengthen this receipt attribution.
+                if let Some((session, observations)) = native_checkpoint_observations.as_mut()
+                    && *phase == PipelinePhase::Frontend
+                    && registry.service_for_phase(*phase).is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<crate::frontend_adapter::FrontendService>()
+                    })
+                    && input_snapshot == task.snapshot
+                    && status == PhaseStatus::Cancelled
+                    && result.diagnostics.is_empty()
+                    && result.output_refs.is_empty()
+                    && result.artifact_commit.is_none()
+                    && let Some(cancellation) =
+                        delivered_cancellation.filter(|token| token.snapshot == input_snapshot)
+                {
+                    observations.push(NativeCheckpointObservation {
+                        session: *session,
+                        task: task.task.id.clone(),
+                        checkpoint: NativeCheckpoint::FrontendServiceEntry,
+                        input_snapshot,
+                        cancellation,
+                    });
                 }
                 if status != PhaseStatus::Complete {
                     result.output_refs.clear();

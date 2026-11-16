@@ -21,7 +21,8 @@ pub mod request;
 pub mod facade {
     pub use crate::driver::{
         BuildSubmission, CompilerDriver, DiagnosticIndexMode, DriverSubmitError, DriverSubmitInput,
-        NativeCacheMode, NativeCacheOptions, SubmitOptions, WatchSubmission, WatchSubmitControl,
+        NativeCacheMode, NativeCacheOptions, NativeCheckpoint, NativeCheckpointObservation,
+        NativeCheckpointObservations, SubmitOptions, WatchSubmission, WatchSubmitControl,
         WatchSubmitError, WatchSubmitFailure,
     };
     pub use crate::registry::{

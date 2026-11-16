@@ -63,6 +63,10 @@ fn watch_change_rebuilds_replaces_snapshot_and_suppresses_previous_replay() {
             Default::default(),
         )
         .expect("initial watch submission succeeds");
+    assert!(matches!(
+        driver.native_checkpoint_observations(first.submission.session.id()),
+        mizar_driver::driver::NativeCheckpointObservations::Disabled
+    ));
     let first_snapshot = first.submission.session.captured().snapshot().id;
     let retained = publish_text(&publisher, first_snapshot, "old-output");
 

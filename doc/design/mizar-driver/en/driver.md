@@ -69,6 +69,8 @@ for:
 - `DriverCancelReason`;
 - `DiagnosticIndexMode`;
 - `NativeCacheMode`;
+- `NativeCheckpoint`;
+- `NativeCheckpointObservations`;
 - `DriverSubmitError`.
 
 Downstream crates must use wildcard arms when matching these enums. Future
@@ -486,3 +488,11 @@ This is explicit same-capture retained scheduling, not cold record-independent F
 `start_captured` preserves captured validation, native import discovery and structured early failures, then stores the actual scheduler continuation before returning Running metadata. `pending_task` exposes its admitted task; `progress` dispatches at most one task and returns a terminal submission only after drainage. Unknown/pending progress returns None; terminal progress replays the retained submission. `terminal_submission` rechecks currentness and publisher validity before returning retained results/index. Borrowed cache/retained-frontend options are rejected by nonterminal start; synchronous/cache/watch callers retain shared preparation, scheduler core and finalization.
 
 Each deferred execution keeps one snapshot-bound publisher view, sharing the configured publisher’s storage, registry and live authorization. Equal-snapshot replacements publish separate immutable physical outputs with fresh capture SourceIds; canonical output IDs stay unchanged. Synchronous publication and same-execution duplicate refusal remain unchanged.
+
+## Native checkpoint observations
+
+`start_captured_observed` opts into native Frontend service-entry receipt observation using the same arguments and execution route as `start_captured`. Ordinary captured, synchronous and Watch starts leave observation disabled. `native_checkpoint_observations(session)` returns `NativeCheckpointObservations::UnknownSession`, `Disabled`, or `Enabled(&[NativeCheckpointObservation])`; an empty enabled slice means no recorded receipt. Reads are non-consuming and never advance execution, request cancellation or publish results.
+
+Each summary binds the owning session, actual graph task, `NativeCheckpoint::FrontendServiceEntry`, input snapshot and exact delivered Build cancellation token, including reason and cancellation generation. The original session resolves request/lane/request-generation identity. A summary attests to genuine native Frontend TypeId, matching input/token snapshots, Cancelled return, empty diagnostics/outputs and no artifact. The registry dispatcher checks these original return facts and records only after existing result validation, before normalization or obsolete-result suppression. Native Frontend's matching-token branch is the sole Cancelled origin; adding another origin requires preserving unambiguous attribution or strengthening the witness.
+
+Summaries follow actual dispatch/return order and live in the session's existing execution/replay record through drainage, terminal retrieval and stale replay; they are released with that record. They retain no compiler payload, output, publication authority or separate capture lease. Disabled/unsupported paths and missing records never imply receipt. Equal-snapshot sessions remain distinct, cancellation keeps its first reason, and completion before cancellation cannot gain a retrospective receipt. Observation adds no checkpoint latency or global retention guarantee and does not constitute Task40's combined bridge acceptance.

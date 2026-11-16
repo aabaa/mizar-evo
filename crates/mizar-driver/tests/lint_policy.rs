@@ -739,7 +739,7 @@ fn lib_has_unexpected_code_line(line: &str) -> bool {
         return compact
             != concat!(
                 "pubmodfacade{",
-                "pubusecrate::driver::{BuildSubmission,CompilerDriver,DiagnosticIndexMode,DriverSubmitError,DriverSubmitInput,NativeCacheMode,NativeCacheOptions,SubmitOptions,WatchSubmission,WatchSubmitControl,WatchSubmitError,WatchSubmitFailure,};",
+                "pubusecrate::driver::{BuildSubmission,CompilerDriver,DiagnosticIndexMode,DriverSubmitError,DriverSubmitInput,NativeCacheMode,NativeCacheOptions,NativeCheckpoint,NativeCheckpointObservation,NativeCheckpointObservations,SubmitOptions,WatchSubmission,WatchSubmitControl,WatchSubmitError,WatchSubmitFailure,};",
                 "pubusecrate::registry::{PhaseRegistry,PhaseRegistryBuilder,StageConfig,assemble_registry,};",
                 "pubusecrate::request::{BatchInvocation,BatchRequest,BuildLaneId,BuildProfile,BuildRequest,BuildRequestDraft,BuildRequestGeneration,BuildRequestOrigin,BuildSession,BuildTargets,CapturedSnapshot,DependencyInputSet,LspFocus,LspPriority,LspRequest,PendingBuildRequest,PublicationDecision,SourceInputSet,VerifierConfigInput,WatchRequest,};",
                 "pubusemizar_atp::problem::{ConcreteFormat,EqualitySupport,LogicFragment,LogicProfile,NativePropertySupport,QuantifierPolicy,SoftTypeStrategy,};",

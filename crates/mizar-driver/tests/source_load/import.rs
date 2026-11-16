@@ -117,6 +117,504 @@ fn captured_native_execution_fixture(
     (fixture, ids, snapshots, session, input, snapshot)
 }
 
+fn captured_open_buffer_execution_fixture(
+    text: &str,
+    generation: u64,
+) -> (
+    Fixture,
+    InMemorySessionIdAllocator,
+    SnapshotRegistry<InMemorySessionIdAllocator>,
+    mizar_driver::request::BuildSession,
+    DriverSubmitInput<StaticSourceLayout>,
+    BuildSnapshotId,
+) {
+    use std::sync::Arc;
+
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+    draft.generation = BuildRequestGeneration::new(generation);
+    draft.source_inputs.versions.clear();
+    let package_root = fixture.root.join("alpha");
+    let captured_input = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::OpenBuffer {
+            uri: format!("file://{}", package_root.join("src/main.miz").display()),
+            expected_version: 7,
+            actual_version: 7,
+            text: Arc::from(text),
+        },
+    };
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(DiskSourceLoader::new(package_root), captured_input)],
+        )
+        .unwrap();
+    let snapshot = session.captured().snapshot().id;
+    let input = fixture.submit_request(vec![], vec![]).1;
+    (fixture, ids, snapshots, session, input, snapshot)
+}
+
+struct ObservationLookalikeService {
+    descriptor: mizar_driver::registry::PhaseDescriptor,
+    status: PhaseStatus,
+    invalid_result: bool,
+    tokens: std::sync::Arc<std::sync::Mutex<Vec<Option<mizar_build::cancel::CancellationToken>>>>,
+}
+
+impl mizar_driver::registry::PhaseService for ObservationLookalikeService {
+    fn phase(&self) -> mizar_driver::registry::PhaseDescriptor {
+        self.descriptor.clone()
+    }
+
+    fn cache_key(
+        &self,
+        _input: &PhaseInput,
+        _context: &mizar_driver::registry::PhaseCacheContext,
+    ) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "lookalike observation control".into(),
+        }
+    }
+
+    fn execute(
+        &self,
+        _input: PhaseInput,
+        context: mizar_driver::registry::PhaseExecutionContext<'_>,
+    ) -> mizar_driver::registry::PhaseResult {
+        self.tokens.lock().unwrap().push(context.cancellation);
+        let mut result = mizar_driver::registry::PhaseResult::complete();
+        result.status = self.status;
+        if self.invalid_result {
+            result.diagnostics.push(
+                DiagnosticSink::new(DiagnosticProducerScope::new(
+                    DiagnosticPhase::Frontend,
+                    snapshot_id(0xee),
+                    "invalid observation result",
+                ))
+                .into_batch(),
+            );
+        }
+        result
+    }
+}
+
+struct ObservationTestInputs;
+
+impl PhaseDispatchInputProvider<BuildTask> for ObservationTestInputs {
+    fn dispatch_input_for_task(
+        &self,
+        request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, DispatchInputError> {
+        Ok(Some(PhaseDispatchInputBundle::without_parent_outputs(
+            request.snapshot(),
+            hash(1),
+            Vec::new(),
+        )))
+    }
+}
+
+#[test]
+fn observed_non_native_cancelled_lookalike_does_not_create_a_receipt() {
+    for (status, invalid_result) in [
+        (PhaseStatus::Cancelled, false),
+        (PhaseStatus::Cancelled, true),
+        (PhaseStatus::Fatal, false),
+    ] {
+        let (_fixture, ids, snapshots, session, mut input, snapshot) =
+            captured_open_buffer_execution_fixture("theorem T: a = a;\n", 0);
+        let mut native_registry = PhaseRegistryBuilder::new();
+        native_registry
+            .register_source_load()
+            .register_frontend(Vec::new());
+        let native_registry = native_registry.build().unwrap();
+        let tokens = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register(ObservationLookalikeService {
+                descriptor: native_registry
+                    .descriptor_for_phase(PipelinePhase::SourceLoad)
+                    .unwrap()
+                    .clone(),
+                status: PhaseStatus::Complete,
+                invalid_result: false,
+                tokens: tokens.clone(),
+            })
+            .register(ObservationLookalikeService {
+                descriptor: native_registry
+                    .descriptor_for_phase(PipelinePhase::Frontend)
+                    .unwrap()
+                    .clone(),
+                status,
+                invalid_result,
+                tokens: tokens.clone(),
+            });
+        for requirement in mizar_driver::registry::required_phase_services() {
+            if requirement
+                .phases
+                .iter()
+                .any(|phase| matches!(phase, PipelinePhase::SourceLoad | PipelinePhase::Frontend))
+            {
+                continue;
+            }
+            builder.register(ObservationLookalikeService {
+                descriptor: mizar_driver::registry::PhaseDescriptor::new(
+                    requirement.service_name,
+                    requirement.owner,
+                    requirement.phases.to_vec(),
+                    "observation-control-v1",
+                    requirement.service_name,
+                )
+                .unwrap(),
+                status: PhaseStatus::Complete,
+                invalid_result: false,
+                tokens: tokens.clone(),
+            });
+        }
+        input.phase_dispatch_inputs = Some(Box::new(ObservationTestInputs));
+        let mut driver = CompilerDriver::new(builder.build().unwrap());
+        let accepted = driver
+            .start_captured_observed(session, &ids, &snapshots, input, SubmitOptions::default())
+            .unwrap();
+        let session_id = accepted.session.id();
+        let frontend = accepted
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend)
+            .unwrap()
+            .id
+            .clone();
+        while driver.pending_task(session_id).map(|task| task.id.clone()) != Some(frontend.clone())
+        {
+            assert!(
+                driver
+                    .progress(session_id, &ids, &snapshots)
+                    .unwrap()
+                    .is_none()
+            );
+        }
+        let delivered = if !invalid_result && status == PhaseStatus::Cancelled {
+            let outcome = driver.cancel(
+                session_id,
+                mizar_driver::driver::DriverCancelReason::Shutdown,
+                &snapshots,
+            );
+            assert_eq!(outcome.state, Some(BuildSessionState::Cancelling));
+            Some(CancellationToken {
+                snapshot,
+                generation: driver.cancellation_policy(session_id).unwrap().generation(),
+                reason: CancellationReason::Shutdown,
+            })
+        } else {
+            None
+        };
+        let mut terminal = None;
+        while terminal.is_none() {
+            terminal = driver.progress(session_id, &ids, &snapshots).unwrap();
+        }
+        let terminal = terminal.unwrap();
+        let run = terminal.scheduler_run.as_ref().unwrap();
+        if invalid_result {
+            assert!(!run.phase_results.contains_key(&frontend));
+            assert!(
+                run.task_states
+                    .iter()
+                    .any(|task| task.task_id == frontend && task.state == TaskState::Failed)
+            );
+        } else {
+            assert_eq!(run.phase_results[&frontend][0].status, status);
+        }
+        assert_eq!(tokens.lock().unwrap().last().cloned(), Some(delivered));
+        assert!(matches!(
+            driver.native_checkpoint_observations(session_id),
+            mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+                if observations.is_empty()
+        ));
+    }
+}
+
+#[test]
+fn observed_open_buffer_frontend_receipt_survives_shutdown_drainage_and_replay() {
+    let (fixture, ids, snapshots, session, input, snapshot) =
+        captured_open_buffer_execution_fixture("theorem T: a = a;\n", 0);
+    let (mut driver, _) = import_discovered_native_index_driver(snapshot, &["main"]);
+    let mut disabled_driver = import_discovered_native_index_driver(snapshot, &["main"]).0;
+    let disabled = disabled_driver
+        .start_captured(
+            session.clone(),
+            &ids,
+            &snapshots,
+            fixture.submit_request(vec![], vec![]).1,
+            SubmitOptions::default(),
+        )
+        .unwrap();
+    assert!(matches!(
+        disabled_driver.native_checkpoint_observations(disabled.session.id()),
+        mizar_driver::driver::NativeCheckpointObservations::Disabled
+    ));
+    let accepted = driver
+        .start_captured_observed(session, &ids, &snapshots, input, SubmitOptions::default())
+        .unwrap();
+    let session_id = accepted.session.id();
+    let frontend = accepted
+        .task_graph
+        .as_ref()
+        .unwrap()
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap()
+        .id
+        .clone();
+    let unknown = ids.next_session_id().unwrap();
+    assert!(matches!(
+        driver.native_checkpoint_observations(unknown),
+        mizar_driver::driver::NativeCheckpointObservations::UnknownSession
+    ));
+    assert!(matches!(
+        driver.native_checkpoint_observations(session_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
+    while driver.pending_task(session_id).map(|task| task.id.clone()) != Some(frontend.clone()) {
+        assert!(
+            driver
+                .progress(session_id, &ids, &snapshots)
+                .unwrap()
+                .is_none()
+        );
+    }
+    let cancelled = driver.cancel(
+        session_id,
+        mizar_driver::driver::DriverCancelReason::Shutdown,
+        &snapshots,
+    );
+    assert!(cancelled.changed);
+    assert_eq!(cancelled.state, Some(BuildSessionState::Cancelling));
+    let expected_token = CancellationToken {
+        snapshot,
+        generation: driver.cancellation_policy(session_id).unwrap().generation(),
+        reason: CancellationReason::Shutdown,
+    };
+    let repeated_while_cancelling = driver.cancel(
+        session_id,
+        mizar_driver::driver::DriverCancelReason::ExplicitRequest,
+        &snapshots,
+    );
+    assert!(!repeated_while_cancelling.changed);
+    assert_eq!(
+        repeated_while_cancelling.state,
+        Some(BuildSessionState::Cancelling)
+    );
+    assert_eq!(
+        driver.cancellation_policy(session_id).unwrap().generation(),
+        expected_token.generation
+    );
+    let mut terminal = None;
+    while terminal.is_none() {
+        terminal = driver.progress(session_id, &ids, &snapshots).unwrap();
+    }
+    let terminal = terminal.unwrap();
+    assert_eq!(
+        terminal.session.state(),
+        BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
+    );
+    let result = &terminal.scheduler_run.as_ref().unwrap().phase_results[&frontend][0];
+    assert_eq!(result.status, PhaseStatus::Cancelled);
+    assert!(result.output_refs.is_empty());
+    let observation = match driver.native_checkpoint_observations(session_id) {
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations) => {
+            assert_eq!(observations.len(), 1);
+            observations[0].clone()
+        }
+        other => panic!("expected retained observation, got {other:?}"),
+    };
+    assert_eq!(observation.session, session_id);
+    assert_eq!(observation.task, frontend);
+    assert_eq!(
+        observation.checkpoint,
+        mizar_driver::driver::NativeCheckpoint::FrontendServiceEntry
+    );
+    assert_eq!(observation.input_snapshot, snapshot);
+    assert_eq!(observation.cancellation, expected_token);
+    let events = driver.events(session_id);
+    assert_eq!(
+        events
+            .events()
+            .iter()
+            .filter(|event| matches!(event.kind, BuildEventKind::SessionFinished { .. }))
+            .count(),
+        1
+    );
+    let repeated = driver.cancel(
+        session_id,
+        mizar_driver::driver::DriverCancelReason::ExplicitRequest,
+        &snapshots,
+    );
+    assert!(!repeated.changed);
+    assert_eq!(driver.events(session_id).events(), events.events());
+    assert_eq!(
+        driver.native_checkpoint_observations(session_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(std::slice::from_ref(
+            &observation
+        ))
+    );
+    assert_eq!(
+        driver.progress(session_id, &ids, &snapshots).unwrap(),
+        Some(terminal)
+    );
+    assert_eq!(driver.events(session_id).events(), events.events());
+}
+
+#[test]
+fn observed_equal_snapshot_replacement_keeps_receipts_session_scoped() {
+    let (fixture, ids, snapshots, old, old_input, snapshot) =
+        captured_open_buffer_execution_fixture("theorem T: a = a;\n", 0);
+    let (mut driver, _) = import_discovered_native_index_driver(snapshot, &["main"]);
+    let old_accepted = driver
+        .start_captured_observed(old, &ids, &snapshots, old_input, SubmitOptions::default())
+        .unwrap();
+    let old_id = old_accepted.session.id();
+    let old_frontend = old_accepted
+        .task_graph
+        .as_ref()
+        .unwrap()
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap()
+        .id
+        .clone();
+    while driver.pending_task(old_id).map(|task| task.id.clone()) != Some(old_frontend.clone()) {
+        assert!(driver.progress(old_id, &ids, &snapshots).unwrap().is_none());
+    }
+    let (mut replacement_draft, _) = fixture.submit_request(vec![], vec![]);
+    replacement_draft.generation = BuildRequestGeneration::new(1);
+    replacement_draft.source_inputs.versions.clear();
+    let package_root = fixture.root.join("alpha");
+    let replacement_source = SourceInput {
+        package_id: fixture.version.package_id.clone(),
+        module_path: fixture.version.module_path.clone(),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: fixture.version.edition.clone(),
+        origin: SourceOriginInput::OpenBuffer {
+            uri: format!("file://{}", package_root.join("src/main.miz").display()),
+            expected_version: 7,
+            actual_version: 7,
+            text: std::sync::Arc::from("theorem T: a = a;\n"),
+        },
+    };
+    let replacement = replacement_draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(DiskSourceLoader::new(package_root), replacement_source)],
+        )
+        .unwrap();
+    let replacement_snapshot = replacement.captured().snapshot().id;
+    let replacement_input = fixture.submit_request(vec![], vec![]).1;
+    assert_eq!(replacement_snapshot, snapshot);
+    let replacement = driver
+        .start_captured_observed(
+            replacement,
+            &ids,
+            &snapshots,
+            replacement_input,
+            SubmitOptions::default(),
+        )
+        .unwrap();
+    let replacement_id = replacement.session.id();
+    assert_ne!(old_id, replacement_id);
+    let replacement_graph_size = replacement.task_graph.as_ref().unwrap().tasks().len();
+    let superseded = driver.cancel(
+        old_id,
+        mizar_driver::driver::DriverCancelReason::Superseded,
+        &snapshots,
+    );
+    assert!(superseded.changed);
+    assert_eq!(superseded.state, Some(BuildSessionState::Cancelling));
+    let expected_token = CancellationToken {
+        snapshot,
+        generation: driver.cancellation_policy(old_id).unwrap().generation(),
+        reason: CancellationReason::SupersededSnapshot,
+    };
+    let mut old_terminal = None;
+    while old_terminal.is_none() {
+        old_terminal = driver.progress(old_id, &ids, &snapshots).unwrap();
+    }
+    let old_terminal = old_terminal.unwrap();
+    assert_eq!(
+        old_terminal.session.state(),
+        BuildSessionState::Finished(BuildSessionOutcome::Superseded)
+    );
+    assert!(
+        old_terminal
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .is_empty()
+    );
+    let old_observation = match driver.native_checkpoint_observations(old_id) {
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations) => {
+            assert_eq!(observations.len(), 1);
+            observations[0].clone()
+        }
+        other => panic!("expected retained old receipt, got {other:?}"),
+    };
+    assert_eq!(old_observation.session, old_id);
+    assert_eq!(old_observation.task, old_frontend);
+    assert_eq!(old_observation.input_snapshot, snapshot);
+    assert_eq!(old_observation.cancellation, expected_token);
+    assert!(matches!(
+        driver.native_checkpoint_observations(replacement_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
+    assert!(
+        driver
+            .cancellation_policy(replacement_id)
+            .unwrap()
+            .cancelled_tasks()
+            .is_empty()
+    );
+    let old_events = driver.events(old_id);
+    assert!(
+        old_events
+            .events()
+            .iter()
+            .any(|event| matches!(event.kind, BuildEventKind::PublicationSuppressed))
+    );
+    assert!(
+        !old_events
+            .events()
+            .iter()
+            .any(|event| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
+    );
+    let mut steps = 0;
+    let mut replacement_terminal = None;
+    while replacement_terminal.is_none() {
+        steps += 1;
+        assert!(steps <= replacement_graph_size + 2);
+        replacement_terminal = driver.progress(replacement_id, &ids, &snapshots).unwrap();
+    }
+    assert!(replacement_terminal.unwrap().session.is_terminal());
+    assert!(matches!(
+        driver.native_checkpoint_observations(replacement_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
+}
+
 #[test]
 fn captured_native_execution_yields_and_matches_synchronous_completion() {
     let (fixture, ids, snapshots, session, input, snapshot) =
@@ -195,7 +693,7 @@ fn captured_native_execution_yields_and_matches_synchronous_completion() {
     );
     assert_eq!(
         driver.progress(session_id, &ids, &snapshots).unwrap(),
-        Some(expected)
+        Some(expected.clone())
     );
     assert_eq!(
         driver.events(session_id).events(),
@@ -210,6 +708,57 @@ fn captured_native_execution_yields_and_matches_synchronous_completion() {
             .count(),
         1
     );
+    let (mut observed_driver, _) = import_discovered_native_index_driver(snapshot, &["main"]);
+    let observed = observed_driver
+        .start_captured_observed(
+            session.clone(),
+            &ids,
+            &snapshots,
+            fixture.submit_request(vec![], vec![]).1,
+            SubmitOptions::default(),
+        )
+        .unwrap();
+    let observed_id = observed.session.id();
+    let observed_graph_size = observed.task_graph.as_ref().unwrap().tasks().len();
+    assert!(matches!(
+        observed_driver.native_checkpoint_observations(observed_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
+    let mut observed_steps = 0;
+    let mut observed_terminal = None;
+    while observed_terminal.is_none() {
+        observed_steps += 1;
+        assert!(observed_steps <= observed_graph_size + 2);
+        observed_terminal = observed_driver
+            .progress(observed_id, &ids, &snapshots)
+            .unwrap();
+    }
+    let observed_terminal = observed_terminal.unwrap();
+    assert_eq!(observed_terminal, expected);
+    assert_eq!(
+        observed_driver.events(observed_id).events(),
+        sync_driver.events(session_id).events()
+    );
+    assert!(matches!(
+        observed_driver.native_checkpoint_observations(observed_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
+    assert!(
+        !observed_driver
+            .cancel(
+                observed_id,
+                mizar_driver::driver::DriverCancelReason::ExplicitRequest,
+                &snapshots,
+            )
+            .changed
+    );
+    assert!(matches!(
+        observed_driver.native_checkpoint_observations(observed_id),
+        mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+            if observations.is_empty()
+    ));
     let finished = driver.cancel(
         session_id,
         mizar_driver::driver::DriverCancelReason::ExplicitRequest,
@@ -487,9 +1036,14 @@ fn equal_snapshot_native_executions_on_distinct_lanes_keep_signals_and_outputs_i
         assert_eq!(replacement.captured().snapshot().id, snapshot);
         let (mut driver, owner) = import_discovered_native_index_driver(snapshot, &["main"]);
         let old_accepted = driver
-            .start_captured(old, &ids, &snapshots, old_input, SubmitOptions::default())
+            .start_captured_observed(old, &ids, &snapshots, old_input, SubmitOptions::default())
             .unwrap();
         let old_id = old_accepted.session.id();
+        assert!(matches!(
+            driver.native_checkpoint_observations(old_id),
+            mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+                if observations.is_empty()
+        ));
         let old_graph_size = old_accepted.task_graph.as_ref().unwrap().tasks().len();
         let old_source_load = old_accepted
             .task_graph
@@ -511,7 +1065,7 @@ fn equal_snapshot_native_executions_on_distinct_lanes_keep_signals_and_outputs_i
         }
 
         let new_accepted = driver
-            .start_captured(
+            .start_captured_observed(
                 replacement,
                 &ids,
                 &snapshots,
@@ -520,6 +1074,11 @@ fn equal_snapshot_native_executions_on_distinct_lanes_keep_signals_and_outputs_i
             )
             .unwrap();
         let new_id = new_accepted.session.id();
+        assert!(matches!(
+            driver.native_checkpoint_observations(new_id),
+            mizar_driver::driver::NativeCheckpointObservations::Enabled(observations)
+                if observations.is_empty()
+        ));
         assert_ne!(old_id, new_id);
         let new_frontend = new_accepted
             .task_graph
@@ -551,6 +1110,10 @@ fn equal_snapshot_native_executions_on_distinct_lanes_keep_signals_and_outputs_i
             old_terminal.session.state(),
             BuildSessionState::Finished(BuildSessionOutcome::Superseded)
         );
+        assert!(matches!(
+            driver.native_checkpoint_observations(old_id),
+            mizar_driver::driver::NativeCheckpointObservations::Enabled(observations) if observations.is_empty()
+        ));
         let old_run = old_terminal.scheduler_run.as_ref().unwrap();
         assert!(old_run.task_states.iter().any(|task| {
             task.task_id == old_source_load
