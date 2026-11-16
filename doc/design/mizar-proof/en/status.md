@@ -46,7 +46,7 @@ projected obligation status separate:
 | Winner class | Projected obligation status | Trusted | Notes |
 |---|---|---:|---|
 | `KernelVerified` | `accepted` | yes | Requires a matching accepted proof-obligation kernel result. Projecting the accepted artifact status as publishable also requires matching selected kernel-witness metadata; committed witness refs are published separately by `witness_store::publish_ref`. |
-| `DischargedBuiltin` | `accepted` | yes | Requires a matching accepted proof-obligation kernel result. Final artifact witness publication remains an `external_dependency_gap` until artifact schema support exists. |
+| `DischargedBuiltin` | `accepted` | yes | Requires a matching accepted proof-obligation kernel result. Only matching validated source-theorem FILE staging enables the bounded publication profile below; other profiles remain an `external_dependency_gap`. |
 | `PolicyPermittedExternal` | `externally_attested` | no | Policy-controlled evidence only. It carries no trusted `used_axioms`. |
 | `PolicyAssumed` | `policy_assumed` internal status | no | Must remain distinct from accepted and externally attested status. Current artifact schema lacks this public obligation status, so artifact publication is `external_dependency_gap` unless a later schema adds it. |
 | `PolicyOpen` | `open` | no | Carries an explanation reference when available. |
@@ -128,15 +128,22 @@ evidence only. Therefore:
 - `KernelVerified` can project an accepted artifact status as publishable only
   when matching selected witness metadata is available; status projection does
   not itself publish a committed witness ref;
-- `DischargedBuiltin` remains an accepted internal projection but cannot publish
-  a trusted artifact witness ref yet; its deterministic discharge hash remains
-  internal projection and proof-reuse metadata under the current artifact schema
-  and must not be written as an accepted artifact obligation field;
+- `DischargedBuiltin` remains an internal projection gap unless bound through
+  `with_source_theorem_witness` to matching validated reflexivity FILE staging;
 - `PolicyAssumed` cannot be losslessly represented in current
   `ObligationStatus`.
 
 These are integration gaps, not permission to emit placeholder witnesses or to
 rename statuses.
+
+`ProofStatusProjection::with_source_theorem_witness(self, &ProofWitnessStagedRef)`
+admits only the validated source-theorem FILE1.0/reflexivity Ref3.0 profile.
+Require matching accepted Builtin class, original obligation id/fingerprint/anchor,
+selected evidence, candidate, VC/dependency/policy and used-axiom provenance.
+Return the same projection with publishable accepted status and its witness id;
+preserve all reuse metadata, absent selected witness hash, incomplete slice/MISS
+and caller-owned currentness. Committed publication remains with
+[witness_store](./witness_store.md#publication-references).
 
 ## Proof Reuse Metadata
 

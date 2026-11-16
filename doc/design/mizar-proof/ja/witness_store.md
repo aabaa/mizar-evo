@@ -20,7 +20,7 @@ selection に対する `ProofWitnessDraft` だけを消費する:
 
 - 対応する accepted proof-obligation kernel result を持つ `KernelVerified`
   formula/substitution kernel evidence;
-- `DischargedBuiltin` は internal staged outcome とし、下記の明示 file route も unpublished reference のみを持つ。
+- `DischargedBuiltin` は internal staged outcome とし、検証済み source-theorem FILE staging のみが限定 committed publication を可能にする。
 
 draft は次を持つ:
 
@@ -67,13 +67,14 @@ origin evidence とする。committed publication evidence なしの `publish_re
 `CommittedWitnessPublicationProof::from_source_theorem_manifest_commit` は実際の
 `ManifestCommit`、root、完全な module identity、coordinator が期待する snapshot を受け取る。
 全 flag を有効にした fresh manifest validation で commit hash と manifest 全体を照合し、
-normal1.1 main と exact witness coverage の検証後、具体的な source-theorem candidate FILE の
-hash/reference を検証する。空でない KernelVerified 集合を要求する。
+normal1.1/1.2 または明示的 Builtin2.0 main と exact witness coverage の検証後、
+具体的な source-theorem FILE hash/reference を検証する。KernelVerified candidate
+または DischargedBuiltin reflexivity FILE witness の空でない集合を要求する。
 期待 snapshot は既存の `publish_ref` が staged provenance と比較する値であり、commit 時の
 snapshot receipt、現在の root/source の認証、lease ではない。token は検証時の過去の到達性を
 保持し、新規構築では file を再検証する。後の変更は既存 token を変えず、reuse を認証しない。
 通常の main hash 除外と同一内容の複製 root は有効であり、排他的な filesystem origin は認証しない。
-他の payload profile と DischargedBuiltin publication は引き続き未対応である。
+他の payload profile は引き続き未対応である。
 
 `publish_ref` は commit 後に新しい artifact reference を発明しない。`stage` が出した
 unpublished reference candidate が committed `VerifiedArtifact` と manifest に記録された
@@ -124,7 +125,7 @@ Status の[実生成](./status.md#source-theorem-witness-file-candidate)が、sc
 元の実 obligation id と Interface fingerprint family `mizar-proof/source-theorem-original-obligation`1.0 を使う。payload は同じ検査の非空・小文字・偶数長ASCII hexで、厳密に二つのprofileだけを許す。`mizar-proof/source-theorem-reflexivity-checked-wire`2.0 はBuiltin/ref3、`mizar-proof/source-theorem-candidate-checked-wire`2.0 はKernelVerified/通常ref2。[candidate生成](./status.md#source-theorem-candidate-witness-file)も既存8key/file1.0を使い、他のfamily/version組合せは拒否する。kernel_acceptance は既存 [Artifact metadata OBJECT](../../mizar-artifact/ja/proof_witness.md#conceptual-shape)そのもので、formula_context_hash 不在は明示 null、evidence_schema_version は2.0。旧7 key hash、raw STRING/composite identity/ref と混同しない。
 `read_source_theorem_witness_file(&PublishedArtifactRead, &ProofWitnessRef) -> Result<Vec<u8>, String>` は構造データだけを検証する。OBJECT を要求し、path付き SchemaVersionSupport(family,1,0,UpToSupported) で schema_version を最初に確認し、次に schema_family の完全一致（不互換は family・実 version・対応範囲・path を示す）、正確な key/型、厳密に許可されたpayload family/version、安全なhex復元を検査する。migration/forward-minor は宣言しない。byte slice より先に非ASCII、空・奇数長・大文字・非hex を拒否する。
 全 file hash を新 domain で再計算し、read.artifact_hash=Some(再計算値) を要求する。許可された実fileprofileだけからclass/versionを選ぶ。reflexivity2.0はBuiltin/ref3/read_builtin_proof_witness_ref、candidate2.0はKernelVerified/ref2/通常read_proof_witness_ref。同じfile元identity/metadata/read.path/再計算typedhashと選択class/versionの非信頼JSONを組み、実pathとexpected.witness_artifact_hashで対応する未変更Artifact readerを呼び、返る ref 全体と expected の一致、および元 fingerprint/evidence version の profile 一致を要求する。wire bytes だけを返し、下位 error は String で伝播する。kernel evidence の parse/replay、受理、確定公開 token は作らない。
-canonical parse・duplicate key/UTF-8/path/I/O integrity・ref/metadata 検証は Artifact が所有する。Builtin stage/publication guard、status/cache gap、不完全 slice は不変で、別の committed publication owner ができるまで新 file/ref は unreferenced である。
+canonical parse・duplicate key/UTF-8/path/I/O integrity・ref/metadata 検証は Artifact が所有する。reader 単独では acceptance/publication/cache authority を作らず、限定 committed route は [Publication References](#publication-references) が所有する。
 ### Source theorem witness file tests
 既存 term_proof_tests に source_theorem_witness_file_matches_genuine_artifact_transport と source_theorem_witness_file_rejects_invalid_schema_and_associations だけを追記し、旧全 byte/import/helper/fixture を保持する。実 native Disk/OpenBuffer・Frontend・元 resolver 入力を使う。新しい各成功の前に未変更の元ソース draft 取得を独立に呼び、triple 全体と独立に組んだ8 key/file/metadata/hash/ref を比較する。実 Artifact write/read の canonical 全 byte・hash/domain・復元 wire・反復・入力不変性・実 source/policy 変化と、元 Open/incomplete/miss/publication gap/stageNone を確認する。
 負例は実生成物から作った非信頼データを実 Artifact transport に通す。内容検証より先の互換性、family、unknown/missing/型、hex、metadata、別 identity/policy/path/ref/hash、read hash 不在/不一致を扱う。schema error に到達する generic read の expected hash 省略は authority ではない。実上流 error/優先順は旧取得と比較し、下位 parser/I/O/kernel 行列を複製せず、架空の正の Accepted/token/receipt/complete slice を作らない。構成不能な guard は静的に確認する。
@@ -170,9 +171,12 @@ reference を publication-reachable として返す。
 store は non-trusted status の `ProofWitnessRef` を publish してはならない。unsupported
 trusted status を `kernel_verified` に書き換えてもならない。
 
-`DischargedBuiltin` publication は `external_dependency_gap` を保ち、実 Artifact 所有 committed reachability が供給されるまで `publish_ref` は拒否する。
-Generic `stage` は internal hash/reference absent を保つ。明示 file route は別 file hash の unpublished reference3.0 のみを保持してよい。
-どちらも selected_proof_witness_hash を供給せず、必須 deterministic-discharge reuse input を置き換えず、status/publication/cache authority を昇格しない。
+`DischargedBuiltin` は検証済み source-theorem FILE1.0 Ref3.0 candidate と対応する
+committed reachability がある場合のみ公開する。generic `stage` は internal hash と
+reference 不在を保持し、algorithm-state FILE publication は拒否する。
+[status binding](./status.md#artifact-projection) は対応する projection の publication
+field のみを変更する。`selected_proof_witness_hash` の供給、deterministic-discharge
+reuse input の代替、cache/currentness authority の確立は行わない。
 
 ## Provenance Metadata
 
@@ -236,8 +240,8 @@ artifact witness schema が参照できる witness payload artifact hash
 （`witness_artifact_hash`）を持つ場合、`selected_proof_witness_hash` を保持してよい。
 その hash は `ProofWitnessRef` metadata object の hash ではなく、committed publication proof
 でもない。committed `ProofWitnessPublishedRef` は、artifact boundary が matching committed
-witness publication proof を供給した後に `publish_ref` からだけ得られる。artifact support
-が存在するまで、`DischargedBuiltin` reuse は `deterministic_discharge_hash` を使い続ける。
+witness publication proof を供給した後に `publish_ref` からだけ得られる。
+`DischargedBuiltin` reuse は `deterministic_discharge_hash` を使い続ける。
 internal staged hash は selected proof witness hash ではない。cache hit は witness を
 publish できず、non-trusted status を昇格させられず、trusted `used_axioms` も作れない。
 
@@ -245,7 +249,7 @@ publish できず、non-trusted status を昇格させられず、trusted `used_
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `WITNESS10-G001` | `external_dependency_gap` | `mizar-artifact` `ProofWitnessRef` version `2.0` は現在 `kernel_verified` formula/substitution evidence だけを受理する。`DischargedBuiltin` witness publication は unsupported のままであり、collapse してはならない。 |
+| `WITNESS10-G001` | `external_dependency_gap` | 検証済み source-theorem reflexivity FILE staging 以外の `DischargedBuiltin` publication は未対応であり、collapse してはならない。 |
 | `WITNESS10-G002` | `deferred` | [State Machine](#state-machine) の限定 source-theorem candidate 経路が committed exact coverage を供給する。汎用 publication integration は deferred であり、この module は manifest を書かない。 |
 | `WITNESS10-G003` | `deferred` | formula/substitution witness bytes 以外の concrete payload schema は producer-owned のままである。store は schema identity と bytes を hash するが backend proof payload は解釈しない。 |
 | `WITNESS11-G001` | `external_dependency_gap` | opaque Artifact commit は [限定 source-theorem constructor](#state-machine) だけを可能にする。他の production token profile は未提供であり、一致する公開 tuple は commit origin を証明しない。 |

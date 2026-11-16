@@ -4717,6 +4717,57 @@ pub struct ProofStatusProjection {
 }
 
 impl ProofStatusProjection {
+    /// Binds accepted theorem reflexivity to its validated, unpublished witness file.
+    pub fn with_source_theorem_witness(
+        mut self,
+        staged: &crate::witness_store::ProofWitnessStagedRef,
+    ) -> Result<Self, String> {
+        use mizar_artifact::{
+            proof_witness::{EvidenceKind, ProofStatus},
+            registration_summary::ArtifactHashClass,
+            store::SchemaVersion,
+        };
+
+        let invalid = || "source theorem witness status binding mismatch".to_owned();
+        let reference = staged.artifact_reference_candidate().ok_or_else(invalid)?;
+        let provenance = staged.provenance();
+        let reuse = &self.reuse_metadata;
+        if self.selected_class != ProofWinnerClass::DischargedBuiltin
+            || self.projected_status != ProjectedProofStatus::Accepted
+            || staged.selected_class() != self.selected_class
+            || staged.payload_schema().family()
+                != crate::witness_store::SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY
+            || staged.payload_schema().version() != SchemaVersion::new(1, 0)
+            || !staged.payload_schema().canonical_bytes_required()
+            || reference.schema_version != SchemaVersion::new(3, 0)
+            || reference.proof_status != ProofStatus::DischargedBuiltin
+            || reference.evidence_kind != EvidenceKind::FormulaSubstitutionKernelEvidence
+            || staged.obligation_fingerprint().class != ArtifactHashClass::Interface
+            || staged.obligation_fingerprint().schema_family
+                != "mizar-proof/source-theorem-original-obligation"
+            || staged.obligation_fingerprint().schema_version != SchemaVersion::new(1, 0)
+            || self.obligation_id != staged.obligation_id()
+            || reuse.obligation_fingerprint() != staged.obligation_fingerprint().digest
+            || reuse.obligation_anchor() != staged.obligation_anchor()
+            || reuse.selected_evidence_hash() != Some(staged.selected_evidence_hash())
+            || reuse.selected_proof_witness_hash().is_some()
+            || reuse.selected_candidate_id() != Some(provenance.selected_candidate_id())
+            || provenance.kernel_evidence_origin() != KernelEvidenceOrigin::BuiltinDischarge
+            || reuse.vc_fingerprint() != provenance.target_vc_fingerprint()
+            || reuse.dependency_slice_fingerprint() != provenance.dependency_slice_fingerprint()
+            || reuse.policy_fingerprint().hash() != provenance.verifier_policy_fingerprint()
+            || provenance.accepted_result_hash() != Some(staged.selected_evidence_hash())
+            || self.trusted_used_axioms.as_ref() != provenance.trusted_used_axioms_ref()
+            || reuse.trusted_used_axioms_hash() != provenance.trusted_used_axiom_ref_hash()
+        {
+            return Err(invalid());
+        }
+        self.artifact_publication =
+            ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Accepted);
+        self.accepted_witness_obligation_id = Some(self.obligation_id.clone());
+        Ok(self)
+    }
+
     #[must_use]
     pub const fn vc(&self) -> VcId {
         self.vc

@@ -42,7 +42,7 @@ internal projection result は selection winner class と projected obligation s
 | Winner class | Projected obligation status | Trusted | Notes |
 |---|---|---:|---|
 | `KernelVerified` | `accepted` | yes | 対応する accepted proof-obligation kernel result が必要である。accepted artifact status を publishable として project するには matching selected kernel-witness metadata も必要である。committed witness ref は `witness_store::publish_ref` が別に publish する。 |
-| `DischargedBuiltin` | `accepted` | yes | 対応する accepted proof-obligation kernel result が必要である。artifact schema support が存在するまで final artifact witness publication は `external_dependency_gap` のままである。 |
+| `DischargedBuiltin` | `accepted` | yes | 対応する accepted proof-obligation kernel result が必要である。対応する検証済み source-theorem FILE staging のみが下記の限定 publication を可能にし、他の profile は `external_dependency_gap` を保つ。 |
 | `PolicyPermittedExternal` | `externally_attested` | no | policy-controlled evidence のみ。trusted `used_axioms` を持たない。 |
 | `PolicyAssumed` | `policy_assumed` internal status | no | accepted status や externally attested status と区別したままにする。現在の artifact schema にはこの public obligation status がないため、後続 schema が追加するまでは artifact publication は `external_dependency_gap` である。 |
 | `PolicyOpen` | `open` | no | 利用可能なら explanation reference を持つ。 |
@@ -119,14 +119,21 @@ projection は stable projection data からだけ artifact obligation field を
 - `KernelVerified` は matching selected witness metadata が利用可能な場合だけ accepted
   artifact status を publishable として project できる。status projection 自体は committed
   witness ref を publish しない;
-- `DischargedBuiltin` は accepted internal projection のままだが、まだ trusted
-  artifact witness ref を publish できない; その deterministic discharge hash は
-  現行 artifact schema では internal projection および proof-reuse metadata に留まり、
-  accepted artifact obligation field として書いてはならない;
+- `DischargedBuiltin` は `with_source_theorem_witness` で対応する検証済み
+  reflexivity FILE staging に結び付けるまでは internal projection gap を保つ;
 - `PolicyAssumed` は現在の `ObligationStatus` では lossless に表現できない。
 
 これらは integration gap であり、placeholder witness を emit したり status 名を
 置き換えたりする許可ではない。
+
+`ProofStatusProjection::with_source_theorem_witness(self, &ProofWitnessStagedRef)`
+は検証済み source-theorem FILE1.0/reflexivity Ref3.0 profile のみを受け付ける。
+accepted Builtin class、元の obligation id/fingerprint/anchor、selected evidence、
+candidate、VC/dependency/policy および used-axiom provenance の一致を要求する。
+同じ projection の publication を accepted にし、対応する witness id を設定する。
+reuse metadata、selected witness hash の不在、incomplete slice/MISS、呼出側の
+currentness 責務を保持する。committed publication は
+[witness_store](./witness_store.md#publication-references) が所有する。
 
 ## Proof Reuse Metadata
 

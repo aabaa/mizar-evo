@@ -21,7 +21,7 @@ also match the deterministic status projection for the same obligation:
 
 - `KernelVerified` formula/substitution kernel evidence with a matching
   accepted proof-obligation kernel result;
-- `DischargedBuiltin` as an internal staged outcome; the explicit file route below carries an unpublished reference only.
+- `DischargedBuiltin` as an internal staged outcome; only validated source-theorem FILE staging supports bounded committed publication.
 
 The draft carries:
 
@@ -72,14 +72,15 @@ Calling `publish_ref` without committed publication evidence is an error.
 `CommittedWitnessPublicationProof::from_source_theorem_manifest_commit` takes an
 actual `ManifestCommit`, root, full module identity and coordinator-expected snapshot.
 Fresh all-flags manifest validation must match the commit hash and whole manifest;
-normal1.1 main validation and exact witness coverage precede concrete source-theorem
-candidate FILE hash/reference validation. Require a nonempty KernelVerified set.
+Normal1.1/1.2 or explicit Builtin2.0 main validation and exact witness coverage
+precede concrete source-theorem FILE hash/reference validation. Require a nonempty
+set of KernelVerified candidate or DischargedBuiltin reflexivity FILE witnesses.
 The expected snapshot is compared with staged provenance by unchanged `publish_ref`;
 it is not a commit snapshot receipt, current-root/source authentication or lease.
 The token retains past validated reachability: fresh construction rechecks files,
 while later mutation does not retroactively alter an existing token or certify reuse.
 Normal main-hash exclusions and identical copied roots remain valid; no exclusive filesystem origin is authenticated.
-Other payload profiles and DischargedBuiltin publication remain unsupported.
+Other payload profiles remain unsupported.
 
 `publish_ref` does not invent a new artifact reference after commit. It
 validates that the unpublished reference candidate emitted by `stage` is the
@@ -131,7 +132,7 @@ The source Status [producer](./status.md#source-theorem-witness-file-candidate) 
 Identity is the actual original obligation id and Interface hash family `mizar-proof/source-theorem-original-obligation`1.0. Payload is SAME-call nonempty lowercase even-length ASCII hex in EXACTLY two profiles: `mizar-proof/source-theorem-reflexivity-checked-wire`2.0 for Builtin/ref3, or `mizar-proof/source-theorem-candidate-checked-wire`2.0 for KernelVerified/normalref2; the new [candidate producer](./status.md#source-theorem-candidate-witness-file) preserves the existing eight-key grammar/file1.0. Other profile/version pairs are refused. kernel_acceptance is exactly the existing [Artifact metadata object](../../mizar-artifact/en/proof_witness.md#conceptual-shape), including explicit null for absent formula_context_hash; its evidence_schema_version is2.0. Do not reuse/reinterpret legacy seven-key hashes, raw STRING/composite identities or their references.
 `read_source_theorem_witness_file(&PublishedArtifactRead, &ProofWitnessRef) -> Result<Vec<u8>, String>` validates untrusted structural data only. Require an OBJECT; check schema_version first with path-aware SchemaVersionSupport(family,1,0,UpToSupported), then exact schema_family (an incompatibility reports family, actual version, supported range and path), exact key set/field types, the exact admitted payload-family/version pair and safe hex recovery. No migration or forward-minor extension is declared. Reject non-ASCII before byte slicing; reject empty/odd/uppercase/nonhex payloads.
 Recompute the whole canonical file hash in its own domain and require read.artifact_hash=Some(recomputed), rather than trusting a caller-constructible PublishedArtifactRead. Derive reference class/version ONLY from the admitted explicit file profile: reflexivity2.0 selects Builtin/ref3/read_builtin_proof_witness_ref, candidate2.0 selects KernelVerified/ref2/normal read_proof_witness_ref. Assemble untrusted JSON from actual file identity/metadata/read.path/recomputed typed hash and selected class/version; use the corresponding unchanged Artifact reader with actual path and expected.witness_artifact_hash, then require the entire decoded reference equals expected and the original fingerprint/evidence versions match this profile. Return only recovered wire bytes; propagate lower errors as strings. The reader neither parses/replays kernel evidence nor creates acceptance or a committed publication token.
-Artifact retains canonical parsing, duplicate-key/UTF-8/path/I/O integrity and reference/metadata validation. Existing Builtin stage/publication guards, status/cache gaps and incomplete dependency slices stay unchanged; the new file/reference is unreferenced until a separate committed publication owner exists.
+Artifact retains canonical parsing, duplicate-key/UTF-8/path/I/O integrity and reference/metadata validation. The reader alone establishes no acceptance, publication or cache authority; [Publication References](#publication-references) owns the bounded committed route.
 ### Source theorem witness file tests
 Append only source_theorem_witness_file_matches_genuine_artifact_transport and source_theorem_witness_file_rejects_invalid_schema_and_associations in existing term_proof_tests. Preserve old bytes/imports/helpers/fixtures. Use actual native Disk/OpenBuffer capture, Frontend and original resolver inputs. Before each new success independently call unchanged original-source draft acquisition; compare its whole triple and independently assembled eight-key file/full metadata/hash/ref with the new products. Check actual Artifact write/read whole canonical bytes, hash/domain, recovered wire, replay, received-input purity and real source/policy variants; keep actual original Open/incomplete/miss/publication-gap/stageNone controls.
 Negative file data starts from genuine products and uses actual Artifact transport. Cover compatibility before malformed content, wrong family, unknown/missing/wrong fields, malformed hex, nested metadata, foreign identity/policy/path/reference/hash and absent/wrong read hash. Generic transport may omit expected hash to reach schema errors; that is not proof authority. Compare genuine upstream producer errors/precedence with unchanged acquisition; do not duplicate lower parser/I/O/kernel matrices or construct fake positive Accepted/token/receipt/complete slices. Defensive unconstructible guards receive static review.
@@ -177,9 +178,12 @@ only after committed manifest reachability is proven.
 The store must not publish a `ProofWitnessRef` for non-trusted statuses. It must
 also not rewrite unsupported trusted statuses into `kernel_verified`.
 
-`DischargedBuiltin` publication remains an `external_dependency_gap`: `publish_ref` refuses it until real Artifact-owned committed reachability is supplied.
-Generic `stage` retains its internal hash and absent reference. The explicit file route may carry an unpublished reference3.0 to its separate file hash.
-Neither path supplies `selected_proof_witness_hash`, replaces the required deterministic-discharge reuse input, upgrades status or establishes publication/cache authority.
+`DischargedBuiltin` publishes only the validated source-theorem FILE1.0 Ref3.0
+candidate with matching committed reachability. Generic `stage` retains its
+internal hash and absent reference; algorithm-state FILE publication stays refused.
+The [status binding](./status.md#artifact-projection) changes only the matching
+projection's publication fields. Neither route supplies `selected_proof_witness_hash`,
+replaces deterministic-discharge reuse input or establishes cache/currentness authority.
 
 ## Provenance Metadata
 
@@ -248,7 +252,7 @@ candidate may carry
 reference. That hash is not a hash of the `ProofWitnessRef` metadata object and
 is not a committed publication proof. A committed `ProofWitnessPublishedRef`
 still comes only from `publish_ref` after the artifact boundary supplies a
-matching committed witness publication proof. Until artifact support exists,
+matching committed witness publication proof.
 `DischargedBuiltin` reuse continues to use `deterministic_discharge_hash`; any
 internal staged hash is not a selected proof witness hash. Cache hits cannot
 publish witnesses, upgrade non-trusted statuses, or create trusted
@@ -258,7 +262,7 @@ publish witnesses, upgrade non-trusted statuses, or create trusted
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `WITNESS10-G001` | `external_dependency_gap` | `mizar-artifact` `ProofWitnessRef` version `2.0` currently accepts only `kernel_verified` formula/substitution evidence. `DischargedBuiltin` witness publication remains unsupported and must not be collapsed. |
+| `WITNESS10-G001` | `external_dependency_gap` | `DischargedBuiltin` publication outside validated source-theorem reflexivity FILE staging remains unsupported and must not be collapsed. |
 | `WITNESS10-G002` | `deferred` | The bounded source-theorem candidate route in [State Machine](#state-machine) supplies exact committed coverage; general publication integration remains deferred. This module does not write manifests. |
 | `WITNESS10-G003` | `deferred` | Concrete payload schemas beyond formula/substitution witness bytes remain producer-owned. The store hashes schema identity and bytes but does not interpret backend proof payloads. |
 | `WITNESS11-G001` | `external_dependency_gap` | The opaque Artifact commit enables only the [bounded source-theorem constructor](#state-machine). Other production token profiles remain unavailable; matching public tuples never establish commit origin. |

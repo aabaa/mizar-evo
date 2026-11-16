@@ -456,7 +456,7 @@ fn discharged_builtin_stages_internal_hash_but_does_not_publish_ref() {
         ),
         Err(ProofWitnessStoreError::UnsupportedWitnessPublication {
             selected_class: ProofWinnerClass::DischargedBuiltin,
-            gap: "WITNESS10-G001: mizar-artifact ProofWitnessRef 2.0 has no discharged_builtin witness status/evidence pair",
+            gap: "WITNESS10-G001: DischargedBuiltin publication requires validated source-theorem FILE staging",
         })
     );
 }

@@ -916,7 +916,7 @@ pub struct CommittedWitnessPublicationProof {
 }
 
 impl CommittedWitnessPublicationProof {
-    /// Validates committed reachability for source-theorem candidate witnesses.
+    /// Validates committed reachability for source-theorem witnesses.
     ///
     /// Fresh reads must match the opaque commit and every selected witness file.
     /// `expected_snapshot` is the coordinator's publication expectation, checked
@@ -937,7 +937,8 @@ impl CommittedWitnessPublicationProof {
             },
             verified_artifact::{
                 VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
-                artifact_hash_excluded_paths, read_verified_artifact,
+                artifact_hash_excluded_paths, read_builtin_verified_artifact,
+                read_verified_artifact,
             },
         };
 
@@ -977,30 +978,34 @@ impl CommittedWitnessPublicationProof {
             },
         )
         .map_err(|error| error.to_string())?;
-        let artifact = read_verified_artifact(
-            &read.value,
-            VerifiedArtifactReadOptions {
-                artifact_path: Some(path.as_str()),
-                expected_module: Some(&entry.module),
-                expected_interface_hash: Some(entry.interface_hash.digest),
-                expected_implementation_hash: Some(entry.implementation_hash.digest),
-            },
-        )
+        let options = VerifiedArtifactReadOptions {
+            artifact_path: Some(path.as_str()),
+            expected_module: Some(&entry.module),
+            expected_interface_hash: Some(entry.interface_hash.digest),
+            expected_implementation_hash: Some(entry.implementation_hash.digest),
+        };
+        let artifact = if entry.artifact_hash.schema_version == SchemaVersion::new(2, 0) {
+            read_builtin_verified_artifact(&read.value, options)
+        } else {
+            read_verified_artifact(&read.value, options)
+        }
         .map_err(|error| error.to_string())?;
         if artifact.schema_version != SchemaVersion::new(1, 1)
             && artifact.schema_version != SchemaVersion::new(1, 2)
+            && artifact.schema_version != SchemaVersion::new(2, 0)
         {
-            return Err("committed source theorem main must use schema 1.1 or 1.2".to_owned());
+            return Err("committed source theorem main must use schema 1.1, 1.2 or 2.0".to_owned());
         }
         validate_exact_witness_coverage(&artifact.proof_witnesses, &entry.proof_witnesses)
             .map_err(|error| error.to_string())?;
         if artifact.proof_witnesses.is_empty()
-            || artifact
-                .proof_witnesses
-                .iter()
-                .any(|witness| witness.proof_status != ArtifactProofStatus::KernelVerified)
+            || artifact.proof_witnesses.iter().any(|witness| {
+                witness.proof_status != ArtifactProofStatus::KernelVerified
+                    && !(artifact.schema_version == SchemaVersion::new(2, 0)
+                        && witness.proof_status == ArtifactProofStatus::DischargedBuiltin)
+            })
         {
-            return Err("committed source theorem requires KernelVerified witnesses".to_owned());
+            return Err("committed source theorem requires supported trusted witnesses".to_owned());
         }
         let domain = artifact_hash_domain(
             SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
@@ -1362,10 +1367,22 @@ pub fn publish_ref(
     staged: &ProofWitnessStagedRef,
     proof: &CommittedWitnessPublicationProof,
 ) -> Result<ProofWitnessPublishedRef, ProofWitnessStoreError> {
-    if staged.selected_class == ProofWinnerClass::DischargedBuiltin {
+    if staged.selected_class == ProofWinnerClass::DischargedBuiltin
+        && !(staged.payload_schema.family() == SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY
+            && staged.payload_schema.version() == SchemaVersion::new(1, 0)
+            && staged
+                .artifact_reference_candidate
+                .as_ref()
+                .is_some_and(|reference| {
+                    reference.schema_version == SchemaVersion::new(3, 0)
+                        && reference.proof_status == ArtifactProofStatus::DischargedBuiltin
+                        && reference.evidence_kind
+                            == EvidenceKind::FormulaSubstitutionKernelEvidence
+                }))
+    {
         return Err(ProofWitnessStoreError::UnsupportedWitnessPublication {
             selected_class: staged.selected_class,
-            gap: "WITNESS10-G001: mizar-artifact ProofWitnessRef 2.0 has no discharged_builtin witness status/evidence pair",
+            gap: "WITNESS10-G001: DischargedBuiltin publication requires validated source-theorem FILE staging",
         });
     }
     if staged.provenance.build_snapshot_fingerprint() != proof.build_snapshot_fingerprint {
@@ -1718,7 +1735,11 @@ fn validate_exact_witness_coverage(
     let mut artifact_keys = BTreeSet::new();
     let mut artifact_obligation_ids = BTreeSet::new();
     for witness in artifact_witnesses {
-        write_proof_witness_ref(witness)?;
+        if witness.proof_status == ArtifactProofStatus::DischargedBuiltin {
+            mizar_artifact::proof_witness::builtin_proof_witness_ref_json(witness)?;
+        } else {
+            write_proof_witness_ref(witness)?;
+        }
         if !artifact_obligation_ids.insert(witness.obligation_id.clone()) {
             return Err(ProofWitnessStoreError::DuplicateArtifactWitnessReference {
                 obligation_id: witness.obligation_id.clone(),
