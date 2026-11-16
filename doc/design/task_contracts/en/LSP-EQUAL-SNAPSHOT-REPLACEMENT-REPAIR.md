@@ -1,0 +1,21 @@
+# Task LSP-EQUAL-SNAPSHOT-REPLACEMENT-REPAIR: equal-snapshot replacement repair
+Canonical language: English; [Japanese pointer](../ja/LSP-EQUAL-SNAPSHOT-REPLACEMENT-REPAIR.md).
+Status: frozen repair contract. Tier: full; physical storage/public execution-view boundary fails the test-only predecessor's pattern.
+Owner: [LSP plan](../../mizar-lsp/en/00.crate_plan.md); lower owners: [IR plan](../../mizar-ir/en/00.crate_plan.md), [Driver plan](../../mizar-driver/en/00.crate_plan.md). Consumer: held T1 range audit.
+
+## Authority and scope
+
+Repair same-configured-publisher replacement after native SourceLoad under [bridge lifecycle](../../mizar-lsp/en/build_bridge.md#supersede-and-terminal-lifecycle), [captured execution](../../mizar-driver/en/driver.md#nonterminal-captured-execution), and [Task40 case 1](LSP-RUNNING-BRIDGE-CANCELLATION.md#test-matrix-and-exit).
+Writes: IR publisher/identity/storage, Driver deferred dispatch and their tests, LSP bridge regression, paired owners and required contract backlinks. No Session behavior changes; captures keep fresh SourceIds.
+Add only `PhaseOutputPublisher::for_captured_execution(snapshot)` as a public method: a snapshot-scoped view sharing configured storage, registry, currentness, work authorization and exact publication records. Driver retains one view per deferred execution, including its first dispatch; synchronous submission and standalone/cache publication retain ordinary duplicate refusal.
+Separate execution views may seal separate immutable physical instances of an equal canonical output ID. Private slot identity distinguishes exact handles; canonical hashes/IDs/schema stay unchanged. Each view still rejects a second successful publication for the same phase/unit/kind; failed sealing permits retry. Native capture/result/currentness guards remain unchanged.
+Only execution-view OpenBuffer/InternalOnly registration may retain distinct lineages for differing capture provenance under an equal snapshot. Preserve ordinary/package conflicting-duplicate anchors through rollback, parents, and nonpromotion. Views grant no package/proof authority beyond existing producer validation.
+Retain/release/protect act on every physical instance of the canonical ID; a new instance inherits existing retain owners. Collection removes only its own physical slot and preserves live siblings, generation guards, blob lifetime and old readers. Pending-slot validation remains fail closed; no payload rebinding, source-ID reinterpretation, resets or collection workaround.
+Forbidden: language/spec/.miz/expectation/trace changes, observation seam or unapproved Q1–Q5, Task41, scheduler policy, other public APIs/types, AGENTS/protocol edits, coverage credit or push.
+
+## Test matrix and exit
+
+Cap six grouped cases: (1) genuine running LSP replacement after SourceLoad reaches Frontend while old work drains without obsolete output/publication; (2) completed Frontend replacement succeeds with fresh capture IDs and readable original payloads; (3) separate execution views retain distinct physical handles/equal canonical IDs, both readable/authorized through the configured publisher, while ordinary and same-view duplicates fail; (4) internal variants preserve readers/rollback/ordinary conflicts and publication classes; invalid pending/parent/schema/type/currentness controls remain; (5) sibling retain/release/protect/collect, inherited owners and blob lifetime preserve exact readers and collected-generation refusal; (6) unchanged Session fresh-ID and Driver native/proof/cache duplicate-refusal suites pass.
+Reviews: independent specification/test intent, sufficiency, precision, volume/scope and consistency/final.
+Verification: fmt, all-target/all-feature Clippy with warnings denied, both checker/test lint_policy, complete IR/Build/Driver/LSP groups, unchanged Session group and explicit native bridge regression as short E2E; links/fragments and diff checks. Full cargo test is required by the inherited ten-task pre-push cadence and any full-failure repair; no new outstanding task. Logs remain outside doc/.
+Exit: freeze then repair committed locally; outstanding count remains ten and push remains held for a fresh T1 audit. No language-intent choice is authorized.
