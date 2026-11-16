@@ -312,6 +312,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Deps: 11, owner-supported nonterminal Driver execution. Spec: [bridge cancellation](build_bridge.md#supersede-and-terminal-lifecycle).
 
 41. **Non-range diagnostic delivery contract.** [ ]
+    - Definition prerequisite: [LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN.md), [paired presentation proposal](non_range_diagnostics.md); owner Q1–Q5 approval, presentation/host prerequisites and implementation precede Task41 delivery evidence.
     - Audit G6: obtain owner-approved source-load/non-range presentation before adding wire conversion and actual delivery tests; retain explicit whole-batch refusal meanwhile. Any new semantic choice returns to the owner.
     - Deps: 9, owner presentation decision. Spec: [diagnostic ranges](diagnostics.md#range-conversion).
 

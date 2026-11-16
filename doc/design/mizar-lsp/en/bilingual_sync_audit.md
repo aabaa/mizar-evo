@@ -4,6 +4,8 @@ This document owns language parity boundaries for the `mizar-lsp` design tree.
 
 ## Language ownership
 
+- The [non-range diagnostic presentation proposal](non_range_diagnostics.md) is paired; Q1–Q5 await owner approval.
+
 - The [checkpoint observation proposal](observation_seam.md) is paired; Q1–Q5 await owner approval.
 - The approved [nonterminal execution seam](execution_seam.md) is paired; Q1–Q5 use option A.
 - The approved [native payload producers](native_payload_producers.md) and [ranged diagnostic host input](ranged_diagnostic_host.md) are paired.

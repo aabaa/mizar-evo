@@ -21,6 +21,8 @@ Preserve primary ranges, retained secondary anchors and their order/multiplicity
 
 Source-load diagnostics retain package/path identity and their non-range location: no fabricated EOF, insertion point or source span. They are not fed through a span-only converter. No new non-range wire encoding is defined here.
 
+The separate [non-range presentation proposal](non_range_diagnostics.md) leaves Q1–Q5 open for owner approval before implementation and Task41; it does not relax the current whole-batch refusal.
+
 ## Unsaved-text overlays
 
 [Lightweight frontend diagnostics](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#lightweight-open-buffer-diagnostics) use current editor text and version, are marked `current`, and claim no verified semantic status. They remain version-keyed overlay diagnostics, separate from the published build index, and never reach CLI output or artifacts, including `VerifiedArtifact`.

@@ -21,6 +21,8 @@ LSP は [spec §22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#22
 
 source-load 診断は package/path identity と non-range location を保つ。EOF、挿入点、source span を捏造せず、span-only converter に渡さない。新たな non-range wire encoding はここでは定めない。
 
+別の [non-range 表示案](non_range_diagnostics.md) は Q1–Q5 の owner 承認後に実装、次に Task41 を進めるための未決提案であり、現 batch 全体の拒否を緩めない。
+
 ## Unsaved-text overlays
 
 [軽量 frontend 診断](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#lightweight-open-buffer-diagnostics) は現在 editor text と version を使い、`current` とし、検証済み semantic status を主張しない。version を key とする overlay 診断として公開 build index から分離し、CLI 出力にも `VerifiedArtifact` を含む artifact にも決して渡さない。
