@@ -1364,6 +1364,79 @@ fn resolver_import_aliases_and_facades_preserve_public_spelling_and_identity() {
 }
 
 #[test]
+fn citations_exclude_active_local_notation_and_proof_keywords() {
+    use super::append_semantic_items;
+
+    let (source, summary, notation) = genuine_notation_fixture(false);
+    let mut summary = summary.expect("genuine source notation summary candidate");
+    let owner = summary.exported_symbols[0].clone();
+    let mut theorem = owner.clone();
+    theorem.origin_id = "artifact-theorem-owner".into();
+    theorem.fully_qualified_name = "app::main::TheoremT".into();
+    theorem.declaration_kind = "theorem".into();
+    let mut definition = owner.clone();
+    definition.origin_id = "artifact-definition-owner".into();
+    definition.fully_qualified_name = "app::main::DefinitionD".into();
+    definition.declaration_kind = "functor".into();
+    summary
+        .exported_symbols
+        .extend([theorem.clone(), definition.clone()]);
+    summary.exported_labels = vec![
+        mizar_artifact::module_summary::ExportedLabelSummary {
+            origin_id: "artifact-theorem-label".into(),
+            label: "T".into(),
+            owner_fully_qualified_name: theorem.fully_qualified_name.clone(),
+            visibility: "public".into(),
+            source_range: theorem.source_range,
+            target_kind: "theorem".into(),
+        },
+        mizar_artifact::module_summary::ExportedLabelSummary {
+            origin_id: "artifact-definition-label".into(),
+            label: "D".into(),
+            owner_fully_qualified_name: definition.fully_qualified_name.clone(),
+            visibility: "public".into(),
+            source_range: definition.source_range,
+            target_kind: "definition".into(),
+        },
+    ];
+    summary.refresh_interface_hash().unwrap();
+
+    let complete = |text: &str| {
+        let context = at_end(text).unwrap();
+        let mut items = syntax_items(&context);
+        append_semantic_items(
+            &mut items,
+            &summary,
+            Some(&notation),
+            None,
+            (source.len(), source.len()),
+            &context,
+            "Source: genuine local (version 1)",
+        );
+        sort_items(items, &context.1)
+    };
+
+    let terms = complete("x = ");
+    assert!(
+        labels(&terms).contains(&"base"),
+        "active functor missing: {terms:?}"
+    );
+    let formulas = complete("x holds ");
+    assert!(
+        labels(&formulas).contains(&"related"),
+        "active predicate missing: {formulas:?}"
+    );
+
+    for cue in ["by ", "by T, "] {
+        assert_eq!(
+            labels(&complete(cue)),
+            ["D", "T"],
+            "citation candidates for {cue:?} must exclude active local notation and proof keywords"
+        );
+    }
+}
+
+#[test]
 fn imported_citations_keep_theorem_definition_signatures_and_exclude_unpublished_labels() {
     use super::append_semantic_items;
     let mut fixture = super::super::full_snapshot_registry_a::RegistryFixture::new();
