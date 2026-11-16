@@ -9120,10 +9120,7 @@ mod genuine_source_load_diagnostic_host_tests {
     use mizar_session::{
         DiskSourceLoader, ModulePath, PackageId, SourceInput, SourceLoader, SourceOriginInput,
     };
-    use std::{
-        fs,
-        path::{Path, PathBuf},
-    };
+    use std::{fs, path::PathBuf};
 
     fn disk_input(
         capture: &NativeOpenBufferCapture,
@@ -9191,7 +9188,8 @@ mod genuine_source_load_diagnostic_host_tests {
     fn assert_genuine_non_range_wire_delivery(
         fixture: &RegistryFixture,
         records: &[mizar_diagnostics::failure_record::DiagnosticRecord],
-    ) {
+        selection: &str,
+    ) -> Vec<Value> {
         let mut wire = Vec::new();
         assert_eq!(
             fixture
@@ -9207,11 +9205,12 @@ mod genuine_source_load_diagnostic_host_tests {
         );
         let frames = super::tests::responses(&wire);
         assert_eq!(frames.len(), fixture.sources.len() + 1);
-        let expected_uris = fixture
+        let mut expected_uris = fixture
             .sources
             .iter()
             .map(|(_, _, uri)| uri.as_str())
-            .collect::<std::collections::BTreeSet<_>>();
+            .collect::<Vec<_>>();
+        expected_uris.sort_unstable();
         assert_eq!(
             frames[..frames.len() - 1]
                 .iter()
@@ -9220,14 +9219,14 @@ mod genuine_source_load_diagnostic_host_tests {
                     assert_eq!(frame["params"]["diagnostics"], json!([]));
                     frame["params"]["uri"].as_str().unwrap()
                 })
-                .collect::<std::collections::BTreeSet<_>>(),
+                .collect::<Vec<_>>(),
             expected_uris
         );
         let frame = frames.last().unwrap();
         assert_eq!(frame["jsonrpc"], "2.0");
         assert_eq!(frame["method"], "mizar/publishNonRangeDiagnostics");
         assert_eq!(frame["params"]["version"], 1);
-        assert!(frame["params"]["selection"].as_str().is_some());
+        assert_eq!(frame["params"]["selection"], selection);
         let wire_records = frame["params"]["records"].as_array().unwrap();
         assert_eq!(wire_records.len(), records.len());
         for (wire_record, record) in wire_records.iter().zip(records) {
@@ -9257,13 +9256,18 @@ mod genuine_source_load_diagnostic_host_tests {
             );
             assert_eq!(
                 wire_record["data"]["snapshot"],
-                frame["params"]["records"][0]["data"]["snapshot"]
+                record
+                    .handle()
+                    .snapshot
+                    .to_published_schema_string()
+                    .unwrap()
             );
             assert_eq!(wire_record["data"]["id"], record.handle().id.get());
             assert_eq!(wire_record["relatedInformation"], json!([]));
             assert!(wire_record.get("range").is_none());
             assert!(wire_record.get("version").is_none());
         }
+        frames
     }
 
     #[test]
@@ -9342,7 +9346,11 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
-        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
+        assert_genuine_non_range_wire_delivery(
+            &fixture,
+            host.diagnostics().records(),
+            host.publication_identity(),
+        );
         assert!(
             host.publication().is_none(),
             "failed load has no full publication"
@@ -9481,7 +9489,11 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained source-load host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
-        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
+        assert_genuine_non_range_wire_delivery(
+            &fixture,
+            host.diagnostics().records(),
+            host.publication_identity(),
+        );
         let record = host
             .diagnostics()
             .records()
@@ -9525,7 +9537,11 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained source-load host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
-        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
+        assert_genuine_non_range_wire_delivery(
+            &fixture,
+            host.diagnostics().records(),
+            host.publication_identity(),
+        );
         let record = host
             .diagnostics()
             .records()
@@ -9655,11 +9671,11 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .unwrap();
         assert_eq!(old_freshness, LspSnapshotFreshness::Current);
-        let old_wire = fixture
-            .server
-            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
-            .unwrap()
-            .unwrap();
+        let old_wire = assert_genuine_non_range_wire_delivery(
+            &fixture,
+            old_host.diagnostics().records(),
+            old_host.publication_identity(),
+        );
         let old_token = old_wire.last().unwrap()["params"]["selection"].clone();
         let old_identity = old_host.publication_identity().to_owned();
         let old_records = old_host.diagnostics().clone();
@@ -9708,11 +9724,11 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .unwrap();
         assert_eq!(new_freshness, LspSnapshotFreshness::Current);
-        let new_wire = fixture
-            .server
-            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
-            .unwrap()
-            .unwrap();
+        let new_wire = assert_genuine_non_range_wire_delivery(
+            &fixture,
+            new_host.diagnostics().records(),
+            new_host.publication_identity(),
+        );
         assert_ne!(old_token, new_wire.last().unwrap()["params"]["selection"]);
         assert_eq!(
             fixture
@@ -9767,17 +9783,17 @@ mod genuine_source_load_diagnostic_host_tests {
         assert!(fixture.build().1);
         let clean = fixture
             .server
-            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .unwrap()
-            .unwrap();
-        assert_eq!(
-            clean.last().unwrap()["params"]["records"],
-            json!([]),
-            "a clean full replacement removes all prior non-range packages"
+            .0;
+        let clean_wire = assert_genuine_non_range_wire_delivery(
+            &fixture,
+            clean.diagnostics().records(),
+            clean.publication_identity(),
         );
-        assert!(clean.last().unwrap()["params"]["selection"].is_string());
+        assert_eq!(clean_wire.last().unwrap()["params"]["records"], json!([]));
         assert_ne!(
-            clean.last().unwrap()["params"]["selection"],
+            clean.publication_identity(),
             new_wire.last().unwrap()["params"]["selection"]
         );
     }
@@ -10125,64 +10141,63 @@ mod genuine_source_load_diagnostic_host_tests {
 
     #[test]
     fn genuine_source_load_same_path_in_two_captured_packages_stays_distinct_and_ordered() {
-        let mut fixture = RegistryFixture::new();
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
         let beta_root =
             PathBuf::from(fixture.input_template.plan_request.workspace_root.as_str()).join("beta");
         fs::create_dir_all(beta_root.join("src")).unwrap();
         fs::write(beta_root.join("src/main.miz"), b"theorem BetaMain;\n").unwrap();
 
-        let exemplar_capture = fixture.capture();
-        let exemplar = exemplar_capture
-            .snapshot
-            .captured()
-            .native_sources()
-            .unwrap()[0]
-            .2
-            .clone();
-        drop(exemplar_capture);
+        let mut packages = fixture.input_template.workspace_packages.clone();
+        packages.push(mizar_build::planner::WorkspacePackage {
+            member_path: "beta".into(),
+            manifest: mizar_build::planner::parse_package_manifest(
+                "[package]\nname = \"beta\"\nversion = \"0.1.0\"\n",
+            )
+            .unwrap(),
+        });
+        let lock = mizar_build::planner::parse_lockfile("schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n\n[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"beta\" }\ndependencies = []\n").unwrap();
+        let plan = mizar_build::planner::produce_build_plan(
+            fixture.input_template.plan_request.clone(),
+            packages.clone(),
+            lock.clone(),
+        )
+        .unwrap();
+        let layout =
+            mizar_build::module_index::StaticSourceLayout::from_native_disk(&plan).unwrap();
+        fixture.index = mizar_build::module_index::build_module_index(&plan, &layout, &[]).unwrap();
+        fixture.draft.dependency_inputs = mizar_driver::request::DependencyInputSet::new(
+            vec![],
+            mizar_build::planner::lockfile_content_hash(&plan.lockfile),
+            plan.toolchain.clone(),
+        );
+        fixture.input_template.workspace_packages = packages;
+        fixture.input_template.lockfile = lock;
+        fixture.input_template.source_layout = layout;
 
         let alpha_loader = fixture.sources[0].0.clone();
         let beta_loader = DiskSourceLoader::new(&beta_root);
-        let mut alpha_input = exemplar.clone();
-        alpha_input.package_id = PackageId::new("alpha");
-        alpha_input.module_path = ModulePath::new("Main");
-        alpha_input.normalized_path = alpha_loader
-            .normalize_path(alpha_loader.package_root(), Path::new("src/main.miz"))
-            .unwrap();
-        alpha_input.origin = SourceOriginInput::Disk {
-            path: PathBuf::from("src/main.miz"),
-        };
-        let mut beta_input = exemplar;
-        beta_input.package_id = PackageId::new("beta");
-        beta_input.module_path = ModulePath::new("Main");
-        beta_input.normalized_path = beta_loader
-            .normalize_path(beta_loader.package_root(), Path::new("src/main.miz"))
-            .unwrap();
-        beta_input.origin = SourceOriginInput::Disk {
-            path: PathBuf::from("src/main.miz"),
-        };
+        let beta_uri = format!("file://{}", beta_root.join("src/main.miz").display());
+        fixture.server.handle_message(json!({
+            "jsonrpc":"2.0", "method":"textDocument/didOpen",
+            "params":{"textDocument":{"uri":beta_uri,"languageId":"mizar","version":1,"text":"theorem BetaMain;\n"}}
+        }));
+        fixture
+            .sources
+            .push((beta_loader.clone(), PackageId::new("beta"), beta_uri));
 
-        let mut session = fixture
-            .draft
-            .clone()
-            .capture_sources(
-                &fixture.ids,
-                &fixture.snapshots,
-                vec![
-                    (alpha_loader.clone(), alpha_input),
-                    (beta_loader.clone(), beta_input),
-                ],
-            )
-            .expect("genuine two-package successful native capture");
+        let capture = fixture.capture();
         let alpha_failed = alpha_loader.package_root().join("src/shared_extra.miz");
         let beta_failed = beta_loader.package_root().join("src/shared_extra.miz");
         fs::write(&alpha_failed, [0xff]).unwrap();
         fs::write(&beta_failed, [0xfe]).unwrap();
-        let supplemental = session
+        let mut seen_packages = std::collections::HashSet::new();
+        let supplemental = capture
+            .snapshot
             .captured()
             .native_sources()
             .unwrap()
             .iter()
+            .filter(|(_, _, input)| seen_packages.insert(input.package_id.clone()))
             .map(|(loader, _, captured_input)| {
                 let path = PathBuf::from("src/shared_extra.miz");
                 let mut input = captured_input.clone();
@@ -10194,28 +10209,12 @@ mod genuine_source_load_diagnostic_host_tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(supplemental.len(), 2);
-        session
+        let capture = capture
             .capture_source_load_failures(&fixture.ids, supplemental)
             .expect("both package failures are attempted by their genuine native loaders");
         fs::write(&alpha_failed, b"theorem Recreated;\n").unwrap();
         fs::write(&beta_failed, b"theorem Recreated;\n").unwrap();
-
-        fixture
-            .publisher
-            .register_current_snapshot(session.captured().snapshot().id);
-        let submission = fixture
-            .driver
-            .submit_captured(
-                session,
-                &fixture.ids,
-                &fixture.snapshots,
-                fixture.driver_input(),
-                mizar_driver::driver::SubmitOptions {
-                    diagnostic_index: Some(mizar_driver::driver::DiagnosticIndexMode::Native),
-                    ..Default::default()
-                },
-            )
-            .expect("terminal native source-load submission");
+        let submission = submit(&mut fixture, capture);
         assert_eq!(
             submission.status,
             mizar_driver::driver::DriverSubmissionStatus::SourceLoadFailed
@@ -10253,5 +10252,37 @@ mod genuine_source_load_diagnostic_host_tests {
             ],
             "canonical order is stable and deduplication retains each package identity"
         );
+        let (host, freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .expect("originating genuine source-load host admission");
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert_eq!(host.diagnostics().records(), records);
+        assert_genuine_non_range_wire_delivery(
+            &fixture,
+            host.diagnostics().records(),
+            host.publication_identity(),
+        );
+        assert!(host.publication().is_none());
+
+        let replacement = source_load_capture(&mut fixture, "src/shared_extra.miz", "SharedExtra");
+        submit(&mut fixture, replacement);
+        let (new_host, freshness) = fixture
+            .server
+            .diagnostic_host(&fixture.driver, &fixture.snapshots)
+            .unwrap();
+        assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert_ne!(new_host.publication_identity(), host.publication_identity());
+        let wire = assert_genuine_non_range_wire_delivery(
+            &fixture,
+            new_host.diagnostics().records(),
+            new_host.publication_identity(),
+        );
+        let replacement_records = wire.last().unwrap()["params"]["records"]
+            .as_array()
+            .unwrap();
+        assert_eq!(replacement_records.len(), 1);
+        assert_eq!(replacement_records[0]["location"]["package"], "alpha");
+        assert_eq!(host.diagnostics().records(), records);
     }
 }

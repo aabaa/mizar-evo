@@ -311,9 +311,9 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
     - Audit G5: test supersede and Shutdown cancellation through genuine nonterminal sessions when Driver supports that execution seam; preserve failure/no-cancel and lane isolation controls. No synthetic acceptance or scheduler policy change.
     - Deps: 11, owner-supported nonterminal Driver execution. Spec: [bridge cancellation](build_bridge.md#supersede-and-terminal-lifecycle).
 
-41. **Non-range diagnostic delivery contract.** [ ]
+41. **[Non-range diagnostic delivery evidence](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-DELIVERY.md).** [x]
     - Definition prerequisite: [LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN.md), [paired presentation proposal](non_range_diagnostics.md); approved Q1–Q5 A [implementation contract](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION.md) follows genuine host retention and precedes Task41 delivery evidence.
-    - Audit G6: verify delivery evidence after approved source-load/non-range presentation implementation; this implementation unit does not close Task41. Any new semantic choice returns to the owner.
+    - Audit G6: genuine native host delivery covers the approved non-range presentation; typed conversion/anchor fixtures remain distinct from native producer evidence. Any new semantic choice returns to the owner.
     - Deps: 9, owner presentation decision. Spec: [diagnostic ranges](diagnostics.md#range-conversion).
 
 42. **[Lightweight diagnostic overlay storage and isolation](../../task_contracts/en/LSP-DIAGNOSTIC-OVERLAY.md).** [x]
