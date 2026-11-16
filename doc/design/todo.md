@@ -15,12 +15,12 @@ and the crate ownership map in
 ## How To Read This Document
 
 - The [Sequential Execution Plan](#sequential-execution-plan) is the single
-  ordering authority. Select the first unfinished task whose owning contract's
-  dependencies and readiness permit the intended slice. The listed order is
-  the default priority; completed tasks and dependency-blocked slices are
-  skipped. A blocked slice blocks its consumers, not independent work in a
-  later step. Recheck readiness before implementation and retain every open
-  completion gate.
+  ordering authority. Apply its [M1 Dispatch Policy](#m1-dispatch-policy) first
+  for dependency-ready source-to-artifact integration slices; otherwise select
+  the first unfinished owner task in step/item order whose contract permits
+  the slice. Completed, dependency-blocked, and parked slices are skipped,
+  not treated as global stops. A blocked slice blocks only its consumers.
+  Recheck readiness on each dispatch and retain every open gate.
 - Each entry names an owner task. For a new non-trivial task, follow the crate
   TODO's link to its paired `doc/design/task_contracts/{en,ja}/` record for
   scope, acceptance criteria, and verification. Crate TODOs retain only concise
@@ -58,6 +58,11 @@ and the crate ownership map in
    exposes the real producer or consumer seam. Do not close a gate by weakening
    tests, matching expectations to current behavior, fabricating semantic
    payloads, or moving trust authority into a convenient downstream crate.
+7. **Prioritize a real vertical slice.** Within genuine producer dependencies,
+   close the smallest source-to-verified-artifact path before broadening
+   unrelated source profiles. Bundle three-to-five identical-shape slices
+   when the protocol permits; do not multiply syntax variants into separate
+   tasks or conflate distinct semantic/trust owners.
 
 ## Completion Gates
 
@@ -66,7 +71,8 @@ implementation to reach an end-to-end usable state, provided remaining
 `external_dependency_gap`, `deferred`, `test_gap`, and `design_drift` records
 are promoted into real owner tasks before they are closed. The authority order
 in [autonomous_crate_development.md](./autonomous_crate_development.md) must
-still agree with the resulting behavior.
+still agree with the resulting behavior. M1 is a bounded integration
+milestone, not a substitute for any completion gate below.
 
 | Gate | Completion condition | Plan steps | Primary owners |
 |---|---|---|---|
@@ -94,7 +100,11 @@ integration (LSP server, VS Code extension, toolchain installation), and
 documentation generation. Items without an owner task must be promoted to
 one before the claim. The port of the Mizar Mathematical Library is a
 separate program that consumes processor features; its progress is part of
-neither claim, and requirements it raises are recorded as processor tasks.
+neither claim, and requirements it raises are recorded as processor tasks. Distinguish three
+claims: (1) the bounded M1 trusted source-to-artifact demonstration, (2) the
+verification-focused pipeline subject to the gates above, and (3) the
+complete processor. Neither M1 nor Step 5 alpha completion grants broad
+source-proof acceptance or a complete-processor claim.
 
 If a future task discovers that a gate cannot be closed by the existing crate
 TODOs, update this roadmap in the same change that records the new gap.
@@ -135,6 +145,72 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 `mizar-test` task-20 reserve-bridge closeout. Steps 1-3 close audited
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
+
+### M1 Dispatch Policy
+
+**Milestone: trusted source-to-artifact verification (open).** This policy is
+part of the single Sequential Execution Plan, not a second task queue,
+new task, contract, or change to proof policy. It supersedes numeric Step 5-8
+order only for dependency-ready slices on the shortest authentic source
+proof-to-artifact path. Existing crate TODOs and paired task contracts own
+the exact scope, requirements, implementation gates, and acceptance.
+
+**Target:** one supported real `.miz` theorem, from captured source through
+Frontend, Resolver, Checker, Core/VC, Kernel-checked evidence, Proof selection,
+and a committed/readable Artifact with witness via a real Driver service.
+A direct-premise or reflexivity theorem is only a candidate: verify authentic
+source identity, goal, context, polarity, evidence, and provenance before
+selecting it. An open VC, Pending coherence, successful backend, opaque
+token, unpublished draft, or mock payload is not an accepted proof.
+
+| Rank | Existing owner / task | Dispatch readiness |
+|---|---|---|
+| M1.1 Source proof inputs | [checker](./mizar-checker/en/todo.md) 258/272, [core](./mizar-core/en/todo.md) 33-37, [VC](./mizar-vc/en/todo.md) 32, and Step 5B.3 only where the chosen real case needs them | Identify the **smallest missing source-derived producer**; existing bounded theorem/reflexivity routes may already meet portions of this edge. Do not finish entire generalization families first or bypass Task 274 / Gate S1 where required. |
+| M1.2 Checkable evidence | [Step 7](#step-7--evidence-pipeline-integration--) item 2 (VC 60 built-ins) **or** item 1 (ATP with Kernel checking) | Only dispatch source slices with authentic formula, VC/goal/context, substitution and provenance. VC 60 is deferred where producers are absent; equality requires its Kernel-instance prerequisites. |
+| M1.3 Accepted status/witness | [Step 7](#step-7--evidence-pipeline-integration--) item 3 (Proof 23 / Artifact 25) | Requires a genuinely checked, correctly bound result. A flag/hash/token or untrusted backend result never upgrades status or creates a trusted witness. |
+| M1.4 Registered real services | [Step 6](#step-6--phase-output-publication-and-orchestration--) item 1 (Driver, IR, Build and phase producers) | Publish only producer-owned, snapshot-fresh phase outputs. Independent service prerequisites may execute while earlier proof edges are blocked. |
+| M1.5 Atomic verified emission | [Step 6](#step-6--phase-output-publication-and-orchestration--) item 3 (Artifact 17, with Proof/Artifact staging) | Keep deferred until real VerifiedArtifact inputs, checked witness staging, manifest/store publication, and validated reader reachability exist. |
+
+**Muse selection procedure (repeat after every dispatched unit):**
+
+1. Inspect the latest `main` roadmap, owner TODO, paired EN/JA contract,
+   readiness/dependencies, recent commits, and local orchestration handoff.
+   Reconcile in-flight and unpushed work before selecting; never redispatch
+   an active unit. This document cannot certify the local worktree.
+2. Identify the missing edges for the smallest authentic M1 case. Among
+   independent *ready* M1 slices, choose the earliest missing producer by
+   the table above; an earlier blocked edge does not block later independent
+   service prerequisites. Dispatch one owner contract per run (or a permitted
+   three-to-five identical-shape bundle) under the
+   [dispatch boundary](./autonomous_crate_development.md#dispatch-boundary).
+3. A slice is not ready when its authoritative source/test oracle, concrete
+   producer, prerequisite, reviewed contract, or required dependency is
+   missing. Preserve `blocked`/`deferred`; report its exact owner. No
+   fabricated input, speculative task ID, proof/trace promotion, or weakened
+   expectation is a workaround. If a real required task has no owner, create
+   its paired contract and crate-plan assignment under normal review **before**
+   dispatch, not as an implied permission from this priority table.
+4. If all M1 slices are blocked, choose a ready, independent Step 6/7
+   producer or real-service-equivalence prerequisite; next choose Step 8
+   source-input, editor lifecycle, snapshot or native-diagnostic transport
+   work using existing outputs; next other dependency-ready tasks in the
+   existing plan. Never advance Artifact 17, accepted-result consumers,
+   semantic LSP metadata, or MVM execution ahead of their actual producers.
+5. After M1 acceptance, prioritize [Step 6C equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md),
+   Step 7 proof reuse/ATP generalization, and broader source/Core/VC proof
+   families. Each retains its own original completion gate; M1 does not
+   establish cache-hit/miss or sequential/parallel equivalence.
+6. If no legitimate contract is ready, report blockers and the owner decision
+   required to Muse. Do not manufacture a next task or claim completion.
+
+**M1 exit:** a positive source-derived theorem accepted by the existing
+Kernel/Proof policy, with matching checked witness and source/proof status,
+atomically published into a VerifiedArtifact and read back through the real
+build path. Tests reject absent/forged evidence, goal/context/polarity
+mismatches, stale snapshots, and unsupported/rejected proofs without changing
+the trust policy, using a mock producer, or weakening tests. This is a
+bounded milestone, not full `proof_verification` coverage, MVM execution,
+full cache equivalence, or complete-processor status.
 
 ### Velocity gate — November 2026 [x]
 
@@ -486,6 +562,10 @@ stay binding and must not be weakened.
    sole open pre-audit activation task and is independent of the audit-1
    corpus (it activates the pre-audit 24-fixture set only).
 
+This activation is dependency-gated, not a global stop on M1 or independent
+Steps 6-8. Do not infer accepted-status or scheme/theorem roles; resume
+Task 49 only when the named prerequisites are genuinely satisfied.
+
 #### Task-265 execution authority (pre-audit vertical slice) [~]
 
 
@@ -698,7 +778,11 @@ families — and the alpha boundary is met: all 103 audit-1 requirements
 report active coverage, all 120 oracle pairs are active at their sidecar
 stages, gaps G1-G9 are closed (G7 by the recorded 5A.8 spec decision), and
 the corpus-wide syntax smoke guard (5A.9) is green. MVM/algorithm
-execution remains excluded and parked.
+execution remains excluded and parked. This is **alpha-corpus completion**,
+not unrestricted Checker/Core/VC producer completion: broader per-crate work
+and Step 5B.3 remain independently gated. A per-crate in-progress status
+for general implementation does not contradict the completed alpha corpus
+and neither state implies ordinary proof acceptance.
 
 ### Step 6 — Phase-output publication and orchestration [~]
 
@@ -716,6 +800,11 @@ Full cache-hit equivalence still needs complete active-runtime context beyond
 the explicit retained SourceLoad route; Frontend cache producers, later semantic/proof services
 and full artifact emission remain dependency-blocked.
 Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
+
+**M1 sequencing:** connect authentic, snapshot-fresh services as producers
+become available (item 1), while item 2 can verify registered services
+independently. Item 3 remains blocked until Step 7 supplies real accepted
+witness and VerifiedArtifact inputs. See [M1](#m1-dispatch-policy).
 
 1. [~] Real phase services and producer publication, preserving IV-007
    snapshot freshness. Completed prerequisites
@@ -785,6 +874,13 @@ in Proof, cache validation in Cache, artifact publication in Artifact, and
 registry/orchestration in Driver. Designs can start where their contracts
 permit; each source-integration slice waits for its actual upstream outputs.
 
+**M1 sequencing:** prefer the smallest genuinely checkable source proof.
+The built-in route (item 2) and ATP route (item 1) are alternatives only
+when their source inputs and Kernel prerequisites exist; neither alone
+grants trusted acceptance. Item 3 supplies acceptance/witness publication,
+then Step 6 item 3 performs full artifact emission. Broader portfolio,
+ranking, reuse and benchmarks remain separate dependent work.
+
 1. [ ] Real ATP backend extraction and portfolio execution in `mizar-atp`
    (IV-004), using the [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
    (atp 30). Equality slices require the [kernel equality instances](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
@@ -838,7 +934,11 @@ Exit: the proof-and-algorithm-verification completion gate holds with active
 ### Step 8 — User-facing consumer wave [~]
 
 Adopt user-facing surfaces only after the owning producers publish stable
-diagnostics, metadata, artifacts, and semantic indexes.
+diagnostics, metadata, artifacts, and semantic indexes. Before M1,
+independent native source input, editor lifecycle, snapshot and current
+diagnostic transport may proceed. Proof-status hover, semantic navigation/
+completion and published phase-16 rendering require their actual upstream
+outputs; do not fabricate metadata to unblock these consumers.
 
 1. [ ] [mizar-resolve task 30](./mizar-resolve/en/todo.md) — public resolver
    diagnostic adoption beyond the implemented E0220–E0224 import subset
