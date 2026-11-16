@@ -7,7 +7,7 @@
 `document(uri)` は借用 `(i32 version, text)`、`serve(BufRead, Write)` は framed traffic と exit code を返す。
 
 initialize は1回で、params に processId (i32/null)、rootUri (string/null)、object capabilities を要求する。
-未知の capability/option は無視し、UTF-16 と openClose/full text sync を応答する。
+未知の capability/option は無視し、UTF-16 と openClose/full text sync を応答する。[non-range diagnostic 拡張](non_range_diagnostics.md#open-owner-decisions) は version 1 を広告し、厳密な client opt-in で配送を有効にする。受理した編集無効化は `serve` または明示 diagnostic writer 用に消去をキューへ入れる。
 初期化前の request は -32002、notification は exit 以外無視する。重複 initialize と
 shutdown 後の request は -32600、notification は exit 以外無視する。shutdown/exit の params は省略/null。
 shutdown は null 応答のみで終了せず、exit は shutdown 後0、その他1。

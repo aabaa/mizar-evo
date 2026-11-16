@@ -19,9 +19,9 @@ Convert native source ranges to LSP UTF-16 ranges only at the LSP boundary, usin
 
 Preserve primary ranges, retained secondary anchors and their order/multiplicity, Range versus Point, supplied provenance and generated reasons under §22.1.2. Invalid, unknown or unrepresentable diagnostics/anchors fail conversion explicitly; never silently drop them, fabricate ranges or claim successful publication. Existing producer deduplication and representative selection remain unchanged.
 
-Source-load diagnostics retain package/path identity and their non-range location: no fabricated EOF, insertion point or source span. They are not fed through a span-only converter. No new non-range wire encoding is defined here.
+Source-load diagnostics retain package/path identity and their non-range location: no fabricated EOF, insertion point or source span. They are not fed through a span-only converter.
 
-The separate [non-range presentation proposal](non_range_diagnostics.md) leaves Q1–Q5 open for owner approval before implementation and Task41; it does not relax the current whole-batch refusal.
+The [approved Q1–Q5 A presentation](non_range_diagnostics.md#open-owner-decisions) owns the compact v1 schema and connection opt-in. Supported connections receive whole-set `mizar/publishNonRangeDiagnostics` replacements after ranged frames; unsupported non-range batches fail before any write. Original records retain richer payloads; Task41 delivery evidence remains separate.
 
 ## Unsaved-text overlays
 
@@ -41,7 +41,7 @@ The existing explicit native frontend path groups notifications by URI in ordere
 
 ## Implementation boundary
 
-`src/diagnostics.rs` implements task9. `Server::snapshot_diagnostic_notifications` selects a current retained snapshot; unavailable or stale selection returns no notifications. Conversion errors reject the entire batch, including non-range source-load records whose wire encoding remains undefined.
+`src/diagnostics.rs` implements task9 and approved non-range presentation. `Server::snapshot_diagnostic_notifications` selects the current retained diagnostic publication. Conversion errors reject the entire batch. On opted-in live connections, loss or staleness of an existing selection yields a null-selection empty replacement; accepted editor invalidations queue that clearing for the serving loop or explicit diagnostic writer. A newer publication supersedes pending clearing; terminal connections discard it.
 
 Notifications use URI order and the captured document version, including empty lists for clean sources. Primary ranges and ordered secondary `relatedInformation` use original raw maps. Diagnostic `data` contains the existing handle as `{snapshot: <published BuildSnapshotId>, id: <ordinal>}`; it refers to the unchanged record in the retained index, preserving anchor shape, generated reasons, provenance, notes and intent without duplicating them in a new representation. It grants no currentness or edit authority.
 

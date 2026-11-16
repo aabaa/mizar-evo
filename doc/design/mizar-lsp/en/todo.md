@@ -313,7 +313,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
 
 41. **Non-range diagnostic delivery contract.** [ ]
     - Definition prerequisite: [LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION-DESIGN.md), [paired presentation proposal](non_range_diagnostics.md); approved Q1–Q5 A [implementation contract](../../task_contracts/en/LSP-NON-RANGE-DIAGNOSTIC-PRESENTATION.md) follows genuine host retention and precedes Task41 delivery evidence.
-    - Audit G6: obtain owner-approved source-load/non-range presentation before adding wire conversion and actual delivery tests; retain explicit whole-batch refusal meanwhile. Any new semantic choice returns to the owner.
+    - Audit G6: verify delivery evidence after approved source-load/non-range presentation implementation; this implementation unit does not close Task41. Any new semantic choice returns to the owner.
     - Deps: 9, owner presentation decision. Spec: [diagnostic ranges](diagnostics.md#range-conversion).
 
 42. **[Lightweight diagnostic overlay storage and isolation](../../task_contracts/en/LSP-DIAGNOSTIC-OVERLAY.md).** [x]

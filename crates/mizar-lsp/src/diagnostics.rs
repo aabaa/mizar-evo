@@ -552,28 +552,39 @@ impl Server {
     }
 
     /// Converts the selected current diagnostic publication using its original retained native maps.
-    /// Missing or stale publications return `None`; unrepresentable records fail the batch.
+    /// Missing publications return `None`; negotiated stale selections return a clearing set.
     /// Diagnostic data references the unchanged index, retaining anchor shape and provenance.
     pub fn snapshot_diagnostic_notifications<A: SessionIdAllocator>(
         &self,
         driver: &CompilerDriver,
         snapshots: &SnapshotRegistry<A>,
     ) -> Result<Option<Vec<Value>>, String> {
-        let Some((selected, LspSnapshotFreshness::Current)) =
-            self.diagnostic_host(driver, snapshots)
-        else {
-            return Ok(None);
+        let selected = match self.diagnostic_host(driver, snapshots) {
+            Some((selected, LspSnapshotFreshness::Current)) => selected,
+            stale => {
+                if let Some((selected, _)) = stale {
+                    self.queue_non_range_clear(selected.publication_identity());
+                }
+                return Ok(self.take_non_range_clear().map(|clear| vec![clear]));
+            }
         };
-        let notifications = convert_index(
+        let notifications = convert_index_with_non_range(
             selected.diagnostics(),
             selected.native_open_buffers().captured(),
+            self.non_range_diagnostics_enabled()
+                .then(|| selected.publication_identity()),
         )?;
-        Ok(self
+        if self
             .diagnostic_host(driver, snapshots)
-            .filter(|(current, freshness)| {
-                *freshness == LspSnapshotFreshness::Current && current.same_publication(&selected)
+            .is_some_and(|(current, freshness)| {
+                freshness == LspSnapshotFreshness::Current && current.same_publication(&selected)
             })
-            .map(|_| notifications))
+        {
+            Ok(Some(notifications))
+        } else {
+            self.queue_non_range_clear(selected.publication_identity());
+            Ok(self.take_non_range_clear().map(|clear| vec![clear]))
+        }
     }
 
     pub(crate) fn snapshot_code_actions<A: SessionIdAllocator>(
@@ -658,14 +669,20 @@ impl Server {
         snapshots: &SnapshotRegistry<A>,
         output: &mut impl Write,
     ) -> io::Result<usize> {
-        let Some((selected, LspSnapshotFreshness::Current)) =
-            self.diagnostic_host(driver, snapshots)
-        else {
-            return Ok(0);
+        let selected = match self.diagnostic_host(driver, snapshots) {
+            Some((selected, LspSnapshotFreshness::Current)) => selected,
+            stale => {
+                if let Some((selected, _)) = stale {
+                    self.queue_non_range_clear(selected.publication_identity());
+                }
+                return self.write_pending_non_range_clear(output);
+            }
         };
-        let frames = convert_index(
+        let frames = convert_index_with_non_range(
             selected.diagnostics(),
             selected.native_open_buffers().captured(),
+            self.non_range_diagnostics_enabled()
+                .then(|| selected.publication_identity()),
         )
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?
         .iter()
@@ -681,6 +698,7 @@ impl Server {
                         && current.same_publication(&selected)
                 })
             {
+                self.queue_non_range_clear(selected.publication_identity());
                 break;
             }
             write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
@@ -695,6 +713,14 @@ impl Server {
 pub(crate) fn convert_index(
     index: &BuildDiagnosticIndex,
     captured: &CapturedSnapshot,
+) -> Result<Vec<Value>, String> {
+    convert_index_with_non_range(index, captured, None)
+}
+
+fn convert_index_with_non_range(
+    index: &BuildDiagnosticIndex,
+    captured: &CapturedSnapshot,
+    selection: Option<&str>,
 ) -> Result<Vec<Value>, String> {
     if index.snapshot() != captured.snapshot().id {
         return Err("diagnostic index snapshot mismatch".into());
@@ -773,6 +799,7 @@ pub(crate) fn convert_index(
             "end": {"line": range.end.line, "character": range.end.character}}),
         ))
     };
+    let mut non_range = Vec::new();
     for record in index.records() {
         if record.handle().snapshot != index.snapshot()
             || record.freshness()
@@ -782,10 +809,6 @@ pub(crate) fn convert_index(
         {
             return Err("diagnostic record is not current for its index".into());
         }
-        let DiagnosticPrimaryLocation::Span(primary) = record.primary_location() else {
-            return Err("diagnostic primary location has no supported range encoding".into());
-        };
-        let (uri, range) = convert_span(primary)?;
         let severity = match record.severity() {
             DiagnosticSeverity::Error => 1,
             DiagnosticSeverity::Warning => 2,
@@ -805,12 +828,28 @@ pub(crate) fn convert_index(
             .snapshot
             .to_published_schema_string()
             .map_err(|error| format!("invalid diagnostic snapshot identity: {error:?}"))?;
-        by_uri.get_mut(uri).ok_or("unknown primary diagnostic URI")?.1.push(json!({
-            "range": range, "code": record.code().to_string(), "message": record.message(), "severity": severity,
+        let mut diagnostic = json!({
+            "code": record.code().to_string(), "message": record.message(), "severity": severity,
             "relatedInformation": related, "data": {"snapshot": snapshot, "id": record.handle().id.get()}
-        }));
+        });
+        match record.primary_location() {
+            DiagnosticPrimaryLocation::Span(primary) => {
+                let (uri, range) = convert_span(primary)?;
+                diagnostic["range"] = range;
+                by_uri
+                    .get_mut(uri)
+                    .ok_or("unknown primary diagnostic URI")?
+                    .1
+                    .push(diagnostic);
+            }
+            DiagnosticPrimaryLocation::SourceLoad { package_id, path } if selection.is_some() => {
+                diagnostic["location"] = json!({"kind": "sourceLoad", "package": package_id.as_str(), "path": path.as_str()});
+                non_range.push(diagnostic);
+            }
+            _ => return Err("diagnostic primary location has no supported range encoding".into()),
+        }
     }
-    Ok(by_uri
+    let mut notifications = by_uri
         .into_iter()
         .map(|(uri, (version, diagnostics))| {
             json!({
@@ -818,7 +857,14 @@ pub(crate) fn convert_index(
                 "params": {"uri": uri, "version": version, "diagnostics": diagnostics}
             })
         })
-        .collect())
+        .collect::<Vec<_>>();
+    if let Some(selection) = selection {
+        notifications.push(
+            json!({"jsonrpc": "2.0", "method": "mizar/publishNonRangeDiagnostics",
+            "params": {"version": 1, "selection": selection, "records": non_range}}),
+        );
+    }
+    Ok(notifications)
 }
 
 // Validate coordinates against the exact raw editor text, including UTF-16 scalar boundaries.
@@ -2434,28 +2480,6 @@ mod tests {
                 break candidate;
             }
         };
-        let source_load = DiagnosticDraft::new(DiagnosticDraftInput {
-            source_snapshot: fixture.snapshot(),
-            code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 600).unwrap(),
-            phase: PipelinePhase::SourceLoad,
-            category: FailureCategory::SourceLoadError,
-            stable_detail_key: "source_load".into(),
-            message: "unmappable source load".into(),
-            primary_location: DiagnosticPrimaryLocation::SourceLoad {
-                package_id: PackageId::new("alpha"),
-                path: normalize_source_path(
-                    &fixture._root.join("alpha"),
-                    std::path::Path::new("src/source.miz"),
-                )
-                .unwrap(),
-            },
-            secondary_spans: vec![],
-            notes: vec![],
-            details: DiagnosticDetails::new(),
-            fixes: vec![],
-            explanation: None,
-        })
-        .unwrap();
         let mut parser_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
             PipelinePhase::Parser,
             fixture.snapshot(),
@@ -2467,13 +2491,110 @@ mod tests {
             fixture.snapshot(),
             "source_load",
         ));
-        source_load_sink.emit(source_load).unwrap();
+        let mut remaining_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+            PipelinePhase::SourceLoad,
+            fixture.snapshot(),
+            "source_load",
+        ));
+        for package in ["alpha", "beta"] {
+            let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+                source_snapshot: fixture.snapshot(),
+                code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 600).unwrap(),
+                phase: PipelinePhase::SourceLoad,
+                category: FailureCategory::SourceLoadError,
+                stable_detail_key: "source_load".into(),
+                message: "unmappable source load".into(),
+                primary_location: DiagnosticPrimaryLocation::SourceLoad {
+                    package_id: PackageId::new(package),
+                    path: normalize_source_path(
+                        &fixture._root.join("alpha"),
+                        std::path::Path::new("src/source.miz"),
+                    )
+                    .unwrap(),
+                },
+                secondary_spans: vec![
+                    span(
+                        SourceAnchor::Range(loaded_range(&fixture, 0, "a")),
+                        DiagnosticSpanRole::Secondary,
+                        Some("repeated anchor"),
+                        None,
+                    ),
+                    span(
+                        SourceAnchor::Range(loaded_range(&fixture, 0, "a")),
+                        DiagnosticSpanRole::Secondary,
+                        Some("repeated anchor"),
+                        None,
+                    ),
+                ],
+                notes: vec![],
+                details: DiagnosticDetails::new(),
+                fixes: vec![],
+                explanation: None,
+            })
+            .unwrap();
+            if package == "beta" {
+                remaining_sink.emit(draft.clone()).unwrap();
+            }
+            source_load_sink.emit(draft).unwrap();
+        }
         let non_range = BuildDiagnosticIndex::aggregate(DiagnosticAggregationInput::new(
             fixture.snapshot(),
             vec![parser_sink.into_batch(), source_load_sink.into_batch()],
         ))
         .unwrap();
         assert!(convert_index(&non_range, &fixture.captured).is_err());
+        let negotiated =
+            convert_index_with_non_range(&non_range, &fixture.captured, Some("publication-1"))
+                .unwrap();
+        assert_eq!(negotiated.len(), 2);
+        assert_eq!(negotiated[0]["method"], "textDocument/publishDiagnostics");
+        let extension = &negotiated[1];
+        assert_eq!(extension["method"], "mizar/publishNonRangeDiagnostics");
+        assert_eq!(extension["params"]["version"], 1);
+        assert_eq!(extension["params"]["selection"], "publication-1");
+        let records = extension["params"]["records"].as_array().unwrap();
+        assert_eq!(records.len(), 2);
+        for (record, package) in records.iter().zip(["alpha", "beta"]) {
+            assert_eq!(
+                record["location"],
+                json!({
+                    "kind": "sourceLoad", "package": package, "path": "src/source.miz"
+                })
+            );
+            assert_eq!(record["code"], "E0600");
+            assert_eq!(record["message"], "unmappable source load");
+            assert!(record.get("range").is_none());
+            assert!(record.get("version").is_none());
+            assert_eq!(record["relatedInformation"].as_array().unwrap().len(), 2);
+            assert_eq!(
+                record["relatedInformation"][0],
+                record["relatedInformation"][1]
+            );
+            assert_eq!(
+                record["relatedInformation"][0]["message"],
+                "repeated anchor"
+            );
+            assert_eq!(
+                record["data"]["snapshot"],
+                negotiated[0]["params"]["diagnostics"][0]["data"]["snapshot"]
+            );
+        }
+        assert_ne!(records[0]["data"]["id"], records[1]["data"]["id"]);
+        let remaining = BuildDiagnosticIndex::aggregate(DiagnosticAggregationInput::new(
+            fixture.snapshot(),
+            vec![remaining_sink.into_batch()],
+        ))
+        .unwrap();
+        let replacement =
+            convert_index_with_non_range(&remaining, &fixture.captured, Some("publication-2"))
+                .unwrap();
+        let replacement = &replacement.last().unwrap()["params"];
+        assert_eq!(replacement["selection"], "publication-2");
+        assert_eq!(replacement["records"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            replacement["records"][0]["location"], records[1]["location"],
+            "whole-set replacement removes alpha while preserving beta"
+        );
 
         let unknown = syntax_draft(
             fixture.snapshot(),
@@ -2495,8 +2616,16 @@ mod tests {
         );
         assert!(
             convert_index(
-                &index(fixture.snapshot(), vec![good.clone(), unknown]),
+                &index(fixture.snapshot(), vec![good.clone(), unknown.clone()]),
                 &fixture.captured
+            )
+            .is_err()
+        );
+        assert!(
+            convert_index_with_non_range(
+                &index(fixture.snapshot(), vec![good.clone(), unknown]),
+                &fixture.captured,
+                Some("publication-1"),
             )
             .is_err()
         );
@@ -2521,8 +2650,19 @@ mod tests {
         );
         assert!(
             convert_index(
-                &index(fixture.snapshot(), vec![good.clone(), invalid_primary]),
+                &index(
+                    fixture.snapshot(),
+                    vec![good.clone(), invalid_primary.clone()]
+                ),
                 &fixture.captured
+            )
+            .is_err()
+        );
+        assert!(
+            convert_index_with_non_range(
+                &index(fixture.snapshot(), vec![good.clone(), invalid_primary]),
+                &fixture.captured,
+                Some("publication-1"),
             )
             .is_err()
         );
@@ -2575,8 +2715,79 @@ mod tests {
         );
         assert!(
             convert_index(
-                &index(fixture.snapshot(), vec![good.clone(), invalid_secondary]),
+                &index(
+                    fixture.snapshot(),
+                    vec![good.clone(), invalid_secondary.clone()]
+                ),
                 &fixture.captured
+            )
+            .is_err()
+        );
+        assert!(
+            convert_index_with_non_range(
+                &index(fixture.snapshot(), vec![good.clone(), invalid_secondary]),
+                &fixture.captured,
+                Some("publication-1"),
+            )
+            .is_err()
+        );
+
+        let invalid_source_load_secondary = DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: fixture.snapshot(),
+            code: DiagnosticCode::from_parts(DiagnosticSeverity::Error, 600).unwrap(),
+            phase: PipelinePhase::SourceLoad,
+            category: FailureCategory::SourceLoadError,
+            stable_detail_key: "invalid_source_load_secondary".to_owned(),
+            message: "bad source-load related location".to_owned(),
+            primary_location: DiagnosticPrimaryLocation::SourceLoad {
+                package_id: PackageId::new("alpha"),
+                path: normalize_source_path(
+                    &fixture._root.join("alpha"),
+                    std::path::Path::new("src/source.miz"),
+                )
+                .unwrap(),
+            },
+            secondary_spans: vec![span(
+                SourceAnchor::Range(SourceRange {
+                    source_id: unknown_id,
+                    start: loaded_range(&fixture, 0, "a").start,
+                    end: loaded_range(&fixture, 0, "a").end,
+                }),
+                DiagnosticSpanRole::Secondary,
+                None,
+                None,
+            )],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes: vec![],
+            explanation: None,
+        })
+        .unwrap();
+        let mut source_load_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+            PipelinePhase::SourceLoad,
+            fixture.snapshot(),
+            "source_load",
+        ));
+        source_load_sink
+            .emit(invalid_source_load_secondary)
+            .unwrap();
+        let mut ranged_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+            PipelinePhase::Parser,
+            fixture.snapshot(),
+            "parser",
+        ));
+        ranged_sink.emit(good.clone()).unwrap();
+        let invalid_source_load_index =
+            BuildDiagnosticIndex::aggregate(DiagnosticAggregationInput::new(
+                fixture.snapshot(),
+                vec![ranged_sink.into_batch(), source_load_sink.into_batch()],
+            ))
+            .unwrap();
+        assert!(
+            convert_index_with_non_range(
+                &invalid_source_load_index,
+                &fixture.captured,
+                Some("publication-1"),
             )
             .is_err()
         );

@@ -19,9 +19,9 @@ LSP は [spec §22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#22
 
 §22.1.2 に従い、primary range、保持された secondary anchor とその順序・多重度、Range と Point の区別、与えられた provenance と generated reason を保持する。invalid/unknown/unrepresentable な診断や anchor は明示的な変換失敗とし、黙って捨てたり range を捏造したり公開成功としない。既存 producer の重複排除と代表選択は変えない。
 
-source-load 診断は package/path identity と non-range location を保つ。EOF、挿入点、source span を捏造せず、span-only converter に渡さない。新たな non-range wire encoding はここでは定めない。
+source-load 診断は package/path identity と non-range location を保つ。EOF、挿入点、source span を捏造せず、span-only converter に渡さない。
 
-別の [non-range 表示案](non_range_diagnostics.md) は Q1–Q5 の owner 承認後に実装、次に Task41 を進めるための未決提案であり、現 batch 全体の拒否を緩めない。
+[承認済み Q1–Q5 A 表示](non_range_diagnostics.md#open-owner-decisions) が compact v1 schema と接続単位の opt-in を所有する。対応接続には ranged frame の後に全件置換の `mizar/publishNonRangeDiagnostics` を送り、未対応接続の non-range batch は送信前に全体を拒否する。詳細 payload は元 record に保持し、Task41 配送証跡は別途扱う。
 
 ## Unsaved-text overlays
 
@@ -41,7 +41,7 @@ source の診断を選択するときは aggregator の [canonical record order]
 
 ## Implementation boundary
 
-`src/diagnostics.rs` が task9 を実装する。`Server::snapshot_diagnostic_notifications` は current な保持 snapshot を選択し、未取得または stale なら通知を返さない。変換エラーは batch 全体を拒否し、wire encoding 未定義の non-range source-load record も対象となる。
+`src/diagnostics.rs` が task9 と承認済み non-range 表示を実装する。`Server::snapshot_diagnostic_notifications` は current な保持診断 publication を選択し、変換エラーは batch 全体を拒否する。opt-in 済みの live 接続で既存 selection を失うか stale になれば null-selection の空置換を返す。受理した編集無効化は serving loop または明示 diagnostic writer 用に消去をキューへ入れ、新 publication が古い消去を置換する。terminal 接続はキューを破棄する。
 
 通知は URI 順、capture 時の document version を使い、正常 source の空リストも含む。primary range と順序を保つ secondary `relatedInformation` は元の raw map で変換する。診断の `data` は既存 handle を `{snapshot: <published BuildSnapshotId>, id: <ordinal>}` として保持 index 内の未変更 record を参照する。anchor の形、generated reason、provenance、note、intent は新しい表現に複製せず元の record に保持する。この handle は currentness や編集権限を与えない。
 

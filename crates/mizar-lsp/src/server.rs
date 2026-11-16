@@ -48,6 +48,7 @@ pub struct Server {
     diagnostic_overlays: BTreeMap<(String, i32), std::sync::Arc<LspDiagnosticOverlay>>,
     lsp_snapshot: Option<std::sync::Arc<LspSnapshot>>,
     ranged_diagnostics: Option<std::sync::Arc<RangedDiagnosticPublication>>,
+    pending_non_range_clear: std::sync::Mutex<Option<String>>,
     build_bridge: Option<build_bridge::BuildBridge>,
 }
 
@@ -243,6 +244,90 @@ impl DiagnosticHostRead {
 }
 
 impl Server {
+    pub(crate) fn non_range_diagnostics_enabled(&self) -> bool {
+        self.initialized.as_ref().is_some_and(|params| {
+            params["capabilities"]["experimental"]["mizarNonRangeDiagnostics"]["version"].as_u64()
+                == Some(1)
+        })
+    }
+
+    fn diagnostic_selection_identity(&self) -> Option<&str> {
+        self.ranged_diagnostics
+            .as_ref()
+            .map(|selected| selected.identity.as_str())
+            .or_else(|| {
+                self.lsp_snapshot
+                    .as_ref()
+                    .map(|selected| selected.publication_identity())
+            })
+    }
+
+    pub(crate) fn queue_non_range_clear(&self, selection: &str) {
+        if self.non_range_diagnostics_enabled() && !self.shutdown && self.exit_code.is_none() {
+            *self
+                .pending_non_range_clear
+                .lock()
+                .expect("non-range clear lock poisoned") = Some(selection.to_owned());
+        }
+    }
+
+    fn invalidate_non_range_document(&self, uri: &str) {
+        let association = self
+            .ranged_diagnostics
+            .as_ref()
+            .map(|selected| &selected.association)
+            .or_else(|| {
+                self.lsp_snapshot
+                    .as_ref()
+                    .map(|selected| &selected.native_open_buffers)
+            });
+        if association.is_some_and(|association| {
+            association
+                .lifetimes
+                .iter()
+                .any(|(source, _)| source == uri)
+        }) && let Some(selection) = self.diagnostic_selection_identity()
+        {
+            self.queue_non_range_clear(selection);
+        }
+    }
+
+    pub(crate) fn take_non_range_clear(&self) -> Option<Value> {
+        let selection = self
+            .pending_non_range_clear
+            .lock()
+            .expect("non-range clear lock poisoned")
+            .take();
+        let selection = selection?;
+        if self.shutdown
+            || self.exit_code.is_some()
+            || !self.non_range_diagnostics_enabled()
+            || self
+                .diagnostic_selection_identity()
+                .is_some_and(|current| current != selection)
+        {
+            return None;
+        }
+        Some(
+            json!({"jsonrpc": "2.0", "method": "mizar/publishNonRangeDiagnostics",
+            "params": {"version": 1, "selection": null, "records": []}}),
+        )
+    }
+
+    pub(crate) fn write_pending_non_range_clear(
+        &self,
+        output: &mut impl Write,
+    ) -> io::Result<usize> {
+        let Some(notification) = self.take_non_range_clear() else {
+            return Ok(0);
+        };
+        let body = serde_json::to_vec(&notification).map_err(io::Error::other)?;
+        write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
+        output.write_all(&body)?;
+        output.flush()?;
+        Ok(1)
+    }
+
     pub(crate) fn diagnostic_host<A: mizar_session::SessionIdAllocator>(
         &self,
         driver: &mizar_driver::driver::CompilerDriver,
@@ -420,6 +505,10 @@ impl Server {
             }
         }
         self.ranged_diagnostics = Some(candidate);
+        self.pending_non_range_clear
+            .get_mut()
+            .expect("non-range clear lock poisoned")
+            .take();
         self.deferred_fixes = registrations;
         Ok((submission, true))
     }
@@ -790,6 +879,10 @@ impl Server {
         }
         self.deferred_fixes.clear();
         self.ranged_diagnostics = None;
+        self.pending_non_range_clear
+            .get_mut()
+            .expect("non-range clear lock poisoned")
+            .take();
         self.lsp_snapshot = Some(candidate);
         true
     }
@@ -1317,6 +1410,7 @@ impl Server {
                 }
                 self.initialized = Some(params.clone());
                 let mut result = json!({"capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true},
+                    "experimental": {"mizarNonRangeDiagnostics": {"version": 1}},
                     "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true},
                     "textDocumentSync": {"openClose": true, "change": 1}}});
                 if self.diagnostic_commands_enabled {
@@ -1639,6 +1733,10 @@ impl Server {
                             return error(id.clone(), -32602, "Invalid params");
                         }
                         self.shutdown = true;
+                        self.pending_non_range_clear
+                            .get_mut()
+                            .expect("non-range clear lock poisoned")
+                            .take();
                         self.deferred_fixes.clear();
                         self.native_open_buffers = None;
                         self.diagnostic_overlays.clear();
@@ -1670,6 +1768,10 @@ impl Server {
         if method == "exit" {
             if params.is_none_or(Value::is_null) {
                 self.exit_code = Some(if self.shutdown { 0 } else { 1 });
+                self.pending_non_range_clear
+                    .get_mut()
+                    .expect("non-range clear lock poisoned")
+                    .take();
                 self.native_open_buffers = None;
                 self.diagnostic_overlays.clear();
                 if let Some(bridge) = &mut self.build_bridge {
@@ -1720,6 +1822,7 @@ impl Server {
                         buffer.1 = text.to_owned();
                     }
                     buffer.0 = version;
+                    self.invalidate_non_range_document(uri);
                     self.diagnostic_overlays.retain(|_, overlay| {
                         !overlay
                             .association
@@ -1749,6 +1852,7 @@ impl Server {
                     self.native_open_buffers = None;
                 }
                 if removed {
+                    self.invalidate_non_range_document(uri);
                     self.diagnostic_overlays.retain(|_, overlay| {
                         !overlay
                             .association
@@ -1865,6 +1969,7 @@ impl Server {
                 output.write_all(&body)?;
                 output.flush()?;
             }
+            self.write_pending_non_range_clear(output)?;
         }
     }
 }
@@ -1892,7 +1997,7 @@ mod tests {
         assert_eq!(
             response,
             json!({"jsonrpc": "2.0", "id": 7, "result": {
-            "capabilities": {"positionEncoding": "utf-16", "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}}}})
+            "capabilities": {"positionEncoding": "utf-16", "experimental": {"mizarNonRangeDiagnostics": {"version": 1}}, "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}}}})
         );
     }
 
@@ -1906,14 +2011,14 @@ mod tests {
         response
     }
 
-    fn frame(body: impl AsRef<[u8]>) -> Vec<u8> {
+    pub(super) fn frame(body: impl AsRef<[u8]>) -> Vec<u8> {
         let body = body.as_ref();
         let mut bytes = format!("Content-Length: {}\r\n\r\n", body.len()).into_bytes();
         bytes.extend_from_slice(body);
         bytes
     }
 
-    fn responses(mut bytes: &[u8]) -> Vec<Value> {
+    pub(super) fn responses(mut bytes: &[u8]) -> Vec<Value> {
         let mut result = Vec::new();
         while !bytes.is_empty() {
             let end = bytes
@@ -2549,7 +2654,7 @@ mod tests {
                 server.handle_message(request("initialize", original.clone())),
                 Some(json!({
                     "jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                        "positionEncoding": "utf-16", "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                        "positionEncoding": "utf-16", "experimental": {"mizarNonRangeDiagnostics": {"version": 1}}, "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                     }}
                 }))
             );
@@ -2671,7 +2776,7 @@ mod tests {
             vec![
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32602, "message": "Invalid params"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "experimental": {"mizarNonRangeDiagnostics": {"version": 1}}, "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}}),
                 json!({"jsonrpc": "2.0", "id": 7, "error": {"code": -32600, "message": "Invalid Request"}}),
                 json!({"jsonrpc": "2.0", "id": 7, "result": null}),
@@ -2714,7 +2819,7 @@ mod tests {
             server.handle_message(request("initialize", params.clone())),
             Some(
                 json!({"jsonrpc": "2.0", "id": 7, "result": {"capabilities": {
-                    "positionEncoding": "utf-16", "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
+                    "positionEncoding": "utf-16", "experimental": {"mizarNonRangeDiagnostics": {"version": 1}}, "hoverProvider": true, "completionProvider": {"triggerCharacters": ["."]}, "codeActionProvider": {"codeActionKinds": ["quickfix"], "resolveProvider": true}, "semanticTokensProvider": {"legend": {"tokenTypes": ["keyword", "operator", "number", "comment"], "tokenModifiers": []}, "full": true}, "textDocumentSync": {"openClose": true, "change": 1}
                 }}})
             )
         );
@@ -5907,6 +6012,12 @@ pub(super) mod full_snapshot_registry_a {
 
     impl RegistryFixture {
         pub(super) fn new() -> Self {
+            Self::with_non_range_capability(None)
+        }
+        pub(super) fn with_non_range_diagnostics() -> Self {
+            Self::with_non_range_capability(Some(json!({"version": 1})))
+        }
+        pub(super) fn with_non_range_capability(capability: Option<Value>) -> Self {
             let sequence = NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed);
             let root = std::env::temp_dir().join(format!(
                 "mizar-lsp-full-snapshot-{}-{sequence}",
@@ -5994,7 +6105,11 @@ pub(super) mod full_snapshot_registry_a {
             let ids = RegistryObservingAllocator::default();
             let snapshots = Arc::new(SnapshotRegistry::with_allocator(ids.clone()));
             let mut server = Server::default();
-            initialize(&mut server);
+            let mut capabilities = json!({});
+            if let Some(capability) = capability {
+                capabilities["experimental"]["mizarNonRangeDiagnostics"] = capability;
+            }
+            server.handle_message(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":capabilities}}));
             let sources = ["main", "leaf"].into_iter().map(|module| {
                 let uri = file_uri(&package_root.join(format!("src/{module}.miz")));
                 server.handle_message(notification("textDocument/didOpen", json!({"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":raw[usize::from(module == "leaf") ]}})));
@@ -6152,9 +6267,6 @@ pub(super) mod full_snapshot_registry_a {
 
     fn file_uri(path: &Path) -> String {
         format!("file://{}", path.to_string_lossy().replace('\\', "/"))
-    }
-    fn initialize(server: &mut Server) {
-        server.handle_message(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}}));
     }
     fn notification(method: &str, params: Value) -> Value {
         json!({"jsonrpc":"2.0","method":method,"params":params})
@@ -6720,6 +6832,7 @@ mod task9_publication_api_tests {
         fail_at: Option<&'static str>,
         in_body: bool,
         obsolete_on_flush: Option<(
+            usize,
             std::sync::Arc<mizar_ir::publisher::PhaseOutputPublisher>,
             mizar_session::BuildSnapshotId,
         )>,
@@ -6729,7 +6842,12 @@ mod task9_publication_api_tests {
     impl Write for RecordingWriter {
         fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
             let operation = if self.in_body { "body" } else { "header" };
-            if self.fail_at == Some(operation) {
+            let fail_extension_header = operation == "header"
+                && self.fail_at == Some("extension-header")
+                && self.flushes == 2;
+            let fail_extension_body =
+                operation == "body" && self.fail_at == Some("extension-body") && self.flushes == 2;
+            if self.fail_at == Some(operation) || fail_extension_header || fail_extension_body {
                 return Err(io::Error::other(operation));
             }
             self.bytes.extend_from_slice(bytes);
@@ -6739,10 +6857,17 @@ mod task9_publication_api_tests {
 
         fn flush(&mut self) -> io::Result<()> {
             self.flushes += 1;
-            if self.fail_at == Some("flush") {
+            if self.fail_at == Some("flush")
+                || (self.fail_at == Some("extension-flush") && self.flushes == 3 && self.in_body)
+            {
                 return Err(io::Error::other("flush"));
             }
-            if let Some((publisher, snapshot)) = self.obsolete_on_flush.take() {
+            if self
+                .obsolete_on_flush
+                .as_ref()
+                .is_some_and(|(after, _, _)| *after == self.flushes)
+            {
+                let (_, publisher, snapshot) = self.obsolete_on_flush.take().unwrap();
                 publisher.mark_obsolete(snapshot).unwrap();
             }
             self.in_body = false;
@@ -6949,7 +7074,7 @@ mod task9_publication_api_tests {
             .snapshot()
             .id;
         let mut obsolete_writer = RecordingWriter {
-            obsolete_on_flush: Some((fixture.publisher.clone(), snapshot_id)),
+            obsolete_on_flush: Some((1, fixture.publisher.clone(), snapshot_id)),
             ..Default::default()
         };
         assert_eq!(
@@ -6999,6 +7124,302 @@ mod task9_publication_api_tests {
                 assert_eq!(writer.bytes, complete_first_frame);
             }
         }
+    }
+
+    fn framed_notifications(notifications: &[Value]) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        for notification in notifications {
+            let body = serde_json::to_vec(notification).unwrap();
+            bytes.extend_from_slice(format!("Content-Length: {}\r\n\r\n", body.len()).as_bytes());
+            bytes.extend_from_slice(&body);
+        }
+        bytes
+    }
+
+    #[test]
+    fn genuine_source_load_writer_stops_before_extension_on_midbatch_loss_then_clears() {
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
+        let capture = super::genuine_source_load_diagnostic_host_tests::source_load_capture(
+            &mut fixture,
+            "src/writer_loss.miz",
+            "WriterLoss",
+        );
+        let submission =
+            super::genuine_source_load_diagnostic_host_tests::submit(&mut fixture, capture);
+        let notifications = publish(&fixture).expect("current genuine source-load selection");
+        let ranged_count = fixture.sources.len();
+        assert_eq!(notifications.len(), ranged_count + 1);
+        assert_eq!(
+            notifications.last().unwrap()["method"],
+            "mizar/publishNonRangeDiagnostics"
+        );
+        let snapshot_id = submission.session.captured().snapshot().id;
+        let mut writer = RecordingWriter {
+            obsolete_on_flush: Some((ranged_count, fixture.publisher.clone(), snapshot_id)),
+            ..Default::default()
+        };
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut writer,
+                )
+                .unwrap(),
+            ranged_count,
+            "publisher obsolescence after ranged clears suppresses the extension frame"
+        );
+        assert_eq!(writer.flushes, ranged_count);
+        assert_eq!(
+            writer.bytes,
+            framed_notifications(&notifications[..ranged_count])
+        );
+
+        let mut clear_writer = RecordingWriter::default();
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut clear_writer,
+                )
+                .unwrap(),
+            1,
+            "the following stale invocation emits the guarded extension clear"
+        );
+        let clear = super::tests::responses(&clear_writer.bytes);
+        assert_eq!(clear.len(), 1);
+        assert_eq!(clear[0]["method"], "mizar/publishNonRangeDiagnostics");
+        assert_eq!(clear[0]["params"]["selection"], Value::Null);
+        assert_eq!(clear[0]["params"]["records"], json!([]));
+    }
+
+    #[test]
+    fn genuine_source_load_extension_writer_failures_retain_prior_bytes() {
+        for fail_at in ["extension-header", "extension-body", "extension-flush"] {
+            let mut fixture = RegistryFixture::with_non_range_diagnostics();
+            let capture = super::genuine_source_load_diagnostic_host_tests::source_load_capture(
+                &mut fixture,
+                "src/writer_failure.miz",
+                "WriterFailure",
+            );
+            super::genuine_source_load_diagnostic_host_tests::submit(&mut fixture, capture);
+            let notifications = publish(&fixture).expect("current genuine source-load selection");
+            let ranged_count = fixture.sources.len();
+            assert_eq!(notifications.len(), ranged_count + 1);
+            assert_eq!(
+                notifications.last().unwrap()["method"],
+                "mizar/publishNonRangeDiagnostics"
+            );
+            let expected_ranged = framed_notifications(&notifications[..ranged_count]);
+            let mut writer = RecordingWriter {
+                fail_at: Some(fail_at),
+                ..Default::default()
+            };
+            let error = fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut writer,
+                )
+                .unwrap_err();
+            assert_eq!(
+                error.to_string(),
+                match fail_at {
+                    "extension-header" => "header",
+                    "extension-body" => "body",
+                    "extension-flush" => "flush",
+                    _ => unreachable!(),
+                }
+            );
+            assert!(
+                writer.bytes.starts_with(&expected_ranged),
+                "case: {fail_at}"
+            );
+            assert_eq!(
+                writer.flushes,
+                ranged_count + usize::from(fail_at == "extension-flush"),
+                "case: {fail_at}"
+            );
+            match fail_at {
+                "extension-header" => assert_eq!(writer.bytes, expected_ranged),
+                "extension-body" => assert!(
+                    writer.bytes.len() > expected_ranged.len(),
+                    "extension header remains after its body write fails"
+                ),
+                "extension-flush" => {
+                    assert_eq!(
+                        writer.bytes,
+                        framed_notifications(&notifications),
+                        "complete extension bytes remain when flush fails"
+                    );
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    #[test]
+    fn malformed_source_load_secondary_fails_negotiated_writer_preflight_before_any_frame() {
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
+        let capture = super::genuine_source_load_diagnostic_host_tests::source_load_capture(
+            &mut fixture,
+            "src/writer_preflight.miz",
+            "WriterPreflight",
+        );
+        super::genuine_source_load_diagnostic_host_tests::submit(&mut fixture, capture);
+        let selected = fixture
+            .server
+            .ranged_diagnostics
+            .as_ref()
+            .expect("genuine source-load host selection");
+        let captured = selected.association.captured();
+        let snapshot = captured.snapshot().id;
+        let source_id = captured.native_sources().unwrap()[0].1.source_id;
+        let source_text = captured.native_sources().unwrap()[0].1.line_map.source();
+        let start = source_text.find("theorem").unwrap();
+        let end = start + "t".len();
+        let unknown_source = loop {
+            let candidate =
+                mizar_session::SessionIdAllocator::next_source_id(&fixture.ids, snapshot).unwrap();
+            if !captured
+                .native_sources()
+                .unwrap()
+                .iter()
+                .any(|(_, loaded, _)| loaded.source_id == candidate)
+            {
+                break candidate;
+            }
+        };
+        let (package_id, source_path) = match selected.index.records()[0].primary_location() {
+            mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                package_id,
+                path,
+            } => (package_id.clone(), path.clone()),
+            _ => panic!("genuine source-load host record has a source-load primary"),
+        };
+        let good_ranged = mizar_diagnostics::failure_record::DiagnosticDraft::new(
+            mizar_diagnostics::failure_record::DiagnosticDraftInput {
+                source_snapshot: snapshot,
+                code: mizar_diagnostics::registry::DiagnosticCode::from_parts(
+                    mizar_diagnostics::registry::DiagnosticSeverity::Error,
+                    1,
+                )
+                .unwrap(),
+                phase: mizar_diagnostics::failure_record::PipelinePhase::Parser,
+                category: mizar_diagnostics::failure_record::FailureCategory::ParseError,
+                stable_detail_key: "writer_preflight_ranged".to_owned(),
+                message: "valid ranged diagnostic".to_owned(),
+                primary_location:
+                    mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::Span(
+                        mizar_diagnostics::failure_record::DiagnosticSpan::from_anchor(
+                            mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                                source_id,
+                                start,
+                                end,
+                            }),
+                            mizar_diagnostics::failure_record::DiagnosticSpanRole::Primary,
+                            None,
+                            mizar_diagnostics::failure_record::SpanFreshness::Current,
+                            None,
+                        )
+                        .unwrap(),
+                    ),
+                secondary_spans: vec![],
+                notes: vec![],
+                details: mizar_diagnostics::failure_record::DiagnosticDetails::new(),
+                fixes: vec![],
+                explanation: None,
+            },
+        )
+        .unwrap();
+        let invalid_non_range = mizar_diagnostics::failure_record::DiagnosticDraft::new(
+            mizar_diagnostics::failure_record::DiagnosticDraftInput {
+                source_snapshot: snapshot,
+                code: mizar_diagnostics::registry::DiagnosticCode::from_parts(
+                    mizar_diagnostics::registry::DiagnosticSeverity::Error,
+                    600,
+                )
+                .unwrap(),
+                phase: mizar_diagnostics::failure_record::PipelinePhase::SourceLoad,
+                category: mizar_diagnostics::failure_record::FailureCategory::SourceLoadError,
+                stable_detail_key: "writer_preflight_non_range".to_owned(),
+                message: "invalid related source location".to_owned(),
+                primary_location:
+                    mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                        package_id,
+                        path: source_path,
+                    },
+                secondary_spans: vec![
+                    mizar_diagnostics::failure_record::DiagnosticSpan::from_anchor(
+                        mizar_session::SourceAnchor::Range(mizar_session::SourceRange {
+                            source_id: unknown_source,
+                            start,
+                            end,
+                        }),
+                        mizar_diagnostics::failure_record::DiagnosticSpanRole::Secondary,
+                        None,
+                        mizar_diagnostics::failure_record::SpanFreshness::Current,
+                        None,
+                    )
+                    .unwrap(),
+                ],
+                notes: vec![],
+                details: mizar_diagnostics::failure_record::DiagnosticDetails::new(),
+                fixes: vec![],
+                explanation: None,
+            },
+        )
+        .unwrap();
+        let mut ranged_sink = mizar_diagnostics::sink::DiagnosticSink::new(
+            mizar_diagnostics::sink::DiagnosticProducerScope::new(
+                mizar_diagnostics::failure_record::PipelinePhase::Parser,
+                snapshot,
+                "writer_preflight_parser",
+            ),
+        );
+        ranged_sink.emit(good_ranged).unwrap();
+        let mut non_range_sink = mizar_diagnostics::sink::DiagnosticSink::new(
+            mizar_diagnostics::sink::DiagnosticProducerScope::new(
+                mizar_diagnostics::failure_record::PipelinePhase::SourceLoad,
+                snapshot,
+                "writer_preflight_source_load",
+            ),
+        );
+        non_range_sink.emit(invalid_non_range).unwrap();
+        let index = mizar_diagnostics::aggregator::BuildDiagnosticIndex::aggregate(
+            mizar_diagnostics::aggregator::DiagnosticAggregationInput::new(
+                snapshot,
+                vec![ranged_sink.into_batch(), non_range_sink.into_batch()],
+            ),
+        )
+        .unwrap();
+        assert_eq!(index.records().len(), 2);
+
+        let selected = fixture.server.ranged_diagnostics.take().unwrap();
+        fixture.server.ranged_diagnostics =
+            Some(std::sync::Arc::new(RangedDiagnosticPublication {
+                session: selected.session,
+                index,
+                association: selected.association.clone(),
+                identity: selected.identity.clone(),
+                store: selected.store.clone(),
+            }));
+        let mut writer = RecordingWriter::default();
+        let error = fixture
+            .server
+            .publish_snapshot_diagnostics_to_writer(
+                &fixture.driver,
+                &fixture.snapshots,
+                &mut writer,
+            )
+            .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert!(writer.bytes.is_empty());
+        assert_eq!(writer.flushes, 0);
     }
 }
 
@@ -8729,7 +9150,7 @@ mod genuine_source_load_diagnostic_host_tests {
         input
     }
 
-    fn submit(
+    pub(super) fn submit(
         fixture: &mut RegistryFixture,
         capture: NativeOpenBufferCapture,
     ) -> mizar_driver::driver::BuildSubmission {
@@ -8748,7 +9169,7 @@ mod genuine_source_load_diagnostic_host_tests {
         submission
     }
 
-    fn source_load_capture(
+    pub(super) fn source_load_capture(
         fixture: &mut RegistryFixture,
         relative_path: &str,
         module: &str,
@@ -8767,9 +9188,87 @@ mod genuine_source_load_diagnostic_host_tests {
         capture
     }
 
+    fn assert_genuine_non_range_wire_delivery(
+        fixture: &RegistryFixture,
+        records: &[mizar_diagnostics::failure_record::DiagnosticRecord],
+    ) {
+        let mut wire = Vec::new();
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut wire,
+                )
+                .unwrap(),
+            fixture.sources.len() + 1,
+            "source-load-only selection emits ranged clears followed by its replacement frame"
+        );
+        let frames = super::tests::responses(&wire);
+        assert_eq!(frames.len(), fixture.sources.len() + 1);
+        let expected_uris = fixture
+            .sources
+            .iter()
+            .map(|(_, _, uri)| uri.as_str())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(
+            frames[..frames.len() - 1]
+                .iter()
+                .map(|frame| {
+                    assert_eq!(frame["method"], "textDocument/publishDiagnostics");
+                    assert_eq!(frame["params"]["diagnostics"], json!([]));
+                    frame["params"]["uri"].as_str().unwrap()
+                })
+                .collect::<std::collections::BTreeSet<_>>(),
+            expected_uris
+        );
+        let frame = frames.last().unwrap();
+        assert_eq!(frame["jsonrpc"], "2.0");
+        assert_eq!(frame["method"], "mizar/publishNonRangeDiagnostics");
+        assert_eq!(frame["params"]["version"], 1);
+        assert!(frame["params"]["selection"].as_str().is_some());
+        let wire_records = frame["params"]["records"].as_array().unwrap();
+        assert_eq!(wire_records.len(), records.len());
+        for (wire_record, record) in wire_records.iter().zip(records) {
+            let mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::SourceLoad {
+                package_id,
+                path,
+            } = record.primary_location()
+            else {
+                panic!("genuine source-load record retains its requested identity")
+            };
+            assert_eq!(
+                wire_record["location"],
+                json!({
+                    "kind": "sourceLoad", "package": package_id.as_str(), "path": path.as_str()
+                })
+            );
+            assert_eq!(wire_record["code"], record.code().to_string());
+            assert_eq!(wire_record["message"], record.message());
+            assert_eq!(
+                wire_record["severity"],
+                match record.severity() {
+                    mizar_diagnostics::registry::DiagnosticSeverity::Error => 1,
+                    mizar_diagnostics::registry::DiagnosticSeverity::Warning => 2,
+                    mizar_diagnostics::registry::DiagnosticSeverity::Info => 3,
+                    _ => panic!("supported severity"),
+                }
+            );
+            assert_eq!(
+                wire_record["data"]["snapshot"],
+                frame["params"]["records"][0]["data"]["snapshot"]
+            );
+            assert_eq!(wire_record["data"]["id"], record.handle().id.get());
+            assert_eq!(wire_record["relatedInformation"], json!([]));
+            assert!(wire_record.get("range").is_none());
+            assert!(wire_record.get("version").is_none());
+        }
+    }
+
     #[test]
     fn genuine_source_load_missing_and_invalid_utf8_survive_recreation_and_retained_reads() {
-        let mut fixture = RegistryFixture::new();
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
         let loader = fixture.sources[0].0.clone();
         let package = fixture.sources[0].1.clone();
         let missing = loader.package_root().join("src/missing_extra.miz");
@@ -8843,15 +9342,19 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
         assert!(
             host.publication().is_none(),
             "failed load has no full publication"
         );
-        assert!(
-            fixture
-                .server
-                .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
-                .is_err()
+        let notifications = fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            notifications.last().unwrap()["method"],
+            "mizar/publishNonRangeDiagnostics"
         );
         assert_eq!(
             submission.diagnostic_index.as_ref(),
@@ -8950,7 +9453,7 @@ mod genuine_source_load_diagnostic_host_tests {
     fn genuine_source_load_outside_root_symlink_retains_canonical_failure() {
         use std::os::unix::fs::symlink;
 
-        let mut fixture = RegistryFixture::new();
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
         let loader = fixture.sources[0].0.clone();
         let package = fixture.sources[0].1.clone();
         let escaped = loader.package_root().join("src/escaped_extra.miz");
@@ -8978,6 +9481,7 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained source-load host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
         let record = host
             .diagnostics()
             .records()
@@ -9001,7 +9505,7 @@ mod genuine_source_load_diagnostic_host_tests {
     fn genuine_source_load_generic_loader_failure_keeps_exact_source_identity() {
         use std::os::unix::fs::symlink;
 
-        let mut fixture = RegistryFixture::new();
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
         let loader = fixture.sources[0].0.clone();
         let package = fixture.sources[0].1.clone();
         let source = loader.package_root().join("src/generic_extra.miz");
@@ -9021,6 +9525,7 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .expect("retained source-load host evidence");
         assert_eq!(freshness, LspSnapshotFreshness::Current);
+        assert_genuine_non_range_wire_delivery(&fixture, host.diagnostics().records());
         let record = host
             .diagnostics()
             .records()
@@ -9044,8 +9549,87 @@ mod genuine_source_load_diagnostic_host_tests {
     }
 
     #[test]
+    fn non_range_capability_refusal_and_editor_invalidation_clear_are_framed() {
+        for capability in [
+            None,
+            Some(json!(null)),
+            Some(json!({})),
+            Some(json!({"version": 2})),
+            Some(json!({"version": "1"})),
+        ] {
+            let mut fixture = RegistryFixture::with_non_range_capability(capability);
+            let capture = source_load_capture(
+                &mut fixture,
+                "src/unsupported_extra.miz",
+                "UnsupportedExtra",
+            );
+            submit(&mut fixture, capture);
+            assert!(
+                fixture
+                    .server
+                    .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+                    .is_err()
+            );
+            let mut wire = Vec::new();
+            assert!(
+                fixture
+                    .server
+                    .publish_snapshot_diagnostics_to_writer(
+                        &fixture.driver,
+                        &fixture.snapshots,
+                        &mut wire,
+                    )
+                    .is_err()
+            );
+            assert!(
+                wire.is_empty(),
+                "unsupported capability must fail before writes"
+            );
+        }
+
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
+        let capture =
+            source_load_capture(&mut fixture, "src/invalidate_extra.miz", "InvalidateExtra");
+        submit(&mut fixture, capture);
+        let current = fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .unwrap();
+        let selection = current.last().unwrap()["params"]["selection"]
+            .as_str()
+            .unwrap();
+        assert!(!selection.is_empty());
+        let uri = fixture.sources[0].2.clone();
+        fixture.did_change_version_only(&uri, 2);
+        let mut wire = Vec::new();
+        assert_eq!(
+            fixture
+                .server
+                .publish_snapshot_diagnostics_to_writer(
+                    &fixture.driver,
+                    &fixture.snapshots,
+                    &mut wire,
+                )
+                .unwrap(),
+            1,
+            "accepted invalidation delivers one guarded clear"
+        );
+        let separator = wire
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+            .unwrap();
+        let clear: Value = serde_json::from_slice(&wire[separator + 4..]).unwrap();
+        assert_eq!(clear["method"], "mizar/publishNonRangeDiagnostics");
+        assert_eq!(
+            clear["params"],
+            json!({"version": 1, "selection": null, "records": []})
+        );
+    }
+
+    #[test]
     fn genuine_source_load_version_only_replacement_keeps_old_reader_distinct() {
-        let mut fixture = RegistryFixture::new();
+        let mut fixture = RegistryFixture::with_non_range_diagnostics();
         let loader = fixture.sources[0].0.clone();
         let package = fixture.sources[0].1.clone();
         let uri = fixture.sources[0].2.clone();
@@ -9071,6 +9655,12 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .unwrap();
         assert_eq!(old_freshness, LspSnapshotFreshness::Current);
+        let old_wire = fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .unwrap();
+        let old_token = old_wire.last().unwrap()["params"]["selection"].clone();
         let old_identity = old_host.publication_identity().to_owned();
         let old_records = old_host.diagnostics().clone();
         let old_sources = old_host
@@ -9118,6 +9708,27 @@ mod genuine_source_load_diagnostic_host_tests {
             .diagnostic_host(&fixture.driver, &fixture.snapshots)
             .unwrap();
         assert_eq!(new_freshness, LspSnapshotFreshness::Current);
+        let new_wire = fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .unwrap();
+        assert_ne!(old_token, new_wire.last().unwrap()["params"]["selection"]);
+        assert_eq!(
+            fixture
+                .server
+                .write_pending_non_range_clear(&mut Vec::new())
+                .unwrap(),
+            0,
+            "a newer selected publication supersedes the queued old clear"
+        );
+        assert_eq!(
+            new_wire.last().unwrap()["params"]["records"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
         assert_eq!(
             old_host.native_open_buffers().captured().snapshot().id,
             new_host.native_open_buffers().captured().snapshot().id,
@@ -9153,6 +9764,94 @@ mod genuine_source_load_diagnostic_host_tests {
         );
         assert_eq!(new_host.diagnostics().records().len(), 1);
         assert_eq!(old_host.diagnostics().records().len(), 1);
+        assert!(fixture.build().1);
+        let clean = fixture
+            .server
+            .snapshot_diagnostic_notifications(&fixture.driver, &fixture.snapshots)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            clean.last().unwrap()["params"]["records"],
+            json!([]),
+            "a clean full replacement removes all prior non-range packages"
+        );
+        assert!(clean.last().unwrap()["params"]["selection"].is_string());
+        assert_ne!(
+            clean.last().unwrap()["params"]["selection"],
+            new_wire.last().unwrap()["params"]["selection"]
+        );
+    }
+
+    #[test]
+    fn non_range_clear_is_served_after_an_edit_and_discarded_at_terminal_closure() {
+        use super::tests::{frame, responses};
+        for terminal in ["shutdown", "exit", "serve"] {
+            let mut fixture = RegistryFixture::with_non_range_diagnostics();
+            let capture =
+                source_load_capture(&mut fixture, "src/closing_extra.miz", "ClosingExtra");
+            submit(&mut fixture, capture);
+            let uri = fixture.sources[0].2.clone();
+            let change = json!({"jsonrpc":"2.0", "method":"textDocument/didChange",
+                "params":{"textDocument":{"uri":uri,"version":2},"contentChanges":[]}});
+            let shutdown = json!({"jsonrpc":"2.0","id":42,"method":"shutdown"});
+            let exit = json!({"jsonrpc":"2.0","method":"exit"});
+            let mut wire = Vec::new();
+            if terminal == "serve" {
+                let input = [change, shutdown, exit]
+                    .into_iter()
+                    .flat_map(|message| frame(message.to_string()))
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    fixture
+                        .server
+                        .serve(&mut std::io::Cursor::new(input), &mut wire)
+                        .unwrap(),
+                    0
+                );
+                let messages = responses(&wire);
+                assert_eq!(messages.len(), 2);
+                assert_eq!(messages[0]["method"], "mizar/publishNonRangeDiagnostics");
+                assert_eq!(
+                    messages[0]["params"],
+                    json!({"version":1,"selection":null,"records":[]})
+                );
+                assert_eq!(messages[1]["id"], 42);
+            } else {
+                fixture.server.handle_message(change);
+                assert!(
+                    fixture
+                        .server
+                        .pending_non_range_clear
+                        .lock()
+                        .expect("non-range clear lock poisoned")
+                        .is_some()
+                );
+                fixture.server.handle_message(if terminal == "shutdown" {
+                    shutdown
+                } else {
+                    exit
+                });
+                assert!(
+                    fixture
+                        .server
+                        .pending_non_range_clear
+                        .lock()
+                        .expect("non-range clear lock poisoned")
+                        .is_none()
+                );
+            }
+            assert_eq!(
+                fixture
+                    .server
+                    .publish_snapshot_diagnostics_to_writer(
+                        &fixture.driver,
+                        &fixture.snapshots,
+                        &mut Vec::new()
+                    )
+                    .unwrap(),
+                0
+            );
+        }
     }
 
     #[test]

@@ -183,7 +183,7 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     for message in [
         json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
@@ -414,7 +414,7 @@ fn complete_bad_json_responds_and_continues_to_exit() {
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     process.send(&frame(
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),
