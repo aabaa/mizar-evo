@@ -3,7 +3,7 @@ Canonical language: English; [Japanese companion](../ja/non_range_diagnostics.md
 
 ## Status and authority
 
-**Proposal only: Q1–Q5 are open; no presentation is approved or implemented.** The owner authorized this separate definition before implementation. Until approval and separately dispatched implementation, [explicit whole-batch refusal](diagnostics.md#implementation-boundary) remains unchanged; Task41 Audit G6 stays open.
+**Owner approved Q1–Q5 option A on 2026-11-16.** The implementation contract in the [crate plan](00.crate_plan.md#task-index) freezes that selection. The proposal alternatives below record the decision surface; B alternatives are unselected and forbidden. Task41 Audit G6 delivery evidence remains separate.
 Authority: [spec §22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display), [source-loading primary locations](../../mizar-diagnostics/en/failure_record.md#source-loading-primary-locations), [aggregation](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#build-aggregation), [diagnostic conversion](diagnostics.md#range-conversion) and [snapshot currentness](snapshot.md#freshness-and-replacement). Diagnostics owns existing codes, request identity, normalization/deduplication and order; LSP owns only presentation and delivery.
 LSP 3.17 [Diagnostic](https://raw.githubusercontent.com/microsoft/language-server-protocol/gh-pages/_specifications/lsp/3.17/types/diagnostic.md) requires `range`; [publishDiagnostics](https://raw.githubusercontent.com/microsoft/language-server-protocol/gh-pages/_specifications/lsp/3.17/language/publishDiagnostics.md) carries those objects. Neither omitting/nulling that field nor placing a path-only record in `relatedInformation` supplies a standard non-range encoding. This motivates the extension proposals below; it does not authorize one.
 
@@ -14,6 +14,8 @@ Never feed the non-range primary through a span-only converter. Real secondary a
 All presentation variants refer to one authentic immutable diagnostic selection and original association; a handle or wire token grants no currentness, edit, proof, artifact or acceptance authority. Retained reads must never remap old locations into live text. Existing CLI/artifact projection, overlay isolation, ranged delivery and other units' open questions remain outside this definition.
 
 ## Open owner decisions
+
+The questions below are resolved as A throughout; references to proposed fields and recommendations describe the original proposal, now approved unchanged.
 
 **Q1 — which wire carrier?** A: a dedicated server-to-client JSON-RPC notification, provisionally `mizar/publishNonRangeDiagnostics`, carrying a structured non-range replacement set alongside unchanged standard ranged notifications. B: a dedicated client pull request returning the same structured set, with an explicit unavailable/stale result and client polling/refresh lifecycle to be defined before implementation. **Recommend A**: it fits existing push delivery and permits active clearing. B avoids unsolicited payloads but needs an additional refresh/availability contract; Q4/Q5 below describe A, so choosing B requires owner approval of their adapted pull lifecycle before coding. Standard push/pull Diagnostic arrays, a fake URI with a zero range, and an information popup cannot provide this structured non-range carrier.
 

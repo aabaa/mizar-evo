@@ -3,7 +3,7 @@
 
 ## Status and authority
 
-**提案のみ。Q1–Q5 は未決であり、表示方式は未承認・未実装。** owner は実装前の独立した定義作業を承認した。承認と別 dispatch の実装までは、既存の [batch 全体の明示的拒否](diagnostics.md#implementation-boundary) を維持し、Task41 Audit G6 は未完了とする。
+**2026-11-16 に owner が Q1–Q5 の A を全承認した。** [crate plan](00.crate_plan.md#task-index) の実装契約が選択を固定する。以下の選択肢は当初の判断対象を記録し、未選択の B は実装禁止。Task41 Audit G6 の配送証跡は別途扱う。
 権限: [spec §22.1.2](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display)、[source-loading primary locations](../../mizar-diagnostics/en/failure_record.md#source-loading-primary-locations)、[aggregation](../../internal/en/03.diagnostics_model_and_lsp_bridge.md#build-aggregation)、[diagnostic conversion](diagnostics.md#range-conversion)、[snapshot currentness](snapshot.md#freshness-and-replacement)。既存 code・request identity・正規化/deduplication・順序は Diagnostics が所有し、LSP は表示と配信だけを所有する。
 LSP 3.17 の [Diagnostic](https://raw.githubusercontent.com/microsoft/language-server-protocol/gh-pages/_specifications/lsp/3.17/types/diagnostic.md) は `range` が必須で、[publishDiagnostics](https://raw.githubusercontent.com/microsoft/language-server-protocol/gh-pages/_specifications/lsp/3.17/language/publishDiagnostics.md) はその object を運ぶ。range の省略/null 化や path のみの record を `relatedInformation` に置く方法では標準 non-range encoding にならない。これは以下の拡張案の理由であり、承認ではない。
 
@@ -14,6 +14,8 @@ non-range primary を span-only converter に渡さない。実在する seconda
 どの表示案も一つの genuine immutable diagnostic selection と元の association を参照する。handle/wire token は currentness・edit・proof・artifact・acceptance 権限を与えない。retained read は古い位置を live text に再対応付けしない。既存 CLI/artifact projection・overlay isolation・ranged delivery・他 unit の未決事項は本定義の範囲外とする。
 
 ## Open owner decisions
+
+以下の問いはすべて A で解決済み。提案値や推奨という表現は、変更なく承認された当初案の記録である。
 
 **Q1 — wire carrier は何か。** A: 専用の server-to-client JSON-RPC notification（仮称 `mizar/publishNonRangeDiagnostics`）で structured non-range replacement set を送り、標準 ranged notification を併用する。B: 同じ structured set を返す専用 client pull request とし、unavailable/stale result と client polling/refresh lifecycle を実装前に明記する。**A を推奨**: 既存 push delivery に合い、能動的な消去が可能。B は unsolicited payload を避けるが refresh/availability 契約が別途必要。以下の Q4/Q5 は A を記述するため、B を選ぶ場合は対応する pull lifecycle を coding 前に owner が承認する。標準 push/pull の Diagnostic array、偽 URI と zero range、情報 popup はこの structured non-range carrier を提供しない。
 
