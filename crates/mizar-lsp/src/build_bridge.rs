@@ -279,7 +279,12 @@ impl Server {
                 ..Default::default()
             };
             let submit = if nonterminal {
-                CompilerDriver::start_captured
+                // Unit tests retain passive checkpoint receipts on the same captured route.
+                #[cfg(test)]
+                let start = CompilerDriver::start_captured_observed;
+                #[cfg(not(test))]
+                let start = CompilerDriver::start_captured;
+                start
             } else {
                 CompilerDriver::submit_captured
             };

@@ -1,15 +1,20 @@
 use super::full_snapshot_registry_a::{RegistryFixture, RegistryObservingAllocator};
 use super::*;
-use mizar_build::task_graph::PipelinePhase;
-use mizar_driver::{
-    driver::SubmitOptions,
-    registry::PhaseStatus,
-    request::{BuildSessionOutcome, BuildSessionState},
+use mizar_build::{
+    cancel::{CancellationReason, CancellationToken},
+    task_graph::PipelinePhase,
 };
 use mizar_driver::{
     driver::{CompilerDriver, DriverSubmitError, WatchOwnerSeam, WatchSubmitControl},
     events::BuildEventKind,
     request::{BuildLaneId, BuildRequestGeneration, BuildRequestOrigin, WatchRequest},
+};
+use mizar_driver::{
+    driver::{
+        NativeCheckpoint, NativeCheckpointObservation, NativeCheckpointObservations, SubmitOptions,
+    },
+    registry::PhaseStatus,
+    request::{BuildSessionOutcome, BuildSessionState},
 };
 use mizar_session::{SnapshotRegistry, SourceOrigin};
 use std::{
@@ -790,6 +795,10 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
     );
     pause_at_frontend(&mut fixture, first_id, task_count);
     let old_frontend = fixture.driver.pending_task(first_id).unwrap().id.clone();
+    assert_eq!(
+        fixture.driver.native_checkpoint_observations(first_id),
+        NativeCheckpointObservations::Enabled(&[])
+    );
 
     // Admission records editor activity but leaves the accepted native work Running.
     change_version(&mut fixture.server, &uri, 3);
@@ -863,8 +872,31 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
             .all(|(event, _)| event.identity.generation == BuildRequestGeneration::new(2))
     );
 
+    let expected_observation = NativeCheckpointObservation {
+        session: first_id,
+        task: old_frontend.clone(),
+        checkpoint: NativeCheckpoint::FrontendServiceEntry,
+        input_snapshot: first_snapshot,
+        cancellation: CancellationToken {
+            snapshot: first_snapshot,
+            generation: fixture
+                .driver
+                .cancellation_policy(first_id)
+                .unwrap()
+                .generation(),
+            reason: CancellationReason::SupersededSnapshot,
+        },
+    };
+    assert_eq!(
+        fixture.driver.native_checkpoint_observations(first_id),
+        NativeCheckpointObservations::Enabled(&[])
+    );
     let old_terminal = drain_bridge_session(&mut fixture, first_id, task_count)
         .expect("superseded old work must drain");
+    assert_eq!(
+        fixture.driver.native_checkpoint_observations(first_id),
+        NativeCheckpointObservations::Enabled(std::slice::from_ref(&expected_observation))
+    );
     assert_eq!(
         old_terminal.session.state(),
         BuildSessionState::Finished(BuildSessionOutcome::Superseded)
@@ -936,6 +968,16 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
         replacement_events
             .iter()
             .any(|(event, _)| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
+    );
+    assert_eq!(
+        fixture
+            .driver
+            .native_checkpoint_observations(replacement_id),
+        NativeCheckpointObservations::Enabled(&[])
+    );
+    assert_eq!(
+        fixture.driver.native_checkpoint_observations(first_id),
+        NativeCheckpointObservations::Enabled(std::slice::from_ref(&expected_observation))
     );
 }
 
@@ -1050,6 +1092,10 @@ fn native_bridge_shutdown_and_exit_cancel_pending_frontend_once() {
             .clone();
         pause_at_frontend(&mut fixture, session, task_count);
         let frontend = fixture.driver.pending_task(session).unwrap().id.clone();
+        assert_eq!(
+            fixture.driver.native_checkpoint_observations(session),
+            NativeCheckpointObservations::Enabled(&[])
+        );
         change_version(&mut fixture.server, &uri, 3); // A slot is admitted and discarded by terminal traffic.
         millis.store(600, Ordering::SeqCst);
         let repeat = if terminal_method == "shutdown" {
@@ -1106,8 +1152,28 @@ fn native_bridge_shutdown_and_exit_cancel_pending_frontend_once() {
                 .iter()
                 .all(|(event, _)| !matches!(event.kind, BuildEventKind::SessionFinished { .. }))
         );
+        let snapshot = started.session.captured().snapshot().id;
+        let expected_observation = NativeCheckpointObservation {
+            session,
+            task: frontend.clone(),
+            checkpoint: NativeCheckpoint::FrontendServiceEntry,
+            input_snapshot: snapshot,
+            cancellation: CancellationToken {
+                snapshot,
+                generation: fixture
+                    .driver
+                    .cancellation_policy(session)
+                    .unwrap()
+                    .generation(),
+                reason: CancellationReason::Shutdown,
+            },
+        };
         let terminal = drain_bridge_session(&mut fixture, session, task_count)
             .expect("shutdown cancellation must drain at the native checkpoint");
+        assert_eq!(
+            fixture.driver.native_checkpoint_observations(session),
+            NativeCheckpointObservations::Enabled(std::slice::from_ref(&expected_observation))
+        );
         assert_eq!(
             terminal.session.state(),
             BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
@@ -1158,6 +1224,10 @@ fn native_bridge_shutdown_and_exit_cancel_pending_frontend_once() {
                 .iter()
                 .map(|(event, _)| event.clone())
                 .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            fixture.driver.native_checkpoint_observations(session),
+            NativeCheckpointObservations::Enabled(std::slice::from_ref(&expected_observation))
         );
     }
 }
