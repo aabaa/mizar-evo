@@ -1,0 +1,28 @@
+# Task DRIVER-GENUINE-REFLEXIVITY-STATUS-HANDOFF-DESIGN: genuine reflexivity service handoff proposal
+Canonical language: English; [Japanese pointer](../ja/DRIVER-GENUINE-REFLEXIVITY-STATUS-HANDOFF-DESIGN.md).
+Status: frozen definition unit; proposed choices require owner approval. Tier: full; a new Kernel/status service boundary fails the no-new-public-seam pattern criterion.
+Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md#task-index). Consumers: later M1.4 implementation and M1.5 emission prerequisites.
+Purpose: define the missing genuine theorem-reflexivity Kernel/status-to-service handoff without implementing or approving it.
+
+## Authority and readiness
+
+Authority: spec [§16.5](../../../spec/en/16.theorems_and_proofs.md#165-proof-justification-by), [§21.7.1](../../../spec/en/21.source_code_annotation_and_atp.md#2171-minimum-kernel-architecture-and-de-bruijn-criterion), [§21.7.5](../../../spec/en/21.source_code_annotation_and_atp.md#2175-kernel-evidence-format), [§23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility) and [§23.5.1](../../../spec/en/23.package_management_and_build_system.md#2351-mizirjson-artifact-format).
+Dependencies: M1.3 genuine theorem-reflexivity acceptance/publication producers exist; [Proof status](../../mizar-proof/en/status.md#source-theorem-reflexivity-status-projection), [FILE staging](../../mizar-proof/en/witness_store.md#explicit-source-theorem-file-staging), and [Artifact profile](../../mizar-artifact/en/verified_artifact.md#explicit-built-in-enclosing-profile) retain authority.
+Gap: `design_gap` in the reviewed Driver handoff; service integration remains `source_drift`/`test_gap`, not permission to implement. [Driver91](DRIVER-NATIVE-THEOREM-REFLEXIVITY-CORE-VC-CALLER.md) grants no service/status expansion; the [registered candidate check](../../mizar-driver/en/frontend_adapter.md#scheduled-source-theorem-candidate-check) is the separate normal ATP route.
+Definition is ready. Owner approval of every real choice and a separately frozen implementation contract are prerequisites to implementation; recommendation is not approval.
+
+## Scope and boundaries
+
+Author paired `doc/design/mizar-driver/{en,ja}/genuine_reflexivity_status_handoff.md`: existing producer/consumer gap, proposed route and ownership, input/output/identity/currentness/refusal invariants, status/witness handoff, Q-decisions with alternatives and recommendations, conditional validation and implementation prerequisites.
+Driver owns service orchestration and fresh sealed transport; Checker/Core/VC/Kernel/Proof/Artifact retain their existing semantic, acceptance, staging and publication ownership. Reuse authentic original source and actual Kernel-checked evidence; never promote a flag, hash, opaque token or backend success.
+Forbidden: production/test/fixture/spec/expectation/trace/ledger changes; implementation, new acceptance policy or diagnostic allocation; normal ATP route weakening; fabricated accepted outputs; generic/state built-in expansion; cache/reuse or full phase-15 activation; AGENTS/protocol/global TODO edits; coverage or milestone credit.
+Writes: contract pair and one Task Index row per Driver plan in the freeze; then proposal pair, paired registry prerequisite links and proposal links in those plan rows. No other fan-out.
+Audit: no coverage-audit state change; M1 and general service/emission gaps remain open.
+
+## Review matrix and exit
+
+Document-review matrix (cap six; runtime cases conditional on approval): (1) authentic captured omitted-step reflexivity source joins original Core/VC and actual Kernel/Proof status; (2) source/module/snapshot/schema/goal/context/polarity/evidence/policy mismatches fail closed; (3) disabled policy, open/unsupported/cited/multiple obligations and backend-only data grant no accepted status; (4) selected route registration, exact parent roles and sealed output identity distinguish genuine built-in from normal ATP; (5) cancellation, stale/collected parents, replacement and retained readers never grant current publication; (6) matching accepted status/FILE/main/manifest/readback/publication preserve witness class and trusted used_axioms while incomplete slices remain mandatory MISS, and normal/generic/state controls retain their boundaries.
+Existing intent: `source_theorem_reflexivity_status_matches_existing_projection_and_full_slice`, `source_theorem_reflexivity_status_preserves_actual_error_order` in `crates/mizar-test/src/runner/proof_verification/term_proof_tests/source_theorem_reflexivity.rs`; `source_theorem_file_staging_matches_genuine_file_and_legacy_boundaries` in sibling `misc.rs`; `builtin_enclosing_*` in `crates/mizar-test/src/runner/tests/misc.rs`; `native_theorem_kernel_handoff_core_vc_caller_*` in `crates/mizar-driver/tests/source_load/native_theorem_kernel.rs` and `scheduled_theorem_candidate_check_*` in `crates/mizar-driver/tests/driver.rs`. No executable cases or expectations change.
+Reviews: independent specification/test-intent before freeze; sufficiency, precision, volume/scope and consistency/final assessment over both commits. Extra cases require an authority clause or .miz test.
+Each commit: both `cargo test -p mizar-checker --test lint_policy` and `cargo test -p mizar-test --test lint_policy`, local links/fragments, EN/JA parity and `git diff --check`. Caps: contract 60 lines/660 words; whole-unit documentation 200 added lines.
+Documentation only: fmt/Clippy/runtime/E2E unrun; full `cargo test` only on a cadence trigger. Exit: reviewed contract freeze then paired proposal, two local commits counting as one changed task; Q-decisions remain pending, with no M1.4 implementation or push.
