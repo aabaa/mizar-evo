@@ -2779,18 +2779,44 @@ pub fn project_source_theorem_reflexivity_used_axioms_status(
     ),
     String,
 > {
+    let (_, _, _, _, projection, slice) = check_source_theorem_reflexivity_with_status(
+        source, check, symbols, snapshot, vc_id, policy,
+    )?;
+    Ok((projection, slice))
+}
+
+/// Returns original graphs, Kernel evaluation and trusted status from one genuine check.
+pub fn check_source_theorem_reflexivity_with_status(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        mizar_core::core_ir::CoreIr,
+        mizar_vc::vc_ir::VcSet,
+        KernelCheckResult,
+        crate::policy::PolicyDecision,
+        ProofStatusProjection,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
     use crate::selection::{VcProofSelection, merge_artifact_proof_selections};
     let (identity, slice) =
         source_theorem_obligation_identity(source, check, symbols, snapshot, vc_id)?;
     let origin = KernelEvidenceOrigin::BuiltinDischarge;
-    let (result, decision, _, _, _, _, _) = check_source_theorem_reflexivity_payload(
+    let (result, decision, _, _, _, core, vcs) = check_source_theorem_reflexivity_payload(
         source, check, symbols, snapshot, vc_id, policy, false,
     )?;
     let invalid = || "theorem.proof.invalid_source_used_axioms_status".to_owned();
     if decision.class != crate::policy::CandidatePolicyClass::DischargedBuiltin {
         return Err(invalid());
     }
-    let selection = select_source_theorem_reflexivity_result(&result, decision, origin, policy)?;
+    let selection =
+        select_source_theorem_reflexivity_result(&result, decision.clone(), origin, policy)?;
     if selection.selected_class() != ProofWinnerClass::DischargedBuiltin {
         return Err(invalid());
     }
@@ -2804,7 +2830,7 @@ pub fn project_source_theorem_reflexivity_used_axioms_status(
             .with_trusted_used_axioms(reference),
     )
     .map_err(|error| error.to_string())?;
-    Ok((projection, slice))
+    Ok((core, vcs, result, decision, projection, slice))
 }
 
 /// Binds original theorem identity to the caller's exact generation and VC schemas.
