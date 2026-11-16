@@ -5,7 +5,7 @@
 
 ## Purpose
 
-The [genuine reflexivity Kernel/status handoff proposal](genuine_reflexivity_status_handoff.md) awaits owner Q1–Q5 decisions; it registers no service and does not extend the normal candidate-check route.
+The explicit [genuine reflexivity Kernel/status service](frontend_adapter.md#genuine-reflexivity-kernel-status-service) is separate from normal candidate checking; the historical handoff proposal does not register services.
 
 This module defines the driver-owned phase service registry and salsa query
 boundary.

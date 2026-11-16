@@ -5,7 +5,7 @@
 
 ## 目的
 
-[Genuine reflexivity Kernel/status handoff 案](genuine_reflexivity_status_handoff.md) は owner Q1–Q5 判断待ち。service を登録せず、通常 candidate-check 経路を拡張しない。
+明示的な [genuine reflexivity Kernel/status service](frontend_adapter.md#genuine-reflexivity-kernel-status-service) は通常 candidate check と別経路であり、過去の提案自体はサービス登録を行わない。
 
 この module は driver-owned な phase service registry と salsa query 境界を定義する。
 
