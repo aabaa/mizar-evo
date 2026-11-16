@@ -3,7 +3,7 @@
 
 ## 状態と権限
 
-**提案: Q1–Q5 は未決であり、推奨は承認ではない。** owner は実装と分離した本定義を認めた。承認後に観測実装を別 dispatch し、その後、保留中 Task40 の修正を再 dispatch する。Task41 の presentation 判断は変更しない。
+**Q1–Q5 A は 2026-11-16 に owner 承認済み。** 以下の選択肢・推奨は提案時の根拠として残し、B 案は実装しない。観測実装と保留中 Task40 の修正は別 dispatch とする。Task41 の presentation 判断は変更しない。
 権限: [承認済み実行 seam](execution_seam.md#implemented-a-package)、[bridge lifecycle](build_bridge.md#supersede-and-terminal-lifecycle)、Driver [execution](../../mizar-driver/en/driver.md#nonterminal-captured-execution)・[cancellation](../../mizar-driver/en/driver.md#cancellation)・[scheduler boundary](../../mizar-driver/en/driver.md#scheduler-boundary)・[session identity](../../mizar-driver/en/request.md#buildsession)・[events](../../mizar-driver/en/events.md)、internal01 [checkpoint policy](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md#cancellation)、spec [§23.6](../../../spec/en/23.package_management_and_build_system.md#236-lsp-integration-and-ide-support)。言語・proof・diagnostic・scheduler policy は提案しない。
 `crates/mizar-driver/src/frontend_adapter/frontend.rs` の native `FrontendService::execute` checkpoint は、入力 snapshot と一致する token に対し `PhaseStatus::Cancelled` を返す。Driver registry dispatcher は結果を受けるが、finalization は `crates/mizar-driver/src/driver.rs:1777` で obsolete `phase_results` を消去する。そのため scheduler `TaskState::Cancelled` と空の result/output 集合だけでは checkpoint 受領を証明できず、service dispatch 前の cancellation でも成立する。これは証拠の欠落であり、実証された production defect ではない。
 
@@ -20,7 +20,7 @@ Driver が記録・対応付け・取得を所有する。Build は admission/ch
 承認済み first-reason・drain まで Cancelling・terminal replay 規則が権限を持つ。受領と drainage、単一 SessionFinished を区別する。観測は capture lease・artifact access・editor publication・currentness を付与しない。同一 snapshot の replacement と Watch/LSP session は別の証拠/control/publisher を保つ。cancel より先に勝った completion は completion のままで、受領を遡って捏造しない。checkpoint/progress/cleanup の latency 保証は追加しない。
 obsolete session と Shutdown/exit 後の cleanup progress でも、終端結果が抑止された場合を含め読み取れること。反復 read/replay は観測生成・実行前進・cancellation 消費・終端 event 重複を起こさない。保持は明示し、保持中 execution ごとの実観測呼出しに限定して Q4 により owner と共に解放する。global log、capture の独立保持、新 session-eviction policy は導かない。
 
-## Owner への未決事項
+## 承認済み owner 判断（すべて A、提案時の選択肢を保持）
 
 **Q1 — 証拠をどう公開するか。** A: session をキーにした専用 read-only Driver query とし、unknown session・既知で観測なし・観測ありを明示的に区別する。既存 submission/event API を維持する。B: 既存 replay に typed Driver observation event を追加し、同じ区別と suppression 前記録を保証する。**A を推奨**: canonical event schema/order や subscriber の変更を避ける。B は replay を再利用できるが event owner・互換性・stale-publication 分類の変更が必要で、観測 event は output/publication と数えられない。
 **Q2 — native 受領を何で証明するか。** A: 既存 registry 境界で上記事実を持つ native-dispatch return witness を記録し、native matching-token Cancelled branch を provenance invariant とする。B: execution resource に Driver-owned receipt sink を加え、既存 native checkpoint 内で直接通知する。native service TypeId/route を維持し、受領と後続 result 検証/drainage を区別する。現 checkpoint では新 service/context callback が不要な **A を推奨**。B は Cancelled に別起源が加わった場合も checkpoint 帰属を明示できるが context/lifetime ownership が広がり、通知契約の別 freeze が必要。両案とも token や scheduler decision だけから受領を推測せず、B の observer 動作は実行を分岐・条件化しない。
