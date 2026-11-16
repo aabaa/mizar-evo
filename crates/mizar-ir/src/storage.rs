@@ -205,6 +205,7 @@ pub struct CollectionSummary {
 /// after runtime kind and Rust type validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AnyPhaseOutputRef {
+    slot: OutputSlotId,
     lineage: PhaseOutputLineage,
     schema_version: SchemaVersion,
     generation: StorageGeneration,
@@ -233,7 +234,7 @@ pub struct IrStorageService {
 struct StorageState {
     next_slot_id: u64,
     slots: HashMap<OutputSlotId, SlotRecord>,
-    outputs: HashMap<PhaseOutputId, OutputSlotId>,
+    outputs: HashMap<PhaseOutputId, Vec<OutputSlotId>>,
     output_generations: HashMap<PhaseOutputId, u64>,
     blobs: HashMap<ContentBlobId, Arc<Vec<u8>>>,
     collected_outputs: HashSet<PhaseOutputId>,
@@ -445,6 +446,7 @@ impl IrStorageService {
                 value: Arc::new(input.payload),
                 storage_fingerprint: None,
             },
+            false,
         )
     }
 
@@ -480,6 +482,7 @@ impl IrStorageService {
                     value: payload,
                     storage_fingerprint: Some(storage_fingerprint),
                 },
+                false,
             );
         }
 
@@ -491,6 +494,7 @@ impl IrStorageService {
                 canonical_bytes: input.canonical_bytes,
                 decode,
             },
+            false,
         )
     }
 
@@ -498,6 +502,17 @@ impl IrStorageService {
     pub fn seal_canonical<T>(
         &self,
         input: SealCanonicalOutputInput<T>,
+    ) -> Result<PhaseOutputRef<T>, StorageError>
+    where
+        T: Send + Sync + 'static,
+    {
+        self.seal_canonical_instance(input, false)
+    }
+
+    pub(crate) fn seal_canonical_instance<T>(
+        &self,
+        input: SealCanonicalOutputInput<T>,
+        allow_instance: bool,
     ) -> Result<PhaseOutputRef<T>, StorageError>
     where
         T: Send + Sync + 'static,
@@ -513,6 +528,7 @@ impl IrStorageService {
                     value: Arc::new(input.payload),
                     storage_fingerprint: Some(storage_fingerprint),
                 },
+                allow_instance,
             );
         }
 
@@ -524,6 +540,7 @@ impl IrStorageService {
                 canonical_bytes: input.canonical_bytes,
                 decode: input.decode.into_erased(),
             },
+            allow_instance,
         )
     }
 
@@ -533,6 +550,7 @@ impl IrStorageService {
         lineage: PhaseOutputLineage,
         side_tables: IrSideTables,
         payload: PendingPayload,
+        allow_instance: bool,
     ) -> Result<PhaseOutputRef<T>, StorageError>
     where
         T: Send + Sync + 'static,
@@ -541,7 +559,7 @@ impl IrStorageService {
         let slot_id = slot.id;
         let output = lineage.output;
 
-        let existing_slot = state.outputs.get(&output).copied();
+        let existing_slots = state.outputs.get(&output).cloned().unwrap_or_default();
         let mut record = state
             .slots
             .remove(&slot_id)
@@ -558,9 +576,7 @@ impl IrStorageService {
             }
         }
 
-        if let Some(existing_slot) = existing_slot
-            && existing_slot != slot_id
-        {
+        if !allow_instance && existing_slots.iter().any(|existing| *existing != slot_id) {
             record.state = SlotState::Abandoned;
             state.slots.insert(slot_id, record);
             return Err(StorageError::OutputAlreadyStored { output });
@@ -585,11 +601,19 @@ impl IrStorageService {
             });
         }
 
+        for existing in existing_slots {
+            if let Some(existing) = state.slots.get(&existing) {
+                record
+                    .retain_owners
+                    .extend(existing.retain_owners.iter().cloned());
+            }
+        }
         let (payload, placement, storage_fingerprint) =
             build_payload_storage(&mut state, slot.schema_version, payload);
         let generation = StorageGeneration(*state.output_generations.entry(output).or_insert(0));
         record.generation = generation;
         let handle = AnyPhaseOutputRef {
+            slot: slot_id,
             lineage,
             schema_version: slot.schema_version,
             generation,
@@ -605,7 +629,7 @@ impl IrStorageService {
             payload,
             side_tables: Arc::new(side_tables),
         }));
-        state.outputs.insert(output, slot_id);
+        state.outputs.entry(output).or_default().push(slot_id);
         state.slots.insert(slot_id, record);
 
         Ok(typed)
@@ -621,7 +645,11 @@ impl IrStorageService {
     {
         let mut state = self.state.lock().expect("IR storage mutex poisoned");
         let output = lineage.output;
-        let existing_slot = state.outputs.get(&output).copied();
+        let existing_slot = state
+            .outputs
+            .get(&output)
+            .and_then(|slots| slots.first())
+            .copied();
         let record = state
             .slots
             .get_mut(&slot.id)
@@ -767,15 +795,18 @@ impl IrStorageService {
     /// Retains a sealed output for an explicit owner.
     pub fn retain(&self, output: PhaseOutputId, owner: RetainOwner) -> Result<(), StorageError> {
         let mut state = self.state.lock().expect("IR storage mutex poisoned");
-        let slot = slot_for_output(&state, output)?;
-        let record = state
-            .slots
-            .get_mut(&slot)
-            .ok_or(StorageError::UnknownOutput { output })?;
-        if !matches!(record.state, SlotState::Sealed(_)) {
-            return Err(StorageError::UnsealedOutput { slot });
+        slot_for_output(&state, output)?;
+        let slots = state.outputs[&output].clone();
+        for slot in slots {
+            let record = state
+                .slots
+                .get_mut(&slot)
+                .ok_or(StorageError::UnknownOutput { output })?;
+            if !matches!(record.state, SlotState::Sealed(_)) {
+                return Err(StorageError::UnsealedOutput { slot });
+            }
+            record.retain_owners.insert(owner.clone());
         }
-        record.retain_owners.insert(owner);
         Ok(())
     }
 
@@ -786,12 +817,17 @@ impl IrStorageService {
         owner: &RetainOwner,
     ) -> Result<bool, StorageError> {
         let mut state = self.state.lock().expect("IR storage mutex poisoned");
-        let slot = slot_for_output(&state, output)?;
-        let record = state
-            .slots
-            .get_mut(&slot)
-            .ok_or(StorageError::UnknownOutput { output })?;
-        Ok(record.retain_owners.remove(owner))
+        slot_for_output(&state, output)?;
+        let slots = state.outputs[&output].clone();
+        let mut removed = false;
+        for slot in slots {
+            let record = state
+                .slots
+                .get_mut(&slot)
+                .ok_or(StorageError::UnknownOutput { output })?;
+            removed |= record.retain_owners.remove(owner);
+        }
+        Ok(removed)
     }
 
     /// Collects unretained outputs for one snapshot.
@@ -838,7 +874,12 @@ impl IrStorageService {
                         .entry(output)
                         .and_modify(|generation| *generation = (*generation).max(next_generation))
                         .or_insert(next_generation);
-                    state.outputs.remove(&output);
+                    if let Some(slots) = state.outputs.get_mut(&output) {
+                        slots.retain(|existing| *existing != slot);
+                        if slots.is_empty() {
+                            state.outputs.remove(&output);
+                        }
+                    }
                     state.collected_outputs.insert(output);
                     summary.outputs_dropped += 1;
                     if let PayloadStorage::Blob { blob, .. } = sealed.payload
@@ -1057,6 +1098,10 @@ impl<T> PendingOutputSlot<T> {
 }
 
 impl AnyPhaseOutputRef {
+    pub(crate) const fn physical_slot(&self) -> OutputSlotId {
+        self.slot
+    }
+
     /// Returns the output id.
     pub const fn output(&self) -> PhaseOutputId {
         self.lineage.output
@@ -1326,14 +1371,28 @@ fn slot_for_handle(
     state: &StorageState,
     handle: &AnyPhaseOutputRef,
 ) -> Result<OutputSlotId, StorageError> {
-    slot_for_output(state, handle.output())
+    if state
+        .outputs
+        .get(&handle.output())
+        .is_some_and(|slots| slots.contains(&handle.slot))
+    {
+        Ok(handle.slot)
+    } else {
+        slot_for_output(state, handle.output())?;
+        Err(collected_or_stale_error(state, handle))
+    }
 }
 
 fn slot_for_output(
     state: &StorageState,
     output: PhaseOutputId,
 ) -> Result<OutputSlotId, StorageError> {
-    if let Some(slot) = state.outputs.get(&output).copied() {
+    if let Some(slot) = state
+        .outputs
+        .get(&output)
+        .and_then(|slots| slots.first())
+        .copied()
+    {
         Ok(slot)
     } else if state.collected_outputs.contains(&output) {
         Err(StorageError::CollectedOutput { output })
@@ -2380,6 +2439,169 @@ mod tests {
         assert!(matches!(
             storage.get(&blob),
             Err(StorageError::CollectedOutput { output }) if output == blob.output()
+        ));
+    }
+    #[test]
+    fn sibling_slots_inherit_retention_and_share_blob_lifetime() {
+        let snapshot = snapshot(62);
+        let lineage = lineage(snapshot, "same-unit", 1);
+        let storage = IrStorageService::with_policy(StoragePolicy::with_blob_spill_threshold(0));
+        let bytes = b"equal canonical payload".to_vec();
+        let owner = RetainOwner::new("captured-execution");
+
+        let first = storage
+            .seal_canonical_instance(
+                SealCanonicalOutputInput {
+                    slot: storage.allocate::<(u64, String)>(allocation(snapshot, "same-unit")),
+                    lineage: lineage.clone(),
+                    side_tables: IrSideTables::default(),
+                    payload: (101, "equal canonical payload".to_owned()),
+                    canonical_bytes: bytes.clone(),
+                    decode: BlobDecoder::new(|bytes| {
+                        Ok((
+                            101,
+                            String::from_utf8(bytes.to_vec()).expect("valid fixture bytes"),
+                        ))
+                    }),
+                },
+                true,
+            )
+            .expect("first physical instance seals");
+        storage
+            .retain(first.output(), owner.clone())
+            .expect("first instance is retained");
+        let second = storage
+            .seal_canonical_instance(
+                SealCanonicalOutputInput {
+                    slot: storage.allocate::<(u64, String)>(allocation(snapshot, "same-unit")),
+                    lineage: lineage.clone(),
+                    side_tables: IrSideTables::default(),
+                    payload: (202, "equal canonical payload".to_owned()),
+                    canonical_bytes: bytes,
+                    decode: BlobDecoder::new(|bytes| {
+                        Ok((
+                            202,
+                            String::from_utf8(bytes.to_vec()).expect("valid fixture bytes"),
+                        ))
+                    }),
+                },
+                true,
+            )
+            .expect("sibling instance inherits retention");
+
+        assert_eq!(first.output(), second.output());
+        assert_ne!(first.any().slot, second.any().slot);
+        assert_eq!(
+            &*storage.get(&first).expect("first reader stays bound"),
+            &(101, "equal canonical payload".to_owned())
+        );
+        assert_eq!(
+            &*storage.get(&second).expect("second reader stays bound"),
+            &(202, "equal canonical payload".to_owned())
+        );
+
+        let retained = storage.collect(CollectInput {
+            snapshot,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(retained.outputs_dropped, 0);
+        assert_eq!(retained.retained_outputs, 2);
+        assert!(
+            storage
+                .release(first.output(), &owner)
+                .expect("owner releases")
+        );
+        assert!(!storage.release(first.output(), &owner).unwrap());
+        let protected = storage.collect(CollectInput {
+            snapshot,
+            protected_outputs: vec![first.output()],
+        });
+        assert_eq!(protected.outputs_dropped, 0);
+        assert_eq!(protected.protected_outputs, 2);
+
+        storage
+            .retain(second.output(), owner.clone())
+            .expect("surviving sibling can be retained independently");
+        {
+            let mut state = storage.state.lock().expect("storage mutex is not poisoned");
+            state
+                .slots
+                .get_mut(&first.any().slot)
+                .expect("first slot remains until collection")
+                .retain_owners
+                .remove(&owner);
+        }
+        let sibling_collection = storage.collect(CollectInput {
+            snapshot,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(sibling_collection.outputs_dropped, 1);
+        assert_eq!(sibling_collection.retained_outputs, 1);
+        assert_eq!(sibling_collection.blobs_dropped, 0);
+        assert!(matches!(
+            storage.get(&first),
+            Err(StorageError::CollectedOutput { .. })
+        ));
+        assert_eq!(
+            &*storage
+                .get(&second)
+                .expect("retained sibling and blob survive"),
+            &(202, "equal canonical payload".to_owned())
+        );
+
+        let third = storage
+            .seal_canonical_instance(
+                SealCanonicalOutputInput {
+                    slot: storage.allocate::<(u64, String)>(allocation(snapshot, "same-unit")),
+                    lineage,
+                    side_tables: IrSideTables::default(),
+                    payload: (303, "equal canonical payload".to_owned()),
+                    canonical_bytes: b"equal canonical payload".to_vec(),
+                    decode: BlobDecoder::new(|bytes| {
+                        Ok((
+                            303,
+                            String::from_utf8(bytes.to_vec()).expect("valid fixture bytes"),
+                        ))
+                    }),
+                },
+                true,
+            )
+            .expect("new sibling inherits the surviving owner's retention");
+        assert_ne!(second.any().slot, third.any().slot);
+        assert!(third.any().generation().get() > second.any().generation().get());
+        assert!(matches!(
+            storage.get(&first),
+            Err(StorageError::CollectedOutput { .. })
+        ));
+        assert_eq!(
+            &*storage
+                .get(&second)
+                .expect("older reader survives new generation"),
+            &(202, "equal canonical payload".to_owned())
+        );
+        assert_eq!(
+            &*storage.get(&third).expect("third reader stays bound"),
+            &(303, "equal canonical payload".to_owned())
+        );
+
+        assert!(
+            storage
+                .release(second.output(), &owner)
+                .expect("owner releases all siblings")
+        );
+        let final_collection = storage.collect(CollectInput {
+            snapshot,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(final_collection.outputs_dropped, 2);
+        assert_eq!(final_collection.blobs_dropped, 1);
+        assert!(matches!(
+            storage.get(&second),
+            Err(StorageError::CollectedOutput { .. })
+        ));
+        assert!(matches!(
+            storage.get(&third),
+            Err(StorageError::CollectedOutput { .. })
         ));
     }
 }

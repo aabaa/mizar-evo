@@ -88,6 +88,14 @@ Registering the same logical key with a different payload in one snapshot is
 rejected as a conflicting duplicate instead of silently producing a second
 current identity.
 
+Only a captured-execution publisher view's bound-snapshot
+OpenBuffer/InternalOnly registration may retain differing lineages under one
+phase-output logical key. Canonical IDs, hashes and parents remain unchanged.
+The first surviving logical-key anchor preserves ordinary/package conflict checks;
+rollback of that anchor selects the surviving lineage with the smallest output
+hash, or removes the key when none survives. Failed sealing rolls back only a
+newly inserted lineage and cannot remove an existing registration.
+
 Producer path keys are semantic or source-shaped keys supplied by the owning
 phase. `mizar-ir` validates ordering, domains, and snapshot compatibility, but
 it does not decide name resolution, type semantics, obligation anchors, proof

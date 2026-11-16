@@ -286,6 +286,7 @@ enum SubmissionMode {
 
 struct DriverExecution {
     scheduler: SchedulerExecution,
+    output_publisher: Option<Arc<PhaseOutputPublisher>>,
     build_plan: BuildPlan,
     module_index: ModuleIndex,
     task_graph: TaskGraph,
@@ -614,7 +615,7 @@ impl CompilerDriver {
         let mut dispatcher = RegistrySchedulerDispatcher::new(
             &self.registry,
             execution.phase_inputs.as_deref(),
-            self.output_publisher.as_ref(),
+            execution.output_publisher.as_ref(),
             Some(crate::registry::SourceLoadInputs {
                 snapshot: &session_inputs.captured.snapshot,
                 captured: Some(&session_inputs.captured),
@@ -1241,10 +1242,17 @@ impl CompilerDriver {
         scheduler_input.cancellation = cancellation.clone();
         scheduler_input.worker_count = worker_count.max(1);
         scheduler_input.completion_order = completion_order;
+        let output_publisher = self.output_publisher.as_ref().map(|publisher| {
+            if mode == SubmissionMode::Deferred {
+                Arc::new(publisher.for_captured_execution(session.captured.snapshot.id))
+            } else {
+                publisher.clone()
+            }
+        });
         let mut dispatcher = RegistrySchedulerDispatcher::new(
             &self.registry,
             phase_dispatch_inputs.as_deref(),
-            self.output_publisher.as_ref(),
+            output_publisher.as_ref(),
             Some(crate::registry::SourceLoadInputs {
                 snapshot: &session.captured.snapshot,
                 captured: Some(&session.captured),
@@ -1597,6 +1605,7 @@ impl CompilerDriver {
                 session.id,
                 DriverExecution {
                     scheduler: execution,
+                    output_publisher,
                     build_plan: build_plan.clone(),
                     module_index: module_index.clone(),
                     task_graph: task_graph.clone(),
@@ -1633,6 +1642,7 @@ impl CompilerDriver {
             cancellation,
             DriverExecution {
                 scheduler: execution,
+                output_publisher,
                 build_plan,
                 module_index,
                 task_graph,

@@ -475,7 +475,7 @@ impl SnapshotHandleRegistry {
         &self,
         input: OutputIdentityInput,
     ) -> Result<PhaseOutputLineage, IdentityError> {
-        Ok(self.register_output_with_status(input)?.lineage)
+        Ok(self.register_output_with_status(input, false)?.lineage)
     }
 
     /// Registers phase-output lineage and reports whether it was newly
@@ -483,6 +483,7 @@ impl SnapshotHandleRegistry {
     pub(crate) fn register_output_with_status(
         &self,
         input: OutputIdentityInput,
+        internal_variants: bool,
     ) -> Result<PhaseOutputRegistration, IdentityError> {
         let lineage = derive_phase_output_lineage(input)?;
         let output = lineage.output;
@@ -516,6 +517,7 @@ impl SnapshotHandleRegistry {
             .copied();
         if let Some(existing) = existing_for_key
             && existing != output
+            && !internal_variants
         {
             return Err(IdentityError::ConflictingDuplicate {
                 collection: "phase_outputs",
@@ -536,7 +538,8 @@ impl SnapshotHandleRegistry {
                     .get_mut(&lineage.snapshot)
                     .expect("snapshot was checked above")
                     .output_keys
-                    .insert(key, output);
+                    .entry(key)
+                    .or_insert(output);
                 Ok(PhaseOutputRegistration {
                     lineage,
                     status: PhaseOutputRegistrationStatus::Inserted,
@@ -555,10 +558,25 @@ impl SnapshotHandleRegistry {
             return false;
         }
         state.outputs.remove(&lineage.output);
+        let replacement = state
+            .outputs
+            .values()
+            .filter(|candidate| {
+                candidate.snapshot == lineage.snapshot
+                    && candidate.phase == lineage.phase
+                    && candidate.work_unit == lineage.work_unit
+                    && candidate.output_kind == lineage.output_kind
+            })
+            .map(|candidate| candidate.output)
+            .min_by_key(|output| output.hash().as_bytes().to_owned());
         if let Some(snapshot) = state.snapshots.get_mut(&lineage.snapshot)
             && snapshot.output_keys.get(&key) == Some(&lineage.output)
         {
-            snapshot.output_keys.remove(&key);
+            if let Some(output) = replacement {
+                snapshot.output_keys.insert(key, output);
+            } else {
+                snapshot.output_keys.remove(&key);
+            }
         }
         true
     }
@@ -1734,5 +1752,39 @@ mod tests {
         let allocator = mizar_session::InMemorySessionIdAllocator::new();
         mizar_session::SessionIdAllocator::next_source_id(&allocator, snapshot)
             .expect("test source id is allocated")
+    }
+    #[test]
+    fn internal_variants_keep_ordinary_duplicate_anchor_through_rollback() {
+        let snapshot = snapshot(61);
+        let registry = registered_registry(snapshot);
+        let input = |seed| {
+            let mut input = output_input(snapshot, "same-unit", Vec::new(), Vec::new());
+            input.named_input_hashes.push(NamedInputHash {
+                name: "capture".to_owned(),
+                domain: "test".to_owned(),
+                digest: hash(seed),
+            });
+            input
+        };
+
+        let first = registry
+            .register_output_with_status(input(1), true)
+            .expect("first internal lineage registers")
+            .lineage;
+        let sibling = registry
+            .register_output_with_status(input(2), true)
+            .expect("internal sibling lineage registers")
+            .lineage;
+
+        assert!(registry.rollback_inserted_output(&first));
+        assert!(matches!(
+            registry.register_output_with_status(input(3), false),
+            Err(IdentityError::ConflictingDuplicate { .. })
+        ));
+        let repeated = registry
+            .register_output_with_status(input(2), true)
+            .expect("surviving internal lineage remains registered");
+        assert_eq!(repeated.lineage, sibling);
+        assert_eq!(repeated.status, PhaseOutputRegistrationStatus::Existing);
     }
 }

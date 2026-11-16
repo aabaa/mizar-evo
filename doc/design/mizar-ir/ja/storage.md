@@ -186,6 +186,14 @@ summary は追加 drop が 0 であること以外変わってはならない。
 content、published artifact、dependency fingerprint、proof status、cache validation result を
 変更してはならない。
 
+captured-execution publisher view は、一つの canonical output ID に複数の immutable な
+物理 slot を seal できる。通常の `seal`、`seal_blob`、`seal_canonical` は重複を拒否する。
+private な slot identity が各 handle を固有の payload と decoder に対応させ、canonical ID と
+storage fingerprint が等しくても区別する。`retain`、`release`、保護 root は ID の全生存
+instance に適用し、新 instance は既存 retain owner の和集合を継承する。`release` は
+いずれかの instance から owner を除いた場合に true を返す。collection は対象 slot だけを
+除き、生存 sibling、正確な handle の generation 検証、共有 blob の寿命を保つ。
+
 ## Snapshot replacement boundary
 
 Task 13 は current/obsolete snapshot state を追加する。storage はすべての slot に owner の

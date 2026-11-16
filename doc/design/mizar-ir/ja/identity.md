@@ -100,6 +100,12 @@ Identity input に使う collection は、stable string または hash key で s
 から hash する。payload が衝突する duplicate identity key は拒否する。必須
 identity field の欠落は、空 default で置き換えず拒否する。
 
+captured-execution publisher view の指定 snapshot に対する OpenBuffer/InternalOnly 登録だけが、
+一つの phase-output logical key に異なる lineage を保持できる。canonical ID、hash、parent は
+変えない。最初の生存 logical-key anchor が通常/package の競合検査を維持する。
+anchor の rollback は output hash が最小の生存 lineage を選び、生存者がなければ key を
+除く。seal 失敗は新規挿入した lineage だけを rollback し、既存登録を除かない。
+
 ## Parent and derived output relationships
 
 snapshot handle registry は各 seal 済み output について lineage を記録する:

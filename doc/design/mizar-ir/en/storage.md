@@ -194,6 +194,15 @@ handles may remain readable while retained by stale diagnostics, explanation
 requests, or semantic snapshot readers. After release, collection may remove
 the old payload and subsequent reads fail as `CollectedOutput`.
 
+Captured-execution publisher views may seal separate immutable physical slots for
+one canonical output ID; ordinary `seal`, `seal_blob` and `seal_canonical` still
+reject duplicates. Private slot identity routes each handle to its own payload and
+decoder, even when canonical IDs and storage fingerprints match. `retain`,
+`release` and protection roots apply to all live instances of an ID; new instances
+inherit the union of existing retain owners, and `release` reports whether any
+instance released the owner. Collection removes only its selected slot, preserving
+live siblings, exact-handle generation checks and shared blob lifetime.
+
 Collection is idempotent. Running it twice over the same snapshot and owner
 state must not change the second summary except for zero additional drops.
 Collection must not mutate sealed payload content, published artifacts,

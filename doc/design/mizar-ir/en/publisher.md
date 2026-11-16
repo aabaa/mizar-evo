@@ -219,7 +219,7 @@ Task 8 must cover:
 ## Published output authorization
 
 `validate_output(snapshot, &AnyPhaseOutputRef, OutputAuthorization) -> Result<(), PublishError>`
-checks current publisher state, the output snapshot and an exact output/generation
+checks current publisher state, the output snapshot and an exact output/generation/physical-slot
 record from this publisher, in that order. `OutputAuthorization::CurrentPackage`
 requires a current/package root and returns `OutputNotCurrentPackage` when absent.
 `OutputAuthorization::Published` also admits successfully sealed OpenBuffer/InternalOnly
@@ -230,3 +230,20 @@ nothing. Physical handle validity remains a storage check; records do not pin st
 or revive collected generations. This is publisher provenance, not source validity,
 document-version freshness, cache acceptance, proof status or artifact authority.
 Obsolete/superseded snapshots remain rejected. Existing errors and precedence remain.
+
+`for_captured_execution(snapshot)` creates one execution view over the configured
+publisher's storage, registry, currentness, work authorization and publication
+records. Only that snapshot's PackageSource/CurrentPackage and
+OpenBuffer/InternalOnly requests may seal fresh physical instances of an equal
+canonical ID. Other snapshots, ordinary producers and cache rehydration retain
+ordinary duplicate refusal. Each view rejects a second successful phase/unit/kind
+publication after request, parent and hash validation; failed sealing permits retry.
+
+Each instance stores the complete fresh payload, including fresh captured SourceIds;
+previous payloads are never rebound or reused. A private physical slot distinguishes
+exact publication records, so direct seals or new generations acquire no authority.
+Only the view's OpenBuffer/InternalOnly registrations admit distinct internal
+lineages under one logical key; ordinary/package conflicting duplicates keep their
+original surviving anchor. Session behavior and canonical hashes/IDs are unchanged.
+Storage [retains and collects every physical instance](storage.md#retain-and-collect)
+while preserving retained readers and sibling handles.

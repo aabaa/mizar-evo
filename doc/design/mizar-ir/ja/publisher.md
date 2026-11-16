@@ -196,7 +196,7 @@ Task 8 は以下を cover しなければならない:
 ## Published output authorization
 
 `validate_output(snapshot, &AnyPhaseOutputRef, OutputAuthorization) -> Result<(), PublishError>`
-は現在の publisher 状態、output snapshot、当 publisher の正確な output/generation
+は現在の publisher 状態、output snapshot、当 publisher の正確な output/generation/physical-slot
 記録をこの順に照合する。`OutputAuthorization::CurrentPackage` は current/package
 root を要求し、不在時は `OutputNotCurrentPackage` を返す。
 `OutputAuthorization::Published` は seal 成功した OpenBuffer/InternalOnly の別の
@@ -207,3 +207,18 @@ seal は承認しない。seal 失敗は記録を作らない。物理 handle �
 これは publisher 由来の確認であり、source 正当性・document version 鮮度・cache 受理・
 proof status・artifact 権限ではない。obsolete/superseded snapshot は拒否し、
 従来の error と優先順位を維持する。
+
+`for_captured_execution(snapshot)` は、設定済み publisher の storage、registry、
+currentness、work authorization、publication 記録を共有する execution view を作る。
+指定 snapshot の PackageSource/CurrentPackage と OpenBuffer/InternalOnly だけが、
+等しい canonical ID に新しい物理 instance を seal できる。他の snapshot、通常の producer、
+cache 再構成は従来の重複拒否を維持する。各 view は request、parent、hash 検証後に
+同じ phase/unit/kind の二度目の seal 成功を拒否し、seal 失敗後の再試行を許す。
+
+各 instance は新しい captured SourceId を含む complete な新規 payload を保存し、
+既存 payload の再束縛・再利用をしない。private な物理 slot が正確な publication 記録を
+区別し、直接 seal や新 generation に権限を与えない。view の OpenBuffer/InternalOnly
+登録だけが同じ logical key の異なる内部 lineage を許し、通常/package の競合重複は
+最初の生存 anchor を維持する。Session 動作と canonical hash/ID は変えない。
+storage は[各物理 instance を retain・collect](storage.md#retain-and-collect)し、
+retain 済み reader と sibling handle を維持する。

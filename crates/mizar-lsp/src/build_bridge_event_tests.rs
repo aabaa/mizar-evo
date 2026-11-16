@@ -815,7 +815,6 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
     );
 
     millis.store(600, Ordering::SeqCst);
-    drop(fixture.capture()); // Give the equal-snapshot replacement its own output store.
     let publisher = fixture.publisher.clone();
     let replacement = flush_bridge(&mut fixture, publisher).unwrap().unwrap();
     let replacement_id = replacement.session.id();
@@ -903,6 +902,7 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
             .any(|(event, _)| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
     );
 
+    pause_at_frontend(&mut fixture, replacement_id, replacement_count);
     let replacement_terminal =
         drain_bridge_session(&mut fixture, replacement_id, replacement_count)
             .expect("replacement native work must complete");
@@ -937,6 +937,100 @@ fn native_bridge_replacement_cancels_only_after_acceptance_and_drains_old_fronte
             .iter()
             .any(|(event, _)| matches!(event.kind, BuildEventKind::SnapshotPublished { .. }))
     );
+}
+
+#[test]
+fn native_bridge_equal_snapshot_preserves_completed_outputs_with_the_configured_publisher() {
+    let mut fixture = RegistryFixture::new();
+    let (millis, _) = configure_nonterminal_bridge(&mut fixture, 94);
+    let uri = fixture.sources[0].2.clone();
+    let publisher = fixture.publisher.clone();
+    let mut previous_outputs: Option<Vec<mizar_ir::storage::AnyPhaseOutputRef>> = None;
+    let mut previous_session = None;
+    for (version, now) in [(2, 300), (3, 600)] {
+        change_version(&mut fixture.server, &uri, version);
+        millis.store(now, Ordering::SeqCst);
+        let started = flush_bridge(&mut fixture, publisher.clone())
+            .unwrap()
+            .unwrap();
+        assert_ne!(previous_session, Some(started.session.id()));
+        let terminal = drain_bridge_session(
+            &mut fixture,
+            started.session.id(),
+            started.task_graph.as_ref().unwrap().tasks().len(),
+        )
+        .expect("same-publisher native execution must drain");
+        assert_eq!(
+            terminal.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+        );
+        let outputs = terminal
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| result.output_refs.iter().cloned())
+            .collect::<Vec<_>>();
+        assert!(
+            outputs
+                .iter()
+                .any(|output| output.output_kind().as_str() == "FrontendOutput")
+        );
+        if let Some(previous) = previous_outputs {
+            let unchanged_frontend = previous
+                .iter()
+                .find(|output| {
+                    output.output_kind().as_str() == "FrontendOutput"
+                        && output.work_unit().as_str() == "\"alpha\":\"leaf\""
+                })
+                .expect("the unchanged module produced native Frontend output");
+            let replacement_frontend = outputs
+                .iter()
+                .find(|output| {
+                    output.output_kind().as_str() == "FrontendOutput"
+                        && output.work_unit() == unchanged_frontend.work_unit()
+                })
+                .unwrap();
+            assert_eq!(replacement_frontend.output(), unchanged_frontend.output());
+            assert_ne!(replacement_frontend, unchanged_frontend);
+            let [old_frontend, new_frontend] = [unchanged_frontend, replacement_frontend].map(|output| {
+                let handle = publisher
+                    .storage()
+                    .typed_handle::<mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>>(
+                        output,
+                        output.output_kind(),
+                    )
+                    .unwrap();
+                publisher.storage().get(&handle).unwrap()
+            });
+            assert_ne!(old_frontend.source.source_id, new_frontend.source.source_id);
+            let captured_leaf = terminal
+                .session
+                .captured()
+                .native_sources()
+                .unwrap()
+                .iter()
+                .find(|(_, source, _)| source.module_path == new_frontend.source.module_path)
+                .unwrap();
+            assert_eq!(new_frontend.source.source_id, captured_leaf.1.source_id);
+            for output in &previous {
+                publisher.storage().validate_handle(output).unwrap();
+            }
+        }
+        assert!(
+            fixture
+                .driver
+                .events(started.session.id())
+                .events()
+                .iter()
+                .any(|event| { matches!(event.kind, BuildEventKind::SnapshotPublished { .. }) })
+        );
+        assert!(Arc::ptr_eq(&fixture.publisher, &publisher));
+        previous_outputs = Some(outputs);
+        previous_session = Some(started.session.id());
+    }
 }
 
 #[test]

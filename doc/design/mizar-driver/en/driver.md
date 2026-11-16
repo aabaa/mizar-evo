@@ -484,3 +484,5 @@ This is explicit same-capture retained scheduling, not cold record-independent F
 ## Nonterminal captured execution
 
 `start_captured` preserves captured validation, native import discovery and structured early failures, then stores the actual scheduler continuation before returning Running metadata. `pending_task` exposes its admitted task; `progress` dispatches at most one task and returns a terminal submission only after drainage. Unknown/pending progress returns None; terminal progress replays the retained submission. `terminal_submission` rechecks currentness and publisher validity before returning retained results/index. Borrowed cache/retained-frontend options are rejected by nonterminal start; synchronous/cache/watch callers retain shared preparation, scheduler core and finalization.
+
+Each deferred execution keeps one snapshot-bound publisher view, sharing the configured publisher’s storage, registry and live authorization. Equal-snapshot replacements publish separate immutable physical outputs with fresh capture SourceIds; canonical output IDs stay unchanged. Synchronous publication and same-execution duplicate refusal remain unchanged.

@@ -461,3 +461,5 @@ cold Frontend expectations、retained scheduler skip、完全 runtime/toolchain/
 ## Nonterminal captured execution
 
 `start_captured` は captured validation・native import discovery・構造化された早期失敗を維持し、実 scheduler 継続を保存してから Running metadata を返す。`pending_task` は admitted task を公開し、`progress` は最大一つの task を dispatch して排出後だけ terminal submission を返す。unknown/pending は None、terminal progress は保持済み submission の replay。`terminal_submission` は currentness と publisher validity を再検証して result/index を返す。非終端 start は借用 cache/retained-frontend option を拒否する。同期/cache/watch caller は共通の preparation・scheduler core・finalization を維持する。
+
+各 deferred execution は snapshot に束縛した publisher view を一つ保持し、設定済み publisher の storage・registry・live authorization を共有する。equal-snapshot replacement は新しい capture SourceId を持つ別の不変 physical output を公開し、canonical output ID は維持する。同期 publication と同一 execution 内の duplicate 拒否は維持する。

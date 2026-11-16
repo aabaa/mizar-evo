@@ -18,9 +18,9 @@ use crate::{
         PhaseOutputRegistrationStatus, PipelinePhase, SnapshotHandleRegistry, WorkUnit,
     },
     storage::{
-        AnyPhaseOutputRef, BlobDecoder, IrSideTables, IrStorageService, PendingOutputSlot,
-        PhaseOutputRef, SchemaVersion, SealCanonicalOutputInput, SideTableRecord, StorageError,
-        StorageGeneration,
+        AnyPhaseOutputRef, BlobDecoder, IrSideTables, IrStorageService, OutputSlotId,
+        PendingOutputSlot, PhaseOutputRef, SchemaVersion, SealCanonicalOutputInput,
+        SideTableRecord, StorageError, StorageGeneration,
     },
 };
 
@@ -122,7 +122,9 @@ pub struct PublishOutputInput<T> {
 pub struct PhaseOutputPublisher {
     storage: Arc<IrStorageService>,
     registry: Arc<SnapshotHandleRegistry>,
-    state: Mutex<PublisherState>,
+    state: Arc<Mutex<PublisherState>>,
+    captured_snapshot: Option<BuildSnapshotId>,
+    successful_outputs: Mutex<HashMap<AllowedWorkUnit, PhaseOutputId>>,
 }
 
 #[derive(Debug, Default)]
@@ -139,6 +141,7 @@ struct PublisherState {
 struct CurrentOutputRoot {
     output: PhaseOutputId,
     generation: StorageGeneration,
+    slot: OutputSlotId,
 }
 
 /// Errors reported by the phase-output publisher.
@@ -243,7 +246,23 @@ impl PhaseOutputPublisher {
         Self {
             storage,
             registry,
-            state: Mutex::default(),
+            state: Arc::default(),
+            captured_snapshot: None,
+            successful_outputs: Mutex::default(),
+        }
+    }
+
+    /// Creates a snapshot-bound publication view for one captured execution.
+    ///
+    /// The view shares currentness and authorization with this publisher, but
+    /// seals fresh physical payloads and rejects repeated successful work units.
+    pub fn for_captured_execution(&self, snapshot: BuildSnapshotId) -> Self {
+        Self {
+            storage: Arc::clone(&self.storage),
+            registry: Arc::clone(&self.registry),
+            state: Arc::clone(&self.state),
+            captured_snapshot: Some(snapshot),
+            successful_outputs: Mutex::default(),
         }
     }
 
@@ -352,6 +371,7 @@ impl PhaseOutputPublisher {
         let root = CurrentOutputRoot {
             output: output.output(),
             generation: output.generation(),
+            slot: output.physical_slot(),
         };
         if state.current_outputs.contains(&root) {
             return Ok(());
@@ -471,9 +491,35 @@ impl PhaseOutputPublisher {
         };
         let parent_ids = parents.iter().map(AnyPhaseOutputRef::output).collect();
 
-        let registration = match self
-            .registry
-            .register_output_with_status(OutputIdentityInput {
+        let allow_instance = self.captured_snapshot == Some(input.snapshot)
+            && matches!(
+                (input.origin, input.target),
+                (
+                    OutputOrigin::PackageSource,
+                    PublicationTarget::CurrentPackage
+                ) | (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly)
+            );
+        let work = AllowedWorkUnit::new(
+            input.phase.clone(),
+            input.output_kind.clone(),
+            input.work_unit.clone(),
+        );
+        if allow_instance
+            && let Some(output) = self
+                .successful_outputs
+                .lock()
+                .expect("publisher execution mutex poisoned")
+                .get(&work)
+                .copied()
+        {
+            self.storage.abandon(slot_for_abandon);
+            return Err(PublishError::Storage {
+                error: Box::new(StorageError::OutputAlreadyStored { output }),
+            });
+        }
+        let internal_variants = allow_instance && input.origin == OutputOrigin::OpenBuffer;
+        let registration = match self.registry.register_output_with_status(
+            OutputIdentityInput {
                 snapshot: input.snapshot,
                 phase: input.phase,
                 work_unit: input.work_unit,
@@ -482,7 +528,9 @@ impl PhaseOutputPublisher {
                 side_table_hash,
                 parents: parent_ids,
                 named_input_hashes: input.named_input_hashes,
-            }) {
+            },
+            internal_variants,
+        ) {
             Ok(registration) => registration,
             Err(error) => {
                 self.storage.abandon(slot_for_abandon);
@@ -497,26 +545,37 @@ impl PhaseOutputPublisher {
         let publishes_open_buffer = input.origin == OutputOrigin::OpenBuffer
             && input.target == PublicationTarget::InternalOnly;
 
-        match self.storage.seal_canonical(SealCanonicalOutputInput {
-            slot: input.slot,
-            lineage: lineage.clone(),
-            side_tables: input.side_tables,
-            payload: input.payload,
-            canonical_bytes: storage_payload,
-            decode: input.decode,
-        }) {
+        match self.storage.seal_canonical_instance(
+            SealCanonicalOutputInput {
+                slot: input.slot,
+                lineage: lineage.clone(),
+                side_tables: input.side_tables,
+                payload: input.payload,
+                canonical_bytes: storage_payload,
+                decode: input.decode,
+            },
+            allow_instance,
+        ) {
             Ok(handle) => {
                 if publishes_current {
                     state.current_outputs.insert(CurrentOutputRoot {
                         output,
                         generation: handle.any().generation(),
+                        slot: handle.any().physical_slot(),
                     });
                 }
                 if publishes_open_buffer {
                     state.open_buffer_outputs.insert(CurrentOutputRoot {
                         output,
                         generation: handle.any().generation(),
+                        slot: handle.any().physical_slot(),
                     });
+                }
+                if allow_instance {
+                    self.successful_outputs
+                        .lock()
+                        .expect("publisher execution mutex poisoned")
+                        .insert(work, output);
                 }
                 Ok(handle)
             }
@@ -2246,5 +2305,177 @@ mod tests {
                 "publisher handle metadata must not expose `{forbidden}` authority"
             );
         }
+    }
+
+    #[test]
+    fn separate_captured_views_keep_distinct_instances_and_shared_publication_authority() {
+        let target_snapshot = snapshot(63);
+        for (origin, target, authorization) in [
+            (
+                OutputOrigin::OpenBuffer,
+                PublicationTarget::InternalOnly,
+                OutputAuthorization::Published,
+            ),
+            (
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+                OutputAuthorization::CurrentPackage,
+            ),
+        ] {
+            let publisher = publisher(target_snapshot);
+            let first_view = publisher.for_captured_execution(target_snapshot);
+            let second_view = publisher.for_captured_execution(target_snapshot);
+            let publish = |view: &PhaseOutputPublisher, output_origin, output_target, payload| {
+                publish_text(
+                    view,
+                    target_snapshot,
+                    "unit",
+                    payload,
+                    Vec::new(),
+                    IrSideTables::default(),
+                    (output_origin, output_target),
+                )
+            };
+            let first = publish(&first_view, origin, target, "same canonical output")
+                .expect("first execution instance publishes");
+            let second = publish(&second_view, origin, target, "same canonical output")
+                .expect("second execution may publish its private instance");
+
+            assert_eq!(first.output(), second.output());
+            assert_ne!(first.any(), second.any());
+            assert_eq!(
+                &*publisher
+                    .storage()
+                    .get(&first)
+                    .expect("first reader remains valid"),
+                "same canonical output"
+            );
+            assert_eq!(
+                &*publisher
+                    .storage()
+                    .get(&second)
+                    .expect("second reader remains valid"),
+                "same canonical output"
+            );
+            assert!(
+                publisher
+                    .validate_output(target_snapshot, first.any(), authorization)
+                    .is_ok()
+            );
+            assert!(
+                publisher
+                    .validate_output(target_snapshot, second.any(), authorization)
+                    .is_ok()
+            );
+            if origin == OutputOrigin::OpenBuffer {
+                assert!(
+                    publisher
+                        .validate_output(
+                            target_snapshot,
+                            first.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
+                        .is_err()
+                );
+            }
+
+            assert!(publish(&first_view, origin, target, "same canonical output").is_err());
+            assert!(publish(&first_view, origin, target, "different lineage").is_err());
+            assert!(publish(&publisher, origin, target, "same canonical output").is_err());
+
+            if origin == OutputOrigin::PackageSource {
+                let wrong_snapshot_view = publisher.for_captured_execution(snapshot(64));
+                assert!(
+                    publish(
+                        &wrong_snapshot_view,
+                        origin,
+                        target,
+                        "same canonical output"
+                    )
+                    .is_err()
+                );
+                let cache_view = publisher.for_captured_execution(target_snapshot);
+                assert!(
+                    publish(
+                        &cache_view,
+                        OutputOrigin::ValidatedCacheInput,
+                        PublicationTarget::CurrentPackage,
+                        "same canonical output",
+                    )
+                    .is_err()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn captured_view_can_retry_after_storage_failure() {
+        let snapshot = snapshot(65);
+        let publisher = publisher(snapshot);
+        let view = publisher.for_captured_execution(snapshot);
+        let phase = phase();
+        let unit = work_unit("unit");
+        let kind = output_kind();
+        let build_input = |slot| PublishOutputInput {
+            slot,
+            snapshot,
+            phase: phase.clone(),
+            work_unit: unit.clone(),
+            output_kind: kind.clone(),
+            schema_version: SchemaVersion::new(1),
+            payload: "retry payload".to_owned(),
+            canonical_payload: Some(b"retry payload".to_vec()),
+            storage_payload: Some(b"retry payload".to_vec()),
+            decode: BlobDecoder::new(|bytes| {
+                String::from_utf8(bytes.to_vec())
+                    .map_err(|error| crate::storage::BlobDecodeError::new(error.to_string()))
+            }),
+            parents: Vec::new(),
+            named_input_hashes: vec![named(1)],
+            side_tables: IrSideTables::default(),
+            origin: OutputOrigin::OpenBuffer,
+            target: PublicationTarget::InternalOnly,
+        };
+        let foreign_storage = IrStorageService::new();
+        let foreign_slot = foreign_storage.allocate(crate::storage::AllocateSlotInput {
+            snapshot,
+            phase: phase.clone(),
+            work_unit: unit.clone(),
+            output_kind: kind.clone(),
+            schema_version: SchemaVersion::new(1),
+        });
+        assert!(matches!(
+            view.publish(build_input(foreign_slot)),
+            Err(PublishError::Storage { .. })
+        ));
+
+        let output = view
+            .publish(build_input(view.allocate(
+                snapshot,
+                phase.clone(),
+                unit.clone(),
+                kind.clone(),
+                SchemaVersion::new(1),
+            )))
+            .expect("fresh slot retries after failed seal rollback");
+        assert_eq!(
+            &*publisher
+                .storage()
+                .get(&output)
+                .expect("retry payload is readable"),
+            "retry payload"
+        );
+        assert!(
+            publish_text(
+                &view,
+                snapshot,
+                "unit",
+                "retry payload",
+                Vec::new(),
+                IrSideTables::default(),
+                (OutputOrigin::OpenBuffer, PublicationTarget::InternalOnly),
+            )
+            .is_err()
+        );
     }
 }
