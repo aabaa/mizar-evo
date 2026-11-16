@@ -45,6 +45,7 @@ bridge は自分の LSP lane のみ submit/cancel/consume し、Watch-origin req
 
 ## Implementation boundary
 
+Task40 に欠けている実行の前提条件は[非終端実行 seam 提案](execution_seam.md)で定義する。Q-decision は別実装の前に owner 承認を要する。
 `src/build_bridge.rs` は `Server::with_build_bridge`、`drive_build_bridge`、`next_build_deadline`、`build_bridge_events` により task11 を実装する。host は lane 専用 Driver と対応する publisher、単調時計を渡し、受信 traffic と返された deadline で駆動し、flush 時だけ全 open URI の座標を解決する。文書 traffic の受理前に bridge を構成する。既存 stdio lifecycle は compiler host を設置せず、native host/watch 統合は DRIVER-G-012 に残る。
 event replay は元の capture を保持し、registry activation や診断送信は行わない。これらは task7 と task9 の境界に残す。OpenBuffer provenance、artifact storage、Session SourceId encoding は保留中の Driver 単位に属し、本 scheduling 方針は依存も決定もせず、OpenBuffer artifact-production 能力を付与しない。SCA-003 credit は変更しない。
 

@@ -4,6 +4,7 @@ This document owns language parity boundaries for the `mizar-lsp` design tree.
 
 ## Language ownership
 
+- The [nonterminal execution seam proposal](execution_seam.md) is paired; Q1–Q5 await owner approval.
 - The approved [native payload producers](native_payload_producers.md) and [ranged diagnostic host input](ranged_diagnostic_host.md) are paired.
 
 - The [producer metadata publication proposal](producer_metadata_publication.md) is paired; Q1–Q5 await owner approval.

@@ -45,6 +45,7 @@ Consequently Disk-side changes are not reflected in LSP results until the next a
 
 ## Implementation boundary
 
+The [nonterminal execution seam proposal](execution_seam.md) defines Task40's missing execution prerequisite; its Q-decisions require owner approval before separate implementation.
 `src/build_bridge.rs` implements task11 through `Server::with_build_bridge`, `drive_build_bridge`, `next_build_deadline` and `build_bridge_events`. The host supplies a lane-exclusive Driver and its matching publisher, injects a monotonic clock, drives incoming traffic and returned deadlines, and resolves the complete open-URI coordinate set only at flush. Configure the bridge before accepting document traffic. The existing stdio lifecycle does not install a compiler host; native host/watch integration remains under DRIVER-G-012.
 Event replay retains the original capture and does not activate a registry or deliver diagnostics; task7 and task9 keep those boundaries. OpenBuffer provenance, artifact storage and Session SourceId encoding belong to the parked Driver unit: this scheduling policy neither depends on nor decides them, and grants no OpenBuffer artifact-production capability. SCA-003 credit stays unchanged.
 
