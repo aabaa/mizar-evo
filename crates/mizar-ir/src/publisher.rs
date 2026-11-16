@@ -491,7 +491,8 @@ impl PhaseOutputPublisher {
         };
         let parent_ids = parents.iter().map(AnyPhaseOutputRef::output).collect();
 
-        let allow_instance = self.captured_snapshot == Some(input.snapshot)
+        let captured_execution = self.captured_snapshot == Some(input.snapshot);
+        let allow_instance = captured_execution
             && matches!(
                 (input.origin, input.target),
                 (
@@ -504,7 +505,7 @@ impl PhaseOutputPublisher {
             input.output_kind.clone(),
             input.work_unit.clone(),
         );
-        if allow_instance
+        if captured_execution
             && let Some(output) = self
                 .successful_outputs
                 .lock()
@@ -571,7 +572,7 @@ impl PhaseOutputPublisher {
                         slot: handle.any().physical_slot(),
                     });
                 }
-                if allow_instance {
+                if captured_execution {
                     self.successful_outputs
                         .lock()
                         .expect("publisher execution mutex poisoned")
@@ -2477,5 +2478,59 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn captured_view_rejects_package_after_cache_first_publication() {
+        let snapshot = snapshot(66);
+        let publisher = publisher(snapshot);
+        let view = publisher.for_captured_execution(snapshot);
+        let cached = publish_text(
+            &view,
+            snapshot,
+            "unit",
+            "cached output",
+            Vec::new(),
+            IrSideTables::default(),
+            (
+                OutputOrigin::ValidatedCacheInput,
+                PublicationTarget::CurrentPackage,
+            ),
+        )
+        .expect("validated cache input publishes as current package IR");
+
+        assert_eq!(
+            &*publisher
+                .storage()
+                .get(&cached)
+                .expect("cache-first payload remains readable"),
+            "cached output"
+        );
+        assert!(
+            publisher
+                .validate_output(snapshot, cached.any(), OutputAuthorization::CurrentPackage)
+                .is_ok()
+        );
+
+        let error = publish_text(
+            &view,
+            snapshot,
+            "unit",
+            "cached output",
+            Vec::new(),
+            IrSideTables::default(),
+            (
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+            ),
+        )
+        .expect_err("a later package publication in this view is a duplicate");
+        match error {
+            PublishError::Storage { error } => assert!(matches!(
+                *error,
+                StorageError::OutputAlreadyStored { output } if output == cached.output()
+            )),
+            other => panic!("expected duplicate-output rejection, got {other:?}"),
+        }
     }
 }
