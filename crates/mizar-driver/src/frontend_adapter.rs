@@ -132,9 +132,11 @@ pub use candidate::{
 };
 mod artifact;
 
-pub(crate) use artifact::SourceTheoremArtifactCommitService;
 pub(crate) use artifact::remove_native_artifact_staging;
 pub use artifact::{PublishedSourceMetadata, SnapshotPublication};
+pub(crate) use artifact::{
+    SourceTheoremArtifactCommitService, SourceTheoremReflexivityArtifactCommitService,
+};
 pub(crate) use candidate::{SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService};
 pub(crate) use checking::{
     SourceTheoremOverloadResolutionService, SourceTheoremRegistrationResolutionService,

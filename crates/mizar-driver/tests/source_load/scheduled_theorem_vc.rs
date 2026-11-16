@@ -2275,6 +2275,1007 @@ fn scheduled_reflexivity_kernel_profile_is_exact_and_edit_clean() {
     }
 }
 
+fn reflexivity_artifact_registry(
+    producer_policy: mizar_proof::policy::VerifierPolicy,
+    consumer_policy: mizar_proof::policy::VerifierPolicy,
+    output_parent: &str,
+) -> mizar_driver::registry::PhaseRegistry {
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+
+    let mut builder = PhaseRegistryBuilder::new();
+    builder
+        .register_source_load()
+        .register_frontend(vec![])
+        .register_source_theorem_module_resolver()
+        .register_source_theorem_signature_collection()
+        .register_source_theorem_type_checking()
+        .register_source_theorem_registration_resolution()
+        .register_source_theorem_overload_resolution()
+        .register_source_theorem_elaboration()
+        .register_source_theorem_algorithm_preparation()
+        .register_source_theorem_vc_generation(
+            GenerationSchemaVersion::new("source-theorem-local-v1"),
+            VcSchemaVersion::new("vc-v1"),
+        )
+        .register_source_theorem_reflexivity_kernel_check(producer_policy);
+    builder
+        .register_source_theorem_reflexivity_artifact_commit(
+            consumer_policy,
+            (
+                "proof-witnesses".to_owned(),
+                "main.mizir.json".to_owned(),
+                output_parent.to_owned(),
+            ),
+        )
+        .unwrap();
+    builder.build().unwrap()
+}
+
+fn allow_reflexivity_artifact_outputs(owner: &PhaseOutputPublisher, unit: &WorkUnit) {
+    allow_frontend(owner, unit);
+    for (phase, kind) in [
+        ("ModuleResolve", "SourceTheoremModuleCandidates"),
+        ("SignatureCollection", "SourceTheoremModuleSummary"),
+        ("TypeChecking", "SourceTheoremTypedAst"),
+        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+        ("OverloadResolution", "SourceTheoremMetadata"),
+        ("Elaboration", "SourceTheoremCore"),
+        ("AlgorithmPreparation", "SourceTheoremPreparation"),
+        ("VcGenerate", "SourceTheoremVC"),
+        ("KernelCheck", "SourceTheoremReflexivityKernelStatus"),
+        ("ArtifactCommit", "SourceTheoremArtifactData"),
+    ] {
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new(phase),
+            OutputKind::new(kind),
+            IrWorkUnit::new("\"alpha\":\"main\""),
+        ));
+    }
+}
+
+#[test]
+fn scheduled_reflexivity_artifact_consumer_commits_genuine_outputs() {
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, TaskKind, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+
+    for (text, open, wrong_policy, expected_commit) in [
+        (
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            false,
+            false,
+            true,
+        ),
+        (
+            "theorem Renamed: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end;",
+            false,
+            false,
+            true,
+        ),
+        (
+            "\n theorem Renamed: for Y being set holds Y = Y proof let Y be set; thus Y = Y; end; \n",
+            false,
+            false,
+            true,
+        ),
+        (
+            "private theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            false,
+            false,
+            false,
+        ),
+        (
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            true,
+            false,
+            true,
+        ),
+        (
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+            false,
+            true,
+            false,
+        ),
+    ] {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut request, mut submit) = fixture.submit_request(vec![], vec![]);
+        let plan = mizar_build::planner::produce_build_plan(
+            submit.plan_request.clone(),
+            submit.workspace_packages.clone(),
+            submit.lockfile.clone(),
+        )
+        .unwrap();
+        request.dependency_inputs.lockfile_hash =
+            mizar_build::planner::lockfile_content_hash(&plan.lockfile);
+        request.dependency_inputs.toolchain = plan.toolchain.clone();
+        request.verifier_config = mizar_driver::request::VerifierConfigInput::new(
+            mizar_build::planner::workspace_config_content_hash(
+                &plan.verifier_config,
+                &plan.build_config,
+            ),
+        );
+        request.source_inputs.versions.clear();
+        let source = mizar_session::SourceInput {
+            package_id: PackageId::new("alpha"),
+            module_path: ModulePath::new("main"),
+            normalized_path: fixture.version.normalized_path.clone(),
+            edition: Edition::new("2025"),
+            origin: if open {
+                SourceOriginInput::OpenBuffer {
+                    uri: format!(
+                        "file://{}",
+                        fixture.root.join("alpha/src/main.miz").display()
+                    ),
+                    expected_version: 7,
+                    actual_version: 7,
+                    text: std::sync::Arc::from(text),
+                }
+            } else {
+                SourceOriginInput::Disk {
+                    path: "src/main.miz".into(),
+                }
+            },
+        };
+        if open {
+            fixture.write(&[0xff]);
+        }
+        let session = request
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(DiskSourceLoader::new(fixture.root.join("alpha")), source)],
+            )
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        fs::create_dir_all(fixture.root.join("alpha/reflexivity-artifacts")).unwrap();
+        let owner = publisher(snapshot, 0, &unit);
+        allow_reflexivity_artifact_outputs(&owner, &unit);
+        let policy = VerifierPolicy::release();
+        let consumer_policy = if wrong_policy {
+            VerifierPolicy::development()
+        } else {
+            policy.clone()
+        };
+        let registry =
+            reflexivity_artifact_registry(policy.clone(), consumer_policy, "reflexivity-artifacts");
+        assert_eq!(registry.descriptors().len(), 12);
+        let descriptor = registry
+            .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+            .unwrap();
+        assert_eq!(
+            descriptor.service_name,
+            "SourceTheoremReflexivityArtifactCommit"
+        );
+        assert_eq!(
+            descriptor.owner,
+            mizar_driver::registry::PhaseOwner::MizarArtifact
+        );
+        assert_eq!(descriptor.output_kind, "SourceTheoremArtifactData");
+        assert!(
+            descriptor
+                .schema_version
+                .contains("witness_path_prefix=15:proof-witnesses")
+        );
+        assert!(
+            descriptor
+                .schema_version
+                .contains("main_path=15:main.mizir.json")
+        );
+        assert!(!descriptor.schema_version.contains("reflexivity-artifacts"));
+        let cache_input = PhaseInput::new(
+            unit.clone(),
+            PhaseDispatchInputBundle::without_parent_outputs(
+                snapshot,
+                session.captured().snapshot().source_versions[0].source_hash,
+                vec![],
+            ),
+        );
+        assert!(matches!(
+            registry
+                .cache_key_for_phase(PipelinePhase::ArtifactCommit, &cache_input)
+                .unwrap()
+                .intent,
+            PhaseCacheIntent::NoKey { .. }
+        ));
+        let WorkUnit::Module { module } = &unit else {
+            panic!("module work unit")
+        };
+        submit.vc_descriptors = vec![VcTaskDescriptor::new(
+            VcTaskDescriptorId::new("opaque-reflexivity-artifact"),
+            module.clone(),
+            VcOrderKey::new("opaque-reflexivity-artifact"),
+            vec![],
+            vec![EvidenceCandidateId::new("opaque-reflexivity-artifact")],
+        )];
+        let mut driver = CompilerDriver::new(registry).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                submit,
+                Default::default(),
+            )
+            .unwrap();
+        let events = driver.events(submission.session.id());
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices,
+            "the explicit twelve-service profile intentionally has no discharge phase"
+        );
+        assert_eq!(
+            submission
+                .missing_services
+                .iter()
+                .map(|missing| missing.phase)
+                .collect::<Vec<_>>(),
+            [PipelinePhase::VcDischarge]
+        );
+        assert_eq!(
+            submission.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+        );
+        assert!(
+            graph
+                .tasks()
+                .iter()
+                .all(|task| !matches!(task.kind, TaskKind::AtpSolve | TaskKind::BackendRun))
+        );
+        let artifact_task = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::ArtifactCommit && task.unit == unit)
+            .unwrap();
+        assert!(!artifact_task.dependencies.iter().any(|dependency| {
+            graph
+                .tasks()
+                .iter()
+                .any(|task| &task.id == dependency && task.kind == TaskKind::VcDischarge)
+        }));
+        let artifact_state = run
+            .task_states
+            .iter()
+            .find(|state| state.task_id == artifact_task.id)
+            .unwrap()
+            .state;
+        if !expected_commit {
+            assert_ne!(artifact_state, TaskState::Completed);
+            assert!(!events.events().iter().any(|event| matches!(
+                event.kind,
+                mizar_driver::events::BuildEventKind::ArtifactBoundary { .. }
+            )));
+            assert!(!events.events().iter().any(|event| matches!(
+                event.kind,
+                mizar_driver::events::BuildEventKind::SnapshotPublished { .. }
+            )));
+            assert!(
+                run.phase_results
+                    .get(&artifact_task.id)
+                    .is_none_or(|rows| { rows.iter().all(|row| row.output_refs.is_empty()) })
+            );
+            assert_eq!(
+                fs::read_dir(fixture.root.join("alpha/reflexivity-artifacts"))
+                    .unwrap()
+                    .count(),
+                0,
+                "unsupported source or policy mismatch cannot publish"
+            );
+            if text.starts_with("private ") {
+                let kernel_task = graph
+                    .tasks()
+                    .iter()
+                    .find(|task| task.kind == TaskKind::KernelCheck)
+                    .unwrap();
+                assert_eq!(
+                    run.task_states
+                        .iter()
+                        .find(|state| state.task_id == kernel_task.id)
+                        .unwrap()
+                        .state,
+                    TaskState::Completed,
+                    "private source has a genuine sealed status before FILE facade refusal"
+                );
+                let [kernel_result] = run.phase_results[&kernel_task.id].as_slice() else {
+                    panic!("one genuine private KernelCheck result")
+                };
+                let [private_status_ref] = kernel_result.output_refs.as_slice() else {
+                    panic!("one sealed private reflexivity status")
+                };
+                assert_eq!(
+                    private_status_ref.output_kind(),
+                    &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+                );
+                let private_status = owner
+                    .storage()
+                    .typed_handle::<(
+                        mizar_core::core_ir::CoreIr,
+                        mizar_vc::vc_ir::VcSet,
+                        mizar_kernel::checker::KernelCheckResult,
+                        mizar_proof::policy::PolicyDecision,
+                        mizar_proof::status::ProofStatusProjection,
+                        mizar_vc::dependency_slice::DependencySlice,
+                    )>(private_status_ref, private_status_ref.output_kind())
+                    .unwrap();
+                let private_status = owner.storage().get(&private_status).unwrap();
+                assert_eq!(
+                    private_status.3.class,
+                    mizar_proof::policy::CandidatePolicyClass::DischargedBuiltin
+                );
+                let frontend_ref = run
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter())
+                    .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+                    .expect("genuine frontend output for private source");
+                let frontend = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        frontend_ref,
+                        frontend_ref.output_kind(),
+                    )
+                    .unwrap();
+                let frontend = owner.storage().get(&frontend).unwrap();
+                let ast = frontend.ast.as_ref().expect("private source parsed");
+                let WorkUnit::Module { module } = &unit else {
+                    panic!("module work unit")
+                };
+                let resolver_module = mizar_resolve::resolved_ast::ModuleId::new(
+                    module.package.clone(),
+                    module.path.clone(),
+                );
+                let (arena, env) = mizar_resolve::symbols::source_theorem_module_original_inputs(
+                    ast,
+                    &resolver_module,
+                )
+                .unwrap()
+                .expect("private source has genuine theorem inputs");
+                assert_eq!(
+                    mizar_proof::status::source_theorem_reflexivity_witness_file_candidate(
+                        &arena,
+                        &env,
+                        session.captured().snapshot(),
+                        &VerifierPolicy::release(),
+                        "proof-witnesses",
+                    )
+                    .unwrap_err(),
+                    "theorems.source.invalid"
+                );
+            }
+            continue;
+        }
+        assert_eq!(artifact_state, TaskState::Completed);
+        assert!(events.events().iter().any(|event| matches!(
+            event.kind,
+            mizar_driver::events::BuildEventKind::ArtifactBoundary { .. }
+        )));
+        assert!(!events.events().iter().any(|event| matches!(
+            event.kind,
+            mizar_driver::events::BuildEventKind::SnapshotPublished { .. }
+        )));
+        let kernel_task = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::KernelCheck)
+            .unwrap();
+        let [kernel_result] = run.phase_results[&kernel_task.id].as_slice() else {
+            panic!("one genuine KernelCheck result")
+        };
+        let [status_ref] = kernel_result.output_refs.as_slice() else {
+            panic!("one sealed reflexivity status")
+        };
+        let status_handle = owner
+            .storage()
+            .typed_handle::<(
+                mizar_core::core_ir::CoreIr,
+                mizar_vc::vc_ir::VcSet,
+                mizar_kernel::checker::KernelCheckResult,
+                mizar_proof::policy::PolicyDecision,
+                mizar_proof::status::ProofStatusProjection,
+                mizar_vc::dependency_slice::DependencySlice,
+            )>(status_ref, status_ref.output_kind())
+            .unwrap();
+        let sealed = owner.storage().get(&status_handle).unwrap();
+        assert_eq!(
+            sealed.3.class,
+            mizar_proof::policy::CandidatePolicyClass::DischargedBuiltin
+        );
+        assert_eq!(
+            sealed.4.projected_status(),
+            mizar_proof::status::ProjectedProofStatus::Accepted
+        );
+        assert_eq!(
+            sealed.4.artifact_publication(),
+            mizar_proof::status::ArtifactStatusPublication::ExternalDependencyGap(
+                mizar_proof::status::ArtifactPublicationGap::DischargedBuiltinWitnessUnsupported,
+            )
+        );
+        assert!(sealed.4.trusted_used_axioms().is_some());
+        assert!(
+            sealed
+                .4
+                .reuse_metadata()
+                .selected_proof_witness_hash()
+                .is_none()
+        );
+        assert_eq!(
+            sealed.5.completeness(),
+            mizar_vc::dependency_slice::DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(sealed.5.requires_cache_miss());
+        let [result] = run.phase_results[&artifact_task.id].as_slice() else {
+            panic!("one ArtifactCommit result")
+        };
+        assert_eq!(result.status, PhaseStatus::Complete);
+        let [artifact_ref] = result.output_refs.as_slice() else {
+            panic!("one ArtifactCommit DATA output")
+        };
+        assert_eq!(
+            artifact_ref.output_kind(),
+            &OutputKind::new("SourceTheoremArtifactData")
+        );
+        assert_eq!(artifact_ref.lineage().parents.len(), 5);
+        let commit = result
+            .artifact_commit
+            .as_ref()
+            .expect("scheduler retains the actual manifest commit");
+        assert!(
+            commit
+                .manifest()
+                .artifact_root
+                .starts_with("reflexivity-artifacts/")
+        );
+        let root = fixture
+            .root
+            .join("alpha")
+            .join(&commit.manifest().artifact_root);
+        if !open {
+            let read = mizar_artifact::manifest::read_manifest_file(
+                &root,
+                mizar_artifact::manifest::ManifestFileReadOptions {
+                    validate_references: true,
+                    validate_witness_files: true,
+                    validate_development_artifacts: true,
+                    expected_manifest_hash: Some(commit.write().artifact_hash),
+                },
+            )
+            .unwrap();
+            assert_eq!(read.manifest, *commit.manifest());
+            assert_eq!(read.artifact_hash, commit.write().artifact_hash);
+        }
+        let handle = owner
+            .storage()
+            .typed_handle::<mizar_artifact::verified_artifact::VerifiedArtifact>(
+                artifact_ref,
+                artifact_ref.output_kind(),
+            )
+            .unwrap();
+        let artifact = owner.storage().get(&handle).unwrap();
+        assert_eq!(
+            artifact.schema_version,
+            mizar_artifact::store::SchemaVersion::new(2, 0)
+        );
+        assert_eq!(artifact.proof_witnesses.len(), 1);
+        assert_eq!(
+            artifact.proof_witnesses[0].proof_status,
+            mizar_artifact::proof_witness::ProofStatus::DischargedBuiltin
+        );
+        assert_eq!(
+            artifact.proof_witnesses[0].obligation_id,
+            sealed.4.obligation_id()
+        );
+        assert_eq!(
+            artifact.proof_witnesses[0]
+                .kernel_acceptance
+                .accepted_result_hash
+                .digest,
+            mizar_proof::selection::TrustedKernelEvidence::from_policy_input(
+                &mizar_proof::policy::KernelPolicyInput::from_kernel_result(
+                    &sealed.2,
+                    mizar_proof::policy::KernelEvidenceOrigin::BuiltinDischarge,
+                )
+            )
+            .unwrap()
+            .accepted_evidence_hash()
+        );
+        let witness = &artifact.proof_witnesses[0];
+        let frontend_ref = run
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|row| row.output_refs.iter())
+            .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            .expect("genuine frontend output for captured source");
+        let frontend = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                frontend_ref,
+                frontend_ref.output_kind(),
+            )
+            .unwrap();
+        let frontend = owner.storage().get(&frontend).unwrap();
+        let ast = frontend.ast.as_ref().expect("captured theorem parses");
+        let WorkUnit::Module { module } = &unit else {
+            panic!("module work unit")
+        };
+        let resolver_module =
+            mizar_resolve::resolved_ast::ModuleId::new(module.package.clone(), module.path.clone());
+        let (arena, env) =
+            mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &resolver_module)
+                .unwrap()
+                .expect("genuine source theorem metadata");
+        let (scope, labels, resolved) =
+            mizar_resolve::symbols::source_proof_inputs(&arena, &env).unwrap();
+        let typed =
+            mizar_checker::type_checker::check_source_theorem_metadata(&arena, &env, &scope)
+                .unwrap()
+                .2;
+        let check =
+            mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
+                &arena, &typed, &scope, &env, &labels, &resolved, None,
+            )
+            .unwrap();
+        let vc_id = sealed.1.vcs()[0].id;
+        let (trusted_metadata, expected_wire) =
+            mizar_proof::status::source_theorem_reflexivity_trusted_witness_metadata_with_wire(
+                &arena,
+                &check,
+                &env,
+                snapshot,
+                vc_id,
+                &VerifierPolicy::release(),
+            )
+            .unwrap();
+        let expected_evidence = mizar_proof::selection::TrustedKernelEvidence::from_policy_input(
+            &mizar_proof::policy::KernelPolicyInput::from_kernel_result(
+                &sealed.2,
+                mizar_proof::policy::KernelEvidenceOrigin::BuiltinDischarge,
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            trusted_metadata.kernel_acceptance(),
+            &witness.kernel_acceptance
+        );
+        assert_eq!(
+            trusted_metadata.trusted_kernel_evidence(),
+            &expected_evidence
+        );
+        if open {
+            // Scheduler cleanup removes ephemeral files after the committed handoff.
+            // Retained DATA and commit metadata do not restore filesystem reachability.
+            assert!(!root.exists());
+            let ((_, slice, draft), file, expected_reference) =
+                mizar_proof::status::source_theorem_reflexivity_witness_file_candidate(
+                    &arena,
+                    &env,
+                    session.captured().snapshot(),
+                    &VerifierPolicy::release(),
+                    &witness.witness_path,
+                )
+                .unwrap();
+            assert_eq!(&expected_reference, witness);
+            assert_eq!(draft.payload_bytes(), expected_wire);
+            assert_eq!(slice, sealed.5);
+            let domain = mizar_artifact::store::artifact_hash_domain(
+                witness.witness_artifact_hash.schema_family.clone(),
+                witness.witness_artifact_hash.schema_version,
+            );
+            assert_eq!(
+                domain.hash(&file, &[]),
+                witness.witness_artifact_hash.digest
+            );
+            let value =
+                mizar_artifact::verified_artifact::builtin_verified_artifact_json(&artifact)
+                    .unwrap();
+            let main_domain = mizar_artifact::store::artifact_hash_domain(
+                mizar_artifact::verified_artifact::VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                artifact.schema_version,
+            );
+            assert_eq!(
+                main_domain.hash(
+                    &value,
+                    &mizar_artifact::verified_artifact::artifact_hash_excluded_paths()
+                ),
+                commit.manifest().modules[0].artifact_hash.digest
+            );
+            assert!(mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                commit, &root, &artifact.module, snapshot.fingerprint(),
+            ).is_err());
+            owner.mark_obsolete(snapshot).unwrap();
+            assert_eq!(*owner.storage().get(&handle).unwrap(), *artifact);
+            assert!(owner.validate_current_snapshot(snapshot).is_err());
+            continue;
+        }
+        let witness_domain = mizar_artifact::store::artifact_hash_domain(
+            witness.witness_artifact_hash.schema_family.clone(),
+            witness.witness_artifact_hash.schema_version,
+        );
+        let witness_read = mizar_artifact::store::read_published_artifact(
+            &root,
+            &mizar_artifact::store::PublishedArtifactPath::new(&witness.witness_path).unwrap(),
+            mizar_artifact::store::PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&witness_domain),
+                expected_artifact_hash: Some(witness.witness_artifact_hash.digest),
+                ..mizar_artifact::store::PublishedArtifactReadOptions::default()
+            },
+        )
+        .unwrap();
+        let wire =
+            mizar_proof::witness_store::read_source_theorem_witness_file(&witness_read, witness)
+                .unwrap();
+        assert_eq!(expected_wire.as_slice(), wire.as_slice());
+        assert!(!wire.is_empty());
+        assert_eq!(
+            fs::read(root.join("main.mizir.json")).unwrap(),
+            mizar_artifact::store::canonical_json_bytes(
+                &mizar_artifact::verified_artifact::builtin_verified_artifact_json(&artifact)
+                    .unwrap()
+            )
+        );
+        let clean_parent = "reflexivity-artifacts/clean-worker4";
+        fs::create_dir_all(fixture.root.join("alpha").join(clean_parent)).unwrap();
+        let clean_owner = publisher(snapshot, 0, &unit);
+        allow_reflexivity_artifact_outputs(&clean_owner, &unit);
+        let clean_registry = reflexivity_artifact_registry(
+            VerifierPolicy::release(),
+            VerifierPolicy::release(),
+            clean_parent,
+        );
+        let (_, mut clean_submit) = fixture.submit_request(vec![], vec![]);
+        let WorkUnit::Module { module } = &unit else {
+            panic!("module work unit")
+        };
+        clean_submit.vc_descriptors = vec![VcTaskDescriptor::new(
+            VcTaskDescriptorId::new("opaque-reflexivity-artifact"),
+            module.clone(),
+            VcOrderKey::new("opaque-reflexivity-artifact"),
+            vec![],
+            vec![EvidenceCandidateId::new("opaque-reflexivity-artifact")],
+        )];
+        clean_submit.worker_count = 4;
+        clean_submit.completion_order = CompletionOrder::Reverse;
+        let clean_submission = CompilerDriver::new(clean_registry)
+            .with_output_publisher(clean_owner.clone())
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                clean_submit,
+                Default::default(),
+            )
+            .unwrap();
+        let clean_run = clean_submission.scheduler_run.as_ref().unwrap();
+        let clean_task = clean_submission
+            .task_graph
+            .as_ref()
+            .unwrap()
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::ArtifactCommit)
+            .unwrap();
+        let [clean_result] = clean_run.phase_results[&clean_task.id].as_slice() else {
+            panic!("one clean ArtifactCommit result")
+        };
+        let [clean_ref] = clean_result.output_refs.as_slice() else {
+            panic!("one clean ArtifactCommit DATA output")
+        };
+        let clean_handle = clean_owner
+            .storage()
+            .typed_handle::<mizar_artifact::verified_artifact::VerifiedArtifact>(
+                clean_ref,
+                clean_ref.output_kind(),
+            )
+            .unwrap();
+        let clean_artifact = clean_owner.storage().get(&clean_handle).unwrap();
+        assert_eq!(*clean_artifact, *artifact);
+        let clean_commit = clean_result
+            .artifact_commit
+            .as_ref()
+            .expect("clean worker run retains its manifest commit");
+        assert_ne!(
+            clean_commit.manifest().artifact_root,
+            commit.manifest().artifact_root
+        );
+        let clean_root = fixture
+            .root
+            .join("alpha")
+            .join(&clean_commit.manifest().artifact_root);
+        let clean_read = mizar_artifact::manifest::read_manifest_file(
+            &clean_root,
+            mizar_artifact::manifest::ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                validate_development_artifacts: true,
+                expected_manifest_hash: Some(clean_commit.write().artifact_hash),
+            },
+        )
+        .unwrap();
+        assert_eq!(clean_read.manifest, *clean_commit.manifest());
+        let clean_witness = &clean_artifact.proof_witnesses[0];
+        let clean_domain = mizar_artifact::store::artifact_hash_domain(
+            clean_witness.witness_artifact_hash.schema_family.clone(),
+            clean_witness.witness_artifact_hash.schema_version,
+        );
+        let clean_witness_read = mizar_artifact::store::read_published_artifact(
+            &clean_root,
+            &mizar_artifact::store::PublishedArtifactPath::new(&clean_witness.witness_path)
+                .unwrap(),
+            mizar_artifact::store::PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&clean_domain),
+                expected_artifact_hash: Some(clean_witness.witness_artifact_hash.digest),
+                ..mizar_artifact::store::PublishedArtifactReadOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            mizar_proof::witness_store::read_source_theorem_witness_file(
+                &clean_witness_read,
+                clean_witness,
+            )
+            .unwrap(),
+            wire
+        );
+        let parent_outputs = artifact_ref
+            .lineage()
+            .parents
+            .iter()
+            .map(|parent| {
+                run.phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter())
+                    .find(|output| output.output() == *parent)
+                    .expect("all five direct parents remain published")
+                    .clone()
+            })
+            .collect::<Vec<_>>();
+        let mut parent_kinds = parent_outputs
+            .iter()
+            .map(|output| output.output_kind().as_str().to_owned())
+            .collect::<Vec<_>>();
+        parent_kinds.sort();
+        assert_eq!(
+            parent_kinds,
+            [
+                "SourceTheoremCore",
+                "SourceTheoremModuleSummary",
+                "SourceTheoremPreparation",
+                "SourceTheoremReflexivityKernelStatus",
+                "SourceTheoremVC",
+            ]
+        );
+        let direct_parent = "reflexivity-artifacts/direct-refusals";
+        fs::create_dir_all(fixture.root.join("alpha").join(direct_parent)).unwrap();
+        let mut consumer_builder = PhaseRegistryBuilder::new();
+        consumer_builder
+            .register_source_theorem_reflexivity_artifact_commit(
+                VerifierPolicy::release(),
+                (
+                    "proof-witnesses".to_owned(),
+                    "main.mizir.json".to_owned(),
+                    direct_parent.to_owned(),
+                ),
+            )
+            .unwrap();
+        let consumer_registry = consumer_builder.build().unwrap();
+        let captured = submission.session.captured();
+        let source_inputs = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        };
+        let input_for = |parents: &[AnyPhaseOutputRef],
+                         bundle_snapshot,
+                         work_unit: WorkUnit,
+                         input_hash: mizar_session::Hash|
+         -> Result<PhaseInput, String> {
+            let handles = parents
+                .iter()
+                .map(|parent| {
+                    SealedParentOutputHandle::from_published_output(
+                        &owner,
+                        snapshot,
+                        parent.clone(),
+                    )
+                    .map_err(|error| error.to_string())
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            PhaseDispatchInputBundle::new(bundle_snapshot, input_hash, vec![], handles)
+                .map(|bundle| PhaseInput::new(work_unit, bundle))
+                .map_err(|error| error.to_string())
+        };
+        let rejected = |input: PhaseInput, source_load| {
+            let result = consumer_registry
+                .execute_phase_with_resources(
+                    PipelinePhase::ArtifactCommit,
+                    input,
+                    PhaseExecutionResources {
+                        output_publisher: Some(owner.clone()),
+                        source_load,
+                        ..PhaseExecutionResources::default()
+                    },
+                )
+                .unwrap()
+                .result;
+            assert_ne!(result.status, PhaseStatus::Complete);
+            assert!(result.output_refs.is_empty());
+            assert!(result.artifact_commit.is_none());
+        };
+        let mut missing = parent_outputs.clone();
+        missing.pop();
+        let source_hash = source_key(&captured.snapshot().source_versions[0]);
+        rejected(
+            input_for(&missing, snapshot, unit.clone(), source_hash).unwrap(),
+            Some(source_inputs),
+        );
+        let mut foreign_role = parent_outputs.clone();
+        let status_index = foreign_role
+            .iter()
+            .position(|output| {
+                output.output_kind() == &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+            })
+            .unwrap();
+        foreign_role[status_index] = run
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|row| row.output_refs.iter())
+            .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremMetadata"))
+            .unwrap()
+            .clone();
+        rejected(
+            input_for(&foreign_role, snapshot, unit.clone(), source_hash).unwrap(),
+            Some(source_inputs),
+        );
+        let WorkUnit::Module { module } = &unit else {
+            panic!("module work unit")
+        };
+        // A differently bound policy needs its own genuine producer registry:
+        // the original registry forbids conflicting content for one logical output id.
+        let swapped_parent = "reflexivity-artifacts/other-policy";
+        fs::create_dir_all(fixture.root.join("alpha").join(swapped_parent)).unwrap();
+        let swapped_owner = publisher(snapshot, 0, &unit);
+        allow_reflexivity_artifact_outputs(&swapped_owner, &unit);
+        let swapped_policy = VerifierPolicy::release().with_require_kernel_certificates(false);
+        let swapped_registry =
+            reflexivity_artifact_registry(swapped_policy.clone(), swapped_policy, swapped_parent);
+        let (_, mut swapped_submit) = fixture.submit_request(vec![], vec![]);
+        swapped_submit.vc_descriptors = vec![VcTaskDescriptor::new(
+            VcTaskDescriptorId::new("other-policy"),
+            module.clone(),
+            VcOrderKey::new("other-policy"),
+            vec![],
+            vec![EvidenceCandidateId::new("other-policy")],
+        )];
+        let swapped_submission = CompilerDriver::new(swapped_registry)
+            .with_output_publisher(swapped_owner)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                swapped_submit,
+                Default::default(),
+            )
+            .unwrap();
+        let swapped_run = swapped_submission.scheduler_run.as_ref().unwrap();
+        let swapped_status = swapped_run
+            .phase_results
+            .values()
+            .flatten()
+            .find(|result| {
+                result.output_refs.iter().any(|output| {
+                    output.output_kind() == &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+                })
+            })
+            .expect("independent genuine policy baseline has sealed status");
+        assert_eq!(swapped_status.status, PhaseStatus::Complete);
+        assert!(
+            swapped_run
+                .phase_results
+                .values()
+                .flatten()
+                .any(|result| result.status == PhaseStatus::Complete
+                    && result.artifact_commit.is_some())
+        );
+        let mut genuine_swap = parent_outputs.clone();
+        genuine_swap[status_index] = swapped_status.output_refs[0].clone();
+        assert!(
+            input_for(&genuine_swap, snapshot, unit.clone(), source_hash).is_err(),
+            "independent producer output cannot transfer publication authority"
+        );
+        rejected(
+            input_for(
+                &parent_outputs,
+                snapshot,
+                unit.clone(),
+                mizar_session::Hash::from_bytes([0x55; 32]),
+            )
+            .unwrap(),
+            Some(source_inputs),
+        );
+        let wrong_module = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("wrong"),
+            ),
+        };
+        rejected(
+            input_for(&parent_outputs, snapshot, wrong_module, source_hash).unwrap(),
+            Some(source_inputs),
+        );
+        assert!(
+            input_for(
+                &parent_outputs,
+                snapshot_id(0xe7),
+                unit.clone(),
+                source_hash,
+            )
+            .is_err()
+        );
+        rejected(
+            input_for(&parent_outputs, snapshot, unit.clone(), source_hash).unwrap(),
+            None,
+        );
+        let matching_cancel = CancellationToken {
+            snapshot,
+            generation: CancellationGeneration::new(1),
+            reason: CancellationReason::ExplicitRequest,
+        };
+        let cancelled = consumer_registry
+            .execute_phase_with_resources(
+                PipelinePhase::ArtifactCommit,
+                input_for(&parent_outputs, snapshot, unit.clone(), source_hash).unwrap(),
+                PhaseExecutionResources {
+                    cancellation: Some(matching_cancel),
+                    output_publisher: Some(owner.clone()),
+                    source_load: Some(source_inputs),
+                    ..PhaseExecutionResources::default()
+                },
+            )
+            .unwrap()
+            .result;
+        assert_eq!(cancelled.status, PhaseStatus::Cancelled);
+        assert!(cancelled.output_refs.is_empty());
+        assert!(cancelled.artifact_commit.is_none());
+        let duplicate = {
+            let mut parents = parent_outputs.clone();
+            parents[4] = parents[0].clone();
+            input_for(&parents, snapshot, unit.clone(), source_hash)
+        };
+        assert!(duplicate.is_err());
+        let stale_input = input_for(&parent_outputs, snapshot, unit.clone(), source_hash).unwrap();
+        owner.mark_obsolete(snapshot).unwrap();
+        rejected(stale_input, Some(source_inputs));
+        let collected = owner.storage().collect(mizar_ir::storage::CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert!(collected.outputs_dropped > 0);
+        assert!(input_for(&parent_outputs, snapshot, unit.clone(), source_hash).is_err());
+        assert!(
+            fs::read_dir(fixture.root.join("alpha").join(direct_parent))
+                .unwrap()
+                .next()
+                .is_none()
+        );
+        assert!(!artifact.exports.is_empty());
+    }
+}
+
 #[test]
 fn scheduled_reflexivity_kernel_profile_rejects_nonexact_candidates() {
     use mizar_build::task_graph::{

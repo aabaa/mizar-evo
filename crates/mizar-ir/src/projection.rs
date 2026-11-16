@@ -12,8 +12,8 @@ use mizar_artifact::{
     verified_artifact::{
         ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
         ExpressionMetadata, ObligationMetadata, OverloadMetadata, StatementMetadata,
-        VerifiedArtifact, VerifiedArtifactError, VerifiedExport, current_schema_version,
-        write_verified_artifact,
+        VerifiedArtifact, VerifiedArtifactError, VerifiedExport, builtin_verified_artifact_json,
+        current_schema_version, write_verified_artifact,
     },
 };
 use mizar_session::{BuildSnapshotId, Hash};
@@ -147,6 +147,23 @@ impl ArtifactProjectionService {
         &self,
         input: ProjectVerifiedArtifactInput,
     ) -> Result<VerifiedArtifactDraft, ProjectionError> {
+        self.project_module_for_profile(input, false)
+    }
+
+    /// Projects through Artifact's explicit built-in enclosing profile.
+    /// This validates structural association, not proof acceptance.
+    pub fn project_builtin_module(
+        &self,
+        input: ProjectVerifiedArtifactInput,
+    ) -> Result<VerifiedArtifactDraft, ProjectionError> {
+        self.project_module_for_profile(input, true)
+    }
+
+    fn project_module_for_profile(
+        &self,
+        input: ProjectVerifiedArtifactInput,
+        builtin: bool,
+    ) -> Result<VerifiedArtifactDraft, ProjectionError> {
         if input.required_outputs.is_empty() {
             return Err(ProjectionError::MissingRequiredOutput);
         }
@@ -160,7 +177,11 @@ impl ArtifactProjectionService {
             self.validate_required_outputs(input.snapshot, &input.required_outputs)?;
 
         let mut artifact = VerifiedArtifact {
-            schema_version: current_schema_version(),
+            schema_version: if builtin {
+                mizar_artifact::store::SchemaVersion::new(2, 0)
+            } else {
+                current_schema_version()
+            },
             module: input.module,
             source_file: input.source_file,
             source_hash: input.source_hash,
@@ -182,7 +203,12 @@ impl ArtifactProjectionService {
             .map_err(|error| ProjectionError::Artifact {
                 error: Box::new(error),
             })?;
-        write_verified_artifact(&artifact).map_err(|error| ProjectionError::Artifact {
+        let validated = if builtin {
+            builtin_verified_artifact_json(&artifact).map(|_| ())
+        } else {
+            write_verified_artifact(&artifact).map(|_| ())
+        };
+        validated.map_err(|error| ProjectionError::Artifact {
             error: Box::new(error),
         })?;
         let revalidated_outputs =
@@ -870,6 +896,57 @@ mod tests {
         let read = read_verified_artifact(&json, VerifiedArtifactReadOptions::default())
             .expect("artifact reader accepts projected draft");
         assert_eq!(read, draft.artifact);
+    }
+
+    #[test]
+    fn builtin_projection_requires_explicit_profile_and_preserves_output_guards() {
+        use mizar_artifact::verified_artifact::{
+            builtin_verified_artifact_json, read_builtin_verified_artifact,
+        };
+
+        let snapshot = snapshot(1);
+        let publisher = publisher(snapshot);
+        let handle = publish_fixture(&publisher, snapshot, "module");
+        let service = ArtifactProjectionService::new(Arc::clone(&publisher));
+        let input = || {
+            let mut input = project_input(snapshot, handle.erase());
+            let obligation = accepted_obligation("builtin", 10);
+            let mut witness = witness_for(&obligation, 20);
+            witness.schema_version = ArtifactSchemaVersion::new(3, 0);
+            witness.proof_status = ProofStatus::DischargedBuiltin;
+            input.obligations = vec![obligation];
+            input.proof_witnesses = vec![witness];
+            input.provenance.captured_source = None;
+            input
+        };
+        assert!(service.project_module(input()).is_err());
+        let draft = service.project_builtin_module(input()).unwrap();
+        assert_eq!(
+            draft.artifact.schema_version,
+            ArtifactSchemaVersion::new(2, 0)
+        );
+        assert_eq!(draft.artifact.proof_witnesses, input().proof_witnesses);
+        assert_eq!(draft.required_outputs, vec![handle.output()]);
+        let value = builtin_verified_artifact_json(&draft.artifact).unwrap();
+        assert_eq!(
+            read_builtin_verified_artifact(&value, VerifiedArtifactReadOptions::default()).unwrap(),
+            draft.artifact
+        );
+        assert!(read_verified_artifact(&value, VerifiedArtifactReadOptions::default()).is_err());
+        let mut duplicate = input();
+        duplicate.required_outputs.push(handle.erase());
+        assert!(matches!(
+            service.project_builtin_module(duplicate),
+            Err(ProjectionError::DuplicateRequiredOutput { .. })
+        ));
+        let mut raw = input();
+        raw.expressions[0].rendered_surface = "raw TypedAst".to_owned();
+        assert!(matches!(
+            service.project_builtin_module(raw),
+            Err(ProjectionError::RawInternalLeak { .. })
+        ));
+        publisher.mark_obsolete(snapshot).unwrap();
+        assert!(service.project_builtin_module(input()).is_err());
     }
 
     #[test]

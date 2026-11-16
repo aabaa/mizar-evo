@@ -426,3 +426,5 @@ Task 5 must add focused tests for:
 The explicit fallible register_source_theorem_candidate_check builder follows the [sole service owner](frontend_adapter.md#scheduled-source-theorem-candidate-check), preserving actual configured descriptor and unknown-transport refusal before registration.
 
 The opt-in `register_source_theorem_candidate_check_with_witness_files` follows the [sole service owner](frontend_adapter.md#scheduled-source-theorem-candidate-witness-data); the old registration remains pair-only.
+
+[The genuine FILE/Artifact consumer](frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) is an explicit twelve-service opt-in profile; normal assembly and candidate profiles retain their existing guards.

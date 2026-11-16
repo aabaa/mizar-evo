@@ -203,6 +203,7 @@ fn dispatch_registry_phase(
                     SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
                     SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
                     SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremReflexivityArtifactCommitService,
                     SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
@@ -241,7 +242,22 @@ fn dispatch_registry_phase(
                     task.task.unit,
                     mizar_build::task_graph::WorkUnit::Module { .. }
                 );
-            let reflexivity_service = registry.descriptors().len() == 11
+            let reflexivity_artifact_service =
+                registry.descriptors().len() == 12
+                    && registry
+                        .service_for_phase(PipelinePhase::ArtifactCommit)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<
+                                    SourceTheoremReflexivityArtifactCommitService,
+                                >()
+                                && registry
+                                    .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+                                    .ok()
+                                    == Some(&service.phase())
+                        });
+            let reflexivity_service = (registry.descriptors().len() == 11
+                || reflexivity_artifact_service)
                 && registry
                     .service_for_phase(PipelinePhase::KernelCheck)
                     .is_ok_and(|service| {
@@ -466,6 +482,7 @@ fn dispatch_registry_phase(
                                 == Some(&service.phase())
                     })
                 && (artifact_service
+                    || reflexivity_artifact_service
                     || matches!(
                         registry.descriptor_for_phase(PipelinePhase::ArtifactCommit),
                         Err(PhaseRegistryError::MissingPhaseService { .. })
@@ -487,10 +504,16 @@ fn dispatch_registry_phase(
                 && (registry.descriptors().len() == 10 || discharge_profile || reflexivity_service);
             let discharge_prefix = discharge_task && discharge_profile;
             let atp_prefix = atp_task && discharge_profile && atp_service;
-            let reflexivity_prefix = kernel_task
+            let reflexivity_artifact_prefix = artifact_task
                 && vc_profile
                 && reflexivity_service
-                && task.task.dependencies.len() == 1;
+                && reflexivity_artifact_service
+                && task.task.dependencies.len() == 3;
+            let reflexivity_prefix = reflexivity_artifact_prefix
+                || (kernel_task
+                    && vc_profile
+                    && reflexivity_service
+                    && task.task.dependencies.len() == 1);
             let kernel_prefix = kernel_task && discharge_profile && atp_service && kernel_service;
             let artifact_prefix = artifact_task
                 && discharge_profile
@@ -555,10 +578,14 @@ fn dispatch_registry_phase(
                         .descriptor_for_phase(PipelinePhase::KernelCheck)
                         .ok()?
                         .clone(),
-                    [PipelinePhase::ArtifactCommit] if artifact_prefix => registry
-                        .descriptor_for_phase(PipelinePhase::ArtifactCommit)
-                        .ok()?
-                        .clone(),
+                    [PipelinePhase::ArtifactCommit]
+                        if artifact_prefix || reflexivity_artifact_prefix =>
+                    {
+                        registry
+                            .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+                            .ok()?
+                            .clone()
+                    }
                     [PipelinePhase::ModuleResolve] => {
                         if std::any::Any::type_id(
                             registry
@@ -726,9 +753,8 @@ fn dispatch_registry_phase(
                     || reflexivity_prefix
                 {
                     let mut dependencies = phase_results.iter().filter_map(|(id, results)| {
-                        if !discharge_prefix
-                            && !candidate_prefix
-                            && !reflexivity_prefix
+                        if ((!discharge_prefix && !candidate_prefix && !reflexivity_prefix)
+                            || reflexivity_artifact_prefix)
                             && !task.task.dependencies.contains(id)
                         {
                             return None;
@@ -795,6 +821,37 @@ fn dispatch_registry_phase(
                     }
                     if candidate_prefix {
                         parents.push(direct?);
+                    }
+                    if reflexivity_artifact_prefix {
+                        let mut kernels = task.task.dependencies.iter().filter_map(|id| {
+                            let [result] = phase_results.get(id)?.as_slice() else {
+                                return None;
+                            };
+                            let [kernel] = result.output_refs.as_slice() else {
+                                return None;
+                            };
+                            (result.status == PhaseStatus::Complete
+                                && result.diagnostics.is_empty()
+                                && kernel.phase() == &IrPhase::from(PipelinePhase::KernelCheck)
+                                && kernel.output_kind()
+                                    == &OutputKind::new("SourceTheoremReflexivityKernelStatus")
+                                && kernel.snapshot() == task.snapshot
+                                && kernel.work_unit() == &unit
+                                && kernel.schema_version()
+                                    == mizar_ir::storage::SchemaVersion::new(1)
+                                && kernel.lineage().named_input_hashes == named
+                                && kernel.lineage().parents.len() == 3
+                                && [core.output(), preparation.output(), vc?.output()]
+                                    .iter()
+                                    .all(|parent| kernel.lineage().parents.contains(parent)))
+                            .then_some(kernel)
+                        });
+                        let kernel = kernels.next()?;
+                        if kernels.next().is_some() {
+                            return None;
+                        }
+                        parents.insert(0, summary);
+                        parents.push(kernel);
                     }
                     if artifact_prefix {
                         let mut kernels = task.task.dependencies.iter().filter_map(|id| {
@@ -1208,10 +1265,16 @@ fn dispatch_registry_phase(
                 let temporary_root = (|| {
                     let inputs = source_load?;
                     let service = registry.service_for_phase(*phase).ok()?;
-                    if std::any::Any::type_id(service)
-                        != std::any::TypeId::of::<
+                    if ![
+                        std::any::TypeId::of::<
                             crate::frontend_adapter::SourceTheoremArtifactCommitService,
-                        >()
+                        >(),
+                        std::any::TypeId::of::<
+                            crate::frontend_adapter::SourceTheoremReflexivityArtifactCommitService,
+                        >(),
+                    ]
+                    .contains(&std::any::Any::type_id(service))
+                        || &service.phase() != descriptor
                     {
                         return None;
                     }
@@ -1325,7 +1388,10 @@ fn dispatch_registry_phase(
                 }
                 if result.artifact_commit.is_some() {
                     let eligible = (|| {
-                        use crate::frontend_adapter::SourceTheoremArtifactCommitService;
+                        use crate::frontend_adapter::{
+                            SourceTheoremArtifactCommitService,
+                            SourceTheoremReflexivityArtifactCommitService,
+                        };
                         use mizar_build::task_graph::{TaskKind, WorkUnit};
                         use mizar_ir::{
                             identity::{
@@ -1339,8 +1405,13 @@ fn dispatch_registry_phase(
                             || status != PhaseStatus::Complete
                             || !result.diagnostics.is_empty()
                             || !registry.service_for_phase(*phase).is_ok_and(|service| {
-                                std::any::Any::type_id(service)
-                                    == std::any::TypeId::of::<SourceTheoremArtifactCommitService>()
+                                [
+                                    std::any::TypeId::of::<SourceTheoremArtifactCommitService>(),
+                                    std::any::TypeId::of::<
+                                        SourceTheoremReflexivityArtifactCommitService,
+                                    >(),
+                                ]
+                                .contains(&std::any::Any::type_id(service))
                                     && &service.phase() == descriptor
                             })
                         {

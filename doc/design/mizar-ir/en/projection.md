@@ -28,6 +28,8 @@ publication tokens, and phase-15 manifest transactions remain
 driver-session, or publication-token APIs, and it must not depend on
 `mizar-driver`.
 
+`project_builtin_module` explicitly selects Artifact's existing built-in enclosing 2.0 profile, using the same input/draft types, output validation, sorting, leakage checks and external gaps. The built-in input must satisfy its legacy empty-statements/absent-captured-provenance rules; projection never strips fields. `project_module` remains fixed to the normal current profile. Artifact owns profile serialization/hash validation; projection creates no proof acceptance or publication authority.
+
 ## Ownership
 
 `mizar-ir` owns:

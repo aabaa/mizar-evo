@@ -3,7 +3,7 @@ canonical English: [English companion](../en/genuine_reflexivity_status_handoff.
 
 ## 状態と根拠
 
-**Q1–Q5 は owner 承認待ち。** この定義は実装を許可しない。推奨は選択済み動作ではない。[Driver plan](00.crate_plan.md#task-index) が定義契約を索引し、承認後に別の実装契約を freeze する。
+**Owner は 2026-11-17 に Q1–Q5 の A を承認し、B は未承認のままとする。** この案は実装前の handoff 境界を記録する。[Driver plan](00.crate_plan.md#task-index) が定義契約を索引し、個別に freeze した契約が実装と readiness を規定する。この承認はより広い実装を許可しない。
 根拠は英語正本がリンクする仕様 §16.5、§21.7.1/§21.7.5、§23.4/§23.5.1。built-in discharge は元の obligation に対して実 Kernel が受理した formula/substitution evidence を要する。言語・受理方針は変更しない。
 
 ## 既存 producer と不足する consumer
@@ -46,4 +46,4 @@ draft、構造的に読める FILE、hash は committed witness ではない。�
 | 5 | cancel/replaced lane、stale/collected original parent、retained reader。古い結果を復活させず current publish を防ぐ。read は work を進めず sleep race でなく決定的 guard control を使う。 |
 | 6 | status/FILE/main/manifest/readback/publication の一致と class/identity/reachability 不一致 control。DischargedBuiltin/trusted used_axioms/不完全/MISS/retained-token 制限を保持。Q3-A では後続 consumer 責務で初回 service 完了 evidence ではない。normal/generic/state 不変。 |
 
-owner は Q1–Q5 を明示選択し他案による追加依存を解決する。その後 Muse が限定実装契約を割り当て exact producer API、genuine source/profile oracle、registration/graph/input/output/schema、policy/refusal、owner write scope、該当 matrix、focused/E2E gate を freeze。Q2-A の Proof composition は未存在の前提で receipt ではない。Q3-A の FILE/Artifact consumer は別途 blocked。この定義から readiness/実装承認を推論せず新 semantic/acceptance choice は owner に戻す。
+owner は Q1–Q5 の A を選択した。Muse が各限定実装契約を割り当て exact producer API、genuine source/profile oracle、registration/graph/input/output/schema、policy/refusal、owner write scope、該当 matrix、focused/E2E gate を freeze。Q2-A の Proof composition は前提であり transferable receipt ではない。Q3-A の FILE/Artifact consumer は別 dispatch を要する。この定義から readiness/実装承認を推論せず新 semantic/acceptance choice は owner に戻す。

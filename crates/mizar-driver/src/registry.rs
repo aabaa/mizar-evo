@@ -573,6 +573,38 @@ impl PhaseRegistryBuilder {
         )
     }
 
+    pub fn register_source_theorem_reflexivity_artifact_commit(
+        &mut self,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+        staging: (String, String, String),
+    ) -> Result<&mut Self, String> {
+        if (staging.0 != "proof-witnesses" && !staging.0.starts_with("proof-witnesses/"))
+            || mizar_artifact::store::PublishedArtifactPath::new(format!(
+                "{}/candidate.json",
+                staging.0
+            ))
+            .is_err()
+        {
+            return Err("unsupported source theorem witness path prefix".to_owned());
+        }
+        if !staging.1.ends_with(".mizir.json")
+            || mizar_artifact::store::PublishedArtifactPath::new(&staging.1).is_err()
+        {
+            return Err("unsupported source theorem artifact main path".to_owned());
+        }
+        if mizar_artifact::store::PublishedArtifactPath::new(&staging.2).is_err() {
+            return Err("unsupported source theorem artifact output parent".to_owned());
+        }
+        Ok(self.register(
+            crate::frontend_adapter::SourceTheoremReflexivityArtifactCommitService {
+                verifier_policy,
+                witness_path_prefix: staging.0,
+                main_path: staging.1,
+                output_parent: staging.2,
+            },
+        ))
+    }
+
     pub fn register_source_theorem_vc_discharge(
         &mut self,
         policy: mizar_vc::discharge::DischargePolicy,

@@ -1121,6 +1121,7 @@ impl CompilerDriver {
             }
         };
         let reflexivity_profile;
+        let reflexivity_artifact_profile;
         let built_in_prefix = {
             use crate::{
                 frontend_adapter::{
@@ -1128,6 +1129,7 @@ impl CompilerDriver {
                     SourceTheoremArtifactCommitService, SourceTheoremAtpSolveService,
                     SourceTheoremCandidateCheckService, SourceTheoremElaborationService,
                     SourceTheoremModuleResolverService, SourceTheoremOverloadResolutionService,
+                    SourceTheoremReflexivityArtifactCommitService,
                     SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
@@ -1135,7 +1137,24 @@ impl CompilerDriver {
                 },
                 registry::PhaseService,
             };
-            reflexivity_profile = self.registry.descriptors().len() == 11
+            reflexivity_artifact_profile =
+                self.registry.descriptors().len() == 12
+                    && self
+                        .registry
+                        .service_for_phase(PipelinePhase::ArtifactCommit)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<
+                                    SourceTheoremReflexivityArtifactCommitService,
+                                >()
+                                && self
+                                    .registry
+                                    .descriptor_for_phase(PipelinePhase::ArtifactCommit)
+                                    .ok()
+                                    == Some(&service.phase())
+                        });
+            reflexivity_profile = (self.registry.descriptors().len() == 11
+                || reflexivity_artifact_profile)
                 && self
                     .registry
                     .service_for_phase(PipelinePhase::KernelCheck)
@@ -1388,23 +1407,48 @@ impl CompilerDriver {
         if built_in_prefix && reflexivity_profile {
             use mizar_build::task_graph::{TaskEdge, TaskKind, WorkUnit};
             let replacements = task_graph.tasks().iter().filter_map(|task| {
-                let WorkUnit::EvidenceCandidate { module, .. } = &task.unit else { return None; };
-                if task.kind != TaskKind::KernelCheck { return None; }
-                let producer = task_graph.tasks().iter().find(|producer| {
+                let module = match (&task.kind, &task.unit) {
+                    (TaskKind::KernelCheck, WorkUnit::EvidenceCandidate { module, .. }) => module,
+                    (TaskKind::ArtifactCommit, WorkUnit::Module { module }) if reflexivity_artifact_profile => module,
+                    _ => return None,
+                };
+                let vc = task_graph.tasks().iter().find(|producer| {
                     producer.kind == TaskKind::VcGenerate
+                        && producer.phases == [PipelinePhase::VcGenerate]
                         && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
                 })?;
-                Some((task.id.clone(), producer.id.clone()))
-            }).collect::<Vec<_>>();
-            for (kernel, vc) in replacements {
-                if let Some(task) = task_graph.tasks.iter_mut().find(|task| task.id == kernel) {
-                    task.dependencies = vec![vc.clone()];
+                let mut dependencies = vec![vc.id.clone()];
+                if task.kind == TaskKind::ArtifactCommit {
+                    let kernel = task_graph.tasks().iter().find(|producer| {
+                        producer.kind == TaskKind::KernelCheck
+                            && producer.phases == [PipelinePhase::KernelCheck]
+                            && matches!(&producer.unit, WorkUnit::EvidenceCandidate { module: parent, .. } if parent == module)
+                    })?;
+                    let source = task_graph.tasks().iter().find(|producer| {
+                        producer.kind == TaskKind::CheckAndElaborate
+                            && vc.dependencies.contains(&producer.id)
+                            && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
+                    })?;
+                    dependencies.extend([kernel.id.clone(), source.id.clone()]);
+                    dependencies.sort();
                 }
-                task_graph.edges.retain(|edge| edge.dependent != kernel);
-                task_graph.edges.push(TaskEdge {
-                    dependent: kernel,
-                    dependency: vc,
-                });
+                Some((task.id.clone(), dependencies))
+            }).collect::<Vec<_>>();
+            for (dependent, dependencies) in replacements {
+                if let Some(task) = task_graph
+                    .tasks
+                    .iter_mut()
+                    .find(|task| task.id == dependent)
+                {
+                    task.dependencies = dependencies.clone();
+                }
+                task_graph.edges.retain(|edge| edge.dependent != dependent);
+                task_graph
+                    .edges
+                    .extend(dependencies.into_iter().map(|dependency| TaskEdge {
+                        dependent: dependent.clone(),
+                        dependency,
+                    }));
             }
             task_graph.edges.sort_by(|left, right| {
                 (&left.dependent, &left.dependency).cmp(&(&right.dependent, &right.dependency))

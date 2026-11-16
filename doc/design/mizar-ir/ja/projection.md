@@ -26,6 +26,8 @@ publication token、phase-15 manifest transaction は、所有 crate が real se
 producer token、diagnostics token、driver session、publication token API を追加して
 はならず、`mizar-driver` に依存してはならない。
 
+
+`project_builtin_module` は Artifact の既存 built-in enclosing 2.0 profile を明示選択し、同じ input/draft 型、output 検証、整列、leakage 検査、external gaps を使う。built-in 入力は legacy の空 statements/captured provenance 不在を満たす必要があり、projection は field を削除しない。`project_module` は通常の current profile に固定する。profile の serialization/hash 検証は Artifact が所有し、projection は proof acceptance や publication 権限を生成しない。
 ## 所有境界
 
 `mizar-ir` が所有するもの:
