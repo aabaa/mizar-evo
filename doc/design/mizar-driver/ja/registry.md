@@ -5,6 +5,8 @@
 
 ## 目的
 
+[Genuine reflexivity Kernel/status handoff 案](genuine_reflexivity_status_handoff.md) は owner Q1–Q5 判断待ち。service を登録せず、通常 candidate-check 経路を拡張しない。
+
 この module は driver-owned な phase service registry と salsa query 境界を定義する。
 
 `mizar-driver` は phase service を 1 つの deterministic な front door の背後で
