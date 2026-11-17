@@ -3,7 +3,7 @@
 
 ## 状態と権限
 
-**Q1–Q5 は owner 承認待ち。** [Driver 計画](00.crate_plan.md#task-index) が索引する定義案であり、キャッシュ受入れを有効化しない。承認済み [active-run 決定](active_run_context_cache_binding.md#owner-q-decisions) と現在の [zero-import cold Frontend](driver.md#active-run-cold-frontend-binding) は既存 profile の権限を保持する。真正な全 Frontend 解析は parsing-avoidance や full STEP6C の達成ではない。
+**2026-11-17 に owner が Q1–Q5 の A をすべて承認。** [Driver 計画](00.crate_plan.md#task-index) が索引する定義案であり、キャッシュ受入れを有効化しない。承認済み [active-run 決定](active_run_context_cache_binding.md#owner-q-decisions) と現在の [zero-import cold Frontend](driver.md#active-run-cold-frontend-binding) は既存 profile の権限を保持する。真正な全 Frontend 解析は parsing-avoidance や full STEP6C の達成ではない。
 根拠: 仕様の [import](../../../spec/en/12.modules_and_namespaces.md#123-import-statements) と [build 再現性](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility)、architecture 22 の [完全 footprint](../../architecture/en/22.incremental_verification_contract.md#dependency-slice-completeness)、[字句・parse 入力](../../architecture/en/22.incremental_verification_contract.md#frontend-lexicalparse-footprints)、[等価性](../../architecture/en/22.incremental_verification_contract.md#clean-build-equivalence)、[freshness](../../architecture/en/22.incremental_verification_contract.md#snapshot-scoped-results)、[fallback](../../architecture/en/22.incremental_verification_contract.md#cache-miss-fallback)。Cache の [fingerprint targets](../../mizar-cache/en/dependency_fingerprint.md#fingerprint-targets) と [lookup](../../mizar-cache/en/cache_store.md#lookup) が key/Store 権限を保持する。どの選択肢も言語、診断、proof 受入れ、互換性方針を変更しない。
 
 ## 既存 producer と不足する接続
