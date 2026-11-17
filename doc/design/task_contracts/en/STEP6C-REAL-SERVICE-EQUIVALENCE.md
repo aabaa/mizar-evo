@@ -7,7 +7,6 @@ Authority: [architecture 22](../../architecture/en/22.incremental_verification_c
 Gap: BUILD-G-017 `external_dependency_gap`. Build task 24 and driver task 16 prove equivalence only for the implemented seams, not for real phase outputs.
 
 ## Scope
-
 Run the clean/incremental and sequential/parallel equivalence gate over real
 workspaces through every phase service registered as available, comparing
 published outputs, diagnostics, and cache decisions. Record coverage for
@@ -19,8 +18,7 @@ Full completion still requires the cache-hit/miss tests below; this slice
 provides no cache-hit coverage. Reuse the existing replay/capture-order/worker
 comparisons in [real source regressions](../../../../crates/mizar-driver/tests/source_load/main.rs).
 
-### Bounded twelve-service edit/clean slice
-
+### Bounded reflexivity edit/clean profiles
 Freeze the explicit NoKey SourceLoad-through-reflexivity-ArtifactCommit profile:
 run an initial disk build, edit and recapture in that workspace with worker1/
 canonical order, and independently capture the edited bytes in a fresh workspace
@@ -31,18 +29,27 @@ FILE witness bytes, canonical diagnostics and actual uncached scheduler outcomes
 normalize only workspace/output roots and snapshot-local identities. Require
 changed source identity after each edit and independent clean stores/captures.
 Retain the existing stale/currentness gate and seam-level regressions unchanged.
-The profile still lacks VcDischarge and remains session-Blocked despite genuine
-ArtifactCommit completion. No full STEP6C completion, cache-hit, complete runtime/
+Preserve that twelve-service profile and its missing-VcDischarge session block.
+Compose it with the real configured VcDischarge service as an exact thirteen-service
+profile, authenticating concrete service types and actual/registered descriptors.
+Admit only singleton per-module discharge/kernel tasks with no ATP/backend tasks;
+bridge actual Core/VC parents into discharge without changing producer semantics,
+explicit-provider authority, currentness or old-profile precedence.
+Run the same two edit cases for this composition: every task/phase completes, with
+no missing service and successful session, real NoKey discharge data and unchanged
+genuine ArtifactCommit comparisons. Six admission cases: nominal composition gains
+the bridge; spoofed discharge type, mismatched descriptor, surplus service, duplicate
+discharge module and duplicate kernel module gain no new built-in bridge authority.
+Preserve missing-service preflight and complete-registry dispatcher/provider behavior;
+cap equivalence cases at two. Driver source/scheduler,
+source_load/driver regressions and paired frontend-adapter boundary docs are affected.
+No spec, trace/audit or coverage-credit change. No full STEP6C completion, cache-hit, complete runtime/
 Frontend producer, Proof reuse/dependency-binding, ATP31 or other family credit
 follows; incomplete dependency slices/MISS and all existing deferrals remain.
-
 ## Forbidden
-
 Synthetic phase outputs; comparing only event streams; weakening the existing
 seam-level gate; claiming equivalence for unregistered services.
-
 ## Tests and exit
-
 Real multi-module workspaces with an edit between runs, several worker counts,
 and cache hits and misses; stale-snapshot rejection. Require independent
 specification, test-sufficiency, implementation, volume/scope, and
