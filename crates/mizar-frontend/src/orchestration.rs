@@ -502,6 +502,351 @@ where
     }
 }
 
+/// Immutable, portable evidence from one fresh real-parser invocation.
+/// Text ranges and comments use loaded-source bytes; map segments name their frames.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommentMetadata {
+    package_id: mizar_session::PackageId,
+    module_path: mizar_session::ModulePath,
+    normalized_path: NormalizedPath,
+    edition: mizar_session::Edition,
+    origin: mizar_session::SourceOrigin,
+    source_hash: mizar_session::Hash,
+    original_text: Arc<str>,
+    loaded_text: Arc<str>,
+    lexical_text: Arc<str>,
+    loading_segments: Vec<mizar_session::LoadingMapSegment>,
+    preprocess_map: mizar_lexer::SourcePreprocessMap,
+    comments: Vec<mizar_lexer::CommentTrivia>,
+    whitespace: Vec<mizar_session::TextRange>,
+    boundaries: Vec<CommentBoundary>,
+}
+
+impl CommentMetadata {
+    /// Returns the captured package id.
+    pub fn package_id(&self) -> &mizar_session::PackageId {
+        &self.package_id
+    }
+    /// Returns the captured module path.
+    pub fn module_path(&self) -> &mizar_session::ModulePath {
+        &self.module_path
+    }
+    /// Returns the captured normalized path.
+    pub fn normalized_path(&self) -> &NormalizedPath {
+        &self.normalized_path
+    }
+    /// Returns the captured edition.
+    pub fn edition(&self) -> &mizar_session::Edition {
+        &self.edition
+    }
+    /// Returns the captured origin.
+    pub fn origin(&self) -> &mizar_session::SourceOrigin {
+        &self.origin
+    }
+    /// Returns the captured source hash.
+    pub fn source_hash(&self) -> &mizar_session::Hash {
+        &self.source_hash
+    }
+    /// Returns the captured original text.
+    pub fn original_text(&self) -> &str {
+        &self.original_text
+    }
+    /// Returns the captured loaded text.
+    pub fn loaded_text(&self) -> &str {
+        &self.loaded_text
+    }
+    /// Returns the captured lexical text.
+    pub fn lexical_text(&self) -> &str {
+        &self.lexical_text
+    }
+    /// Returns the captured loading segments.
+    pub fn loading_segments(&self) -> &[mizar_session::LoadingMapSegment] {
+        &self.loading_segments
+    }
+    /// Returns the captured preprocess map.
+    pub fn preprocess_map(&self) -> &mizar_lexer::SourcePreprocessMap {
+        &self.preprocess_map
+    }
+    /// Returns the captured comments.
+    pub fn comments(&self) -> &[mizar_lexer::CommentTrivia] {
+        &self.comments
+    }
+    /// Returns the captured whitespace.
+    pub fn whitespace(&self) -> &[mizar_session::TextRange] {
+        &self.whitespace
+    }
+    /// Returns the captured boundaries.
+    pub fn boundaries(&self) -> &[CommentBoundary] {
+        &self.boundaries
+    }
+}
+
+/// A syntactic landmark, without an AST handle or a verified attachment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommentBoundary {
+    kind: mizar_syntax::SyntaxKind,
+    range: mizar_session::TextRange,
+    parent: Option<usize>,
+    recovered: bool,
+}
+
+impl CommentBoundary {
+    /// Returns the actual syntax kind.
+    pub fn kind(&self) -> mizar_syntax::SyntaxKind {
+        self.kind
+    }
+    /// Returns the loaded-source byte range.
+    pub fn range(&self) -> mizar_session::TextRange {
+        self.range
+    }
+    /// Returns the nearest enclosing landmark's index in the metadata boundary slice.
+    pub fn parent(&self) -> Option<usize> {
+        self.parent
+    }
+    /// Returns the parser's recovery flag.
+    pub fn recovered(&self) -> bool {
+        self.recovered
+    }
+}
+
+impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
+    Frontend<L, P, crate::parsing::MizarParserSeam>
+{
+    /// Runs the real parser and optionally retains complete portable source evidence.
+    /// Invalid captured metadata is refused without changing ordinary pipeline behavior.
+    pub fn run_loaded_with_comment_metadata(
+        &self,
+        source: SourceUnit,
+        captured_text: &str,
+    ) -> Result<
+        (
+            FrontendOutput<mizar_syntax::SurfaceAst>,
+            Option<CommentMetadata>,
+        ),
+        FrontendError,
+    > {
+        let output = self.run_loaded(source)?;
+        let metadata = (|| {
+            use mizar_session::{LoadingMapSegment, LoadingOrigin, SourceOrigin, TextRange};
+            let source = &output.source;
+            let (loaded, loading_segments) = mizar_session::normalize_source_text(captured_text);
+            if loaded != source.source_text.as_ref()
+                || loading_segments.as_ref() != source.loading_map.as_ref().map(|map| &map.segments)
+            {
+                return None;
+            }
+            match &source.origin {
+                SourceOrigin::Disk => {
+                    source.canonical_disk_bytes()?;
+                }
+                SourceOrigin::OpenBuffer { version } => {
+                    let uri = match source.loading_map.as_ref().map(|map| &map.origin) {
+                        Some(LoadingOrigin::OpenBufferText { uri, .. }) => uri.clone(),
+                        None => String::new(),
+                        _ => return None,
+                    };
+                    source.canonical_open_buffer_bytes(&SourceInput {
+                        package_id: source.package_id.clone(),
+                        module_path: source.module_path.clone(),
+                        normalized_path: source.normalized_path.clone(),
+                        edition: source.edition.clone(),
+                        origin: SourceOriginInput::OpenBuffer {
+                            uri,
+                            expected_version: *version,
+                            actual_version: *version,
+                            text: Arc::from(captured_text),
+                        },
+                    })?;
+                }
+                _ => return None,
+            }
+            let preprocessed = mizar_lexer::preprocess_source_for_lexing(&loaded);
+            if preprocessed.lexical_text != output.preprocessed.lexical_text.as_str()
+                || preprocessed.preprocess_map != output.preprocessed.source_map.preprocess_map
+            {
+                return None;
+            }
+            let mut occupied = Vec::new();
+            let mut previous_end = 0;
+            for comment in &preprocessed.comments {
+                if comment.span.start < previous_end
+                    || loaded.get(comment.span.start..comment.span.end)
+                        != Some(comment.lexeme.as_str())
+                {
+                    return None;
+                }
+                occupied.push((comment.span.start, comment.span.end));
+                previous_end = comment.span.end;
+            }
+            for token in &output.tokens.tokens {
+                if token.span.source_id != source.source_id
+                    || loaded.get(token.span.start..token.span.end).is_none()
+                {
+                    return None;
+                }
+                occupied.push((token.span.start, token.span.end));
+            }
+            occupied.sort_unstable();
+            let mut whitespace = Vec::new();
+            let mut cursor = 0;
+            for (start, end) in occupied
+                .into_iter()
+                .chain(std::iter::once((loaded.len(), loaded.len())))
+            {
+                let mut run = None;
+                for (offset, ch) in loaded.get(cursor..start.max(cursor))?.char_indices() {
+                    let offset = cursor + offset;
+                    if ch.is_whitespace() {
+                        run.get_or_insert(offset);
+                    } else if let Some(start) = run.take() {
+                        whitespace.push(TextRange { start, end: offset });
+                    }
+                }
+                if let Some(run_start) = run {
+                    whitespace.push(TextRange {
+                        start: run_start,
+                        end: start.max(cursor),
+                    });
+                }
+                cursor = cursor.max(end);
+            }
+            let ast = output.ast.as_ref()?;
+            use mizar_syntax::SyntaxKind;
+            if ast.source_id != source.source_id {
+                return None;
+            }
+            let mut boundaries = Vec::new();
+            let mut seen = vec![false; ast.nodes().len()];
+            let mut pending = vec![(ast.root()?, None, None, SyntaxKind::Root)];
+            while let Some((id, parent, containing, parent_kind)) = pending.pop() {
+                let node = ast.node(id)?;
+                // The AST shares token leaves between its flat token list and structural tree.
+                if (*seen.get(id.index())?
+                    && !matches!(node.kind, mizar_syntax::SurfaceNodeKind::Token(_)))
+                    || node.range.source_id != source.source_id
+                    || source
+                        .source_text
+                        .get(node.range.start..node.range.end)
+                        .is_none()
+                    || containing.is_some_and(|range: mizar_session::TextRange| {
+                        range.start > node.range.start || range.end < node.range.end
+                    })
+                {
+                    return None;
+                }
+                seen[id.index()] = true;
+                let range = mizar_session::TextRange {
+                    start: node.range.start,
+                    end: node.range.end,
+                };
+                let kind = node.kind.syntax_kind();
+                let landmark = !matches!(node.kind, mizar_syntax::SurfaceNodeKind::Token(_))
+                    && (matches!(
+                        parent_kind,
+                        SyntaxKind::ItemList
+                            | SyntaxKind::DefinitionBlockItem
+                            | SyntaxKind::RegistrationBlockItem
+                    ) || matches!(
+                        kind,
+                        SyntaxKind::VisibleItem
+                            | SyntaxKind::ExportItem
+                            | SyntaxKind::VisibilityMarker
+                            | SyntaxKind::TheoremItem
+                            | SyntaxKind::LemmaItem
+                            | SyntaxKind::DefinitionBlockItem
+                            | SyntaxKind::RegistrationBlockItem
+                            | SyntaxKind::AttributeDefinition
+                            | SyntaxKind::PredicateDefinition
+                            | SyntaxKind::FunctorDefinition
+                            | SyntaxKind::ModeDefinition
+                            | SyntaxKind::StructureDefinition
+                            | SyntaxKind::AttributeRedefinition
+                            | SyntaxKind::PredicateRedefinition
+                            | SyntaxKind::FunctorRedefinition
+                            | SyntaxKind::InheritanceDefinition
+                            | SyntaxKind::FieldRedefinition
+                            | SyntaxKind::PropertyRedefinition
+                            | SyntaxKind::NotationAlias
+                            | SyntaxKind::ExistentialRegistration
+                            | SyntaxKind::ConditionalRegistration
+                            | SyntaxKind::FunctorialRegistration
+                            | SyntaxKind::ReductionRegistration
+                            | SyntaxKind::AlgorithmDefinition
+                            | SyntaxKind::Annotation
+                            | SyntaxKind::LibraryAnnotation
+                            | SyntaxKind::StandaloneDiagnosticAnnotation
+                            | SyntaxKind::AnnotatedStatement
+                            | SyntaxKind::AnnotatedAlgorithmStatement
+                            | SyntaxKind::AnnotatedDefinitionContent
+                            | SyntaxKind::AnnotatedRegistrationContent
+                    ));
+                let nearest = if landmark {
+                    let index = boundaries.len();
+                    boundaries.push(CommentBoundary {
+                        kind,
+                        range,
+                        parent,
+                        recovered: node.recovered,
+                    });
+                    Some(index)
+                } else {
+                    parent
+                };
+                for &child in node.children.iter().rev() {
+                    pending.push((child, nearest, Some(range), kind));
+                }
+            }
+            let mut order: Vec<_> = (0..boundaries.len()).collect();
+            order.sort_by_key(|&index| {
+                (
+                    boundaries[index].range.start,
+                    std::cmp::Reverse(boundaries[index].range.end),
+                )
+            });
+            let mut positions = vec![0; boundaries.len()];
+            for (position, &index) in order.iter().enumerate() {
+                positions[index] = position;
+            }
+            let boundaries = order
+                .into_iter()
+                .map(|index| {
+                    let mut boundary = boundaries[index].clone();
+                    boundary.parent = boundary.parent.map(|index| positions[index]);
+                    boundary
+                })
+                .collect();
+            Some(CommentMetadata {
+                package_id: source.package_id.clone(),
+                module_path: source.module_path.clone(),
+                normalized_path: source.normalized_path.clone(),
+                edition: source.edition.clone(),
+                origin: source.origin.clone(),
+                source_hash: source.source_hash,
+                original_text: Arc::from(captured_text),
+                loaded_text: source.source_text.clone(),
+                lexical_text: output.preprocessed.lexical_text.text.clone(),
+                loading_segments: loading_segments.unwrap_or_else(|| {
+                    vec![LoadingMapSegment::Original {
+                        loaded: TextRange {
+                            start: 0,
+                            end: loaded.len(),
+                        },
+                        original: TextRange {
+                            start: 0,
+                            end: captured_text.len(),
+                        },
+                    }]
+                }),
+                preprocess_map: preprocessed.preprocess_map,
+                comments: preprocessed.comments,
+                whitespace,
+                boundaries,
+            })
+        })();
+        Ok((output, metadata))
+    }
+}
+
 /// Recoverable frontend diagnostic with source or load-location context.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrontendDiagnostic {

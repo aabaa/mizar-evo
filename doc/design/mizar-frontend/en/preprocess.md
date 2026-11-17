@@ -149,11 +149,27 @@ comment-only edits leave lexical text unchanged.
 
 ### Comments and Doc Comments
 
-Ordinary `Comment`s are retained for formatting and debugging only and are not
-fed to the lexer. `DocComment`s keep their source range and raw body so the
-parser can later attach them to a documentable item; attachment stays a parser
-concern, and structured tag parsing is deferred. Both carry `SourceRange`
-values already mapped to source coordinates.
+Ordinary `Comment`s are not fed to the lexer. `DocComment`s keep their loaded
+source range and marker-stripped `raw_body`; this is not Doc's Q3 body derivation.
+Verified documentation attachment and structured tags remain Doc-owned under the
+[Q1 handoffs](../../mizar-artifact/en/comment_projection.md#ownership-and-handoffs).
+
+The real-parser `Frontend::run_loaded_with_comment_metadata(source, captured_text)`
+returns the ordinary output plus optional immutable `CommentMetadata`. It never
+loads source: the caller supplies the retained original Disk/OpenBuffer UTF8 text
+and validates snapshot binding. Capture/text/hash/map/origin inconsistencies or
+unsupported generated input refuse metadata; absence is not an available-empty
+projection. A successful empty collection is complete source metadata.
+
+Metadata preserves ordered raw comments, whitespace trivia, syntactic candidates
+and annotation boundaries, plus original/loaded/lexical text and portable loading
+and preprocess segments. All ranges use half-open byte offsets in the named
+frame. Runtime SourceIds, diagnostic paths and AST handles are excluded. Existing
+map distinctions preserve exact, composite and synthetic positions; source order
+and physical blank lines remain available without rereading source. Construction
+uses the genuine pipeline, with no public constructor from caller-built ASTs.
+This adds no verified target, lineage/currentness proof, Artifact encoding or Doc
+attachment. Existing preprocessing storage bytes and lexical reuse keys are unchanged.
 
 ### Import Stubs
 

@@ -105,7 +105,12 @@ pub fn preprocess(
 
 ### コメントとドキュメントコメント
 
-通常の `Comment` は、整形・デバッグ用にのみ保持され、字句解析器には渡されない。`DocComment` はソース範囲と生本文を保持するので、パーサーが後でドキュメント化可能な項目に付与できる。付与はパーサーの関心事のままであり、構造化タグの解析は先送りする。いずれも、すでにソース座標へ変換された `SourceRange` を持つ。
+通常の `Comment` は字句解析器には渡されない。`DocComment` は loaded 座標の範囲とマーカーだけを除いた `raw_body` を保持する。これは Doc の Q3 本文導出ではない。検証済み項目への文書付与と構造化タグは、[Q1 の受け渡し](../../mizar-artifact/en/comment_projection.md#ownership-and-handoffs)に従い Doc が所有する。
+
+実パーサー専用の `Frontend::run_loaded_with_comment_metadata(source, captured_text)` は、通常の出力と読み取り専用の `CommentMetadata` を返す。ソースは再読込せず、呼出側が保持する元の Disk/OpenBuffer UTF8 テキストを渡し、snapshot への結合を検証する。capture・本文・hash・map・origin の不整合や generated 入力では metadata を拒否する。欠落は available-empty を意味せず、成功した空のコレクションは完全なソースメタデータである。
+
+metadata は順序付きの生コメント・空白 trivia・構文候補・annotation 境界と、original/loaded/lexical テキスト、portable な loading/preprocess segment を保持する。範囲は各 frame の半開バイト区間であり、実行時 SourceId・診断パス・AST handle は含めない。既存 map の exact/composite/synthetic の区別、ソース順序、物理的空行を保持し、ソース再読込を不要にする。生成は genuine な pipeline 内で行い、呼出側が構築した AST を受ける公開 constructor は設けない。
+検証済み target・lineage/currentness 証明・Artifact encoding・Doc 付与は追加しない。既存 preprocessing storage のバイト形式と lexical reuse key は変わらない。
 
 ### インポートスタブ
 

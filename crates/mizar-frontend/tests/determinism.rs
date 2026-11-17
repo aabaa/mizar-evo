@@ -744,3 +744,446 @@ fn module_path_from_relative(relative: &str) -> String {
         .unwrap_or(relative)
         .replace('/', ".")
 }
+
+mod comment_metadata {
+    use super::*;
+    use mizar_frontend::orchestration::{CommentMetadata, FrontendOutput};
+    use mizar_frontend::source::{SourceUnit, SourceUnitLoader};
+    use mizar_lexer::{CommentKind, SourcePreprocessMapSegment};
+    use mizar_session::{
+        GeneratedSourceKind, LineMap, LoadingMap, LoadingMapSegment, LoadingOrigin,
+        SessionIdAllocator, SourceOrigin, TextRange, hash_text,
+    };
+    use mizar_syntax::{SurfaceAst, SyntaxKind};
+
+    fn frontend(
+        fixture: &PackageFixture,
+    ) -> Frontend<FrontendSourceLoader<DiskSourceLoader>, DeterminismProvider, MizarParserSeam>
+    {
+        Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root())),
+            DeterminismProvider {
+                schedule: ProviderSchedule::InOrder,
+                beta_fingerprint: DEFAULT_BETA_FINGERPRINT,
+            },
+            MizarParserSeam,
+        )
+    }
+
+    fn load(
+        fixture: &PackageFixture,
+        request: SourceUnitRequest,
+        ids: &InMemorySessionIdAllocator,
+    ) -> SourceUnit {
+        FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root()))
+            .load_source_unit(request, ids)
+            .unwrap()
+    }
+
+    fn capture(
+        fixture: &PackageFixture,
+        text: &str,
+    ) -> (FrontendOutput<SurfaceAst>, CommentMetadata) {
+        fixture.write("src/metadata.miz", text);
+        let source = load(
+            fixture,
+            fixture.request("src/metadata.miz"),
+            &InMemorySessionIdAllocator::new(),
+        );
+        let (output, metadata) = frontend(fixture)
+            .run_loaded_with_comment_metadata(source, text)
+            .unwrap();
+        (
+            output,
+            metadata.expect("genuine capture should provide complete metadata"),
+        )
+    }
+
+    #[test]
+    fn disk_preserves_interleaved_raw_comments_and_whitespace() {
+        let fixture = PackageFixture::new();
+        let text = " \t:: ordinary β\n\n::= multi\nline =:: \t::: doc Ω\n:::";
+        let (output, metadata) = capture(&fixture, text);
+        assert_eq!(metadata.original_text(), text);
+        assert_eq!(metadata.loaded_text(), text);
+        assert_eq!(
+            metadata
+                .comments()
+                .iter()
+                .map(|comment| (comment.kind, comment.lexeme.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (CommentKind::SingleLine, ":: ordinary β\n"),
+                (CommentKind::MultiLine, "::= multi\nline =::"),
+                (CommentKind::Documentation, "::: doc Ω\n"),
+                (CommentKind::Documentation, ":::"),
+            ]
+        );
+        for comment in metadata.comments() {
+            assert_eq!(&text[comment.span.start..comment.span.end], comment.lexeme);
+        }
+        assert!(
+            metadata
+                .comments()
+                .windows(2)
+                .all(|pair| pair[0].span.end <= pair[1].span.start)
+        );
+        assert_eq!(
+            metadata
+                .whitespace()
+                .iter()
+                .map(|range| &text[range.start..range.end])
+                .collect::<Vec<_>>(),
+            vec![" \t", "\n", " \t"]
+        );
+        assert_eq!(
+            output
+                .preprocessed
+                .doc_comments
+                .iter()
+                .map(|comment| comment.raw_body.as_ref())
+                .collect::<Vec<_>>(),
+            vec![" doc Ω\n", ""]
+        );
+        assert_eq!(
+            metadata.lexical_text(),
+            output.preprocessed.lexical_text.as_str()
+        );
+    }
+
+    #[test]
+    fn normalized_disk_and_open_buffer_keep_explicit_frames_and_map_segments() {
+        let fixture = PackageFixture::new();
+        let original = "\u{feff}theorem::= β =::T: thesis;\r\n";
+        let (output, metadata) = capture(&fixture, original);
+        let loaded = "theorem::= β =::T: thesis;\n";
+        assert_eq!(metadata.original_text(), original);
+        assert_eq!(metadata.loaded_text(), loaded);
+        assert_eq!(metadata.lexical_text(), "theorem T: thesis;\n");
+        assert!(matches!(
+            metadata.loading_segments()[0],
+            LoadingMapSegment::RemovedLeadingBom {
+                original: TextRange { start: 0, end: 3 }
+            }
+        ));
+        assert!(
+            matches!(metadata.loading_segments().last().unwrap(), LoadingMapSegment::NormalizedNewline { loaded: newline, original: raw } if *newline == (TextRange { start: loaded.len()-1, end: loaded.len() }) && *raw == (TextRange { start: original.len()-2, end: original.len() }))
+        );
+        assert_eq!(
+            metadata
+                .preprocess_map()
+                .source_ranges_for_lexical(mizar_lexer::SourceRange { start: 0, end: 7 }),
+            Some(vec![mizar_lexer::SourceRange { start: 0, end: 7 }])
+        );
+        assert!(metadata.preprocess_map().segments.iter().any(|segment| matches!(segment, SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor } if *lexical == (mizar_lexer::SourceRange { start: 7, end: 8 }) && &loaded[anchor.start..anchor.end] == "::= β =::")));
+        assert!(metadata.preprocess_map().segments.iter().any(|segment| matches!(segment, SourcePreprocessMapSegment::RemovedComment { source, kind: CommentKind::MultiLine } if &loaded[source.start..source.end] == "::= β =::")));
+        assert_eq!(
+            metadata
+                .preprocess_map()
+                .source_ranges_for_lexical(mizar_lexer::SourceRange { start: 8, end: 9 }),
+            Some(vec![mizar_lexer::SourceRange { start: 17, end: 18 }])
+        );
+        assert_eq!(
+            metadata.comments()[0].span,
+            mizar_lexer::SourceRange { start: 7, end: 17 }
+        );
+        assert_eq!(
+            &metadata.original_text()[10..20],
+            metadata.comments()[0].lexeme
+        );
+        assert_eq!(metadata.source_hash(), &output.source.source_hash);
+        let mut previous = None;
+        for version in [3, 4] {
+            let mut request = fixture.request("src/metadata.miz");
+            request.input.origin = SourceOriginInput::OpenBuffer {
+                uri: format!("file://{}", fixture.path("src/metadata.miz").display()),
+                expected_version: version,
+                actual_version: version,
+                text: Arc::from(original),
+            };
+            let input = request.input.clone();
+            let source = load(&fixture, request, &InMemorySessionIdAllocator::new());
+            let (output, metadata) = frontend(&fixture)
+                .run_loaded_with_comment_metadata(source, original)
+                .unwrap();
+            let metadata = metadata.unwrap();
+            assert_eq!(metadata.origin(), &SourceOrigin::OpenBuffer { version });
+            assert_eq!(metadata.original_text(), original);
+            assert_eq!(metadata.loaded_text(), loaded);
+            let bytes = output.canonical_open_buffer_bytes(&input).unwrap();
+            let restored = FrontendOutput::from_canonical_open_buffer_bytes(
+                &bytes,
+                output.source.source_id,
+                &input,
+            )
+            .unwrap();
+            assert_eq!(restored, output);
+            if let Some(previous) = previous {
+                assert_ne!(metadata, previous);
+            }
+            previous = Some(metadata);
+        }
+    }
+
+    #[test]
+    fn real_ast_preserves_ordered_wrappers_annotations_nested_candidates_and_recovery() {
+        let fixture = PackageFixture::new();
+        let text = concat!(
+            "export Demo;\n",
+            "@[label(\"attached\")] public theorem Named: thesis;\n",
+            "@show_type(x);\n",
+            "definition\n  algorithm choose() do return; end;\nend;\n",
+            "registration\n  cluster Exists: non empty set; existence by Ref;\nend;\n",
+            "definition algorithm broken() do return; end;\n",
+        );
+        let (output, metadata) = capture(&fixture, text);
+        let boundaries = metadata.boundaries();
+        for kind in [
+            SyntaxKind::ExportItem,
+            SyntaxKind::VisibleItem,
+            SyntaxKind::Annotation,
+            SyntaxKind::StandaloneDiagnosticAnnotation,
+            SyntaxKind::TheoremItem,
+            SyntaxKind::DefinitionBlockItem,
+            SyntaxKind::AlgorithmDefinition,
+            SyntaxKind::RegistrationBlockItem,
+            SyntaxKind::ExistentialRegistration,
+        ] {
+            assert!(
+                boundaries.iter().any(|boundary| boundary.kind() == kind),
+                "missing {kind:?}"
+            );
+        }
+        assert!(
+            boundaries
+                .windows(2)
+                .all(|pair| pair[0].range().start <= pair[1].range().start)
+        );
+        let (visible_index, visible) = boundaries
+            .iter()
+            .enumerate()
+            .find(|(_, boundary)| boundary.kind() == SyntaxKind::VisibleItem)
+            .unwrap();
+        assert_eq!(
+            &text[visible.range().start..visible.range().end],
+            "@[label(\"attached\")] public theorem Named: thesis;"
+        );
+        assert_eq!(visible.parent(), None);
+        let (annotation_index, attached) = boundaries
+            .iter()
+            .enumerate()
+            .find(|(_, boundary)| boundary.kind() == SyntaxKind::Annotation)
+            .unwrap();
+        assert_eq!(
+            &text[attached.range().start..attached.range().end],
+            "@[label(\"attached\")]"
+        );
+        assert_eq!(attached.parent(), Some(visible_index));
+        let library = boundaries
+            .iter()
+            .find(|boundary| boundary.kind() == SyntaxKind::LibraryAnnotation)
+            .unwrap();
+        assert_eq!(library.range(), attached.range());
+        assert_eq!(library.parent(), Some(annotation_index));
+        let standalone = boundaries
+            .iter()
+            .find(|boundary| boundary.kind() == SyntaxKind::StandaloneDiagnosticAnnotation)
+            .unwrap();
+        assert_eq!(
+            &text[standalone.range().start..standalone.range().end],
+            "@show_type(x)"
+        );
+        let standalone_item = &boundaries[standalone.parent().unwrap()];
+        assert_eq!(standalone_item.kind(), SyntaxKind::StatementItem);
+        assert_eq!(standalone_item.range(), standalone.range());
+        assert_eq!(standalone_item.parent(), None);
+        let named = boundaries
+            .iter()
+            .find(|boundary| boundary.kind() == SyntaxKind::TheoremItem)
+            .unwrap();
+        assert_eq!(
+            &text[named.range().start..named.range().end],
+            "theorem Named: thesis;"
+        );
+        assert_eq!(named.parent(), Some(visible_index));
+        let algorithm = boundaries
+            .iter()
+            .find(|boundary| {
+                boundary.kind() == SyntaxKind::AlgorithmDefinition
+                    && text[boundary.range().start..boundary.range().end].contains("choose")
+            })
+            .unwrap();
+        assert_eq!(
+            &text[algorithm.range().start..algorithm.range().end],
+            "algorithm choose() do return; end;"
+        );
+        assert_eq!(
+            boundaries[algorithm.parent().unwrap()].kind(),
+            SyntaxKind::DefinitionBlockItem
+        );
+        let cluster = boundaries
+            .iter()
+            .find(|boundary| boundary.kind() == SyntaxKind::ExistentialRegistration)
+            .unwrap();
+        assert_eq!(
+            boundaries[cluster.parent().unwrap()].kind(),
+            SyntaxKind::RegistrationBlockItem
+        );
+        assert!(boundaries.iter().any(|boundary| boundary.recovered()));
+        assert!(
+            !output.diagnostics.is_empty(),
+            "missing end remains a real parser recovery"
+        );
+        for (index, boundary) in boundaries.iter().enumerate() {
+            let range = boundary.range();
+            assert!(text.get(range.start..range.end).is_some());
+            if let Some(parent) = boundary.parent() {
+                assert!(parent < index);
+                let outer = boundaries[parent].range();
+                assert!(outer.start <= range.start && range.end <= outer.end);
+            }
+        }
+    }
+
+    #[test]
+    fn available_empty_and_empty_doc_differ_and_comment_edits_keep_lexical_reuse() {
+        let fixture = PackageFixture::new();
+        let (_, empty) = capture(&fixture, "theorem T: thesis;\n");
+        assert!(empty.comments().is_empty());
+        let (_, doc) = capture(&fixture, ":::");
+        assert_eq!(doc.comments().len(), 1);
+        assert_eq!(doc.comments()[0].lexeme, ":::");
+        let (first, first_metadata) = capture(&fixture, COMMENT_EQUIVALENT_SOURCE_A);
+        let (second, second_metadata) = capture(&fixture, COMMENT_EQUIVALENT_SOURCE_B);
+        assert_ne!(first_metadata, second_metadata);
+        assert_ne!(first_metadata.source_hash(), second_metadata.source_hash());
+        assert_eq!(
+            first_metadata.lexical_text(),
+            second_metadata.lexical_text()
+        );
+        assert_eq!(first.cache_keys.tokens, second.cache_keys.tokens);
+        assert_eq!(first.cache_keys.ast, second.cache_keys.ast);
+    }
+
+    #[test]
+    fn invalid_capture_identity_maps_and_origins_refuse_metadata_without_pipeline_changes() {
+        let fixture = PackageFixture::new();
+        let text = "::: β\ntheorem T: thesis;\n";
+        fixture.write("src/metadata.miz", text);
+        let ids = InMemorySessionIdAllocator::new();
+        let source = load(&fixture, fixture.request("src/metadata.miz"), &ids);
+        let foreign_id = ids.next_source_id(snapshot_id(1)).unwrap();
+        let mut variants = vec![(source.clone(), "::: changed\ntheorem T: thesis;\n")];
+        let mut bad = source.clone();
+        bad.source_hash = hash_text("foreign hash");
+        variants.push((bad, text));
+        let mut bad = source.clone();
+        bad.line_map = LineMap::new(foreign_id, text);
+        variants.push((bad, text));
+        let mut bad = source.clone();
+        bad.line_map = LineMap::new(source.source_id, "foreign text");
+        variants.push((bad, text));
+        let identity = LoadingMap::identity(
+            source.source_id,
+            text,
+            LoadingOrigin::DiskBytes {
+                normalized_path: source.normalized_path.clone(),
+            },
+        );
+        let mut bad = source.clone();
+        let mut map = identity.clone();
+        map.source_id = foreign_id;
+        bad.loading_map = Some(map);
+        variants.push((bad, text));
+        let mut bad = source.clone();
+        let mut map = identity.clone();
+        map.origin = LoadingOrigin::Generated;
+        bad.loading_map = Some(map);
+        variants.push((bad, text));
+        let mut bad = source.clone();
+        let mut map = identity;
+        map.segments = vec![
+            LoadingMapSegment::Original {
+                loaded: TextRange { start: 0, end: 5 },
+                original: TextRange { start: 0, end: 5 },
+            },
+            LoadingMapSegment::Original {
+                loaded: TextRange {
+                    start: 5,
+                    end: text.len(),
+                },
+                original: TextRange {
+                    start: 5,
+                    end: text.len(),
+                },
+            },
+        ];
+        bad.loading_map = Some(map);
+        variants.push((bad, text));
+        let mut bad = source.clone();
+        bad.origin = SourceOrigin::OpenBuffer { version: -1 };
+        variants.push((bad, text));
+        let mut bad = source;
+        bad.origin = SourceOrigin::Generated {
+            generator: GeneratedSourceKind::new("test"),
+        };
+        variants.push((bad, text));
+        for (source, captured) in variants {
+            let ordinary = frontend(&fixture).run_loaded(source.clone());
+            let captured = frontend(&fixture).run_loaded_with_comment_metadata(source, captured);
+            match (ordinary, captured) {
+                (Ok(ordinary), Ok((output, metadata))) => {
+                    assert!(metadata.is_none());
+                    assert_eq!(ordinary, output);
+                }
+                (Err(ordinary), Err(captured)) => assert_eq!(ordinary, captured),
+                other => panic!("metadata must preserve pipeline acceptance: {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn equivalent_captures_ignore_runtime_ids_and_local_paths_and_retain_storage() {
+        let first_fixture = PackageFixture::new();
+        let second_fixture = PackageFixture::new();
+        let text = "::: docs\ntheorem T: thesis;\n";
+        first_fixture.write("src/metadata.miz", text);
+        second_fixture.write("src/metadata.miz", text);
+        let ids = InMemorySessionIdAllocator::new();
+        let mut baseline = None;
+        for fixture in [&first_fixture, &second_fixture, &first_fixture] {
+            let request = fixture.request("src/metadata.miz");
+            let source = load(fixture, request.clone(), &ids);
+            let (output, metadata) = frontend(fixture)
+                .run_loaded_with_comment_metadata(source.clone(), text)
+                .unwrap();
+            let metadata = metadata.unwrap();
+            assert_eq!(metadata.package_id(), &source.package_id);
+            assert_eq!(metadata.module_path(), &source.module_path);
+            assert_eq!(metadata.normalized_path(), &source.normalized_path);
+            assert_eq!(metadata.edition(), &source.edition);
+            if let Some((id, path, previous)) = &baseline {
+                assert_ne!(*id, source.source_id);
+                if fixture.root() == second_fixture.root() {
+                    assert_ne!(*path, source.file_path);
+                }
+                assert_eq!(&metadata, previous);
+            } else {
+                baseline = Some((source.source_id, source.file_path.clone(), metadata.clone()));
+            }
+            let bytes = output.canonical_disk_bytes().unwrap();
+            let restored = FrontendOutput::from_canonical_disk_bytes(
+                &bytes,
+                ids.next_source_id(snapshot_id(1)).unwrap(),
+                &request.input,
+            )
+            .unwrap();
+            assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
+            let (replayed, replay_metadata) = frontend(fixture)
+                .run_loaded_with_comment_metadata(restored.source.clone(), text)
+                .unwrap();
+            assert_eq!(replayed, restored);
+            assert_eq!(replay_metadata.as_ref(), Some(&metadata));
+        }
+    }
+}
