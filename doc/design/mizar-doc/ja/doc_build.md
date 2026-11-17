@@ -22,4 +22,49 @@ module 内では保存された fully_qualified_name、origin_id の正確な文
 production 関数一つだけを末尾追加し、元 Rust/Cargo/fixture/expectation/trace/ledger byte は保持する。doc_label_export_candidates_* の構造的公開物テストを二系列だけ追加し、新 helper は作らず既存 Doc publication fixture と Artifact writer を使う。unique/multiple/unmatched 候補、全 typed field/順序/replay/読取前後 byte、module path が同じで完全 identity が異なる場合、同じ label text、全 record の偽造、不在 record、lookup 前の代表的な元 error layer を扱う。下位 matrix 全体は再実行しない。
 正確な保存 metadata 候補だけであり、visible reference の解決・anchor/page/link・warning・source attachment・semantic export producer・完全 DocIndex ではない。保存 proof status はデータのままとし、source/package/current-workspace/受理/witness/reuse/cache 権限、import 順/dependency index、完全 tasks4/5/rendering・Steps6–8 は別課題に保つ。
 ## Full Build And Index Inputs
-これは tasks4/5 の最初の前提であり、完全な DocBuildPlan/DocIndex ではない。package request/options/current-build binding、source の利用可能性・comment、label 対応、page/anchor identity、LaTeX、dependency index、link/UsedBy、rendering/extraction、service/診断統合は後続 TODO に残し、欠落を埋めない。新 type/field/profile/dependency や producer/Kernel/proof/reuse/cache 権限を追加せず、Doc 全体・Artifact17・Steps6–8 は未完了に保つ。
+上記 reader は実装済みの前提である。以下は所有者の承認待ちの Doc4 提案であり、実装済み DocBuildPlan/DocIndex API ではない。Doc5 実装は承認後とし、未解決 Q-decision を実装の既定値にしない。
+
+### Phase-16 Requests
+[internal05](../../internal/ja/05.documentation_extraction.md#phase-16-request) の request の役割を用いる。選択 package/root、artifact-manifest reference、optional source bundle、documentation/extraction configuration、profile、build snapshot は統合入力であり、現 reader が追加認証するものではない。
+`render_docs` と `extract_code` は独立する。両方無効なら phase16 処理はなく、documentation のみ・extraction のみ・両方の場合は各 configuration と warning policy を保つ。consumer の無効化は phases0–15 の検証を変えない。extraction の選択・runtime readiness・lowering は tasks16–22 が所有する。
+phase15 公開後の scheduling と snapshot binding は driver/service が所有する。doc_build は明示的に選ばれた publication を消費し、新しい manifest を探したり caller の path を現在性の証明にしたりしない。各 manifest は caller 指定の expected publication hash を既存 reader に渡す。scheduler・service・cache・source-to-artifact producer はここでは定義しない。
+
+### Package Planning
+選択 package publication ごとに独立して計画し、完全な manifest/path/hash と元の module identity を保つ。複数 package の request は package plan の集合であり、namespace を統合しない。package metadata は module identity と分け、外側 Manifest package が各 module の package tuple との一致を認証するとはしない。current-workspace/package ownership binding は Q3 に残す。
+semantic documentation 構築前に [published-input reader](./artifact_reader.md#published-input-loading) で必要な artifact 検証を全て行う。拒否された publication の使用可能な plan は返さず、既存 error layer を保つ。source なしの artifact 読取成功は source の存在や完全な rendering/extraction readiness を意味しない。optional native source/lexical read は独立した hash/path/map/error 契約を保つ。
+documentation option は上位設計の output destination と private-documentation/profile 選択を含み、新たな option 優先順位は選ばない。output path は出力先であり、変更すべき artifact input path ではない。dependency documentation index は package/publication identity に対応する明示的 reference であり、後続 link に使うが proof・import resolution・dependency 選択の権限にはしない。
+package-wide link resolution の前に各 package の module 入力を集める。各入力は完全な ModuleSummaryIdentity、verified artifact reference/hash、全 export、optional summary metadata を保つ。source の有無と comment は Q2 と Doc6 に従う別入力である。空 module も保ち、summary 不在・空 summary・source 不在を区別して欠落データを捏造しない。
+
+### Index Inputs And Later Completion
+[internal05 の index model](../../internal/ja/05.documentation_extraction.md#documentation-index) は package/publication 来歴、schema、item、link、UsedBy を表し、後続 consumer の目標であって raw export map の形ではない。module/package/version 間の名前衝突を区別するため、完全 module identity と元 export の origin/FQN を保つ。FQN のみの map に潰したり重複の勝者を選んだりしない。
+[保存 label query](#published-label-export-candidates) は候補のみを返す。None・Some(empty)・複数候補は一意な documented item を確立しない。label は実際の exported label metadata から取り、signature や名前解析から作らない。欠落する対応や曖昧な候補は後続 index/link consumer への未解決入力として残し、anchor を補作しない。
+spec [24.2](../../../spec/ja/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) が label/FQN reference、現在 module の後に import 順で探索する規則、曖昧性 warning、exported-label の安定 anchor を所有する。canonical 格納順とは別に意味上の import 順を保つ。Doc9/10 が resolution と診断導入を所有し、import 順や dependency metadata の不在を解決済み graph として扱わない。
+Doc6/7/8 は comment 取得・検証済み identity への attachment・Markdown summary、Doc11/12 は math metadata、Doc9/10 は link resolution、Doc13–15 は page layout/rendering/search emission、Doc23 は output publication を所有し、Doc24 は決定性を検証する。kind・range・proof summary・signature・LaTeX は存在する場合の保存 projection とする。UsedBy 完成は citation metadata と後続 index/render consumer を待ち、raw export のみで完成を主張しない。serialized DocIndex schema や page/anchor 衝突方針は追加しない。
+
+### Determinism And Consumer Invariants
+選択 publication、binding 済み source 入力、lock context、dependency index、option、target、toolchain、schema version が同一なら、planning/index 入力は列挙順や worker scheduling に依存しない。既存の完全 ModuleSummaryIdentity Ord と module 内の正確な FQN/origin 順を使い、重複・optional 不在・意味上の vector 順を保つ。version string を解析して別の順序にしない。
+後続 module/item と search/cross-reference index は安定した module/FQN key を使う。page/anchor identity は spec24 に従い、衝突処理はその所有者に残す。再現可能な出力から timestamp を除外するか local metadata として隔離し、診断順は [architecture12](../../architecture/ja/12.diagnostics_and_lsp.md) に従う。完全 identity の tie-breaker は候補保持のためであり、visible reference の優先順位を決めない。
+plan/index は派生 consumer product であり、意味解析・証拠受理を再実行せず、proof status や artifact/witness を変更しない。保存 proof status はデータのままとする。integrity/schema/staleness の失敗は error、presentation の問題は後続 documentation 診断と graceful degradation で扱い、warning 昇格は選択 profile のみが行う。documentation の品質は proof validity を変えない。
+cache reuse・compiler IR access・一般 artifact emission は既存 producer/validation gate を維持し、本提案では権限を与えない。documentation 出力の再生成・削除は検証結果を変えない。Doc 全体・Artifact17・Steps6–8 は未完了である。
+
+### Owner Q-Decisions
+以下は未解決であり、Doc5 実装前に所有者が提案を承認して Doc4 の選択を処置する必要がある。後続 task の決定はその task に残す。
+
+| Question | 矛盾または未定義の権威と求める判断 |
+|---|---|
+| Q1 — version optionality | architecture13 の plan/index は Version 必須、internal05 は Option<Version>、spec24.4 は version がある場合のみ埋め込む。保存 optional identity を変えたり version を合成したりせず、新 plan/index の表現と version 欠落時の挙動を整合させる。 |
+| Q2 — source optionality | architecture13 の DocModuleInput は source_file 必須（DocItem の source range も必須）だが、internal05 は source/range を optional とし source なしの semantic page と warning を認める。必須/optional field と source なしの挙動を整合させる。placeholder path/range や暫定の既定値は選ばない。 |
+| Q3 — package/current-build binding | request の package/root/snapshot と manifest/module identity は存在するが、現 reader は owning-package/current-workspace の関係を認証しない。統合前に binding の権威と不一致時の挙動を定める。選択 publication の保持だけでは決めない。 |
+| Q4 — Doc6 comment source | task6 が artifact projection と PreprocessedSource/frontend transport の選択を保持する。optional native Lexer 入力はどちらも選ばず、frontend 依存や attachment rule をここでは追加しない。 |
+
+### Doc5 Acceptance Matrix
+以下は将来実装の義務であり、新 test や完了証拠ではない。六 case を本提案の上限とし、所有者決定後に実装が具体的 fixture/API を凍結する。
+
+| Input shape | 必要な観察 |
+|---|---|
+| documentation/extraction switch の全四組合せ | 有効 consumer のみ、検証は変えず extraction は委譲する。 |
+| module path/FQN が衝突する二 package、空 module、dependency index | 全 metadata と dependency reference の完全 package/publication identity を保ち、勝者選択や namespace 統合をしない。 |
+| 同一入力で列挙順を反転し worker scheduling を変更 | canonical plan/index 入力は同一、意味上の import 順を保つ。 |
+| version/source 欠落、summary の不在と空 | Q1/Q2 を待ち区別を保つ。version/path/comment/label を補作しない。 |
+| 不正 manifest/hash/schema/path、古い artifact、package/root/snapshot 不一致 | 既存検証の拒否を保ち、Q3 承認後にその不一致処理を検証する。拒否 publication の使用可能な plan、source fallback、部分 semantic index を返さない。 |
+| label/dependency/import/citation/comment metadata の欠落・曖昧性 | None・Some(empty)・複数候補と候補の全 field を planning 入力まで保つ。欠落を残し、link/UsedBy/attachment や proof credit を捏造しない。 |

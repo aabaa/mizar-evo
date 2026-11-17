@@ -103,6 +103,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
    - 依存: 2。仕様: `artifact_reader.md`。
 
 4. **仕様: `doc_build.md`。** [~]
+   - [定義提案](../../task_contracts/ja/DOC4-DOC-BUILD-PHASE16-DEFINITION.md) は所有者の Q-decision と承認待ちであり、Doc5 実装はその後とする。
    - ドキュメントビルド計画の仕様を執筆する（英語と日本語、コード
      なし）: phase 16 リクエスト、パッケージをまたぐビルド計画、
      ドキュメント索引、決定性規則、消費 phase の規則。

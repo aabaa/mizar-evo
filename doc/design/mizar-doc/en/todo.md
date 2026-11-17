@@ -103,6 +103,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
    - Deps: 2. Spec: `artifact_reader.md`.
 
 4. **Spec: `doc_build.md`.** [~]
+   - [Definition proposal](../../task_contracts/en/DOC4-DOC-BUILD-PHASE16-DEFINITION.md) awaits owner Q-decisions and approval before Doc5 implementation.
    - Write the documentation build-plan spec (English and Japanese, no
      code): phase-16 requests, build planning over packages, the
      documentation index, determinism rules, and the consumer-phase rule.
