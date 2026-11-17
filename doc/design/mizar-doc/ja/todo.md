@@ -103,7 +103,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
    - 依存: 2。仕様: `artifact_reader.md`。
 
 4. **仕様: `doc_build.md`。** [~]
-   - [定義提案](../../task_contracts/ja/DOC4-DOC-BUILD-PHASE16-DEFINITION.md) は所有者の Q-decision と承認待ちであり、Doc5 実装はその後とする。
+   - [定義提案](../../task_contracts/ja/DOC4-DOC-BUILD-PHASE16-DEFINITION.md) は Q1–Q3 の①で承認済み、Q4 は Doc6 に残す。
    - ドキュメントビルド計画の仕様を執筆する（英語と日本語、コード
      なし）: phase 16 リクエスト、パッケージをまたぐビルド計画、
      ドキュメント索引、決定性規則、消費 phase の規則。
@@ -111,6 +111,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
      [internal 05](../../internal/ja/05.documentation_extraction.md)。
 
 5. **ドキュメントビルド計画と索引。** [~]
+   - [限定 planning/index 契約](../../task_contracts/ja/DOC5-DOC-BUILD-PLANNING-INDEX.md) は選択公開入力と snapshot binding を扱い、後続の完成は別とする。
    - リーダー出力上にビルド計画とドキュメント索引を実装する。
    - テスト: 複数パッケージ入力上の計画フィクスチャ。決定的な索引順。
    - 依存: 3、4。仕様: `doc_build.md`。

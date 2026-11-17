@@ -126,3 +126,309 @@ pub fn read_published_label_export_candidates(
         });
     Ok((manifest, candidates))
 }
+
+use std::{error::Error, fmt, path::PathBuf};
+
+use mizar_artifact::{
+    manifest::{ModuleArtifactEntry, PackageIdentity},
+    module_summary::{ExportedLabelSummary, ModuleSummary},
+};
+use mizar_session::{
+    BuildRequestId, BuildSnapshotId, SessionIdAllocator, SnapshotRegistry, WorkspaceRoot,
+};
+
+/// Independent phase-16 consumers and their warning policies.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Phase16Profile {
+    /// Whether documentation planning is enabled.
+    pub render_docs: bool,
+    /// Whether the original request is delegated to extraction.
+    pub extract_code: bool,
+    /// Whether downstream documentation warnings fail documentation.
+    pub fail_on_doc_warnings: bool,
+    /// Whether downstream extraction warnings fail extraction.
+    pub fail_on_extraction_warnings: bool,
+    /// Whether downstream rendering includes private documentation.
+    pub include_private_docs: bool,
+}
+
+/// Explicit dependency documentation reference, without resolution authority.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DependencyDocIndexRef {
+    /// Complete owning package identity.
+    pub package: PackageIdentity,
+    /// Selected publication hash.
+    pub publication_hash: Hash,
+    /// Caller-supplied index location, not read during planning.
+    pub path: PathBuf,
+}
+
+/// One explicitly selected publication and its downstream inputs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocPublicationRequest {
+    /// Expected owning package, including version and lock identity.
+    pub package: PackageIdentity,
+    /// Selected publication root.
+    pub artifact_root: PathBuf,
+    /// Expected manifest publication hash.
+    pub expected_manifest_hash: Hash,
+    /// Downstream output destination, not written during planning.
+    pub output_dir: PathBuf,
+    /// Optional source bundle reference, not read during planning.
+    pub source_bundle: Option<PathBuf>,
+    /// Explicit dependency references; absence differs from an empty list.
+    pub dependency_indexes: Option<Vec<DependencyDocIndexRef>>,
+    /// Per-module semantic import order; absent entries and vectors stay absent.
+    pub import_order: BTreeMap<ModuleSummaryIdentity, Option<Vec<ModuleSummaryIdentity>>>,
+}
+
+/// Consumer request retained by the caller for independent extraction delegation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocBuildRequest {
+    /// Independent consumer choices and policies.
+    pub profile: Phase16Profile,
+    /// Selected publications, never discovered from the filesystem.
+    pub publications: Vec<DocPublicationRequest>,
+}
+
+/// Complete stored module inputs for later documentation consumers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocModuleInput {
+    /// Original manifest entry, including required source path and artifact hashes.
+    pub artifact: ModuleArtifactEntry,
+    /// Complete exports with required stored ranges in FQN/origin order.
+    pub exports: Vec<VerifiedExport>,
+    /// Complete optional summary; absence differs from an empty summary.
+    pub summary: Option<ModuleSummary>,
+}
+
+/// Unresolved package index inputs; no links, anchors or UsedBy are inferred.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocIndex {
+    /// Required package version copied from stored metadata.
+    pub package_version: String,
+    /// All modules, including empty modules, keyed by full stored identity.
+    pub modules: BTreeMap<ModuleSummaryIdentity, DocModuleInput>,
+}
+
+impl DocIndex {
+    /// Returns every exact-record owner candidate, preserving absence and ambiguity.
+    pub fn label_export_candidates(
+        &self,
+        module: &ModuleSummaryIdentity,
+        label: &ExportedLabelSummary,
+    ) -> Option<Vec<&VerifiedExport>> {
+        let input = self.modules.get(module)?;
+        input
+            .summary
+            .as_ref()?
+            .exported_labels
+            .contains(label)
+            .then(|| {
+                input
+                    .exports
+                    .iter()
+                    .filter(|export| {
+                        export.fully_qualified_name == label.owner_fully_qualified_name
+                    })
+                    .collect()
+            })
+    }
+}
+
+/// One authenticated publication with its unresolved index and retained options.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocBuildPlan {
+    /// Original publication request with canonically ordered dependency references.
+    pub request: DocPublicationRequest,
+    /// Independent consumer choices and policies.
+    pub profile: Phase16Profile,
+    /// Identity of the registry-retained current snapshot used for binding.
+    pub snapshot: BuildSnapshotId,
+    /// Request whose current snapshot was authenticated.
+    pub build_request: BuildRequestId,
+    /// Complete validated manifest, path and publication hash.
+    pub manifest: PublishedManifestRead,
+    /// Unresolved index owning the sole copy of module exports.
+    pub index: DocIndex,
+}
+
+/// Refusal to produce any plans, preserving existing publication error layers.
+#[derive(Debug)]
+pub enum DocBuildError {
+    /// Existing publication integrity, schema, path or freshness refusal.
+    Publication(ManifestError),
+    /// Missing required metadata or a request/snapshot/publication mismatch.
+    Binding(&'static str),
+}
+
+impl fmt::Display for DocBuildError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Publication(error) => error.fmt(formatter),
+            Self::Binding(reason) => formatter.write_str(reason),
+        }
+    }
+}
+
+impl Error for DocBuildError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Publication(error) => Some(error),
+            Self::Binding(_) => None,
+        }
+    }
+}
+
+/// Plans all selected publications atomically against a retained current snapshot.
+///
+/// Disabled documentation performs no registry or publication reads. Extraction
+/// remains delegated through the original request, without lowering or publication.
+pub fn build_doc_plans<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    build_request: BuildRequestId,
+    snapshot_id: BuildSnapshotId,
+    workspace_root: &WorkspaceRoot,
+    request: &DocBuildRequest,
+) -> Result<Vec<DocBuildPlan>, DocBuildError> {
+    if !request.profile.render_docs {
+        return Ok(Vec::new());
+    }
+    let snapshot = registry
+        .get(snapshot_id)
+        .filter(|snapshot| {
+            &snapshot.workspace_root == workspace_root
+                && registry.is_current_for_request(snapshot_id, build_request)
+        })
+        .ok_or(DocBuildError::Binding(
+            "snapshot is not current for request/workspace",
+        ))?;
+    let mut plans = Vec::new();
+    for selected in &request.publications {
+        let (manifest, artifacts) =
+            read_published_artifacts(&selected.artifact_root, selected.expected_manifest_hash)
+                .map_err(DocBuildError::Publication)?;
+        let stored = &manifest.manifest;
+        if stored.package != selected.package
+            || !snapshot
+                .source_versions
+                .iter()
+                .any(|source| source.package_id.as_str() == stored.package.package_id)
+            || stored.toolchain != snapshot.toolchain.identity()
+            || stored.lockfile_hash.digest != snapshot.lockfile_hash
+            || stored.verifier_config_hash.digest != snapshot.verifier_config_hash
+        {
+            return Err(DocBuildError::Binding(
+                "package or manifest build provenance mismatch",
+            ));
+        }
+        let package_version = stored
+            .package
+            .package_version
+            .clone()
+            .ok_or(DocBuildError::Binding("package version is required"))?;
+        let (_, mut summaries) = read_published_module_summary_index(
+            &selected.artifact_root,
+            selected.expected_manifest_hash,
+        )
+        .map_err(DocBuildError::Publication)?;
+        let mut modules = BTreeMap::new();
+        for (entry, mut artifact) in stored.modules.iter().zip(artifacts) {
+            let identity = &entry.module;
+            if identity.package_id != stored.package.package_id
+                || identity.package_version.as_ref() != Some(&package_version)
+                || identity.lockfile_identity != stored.package.lockfile_identity
+                || identity.language_edition != stored.language_edition
+                || entry.source_file.is_empty()
+                || !snapshot.source_versions.iter().any(|source| {
+                    source.package_id.as_str() == identity.package_id
+                        && source.module_path.as_str() == identity.module_path
+                        && source.normalized_path.as_str() == entry.source_file
+                        && source.source_hash == entry.source_hash
+                        && source.edition.as_str() == identity.language_edition
+                })
+                || artifact.provenance.toolchain != snapshot.toolchain.identity()
+                || artifact.provenance.lockfile_hash.digest != snapshot.lockfile_hash
+                || artifact.provenance.verifier_config_hash.digest != snapshot.verifier_config_hash
+                || artifact.provenance.language_edition != identity.language_edition
+            {
+                return Err(DocBuildError::Binding(
+                    "module source, package or build provenance mismatch",
+                ));
+            }
+            artifact.exports.sort_by(|a, b| {
+                a.fully_qualified_name
+                    .cmp(&b.fully_qualified_name)
+                    .then_with(|| a.origin_id.cmp(&b.origin_id))
+            });
+            modules.insert(
+                identity.clone(),
+                DocModuleInput {
+                    artifact: entry.clone(),
+                    exports: artifact.exports,
+                    summary: summaries.remove(identity).flatten(),
+                },
+            );
+        }
+        let mut selected = selected.clone();
+        if let Some(dependencies) = &mut selected.dependency_indexes {
+            dependencies.sort_by(|a, b| {
+                (
+                    &a.package.package_id,
+                    &a.package.package_version,
+                    &a.package.lockfile_identity,
+                    a.publication_hash.as_bytes(),
+                    &a.path,
+                )
+                    .cmp(&(
+                        &b.package.package_id,
+                        &b.package.package_version,
+                        &b.package.lockfile_identity,
+                        b.publication_hash.as_bytes(),
+                        &b.path,
+                    ))
+            });
+        }
+        plans.push(DocBuildPlan {
+            request: selected,
+            profile: request.profile.clone(),
+            snapshot: snapshot_id,
+            build_request,
+            manifest,
+            index: DocIndex {
+                package_version,
+                modules,
+            },
+        });
+    }
+    plans.sort_by(|a, b| {
+        let a = &a.request;
+        let b = &b.request;
+        (
+            &a.package.package_id,
+            &a.package.package_version,
+            &a.package.lockfile_identity,
+            a.expected_manifest_hash.as_bytes(),
+        )
+            .cmp(&(
+                &b.package.package_id,
+                &b.package.package_version,
+                &b.package.lockfile_identity,
+                b.expected_manifest_hash.as_bytes(),
+            ))
+    });
+    if plans.windows(2).any(|pair| {
+        pair[0].request.package == pair[1].request.package
+            && pair[0].request.expected_manifest_hash == pair[1].request.expected_manifest_hash
+    }) {
+        return Err(DocBuildError::Binding(
+            "duplicate selected package publication",
+        ));
+    }
+    if !registry.is_current_for_request(snapshot_id, build_request) {
+        return Err(DocBuildError::Binding(
+            "snapshot became stale during planning",
+        ));
+    }
+    Ok(plans)
+}

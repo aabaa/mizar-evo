@@ -1,4 +1,8 @@
 use super::*;
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 #[test]
 fn doc_published_profiles_order_and_typed_preservation() {
@@ -1247,6 +1251,929 @@ fn doc_label_export_candidates_absences_and_original_errors_before_lookup() {
             before
         );
     }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+fn doc_build_case_fixture(
+    package_id: &str,
+) -> (
+    PathBuf,
+    mizar_artifact::manifest::ArtifactManifest,
+    Vec<mizar_artifact::verified_artifact::VerifiedArtifact>,
+    mizar_session::Hash,
+) {
+    let (root, mut manifest, mut artifacts) = doc_published_fixture();
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    std::fs::write(
+        root.join("src/source.miz"),
+        ":: stored source path fixture\n",
+    )
+    .unwrap();
+    manifest.package.package_id = package_id.into();
+    manifest.package.package_version = Some("1.0.0-test".into());
+    for artifact in &mut artifacts {
+        artifact.module.package_id = package_id.into();
+        artifact.module.package_version = Some("1.0.0-test".into());
+        artifact.source_file = "src/source.miz".into();
+    }
+    let hash = doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    (root, manifest, artifacts, hash)
+}
+
+fn doc_build_summary_fixture(
+    package_id: &str,
+    empty_summary: bool,
+    duplicate_export: bool,
+) -> (
+    PathBuf,
+    mizar_artifact::manifest::ArtifactManifest,
+    Vec<mizar_artifact::verified_artifact::VerifiedArtifact>,
+    Vec<mizar_artifact::module_summary::ModuleSummary>,
+    mizar_session::Hash,
+) {
+    use mizar_artifact::{
+        manifest::*,
+        module_summary::*,
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::*,
+    };
+    let (root, mut manifest, mut summaries) = doc_module_summaries_fixture();
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    std::fs::write(
+        root.join("src/source.miz"),
+        ":: stored source path fixture\n",
+    )
+    .unwrap();
+    let old_hash = read_manifest_file(&root, Default::default())
+        .unwrap()
+        .artifact_hash;
+    let (_, mut artifacts) =
+        mizar_doc::artifact_reader::read_published_artifacts(&root, old_hash).unwrap();
+    manifest.package.package_id = package_id.into();
+    manifest.package.package_version = Some("1.0.0-test".into());
+    for (artifact, summary) in artifacts.iter_mut().zip(&mut summaries) {
+        artifact.module.package_id = package_id.into();
+        artifact.module.package_version = Some("1.0.0-test".into());
+        summary.module = artifact.module.clone();
+        summary.source_hash = artifact.source_hash;
+        if empty_summary {
+            summary.exported_symbols.clear();
+            summary.exported_labels.clear();
+            summary.lexical_summary.contributions.clear();
+            summary.reexports.clear();
+            summary.dependency_interfaces.clear();
+        } else if let Some(label) = summary.exported_labels.first_mut() {
+            label.owner_fully_qualified_name = artifact.exports[0].fully_qualified_name.clone();
+        }
+        if duplicate_export {
+            let mut duplicate = artifact.exports[0].clone();
+            duplicate.origin_id.push_str("-second");
+            artifact.exports.push(duplicate);
+        }
+        summary.refresh_interface_hash().unwrap();
+        *summary = read_module_summary(&module_summary_json(summary).unwrap(), Default::default())
+            .unwrap();
+    }
+    doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+    for (index, (entry, summary)) in manifest.modules.iter_mut().zip(&summaries).enumerate() {
+        let path = PublishedArtifactPath::new(format!("summaries/doc_build_{index}.json")).unwrap();
+        let write = write_published_artifact(
+            &root,
+            &path,
+            &module_summary_json(summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        entry.module_summary_file = Some(path.as_str().into());
+        entry.module_summary_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Artifact,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            write.artifact_hash,
+        ));
+        entry.module_summary_interface_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            summary.interface_hash,
+        ));
+    }
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    (root, manifest, artifacts, summaries, hash)
+}
+
+fn doc_build_registry(
+    publications: &[(
+        &Path,
+        &mizar_artifact::manifest::ArtifactManifest,
+        &[mizar_artifact::verified_artifact::VerifiedArtifact],
+    )],
+) -> (
+    mizar_session::SnapshotRegistry,
+    mizar_session::BuildRequestId,
+    mizar_session::BuildSnapshot,
+    mizar_session::WorkspaceRoot,
+) {
+    use mizar_session::{
+        BuildRequestId, DependencyArtifactRef, Edition, InMemorySessionIdAllocator, ModulePath,
+        PackageId, SnapshotInput, SourceOrigin, SourceVersion, ToolchainInfo, WorkspaceRoot,
+    };
+    let ids = InMemorySessionIdAllocator::new();
+    let registry = mizar_session::SnapshotRegistry::new();
+    let request: BuildRequestId = ids.next_request_id().unwrap();
+    let workspace = WorkspaceRoot::new("doc-build-workspace");
+    let first_manifest = &publications[0].1;
+    let initial_input = SnapshotInput {
+        workspace_root: workspace.clone(),
+        source_versions: Vec::new(),
+        dependency_artifacts: Vec::<DependencyArtifactRef>::new(),
+        lockfile_hash: first_manifest.lockfile_hash.digest,
+        toolchain: ToolchainInfo::new(first_manifest.toolchain.clone()),
+        verifier_config_hash: first_manifest.verifier_config_hash.digest,
+    };
+    let (initial, _) = registry
+        .create_snapshot(request, initial_input.clone())
+        .unwrap();
+    let mut sources = Vec::new();
+    for (root, manifest, artifacts) in publications {
+        for (entry, artifact) in manifest.modules.iter().zip(*artifacts) {
+            sources.push(SourceVersion {
+                source_id: ids.next_source_id(initial.id).unwrap(),
+                package_id: PackageId::new(artifact.module.package_id.clone()),
+                module_path: ModulePath::new(artifact.module.module_path.clone()),
+                normalized_path: mizar_session::normalize_path(
+                    root,
+                    &root.join(&entry.source_file),
+                )
+                .unwrap(),
+                source_hash: entry.source_hash,
+                edition: Edition::new(artifact.module.language_edition.clone()),
+                origin: SourceOrigin::Disk,
+            });
+        }
+    }
+    let input = SnapshotInput {
+        workspace_root: workspace.clone(),
+        source_versions: sources,
+        dependency_artifacts: Vec::<DependencyArtifactRef>::new(),
+        lockfile_hash: first_manifest.lockfile_hash.digest,
+        toolchain: ToolchainInfo::new(first_manifest.toolchain.clone()),
+        verifier_config_hash: first_manifest.verifier_config_hash.digest,
+    };
+    let (snapshot, _) = registry.create_snapshot(request, input).unwrap();
+    (registry, request, snapshot, workspace)
+}
+
+#[test]
+fn doc_build_switches_preserve_independent_policies_and_publication_bytes() {
+    use mizar_doc::doc_build::*;
+    let (root, manifest, artifacts, hash) = doc_build_case_fixture("doc-switches");
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(
+            manifest
+                .modules
+                .iter()
+                .map(|entry| entry.artifact_file.clone()),
+        )
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|path| std::fs::read(root.join(path)).unwrap())
+        .collect::<Vec<_>>();
+    let publications = [(root.as_path(), &manifest, artifacts.as_slice())];
+    let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+    let selected = DocPublicationRequest {
+        package: manifest.package.clone(),
+        artifact_root: root.clone(),
+        expected_manifest_hash: hash,
+        output_dir: root.join("output"),
+        source_bundle: None,
+        dependency_indexes: None,
+        import_order: BTreeMap::new(),
+    };
+    let mut plans = Vec::new();
+    for flags in [
+        [false, false, false, false, false],
+        [true, false, false, false, false],
+        [true, true, false, false, false],
+        [true, false, true, false, false],
+        [true, false, false, true, false],
+        [true, false, false, false, true],
+        [false, true, true, true, true],
+    ] {
+        let profile = Phase16Profile {
+            render_docs: flags[0],
+            extract_code: flags[1],
+            fail_on_doc_warnings: flags[2],
+            fail_on_extraction_warnings: flags[3],
+            include_private_docs: flags[4],
+        };
+        let selected = if profile.render_docs {
+            selected.clone()
+        } else {
+            DocPublicationRequest {
+                artifact_root: root.join("missing-publication"),
+                expected_manifest_hash: mizar_session::hash_text("missing"),
+                ..selected.clone()
+            }
+        };
+        let request = DocBuildRequest {
+            profile: profile.clone(),
+            publications: vec![selected],
+        };
+        let result = build_doc_plans(&registry, build_request, snapshot.id, &workspace, &request);
+        if profile.render_docs {
+            let plan = result.unwrap().pop().unwrap();
+            assert_eq!(plan.profile, profile);
+            plans.push(plan);
+        } else {
+            assert!(result.unwrap().is_empty());
+        }
+    }
+    for plan in &plans[1..] {
+        assert_eq!(plans[0].request, plan.request);
+        assert_eq!(plans[0].index, plan.index);
+        assert_eq!(plans[0].manifest, plan.manifest);
+    }
+    assert_eq!(
+        std::iter::once("artifact-manifest.json".to_owned())
+            .chain(
+                manifest
+                    .modules
+                    .iter()
+                    .map(|entry| entry.artifact_file.clone())
+            )
+            .map(|path| std::fs::read(root.join(path)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_build_keeps_package_module_and_empty_module_identities() {
+    use mizar_artifact::manifest::PackageIdentity;
+    use mizar_doc::doc_build::*;
+    let (left_root, mut left_manifest, mut left_artifacts, _) = doc_build_case_fixture("doc-left");
+    let (right_root, right_manifest, right_artifacts, right_summaries, right_hash) =
+        doc_build_summary_fixture("doc-right", false, false);
+    left_artifacts[0].exports.clear();
+    let left_hash = doc_export_index_publish(&left_root, &mut left_manifest, &mut left_artifacts);
+    let publications = [
+        (
+            left_root.as_path(),
+            &left_manifest,
+            left_artifacts.as_slice(),
+        ),
+        (
+            right_root.as_path(),
+            &right_manifest,
+            right_artifacts.as_slice(),
+        ),
+    ];
+    let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+    let dependency = DependencyDocIndexRef {
+        package: right_manifest.package.clone(),
+        publication_hash: right_hash,
+        path: right_root.join("dependency-index.json"),
+    };
+    let selected =
+        |package: PackageIdentity, root: &Path, hash, dependency_indexes| DocPublicationRequest {
+            package,
+            artifact_root: root.into(),
+            expected_manifest_hash: hash,
+            output_dir: root.join("out"),
+            source_bundle: Some(root.join("unavailable-source-bundle")),
+            dependency_indexes,
+            import_order: BTreeMap::new(),
+        };
+    let request = DocBuildRequest {
+        profile: Phase16Profile {
+            render_docs: true,
+            extract_code: true,
+            fail_on_doc_warnings: false,
+            fail_on_extraction_warnings: false,
+            include_private_docs: true,
+        },
+        publications: vec![
+            selected(
+                left_manifest.package.clone(),
+                &left_root,
+                left_hash,
+                Some(vec![dependency.clone()]),
+            ),
+            selected(
+                right_manifest.package.clone(),
+                &right_root,
+                right_hash,
+                None,
+            ),
+        ],
+    };
+    let plans =
+        build_doc_plans(&registry, build_request, snapshot.id, &workspace, &request).unwrap();
+    assert_eq!(plans.len(), 2);
+    for (plan, selected) in plans.iter().zip(&request.publications) {
+        assert_eq!(&plan.request, selected);
+        assert_eq!(plan.profile, request.profile);
+        assert_eq!(plan.snapshot, snapshot.id);
+        assert_eq!(plan.build_request, build_request);
+        assert_eq!(
+            plan.manifest,
+            mizar_artifact::manifest::read_manifest_file(
+                &selected.artifact_root,
+                Default::default()
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            Some(&plan.index.package_version),
+            plan.manifest.manifest.package.package_version.as_ref()
+        );
+    }
+    for (plan, entries, source_artifacts) in [
+        (&plans[0], &left_manifest.modules, &left_artifacts),
+        (&plans[1], &right_manifest.modules, &right_artifacts),
+    ] {
+        assert_eq!(plan.index.modules.len(), 2);
+        assert!(
+            plan.index
+                .modules
+                .keys()
+                .all(|identity| identity.package_id == plan.request.package.package_id)
+        );
+        let module_paths = plan
+            .index
+            .modules
+            .keys()
+            .map(|identity| identity.module_path.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(module_paths, vec!["module_0", "module_1"]);
+        for entry in entries {
+            let module = &plan.index.modules[&entry.module];
+            assert_eq!(&module.artifact, entry);
+            assert_eq!(
+                module.summary.as_ref(),
+                right_summaries
+                    .iter()
+                    .find(|summary| summary.module == entry.module)
+            );
+            let mut expected = source_artifacts
+                .iter()
+                .find(|artifact| artifact.module == entry.module)
+                .unwrap()
+                .exports
+                .clone();
+            expected.sort_by(|a, b| {
+                a.fully_qualified_name
+                    .cmp(&b.fully_qualified_name)
+                    .then_with(|| a.origin_id.cmp(&b.origin_id))
+            });
+            assert_eq!(module.exports, expected);
+        }
+    }
+    assert!(
+        plans[0]
+            .index
+            .modules
+            .values()
+            .any(|module| module.exports.is_empty())
+    );
+    std::fs::remove_dir_all(left_root).unwrap();
+    std::fs::remove_dir_all(right_root).unwrap();
+}
+
+#[test]
+fn doc_build_canonicalizes_enumeration_and_preserves_import_order() {
+    use mizar_doc::doc_build::*;
+    let (one_root, one_manifest, one_artifacts, one_hash) = doc_build_case_fixture("doc-order");
+    let (two_root, mut two_manifest, mut two_artifacts, _) = doc_build_case_fixture("doc-order");
+    two_manifest.package.package_version = Some("2.0.0-test".into());
+    for artifact in &mut two_artifacts {
+        artifact.module.package_version = Some("2.0.0-test".into());
+    }
+    doc_export_index_publish(&two_root, &mut two_manifest, &mut two_artifacts);
+    two_manifest.modules.reverse();
+    two_artifacts.reverse();
+    let two_hash = mizar_artifact::manifest::write_manifest_file(&two_root, &two_manifest)
+        .unwrap()
+        .artifact_hash;
+    let publications = [(one_root.as_path(), &one_manifest, one_artifacts.as_slice())];
+    let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+    let module_ids = one_manifest
+        .modules
+        .iter()
+        .map(|entry| entry.module.clone())
+        .collect::<Vec<_>>();
+    let imports = vec![module_ids[1].clone(), module_ids[0].clone()];
+    let dependency = |package: &mizar_artifact::manifest::ArtifactManifest, hash, root: &Path| {
+        DependencyDocIndexRef {
+            package: package.package.clone(),
+            publication_hash: hash,
+            path: root.join("dep.json"),
+        }
+    };
+    let mut dependencies = vec![
+        dependency(&one_manifest, one_hash, &one_root),
+        dependency(&two_manifest, two_hash, &two_root),
+    ];
+    let mut other_path = dependencies[0].clone();
+    other_path.path = one_root.join("another-index.json");
+    dependencies.push(other_path);
+    let mut other_publication = dependencies[0].clone();
+    other_publication.publication_hash = mizar_session::Hash::from_bytes([0; 32]);
+    other_publication.path = one_root.join("zz-index.json");
+    dependencies.push(other_publication.clone());
+    let mut other_lock = other_publication.clone();
+    other_lock.package.lockfile_identity = Some("opaque-lock".into());
+    dependencies.push(other_lock.clone());
+    let selected = |manifest: &mizar_artifact::manifest::ArtifactManifest,
+                    hash,
+                    root: &Path,
+                    deps| DocPublicationRequest {
+        package: manifest.package.clone(),
+        artifact_root: root.into(),
+        expected_manifest_hash: hash,
+        output_dir: root.join("out"),
+        source_bundle: None,
+        dependency_indexes: Some(deps),
+        import_order: BTreeMap::from([(module_ids[0].clone(), Some(imports.clone()))]),
+    };
+    let profile = Phase16Profile {
+        render_docs: true,
+        extract_code: true,
+        fail_on_doc_warnings: true,
+        fail_on_extraction_warnings: false,
+        include_private_docs: false,
+    };
+    let forward = DocBuildRequest {
+        profile: profile.clone(),
+        publications: vec![
+            selected(&one_manifest, one_hash, &one_root, dependencies.clone()),
+            selected(&two_manifest, two_hash, &two_root, dependencies.clone()),
+        ],
+    };
+    let mut reverse_deps = dependencies.clone();
+    reverse_deps.reverse();
+    let reverse = DocBuildRequest {
+        profile,
+        publications: vec![
+            selected(&two_manifest, two_hash, &two_root, reverse_deps.clone()),
+            selected(&one_manifest, one_hash, &one_root, reverse_deps),
+        ],
+    };
+    let first =
+        build_doc_plans(&registry, build_request, snapshot.id, &workspace, &forward).unwrap();
+    let registry = std::sync::Arc::new(registry);
+    let second = std::thread::spawn({
+        let registry = std::sync::Arc::clone(&registry);
+        let reverse = reverse.clone();
+        let workspace = workspace.clone();
+        move || {
+            build_doc_plans(&registry, build_request, snapshot.id, &workspace, &reverse).unwrap()
+        }
+    })
+    .join()
+    .unwrap();
+    assert_eq!(first, second);
+    assert_eq!(second[0].index.package_version, "1.0.0-test");
+    assert_eq!(second[1].index.package_version, "2.0.0-test");
+    for plan in &second {
+        assert_eq!(
+            plan.request.import_order.get(&module_ids[0]),
+            Some(&Some(imports.clone()))
+        );
+        let refs = plan.request.dependency_indexes.as_ref().unwrap();
+        assert_eq!(refs[0], other_publication);
+        assert_eq!(refs[1].path, one_root.join("another-index.json"));
+        assert_eq!(refs[2].path, one_root.join("dep.json"));
+        assert_eq!(refs[3], other_lock);
+        assert_eq!(refs[4].package, two_manifest.package);
+        let module_paths = plan
+            .index
+            .modules
+            .keys()
+            .map(|identity| identity.module_path.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(module_paths, vec!["module_0", "module_1"]);
+    }
+    std::fs::remove_dir_all(one_root).unwrap();
+    std::fs::remove_dir_all(two_root).unwrap();
+}
+
+#[test]
+fn doc_build_refuses_missing_required_metadata_without_defaults() {
+    use mizar_artifact::{manifest::*, store::*, verified_artifact::*};
+    use mizar_doc::doc_build::*;
+    for case in 0..4 {
+        let (root, mut manifest, mut artifacts, _) = doc_build_case_fixture("doc-required");
+        let source_publications = [(root.as_path(), &manifest, artifacts.as_slice())];
+        let (registry, build_request, snapshot, workspace) =
+            doc_build_registry(&source_publications);
+        match case {
+            0 => manifest.package.package_version = None,
+            1 => {
+                artifacts[0].module.package_version = None;
+                doc_export_index_publish(&root, &mut manifest, &mut artifacts);
+            }
+            _ => {
+                let entry = &mut manifest.modules[0];
+                let path = PublishedArtifactPath::new(&entry.artifact_file).unwrap();
+                let mut json = parse_canonical_json_bytes(
+                    &std::fs::read(root.join(path.as_str())).unwrap(),
+                    path.as_str(),
+                )
+                .unwrap();
+                let CanonicalJson::Object(fields) = &mut json else {
+                    unreachable!()
+                };
+                if case == 2 {
+                    fields.remove("source_file");
+                } else {
+                    let CanonicalJson::Array(exports) = fields.get_mut("exports").unwrap() else {
+                        unreachable!()
+                    };
+                    let CanonicalJson::Object(export) = &mut exports[0] else {
+                        unreachable!()
+                    };
+                    export.remove("source_range");
+                }
+                entry.artifact_hash.digest = write_published_artifact(
+                    &root,
+                    &path,
+                    &json,
+                    &artifact_hash_domain(
+                        VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                        entry.artifact_hash.schema_version,
+                    ),
+                    &artifact_hash_excluded_paths(),
+                )
+                .unwrap()
+                .artifact_hash;
+            }
+        }
+        let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+        let package = manifest.package.clone();
+        let request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: vec![DocPublicationRequest {
+                package,
+                artifact_root: root.clone(),
+                expected_manifest_hash: hash,
+                output_dir: root.join("output"),
+                source_bundle: None,
+                dependency_indexes: None,
+                import_order: BTreeMap::new(),
+            }],
+        };
+        assert!(
+            build_doc_plans(&registry, build_request, snapshot.id, &workspace, &request).is_err(),
+            "case {case}"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    let (plain_root, plain_manifest, plain_artifacts, plain_hash) =
+        doc_build_case_fixture("doc-summary-states");
+    let (empty_root, empty_manifest, empty_artifacts, _, empty_hash) =
+        doc_build_summary_fixture("doc-summary-states", true, false);
+    for (root, manifest, hash) in [
+        (&plain_root, &plain_manifest, plain_hash),
+        (&empty_root, &empty_manifest, empty_hash),
+    ] {
+        let publications = [(
+            root.as_path(),
+            manifest,
+            if root == &plain_root {
+                plain_artifacts.as_slice()
+            } else {
+                empty_artifacts.as_slice()
+            },
+        )];
+        let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+        let request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: vec![DocPublicationRequest {
+                package: manifest.package.clone(),
+                artifact_root: root.clone(),
+                expected_manifest_hash: hash,
+                output_dir: root.join("out"),
+                source_bundle: None,
+                dependency_indexes: None,
+                import_order: BTreeMap::new(),
+            }],
+        };
+        let plan = build_doc_plans(&registry, build_request, snapshot.id, &workspace, &request)
+            .unwrap()
+            .remove(0);
+        if root == &plain_root {
+            assert!(
+                plan.index
+                    .modules
+                    .values()
+                    .all(|module| module.summary.is_none())
+            );
+        } else {
+            assert!(plan.index.modules.values().all(|module| {
+                module
+                    .summary
+                    .as_ref()
+                    .is_some_and(|summary| summary.exported_labels.is_empty())
+            }));
+        }
+    }
+    std::fs::remove_dir_all(plain_root).unwrap();
+    std::fs::remove_dir_all(empty_root).unwrap();
+}
+
+#[test]
+fn doc_build_refuses_tampering_mismatches_and_partial_plans() {
+    use mizar_artifact::manifest::*;
+    use mizar_doc::doc_build::*;
+    let (root, manifest, artifacts, hash) = doc_build_case_fixture("doc-refusal");
+    let publications = [(root.as_path(), &manifest, artifacts.as_slice())];
+    let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+    let selected = DocPublicationRequest {
+        package: manifest.package.clone(),
+        artifact_root: root.clone(),
+        expected_manifest_hash: hash,
+        output_dir: root.join("out"),
+        source_bundle: None,
+        dependency_indexes: None,
+        import_order: BTreeMap::new(),
+    };
+    let request = |publications| DocBuildRequest {
+        profile: Phase16Profile {
+            render_docs: true,
+            extract_code: false,
+            fail_on_doc_warnings: false,
+            fail_on_extraction_warnings: false,
+            include_private_docs: false,
+        },
+        publications,
+    };
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            build_request,
+            snapshot.id,
+            &workspace,
+            &request(vec![DocPublicationRequest {
+                expected_manifest_hash: mizar_session::hash_text("wrong"),
+                ..selected.clone()
+            }])
+        ),
+        Err(DocBuildError::Publication(_))
+    ));
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            build_request,
+            snapshot.id,
+            &mizar_session::WorkspaceRoot::new("other-workspace"),
+            &request(vec![selected.clone()])
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            build_request,
+            snapshot.id,
+            &workspace,
+            &request(vec![DocPublicationRequest {
+                package: PackageIdentity {
+                    package_id: "wrong-package".into(),
+                    ..manifest.package.clone()
+                },
+                ..selected.clone()
+            }])
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+    let (bad_root, mut bad_manifest, mut bad_artifacts, _) = doc_build_case_fixture("doc-refusal");
+    bad_artifacts[0].source_hash = mizar_session::hash_text("different source");
+    bad_artifacts[0].refresh_hashes().unwrap();
+    doc_export_index_publish(&bad_root, &mut bad_manifest, &mut bad_artifacts);
+    bad_manifest.modules[0].source_hash = bad_artifacts[0].source_hash;
+    let bad_hash = write_manifest_file(&bad_root, &bad_manifest)
+        .unwrap()
+        .artifact_hash;
+    let bad = DocPublicationRequest {
+        package: bad_manifest.package.clone(),
+        artifact_root: bad_root.clone(),
+        expected_manifest_hash: bad_hash,
+        output_dir: bad_root.join("out"),
+        source_bundle: None,
+        dependency_indexes: None,
+        import_order: BTreeMap::new(),
+    };
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            build_request,
+            snapshot.id,
+            &workspace,
+            &request(vec![selected.clone(), bad])
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+
+    let (provenance_root, mut provenance_manifest, provenance_artifacts, _) =
+        doc_build_case_fixture("doc-refusal");
+    provenance_manifest.toolchain = "different-toolchain".into();
+    let provenance_hash = write_manifest_file(&provenance_root, &provenance_manifest)
+        .unwrap()
+        .artifact_hash;
+    let provenance = DocPublicationRequest {
+        package: provenance_manifest.package.clone(),
+        artifact_root: provenance_root.clone(),
+        expected_manifest_hash: provenance_hash,
+        output_dir: provenance_root.join("out"),
+        source_bundle: None,
+        dependency_indexes: None,
+        import_order: BTreeMap::new(),
+    };
+    let provenance_publications = [(
+        provenance_root.as_path(),
+        &provenance_manifest,
+        provenance_artifacts.as_slice(),
+    )];
+    let (provenance_registry, provenance_request, provenance_snapshot, provenance_workspace) =
+        doc_build_registry(&provenance_publications);
+    assert!(matches!(
+        build_doc_plans(
+            &provenance_registry,
+            provenance_request,
+            provenance_snapshot.id,
+            &provenance_workspace,
+            &request(vec![provenance])
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+
+    let stale_input = mizar_session::SnapshotInput {
+        workspace_root: workspace.clone(),
+        source_versions: snapshot.source_versions.clone(),
+        dependency_artifacts: snapshot.dependency_artifacts.clone(),
+        lockfile_hash: snapshot.lockfile_hash,
+        toolchain: snapshot.toolchain.clone(),
+        verifier_config_hash: mizar_session::hash_text("changed config"),
+    };
+    registry
+        .create_snapshot(build_request, stale_input)
+        .unwrap();
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            build_request,
+            snapshot.id,
+            &workspace,
+            &request(vec![selected.clone()])
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+
+    let (empty_root, mut empty_manifest, _, _) = doc_build_case_fixture("doc-empty-package");
+    empty_manifest.modules.clear();
+    let empty_hash = write_manifest_file(&empty_root, &empty_manifest)
+        .unwrap()
+        .artifact_hash;
+    let no_sources = doc_build_registry(&[(empty_root.as_path(), &empty_manifest, &[])]);
+    let empty_request = DocBuildRequest {
+        profile: Phase16Profile {
+            render_docs: true,
+            extract_code: false,
+            fail_on_doc_warnings: false,
+            fail_on_extraction_warnings: false,
+            include_private_docs: false,
+        },
+        publications: vec![DocPublicationRequest {
+            package: empty_manifest.package.clone(),
+            artifact_root: empty_root.clone(),
+            expected_manifest_hash: empty_hash,
+            output_dir: empty_root.join("out"),
+            source_bundle: None,
+            dependency_indexes: None,
+            import_order: BTreeMap::new(),
+        }],
+    };
+    assert!(matches!(
+        build_doc_plans(
+            &no_sources.0,
+            no_sources.1,
+            no_sources.2.id,
+            &no_sources.3,
+            &empty_request
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+    std::fs::remove_dir_all(empty_root).unwrap();
+    std::fs::remove_dir_all(bad_root).unwrap();
+    std::fs::remove_dir_all(provenance_root).unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_build_label_candidates_keep_absence_and_all_exact_matches() {
+    use mizar_doc::doc_build::*;
+    let (root, manifest, artifacts, summaries, hash) =
+        doc_build_summary_fixture("doc-labels", false, true);
+    let publications = [(root.as_path(), &manifest, artifacts.as_slice())];
+    let (registry, build_request, snapshot, workspace) = doc_build_registry(&publications);
+    let module = &manifest.modules[0].module;
+    let import_order = BTreeMap::from([
+        (manifest.modules[0].module.clone(), None),
+        (manifest.modules[1].module.clone(), Some(Vec::new())),
+    ]);
+    let request = DocBuildRequest {
+        profile: Phase16Profile {
+            render_docs: true,
+            extract_code: false,
+            fail_on_doc_warnings: false,
+            fail_on_extraction_warnings: false,
+            include_private_docs: false,
+        },
+        publications: vec![DocPublicationRequest {
+            package: manifest.package.clone(),
+            artifact_root: root.clone(),
+            expected_manifest_hash: hash,
+            output_dir: root.join("out"),
+            source_bundle: None,
+            dependency_indexes: None,
+            import_order: import_order.clone(),
+        }],
+    };
+    let plan = build_doc_plans(&registry, build_request, snapshot.id, &workspace, &request)
+        .unwrap()
+        .remove(0);
+    assert_eq!(plan.request.dependency_indexes, None);
+    assert_eq!(plan.request.import_order, import_order);
+    assert_eq!(plan.manifest.manifest.modules, manifest.modules);
+    for (entry, original_summary) in manifest.modules.iter().zip(&summaries) {
+        let retained = &plan.index.modules[&entry.module];
+        assert_eq!(&retained.artifact, entry);
+        assert_eq!(retained.summary.as_ref(), Some(original_summary));
+    }
+    let summary = plan.index.modules[module].summary.as_ref().unwrap();
+    let label = summaries[0]
+        .exported_labels
+        .iter()
+        .find(|label| {
+            label.owner_fully_qualified_name == artifacts[0].exports[0].fully_qualified_name
+        })
+        .unwrap();
+    let mut expected_candidates = artifacts[0]
+        .exports
+        .iter()
+        .filter(|export| export.fully_qualified_name == label.owner_fully_qualified_name)
+        .collect::<Vec<_>>();
+    expected_candidates.sort_by(|a, b| {
+        a.fully_qualified_name
+            .cmp(&b.fully_qualified_name)
+            .then_with(|| a.origin_id.cmp(&b.origin_id))
+    });
+    assert_eq!(
+        plan.index.label_export_candidates(module, label),
+        Some(expected_candidates)
+    );
+    let mut forged = label.clone();
+    forged.origin_id.push_str("-forged");
+    assert_eq!(plan.index.label_export_candidates(module, &forged), None);
+    let zero = summaries[0]
+        .exported_labels
+        .iter()
+        .find(|candidate| *candidate != label)
+        .unwrap();
+    assert_eq!(
+        plan.index.label_export_candidates(module, zero),
+        Some(Vec::new())
+    );
+    let mut absent_module = module.clone();
+    absent_module.module_path = "absent-module".into();
+    assert_eq!(
+        plan.index.label_export_candidates(&absent_module, label),
+        None
+    );
+    assert_eq!(summary.exported_labels, summaries[0].exported_labels);
+    assert!(
+        plan.index
+            .modules
+            .values()
+            .all(|module| module.summary.is_some())
+    );
     std::fs::remove_dir_all(root).unwrap();
 }
 
