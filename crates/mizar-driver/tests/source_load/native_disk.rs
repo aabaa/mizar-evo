@@ -7013,6 +7013,53 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         assert_ne!(actual.0, clean.0);
         assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
     }
+    for (workers, reverse) in [(1, false), (4, true)] {
+        let (warm, warm_outputs) = run_cross(
+            &base_fixture,
+            &base_ids,
+            &base_snapshots,
+            &base_store,
+            1,
+            "cross_base",
+            true,
+            3,
+            workers,
+            reverse,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("app/.mizar-cache"));
+        let (clean, clean_outputs) = run_cross(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            1,
+            "cross_base",
+            true,
+            3,
+            if reverse { 1 } else { 4 },
+            !reverse,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(warm.status, clean.status);
+        assert_eq!(warm.session.state(), clean.session.state());
+        assert_eq!(warm_outputs.len(), cross_edited_outputs.len());
+        assert_eq!(warm_outputs.len(), clean_outputs.len());
+        for ((warm, clean), edited) in warm_outputs
+            .iter()
+            .zip(&clean_outputs)
+            .zip(&cross_edited_outputs)
+        {
+            assert_ne!(warm.0, edited.0);
+            assert_ne!(warm.0, clean.0);
+            assert_eq!((&warm.1, &warm.2), (&edited.1, &edited.2));
+            assert_eq!((&warm.1, &warm.2), (&clean.1, &clean.2));
+        }
+    }
 
     for family in ["cross_leaf", "cross_main"] {
         let fixture = Fixture::new(b"");
@@ -7063,6 +7110,41 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 (&actual_outputs[0].1, &actual_outputs[0].2),
                 (&baseline[0].1, &baseline[0].2)
             );
+        }
+        for (workers, reverse) in [(1, false), (4, true)] {
+            let (warm, warm_outputs) = run_cross(
+                &fixture, &ids, &snapshots, &store, 1, family, true, 3, workers, reverse, true,
+            );
+            let clean_fixture = Fixture::new(b"");
+            let clean_ids = InMemorySessionIdAllocator::new();
+            let clean_snapshots = independent_snapshots();
+            let clean_store = CacheStoreRoot::new(clean_fixture.root.join("app/.mizar-cache"));
+            let (clean, clean_outputs) = run_cross(
+                &clean_fixture,
+                &clean_ids,
+                &clean_snapshots,
+                &clean_store,
+                1,
+                family,
+                true,
+                3,
+                if reverse { 1 } else { 4 },
+                !reverse,
+                false,
+            );
+            assert!(!clean_store.root().exists());
+            assert_eq!(warm.status, clean.status);
+            assert_eq!(warm.session.state(), clean.session.state());
+            assert_eq!(warm_outputs.len(), actual_outputs.len());
+            assert_eq!(warm_outputs.len(), clean_outputs.len());
+            for ((warm, clean), edited) in
+                warm_outputs.iter().zip(&clean_outputs).zip(&actual_outputs)
+            {
+                assert_ne!(warm.0, edited.0);
+                assert_ne!(warm.0, clean.0);
+                assert_eq!((&warm.1, &warm.2), (&edited.1, &edited.2));
+                assert_eq!((&warm.1, &warm.2), (&clean.1, &clean.2));
+            }
         }
     }
 
