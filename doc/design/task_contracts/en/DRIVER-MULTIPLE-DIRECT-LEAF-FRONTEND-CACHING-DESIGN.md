@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/DRIVER-MULTIPLE-DIRECT-LEAF-FRONTEND-CACHING-DESIGN.md).
 Status: frozen definition scope; proposed decisions pending owner approval. Tier: full (expanded cache-admission boundary).
 Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md#task-index). Consumer: [STEP6C](STEP6C-REAL-SERVICE-EQUIVALENCE.md), without completion credit.
-Purpose: define the multiple-target prerequisite of approved [dependency-aware Q1-B](../../mizar-driver/en/dependency_aware_frontend_caching.md#owner-q-decisions); no implementation.
+Purpose: define the multiple-target prerequisite of [Q1-B in the approved one-leaf proposal](../../mizar-driver/en/dependency_aware_frontend_caching.md#owner-q-decisions); no implementation.
 
 ## Authority and readiness
 
