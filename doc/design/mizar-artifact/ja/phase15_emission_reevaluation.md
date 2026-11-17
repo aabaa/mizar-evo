@@ -5,66 +5,38 @@
 
 ## 範囲
 
-task 17 は、task 23 が artifact 側の formula/substitution proof-witness schema を完了
-した後で再評価された。この再評価は、`mizar-artifact` が実 producer projection から
-full `VerifiedArtifact` emission を接続できるかを判断する。
+Task 17 の一般 `VerifiedArtifact` emission は deferred のままとする。
+実 producer projection と witness publication が一切存在しないという従来の記録は、
+bounded genuine source-theorem reflexivity 経路については古い (`design_drift`)。
+言語、proof acceptance、coverage credit は変更しない。
 
-分類結果:
+## 実装済みの bounded 経路
 
-- `external_dependency_gap`: phase 15 emission には、まだ real producer-owned
-  projection output と proof witness publication が不足している。
-- `deferred`: task 17 implementation は deferred のまま。
-- `spec_gap`: crate-owned artifact schema では見つからない。
-- `test_gap`: crate-owned behavior については開かない。
+[Driver genuine consumer](../../mizar-driver/ja/frontend_adapter.md#genuine-reflexivity-fileartifact-consumer)
+は実 captured source/Core/Preparation/VC と sealed Kernel/status を Proof の genuine FILE producer に接続する。
+対応する Disk singleton reflexivity では [explicit built-in enclosing profile](verified_artifact.md#explicit-built-in-enclosing-profile)
+により DischargedBuiltin と trusted used_axioms を含む `VerifiedArtifact` を投影する。
+既存の [manifest transaction](manifest.md#manifest-transaction-protocol) が atomic manifest commit で main を公開し、
+対応する main/FILE readback と committed reachability により
+[Proof witness publication](../../mizar-proof/en/witness_store.md#publication-references) が可能となる。
+この bounded case に fake authority や捏造 projection は不要である。
 
-## 所見
+Artifact は schema/codec、canonical hash、store/manifest commit、reader reachability を所有する。
+Proof/Kernel は evidence、policy、status、witness authority を維持する。
+Driver は authentic producer association を運び live publication guard を検証する。
+保持した ManifestCommit/DATA は新たな authority を与えない。
 
-task 23 は、将来の emission が必要とする artifact 側 witness projection を提供した。
+## 一般 emission に残る gap
 
-- `ProofWitnessRef` schema version `2.0`。
-- 現在の唯一の trusted evidence kind としての
-  `formula_substitution_kernel_evidence`。
-- target binding、formula evidence、substitution evidence、provenance、optional な
-  formula context、accepted result の hash。
-- legacy certificate、resolution trace、backend log、backend method、SMT proof object、
-  instantiated formula、SAT problem payload に対する通常 trusted reader の拒否。
-
-task 17 に残る blocker は `mizar-artifact` の外側にある。
-
-- `mizar-proof` は現在存在し witness staging/publication metadata を所有するが、
-  artifact store と manifest に入力する統合済み producer-owned witness publication
-  output はまだ存在しない。
-- full `VerifiedArtifact` emission 用の real producer output が存在しない。
-- checked kernel evidence、選択済み proof status、witness file、manifest entry を接続する
-  producer-owned publication hook が存在しない。
-
-現時点で task 17 を実装するには、placeholder proof authority、捏造された producer
-projection、または fake witness publication が必要になる。それらは artifact boundary と
-evidence-pipeline correction により禁止されている。
+- 対応 singleton 経路を越える一般 resolver/checker/Core/VC/proof projection と、その end-to-end publication integration は未提供。
+- Builtin2.0 は statements が空で captured-source provenance がないため、coherent `SnapshotPublished` の既存 captured-source guard を満たさない。
+  OpenBuffer temporary root の cleanup 後も、保持 DATA/commit から file/publication reachability を復元できない。
+- generic/state built-in、完全な dependency slice、cache/proof reuse、verified-session completion は deferred。
+  incomplete slice/mandatory MISS、selected-witness-hash の不在、既存 retained-token 制限を維持する。
 
 ## 処置
 
-task 17 は `external_dependency_gap` として deferred のままとする。source stub、
-placeholder crate、fake witness schema、fake producer projection、artifact publication shim は
-追加しない。
-
-次に task 17 を実施できるのは、少なくとも次が存在してからである。
-
-- real producer-owned `VerifiedArtifact` projection input。
-- owning proof/artifact integration からの stable proof/witness staging と
-  manifest publication output。
-- `mizar-artifact` 内の proof authority を変更せず、real emission を実行する integration test。
-
-それらの依存が存在するまでは、`mizar-artifact` は stable schema、canonical writer/reader、
-hash validation、store primitive、manifest transaction だけを所有する。
-
-## Verification
-
-この task は documentation-only である。必要な verification は次の通り。
-
-```text
-git diff --check
-git diff --cached --check
-```
-
-Rust source を変更しないため、この task では Rust verification は不要である。
+Task 17 は一般 emission の `external_dependency_gap`/`deferred` として open のまま。
+次の一般 emission unit は owner-produced projection、対応 proof/witness staging、committed publication/readback integration と、
+対応範囲の実 end-to-end test を必要とする。通常 KernelVerified guard を維持し、placeholder、built-in status の再分類、proof authority の捏造は行わない。
+bounded 経路は一般 emission を完了しない。G6 correspondence correction は別 unit とする。

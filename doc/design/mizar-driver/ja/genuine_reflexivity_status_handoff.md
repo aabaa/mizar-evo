@@ -3,15 +3,13 @@ canonical English: [English companion](../en/genuine_reflexivity_status_handoff.
 
 ## 状態と根拠
 
-**Owner は 2026-11-17 に Q1–Q5 の A を承認し、B は未承認のままとする。** この案は実装前の handoff 境界を記録する。[Driver plan](00.crate_plan.md#task-index) が定義契約を索引し、個別に freeze した契約が実装と readiness を規定する。この承認はより広い実装を許可しない。
+**Owner は 2026-11-17 に Q1–Q5 の A を承認し、B は未承認のままとする。** この案は承認済み設計選択肢を記録し、現在の bounded readiness は下記に示す。[Driver plan](00.crate_plan.md#task-index) が定義契約を索引し、個別に freeze した契約が実装と readiness を規定する。この承認はより広い実装を許可しない。
 根拠は英語正本がリンクする仕様 §16.5、§21.7.1/§21.7.5、§23.4/§23.5.1。built-in discharge は元の obligation に対して実 Kernel が受理した formula/substitution evidence を要する。言語・受理方針は変更しない。
 
-## 既存 producer と不足する consumer
+## 既存 producer と実装済み consumer
 
-[Proof original-graph check](../../mizar-proof/en/status.md#source-theorem-reflexivity-original-graph) は実 Core/VC graph と Kernel result/policy decision を返す。genuine status、trusted used_axioms、source FILE は別 facade であり、統合 Driver receipt ではない。明示的 BuiltinDischarge origin、DischargedBuiltin class、不完全な dependency slice と mandatory MISS を維持する。
-M1.3 の [FILE staging](../../mizar-proof/en/witness_store.md#explicit-source-theorem-file-staging)、[built-in main profile](../../mizar-artifact/en/verified_artifact.md#explicit-built-in-enclosing-profile)、committed reader、witness publication は既存 producer。native service 登録や currentness を証明しない。
-Driver91 wrapper は [廃止済み](frontend_adapter.md#native-theorem-reflexivity-core-vc-caller)。[登録 candidate-check](frontend_adapter.md#scheduled-source-theorem-candidate-check) は別の通常 ATP 経路。`candidate.rs` の FILE は KernelVerified を要求し、`artifact.rs` は AtpFormulaSubstitution origin と KernelVerified projection を要求する。その guard 削除や DischargedBuiltin の再分類は既存境界を越える。
-不足するのは genuine reflexivity evidence/status を実 KernelCheck service の新鮮な認可済み output として運ぶ境界。M1.4 と M1.5 は未完了で coverage/milestone credit は付与しない。
+[genuine Kernel/status service](frontend_adapter.md#genuine-reflexivity-kernel-status-service) は same-result Proof composition を実認可済み KernelCheck service で運ぶ。別途実装済みの [FILE/Artifact consumer](frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) は bounded Disk 経路で genuine FILE、built-in main、atomic manifest commit、readback、witness publication を接続する。通常 candidate FILE/Artifact entrypoint の KernelVerified guard を維持し、built-in status を再分類しない。
+残る一般 emission gap は [Artifact Task 17 再評価](../../mizar-artifact/ja/phase15_emission_reevaluation.md) が所有する。bounded publication は一般 emission、coherent SnapshotPublished、dependency slice、verified session を完了しない。ここでは coverage/milestone credit を付与しない。
 
 ## 全選択肢の不変条件
 
@@ -22,6 +20,8 @@ publish 前に一意の phase/kind parent role、snapshot/module/input/dependenc
 draft、構造的に読める FILE、hash は committed witness ではない。後続 FILE/main/manifest consumer は M1.3 の class/identity/policy/evidence/staged-reference 一致と reachability 検査を使う。selected-witness-hash 不在、generic/state built-in gap、mandatory MISS、caller-expected-snapshot/retained-token 制限を保持し、cross-edit/transferable receipt を新設しない。
 
 ## Owner Q-decisions
+
+以下は実装前の選択記録を維持する。現在の readiness は上記を参照する。
 
 **Q1 — 登録と graph 経路。** A: genuine Core/VC/source-check 前提を持つ opt-in genuine-reflexivity KernelCheck profile。架空の AtpSolve/BackendRun/通常 candidate parent は不要。B: candidate-check に明示 tag と分離 parent/input 検証で built-in 分岐を追加。通常 ATP を保ち混同を拒否する **A を推奨**。B は登録を減らすが accepted-input 境界を広げる。双方とも exact descriptor/output kind/graph/default-input のレビューが必要。既存 service 数で暗黙に許可しない。
 

@@ -3,15 +3,13 @@ Canonical language: English; [Japanese companion](../ja/genuine_reflexivity_stat
 
 ## Status and authority
 
-**Owner approved Q1–Q5 option A on 2026-11-17; B alternatives remain unapproved.** This proposal records the pre-implementation handoff boundaries. The [Driver plan](00.crate_plan.md#task-index) indexes the definition contract; separately frozen contracts govern implementation and readiness. This approval does not authorize broader implementation.
+**Owner approved Q1–Q5 option A on 2026-11-17; B alternatives remain unapproved.** This proposal records the approved design alternatives; current bounded readiness is described below. The [Driver plan](00.crate_plan.md#task-index) indexes the definition contract; separately frozen contracts govern implementation and readiness. This approval does not authorize broader implementation.
 Authority: spec [§16.5](../../../spec/en/16.theorems_and_proofs.md#165-proof-justification-by), [§21.7.1](../../../spec/en/21.source_code_annotation_and_atp.md#2171-minimum-kernel-architecture-and-de-bruijn-criterion), [§21.7.5](../../../spec/en/21.source_code_annotation_and_atp.md#2175-kernel-evidence-format), [§23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility), [§23.5.1](../../../spec/en/23.package_management_and_build_system.md#2351-mizirjson-artifact-format). Built-in discharge requires actual Kernel-accepted formula/substitution evidence for the original obligation; this proposal changes no language or acceptance policy.
 
-## Existing producers and missing consumer
+## Existing producers and implemented consumer
 
-[Proof original-graph checking](../../mizar-proof/en/status.md#source-theorem-reflexivity-original-graph) returns actual Core/VC graphs and Kernel result/policy decision. [Genuine status](../../mizar-proof/en/status.md#source-theorem-reflexivity-status-projection), [trusted used_axioms](../../mizar-proof/en/status.md#source-theorem-reflexivity-status-with-used-axioms), and [source FILE production](../../mizar-proof/en/status.md#source-theorem-witness-file-candidate) are separate existing facades, not a combined Driver receipt. They preserve explicit BuiltinDischarge origin, DischargedBuiltin class and the incomplete dependency slice/mandatory MISS.
-M1.3 already supports matching [FILE staging](../../mizar-proof/en/witness_store.md#explicit-source-theorem-file-staging), [built-in main profile](../../mizar-artifact/en/verified_artifact.md#explicit-built-in-enclosing-profile), committed readers and [witness publication](../../mizar-proof/en/witness_store.md#publication-references). Their existence does not register a native service or prove its currentness.
-The old Driver91 wrapper is [retired](frontend_adapter.md#native-theorem-reflexivity-core-vc-caller). The [registered candidate-check service](frontend_adapter.md#scheduled-source-theorem-candidate-check) consumes the separate ATP candidate route. `candidate.rs` requires KernelVerified for candidate FILE production; `artifact.rs` uses AtpFormulaSubstitution origin and requires KernelVerified in its accepted projection. Removing those guards or relabeling DischargedBuiltin would cross their frozen boundary.
-The missing edge is producer-owned genuine reflexivity evidence/status carried through a real, freshly authorized KernelCheck service. M1.4 integration and M1.5 full emission remain open; no coverage or milestone credit is granted.
+The [genuine Kernel/status service](frontend_adapter.md#genuine-reflexivity-kernel-status-service) now carries the same-result Proof composition through a real authorized KernelCheck service. The separately implemented [FILE/Artifact consumer](frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) connects matching genuine FILE, built-in main, atomic manifest commit, readback and witness publication for the bounded Disk route. Normal candidate FILE/Artifact entrypoints retain their KernelVerified guards; built-in status is never relabeled.
+The [Artifact Task 17 reassessment](../../mizar-artifact/en/phase15_emission_reevaluation.md) owns the remaining general-emission gaps. Bounded publication does not complete general emission, coherent SnapshotPublished, the dependency slice or a verified session. No coverage or milestone credit is granted here.
 
 ## Invariants for any approved option
 
@@ -22,6 +20,8 @@ Publish only after actual Kernel and existing policy acceptance. Original Pendin
 Drafts, structurally readable FILEs and hashes are not committed witnesses. Future FILE/main/manifest consumers must use M1.3's matching class/identity/policy/evidence/staged-reference and reachability checks. Preserve selected-witness-hash absence, generic/state built-in gaps, mandatory MISS and existing caller-expected-snapshot/retained-token limits; no new cross-edit or transferable receipt guarantee.
 
 ## Owner Q-decisions
+
+The alternatives below preserve the original pre-implementation decision record; current readiness is above.
 
 **Q1 — registration and graph route.** A: an explicit opt-in genuine-reflexivity KernelCheck profile with genuine Core/VC/source-check prerequisites and no fictitious AtpSolve/BackendRun or normal candidate parent. B: extend candidate-check with an explicit tagged built-in alternative and disjoint parent/input validation. **Recommend A:** preserve the normal ATP route and make profile confusion fail closed. B reduces registrations but expands its accepted-input boundary. Either needs reviewed exact descriptor, output kind, graph prerequisites and default-input rules; old service counts must not silently authorize it.
 
@@ -35,7 +35,7 @@ Drafts, structurally readable FILEs and hashes are not committed witnesses. Futu
 
 ## Conditional validation and handoff
 
-These six document-review cases become runtime obligations only under approved implementation scope. Existing test intent/selectors are indexed by the definition contract in the Driver plan. No tests or expectations change here.
+These six original document-review cases define the approved contracts' bounded runtime obligations. Existing test intent/selectors are indexed by the definition contract in the Driver plan. No tests or expectations change here.
 
 | Case | Input and required outcome |
 |---|---|

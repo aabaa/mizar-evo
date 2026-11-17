@@ -75,8 +75,8 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
 - **Kernel evidence witness format: resolved for artifact projection by task
   23.** `ProofWitnessRef` schema version `2.0` records
   formula/substitution/provenance/target-binding evidence hashes and rejects
-  legacy certificate material in the normal trusted reader. Real witness
-  publication and phase-15 producer emission remain external dependencies.
+  legacy certificate material in the normal trusted reader. General phase-15 emission remains deferred; see the
+  [reassessment](phase15_emission_reevaluation.md) for bounded publication.
 
 ## Ordered Task List
 
@@ -225,14 +225,8 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 14, 15, this crate's task 23, `mizar-kernel` task 28,
       `mizar-proof` task 11 (witness staging/publication). Spec:
       `verified_artifact.md`, `manifest.md`.
-    - Status: still deferred as `external_dependency_gap` after task 23.
-      `mizar-proof` now exists and owns witness staging/publication metadata,
-      but full phase-15 emission still lacks real producer projection outputs,
-      committed publication reachability integration, and an artifact-owned
-      end-to-end emission handoff. Phase-15 emission must use the task-23
-      formula/substitution kernel evidence witness schema; do not stub
-      producer outputs here. The task-17 reevaluation is recorded in
-      [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md).
+    - General emission remains deferred; bounded genuine publication and remaining
+      gaps are owned by the [reassessment](phase15_emission_reevaluation.md).
 
 ### Hardening and cross-cutting follow-ups
 
@@ -388,8 +382,9 @@ Check the task off here once tests pass.
 - Cache records, cache keys, and proof-reuse validation live in
   `mizar-cache`, not here; the shared canonical-hash rules are task 2's.
 - Formula/substitution kernel evidence witness refs are defined by task 23.
-  Real witness publication remains deferred until producer outputs exist; do
-  not add placeholder fields for resolution-trace certificates.
+  General witness publication remains deferred beyond the bounded route; see
+  the [reassessment](phase15_emission_reevaluation.md). Do not add placeholder
+  fields for resolution-trace certificates.
 
 ## AST specification implementation follow-up
 

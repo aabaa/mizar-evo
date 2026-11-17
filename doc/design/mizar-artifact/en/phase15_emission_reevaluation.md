@@ -5,71 +5,46 @@
 
 ## Scope
 
-Task 17 was reevaluated after task 23 completed the artifact-side
-formula/substitution proof-witness schema. This reevaluation decides whether
-`mizar-artifact` can now wire full `VerifiedArtifact` emission from real
-producer projections.
+Task 17 remains deferred for general `VerifiedArtifact` emission. Its former
+blanket absence of real producer projections and witness publication is stale
+for the bounded genuine source-theorem reflexivity route (`design_drift`).
+This reassessment changes no language, proof acceptance or coverage credit.
 
-Classification result:
+## Implemented bounded path
 
-- `external_dependency_gap`: phase 15 emission still lacks real producer-owned
-  projection outputs and proof witness publication.
-- `deferred`: task 17 implementation remains deferred.
-- `spec_gap`: none found in the crate-owned artifact schema.
-- `test_gap`: none opened for crate-owned behavior.
+The [Driver genuine consumer](../../mizar-driver/en/frontend_adapter.md#genuine-reflexivity-fileartifact-consumer)
+connects real captured source/Core/Preparation/VC and sealed Kernel/status
+products to Proof's genuine FILE producer. For supported Disk singleton
+reflexivity, the [explicit built-in enclosing profile](verified_artifact.md#explicit-built-in-enclosing-profile)
+projects `VerifiedArtifact` with DischargedBuiltin and trusted used_axioms.
+The existing [manifest transaction](manifest.md#manifest-transaction-protocol)
+publishes main through an atomic manifest commit; matching main/FILE readback and committed
+reachability support [Proof witness publication](../../mizar-proof/en/witness_store.md#publication-references).
+These producer and publication seams exist; no fake authority or projection is required for this bounded case.
 
-## Findings
+Artifact owns schema/codec, canonical hashes, store/manifest commit and reader
+reachability; Proof/Kernel retain evidence, policy, status and witness authority.
+Driver transports authentic producer associations and enforces live publication
+guards. A retained ManifestCommit or DATA value grants no renewed authority.
 
-Task 23 supplies the artifact-side witness projection needed by future emission:
+## Remaining general-emission gaps
 
-- `ProofWitnessRef` schema version `2.0`;
-- `formula_substitution_kernel_evidence` as the only trusted current evidence
-  kind;
-- target binding, formula evidence, substitution evidence, provenance, optional
-  formula context, and accepted result hashes;
-- normal trusted-reader rejection for legacy certificate, resolution-trace,
-  backend log, backend method, SMT proof-object, instantiated-formula, and SAT
-  problem payloads.
-
-The remaining task 17 blockers are outside `mizar-artifact`:
-
-- `mizar-proof` now exists and owns witness staging/publication metadata, but
-  there is still no integrated producer-owned witness publication output to
-  feed the artifact store and manifest;
-- no real producer output exists for full `VerifiedArtifact` emission;
-- no producer-owned publication hook exists to connect checked kernel evidence,
-  selected proof status, witness files, and manifest entries.
-
-Implementing task 17 now would require placeholder proof authority, invented
-producer projections, or fake witness publication. Those are forbidden by the
-artifact boundary and by the evidence-pipeline correction.
+- General resolver/checker/Core/VC/proof projections and their end-to-end
+  publication integration beyond the supported singleton route remain unavailable.
+- Builtin2.0 has empty statements and no captured-source provenance. The bounded
+  consumer therefore cannot satisfy coherent `SnapshotPublished`'s unchanged
+  captured-source guard. OpenBuffer temporary-root cleanup also prevents retained
+  DATA/commit values from restoring file/publication reachability.
+- Generic/state built-ins, complete dependency slices, cache/proof reuse and
+  verified-session completion remain deferred. Incomplete slice/mandatory MISS,
+  selected-witness-hash absence and existing retained-token limits remain.
 
 ## Disposition
 
-Task 17 remains deferred as `external_dependency_gap`. No source stub,
-placeholder crate, fake witness schema, fake producer projection, or artifact
-publication shim is added.
-
-The next valid task 17 attempt requires all of the following to exist first:
-
-- real producer-owned `VerifiedArtifact` projection inputs;
-- stable proof/witness staging and manifest publication outputs from the
-  owning proof/artifact integration;
-- integration tests that exercise real emission without changing proof
-  authority inside `mizar-artifact`.
-
-Until those dependencies exist, `mizar-artifact` owns only the stable schemas,
-canonical writers/readers, hash validation, store primitives, and manifest
-transactions.
-
-## Verification
-
-This task is documentation-only. Required verification is:
-
-```text
-git diff --check
-git diff --cached --check
-```
-
-Rust verification is not required for this task because no Rust source changes
-are made.
+Task 17 stays open as `external_dependency_gap`/`deferred` for general emission.
+A further general-emission unit requires owner-produced projections, matching
+proof/witness staging and committed publication/readback integration, with real
+end-to-end tests for its supported scope. Preserve normal KernelVerified guards;
+do not substitute placeholders, relabel built-in status or invent proof authority.
+The bounded path does not complete general emission. G6 correspondence correction
+is a separate unit.

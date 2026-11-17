@@ -73,7 +73,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 - **kernel evidence witness format: artifact projection については task 23 で解決済み。**
   `ProofWitnessRef` schema version `2.0` は formula/substitution/provenance/target-binding
   evidence hash を記録し、通常の trusted reader では legacy certificate material を拒否する。
-  real witness publication と phase-15 producer emission は外部依存として残る。
+  一般 phase-15 emission は deferred のまま。bounded publication は
+  [再評価](phase15_emission_reevaluation.md) を参照する。
 
 ## 順序付きタスク一覧
 
@@ -224,14 +225,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 14、15、この crate の task 23、`mizar-kernel` task 28、
       `mizar-proof` task 11（witness の stage/公開）。仕様:
       `verified_artifact.md`、`manifest.md`。
-    - 状態: task 23 後も `external_dependency_gap` として deferred。
-      `mizar-proof` は現在存在し witness staging/publication metadata を所有するが、
-      full phase-15 emission には real producer projection output、committed
-      publication reachability integration、artifact-owned end-to-end emission
-      handoff がまだ欠けている。phase-15 emission は task 23 の
-      formula/substitution kernel evidence witness schema を使わなければならない。
-      この crate で producer output を stub しない。task 17 の再評価は
-      [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md) に記録する。
+    - 一般 emission は deferred のまま。bounded genuine publication と残る gap は
+      [再評価](phase15_emission_reevaluation.md) が所有する。
 
 ### 強化と横断フォローアップ
 
@@ -378,7 +373,7 @@ cargo test -p mizar-checker
 - キャッシュレコード、キャッシュキー、proof 再利用の検証は `mizar-cache`
   にあり、ここにはない。共有される正準ハッシュ規則は task 2 のものである。
 - Formula/substitution kernel evidence witness ref は task 23 で定義された。
-  real witness publication は producer output が存在するまで deferred とする。
+  bounded 経路を越える一般 witness publication は deferred とし、[再評価](phase15_emission_reevaluation.md) を参照する。
   resolution-trace certificate 用の placeholder field を追加してはならない。
 
 - [ ] [AST-ARTIFACT](../../task_contracts/ja/AST-ARTIFACT.md).
