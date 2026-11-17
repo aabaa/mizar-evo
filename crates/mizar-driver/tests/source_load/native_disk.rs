@@ -5411,6 +5411,42 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
     use mizar_build::scheduler::SchedulerEventKind;
     use mizar_cache::cache_store::CacheStoreRoot;
     use mizar_ir::storage::CollectInput;
+    use std::collections::BTreeMap;
+
+    let store_records = |store: &CacheStoreRoot| {
+        let mut records = BTreeMap::new();
+        for phase in fs::read_dir(store.root().join("records")).unwrap() {
+            for entry in fs::read_dir(phase.unwrap().path()).unwrap() {
+                let path = entry.unwrap().path();
+                let bytes = fs::read(&path).unwrap();
+                let magic_len = mizar_cache::cache_store::CACHE_RECORD_MAGIC.len();
+                assert_eq!(
+                    &bytes[..magic_len],
+                    mizar_cache::cache_store::CACHE_RECORD_MAGIC
+                );
+                let mut cursor = magic_len;
+                assert_eq!(
+                    u32::from_le_bytes(bytes[cursor..cursor + 4].try_into().unwrap()),
+                    1
+                );
+                cursor += 4;
+                let header_len =
+                    u64::from_le_bytes(bytes[cursor..cursor + 8].try_into().unwrap()) as usize;
+                cursor += 8;
+                let header: serde_json::Value =
+                    serde_json::from_slice(&bytes[cursor..cursor + header_len]).unwrap();
+                let phase = header["phase"].as_str().unwrap();
+                let work_unit = header["work_unit"].as_str().unwrap();
+                records
+                    .entry((phase.to_owned(), work_unit.to_owned()))
+                    .or_insert_with(BTreeMap::new)
+                    .insert(path, bytes);
+            }
+        }
+        records
+    };
+    let importer_records = ("Frontend".to_owned(), "\"alpha\":\"main\"".to_owned());
+    let intermediate_records = ("Frontend".to_owned(), "\"alpha\":\"leaf1\"".to_owned());
 
     let independent_snapshots = || {
         let source_ids = InMemorySessionIdAllocator::new();
@@ -6577,9 +6613,9 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         }
     }
 
-    // One transitive member makes the entire importer closure inadmissible.
-    // Repeating it proves neither the importer nor that leaf Frontend was
-    // written, while ordinary output still matches a clean run.
+    // The transitive importer is inadmissible, but its independently eligible
+    // intermediate dependency may be cached. Compare actual Store records so
+    // dependency writes cannot be mistaken for an importer write.
     let leaf_count = 2;
     let fixture = Fixture::new(b"");
     let ids = InMemorySessionIdAllocator::new();
@@ -6589,6 +6625,8 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         &fixture, &ids, &snapshots, &store, leaf_count, "main", false, None, 0, false, 0, 2, false,
         true,
     );
+    let mut previous_records = store_records(&store);
+    assert!(previous_records.contains_key(&importer_records));
     for cache_stage in [4, 5] {
         let (actual, actual_outputs) = run(
             &fixture,
@@ -6634,6 +6672,21 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             assert_ne!(actual.0, clean.0);
             assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
         }
+        let current_records = store_records(&store);
+        assert_eq!(
+            previous_records.get(&importer_records),
+            current_records.get(&importer_records),
+            "inadmissible transitive importer wrote a Frontend record at stage {cache_stage}"
+        );
+        if cache_stage == 4 {
+            assert_ne!(
+                previous_records.get(&intermediate_records),
+                current_records.get(&intermediate_records),
+                "eligible intermediate leaf Frontend record was not newly persisted"
+            );
+            assert!(current_records.contains_key(&intermediate_records));
+        }
+        previous_records = current_records;
     }
     // Two otherwise eligible workspace leaves become lexically conflicting.
     // Repeat the conflict after a viable cached baseline to rule out an importer write.
@@ -6644,6 +6697,8 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
     let _ = run(
         &fixture, &ids, &snapshots, &store, 2, "main", false, None, 0, false, 0, 2, false, true,
     );
+    let mut previous_records = store_records(&store);
+    assert!(previous_records.contains_key(&importer_records));
     for stage in [12, 13] {
         let (actual, _) = run(
             &fixture, &ids, &snapshots, &store, 2, "main", false, None, 4, false, stage, 2, false,
@@ -6698,5 +6753,12 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         });
         assert!(!diagnostics[0].is_empty());
         assert_eq!(diagnostics[0], diagnostics[1]);
+        let current_records = store_records(&store);
+        assert_eq!(
+            previous_records.get(&importer_records),
+            current_records.get(&importer_records),
+            "lexically conflicting importer wrote a Frontend record at stage {stage}"
+        );
+        previous_records = current_records;
     }
 }

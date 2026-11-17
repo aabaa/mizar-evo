@@ -2813,7 +2813,8 @@ pub(crate) mod imported_native_frontend_cache_tests {
             snapshot,
             protected_outputs: protected.clone(),
         });
-        let refusal_adapter = IrCacheAdapter::new(owner.clone());
+        let mut refusal_owner = owner.clone();
+        let mut refusal_adapter = IrCacheAdapter::new(owner.clone());
         let (refusal_input, refusal_sources) = match attack {
             ImportedAttack::WrongSource => (
                 make_input(vec![
@@ -2914,6 +2915,90 @@ pub(crate) mod imported_native_frontend_cache_tests {
                     publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
                     storage::{BlobDecodeError, BlobDecoder},
                 };
+                let swapped_registry = std::sync::Arc::new(SnapshotHandleRegistry::new());
+                let swapped_base =
+                    PhaseOutputPublisher::new(owner.storage().clone(), swapped_registry.clone());
+                swapped_base.register_current_snapshot(snapshot);
+                let swapped_owner =
+                    std::sync::Arc::new(swapped_base.for_captured_execution(snapshot));
+                for module in ["leaf", "main", "twig"] {
+                    allow(
+                        &swapped_owner,
+                        &WorkUnit::Module {
+                            module: ModuleId::new(PackageId::new("alpha"), ModulePath::new(module)),
+                        },
+                    );
+                }
+                let mut replayed: Vec<mizar_ir::storage::AnyPhaseOutputRef> = Vec::new();
+                for (module, original) in [
+                    ("main", &main_source),
+                    ("leaf", &leaf_source),
+                    ("twig", &twig_source),
+                    ("twig", &twig_frontend),
+                ] {
+                    let (phase, diagnostic_phase) = if original.phase().as_str() == "SourceLoad" {
+                        (PipelinePhase::SourceLoad, DiagnosticPhase::SourceLoad)
+                    } else {
+                        (PipelinePhase::Frontend, DiagnosticPhase::Frontend)
+                    };
+                    let parents = if phase == PipelinePhase::Frontend {
+                        vec![
+                            SealedParentOutputHandle::from_published_output(
+                                &swapped_owner,
+                                snapshot,
+                                replayed[2].clone(),
+                            )
+                            .unwrap(),
+                        ]
+                    } else {
+                        vec![]
+                    };
+                    let version = captured
+                        .snapshot()
+                        .source_versions
+                        .iter()
+                        .find(|version| version.module_path.as_str() == module)
+                        .unwrap();
+                    let result = driver
+                        .registry()
+                        .execute_phase_with_resources(
+                            phase,
+                            PhaseInput::new(
+                                WorkUnit::Module {
+                                    module: ModuleId::new(
+                                        PackageId::new("alpha"),
+                                        ModulePath::new(module),
+                                    ),
+                                },
+                                PhaseDispatchInputBundle::new(
+                                    snapshot,
+                                    source_input_hash(version),
+                                    vec![],
+                                    parents,
+                                )
+                                .unwrap(),
+                            ),
+                            crate::registry::PhaseExecutionResources {
+                                diagnostics: Some(mizar_diagnostics::sink::DiagnosticSink::new(
+                                    mizar_diagnostics::sink::DiagnosticProducerScope::new(
+                                        diagnostic_phase,
+                                        snapshot,
+                                        "swapped-lineage-control",
+                                    ),
+                                )),
+                                output_publisher: Some(swapped_owner.clone()),
+                                source_load: Some(source_inputs),
+                                ..Default::default()
+                            },
+                        )
+                        .unwrap()
+                        .result;
+                    assert_eq!(result.status, PhaseStatus::Complete);
+                    assert!(result.diagnostics.is_empty());
+                    assert_eq!(result.output_refs.len(), 1);
+                    assert_eq!(result.output_refs[0].lineage(), original.lineage());
+                    replayed.push(result.output_refs[0].clone());
+                }
                 let typed = owner
                     .storage()
                     .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
@@ -2942,16 +3027,8 @@ pub(crate) mod imported_native_frontend_cache_tests {
                         .stable_hash()
                         .as_bytes(),
                 );
-                owner.storage().collect(CollectInput {
-                    snapshot,
-                    protected_outputs: protected
-                        .iter()
-                        .copied()
-                        .filter(|output| *output != leaf_frontend.output())
-                        .collect(),
-                });
-                let swapped = owner.publish(PublishOutputInput {
-                    slot: owner.allocate(
+                let swapped = swapped_owner.publish(PublishOutputInput {
+                    slot: swapped_owner.allocate(
                         snapshot,
                         leaf_frontend.phase().clone(),
                         leaf_frontend.work_unit().clone(),
@@ -2970,7 +3047,7 @@ pub(crate) mod imported_native_frontend_cache_tests {
                         FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &descriptor)
                             .ok_or_else(|| BlobDecodeError::new("invalid swapped leaf bytes"))
                     }),
-                    parents: vec![twig_source.clone()],
+                    parents: vec![replayed[2].clone()],
                     named_input_hashes: leaf_frontend.lineage().named_input_hashes.clone(),
                     side_tables: sides,
                     origin: OutputOrigin::PackageSource,
@@ -2978,15 +3055,16 @@ pub(crate) mod imported_native_frontend_cache_tests {
                 });
                 let swapped = match swapped {
                     Ok(swapped) => swapped,
-                    Err(mizar_ir::publisher::PublishError::Identity { .. }) => {
-                        assert_eq!(refusal_adapter.successful_rehydrations(), 0);
-                        return;
-                    }
                     Err(error) => panic!("unexpected swapped-lineage publication failure: {error}"),
                 };
-                assert!(owner.storage().validate_handle(swapped.any()).is_ok());
                 assert!(
-                    owner
+                    swapped_owner
+                        .storage()
+                        .validate_handle(swapped.any())
+                        .is_ok()
+                );
+                assert!(
+                    swapped_owner
                         .validate_output(
                             snapshot,
                             swapped.any(),
@@ -2994,13 +3072,32 @@ pub(crate) mod imported_native_frontend_cache_tests {
                         )
                         .is_ok()
                 );
+                let parents = [replayed[0].clone(), swapped.erase(), replayed[3].clone()]
+                    .into_iter()
+                    .map(|parent| {
+                        SealedParentOutputHandle::from_published_output(
+                            &swapped_owner,
+                            snapshot,
+                            parent,
+                        )
+                        .unwrap()
+                    })
+                    .collect();
+                let swapped_input = PhaseInput::new(
+                    importer.clone(),
+                    PhaseDispatchInputBundle::new(
+                        snapshot,
+                        source_input_hash(main_version),
+                        vec![],
+                        parents,
+                    )
+                    .unwrap(),
+                );
+                refusal_owner = swapped_owner;
+                refusal_adapter = IrCacheAdapter::new(refusal_owner.clone());
                 (
-                    make_input(vec![
-                        main_source.clone(),
-                        swapped.erase(),
-                        twig_frontend.clone(),
-                    ]),
-                    leaf_sources.to_vec(),
+                    swapped_input,
+                    vec![replayed[1].clone(), replayed[2].clone()],
                 )
             }
             ImportedAttack::CoherentPayloadCorruption => (
@@ -3040,13 +3137,25 @@ pub(crate) mod imported_native_frontend_cache_tests {
             frontend,
             &refusal_sources,
         );
-        assert!(match refusal {
-            Err(_) => true,
-            Ok(CacheRehydrateOutcome::Miss(_)) => true,
-            Ok(_) => false,
-        });
+        if matches!(attack, ImportedAttack::SwappedLeafLineage) {
+            let Err(error) = refusal else {
+                panic!("swapped SourceLoad lineage must fail frontend dependency authentication");
+            };
+            assert_eq!(error, "native Frontend dependency authentication failed");
+        } else {
+            assert!(match refusal {
+                Err(_) => true,
+                Ok(CacheRehydrateOutcome::Miss(_)) => true,
+                Ok(_) => false,
+            });
+        }
         assert_eq!(refusal_adapter.successful_rehydrations(), 0);
-        assert!(owner.storage().validate_handle(&importer_frontend).is_err());
+        assert!(
+            refusal_owner
+                .storage()
+                .validate_handle(&importer_frontend)
+                .is_err()
+        );
     }
 
     #[test]
