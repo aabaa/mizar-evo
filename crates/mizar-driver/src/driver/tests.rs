@@ -596,7 +596,8 @@ mod imported_cache_lifecycle_tests {
 
     #[test]
     fn intermediate_chain_cache_hit_retains_every_ancestor_and_releases_partial_acquisition() {
-        for case in [CacheCase::new(true), CacheCase::cross_package_chain()] {
+        for cross_package in [false, true] {
+            let case = CacheCase::intermediate(cross_package);
             let mut dispatcher = case.dispatcher();
             assert!(matches!(
                 case.invoke(&mut dispatcher),
@@ -629,6 +630,7 @@ mod imported_cache_lifecycle_tests {
                 (TaskKind::Frontend, case.ancestor()),
                 (TaskKind::SourceLoad, case.ancestor()),
             ] {
+                let case = CacheCase::intermediate(cross_package);
                 let missing = case
                     .submission
                     .scheduler_run
@@ -653,6 +655,18 @@ mod imported_cache_lifecycle_tests {
                     protected_outputs: protected,
                 });
                 let mut dispatcher = case.dispatcher();
+                for output in dispatcher
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|result| &result.output_refs)
+                {
+                    assert_eq!(
+                        case.publisher.storage().validate_handle(output).is_ok(),
+                        output.output() != missing,
+                        "only {kind:?} {module} is missing: {output:?}"
+                    );
+                }
                 assert!(case.invoke(&mut dispatcher).is_none(), "{kind:?} {module}");
                 assert!(dispatcher.cache_owners.is_empty(), "{kind:?} {module}");
                 assert_eq!(
