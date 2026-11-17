@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/STEP6C-REAL-SERVICE-EQUIVALENCE.md).
 Status: in progress. Tier: full. Owner: [build plan](../../mizar-build/en/00.crate_plan.md); consumers: [driver plan](../../mizar-driver/en/00.crate_plan.md), [test plan](../../mizar-test/en/00.crate_plan.md).
 Dependencies: at least one real phase service after SourceLoad registered as available (Frontend is); later services extend the same gate as they land.
-Readiness: NoKey SourceLoad/Frontend and bounded twelve- and thirteen-service reflexivity ArtifactCommit edit/independent-clean comparisons, plus the [explicit retained SourceLoad route](../../mizar-driver/en/driver.md#explicit-native-disk-cached-sourceload-scheduling), are implemented. The twelve-service profile remains session-Blocked at missing VcDischarge; the exact thirteen-service composition completes real discharge and all tasks. Full cache-hit equivalence still waits for complete active-runtime context and Frontend cache producers; remaining unregistered service and Proof reuse/dependency-binding gaps stay open.
+Readiness: NoKey and bounded reflexivity comparisons exist. Automatic Disk SourceLoad and [one-leaf imported Frontend caching](./DRIVER-DEPENDENCY-AWARE-FRONTEND-CACHING.md) provide the producers for the bounded cache comparison below; broader cache, unregistered services and Proof reuse/dependency-binding remain deferred.
 Authority: [architecture 22](../../architecture/en/22.incremental_verification_contract.md) (IV-002, IV-003); [incremental/parallel equivalence](../../mizar-build/en/incremental_parallel_equivalence.md).
 Gap: BUILD-G-017 `external_dependency_gap`. Build task 24 and driver task 16 prove equivalence only for the implemented seams, not for real phase outputs.
 
@@ -14,38 +14,38 @@ checked phase/policy combinations; retain named cache-producer and missing
 service gaps until their real producers exist.
 The first slice compares edit/rebuild with clean runs of the real NoKey services,
 including actual published payloads, diagnostics and uncached outcomes.
-Full completion still requires the cache-hit/miss tests below; this slice
-provides no cache-hit coverage. Reuse the existing replay/capture-order/worker
+Full completion still requires broader cache-hit/miss coverage. Reuse replay/capture-order/worker
 comparisons in [real source regressions](../../../../crates/mizar-driver/tests/source_load/main.rs).
 
 ### Bounded reflexivity edit/clean profiles
-Freeze the explicit NoKey SourceLoad-through-reflexivity-ArtifactCommit profile:
-run an initial disk build, edit and recapture in that workspace with worker1/
-canonical order, and independently capture the edited bytes in a fresh workspace
-with worker4/reverse order. Compare two separate baseline-to-edit cases: theorem/
-binder renaming, and whitespace-only editing; each gets its own clean comparison.
-Compare genuine retained artifact DATA, validated main/manifest module payloads,
-FILE witness bytes, canonical diagnostics and actual uncached scheduler outcomes;
-normalize only workspace/output roots and snapshot-local identities. Require
-changed source identity after each edit and independent clean stores/captures.
-Retain the existing stale/currentness gate and seam-level regressions unchanged.
-Preserve that twelve-service profile and its missing-VcDischarge session block.
-Compose it with the real configured VcDischarge service as an exact thirteen-service
-profile, authenticating concrete service types and actual/registered descriptors.
-Admit only singleton per-module discharge/kernel tasks with no ATP/backend tasks;
-bridge actual Core/VC parents into discharge without changing producer semantics,
-explicit-provider authority, currentness or old-profile precedence.
-Run the same two edit cases for this composition: every task/phase completes, with
-no missing service and successful session, real NoKey discharge data and unchanged
-genuine ArtifactCommit comparisons. Six admission cases: nominal composition gains
-the bridge; spoofed discharge type, mismatched descriptor, surplus service, duplicate
-discharge module and duplicate kernel module gain no new built-in bridge authority.
-Preserve missing-service preflight and complete-registry dispatcher/provider behavior;
-cap equivalence cases at two. Driver source/scheduler,
-source_load/driver regressions and paired frontend-adapter boundary docs are affected.
-No spec, trace/audit or coverage-credit change. No full STEP6C completion, cache-hit, complete runtime/
-Frontend producer, Proof reuse/dependency-binding, ATP31 or other family credit
-follows; incomplete dependency slices/MISS and all existing deferrals remain.
+Preserve the NoKey twelve-service profile blocked at missing VcDischarge and exact
+thirteen-service composition completing real discharge and all tasks. Each compares
+theorem/binder renaming and whitespace edits against independent clean workspaces,
+worker1/canonical versus worker4/reverse: genuine artifact DATA, validated module/
+manifest payloads, FILE witnesses, diagnostics and uncached outcomes. Normalize only
+roots and snapshot-local identities; require changed source identity and independent
+stores/captures. Preserve stale/currentness and seam gates. The thirteen-service
+bridge authenticates concrete types/descriptors and singleton discharge/kernel tasks
+without ATP/backend tasks. Nominal admission and spoofed type, descriptor mismatch,
+surplus service, duplicate discharge/kernel refusals retain their existing authority.
+
+### Bounded automatic cache-backed edit/clean comparison
+Freeze one test-only unit using the existing one-leaf importer profile and genuine
+automatic PersistentPrefix writes, never seeded or synthesized records. Two independent
+baseline-to-edit families: importer source bytes, and leaf lexical contribution consumed
+by the importer. Each starts with an empty Store, observes cold execution, then warm
+SourceLoad/Frontend hits without TaskStarted; the edit misses affected keys and executes,
+while unchanged SourceLoad/leaf work may hit. Recapture the edited state for warm hits.
+Compare every edited/warm result to an uncached run of the same bytes in a separate
+workspace, capture registry and empty Store, with distinct SourceIds. Exercise worker1/
+canonical and worker4/reverse controls and reversed capture/layout order. Compare genuine
+SourceLoad/Frontend canonical payloads, complete keys, line/loading maps, side tables,
+parent commitments, diagnostics and session/phase outcomes; normalize only roots and
+snapshot-local identities. Check the leaf lexical change reaches importer tokenization.
+Case cap: two edit families, each cold/warm/edit/edited-warm with both worker/order
+profiles; reuse currentness/refusal tests. Affect source_load/native_disk regressions
+only unless a bounded implementation defect is exposed. No spec, trace/audit, coverage
+promotion, broader cache, parsing-avoidance, Proof reuse or full STEP6C credit follows.
 ## Forbidden
 Synthetic phase outputs; comparing only event streams; weakening the existing
 seam-level gate; claiming equivalence for unregistered services.
@@ -54,6 +54,7 @@ Real multi-module workspaces with an edit between runs, several worker counts,
 and cache hits and misses; stale-snapshot rejection. Require independent
 specification, test-sufficiency, implementation, volume/scope, and
 consistency reviews; `cargo fmt --check`,
-`cargo clippy --all-targets --all-features -- -D warnings`, `cargo test`.
+`cargo clippy --all-targets --all-features -- -D warnings`, both lint_policy suites,
+Driver/Build and Frontend/Cache owner tests; full `cargo test` only at protocol cadence.
 Exit: the gate holds for every registered real service with genuine cache
 behavior, and BUILD-G-017 retains only remaining service/cache-producer gaps.
