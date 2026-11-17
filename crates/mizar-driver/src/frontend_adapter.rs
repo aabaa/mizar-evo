@@ -111,6 +111,8 @@ pub use checking::{
     native_theorem_registration_closure_storage_bytes, native_theorem_typed_ast_from_storage_bytes,
     native_theorem_typed_ast_storage_bytes,
 };
+#[cfg(test)]
+pub(crate) use source::imported_native_frontend_cache_tests::ImportedFixture;
 mod core;
 pub use core::{
     native_algorithm_core_from_storage_bytes, native_algorithm_core_storage_bytes,

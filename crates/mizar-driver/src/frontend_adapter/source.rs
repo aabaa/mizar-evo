@@ -338,8 +338,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .any(|entry| !matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. }))
             || !(input.parent_outputs().len() == 1
                 || (frontend.is_some()
-                    && input.parent_outputs().len() == 2
-                    && leaf_sources.len() == 1))
+                    && !leaf_sources.is_empty()
+                    && input.parent_outputs().len() == 1 + leaf_sources.len()))
         {
             return Err("native Frontend encoding requires the leaf profile".to_owned());
         }
@@ -375,16 +375,20 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 }),
         )
         .ok_or_else(|| "native Frontend requires one own SourceLoad parent".to_owned())?;
-        let imported = input.parent_outputs().len() == 2;
+        let imported = input.parent_outputs().len() > 1;
         if !imported && !leaf_sources.is_empty() {
             return Err("native Frontend surplus leaf source parents".to_owned());
         }
+        let mut physical_units = std::collections::BTreeSet::new();
         for physical in input
             .parent_outputs()
             .iter()
             .map(|parent| parent.as_output_ref())
             .chain(leaf_sources)
         {
+            if !physical_units.insert((physical.phase().as_str(), physical.work_unit().as_str())) {
+                return Err("native Frontend duplicate physical parent".to_owned());
+            }
             storage
                 .validate_handle(physical)
                 .map_err(|error| error.to_string())?;
@@ -401,58 +405,77 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .ok_or_else(|| "native Frontend dependency authentication failed".to_owned())?;
         if imported {
             use mizar_ir::dispatch_input::SealedParentOutputHandle;
-            let leaf = unique(
-                input
-                    .parent_outputs()
-                    .iter()
-                    .map(|parent| parent.as_output_ref())
-                    .filter(|candidate| *candidate != parent),
-            )
-            .ok_or_else(|| "native Frontend requires one leaf Frontend".to_owned())?;
-            let leaf_source = &leaf_sources[0];
-            if workspace_summaries.len() != 1
-                || leaf.lineage().parents != vec![leaf_source.output()]
-            {
+            if workspace_summaries.len() != leaf_sources.len() {
                 return Err("native Frontend leaf SourceLoad correspondence mismatch".to_owned());
             }
-            let (target, _) = &workspace_summaries[0];
-            let leaf_version = unique(self.snapshot.source_versions.iter().filter(|version| {
-                version.package_id == target.package && version.module_path == target.path
-            }))
-            .ok_or_else(|| "native Frontend leaf capture is unavailable".to_owned())?;
-            let leaf_input = PhaseInput::new(
-                WorkUnit::Module {
-                    module: target.clone(),
-                },
-                PhaseDispatchInputBundle::new(
-                    input.snapshot,
-                    source_input_hash(leaf_version),
-                    Vec::new(),
-                    vec![
-                        SealedParentOutputHandle::from_current_output(
-                            publisher,
-                            input.snapshot,
-                            leaf_source.clone(),
-                        )
-                        .map_err(|error| error.to_string())?,
-                    ],
+            let mut targets = std::collections::BTreeSet::new();
+            for (target, _) in &workspace_summaries {
+                if !targets.insert((target.package.as_str(), target.path.as_str())) {
+                    return Err("native Frontend duplicate leaf target".to_owned());
+                }
+                let unit = mizar_session::module_work_unit_label(
+                    target.package.as_str(),
+                    target.path.as_str(),
+                );
+                let leaf = unique(
+                    input
+                        .parent_outputs()
+                        .iter()
+                        .map(|parent| parent.as_output_ref())
+                        .filter(|candidate| {
+                            candidate.phase().as_str() == "Frontend"
+                                && candidate.work_unit().as_str() == unit
+                        }),
                 )
-                .map_err(|error| error.to_string())?,
-            );
-            let leaf_handle = storage
-                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
-                    leaf,
-                    &OutputKind::new("FrontendOutput"),
-                )
-                .map_err(|error| error.to_string())?;
-            self.prepare_native_disk_frontend_cache_payload(
-                &leaf_input,
-                policy,
-                adapter,
-                Some(&leaf_handle),
-                None,
-                &[],
-            )?;
+                .ok_or_else(|| "native Frontend requires one Frontend per target".to_owned())?;
+                let leaf_source = unique(leaf_sources.iter().filter(|candidate| {
+                    candidate.phase().as_str() == "SourceLoad"
+                        && candidate.work_unit().as_str() == unit
+                }))
+                .ok_or_else(|| "native Frontend requires one SourceLoad per target".to_owned())?;
+                if leaf.lineage().parents != [leaf_source.output()] {
+                    return Err(
+                        "native Frontend leaf SourceLoad correspondence mismatch".to_owned()
+                    );
+                }
+                let leaf_version = unique(self.snapshot.source_versions.iter().filter(|version| {
+                    version.package_id == target.package && version.module_path == target.path
+                }))
+                .ok_or_else(|| "native Frontend leaf capture is unavailable".to_owned())?;
+                let leaf_input = PhaseInput::new(
+                    WorkUnit::Module {
+                        module: target.clone(),
+                    },
+                    PhaseDispatchInputBundle::new(
+                        input.snapshot,
+                        source_input_hash(leaf_version),
+                        Vec::new(),
+                        vec![
+                            SealedParentOutputHandle::from_current_output(
+                                publisher,
+                                input.snapshot,
+                                leaf_source.clone(),
+                            )
+                            .map_err(|error| error.to_string())?,
+                        ],
+                    )
+                    .map_err(|error| error.to_string())?,
+                );
+                let leaf_handle = storage
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        leaf,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .map_err(|error| error.to_string())?;
+                self.prepare_native_disk_frontend_cache_payload(
+                    &leaf_input,
+                    policy,
+                    adapter,
+                    Some(&leaf_handle),
+                    None,
+                    &[],
+                )?;
+            }
         }
 
         storage
@@ -596,10 +619,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 use mizar_resolve::{imports::ImportPathResolver, module_index::ModuleIndexInput};
                 use serde_json::json;
                 let unavailable = || "native Frontend dependency closure is unsupported".to_owned();
-                if workspace_summaries.len() != 1
-                    || output.ast.as_ref().is_none_or(|ast| {
-                        ast.node_views().any(|view| view.as_export_item().is_some())
-                    })
+                if output
+                    .ast
+                    .as_ref()
+                    .is_none_or(|ast| ast.node_views().any(|view| view.as_export_item().is_some()))
                 {
                     return Err(unavailable());
                 }
@@ -613,12 +636,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 let mut resolved = resolution.resolved().iter().collect::<Vec<_>>();
                 resolved.sort_by_key(|import| import.ordinal());
                 let mut imports = Vec::new();
+                let mut resolved_targets = std::collections::BTreeSet::new();
                 for import in resolved {
-                    if import.target().package() != &workspace_summaries[0].0.package
-                        || import.target().path() != &workspace_summaries[0].0.path
+                    let target = (import.target().package(), import.target().path());
+                    if !workspace_summaries
+                        .iter()
+                        .any(|(module, _)| (&module.package, &module.path) == target)
                     {
                         return Err(unavailable());
                     }
+                    resolved_targets.insert((target.0.as_str(), target.1.as_str()));
                     imports.push(json!([
                         import.target().package().as_str(),
                         import.target().path().as_str(),
@@ -628,6 +655,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         import.branch_base_range().map(range),
                         import.branch_member_range().map(range)
                     ]));
+                }
+                if resolved_targets.len() != workspace_summaries.len() {
+                    return Err(unavailable());
                 }
                 let mut ordered_workspace_summaries =
                     workspace_summaries.iter().collect::<Vec<_>>();
@@ -2188,7 +2218,7 @@ impl PhaseService for SourceLoadService {
 }
 
 #[cfg(test)]
-mod imported_native_frontend_cache_tests {
+pub(crate) mod imported_native_frontend_cache_tests {
     use std::{
         fs,
         path::{Path, PathBuf},
@@ -2235,12 +2265,12 @@ mod imported_native_frontend_cache_tests {
 
     static NEXT_ROOT: AtomicU64 = AtomicU64::new(0);
 
-    struct ImportedFixture {
-        root: PathBuf,
+    pub(crate) struct ImportedFixture {
+        pub(crate) root: PathBuf,
     }
 
     impl ImportedFixture {
-        fn new() -> Self {
+        pub(crate) fn new() -> Self {
             let root = std::env::temp_dir().join(format!(
                 "mizar-driver-imported-frontend-unit-{}-{}",
                 std::process::id(),
@@ -2249,14 +2279,15 @@ mod imported_native_frontend_cache_tests {
             fs::create_dir_all(root.join("alpha/src")).unwrap();
             fs::write(
                 root.join("alpha/src/main.miz"),
-                b"import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n",
+                b"import alpha.leaf;\nimport alpha.leaf;\nimport alpha.twig;\ndefinition\nend;\n",
             )
             .unwrap();
             fs::write(root.join("alpha/src/leaf.miz"), b"definition\nend;\n").unwrap();
+            fs::write(root.join("alpha/src/twig.miz"), b"definition\nend;\n").unwrap();
             Self { root }
         }
 
-        fn capture(
+        pub(crate) fn capture(
             &self,
             ids: &InMemorySessionIdAllocator,
             snapshots: &SnapshotRegistry<InMemorySessionIdAllocator>,
@@ -2288,7 +2319,7 @@ mod imported_native_frontend_cache_tests {
                 lockfile.clone(),
                 StaticSourceLayout::new(vec![WorkspaceSourcePackage {
                     package_id: PackageId::new("alpha"),
-                    files: ["leaf", "main"]
+                    files: ["leaf", "main", "twig"]
                         .into_iter()
                         .map(|module| {
                             WorkspaceSourceFile::new(
@@ -2299,12 +2330,18 @@ mod imported_native_frontend_cache_tests {
                         .collect(),
                 }]),
             );
-            input.dependency_overlay =
-                ModuleDependencyOverlay::complete(vec![ModuleDependencyEdge::new(
+            input.dependency_overlay = ModuleDependencyOverlay::complete(vec![
+                ModuleDependencyEdge::new(
                     ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
                     ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
                     ModuleDependencyKind::ImportSummary,
-                )]);
+                ),
+                ModuleDependencyEdge::new(
+                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("twig")),
+                    ModuleDependencyKind::ImportSummary,
+                ),
+            ]);
             input.cache_policy = CacheSchedulingPolicy::Enabled;
             let plan =
                 produce_build_plan(plan_request.clone(), workspace_packages, lockfile.clone())
@@ -2329,7 +2366,7 @@ mod imported_native_frontend_cache_tests {
                     &plan.build_config,
                 )),
             };
-            let descriptors = ["leaf", "main"]
+            let descriptors = ["leaf", "main", "twig"]
                 .into_iter()
                 .map(|module| {
                     let path = format!("src/{module}.miz");
@@ -2384,6 +2421,13 @@ mod imported_native_frontend_cache_tests {
         WrongSource,
         SwappedPhase,
         CollectedSource,
+        MissingLeafSource,
+        SurplusLeafSource,
+        DuplicateLeafSource,
+        MissingLeafFrontend,
+        DuplicateLeafFrontend,
+        SwappedLeafLineage,
+        CoherentPayloadCorruption,
     }
 
     fn run_imported_cache_case(attack: ImportedAttack) {
@@ -2411,7 +2455,7 @@ mod imported_native_frontend_cache_tests {
             std::sync::Arc::new(SnapshotHandleRegistry::new()),
         ));
         owner.register_current_snapshot(snapshot);
-        for module in ["leaf", "main"] {
+        for module in ["leaf", "main", "twig"] {
             allow(
                 &owner,
                 &WorkUnit::Module {
@@ -2459,7 +2503,9 @@ mod imported_native_frontend_cache_tests {
         };
         let main_source = output(TaskKind::SourceLoad, "main");
         let leaf_source = output(TaskKind::SourceLoad, "leaf");
+        let twig_source = output(TaskKind::SourceLoad, "twig");
         let leaf_frontend = output(TaskKind::Frontend, "leaf");
+        let twig_frontend = output(TaskKind::Frontend, "twig");
         let importer_frontend = output(TaskKind::Frontend, "main");
         let main_version = captured
             .snapshot()
@@ -2467,22 +2513,30 @@ mod imported_native_frontend_cache_tests {
             .iter()
             .find(|version| version.module_path == ModulePath::new("main"))
             .unwrap();
-        let parents = [main_source.clone(), leaf_frontend.clone()]
-            .into_iter()
-            .map(|parent| {
-                SealedParentOutputHandle::from_published_output(&owner, snapshot, parent).unwrap()
-            })
-            .collect();
-        let input = PhaseInput::new(
-            importer,
-            PhaseDispatchInputBundle::new(
-                snapshot,
-                source_input_hash(main_version),
-                vec![],
-                parents,
+        let make_input = |outputs: Vec<mizar_ir::storage::AnyPhaseOutputRef>| {
+            let parents = outputs
+                .into_iter()
+                .map(|parent| {
+                    SealedParentOutputHandle::from_published_output(&owner, snapshot, parent)
+                        .unwrap()
+                })
+                .collect();
+            PhaseInput::new(
+                importer.clone(),
+                PhaseDispatchInputBundle::new(
+                    snapshot,
+                    source_input_hash(main_version),
+                    vec![],
+                    parents,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        );
+        };
+        let input = make_input(vec![
+            main_source.clone(),
+            leaf_frontend.clone(),
+            twig_frontend.clone(),
+        ]);
         let adapter = IrCacheAdapter::new(owner.clone());
         let frontend = driver.registry().native_frontend_service().unwrap();
         let handle = owner
@@ -2493,6 +2547,20 @@ mod imported_native_frontend_cache_tests {
             )
             .unwrap();
         let expected_bytes = owner.storage().get(&handle).unwrap().canonical_disk_bytes();
+        let leaf_sources = [leaf_source.clone(), twig_source.clone()];
+        let authenticated = FrontendService::authenticated_workspace_summaries(
+            source_inputs,
+            &input,
+            owner.as_ref(),
+            &main_source,
+        )
+        .expect("genuine importer parents authenticate both direct leaf summaries");
+        assert_eq!(authenticated.len(), 2);
+        assert_ne!(authenticated[0].0, authenticated[1].0);
+        assert_eq!(
+            authenticated[0].1.exported_symbols, authenticated[1].1.exported_symbols,
+            "equal exported content does not collapse distinct leaf targets"
+        );
         let (request, _, _, _) = source_inputs
             .prepare_native_disk_frontend_cache_payload(
                 &input,
@@ -2500,17 +2568,37 @@ mod imported_native_frontend_cache_tests {
                 &adapter,
                 None,
                 Some(frontend),
-                std::slice::from_ref(&leaf_source),
+                &leaf_sources,
             )
             .unwrap();
         let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request).build() else {
             panic!("captured imported Frontend cache key");
         };
         assert!(matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)));
+        let (reordered, _, _, _) = source_inputs
+            .prepare_native_disk_frontend_cache_payload(
+                &make_input(vec![
+                    twig_frontend.clone(),
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                ]),
+                &policy,
+                &adapter,
+                None,
+                Some(frontend),
+                &[twig_source.clone(), leaf_source.clone()],
+            )
+            .unwrap();
+        assert_eq!(
+            CacheKeyBuilder::new(reordered).build(),
+            CacheKeyBuildOutcome::Cacheable(key.clone())
+        );
         let protected = vec![
             main_source.output(),
             leaf_source.output(),
+            twig_source.output(),
             leaf_frontend.output(),
+            twig_frontend.output(),
         ];
         assert!(
             owner
@@ -2529,7 +2617,7 @@ mod imported_native_frontend_cache_tests {
                 &store,
                 &adapter,
                 frontend,
-                std::slice::from_ref(&leaf_source),
+                &leaf_sources,
             )
             .unwrap()
         else {
@@ -2550,41 +2638,237 @@ mod imported_native_frontend_cache_tests {
             protected_outputs: protected.clone(),
         });
         let refusal_adapter = IrCacheAdapter::new(owner.clone());
-        let refusal = match attack {
-            ImportedAttack::WrongSource => source_inputs
-                .rehydrate_native_disk_frontend_cache_with_dependencies(
-                    &input,
-                    &policy,
-                    &store,
-                    &refusal_adapter,
-                    frontend,
-                    std::slice::from_ref(&main_source),
-                ),
-            ImportedAttack::SwappedPhase => source_inputs
-                .rehydrate_native_disk_frontend_cache_with_dependencies(
-                    &input,
-                    &policy,
-                    &store,
-                    &refusal_adapter,
-                    frontend,
-                    std::slice::from_ref(&leaf_frontend),
-                ),
+        let (refusal_input, refusal_sources) = match attack {
+            ImportedAttack::WrongSource => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                vec![main_source.clone(), twig_source.clone()],
+            ),
+            ImportedAttack::SwappedPhase => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                vec![leaf_frontend.clone(), twig_source.clone()],
+            ),
             ImportedAttack::CollectedSource => {
                 owner.storage().collect(CollectInput {
                     snapshot,
-                    protected_outputs: vec![main_source.output(), leaf_frontend.output()],
+                    protected_outputs: vec![
+                        main_source.output(),
+                        leaf_frontend.output(),
+                        twig_frontend.output(),
+                    ],
                 });
-                source_inputs.rehydrate_native_disk_frontend_cache_with_dependencies(
-                    &input,
-                    &policy,
-                    &store,
-                    &refusal_adapter,
-                    frontend,
-                    std::slice::from_ref(&leaf_source),
+                (
+                    make_input(vec![
+                        main_source.clone(),
+                        leaf_frontend.clone(),
+                        twig_frontend.clone(),
+                    ]),
+                    leaf_sources.to_vec(),
                 )
             }
+            ImportedAttack::MissingLeafSource => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                vec![leaf_source.clone()],
+            ),
+            ImportedAttack::SurplusLeafSource => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                vec![
+                    leaf_source.clone(),
+                    twig_source.clone(),
+                    main_source.clone(),
+                ],
+            ),
+            ImportedAttack::DuplicateLeafSource => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                vec![
+                    leaf_source.clone(),
+                    leaf_source.clone(),
+                    twig_source.clone(),
+                ],
+            ),
+            ImportedAttack::MissingLeafFrontend => (
+                make_input(vec![main_source.clone(), leaf_frontend.clone()]),
+                leaf_sources.to_vec(),
+            ),
+            ImportedAttack::DuplicateLeafFrontend => {
+                let parents = [
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    leaf_frontend.clone(),
+                ]
+                .into_iter()
+                .map(|output| {
+                    SealedParentOutputHandle::from_published_output(&owner, snapshot, output)
+                        .unwrap()
+                })
+                .collect();
+                assert!(
+                    PhaseDispatchInputBundle::new(
+                        snapshot,
+                        source_input_hash(main_version),
+                        vec![],
+                        parents
+                    )
+                    .is_err()
+                );
+                assert_eq!(refusal_adapter.successful_rehydrations(), 0);
+                return;
+            }
+            ImportedAttack::SwappedLeafLineage => {
+                use mizar_ir::{
+                    publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+                    storage::{BlobDecodeError, BlobDecoder},
+                };
+                let typed = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        &leaf_frontend,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                let payload = owner.storage().get(&typed).unwrap();
+                let sides = (*owner.storage().side_tables(&typed).unwrap()).clone();
+                let descriptor = captured
+                    .native_sources()
+                    .unwrap()
+                    .iter()
+                    .find(|(_, _, source)| source.module_path.as_str() == "leaf")
+                    .unwrap()
+                    .2
+                    .clone();
+                let source_id = payload.source.source_id;
+                let mut semantic = b"mizar-frontend/output-publication/v1\0".to_vec();
+                semantic.extend_from_slice(
+                    payload
+                        .cache_keys
+                        .ast
+                        .as_ref()
+                        .unwrap()
+                        .stable_hash()
+                        .as_bytes(),
+                );
+                owner.storage().collect(CollectInput {
+                    snapshot,
+                    protected_outputs: protected
+                        .iter()
+                        .copied()
+                        .filter(|output| *output != leaf_frontend.output())
+                        .collect(),
+                });
+                let swapped = owner.publish(PublishOutputInput {
+                    slot: owner.allocate(
+                        snapshot,
+                        leaf_frontend.phase().clone(),
+                        leaf_frontend.work_unit().clone(),
+                        OutputKind::new("FrontendOutput"),
+                        SchemaVersion::new(1),
+                    ),
+                    snapshot,
+                    phase: leaf_frontend.phase().clone(),
+                    work_unit: leaf_frontend.work_unit().clone(),
+                    output_kind: OutputKind::new("FrontendOutput"),
+                    schema_version: SchemaVersion::new(1),
+                    payload: (*payload).clone(),
+                    canonical_payload: Some(semantic),
+                    storage_payload: payload.canonical_disk_bytes(),
+                    decode: BlobDecoder::new(move |bytes| {
+                        FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &descriptor)
+                            .ok_or_else(|| BlobDecodeError::new("invalid swapped leaf bytes"))
+                    }),
+                    parents: vec![twig_source.clone()],
+                    named_input_hashes: leaf_frontend.lineage().named_input_hashes.clone(),
+                    side_tables: sides,
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                });
+                let swapped = match swapped {
+                    Ok(swapped) => swapped,
+                    Err(mizar_ir::publisher::PublishError::Identity { .. }) => {
+                        assert_eq!(refusal_adapter.successful_rehydrations(), 0);
+                        return;
+                    }
+                    Err(error) => panic!("unexpected swapped-lineage publication failure: {error}"),
+                };
+                assert!(owner.storage().validate_handle(swapped.any()).is_ok());
+                assert!(
+                    owner
+                        .validate_output(
+                            snapshot,
+                            swapped.any(),
+                            OutputAuthorization::CurrentPackage
+                        )
+                        .is_ok()
+                );
+                (
+                    make_input(vec![
+                        main_source.clone(),
+                        swapped.erase(),
+                        twig_frontend.clone(),
+                    ]),
+                    leaf_sources.to_vec(),
+                )
+            }
+            ImportedAttack::CoherentPayloadCorruption => (
+                make_input(vec![
+                    main_source.clone(),
+                    leaf_frontend.clone(),
+                    twig_frontend.clone(),
+                ]),
+                leaf_sources.to_vec(),
+            ),
         };
-        assert!(refusal.is_err());
+        let corrupt_store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-corrupt-cache"));
+        let refusal_store = if matches!(attack, ImportedAttack::CoherentPayloadCorruption) {
+            let CacheLookupOutcome::Hit(record) = store.lookup(&key) else {
+                panic!("the genuine multi-leaf record remains available for corruption");
+            };
+            let mut corrupted = record.output.clone();
+            let last = corrupted
+                .last_mut()
+                .expect("encoded cache payload is nonempty");
+            *last ^= 0x01;
+            let rewritten = mizar_cache::cache_store::CacheRecord::new_inline(
+                key.clone(),
+                record.header.produced_by.clone(),
+                corrupted,
+            );
+            corrupt_store.insert(&rewritten).unwrap();
+            &corrupt_store
+        } else {
+            &store
+        };
+        let refusal = source_inputs.rehydrate_native_disk_frontend_cache_with_dependencies(
+            &refusal_input,
+            &policy,
+            refusal_store,
+            &refusal_adapter,
+            frontend,
+            &refusal_sources,
+        );
+        assert!(match refusal {
+            Err(_) => true,
+            Ok(CacheRehydrateOutcome::Miss(_)) => true,
+            Ok(_) => false,
+        });
         assert_eq!(refusal_adapter.successful_rehydrations(), 0);
         assert!(owner.storage().validate_handle(&importer_frontend).is_err());
     }
@@ -2602,5 +2886,40 @@ mod imported_native_frontend_cache_tests {
     #[test]
     fn imported_cache_refuses_a_collected_leaf_source() {
         run_imported_cache_case(ImportedAttack::CollectedSource);
+    }
+
+    #[test]
+    fn imported_cache_refuses_missing_leaf_source_associations() {
+        run_imported_cache_case(ImportedAttack::MissingLeafSource);
+    }
+
+    #[test]
+    fn imported_cache_refuses_surplus_leaf_source_associations() {
+        run_imported_cache_case(ImportedAttack::SurplusLeafSource);
+    }
+
+    #[test]
+    fn imported_cache_refuses_duplicate_leaf_source_associations() {
+        run_imported_cache_case(ImportedAttack::DuplicateLeafSource);
+    }
+
+    #[test]
+    fn imported_cache_refuses_missing_leaf_frontend_associations() {
+        run_imported_cache_case(ImportedAttack::MissingLeafFrontend);
+    }
+
+    #[test]
+    fn imported_cache_refuses_duplicate_leaf_frontend_associations() {
+        run_imported_cache_case(ImportedAttack::DuplicateLeafFrontend);
+    }
+
+    #[test]
+    fn imported_cache_refuses_cross_leaf_source_lineage_with_equal_exports() {
+        run_imported_cache_case(ImportedAttack::SwappedLeafLineage);
+    }
+
+    #[test]
+    fn imported_cache_refuses_a_coherently_rehashed_corrupt_payload() {
+        run_imported_cache_case(ImportedAttack::CoherentPayloadCorruption);
     }
 }

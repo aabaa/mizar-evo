@@ -441,7 +441,7 @@ retained oracle のない native cache submission も、真正 SourceLoad hit �
 
 ## Dependency-ready native Disk Frontend binding
 
-retained oracle のない native cache mode は、実 importer が graph-ready になった時点で imported lookup も試行する。assembled runtime/policy 対応、保護された Disk capture、受理済み PackageResolve・own SourceLoad・一つの distinct direct workspace leaf Frontend dependency の厳密な対応と、その leaf の受理済み SourceLoad result を要求する。重複 import の元 provenance は保持する。leaf は通常実行でも zero-import lookup でもよい。不完全・未対応 profile は通常実行へ戻る。
+retained oracle のない native cache mode は、実 importer が graph-ready になった時点で imported lookup も試行する。assembled runtime/policy 対応、保護された Disk capture、受理済み PackageResolve・own SourceLoad・全ての distinct direct import-free workspace leaf Frontend dependency の厳密な対応と、各 leaf の受理済み SourceLoad result を要求する。重複 import の元 provenance は保持する。leaf は通常実行でも zero-import lookup でもよい。不完全・未対応 profile は通常実行へ戻る。
 scheduler readiness callback は、認証した不変 leaf summary と [完全な imported adapter footprint](frontend_adapter.md#imported-native-disk-frontend-cache) で真正な importer 全解析を準備する。受理された CacheHit だけが再構築した実 output を公開し TaskStarted を省く。期待値準備で parsing は行う。scoped IR owner は全 physical parent と再構築 importer を scheduler 消費・最終検証まで保持し、全経路で解放する。下位処理の前後で currentness・cancellation・publisher 権限を再検査し、retention は current use を与えない。
 PersistentPrefix は同一 closure・完全 payload 検証により、実際に受理した Completed/CacheHit result から best-effort imported write も行う。package Store routing、guard 喪失後の write 抑止、通常 error 優先順位、zero-import/retained 経路、pure NoKey は不変。この限定 profile は semantic import/export、後続 proof/publication/reuse、parsing-avoidance、full STEP6C を達成しない。
 

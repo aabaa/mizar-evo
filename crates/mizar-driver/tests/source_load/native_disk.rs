@@ -5410,7 +5410,15 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
     use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
     use mizar_build::scheduler::SchedulerEventKind;
     use mizar_cache::cache_store::CacheStoreRoot;
+    use mizar_ir::storage::CollectInput;
 
+    let independent_snapshots = || {
+        let source_ids = InMemorySessionIdAllocator::new();
+        for _ in 0..32 {
+            source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+        }
+        SnapshotRegistry::with_allocator(source_ids)
+    };
     let policy = mizar_proof::policy::VerifierPolicy::release();
     let main_unit = WorkUnit::Module {
         module: mizar_build::module_index::ModuleId::new(
@@ -5418,35 +5426,81 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             ModulePath::new("main"),
         ),
     };
-    let leaf_unit = WorkUnit::Module {
-        module: mizar_build::module_index::ModuleId::new(
-            PackageId::new("alpha"),
-            ModulePath::new("leaf"),
-        ),
-    };
     let run = |fixture: &Fixture,
                ids: &InMemorySessionIdAllocator,
                snapshots: &SnapshotRegistry,
                store: &CacheStoreRoot,
+               leaf_count: usize,
                family: &str,
                edited: bool,
+               transitive_leaf: Option<usize>,
+               provenance: usize,
+               replacement: bool,
                cache_stage: usize,
                workers: usize,
                reverse: bool,
                cached: bool| {
-        let importer = if family == "main" && edited {
-            "import alpha.leaf;\ntheorem T: a combine b = b;\ntheorem S: spare = spare;\n"
+        let leaf_names = (0..leaf_count)
+            .map(|index| {
+                if index == 0 {
+                    "leaf".to_owned()
+                } else if replacement && index == 1 {
+                    "leaf2".to_owned()
+                } else {
+                    format!("leaf{index}")
+                }
+            })
+            .collect::<Vec<_>>();
+        let mut importer = leaf_names
+            .iter()
+            .enumerate()
+            .map(|(index, leaf)| match (index, provenance) {
+                (0, 2) => format!("import alpha.{leaf} as l;\n"),
+                (0, 3) => format!("import alpha.{{{leaf}}};\n"),
+                _ => format!("import alpha.{leaf};\n"),
+            })
+            .collect::<String>();
+        importer.push_str(&format!("import alpha.{};\n", leaf_names[0]));
+        if provenance == 1 {
+            importer.push_str(&format!("import alpha.{};\n", leaf_names[0]));
+        }
+        importer.push_str(if family == "main" && edited {
+            "theorem T: a combine b = b;\ntheorem S: spare = spare;\n"
         } else {
-            "import alpha.leaf;\ntheorem T: a combine b = a;\ntheorem S: spare = spare;\n"
-        };
+            "theorem T: a combine b = a;\ntheorem S: spare = spare;\n"
+        });
         let raw_main = format!("\u{feff}{}", importer.replace('\n', "\r\n"));
-        let raw_leaf = if family == "leaf" && edited {
-            "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\npublic func Spare: spare -> set equals x;\nend;\n"
-        } else {
-            "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n"
-        };
         fixture.write(raw_main.as_bytes());
-        fs::write(fixture.root.join("alpha/src/leaf.miz"), raw_leaf.as_bytes()).unwrap();
+        for (index, leaf) in leaf_names.iter().enumerate() {
+            let bytes = if transitive_leaf == Some(index) {
+                "import alpha.base;\ndefinition\nend;\n".to_owned()
+            } else if index == 0 {
+                if family == leaf.as_str() && edited {
+                    "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\npublic func Spare: spare -> set equals x;\nend;\n".to_owned()
+                } else {
+                    "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".to_owned()
+                }
+            } else if index == 1 && provenance == 4 {
+                "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n".to_owned()
+            } else if index == 1 {
+                if family == leaf.as_str() && edited {
+                    format!(
+                        "definition\nlet x be set;\npublic func Edit{index}: edit{index} -> set equals x;\nend;\n"
+                    )
+                } else {
+                    "definition\nend;\n".to_owned()
+                }
+            } else if family == leaf.as_str() && edited {
+                format!(
+                    "definition\nlet x, y be set;\npublic func Symbol{index}: symbol{index} -> set equals x;\npublic func Edit{index}: edit{index} -> set equals x;\nend;\n"
+                )
+            } else {
+                format!(
+                    "definition\nlet x, y be set;\npublic func Symbol{index}: symbol{index} -> set equals x;\nend;\n"
+                )
+            };
+            fs::write(fixture.root.join(format!("alpha/src/{leaf}.miz")), bytes).unwrap();
+        }
 
         let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
         request.source_inputs.versions.clear();
@@ -5462,7 +5516,36 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             &plan.build_config,
         ));
         request.generation = BuildRequestGeneration::new(cache_stage as u64);
-        input.dependency_overlay = complete_leaf_import_overlay();
+        let mut dependency_edges = leaf_names
+            .iter()
+            .map(|leaf| {
+                ModuleDependencyEdge::new(
+                    mizar_build::module_index::ModuleId::new(
+                        PackageId::new("alpha"),
+                        ModulePath::new("main"),
+                    ),
+                    mizar_build::module_index::ModuleId::new(
+                        PackageId::new("alpha"),
+                        ModulePath::new(leaf),
+                    ),
+                    ModuleDependencyKind::ImportSummary,
+                )
+            })
+            .collect::<Vec<_>>();
+        if let Some(index) = transitive_leaf {
+            dependency_edges.push(ModuleDependencyEdge::new(
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new(&leaf_names[index]),
+                ),
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("base"),
+                ),
+                ModuleDependencyKind::ImportSummary,
+            ));
+        }
+        input.dependency_overlay = ModuleDependencyOverlay::complete(dependency_edges);
         input.worker_count = workers;
         input.completion_order = if reverse {
             CompletionOrder::Reverse
@@ -5470,11 +5553,24 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             CompletionOrder::Canonical
         };
         input.cache_policy = CacheSchedulingPolicy::Enabled;
-        let mut files = vec![
-            WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
-            WorkspaceSourceFile::new("src/main.miz", "main.miz"),
-        ];
-        let mut descriptors = ["leaf", "main"]
+        let mut modules = leaf_names.clone();
+        if transitive_leaf.is_some() {
+            modules.push("base".to_owned());
+            fs::write(
+                fixture.root.join("alpha/src/base.miz"),
+                b"definition\nend;\n",
+            )
+            .unwrap();
+        }
+        modules.push("main".to_owned());
+        let mut files = modules
+            .iter()
+            .map(|module| {
+                WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
+            })
+            .collect::<Vec<_>>();
+        let mut descriptors = modules
+            .iter()
             .map(|module| {
                 let path = format!("src/{module}.miz");
                 (
@@ -5492,7 +5588,7 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     },
                 )
             })
-            .to_vec();
+            .collect::<Vec<_>>();
         if reverse {
             descriptors.reverse();
             files.reverse();
@@ -5505,8 +5601,27 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             .capture_sources(ids, snapshots, descriptors)
             .unwrap();
         let snapshot = session.captured().snapshot().id;
-        let owner = publisher(snapshot, 0, &main_unit);
-        for unit in [&leaf_unit, &main_unit] {
+        let owner = publisher(snapshot, if reverse { usize::MAX } else { 0 }, &main_unit);
+        let leaf_units = leaf_names
+            .iter()
+            .map(|leaf| WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new(leaf),
+                ),
+            })
+            .collect::<Vec<_>>();
+        let base_unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("base"),
+            ),
+        };
+        let mut all_units = leaf_units.clone();
+        if transitive_leaf.is_some() {
+            all_units.push(base_unit.clone());
+        }
+        for unit in all_units.iter().chain(std::iter::once(&main_unit)) {
             let name = match unit {
                 WorkUnit::Module { module } => module.path.as_str(),
                 _ => unreachable!(),
@@ -5535,19 +5650,62 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         let submission = driver
             .submit_captured(session, ids, snapshots, input, options)
             .unwrap();
-        assert_eq!(
-            submission.status,
-            DriverSubmissionStatus::BlockedByMissingPhaseServices
-        );
-        assert_eq!(
-            submission.session.state(),
-            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
-        );
+        if transitive_leaf.is_none() && provenance != 4 {
+            assert_eq!(
+                submission.status,
+                DriverSubmissionStatus::BlockedByMissingPhaseServices,
+                "targets={leaf_count} family={family} stage={cache_stage} provenance={provenance} replacement={replacement}"
+            );
+            assert_eq!(
+                submission.session.state(),
+                BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+            );
+        }
         let captured = submission.session.captured();
         let graph = submission.task_graph.as_ref().unwrap();
         let scheduler = submission.scheduler_run.as_ref().unwrap();
+        if provenance == 4 {
+            let importer = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+                .unwrap();
+            let result = &scheduler.phase_results[&importer.id][0];
+            assert_eq!(result.status, PhaseStatus::Recoverable);
+            assert!(result.output_refs.is_empty());
+            assert!(
+                result
+                    .diagnostics
+                    .iter()
+                    .flat_map(|batch| batch.drafts())
+                    .any(|draft| draft.code().number() == 24)
+            );
+            assert!(scheduler.events.iter().any(|event| {
+                event.task_id.as_ref() == Some(&importer.id)
+                    && event.kind == SchedulerEventKind::TaskStarted
+            }));
+            assert!(!scheduler.task_states.iter().any(|state| {
+                state.task_id == importer.id && state.state == TaskState::CacheHit
+            }));
+            assert_eq!(
+                owner
+                    .storage()
+                    .collect(CollectInput {
+                        snapshot,
+                        protected_outputs: vec![],
+                    })
+                    .retained_outputs,
+                0
+            );
+            return (submission, Vec::new());
+        }
         let mut outputs = Vec::new();
-        for (module, unit) in [("leaf", &leaf_unit), ("main", &main_unit)] {
+        for (module, unit) in leaf_names
+            .iter()
+            .map(String::as_str)
+            .zip(leaf_units.iter())
+            .chain(std::iter::once(("main", &main_unit)))
+        {
             let version = captured
                 .snapshot()
                 .source_versions
@@ -5564,16 +5722,28 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 .iter()
                 .find(|task| task.kind == TaskKind::Frontend && task.unit == *unit)
                 .unwrap();
+            let transitive_name = transitive_leaf.map(|index| leaf_names[index].as_str());
             let source_hit = cached
                 && (cache_stage == 1
                     || cache_stage == 3
-                    || (cache_stage == 2
-                        && ((family == "main" && module == "leaf")
-                            || (family == "leaf" && module == "main"))));
+                    || (cache_stage == 2 && module != family)
+                    || (cache_stage == 4 && transitive_name != Some(module))
+                    || (cache_stage == 6 && module != "main" && module != "leaf2")
+                    || (cache_stage == 7 && module != "main")
+                    || ((8..=10).contains(&cache_stage) && module != "main")
+                    || (cache_stage == 11 && module == "leaf")
+                    || cache_stage == 5);
             let frontend_hit = cached
                 && (cache_stage == 1
                     || cache_stage == 3
-                    || (cache_stage == 2 && family == "main" && module == "leaf"));
+                    || (cache_stage == 2 && module != "main" && module != family)
+                    || ((cache_stage == 4 || cache_stage == 5)
+                        && module != "main"
+                        && (cache_stage == 5 || transitive_name != Some(module)))
+                    || (cache_stage == 6 && module != "main" && module != "leaf2")
+                    || (cache_stage == 7 && module != "main")
+                    || ((8..=10).contains(&cache_stage) && module != "main")
+                    || (cache_stage == 11 && module == "leaf"));
             for (task, hit) in [(source_task, source_hit), (frontend_task, frontend_hit)] {
                 let state = &scheduler
                     .task_states
@@ -5648,12 +5818,48 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             let frontend_side = owner.storage().side_tables(&frontend_handle).unwrap();
             let mut parent_hashes;
             if module == "main" {
-                let leaf_frontend_ref = scheduler
+                let leaf_frontend_refs = leaf_units
+                    .iter()
+                    .map(|leaf_unit| {
+                        scheduler
+                            .phase_results
+                            .iter()
+                            .find_map(|(task_id, results)| {
+                                let task = graph.tasks().iter().find(|task| task.id == *task_id)?;
+                                (task.kind == TaskKind::Frontend && task.unit == *leaf_unit)
+                                    .then(|| &results[0].output_refs[0])
+                            })
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(frontend_ref.lineage().parents.len(), leaf_count + 1);
+                assert!(
+                    frontend_ref
+                        .lineage()
+                        .parents
+                        .contains(&source_ref.output())
+                );
+                for leaf_frontend_ref in &leaf_frontend_refs {
+                    assert!(
+                        frontend_ref
+                            .lineage()
+                            .parents
+                            .contains(&leaf_frontend_ref.output())
+                    );
+                }
+                parent_hashes = vec![source_ref.content_hash()];
+                parent_hashes.extend(
+                    leaf_frontend_refs
+                        .iter()
+                        .map(|reference| reference.content_hash()),
+                );
+            } else if transitive_name == Some(module) {
+                let base_frontend_ref = scheduler
                     .phase_results
                     .iter()
                     .find_map(|(task_id, results)| {
                         let task = graph.tasks().iter().find(|task| task.id == *task_id)?;
-                        (task.kind == TaskKind::Frontend && task.unit == leaf_unit)
+                        (task.kind == TaskKind::Frontend && task.unit == base_unit)
                             .then(|| &results[0].output_refs[0])
                     })
                     .unwrap();
@@ -5668,9 +5874,9 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     frontend_ref
                         .lineage()
                         .parents
-                        .contains(&leaf_frontend_ref.output())
+                        .contains(&base_frontend_ref.output())
                 );
-                parent_hashes = vec![source_ref.content_hash(), leaf_frontend_ref.content_hash()];
+                parent_hashes = vec![source_ref.content_hash(), base_frontend_ref.content_hash()];
             } else {
                 assert_eq!(frontend_ref.lineage().parents, vec![source_ref.output()]);
                 parent_hashes = vec![source_ref.content_hash()];
@@ -5698,82 +5904,369 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 ),
             ));
         }
+        let expected_outputs = scheduler
+            .phase_results
+            .values()
+            .flatten()
+            .map(|result| result.output_refs.len())
+            .sum::<usize>();
+        let collected = owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.retained_outputs, 0);
+        assert_eq!(collected.outputs_dropped, expected_outputs);
         (submission, outputs)
     };
 
-    for family in ["main", "leaf"] {
-        for (workers, reverse) in [(1, false), (4, true)] {
-            let fixture = Fixture::new(b"");
-            let ids = InMemorySessionIdAllocator::new();
-            let snapshots = SnapshotRegistry::new();
-            let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
-            assert!(!store.root().exists());
-            let mut baseline = None;
-            let mut previous_source_ids = None;
-            for (cache_stage, edited) in [(0, false), (1, false), (2, true), (3, true)] {
-                let (actual, actual_outputs) = run(
-                    &fixture,
-                    &ids,
-                    &snapshots,
-                    &store,
-                    family,
-                    edited,
-                    cache_stage,
-                    workers,
-                    reverse,
-                    true,
-                );
-                let actual_ids = actual_outputs.iter().map(|row| row.0).collect::<Vec<_>>();
-                if let Some(previous) = &previous_source_ids {
-                    for (current, previous) in actual_ids.iter().zip(previous) {
-                        assert_ne!(current, previous);
+    for leaf_count in 1..=3 {
+        let mut families = vec!["main".to_owned()];
+        families.extend((0..leaf_count).map(|index| {
+            if index == 0 {
+                "leaf".to_owned()
+            } else {
+                format!("leaf{index}")
+            }
+        }));
+        for family in &families {
+            for (workers, reverse) in [(1, false), (4, true)] {
+                let fixture = Fixture::new(b"");
+                let ids = InMemorySessionIdAllocator::new();
+                let snapshots = SnapshotRegistry::new();
+                let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+                assert!(!store.root().exists());
+                let mut baseline = None;
+                let mut previous_source_ids = None;
+                for (cache_stage, edited) in [(0, false), (1, false), (2, true), (3, true)] {
+                    let (actual, actual_outputs) = run(
+                        &fixture,
+                        &ids,
+                        &snapshots,
+                        &store,
+                        leaf_count,
+                        family,
+                        edited,
+                        None,
+                        0,
+                        false,
+                        cache_stage,
+                        workers,
+                        reverse,
+                        true,
+                    );
+                    let actual_ids = actual_outputs.iter().map(|row| row.0).collect::<Vec<_>>();
+                    if let Some(previous) = &previous_source_ids {
+                        for (current, previous) in actual_ids.iter().zip(previous) {
+                            assert_ne!(current, previous);
+                        }
                     }
-                }
-                previous_source_ids = Some(actual_ids);
-                if cache_stage == 0 {
-                    baseline = Some(actual_outputs.clone());
-                }
-                if edited {
-                    let baseline = baseline.as_ref().unwrap();
-                    let changed = usize::from(family == "main");
-                    assert_ne!(actual_outputs[changed].1.0, baseline[changed].1.0);
-                    assert_eq!(actual_outputs[1 - changed].1.0, baseline[1 - changed].1.0);
-                    assert_ne!(actual_outputs[1].2.1, baseline[1].2.1);
-                    if family == "leaf" {
-                        assert_ne!(actual_outputs[1].2.2, baseline[1].2.2);
+                    previous_source_ids = Some(actual_ids);
+                    if cache_stage == 0 {
+                        baseline = Some(actual_outputs.clone());
                     }
-                }
-                // Every stage has a separate clean workspace/capture/Store under the opposite profile.
-                let clean_fixture = Fixture::new(b"");
-                let clean_ids = InMemorySessionIdAllocator::new();
-                let clean_source_ids = InMemorySessionIdAllocator::new();
-                for _ in 0..32 {
-                    clean_source_ids.next_source_id(snapshot_id(0x62)).unwrap();
-                }
-                let clean_snapshots = SnapshotRegistry::with_allocator(clean_source_ids);
-                let clean_store =
-                    CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
-                let (clean, clean_outputs) = run(
-                    &clean_fixture,
-                    &clean_ids,
-                    &clean_snapshots,
-                    &clean_store,
-                    family,
-                    edited,
-                    4,
-                    if reverse { 1 } else { 4 },
-                    !reverse,
-                    false,
-                );
-                assert!(!clean_store.root().exists());
-                assert_eq!(actual.session.state(), clean.session.state());
-                assert_eq!(actual.status, clean.status);
-                assert_eq!(actual_outputs.len(), clean_outputs.len());
-                for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
-                    assert_ne!(actual.0, clean.0);
-                    assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+                    if edited {
+                        let baseline = baseline.as_ref().unwrap();
+                        let changed = if family.as_str() == "main" {
+                            leaf_count
+                        } else {
+                            families.iter().position(|name| name == family).unwrap() - 1
+                        };
+                        for index in 0..actual_outputs.len() {
+                            if index == changed {
+                                assert_ne!(actual_outputs[index].1.0, baseline[index].1.0);
+                            } else {
+                                assert_eq!(actual_outputs[index].1.0, baseline[index].1.0);
+                            }
+                        }
+                        assert_ne!(actual_outputs[leaf_count].2.1, baseline[leaf_count].2.1);
+                        if family.as_str() == "leaf" {
+                            assert_ne!(actual_outputs[leaf_count].2.2, baseline[leaf_count].2.2);
+                        }
+                    }
+                    // Every stage has a separate clean workspace/capture/Store under the opposite profile.
+                    let clean_fixture = Fixture::new(b"");
+                    let clean_ids = InMemorySessionIdAllocator::new();
+                    let clean_snapshots = independent_snapshots();
+                    let clean_store =
+                        CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+                    let (clean, clean_outputs) = run(
+                        &clean_fixture,
+                        &clean_ids,
+                        &clean_snapshots,
+                        &clean_store,
+                        leaf_count,
+                        family,
+                        edited,
+                        None,
+                        0,
+                        false,
+                        4,
+                        if reverse { 1 } else { 4 },
+                        !reverse,
+                        false,
+                    );
+                    assert!(!clean_store.root().exists());
+                    assert_eq!(actual.session.state(), clean.session.state());
+                    assert_eq!(actual.status, clean.status);
+                    assert_eq!(actual_outputs.len(), clean_outputs.len());
+                    for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+                        assert_ne!(actual.0, clean.0);
+                        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+                    }
                 }
             }
         }
+    }
+
+    // Membership changes do not reuse the prior whole-closure importer: add
+    // one target, then remove it, while unchanged member records stay usable.
+    for (leaf_count, cache_stage) in [(3, 6), (2, 7)] {
+        let fixture = Fixture::new(b"");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+        let seed_leaf_count = if leaf_count == 3 { 2 } else { 3 };
+        let _ = run(
+            &fixture,
+            &ids,
+            &snapshots,
+            &store,
+            seed_leaf_count,
+            "main",
+            false,
+            None,
+            0,
+            false,
+            0,
+            2,
+            false,
+            true,
+        );
+        let (actual, actual_outputs) = run(
+            &fixture,
+            &ids,
+            &snapshots,
+            &store,
+            leaf_count,
+            "main",
+            false,
+            None,
+            0,
+            false,
+            cache_stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+        let (clean, clean_outputs) = run(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            leaf_count,
+            "main",
+            false,
+            None,
+            0,
+            false,
+            cache_stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.session.state(), clean.session.state());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual_outputs.len(), clean_outputs.len());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+    }
+
+    // Ordered duplicate count, alias, selected-branch provenance, and target
+    // replacement each change the importer projection while preserving any
+    // still-identical physical leaf records.
+    for (provenance, replacement, cache_stage) in
+        [(1, false, 8), (2, false, 9), (3, false, 10), (0, true, 11)]
+    {
+        let fixture = Fixture::new(b"");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+        let _ = run(
+            &fixture, &ids, &snapshots, &store, 2, "main", false, None, 0, false, 0, 2, false, true,
+        );
+        let (actual, actual_outputs) = run(
+            &fixture,
+            &ids,
+            &snapshots,
+            &store,
+            2,
+            "main",
+            false,
+            None,
+            provenance,
+            replacement,
+            cache_stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+        let (clean, clean_outputs) = run(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            2,
+            "main",
+            false,
+            None,
+            provenance,
+            replacement,
+            cache_stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.session.state(), clean.session.state());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual_outputs.len(), clean_outputs.len());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+    }
+
+    // One transitive member makes the entire importer closure inadmissible.
+    // Repeating it proves neither the importer nor that leaf Frontend was
+    // written, while ordinary output still matches a clean run.
+    let leaf_count = 2;
+    let fixture = Fixture::new(b"");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+    let _ = run(
+        &fixture, &ids, &snapshots, &store, leaf_count, "main", false, None, 0, false, 0, 2, false,
+        true,
+    );
+    for cache_stage in [4, 5] {
+        let (actual, actual_outputs) = run(
+            &fixture,
+            &ids,
+            &snapshots,
+            &store,
+            leaf_count,
+            "main",
+            false,
+            Some(leaf_count - 1),
+            0,
+            false,
+            cache_stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+        let (clean, clean_outputs) = run(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            leaf_count,
+            "main",
+            false,
+            Some(leaf_count - 1),
+            0,
+            false,
+            cache_stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.session.state(), clean.session.state());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual_outputs.len(), clean_outputs.len());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+    }
+    // Two otherwise eligible workspace leaves become lexically conflicting.
+    // Repeat the conflict after a viable cached baseline to rule out an importer write.
+    let fixture = Fixture::new(b"");
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+    let _ = run(
+        &fixture, &ids, &snapshots, &store, 2, "main", false, None, 0, false, 0, 2, false, true,
+    );
+    for stage in [12, 13] {
+        let (actual, _) = run(
+            &fixture, &ids, &snapshots, &store, 2, "main", false, None, 4, false, stage, 2, false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+        let (clean, _) = run(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            2,
+            "main",
+            false,
+            None,
+            4,
+            false,
+            stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.session.state(), clean.session.state());
+        assert_eq!(actual.status, clean.status);
+        let diagnostics = [&actual, &clean].map(|submission| {
+            submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.diagnostics)
+                .flat_map(|batch| batch.drafts())
+                .map(|draft| {
+                    let range = match draft.primary_location() {
+                        mizar_diagnostics::failure_record::DiagnosticPrimaryLocation::Span(
+                            span,
+                        ) => {
+                            let range = span.range();
+                            Some((range.start, range.end))
+                        }
+                        _ => None,
+                    };
+                    (draft.code(), draft.message().to_owned(), range)
+                })
+                .collect::<Vec<_>>()
+        });
+        assert!(!diagnostics[0].is_empty());
+        assert_eq!(diagnostics[0], diagnostics[1]);
     }
 }

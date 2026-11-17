@@ -337,6 +337,7 @@ pub(crate) fn native_frontend_cache_parents(
     let mut leaf_sources = Vec::new();
     let mut own_source = false;
     let mut seen = BTreeSet::new();
+    let mut leaf_units = Vec::new();
     for id in &task.dependencies {
         if !seen.insert(id) {
             return None;
@@ -360,8 +361,9 @@ pub(crate) fn native_frontend_cache_parents(
         } else if parent.kind == TaskKind::Frontend
             && parent.phases == [PipelinePhase::Frontend]
             && parent.unit != task.unit
-            && leaf_sources.is_empty()
+            && !leaf_units.contains(&&parent.unit)
         {
+            leaf_units.push(&parent.unit);
             let mut sources = graph.tasks().iter().filter(|candidate| {
                 candidate.unit == parent.unit && candidate.phases == [PipelinePhase::SourceLoad]
             });

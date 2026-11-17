@@ -2,6 +2,92 @@ use super::*;
 use mizar_ir::publisher::OutputAuthorization;
 
 #[test]
+fn scheduled_direct_leaf_closure_waits_for_and_consumes_each_real_parent() {
+    for failed_leaf in [None, Some("base")] {
+        let base = if failed_leaf == Some("base") {
+            b"definition\nthis is not a declaration;\n".as_slice()
+        } else {
+            b"definition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\n"
+                .as_slice()
+        };
+        let fixture = WorkspaceLeafFixture::new(
+            b"import alpha.leaf;\nimport alpha.base;\ntheorem T: a combine b = a arrange b;\n",
+            b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+            Some(base),
+            usize::MAX,
+        );
+        let mut overlay = complete_leaf_import_overlay();
+        overlay.edges.push(ModuleDependencyEdge::new(
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("base"),
+            ),
+            ModuleDependencyKind::ImportSummary,
+        ));
+        let (request, mut input) = fixture.scheduled_request(overlay, Vec::new(), Vec::new());
+        input.worker_count = 4;
+        input.completion_order = CompletionOrder::Reverse;
+        let mut driver = fixture.scheduled_driver();
+        let submission = driver
+            .submit(
+                request,
+                &fixture.ids,
+                &SnapshotRegistry::new(),
+                input,
+                Default::default(),
+            )
+            .unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let leaf_frontend = fixture.task(TaskKind::Frontend, "leaf");
+        let base_frontend = fixture.task(TaskKind::Frontend, "base");
+        let importer_frontend = fixture.task(TaskKind::Frontend, "main");
+        let state = |task: &BuildTask| {
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == task.id)
+                .unwrap()
+                .state
+        };
+        if failed_leaf.is_some() {
+            assert_ne!(state(base_frontend), TaskState::Completed);
+            assert_eq!(state(leaf_frontend), TaskState::Completed);
+            assert_ne!(state(importer_frontend), TaskState::Completed);
+            assert!(
+                run.phase_results
+                    .get(&importer_frontend.id)
+                    .is_none_or(|results| results
+                        .iter()
+                        .all(|result| result.output_refs.is_empty()))
+            );
+            continue;
+        }
+
+        assert_eq!(state(leaf_frontend), TaskState::Completed);
+        assert_eq!(state(base_frontend), TaskState::Completed);
+        assert_eq!(state(importer_frontend), TaskState::Completed);
+        let output = &run.phase_results[&importer_frontend.id][0].output_refs[0];
+        let lineage = fixture
+            .publisher
+            .registry()
+            .output_lineage(output.output())
+            .unwrap();
+        let own_source = run.phase_results[&fixture.task(TaskKind::SourceLoad, "main").id][0]
+            .output_refs[0]
+            .output();
+        let leaf = run.phase_results[&leaf_frontend.id][0].output_refs[0].output();
+        let base = run.phase_results[&base_frontend.id][0].output_refs[0].output();
+        assert_eq!(lineage.parents.len(), 3);
+        assert!(lineage.parents.contains(&own_source));
+        assert!(lineage.parents.contains(&leaf));
+        assert!(lineage.parents.contains(&base));
+    }
+}
+
+#[test]
 fn scheduled_workspace_intermediate_consumes_only_its_own_public_symbols() {
     let importer = b"import alpha.leaf;\ntheorem T: a arrange b = a;\n";
     let intermediate = b"import alpha.base;\ndefinition\nlet x, y be set;\npublic func Infix: x arrange y -> set equals x;\nend;\ntheorem U: a combine b = a;\n";
