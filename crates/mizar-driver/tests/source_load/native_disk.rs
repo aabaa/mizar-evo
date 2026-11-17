@@ -5404,3 +5404,376 @@ fn imported_native_disk_frontend_prefix_writes_and_skips_ready_importer() {
 
     assert_released(&warm, &warm_owner);
 }
+
+#[test]
+fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
+    use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+    use mizar_build::scheduler::SchedulerEventKind;
+    use mizar_cache::cache_store::CacheStoreRoot;
+
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let main_unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    let leaf_unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("leaf"),
+        ),
+    };
+    let run = |fixture: &Fixture,
+               ids: &InMemorySessionIdAllocator,
+               snapshots: &SnapshotRegistry,
+               store: &CacheStoreRoot,
+               family: &str,
+               edited: bool,
+               cache_stage: usize,
+               workers: usize,
+               reverse: bool,
+               cached: bool| {
+        let importer = if family == "main" && edited {
+            "import alpha.leaf;\ntheorem T: a combine b = b;\ntheorem S: spare = spare;\n"
+        } else {
+            "import alpha.leaf;\ntheorem T: a combine b = a;\ntheorem S: spare = spare;\n"
+        };
+        let raw_main = format!("\u{feff}{}", importer.replace('\n', "\r\n"));
+        let raw_leaf = if family == "leaf" && edited {
+            "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\npublic func Spare: spare -> set equals x;\nend;\n"
+        } else {
+            "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n"
+        };
+        fixture.write(raw_main.as_bytes());
+        fs::write(fixture.root.join("alpha/src/leaf.miz"), raw_leaf.as_bytes()).unwrap();
+
+        let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
+        request.source_inputs.versions.clear();
+        let plan = produce_build_plan(
+            input.plan_request.clone(),
+            input.workspace_packages.clone(),
+            input.lockfile.clone(),
+        )
+        .unwrap();
+        request.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+        request.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+            &plan.verifier_config,
+            &plan.build_config,
+        ));
+        request.generation = BuildRequestGeneration::new(cache_stage as u64);
+        input.dependency_overlay = complete_leaf_import_overlay();
+        input.worker_count = workers;
+        input.completion_order = if reverse {
+            CompletionOrder::Reverse
+        } else {
+            CompletionOrder::Canonical
+        };
+        input.cache_policy = CacheSchedulingPolicy::Enabled;
+        let mut files = vec![
+            WorkspaceSourceFile::new("src/leaf.miz", "leaf.miz"),
+            WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+        ];
+        let mut descriptors = ["leaf", "main"]
+            .map(|module| {
+                let path = format!("src/{module}.miz");
+                (
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new(module),
+                        normalized_path: normalize_path(
+                            &fixture.root.join("alpha"),
+                            Path::new(&path),
+                        )
+                        .unwrap(),
+                        edition: Edition::new("2025"),
+                        origin: SourceOriginInput::Disk { path: path.into() },
+                    },
+                )
+            })
+            .to_vec();
+        if reverse {
+            descriptors.reverse();
+            files.reverse();
+        }
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files,
+        }]);
+        let session = request
+            .capture_sources(ids, snapshots, descriptors)
+            .unwrap();
+        let snapshot = session.captured().snapshot().id;
+        let owner = publisher(snapshot, 0, &main_unit);
+        for unit in [&leaf_unit, &main_unit] {
+            let name = match unit {
+                WorkUnit::Module { module } => module.path.as_str(),
+                _ => unreachable!(),
+            };
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("SourceLoad"),
+                OutputKind::new("SourceUnit"),
+                IrWorkUnit::new(format!("{:?}:{:?}", "alpha", name)),
+            ));
+            allow_frontend(&owner, unit);
+        }
+        let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy))
+            .with_output_publisher(owner.clone());
+        let options = if cached {
+            SubmitOptions {
+                native_cache: Some(NativeCacheOptions {
+                    policy: &policy,
+                    store,
+                    mode: NativeCacheMode::PersistentPrefix,
+                }),
+                ..Default::default()
+            }
+        } else {
+            Default::default()
+        };
+        let submission = driver
+            .submit_captured(session, ids, snapshots, input, options)
+            .unwrap();
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::BlockedByMissingPhaseServices
+        );
+        assert_eq!(
+            submission.session.state(),
+            BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+        );
+        let captured = submission.session.captured();
+        let graph = submission.task_graph.as_ref().unwrap();
+        let scheduler = submission.scheduler_run.as_ref().unwrap();
+        let mut outputs = Vec::new();
+        for (module, unit) in [("leaf", &leaf_unit), ("main", &main_unit)] {
+            let version = captured
+                .snapshot()
+                .source_versions
+                .iter()
+                .find(|version| version.module_path.as_str() == module)
+                .unwrap();
+            let source_task = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::SourceLoad && task.unit == *unit)
+                .unwrap();
+            let frontend_task = graph
+                .tasks()
+                .iter()
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == *unit)
+                .unwrap();
+            let source_hit = cached
+                && (cache_stage == 1
+                    || cache_stage == 3
+                    || (cache_stage == 2
+                        && ((family == "main" && module == "leaf")
+                            || (family == "leaf" && module == "main"))));
+            let frontend_hit = cached
+                && (cache_stage == 1
+                    || cache_stage == 3
+                    || (cache_stage == 2 && family == "main" && module == "leaf"));
+            for (task, hit) in [(source_task, source_hit), (frontend_task, frontend_hit)] {
+                let state = &scheduler
+                    .task_states
+                    .iter()
+                    .find(|state| state.task_id == task.id)
+                    .unwrap()
+                    .state;
+                assert_eq!(
+                    *state,
+                    if hit {
+                        TaskState::CacheHit
+                    } else {
+                        TaskState::Completed
+                    },
+                    "{} {:?} {:?} stage {cache_stage}",
+                    family,
+                    task.kind,
+                    module
+                );
+                assert_eq!(
+                    scheduler.events.iter().any(|event| {
+                        event.task_id.as_ref() == Some(&task.id)
+                            && event.kind == SchedulerEventKind::TaskStarted
+                    }),
+                    !hit
+                );
+            }
+            let source_result = &scheduler.phase_results[&source_task.id][0];
+            let frontend_result = &scheduler.phase_results[&frontend_task.id][0];
+            assert_eq!(source_result.status, PhaseStatus::Complete);
+            assert_eq!(frontend_result.status, PhaseStatus::Complete);
+            assert!(source_result.diagnostics.is_empty());
+            assert!(frontend_result.diagnostics.is_empty());
+            let source_ref = &source_result.output_refs[0];
+            let source_handle = owner
+                .storage()
+                .typed_handle::<SourceUnit>(source_ref, &OutputKind::new("SourceUnit"))
+                .unwrap();
+            let source = owner.storage().get(&source_handle).unwrap();
+            assert_eq!(source.source_id, version.source_id);
+            assert_eq!(source.source_hash, version.source_hash);
+            let source_side = owner.storage().side_tables(&source_handle).unwrap();
+            let frontend_ref = &frontend_result.output_refs[0];
+            let frontend_handle = owner
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    frontend_ref,
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .unwrap();
+            let frontend = owner.storage().get(&frontend_handle).unwrap();
+            assert_eq!(frontend.source, *source);
+            assert_eq!(source.line_map.source_id(), version.source_id);
+            if let Some(map) = &source.loading_map {
+                assert_eq!(map.source_id, version.source_id);
+            }
+            if module == "main" {
+                assert!(frontend.tokens.tokens().iter().any(|token| {
+                    token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
+                }));
+                let spare = frontend
+                    .tokens
+                    .tokens()
+                    .iter()
+                    .find(|token| token.text.as_ref() == "spare")
+                    .unwrap();
+                assert_eq!(
+                    spare.kind == TokenKind::UserSymbol,
+                    family == "leaf" && edited
+                );
+            }
+            let frontend_side = owner.storage().side_tables(&frontend_handle).unwrap();
+            let mut parent_hashes;
+            if module == "main" {
+                let leaf_frontend_ref = scheduler
+                    .phase_results
+                    .iter()
+                    .find_map(|(task_id, results)| {
+                        let task = graph.tasks().iter().find(|task| task.id == *task_id)?;
+                        (task.kind == TaskKind::Frontend && task.unit == leaf_unit)
+                            .then(|| &results[0].output_refs[0])
+                    })
+                    .unwrap();
+                assert_eq!(frontend_ref.lineage().parents.len(), 2);
+                assert!(
+                    frontend_ref
+                        .lineage()
+                        .parents
+                        .contains(&source_ref.output())
+                );
+                assert!(
+                    frontend_ref
+                        .lineage()
+                        .parents
+                        .contains(&leaf_frontend_ref.output())
+                );
+                parent_hashes = vec![source_ref.content_hash(), leaf_frontend_ref.content_hash()];
+            } else {
+                assert_eq!(frontend_ref.lineage().parents, vec![source_ref.output()]);
+                parent_hashes = vec![source_ref.content_hash()];
+            }
+            parent_hashes.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+            // Owner codecs preserve maps and complete payloads while omitting local IDs/roots.
+            outputs.push((
+                source.source_id,
+                (
+                    source.source_hash,
+                    source.canonical_disk_bytes().unwrap(),
+                    (*source_side).clone(),
+                    SourceUnitCacheKey::from_source(&source).stable_hash(),
+                    (source_ref.content_hash(), source_ref.side_table_hash()),
+                    source_ref.lineage().named_input_hashes.clone(),
+                ),
+                (
+                    frontend.canonical_disk_bytes().unwrap(),
+                    frontend.cache_keys.canonical_bytes().unwrap(),
+                    frontend.cache_keys.active_lexical_environment.stable_hash(),
+                    (*frontend_side).clone(),
+                    (frontend_ref.content_hash(), frontend_ref.side_table_hash()),
+                    frontend_ref.lineage().named_input_hashes.clone(),
+                    parent_hashes,
+                ),
+            ));
+        }
+        (submission, outputs)
+    };
+
+    for family in ["main", "leaf"] {
+        for (workers, reverse) in [(1, false), (4, true)] {
+            let fixture = Fixture::new(b"");
+            let ids = InMemorySessionIdAllocator::new();
+            let snapshots = SnapshotRegistry::new();
+            let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+            assert!(!store.root().exists());
+            let mut baseline = None;
+            let mut previous_source_ids = None;
+            for (cache_stage, edited) in [(0, false), (1, false), (2, true), (3, true)] {
+                let (actual, actual_outputs) = run(
+                    &fixture,
+                    &ids,
+                    &snapshots,
+                    &store,
+                    family,
+                    edited,
+                    cache_stage,
+                    workers,
+                    reverse,
+                    true,
+                );
+                let actual_ids = actual_outputs.iter().map(|row| row.0).collect::<Vec<_>>();
+                if let Some(previous) = &previous_source_ids {
+                    for (current, previous) in actual_ids.iter().zip(previous) {
+                        assert_ne!(current, previous);
+                    }
+                }
+                previous_source_ids = Some(actual_ids);
+                if cache_stage == 0 {
+                    baseline = Some(actual_outputs.clone());
+                }
+                if edited {
+                    let baseline = baseline.as_ref().unwrap();
+                    let changed = usize::from(family == "main");
+                    assert_ne!(actual_outputs[changed].1.0, baseline[changed].1.0);
+                    assert_eq!(actual_outputs[1 - changed].1.0, baseline[1 - changed].1.0);
+                    assert_ne!(actual_outputs[1].2.1, baseline[1].2.1);
+                    if family == "leaf" {
+                        assert_ne!(actual_outputs[1].2.2, baseline[1].2.2);
+                    }
+                }
+                // Every stage has a separate clean workspace/capture/Store under the opposite profile.
+                let clean_fixture = Fixture::new(b"");
+                let clean_ids = InMemorySessionIdAllocator::new();
+                let clean_source_ids = InMemorySessionIdAllocator::new();
+                for _ in 0..32 {
+                    clean_source_ids.next_source_id(snapshot_id(0x62)).unwrap();
+                }
+                let clean_snapshots = SnapshotRegistry::with_allocator(clean_source_ids);
+                let clean_store =
+                    CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+                let (clean, clean_outputs) = run(
+                    &clean_fixture,
+                    &clean_ids,
+                    &clean_snapshots,
+                    &clean_store,
+                    family,
+                    edited,
+                    4,
+                    if reverse { 1 } else { 4 },
+                    !reverse,
+                    false,
+                );
+                assert!(!clean_store.root().exists());
+                assert_eq!(actual.session.state(), clean.session.state());
+                assert_eq!(actual.status, clean.status);
+                assert_eq!(actual_outputs.len(), clean_outputs.len());
+                for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+                    assert_ne!(actual.0, clean.0);
+                    assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+                }
+            }
+        }
+    }
+}
