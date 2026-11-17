@@ -2470,3 +2470,842 @@ fn captured_provenance_remains_absent_and_forbidden_in_legacy_profiles() {
         matches!(read_builtin_verified_artifact(&json, VerifiedArtifactReadOptions::default()), Err(VerifiedArtifactError::UnknownField { path, field }) if path == "$.provenance" && field == "captured_source")
     );
 }
+
+fn q1_range(start: usize, end: usize) -> CanonicalJson {
+    CanonicalJson::array([
+        CanonicalJson::integer(start as i64),
+        CanonicalJson::integer(end as i64),
+    ])
+}
+
+fn q1_bind(
+    comments: CanonicalJson,
+    loaded: &str,
+    origin: SourceOrigin,
+) -> crate::comment_projection::CommentedArtifact {
+    let mut artifact = captured_artifact(origin);
+    artifact.source_hash = mizar_session::hash_text(loaded);
+    artifact.provenance.captured_source.as_mut().unwrap().2 = artifact.source_hash;
+    artifact.refresh_hashes().unwrap();
+    crate::comment_projection::CommentedArtifact { artifact, comments }
+}
+
+fn q1_plain(loaded: &str) -> crate::comment_projection::CommentedArtifact {
+    let whole = q1_range(0, loaded.len());
+    q1_bind(
+        CanonicalJson::object([
+            ("original", CanonicalJson::string(loaded)),
+            ("loaded", CanonicalJson::string(loaded)),
+            ("lexical", CanonicalJson::string(loaded)),
+            (
+                "loading",
+                CanonicalJson::array([CanonicalJson::array([
+                    CanonicalJson::string("original"),
+                    whole.clone(),
+                    whole.clone(),
+                ])]),
+            ),
+            (
+                "preprocess",
+                CanonicalJson::array(if loaded.is_empty() {
+                    vec![]
+                } else {
+                    vec![CanonicalJson::array([
+                        CanonicalJson::string("original"),
+                        whole.clone(),
+                        whole,
+                        CanonicalJson::Null,
+                    ])]
+                }),
+            ),
+            ("comments", CanonicalJson::array([])),
+            ("whitespace", CanonicalJson::array([])),
+            ("landmarks", CanonicalJson::array([])),
+        ])
+        .unwrap(),
+        loaded,
+        SourceOrigin::Disk,
+    )
+}
+
+fn q1_fixture(origin: SourceOrigin) -> crate::comment_projection::CommentedArtifact {
+    let loaded = "::: β\n::\na::=δ=::b\n@solo\n@tag\ndefinition\nx;\nend;";
+    let mut lexical = String::new();
+    let mut preprocess = Vec::new();
+    let mut comments = Vec::new();
+    let mut offset = 0;
+    for (kind, text, replacement) in [
+        ("documentation", "::: β\n", "\n"),
+        ("single_line", "::\n", "\n"),
+        ("original", "a", ""),
+        ("multi_line", "::=δ=::", " "),
+        ("original", "b\n@solo\n@tag\ndefinition\nx;\nend;", ""),
+    ] {
+        let source = q1_range(offset, offset + text.len());
+        let start = lexical.len();
+        if kind == "original" {
+            lexical.push_str(text);
+            preprocess.push(CanonicalJson::array([
+                CanonicalJson::string(kind),
+                q1_range(start, lexical.len()),
+                source,
+                CanonicalJson::Null,
+            ]));
+        } else {
+            comments.push(CanonicalJson::array([
+                CanonicalJson::string(kind),
+                source.clone(),
+                CanonicalJson::string(text),
+            ]));
+            preprocess.push(CanonicalJson::array([
+                CanonicalJson::string("removed"),
+                CanonicalJson::Null,
+                source.clone(),
+                CanonicalJson::string(kind),
+            ]));
+            lexical.push_str(replacement);
+            let anchor = if text.ends_with('\n') {
+                q1_range(offset + text.len() - 1, offset + text.len())
+            } else {
+                source
+            };
+            preprocess.push(CanonicalJson::array([
+                CanonicalJson::string("synthetic"),
+                q1_range(start, lexical.len()),
+                anchor,
+                CanonicalJson::Null,
+            ]));
+        }
+        offset += text.len();
+    }
+    let solo = loaded.find("@solo").unwrap();
+    let tag = loaded.find("@tag").unwrap();
+    let definition = loaded.find("definition").unwrap();
+    let item = loaded.find("x;").unwrap();
+    let end = loaded.find("end;").unwrap();
+    let target = CanonicalJson::array([
+        CanonicalJson::string("export-1"),
+        CanonicalJson::string("Hidden.Th1"),
+    ]);
+    let landmarks = [
+        (
+            "standalone_annotation",
+            solo,
+            solo + "@solo".len(),
+            None,
+            false,
+            CanonicalJson::Null,
+        ),
+        (
+            "wrapper",
+            tag,
+            loaded.len(),
+            None,
+            false,
+            CanonicalJson::Null,
+        ),
+        (
+            "attached_annotation",
+            tag,
+            tag + "@tag".len(),
+            Some(1),
+            false,
+            CanonicalJson::Null,
+        ),
+        (
+            "definition",
+            definition,
+            loaded.len(),
+            Some(1),
+            false,
+            target.clone(),
+        ),
+        (
+            "nested_item",
+            item,
+            item + "x;".len(),
+            Some(3),
+            false,
+            target,
+        ),
+        (
+            "recovered_item",
+            end,
+            loaded.len(),
+            Some(3),
+            true,
+            CanonicalJson::Null,
+        ),
+    ]
+    .into_iter()
+    .map(|(kind, start, end, parent, recovered, target)| {
+        CanonicalJson::array([
+            CanonicalJson::string(kind),
+            q1_range(start, end),
+            parent.map_or(CanonicalJson::Null, CanonicalJson::integer),
+            CanonicalJson::Bool(recovered),
+            target,
+        ])
+    })
+    .collect::<Vec<_>>();
+    let mut value = q1_plain(loaded);
+    set_field(
+        &mut value.comments,
+        "lexical",
+        CanonicalJson::string(lexical),
+    );
+    set_field(
+        &mut value.comments,
+        "preprocess",
+        CanonicalJson::array(preprocess),
+    );
+    set_field(
+        &mut value.comments,
+        "comments",
+        CanonicalJson::array(comments),
+    );
+    set_field(
+        &mut value.comments,
+        "whitespace",
+        CanonicalJson::array(
+            loaded
+                .char_indices()
+                .filter(|(at, ch)| *at >= loaded.find("b\n").unwrap() && ch.is_whitespace())
+                .map(|(at, ch)| q1_range(at, at + ch.len_utf8()))
+                .collect::<Vec<_>>(),
+        ),
+    );
+    set_field(
+        &mut value.comments,
+        "landmarks",
+        CanonicalJson::array(landmarks),
+    );
+    value
+        .artifact
+        .provenance
+        .captured_source
+        .as_mut()
+        .unwrap()
+        .1 = origin;
+    value.artifact.exports[0].source_range = range(item as u64, (item + "x;".len()) as u64);
+    value.artifact.refresh_hashes().unwrap();
+    value
+}
+
+#[test]
+fn q1_complete_disk_and_open_buffer_round_trips() {
+    use crate::comment_projection::{
+        commented_artifact_json, read_commented_artifact, write_commented_artifact,
+    };
+    for origin in [SourceOrigin::Disk, SourceOrigin::OpenBuffer { version: -7 }] {
+        let mut value = q1_fixture(origin);
+        let mut same_range = array_field_mut(&mut value.comments, "landmarks")
+            .last()
+            .unwrap()
+            .clone();
+        array_mut(&mut same_range)[0] = CanonicalJson::string("recovery_marker");
+        array_field_mut(&mut value.comments, "landmarks").push(same_range);
+        let json = commented_artifact_json(&value).unwrap();
+        assert_eq!(
+            write_commented_artifact(&value).unwrap(),
+            canonical_json_string(&json).into_bytes()
+        );
+        let read = read_commented_artifact(
+            &json,
+            VerifiedArtifactReadOptions {
+                expected_module: Some(&value.artifact.module),
+                expected_interface_hash: Some(value.compute_interface_hash().unwrap()),
+                expected_implementation_hash: Some(value.compute_implementation_hash().unwrap()),
+                ..VerifiedArtifactReadOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(read.artifact, value.artifact);
+        assert_eq!(read.comments, value.comments);
+    }
+}
+
+#[test]
+fn q1_bom_crlf_and_mapping_refusals() {
+    use crate::comment_projection::{commented_artifact_json, read_commented_artifact};
+    let loaded = "α\nb\n";
+    let original = "\u{feff}α\r\nb\r\n";
+    let bom = "\u{feff}".len();
+    let first = "α".len();
+    let b = loaded.find('b').unwrap();
+    let original_b = original.find('b').unwrap();
+    let mut value = q1_plain(loaded);
+    set_field(
+        &mut value.comments,
+        "original",
+        CanonicalJson::string(original),
+    );
+    set_field(
+        &mut value.comments,
+        "loading",
+        CanonicalJson::array([
+            CanonicalJson::array([
+                CanonicalJson::string("bom"),
+                CanonicalJson::Null,
+                q1_range(0, bom),
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::string("original"),
+                q1_range(0, first),
+                q1_range(bom, bom + first),
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::string("newline"),
+                q1_range(first, b),
+                q1_range(bom + first, original_b),
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::string("original"),
+                q1_range(b, b + "b".len()),
+                q1_range(original_b, original_b + "b".len()),
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::string("newline"),
+                q1_range(b + "b".len(), loaded.len()),
+                q1_range(original_b + "b".len(), original.len()),
+            ]),
+        ]),
+    );
+    let json = commented_artifact_json(&value).unwrap();
+    assert!(read_commented_artifact(&json, VerifiedArtifactReadOptions::default()).is_ok());
+    let complete = q1_fixture(SourceOrigin::Disk);
+    for case in 0..13 {
+        let mut invalid = if case < 3 {
+            value.clone()
+        } else {
+            complete.clone()
+        };
+        match case {
+            0 => {
+                array_field_mut(&mut invalid.comments, "loading").remove(0);
+            }
+            1 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "loading")[1])[1] =
+                    q1_range(0, 1);
+            }
+            2 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "loading")[2])[0] =
+                    CanonicalJson::string("original");
+            }
+            3 => {
+                array_field_mut(&mut invalid.comments, "preprocess").remove(0);
+            }
+            4 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "preprocess")[1])[2] =
+                    q1_range(
+                        invalid.artifact.exports[0].source_range.start_byte as usize,
+                        invalid.artifact.exports[0].source_range.end_byte as usize,
+                    );
+            }
+            5 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "preprocess")[1])[1] =
+                    q1_range(0, 2);
+            }
+            6 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "comments")[0])[1] =
+                    q1_range(0, "::: ".len() + 1);
+            }
+            7 => {
+                array_field_mut(&mut invalid.comments, "whitespace").push(q1_range(0, 1));
+            }
+            8 => {
+                set_field(
+                    &mut invalid.comments,
+                    "lexical",
+                    CanonicalJson::string("wrong"),
+                );
+            }
+            9 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "preprocess")[0])[3] =
+                    CanonicalJson::string("unknown");
+            }
+            10 => {
+                let future =
+                    array_mut(&mut array_field_mut(&mut invalid.comments, "preprocess")[2])[2]
+                        .clone();
+                array_mut(&mut array_field_mut(&mut invalid.comments, "preprocess")[1])[2] = future;
+            }
+            11 => {
+                array_field_mut(&mut invalid.comments, "preprocess").swap(1, 4);
+            }
+            _ => {
+                let CanonicalJson::String(loaded) = &object_mut(&mut invalid.comments)["loaded"]
+                else {
+                    unreachable!()
+                };
+                let end = loaded.len() + 1;
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[0])[1] =
+                    q1_range(0, end);
+            }
+        }
+        assert!(
+            commented_artifact_json(&invalid).is_err(),
+            "writer map case {case}"
+        );
+        let mut malformed =
+            commented_artifact_json(if case < 3 { &value } else { &complete }).unwrap();
+        set_field(&mut malformed, "comments", invalid.comments);
+        assert!(
+            read_commented_artifact(&malformed, VerifiedArtifactReadOptions::default()).is_err(),
+            "reader map case {case}"
+        );
+    }
+}
+
+#[test]
+fn q1_unavailable_available_empty_and_empty_documentation_are_distinct() {
+    use crate::comment_projection::{commented_artifact_json, read_commented_artifact};
+    let empty = q1_plain("");
+    let mut unavailable = empty.clone();
+    unavailable.comments = CanonicalJson::Null;
+    let doc_text = ":::\n";
+    let mut doc = q1_plain(doc_text);
+    set_field(&mut doc.comments, "lexical", CanonicalJson::string("\n"));
+    set_field(
+        &mut doc.comments,
+        "comments",
+        CanonicalJson::array([CanonicalJson::array([
+            CanonicalJson::string("documentation"),
+            q1_range(0, doc_text.len()),
+            CanonicalJson::string(":::\n"),
+        ])]),
+    );
+    set_field(
+        &mut doc.comments,
+        "preprocess",
+        CanonicalJson::array([
+            CanonicalJson::array([
+                CanonicalJson::string("removed"),
+                CanonicalJson::Null,
+                q1_range(0, doc_text.len()),
+                CanonicalJson::string("documentation"),
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::string("synthetic"),
+                q1_range(0, 1),
+                q1_range(":::".len(), doc_text.len()),
+                CanonicalJson::Null,
+            ]),
+        ]),
+    );
+    for value in [&empty, &unavailable, &doc] {
+        let json = commented_artifact_json(value).unwrap();
+        assert_eq!(
+            read_commented_artifact(&json, VerifiedArtifactReadOptions::default())
+                .unwrap()
+                .comments,
+            value.comments
+        );
+    }
+    assert_ne!(
+        empty.compute_implementation_hash().unwrap(),
+        unavailable.compute_implementation_hash().unwrap()
+    );
+    assert_ne!(
+        empty.compute_artifact_hash().unwrap(),
+        doc.compute_artifact_hash().unwrap()
+    );
+    let mut partial = empty;
+    object_mut(&mut partial.comments).remove("landmarks");
+    assert!(commented_artifact_json(&partial).is_err());
+}
+
+#[test]
+fn q1_rejects_binding_order_duplicates_and_malformed_envelopes() {
+    use crate::comment_projection::{commented_artifact_json, read_commented_artifact};
+    let value = q1_fixture(SourceOrigin::Disk);
+    let valid = commented_artifact_json(&value).unwrap();
+    for case in 0..24 {
+        let mut invalid = value.clone();
+        match case {
+            0 => {
+                invalid.artifact.source_hash = mizar_session::hash_text("different capture");
+                invalid
+                    .artifact
+                    .provenance
+                    .captured_source
+                    .as_mut()
+                    .unwrap()
+                    .2 = invalid.artifact.source_hash;
+                invalid.artifact.refresh_hashes().unwrap();
+            }
+            1 => invalid.artifact.source_file = "../hidden.miz".to_owned(),
+            2 => invalid.artifact.module.package_version = Some(String::new()),
+            3 => invalid.artifact.provenance.language_edition = "foreign".to_owned(),
+            4 => invalid.artifact.provenance.captured_source = None,
+            5 => {
+                invalid
+                    .artifact
+                    .provenance
+                    .captured_source
+                    .as_mut()
+                    .unwrap()
+                    .1 = SourceOrigin::Generated {
+                    generator: mizar_session::GeneratedSourceKind::new("q1-fixture"),
+                }
+            }
+            6 => invalid.artifact.schema_version = SchemaVersion::new(1, 1),
+            7 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[3])[4] =
+                    CanonicalJson::array([
+                        CanonicalJson::string("foreign"),
+                        CanonicalJson::string("Hidden.Th1"),
+                    ])
+            }
+            8 => {
+                let duplicate = array_field_mut(&mut invalid.comments, "landmarks")[3].clone();
+                array_field_mut(&mut invalid.comments, "landmarks").insert(4, duplicate);
+            }
+            9 => array_field_mut(&mut invalid.comments, "landmarks").swap(0, 1),
+            10 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[3])[2] =
+                    CanonicalJson::integer(5)
+            }
+            11 => {
+                let duplicate = array_field_mut(&mut invalid.comments, "comments")[0].clone();
+                array_field_mut(&mut invalid.comments, "comments").insert(1, duplicate);
+            }
+            12 => array_field_mut(&mut invalid.comments, "comments").swap(0, 1),
+            13 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[0])[0] =
+                    CanonicalJson::string("")
+            }
+            14 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "comments")[0])
+                    .push(CanonicalJson::Null);
+            }
+            15 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[0]).pop();
+            }
+            16 => {
+                set_field(&mut invalid.comments, "unknown", CanonicalJson::Null);
+            }
+            17 => {
+                object_mut(&mut invalid.comments).remove("loaded");
+            }
+            18 => {
+                set_field(&mut invalid.comments, "landmarks", CanonicalJson::Null);
+            }
+            19 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "comments")[0])[2] =
+                    CanonicalJson::string("mismatch");
+            }
+            20 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[0])[3] =
+                    CanonicalJson::string("true");
+            }
+            21 => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[3])[4] =
+                    CanonicalJson::array([CanonicalJson::string("export-1")]);
+            }
+            22 => {
+                array_field_mut(&mut invalid.comments, "whitespace").reverse();
+            }
+            _ => {
+                array_mut(&mut array_field_mut(&mut invalid.comments, "landmarks")[3])[2] =
+                    CanonicalJson::integer(0);
+            }
+        }
+        let writer = commented_artifact_json(&invalid);
+        assert!(writer.is_err(), "writer binding case {case}");
+        if case == 0 {
+            assert!(
+                matches!(writer, Err(VerifiedArtifactError::InvalidField { path, .. })
+                if path == "$.comments.loaded")
+            );
+        }
+        let mut json = valid.clone();
+        if case <= 6 {
+            // Serialize valid nested data first, then mutate the portable boundary independently.
+            let nested = object_field_mut(&mut json, "artifact");
+            match case {
+                0 => *nested = verified_artifact_json(&invalid.artifact).unwrap(),
+                1 => set_field(
+                    nested,
+                    "source_file",
+                    CanonicalJson::string("../hidden.miz"),
+                ),
+                2 => set_field(
+                    object_field_mut(nested, "module"),
+                    "package_version",
+                    CanonicalJson::string(""),
+                ),
+                3 => set_field(
+                    object_field_mut(nested, "provenance"),
+                    "language_edition",
+                    CanonicalJson::string("foreign"),
+                ),
+                4 => set_field(
+                    object_field_mut(nested, "provenance"),
+                    "captured_source",
+                    CanonicalJson::Null,
+                ),
+                5 => set_field(
+                    object_field_mut(object_field_mut(nested, "provenance"), "captured_source"),
+                    "origin",
+                    CanonicalJson::Null,
+                ),
+                _ => set_field(nested, "schema_version", CanonicalJson::string("1.1")),
+            }
+        } else {
+            set_field(&mut json, "comments", invalid.comments);
+        }
+        let reader = read_commented_artifact(&json, VerifiedArtifactReadOptions::default());
+        assert!(reader.is_err(), "reader binding case {case}");
+        if case == 0 {
+            assert!(
+                matches!(reader, Err(VerifiedArtifactError::InvalidField { path, .. })
+                if path == "$.comments.loaded")
+            );
+        }
+    }
+    for (field, replacement) in [
+        ("schema_version", CanonicalJson::string("1.1")),
+        ("schema_version", CanonicalJson::string("2.0")),
+        ("schema_version", CanonicalJson::integer(1)),
+        ("interface_hash", CanonicalJson::string("invalid")),
+        ("implementation_hash", CanonicalJson::string("invalid")),
+        ("artifact", CanonicalJson::Null),
+        ("extra", CanonicalJson::Null),
+    ] {
+        let mut json = valid.clone();
+        set_field(&mut json, field, replacement);
+        assert!(
+            read_commented_artifact(&json, VerifiedArtifactReadOptions::default()).is_err(),
+            "envelope field {field}"
+        );
+    }
+    for field in [
+        "schema_version",
+        "artifact",
+        "comments",
+        "interface_hash",
+        "implementation_hash",
+    ] {
+        let mut json = valid.clone();
+        object_mut(&mut json).remove(field);
+        assert!(
+            read_commented_artifact(&json, VerifiedArtifactReadOptions::default()).is_err(),
+            "missing {field}"
+        );
+    }
+}
+
+#[test]
+fn q1_hash_projections_include_comments_and_preserve_local_exclusions() {
+    use crate::comment_projection::commented_artifact_json;
+    use crate::store::FieldPath;
+    let value = q1_fixture(SourceOrigin::Disk);
+    let version = SchemaVersion::new(1, 0);
+    let family = "mizar-artifact/commented-verified-artifact";
+    let mut interface = interface_hash_input_json(&value.artifact).unwrap();
+    set_field(
+        &mut interface,
+        "schema_version",
+        CanonicalJson::string("1.0"),
+    );
+    assert_eq!(
+        value.compute_interface_hash().unwrap(),
+        CanonicalHashDomain::new(HashClass::Interface, family, version).hash(&interface, &[])
+    );
+    let implementation = CanonicalJson::object([
+        ("schema_version", CanonicalJson::string("1.0")),
+        (
+            "artifact",
+            implementation_hash_input_json(&value.artifact).unwrap(),
+        ),
+        ("comments", value.comments.clone()),
+    ])
+    .unwrap();
+    assert_eq!(
+        value.compute_implementation_hash().unwrap(),
+        CanonicalHashDomain::new(HashClass::Implementation, family, version)
+            .hash(&implementation, &[])
+    );
+    let exclusions = [
+        FieldPath::new(["artifact", "verified_at"]).unwrap(),
+        FieldPath::new(["artifact", "provenance", "cache_key"]).unwrap(),
+        FieldPath::new(["artifact", "provenance", "captured_source", "source_id"]).unwrap(),
+    ];
+    assert_eq!(
+        value.compute_artifact_hash().unwrap(),
+        artifact_hash_domain(family, version)
+            .hash(&commented_artifact_json(&value).unwrap(), &exclusions)
+    );
+    let mut local = value.clone();
+    local.artifact.verified_at = Some("2026-06-23T14:03:05Z".to_owned());
+    local.artifact.provenance.cache_key = Some("q1-local-cache".to_owned());
+    local
+        .artifact
+        .provenance
+        .captured_source
+        .as_mut()
+        .unwrap()
+        .0 = SourceId::from_nonportable_provenance_str(
+        "mizar-session-source-nonportable-v1:0000000000000011",
+    )
+    .unwrap();
+    for changed in [local, {
+        let mut changed = value.clone();
+        // Equal-byte-length comment-only text changes keep all lexical spans and exports fixed.
+        for field in ["original", "loaded"] {
+            let CanonicalJson::String(text) = object_field_mut(&mut changed.comments, field) else {
+                unreachable!()
+            };
+            *text = text.replace('β', "γ");
+        }
+        array_mut(&mut array_field_mut(&mut changed.comments, "comments")[0])[2] =
+            CanonicalJson::string("::: γ\n");
+        let CanonicalJson::String(loaded) = object_field_mut(&mut changed.comments, "loaded")
+        else {
+            unreachable!()
+        };
+        changed.artifact.source_hash = mizar_session::hash_text(loaded);
+        changed
+            .artifact
+            .provenance
+            .captured_source
+            .as_mut()
+            .unwrap()
+            .2 = changed.artifact.source_hash;
+        changed.artifact.refresh_hashes().unwrap();
+        changed
+    }] {
+        assert_eq!(
+            changed.compute_interface_hash().unwrap(),
+            value.compute_interface_hash().unwrap()
+        );
+        let comment_changed = changed.comments != value.comments;
+        assert_eq!(
+            changed.compute_implementation_hash().unwrap()
+                != value.compute_implementation_hash().unwrap(),
+            comment_changed
+        );
+        assert_eq!(
+            changed.compute_artifact_hash().unwrap() != value.compute_artifact_hash().unwrap(),
+            comment_changed
+        );
+    }
+    for field in ["comments", "whitespace", "landmarks"] {
+        let mut changed = value.clone();
+        if field == "landmarks" {
+            array_mut(&mut array_field_mut(&mut changed.comments, field)[5])[3] =
+                CanonicalJson::Bool(false);
+        } else if field == "whitespace" {
+            array_field_mut(&mut changed.comments, field).clear();
+        } else {
+            changed.comments = CanonicalJson::Null;
+        }
+        assert_ne!(
+            changed.compute_implementation_hash().unwrap(),
+            value.compute_implementation_hash().unwrap(),
+            "participant {field}"
+        );
+        assert_ne!(
+            changed.compute_artifact_hash().unwrap(),
+            value.compute_artifact_hash().unwrap(),
+            "participant {field}"
+        );
+    }
+}
+
+#[test]
+fn q1_canonical_identity_expected_hashes_and_legacy_compatibility() {
+    use crate::comment_projection::{
+        commented_artifact_json, read_commented_artifact, write_commented_artifact,
+    };
+    let value = q1_fixture(SourceOrigin::OpenBuffer { version: 5 });
+    let json = commented_artifact_json(&value).unwrap();
+    for _ in 0..3 {
+        assert_eq!(
+            write_commented_artifact(&value).unwrap(),
+            canonical_json_string(&json).into_bytes()
+        );
+        let read = read_commented_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap();
+        assert_eq!(commented_artifact_json(&read).unwrap(), json);
+        assert_eq!(
+            read.compute_artifact_hash().unwrap(),
+            value.compute_artifact_hash().unwrap()
+        );
+    }
+    for (interface, implementation) in [
+        (Some(value.artifact.interface_hash), None),
+        (None, Some(value.artifact.implementation_hash)),
+    ] {
+        assert!(
+            read_commented_artifact(
+                &json,
+                VerifiedArtifactReadOptions {
+                    expected_interface_hash: interface,
+                    expected_implementation_hash: implementation,
+                    ..VerifiedArtifactReadOptions::default()
+                }
+            )
+            .is_err()
+        );
+    }
+    let foreign = identity("foreign", "articles/hidden", "2026");
+    assert!(
+        read_commented_artifact(
+            &json,
+            VerifiedArtifactReadOptions {
+                expected_module: Some(&foreign),
+                ..VerifiedArtifactReadOptions::default()
+            }
+        )
+        .is_err()
+    );
+    let mut origin = value.clone();
+    origin
+        .artifact
+        .provenance
+        .captured_source
+        .as_mut()
+        .unwrap()
+        .1 = SourceOrigin::OpenBuffer { version: 6 };
+    origin.artifact.refresh_hashes().unwrap();
+    assert_eq!(
+        origin.compute_interface_hash().unwrap(),
+        value.compute_interface_hash().unwrap()
+    );
+    assert_ne!(
+        origin.compute_implementation_hash().unwrap(),
+        value.compute_implementation_hash().unwrap()
+    );
+    for version in [
+        SchemaVersion::new(1, 0),
+        SchemaVersion::new(1, 1),
+        SchemaVersion::new(1, 2),
+        SchemaVersion::new(2, 0),
+    ] {
+        let mut legacy = if version == SchemaVersion::new(1, 2) {
+            captured_artifact(SourceOrigin::Disk)
+        } else {
+            sample_artifact()
+        };
+        legacy.schema_version = version;
+        legacy.refresh_hashes().unwrap();
+        let before = if version.major() == 2 {
+            builtin_verified_artifact_json(&legacy).unwrap()
+        } else {
+            verified_artifact_json(&legacy).unwrap()
+        };
+        assert!(read_commented_artifact(&before, VerifiedArtifactReadOptions::default()).is_err());
+        let mut with_comments = before.clone();
+        set_field(&mut with_comments, "comments", CanonicalJson::Null);
+        let error = if version.major() == 2 {
+            read_builtin_verified_artifact(&with_comments, VerifiedArtifactReadOptions::default())
+        } else {
+            read_verified_artifact(&with_comments, VerifiedArtifactReadOptions::default())
+        };
+        assert!(
+            matches!(error, Err(VerifiedArtifactError::UnknownField { field, .. }) if field == "comments")
+        );
+    }
+    assert!(read_verified_artifact(&json, VerifiedArtifactReadOptions::default()).is_err());
+}

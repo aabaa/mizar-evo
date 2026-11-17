@@ -1,6 +1,6 @@
 # Artifact ソースコメント投影
 正本は英語: [English companion](../en/comment_projection.md)。
-状態: 承認された emission 時投影の定義。transport・schema profile・API は未実装。本データ契約は Artifact が所有し、[VerifiedArtifact](../en/verified_artifact.md#ownership) が schema/version/hash の権限を保持する。
+状態: 承認された emission 時投影の定義と structural codec。producer から publication への統合は未完了。本データ契約は Artifact が所有し、[VerifiedArtifact](../en/verified_artifact.md#ownership) が schema/version/hash の権限を保持する。
 
 ## 所有と引き渡し
 所有者が選択した [Doc6 Q1](../../mizar-doc/en/comments.md#owner-q-decisions) は、emission 時に source 由来 comment/map を公開 artifact へ投影する。source 再読はコメント transport/fallback ではない。snippet/source link 用の optional な binding 済み source loading は既存 owner に残る。
@@ -8,7 +8,7 @@
 2. **IR projection:** [ArtifactProjectionService](../../mizar-ir/en/projection.md#ownership) は producer record、その sealed/readable な current-snapshot output lineage、対応する検証済み item record を消費する。source/module/lineage 一致を確認し、安定データのみを Artifact 所有の形へ変換して unpublished draft に入れる。source 再解析や検証済み target の捏造はしない。
 3. **Driver orchestration:** [captured-source binding](../../mizar-driver/en/frontend_adapter.md#native-captured-sources) は producer → IR → emission を通じ実 source/map を保持する。一致する snapshot/package/source と検証済み output を供給し、既存 ArtifactCommit/store/manifest 検証と atomic publication 境界を用いる。再読・代替 SourceId・公開後 sidecar で不足コメントを補わない。OpenBuffer/InternalOnly draft に package publication 資格を与えない。
 4. **Artifact reader と Doc:** validating reader は検証した enclosing artifact とともにのみ投影を供給する。Doc の[公開入力 plan](../../mizar-doc/en/doc_build.md#full-build-and-index-inputs) が選択 publication/current request に結合し、[comments](../../mizar-doc/ja/comments.md) が後で block 化・attachment・Markdown 導出を行う。Artifact/IR は Doc attachment・tag parsing・link 解決・描画を行わない。
-以上は必須 handoff であり既存の呼出 seam ではない。producer 収集/landmark、schema reader/writer/hash、IR input 検証、Driver 保持/emission、Doc 消費の実装が揃うまで Doc7 は利用できない。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
+以上は必須 handoff であり統合済み呼出経路ではない。Frontend は genuine source metadata、Artifact は structural codec を供給する。IR input 検証、Driver 保持/emission、Doc 消費が揃うまで Doc7 は利用できない。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
 
 ## Availability と Identity
 Unavailable は profile/producer が完全な comment 投影を供給しなかった状態。Available は captured source 全体の収集が完了した状態であり、doc 行ゼロは available-empty、空の `:::` 本文は存在する行である。対応 profile は availability を明示し、legacy profile の欠落は empty ではなく unavailable とする。部分収集/不正 payload を available とせず、検証失敗後に unavailable へ格下げしない。
@@ -24,10 +24,15 @@ emission 時に実 source producer が captured text と text slice・frame 長�
 [Q3 本文導出と逆 map](../../mizar-doc/ja/comments.md#markdown-と構造化タグ) は Doc が所有する。既存 Frontend `raw_body` は marker のみ除くため導出済み本文と誤認しない。Markdown/tag 解析結果は本投影へ出力しない。
 
 ## 互換性・Hash・拒否
-本定義は normal1.0/1.1/1.2 や Builtin2.0 をその場で拡張しない。既存 field・bytes/hash projection・拒否順・version bound を保ち、これらは投影コメントを供給しない。後の実装契約が別の対応 profile/version と正確な field/API encoding を指定してから data を追加する。未対応 version・未知/必須欠落 field は error とし、reader 失敗後に別 profile を試したり source から回収したりしない。
+structural codec は normal1.0/1.1/1.2 や Builtin2.0 をその場で拡張しない。既存 field・bytes/hash projection・拒否順・version bound を保ち、これらは投影コメントを供給しない。未対応 version・未知/必須欠落 field は error とし、reader 失敗後に別 profile を試したり source から回収したりしない。
 対応 profile 内では availability、raw text、順序付き span/landmark、安定 frame/map、source/origin binding を implementation/full Artifact hash に含める。これらは公開 local metadata であり importer-visible 意味 interface field ではないため、同一 enclosing version では既存 export/dependency interface 投影を維持する。既存 version framing/local exclusion を保ち、comment 専用除外で内容を隠さない。schema version 間や semantic export 変更時の interface hash 同一性は保証しない。
 canonical serialization は source/line/segment 順・semantic vector 順と既存 object-key 順を保つ。worker・map insertion・input 列挙順で同等 output を変えない。同じ投影 source occurrence の衝突/重複 record を拒否し、無関係 item/anchor 全体の unique-range 規則を追加しない。
 version/schema/path/hash/source/module/provenance 不一致、不正 map、producer lineage 不整合は下位 owner の integrity refusal のままとし、利用可能 comment payload/部分 publication を返さない。有効な unavailable legacy input でも意味 metadata の Doc page は生成できる。orphan/曖昧 attachment、tag/Markdown 表示 warning は Doc に属し text を保持するが、integrity failure を隠さず proof validity・reuse・抽出受理を変えない。
 
+## Structural Codec Profile
+[`comment_projection`](../../../../crates/mizar-artifact/src/comment_projection.rs) は、独立 family `mizar-artifact/commented-verified-artifact`、厳密 version `1.0` の `CommentedArtifact` と検証付き JSON reader/writer を公開する。envelope は検証済み normal1.2 artifact と必須 `comments` を持つ。null は unavailable、original/loaded/lexical text、portable loading/preprocess map、raw comment、whitespace、source 順 landmark の完全な object は available を表す。任意 target pair は enclosing export を参照するが、attachment や producer lineage を証明しない。
+envelope interface hash は envelope framing で export/dependency projection を保ち、implementation/full hash は全 comment data を含む。既存 local exclusion は `artifact` 配下に適用する。enclosing artifact が完全 identity/origin を供給し、normalized frame text はその source hash と一致する。reader は直列化された bounds/map/binding を検証するが、caller-created data を genuine metadata に昇格しない。
+この profile は structural transport の前提である。既存 manifest/store publication dispatch はこの envelope を選択しない。IR projection、Driver emission、current publication binding、Doc consumption は独立 handoff として残る。
+
 ## 残る Gate
-Q1 の transport 所有と data invariant はここで定義し、実装は未完了とする。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。
+Q1 の transport 所有、data invariant、structural codec は利用可能だが、統合 handoff は未完了とする。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。
