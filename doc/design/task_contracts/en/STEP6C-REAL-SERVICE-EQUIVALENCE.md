@@ -17,7 +17,24 @@ The first slice compares edit/rebuild with clean runs of the real NoKey services
 including actual published payloads, diagnostics and uncached outcomes.
 Full completion still requires the cache-hit/miss tests below; this slice
 provides no cache-hit coverage. Reuse the existing replay/capture-order/worker
-comparisons in [real source regressions](../../../../crates/mizar-driver/tests/source_load.rs).
+comparisons in [real source regressions](../../../../crates/mizar-driver/tests/source_load/main.rs).
+
+### Bounded twelve-service edit/clean slice
+
+Freeze the explicit NoKey SourceLoad-through-reflexivity-ArtifactCommit profile:
+run an initial disk build, edit and recapture in that workspace with worker1/
+canonical order, and independently capture the edited bytes in a fresh workspace
+with worker4/reverse order. Compare two separate baseline-to-edit cases: theorem/
+binder renaming, and whitespace-only editing; each gets its own clean comparison.
+Compare genuine retained artifact DATA, validated main/manifest module payloads,
+FILE witness bytes, canonical diagnostics and actual uncached scheduler outcomes;
+normalize only workspace/output roots and snapshot-local identities. Require
+changed source identity after each edit and independent clean stores/captures.
+Retain the existing stale/currentness gate and seam-level regressions unchanged.
+The profile still lacks VcDischarge and remains session-Blocked despite genuine
+ArtifactCommit completion. No full STEP6C completion, cache-hit, complete runtime/
+Frontend producer, Proof reuse/dependency-binding, ATP31 or other family credit
+follows; incomplete dependency slices/MISS and all existing deferrals remain.
 
 ## Forbidden
 
