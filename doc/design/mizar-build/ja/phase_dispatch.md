@@ -109,11 +109,13 @@ external crates は `SchedulerDispatchTask` の public fields を通じて selec
 adapter が fake producer outputs や artifact publication tokens を作らず scheduler
 states を返せるようにする。
 
-callback は scheduler readiness、cache fallback、cancellation-before-start、
+`dispatch` callback は scheduler readiness、cache fallback、cancellation-before-start、
 resource admission を通過した task に対してのみ呼ばれる。validated cache hit は引き続き
 callback execution を skip する。callback は build-owned task identity、snapshot、
 optional cooperative cancellation token を受け取る。mutable scheduler internals は
 受け取らない。
+
+別の default readiness `cache_decision` method は [cache seam](cache_seam.md#scheduler-integration) が所有する。
 
 callback は以下を返してよい:
 

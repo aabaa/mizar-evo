@@ -4532,3 +4532,875 @@ fn native_disk_frontend_lookup_rejects_permissions_parents_and_coherent_wrong_ag
         assert_eq!(selected.successful_rehydrations(), 0);
     }
 }
+
+#[test]
+fn imported_native_disk_frontend_prefix_writes_and_skips_ready_importer() {
+    use mizar_build::scheduler::SchedulerEventKind;
+    use mizar_cache::cache_store::CacheStoreRoot;
+    use mizar_ir::storage::CollectInput;
+
+    let fixture = Fixture::new(b"import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n");
+    fs::write(
+        fixture.root.join("alpha/src/leaf.miz"),
+        b"definition\nend;\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("alpha/src/base.miz"),
+        b"definition\nend;\n",
+    )
+    .unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let policy = mizar_proof::policy::VerifierPolicy::release();
+    let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+    let main_unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    let transitive_profile = std::cell::Cell::new(false);
+    let alternate_scheduler_profile = std::cell::Cell::new(false);
+    let storage_threshold = std::cell::Cell::new(0_usize);
+    let transitive_overlay = || {
+        ModuleDependencyOverlay::complete(vec![
+            ModuleDependencyEdge::new(
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                ),
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("leaf"),
+                ),
+                ModuleDependencyKind::ImportSummary,
+            ),
+            ModuleDependencyEdge::new(
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("leaf"),
+                ),
+                mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("base"),
+                ),
+                ModuleDependencyKind::ImportSummary,
+            ),
+        ])
+    };
+    let base_target_overlay = || {
+        ModuleDependencyOverlay::complete(vec![ModuleDependencyEdge::new(
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+            mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("base"),
+            ),
+            ModuleDependencyKind::ImportSummary,
+        )])
+    };
+    let configure_input = |mut input: DriverSubmitInput<StaticSourceLayout>,
+                           config_change: bool,
+                           lock_change: bool| {
+        if config_change {
+            input.workspace_packages[0].manifest.verifier.max_axioms += 1;
+        }
+        if lock_change {
+            input.lockfile = parse_lockfile(
+                "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n[[package]]\nname = \"unused\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:unused\" }\ndependencies = []\n",
+            )
+            .unwrap();
+        }
+        input
+    };
+    let capture = |generation: u64, config_change: bool, lock_change: bool| {
+        use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+
+        let (mut draft, input) = fixture.submit_request(vec![], vec![]);
+        let mut input = configure_input(input, config_change, lock_change);
+        let plan = produce_build_plan(
+            input.plan_request.clone(),
+            input.workspace_packages.clone(),
+            input.lockfile.clone(),
+        )
+        .unwrap();
+        draft.generation = BuildRequestGeneration::new(generation);
+        draft.source_inputs.versions.clear();
+        draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+        draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+            &plan.verifier_config,
+            &plan.build_config,
+        ));
+        if transitive_profile.get() {
+            fs::write(
+                fixture.root.join("alpha/src/leaf.miz"),
+                b"import alpha.base;\ndefinition\nend;\n",
+            )
+            .unwrap();
+        }
+        let modules = ["base", "leaf", "main"];
+        let descriptors = modules
+            .iter()
+            .map(|module| {
+                let path = format!("src/{module}.miz");
+                (
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new(*module),
+                        normalized_path: normalize_path(
+                            &fixture.root.join("alpha"),
+                            Path::new(&path),
+                        )
+                        .unwrap(),
+                        edition: Edition::new("2025"),
+                        origin: SourceOriginInput::Disk { path: path.into() },
+                    },
+                )
+            })
+            .collect();
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: modules
+                .iter()
+                .map(|module| {
+                    WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
+                })
+                .collect(),
+        }]);
+        input.dependency_overlay = if transitive_profile.get() {
+            transitive_overlay()
+        } else {
+            complete_leaf_import_overlay()
+        };
+        input.cache_policy = CacheSchedulingPolicy::Enabled;
+        if alternate_scheduler_profile.get() {
+            input.worker_count = 4;
+            input.completion_order = CompletionOrder::Reverse;
+        }
+        let session = draft
+            .capture_sources(&ids, &snapshots, descriptors)
+            .unwrap();
+        (session, input)
+    };
+    let input_with_overlay = |mut input: DriverSubmitInput<StaticSourceLayout>,
+                              overlay: ModuleDependencyOverlay| {
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: ["base", "leaf", "main"]
+                .into_iter()
+                .map(|module| {
+                    WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
+                })
+                .collect(),
+        }]);
+        input.dependency_overlay = overlay;
+        input.cache_policy = CacheSchedulingPolicy::Enabled;
+        input
+    };
+    let clean_input = |config_change: bool, lock_change: bool, overlay: ModuleDependencyOverlay| {
+        let (_, input) = fixture.submit_request(vec![], vec![]);
+        input_with_overlay(configure_input(input, config_change, lock_change), overlay)
+    };
+    let submit = |session: mizar_driver::request::BuildSession,
+                  input: DriverSubmitInput<StaticSourceLayout>,
+                  active_policy: &mizar_proof::policy::VerifierPolicy,
+                  mode: Option<NativeCacheMode>,
+                  active_store: &CacheStoreRoot| {
+        let snapshot = session.captured().snapshot().id;
+        let owner = publisher(snapshot, storage_threshold.get(), &main_unit);
+        for module in ["base", "leaf", "main"] {
+            let unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new(module),
+                ),
+            };
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                IrPipelinePhase::new("SourceLoad"),
+                OutputKind::new("SourceUnit"),
+                IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+            ));
+            allow_frontend(&owner, &unit);
+        }
+        let mut driver = CompilerDriver::new(genuine_source_frontend_registry(active_policy))
+            .with_output_publisher(owner.clone());
+        let options = if let Some(mode) = mode {
+            SubmitOptions {
+                native_cache: Some(NativeCacheOptions {
+                    policy: active_policy,
+                    store: active_store,
+                    mode,
+                }),
+                ..Default::default()
+            }
+        } else {
+            Default::default()
+        };
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input, options)
+            .unwrap();
+        (submission, owner)
+    };
+    let assert_importer_started = |submission: &mizar_driver::driver::BuildSubmission| {
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let frontend = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+            .unwrap();
+        assert!(matches!(
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == frontend.id)
+                .unwrap()
+                .state,
+            TaskState::Completed | TaskState::Failed
+        ));
+        assert!(run.events.iter().any(|event| {
+            event.task_id.as_ref() == Some(&frontend.id)
+                && event.kind == SchedulerEventKind::TaskStarted
+        }));
+        frontend.id.clone()
+    };
+    let assert_released = |submission: &mizar_driver::driver::BuildSubmission,
+                           owner: &PhaseOutputPublisher| {
+        let expected_outputs = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .map(|result| result.output_refs.len())
+            .sum::<usize>();
+        let collected = owner.storage().collect(CollectInput {
+            snapshot: submission.session.captured().snapshot().id,
+            protected_outputs: vec![],
+        });
+        assert_eq!(collected.retained_outputs, 0);
+        assert_eq!(collected.outputs_dropped, expected_outputs);
+    };
+
+    let (cold_session, cold_input) = capture(0, false, false);
+    let (cold, cold_owner) = submit(
+        cold_session,
+        cold_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let cold_graph = cold.task_graph.as_ref().unwrap();
+    let cold_run = cold.scheduler_run.as_ref().unwrap();
+    let cold_frontend = cold_graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    assert_eq!(
+        cold_run
+            .task_states
+            .iter()
+            .find(|state| state.task_id == cold_frontend.id)
+            .unwrap()
+            .state,
+        TaskState::Completed
+    );
+    assert!(
+        cold_run.phase_results[&cold_frontend.id][0]
+            .output_refs
+            .iter()
+            .any(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+    );
+    let cold_main = &cold_run.phase_results[&cold_frontend.id][0].output_refs[0];
+    let cold_main_output = cold_owner
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            cold_main,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let cold_main_output = cold_owner.storage().get(&cold_main_output).unwrap();
+    assert!(matches!(
+        cold_main.placement(),
+        StoragePlacement::Blob { .. }
+    ));
+    assert_eq!(cold_main_output.preprocessed.import_stubs.len(), 2);
+    assert_eq!(
+        cold_main_output.preprocessed.import_stubs[0].path.spelling,
+        cold_main_output.preprocessed.import_stubs[1].path.spelling
+    );
+    assert_ne!(
+        cold_main_output.preprocessed.import_stubs[0].path.span,
+        cold_main_output.preprocessed.import_stubs[1].path.span
+    );
+    assert!(store.root().exists());
+
+    alternate_scheduler_profile.set(true);
+    let (warm_session, warm_input) = capture(1, false, false);
+    alternate_scheduler_profile.set(false);
+    storage_threshold.set(usize::MAX);
+    let warm_session_for_clean = warm_session.clone();
+    let main_source_id = |session: &mizar_driver::request::BuildSession| {
+        session
+            .captured()
+            .snapshot()
+            .source_versions
+            .iter()
+            .find(|version| version.module_path == ModulePath::new("main"))
+            .unwrap()
+            .source_id
+    };
+    let warm_main_source_id = main_source_id(&warm_session);
+    assert_ne!(main_source_id(&cold.session), warm_main_source_id);
+    let (_, warm_clean_input) = fixture.submit_request(vec![], vec![]);
+    let warm_clean_input = input_with_overlay(warm_clean_input, complete_leaf_import_overlay());
+    let (warm, warm_owner) = submit(
+        warm_session,
+        warm_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let graph = warm.task_graph.as_ref().unwrap();
+    let run = warm.scheduler_run.as_ref().unwrap();
+    let frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    assert_eq!(
+        run.task_states
+            .iter()
+            .find(|state| state.task_id == frontend.id)
+            .unwrap()
+            .state,
+        TaskState::CacheHit
+    );
+    assert!(!run.events.iter().any(|event| {
+        event.task_id.as_ref() == Some(&frontend.id)
+            && event.kind == SchedulerEventKind::TaskStarted
+    }));
+    let warm_result = &run.phase_results[&frontend.id][0];
+    assert_eq!(warm_result.status, PhaseStatus::Complete);
+    assert_eq!(
+        warm_result.diagnostics,
+        cold_run.phase_results[&cold_frontend.id][0].diagnostics
+    );
+    let warm_ref = &warm_result.output_refs[0];
+    assert_eq!(warm_ref.output_kind(), &OutputKind::new("FrontendOutput"));
+    assert!(matches!(warm_ref.placement(), StoragePlacement::Resident));
+    let warm_output_handle = warm_owner
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            warm_ref,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let warm_output = warm_owner.storage().get(&warm_output_handle).unwrap();
+    assert_eq!(warm_output.source.source_id, warm_main_source_id);
+    assert_eq!(warm_output.preprocessed.import_stubs.len(), 2);
+    let source_task = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::SourceLoad && task.unit == main_unit)
+        .unwrap();
+    let leaf_unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("leaf"),
+        ),
+    };
+    let leaf_frontend_task = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == leaf_unit)
+        .unwrap();
+    let mut current_import_parents = [
+        run.phase_results[&source_task.id][0].output_refs[0].output(),
+        run.phase_results[&leaf_frontend_task.id][0].output_refs[0].output(),
+    ];
+    current_import_parents
+        .sort_by(|left, right| left.hash().as_bytes().cmp(right.hash().as_bytes()));
+    assert_eq!(warm_ref.lineage().parents, current_import_parents);
+
+    let (clean, clean_owner) = submit(
+        warm_session_for_clean,
+        warm_clean_input,
+        &policy,
+        None,
+        &store,
+    );
+    let clean_frontend = clean
+        .task_graph
+        .as_ref()
+        .unwrap()
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    let clean_result = &clean.scheduler_run.as_ref().unwrap().phase_results[&clean_frontend.id][0];
+    assert_eq!(clean_result.status, PhaseStatus::Complete);
+    assert_eq!(warm_result.diagnostics, clean_result.diagnostics);
+    let clean_ref = &clean_result.output_refs[0];
+    let clean_handle = clean_owner
+        .storage()
+        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+            clean_ref,
+            &OutputKind::new("FrontendOutput"),
+        )
+        .unwrap();
+    let clean_output = clean_owner.storage().get(&clean_handle).unwrap();
+    assert_eq!(
+        warm_output.canonical_disk_bytes().unwrap(),
+        clean_output.canonical_disk_bytes().unwrap()
+    );
+    assert_eq!(warm_ref.content_hash(), clean_ref.content_hash());
+    assert_eq!(warm_ref.side_table_hash(), clean_ref.side_table_hash());
+    assert_eq!(
+        warm_owner
+            .storage()
+            .side_tables(&warm_output_handle)
+            .unwrap(),
+        clean_owner.storage().side_tables(&clean_handle).unwrap()
+    );
+    assert_eq!(warm_ref.lineage().parents, clean_ref.lineage().parents);
+    storage_threshold.set(0);
+    let frontend_projection = |submission: &mizar_driver::driver::BuildSubmission,
+                               owner: &PhaseOutputPublisher| {
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let task = graph
+            .tasks()
+            .iter()
+            .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+            .unwrap();
+        let result = &run.phase_results[&task.id][0];
+        let payload = result
+            .output_refs
+            .iter()
+            .find(|output| output.output_kind() == &OutputKind::new("FrontendOutput"))
+            .map(|output| {
+                let handle = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        output,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                owner
+                    .storage()
+                    .get(&handle)
+                    .unwrap()
+                    .canonical_disk_bytes()
+                    .unwrap()
+            });
+        (payload, result.status, result.diagnostics.clone())
+    };
+    let assert_viable_clean = |actual: &mizar_driver::driver::BuildSubmission,
+                               actual_owner: &PhaseOutputPublisher,
+                               clean: &mizar_driver::driver::BuildSubmission,
+                               clean_owner: &PhaseOutputPublisher| {
+        let task_id = assert_importer_started(actual);
+        let actual_run = actual.scheduler_run.as_ref().unwrap();
+        assert_eq!(
+            actual_run
+                .task_states
+                .iter()
+                .find(|state| state.task_id == task_id)
+                .unwrap()
+                .state,
+            TaskState::Completed
+        );
+        let (actual_bytes, actual_status, actual_diagnostics) =
+            frontend_projection(actual, actual_owner);
+        assert_eq!(actual_status, PhaseStatus::Complete);
+        assert!(actual_diagnostics.is_empty());
+        assert_eq!(
+            frontend_projection(clean, clean_owner),
+            (actual_bytes, PhaseStatus::Complete, actual_diagnostics)
+        );
+        assert_released(actual, actual_owner);
+        assert_released(clean, clean_owner);
+    };
+
+    // A viable leaf edit changes the authenticated summary consumed by the
+    // importer, so its otherwise unchanged Frontend key must miss.
+    fs::write(
+        fixture.root.join("alpha/src/leaf.miz"),
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+    )
+    .unwrap();
+    let (changed_session, changed_input) = capture(2, false, false);
+    let changed_session_for_clean = changed_session.clone();
+    let (changed, changed_owner) = submit(
+        changed_session,
+        changed_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let (changed_clean, changed_clean_owner) = submit(
+        changed_session_for_clean,
+        clean_input(false, false, complete_leaf_import_overlay()),
+        &policy,
+        None,
+        &store,
+    );
+    assert_viable_clean(
+        &changed,
+        &changed_owner,
+        &changed_clean,
+        &changed_clean_owner,
+    );
+
+    // Imported source bytes, import alias, configuration, lockfile identity,
+    // and policy all independently invalidate the viable imported record.
+    for (generation, raw, config_change, lock_change, use_development_policy) in [
+        (
+            3,
+            "\u{feff}import alpha.leaf;\r\nimport alpha.leaf;\r\ndefinition\r\nend;\r\n",
+            false,
+            false,
+            false,
+        ),
+        (
+            4,
+            "import alpha.leaf as l;\ndefinition\nend;\n",
+            false,
+            false,
+            false,
+        ),
+        (
+            5,
+            "import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n",
+            true,
+            false,
+            false,
+        ),
+        (
+            6,
+            "import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n",
+            false,
+            true,
+            false,
+        ),
+        (
+            7,
+            "import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n",
+            false,
+            false,
+            true,
+        ),
+    ] {
+        fixture.write(raw.as_bytes());
+        let (session, input) = capture(generation, config_change, lock_change);
+        let session_for_clean = session.clone();
+        let active_policy = if use_development_policy {
+            mizar_proof::policy::VerifierPolicy::development()
+        } else {
+            policy.clone()
+        };
+        let (submission, owner) = submit(
+            session,
+            input,
+            &active_policy,
+            Some(NativeCacheMode::PersistentPrefix),
+            &store,
+        );
+        let (clean, clean_owner) = submit(
+            session_for_clean,
+            clean_input(config_change, lock_change, complete_leaf_import_overlay()),
+            &active_policy,
+            None,
+            &store,
+        );
+        assert_viable_clean(&submission, &owner, &clean, &clean_owner);
+    }
+
+    // Disabled caching and Store I/O failure retain ordinary importer execution.
+    fixture.write(b"import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n");
+    let (disabled_session, mut disabled_input) = capture(8, false, false);
+    disabled_input.cache_policy = CacheSchedulingPolicy::Disabled;
+    let (disabled, disabled_owner) = submit(
+        disabled_session,
+        disabled_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    assert_importer_started(&disabled);
+    let (clean_disabled_session, clean_disabled_input) = capture(13, false, false);
+    let (clean_disabled, clean_disabled_owner) = submit(
+        clean_disabled_session,
+        clean_disabled_input,
+        &policy,
+        None,
+        &store,
+    );
+    assert_eq!(
+        frontend_projection(&disabled, &disabled_owner),
+        frontend_projection(&clean_disabled, &clean_disabled_owner)
+    );
+    assert_released(&disabled, &disabled_owner);
+    assert_released(&clean_disabled, &clean_disabled_owner);
+
+    fs::remove_dir_all(store.root()).unwrap();
+    fs::write(store.root(), b"not a cache directory").unwrap();
+    let (failing_session, failing_input) = capture(9, false, false);
+    let (failing_store, failing_owner) = submit(
+        failing_session,
+        failing_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    assert_importer_started(&failing_store);
+    let (clean_failing_session, clean_failing_input) = capture(14, false, false);
+    let (clean_failing, clean_failing_owner) = submit(
+        clean_failing_session,
+        clean_failing_input,
+        &policy,
+        None,
+        &store,
+    );
+    assert_eq!(
+        frontend_projection(&failing_store, &failing_owner),
+        frontend_projection(&clean_failing, &clean_failing_owner)
+    );
+    assert_released(&failing_store, &failing_owner);
+    assert_released(&clean_failing, &clean_failing_owner);
+
+    // Restore a healthy Store and seed the unsupported-profile control from a
+    // genuine imported record produced by this Driver path.
+    fs::remove_file(store.root()).unwrap();
+    fs::create_dir_all(store.root()).unwrap();
+    let (seed_session, seed_input) = capture(15, false, false);
+    let (seed, seed_owner) = submit(
+        seed_session,
+        seed_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    assert_importer_started(&seed);
+    assert_released(&seed, &seed_owner);
+
+    // This combined source-and-target edit remains a viable imported control;
+    // it does not isolate target identity from the changed source bytes.
+    fixture.write(b"import alpha.base;\ndefinition\nend;\n");
+    let (target_session, mut target_input) = capture(19, false, false);
+    let target_session_for_clean = target_session.clone();
+    target_input.dependency_overlay = base_target_overlay();
+    let (target, target_owner) = submit(
+        target_session,
+        target_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    assert_importer_started(&target);
+    let (target_clean, target_clean_owner) = submit(
+        target_session_for_clean,
+        clean_input(false, false, base_target_overlay()),
+        &policy,
+        None,
+        &store,
+    );
+    assert_viable_clean(&target, &target_owner, &target_clean, &target_clean_owner);
+    fixture.write(b"import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n");
+
+    let seed_main_task = seed
+        .task_graph
+        .as_ref()
+        .unwrap()
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    let (cancelled_session, mut cancelled_input) = capture(20, false, false);
+    cancelled_input
+        .cancellation
+        .cancel_task(seed_main_task.id.clone());
+    let (cancelled, cancelled_owner) = submit(
+        cancelled_session,
+        cancelled_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let cancelled_graph = cancelled.task_graph.as_ref().unwrap();
+    let cancelled_run = cancelled.scheduler_run.as_ref().unwrap();
+    let cancelled_frontend = cancelled_graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    assert_eq!(cancelled_frontend.id, seed_main_task.id);
+    assert_eq!(
+        cancelled_run
+            .task_states
+            .iter()
+            .find(|state| state.task_id == cancelled_frontend.id)
+            .unwrap()
+            .state,
+        TaskState::Cancelled
+    );
+    assert!(!cancelled_run.events.iter().any(|event| {
+        event.task_id.as_ref() == Some(&cancelled_frontend.id)
+            && event.kind == SchedulerEventKind::TaskStarted
+    }));
+    assert!(
+        !cancelled_run
+            .phase_results
+            .contains_key(&cancelled_frontend.id)
+    );
+    assert_released(&cancelled, &cancelled_owner);
+
+    // A direct import whose own genuine source imports another workspace
+    // module is outside the import-free-leaf admission profile.
+    transitive_profile.set(true);
+    let (transitive_session, transitive_input) = capture(19, false, false);
+    transitive_profile.set(false);
+    let transitive_session_for_clean = transitive_session.clone();
+    let (transitive, transitive_owner) = submit(
+        transitive_session,
+        transitive_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let transitive_id = assert_importer_started(&transitive);
+    assert_ne!(
+        transitive
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .task_states
+            .iter()
+            .find(|state| state.task_id == transitive_id)
+            .unwrap()
+            .state,
+        TaskState::CacheHit
+    );
+    let (_, transitive_clean_input) = fixture.submit_request(vec![], vec![]);
+    let transitive_clean_input = input_with_overlay(transitive_clean_input, transitive_overlay());
+    let (transitive_clean, transitive_clean_owner) = submit(
+        transitive_session_for_clean,
+        transitive_clean_input,
+        &policy,
+        None,
+        &store,
+    );
+    assert_eq!(
+        frontend_projection(&transitive, &transitive_owner),
+        frontend_projection(&transitive_clean, &transitive_clean_owner)
+    );
+    assert_released(&transitive, &transitive_owner);
+    assert_released(&transitive_clean, &transitive_clean_owner);
+
+    fs::write(
+        fixture.root.join("alpha/src/leaf.miz"),
+        b"definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\nend;\n",
+    )
+    .unwrap();
+    let (incomplete_session, mut incomplete_input) = capture(16, false, false);
+    let incomplete_session_for_clean = incomplete_session.clone();
+    incomplete_input.dependency_overlay = ModuleDependencyOverlay::package_only(Vec::new());
+    let (incomplete, incomplete_owner) = submit(
+        incomplete_session,
+        incomplete_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let incomplete_graph = incomplete.task_graph.as_ref().unwrap();
+    let incomplete_run = incomplete.scheduler_run.as_ref().unwrap();
+    let incomplete_frontend = incomplete_graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+        .unwrap();
+    assert!(incomplete_run.events.iter().any(|event| {
+        event.task_id.as_ref() == Some(&incomplete_frontend.id)
+            && event.kind == SchedulerEventKind::TaskStarted
+    }));
+    assert_ne!(
+        incomplete_run
+            .task_states
+            .iter()
+            .find(|state| state.task_id == incomplete_frontend.id)
+            .unwrap()
+            .state,
+        TaskState::CacheHit
+    );
+    let (_, incomplete_clean_input) = fixture.submit_request(vec![], vec![]);
+    let incomplete_clean_input = input_with_overlay(
+        incomplete_clean_input,
+        ModuleDependencyOverlay::package_only(Vec::new()),
+    );
+    let (incomplete_clean, incomplete_clean_owner) = submit(
+        incomplete_session_for_clean,
+        incomplete_clean_input,
+        &policy,
+        None,
+        &store,
+    );
+    assert_eq!(
+        frontend_projection(&incomplete, &incomplete_owner),
+        frontend_projection(&incomplete_clean, &incomplete_clean_owner)
+    );
+    assert_released(&incomplete, &incomplete_owner);
+    assert_released(&incomplete_clean, &incomplete_clean_owner);
+
+    // Diagnostic-bearing importers keep their ordinary result and are never
+    // promoted into a later cache hit.
+    fixture.write(b"import alpha.leaf;\ntheorem T: ;\n");
+    let (diagnostic_session, diagnostic_input) = capture(17, false, false);
+    let diagnostic_session_for_clean = diagnostic_session.clone();
+    let (diagnostic, diagnostic_owner) = submit(
+        diagnostic_session,
+        diagnostic_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    let diagnostic_id = assert_importer_started(&diagnostic);
+    assert!(
+        !diagnostic.scheduler_run.as_ref().unwrap().phase_results[&diagnostic_id][0]
+            .diagnostics
+            .is_empty()
+    );
+    let (_, diagnostic_clean_input) = fixture.submit_request(vec![], vec![]);
+    let diagnostic_clean_input =
+        input_with_overlay(diagnostic_clean_input, complete_leaf_import_overlay());
+    let (diagnostic_clean, diagnostic_clean_owner) = submit(
+        diagnostic_session_for_clean,
+        diagnostic_clean_input,
+        &policy,
+        None,
+        &store,
+    );
+    assert_eq!(
+        frontend_projection(&diagnostic, &diagnostic_owner),
+        frontend_projection(&diagnostic_clean, &diagnostic_clean_owner)
+    );
+    assert_released(&diagnostic, &diagnostic_owner);
+    assert_released(&diagnostic_clean, &diagnostic_clean_owner);
+    let (diagnostic_again_session, diagnostic_again_input) = capture(18, false, false);
+    let (diagnostic_again, diagnostic_again_owner) = submit(
+        diagnostic_again_session,
+        diagnostic_again_input,
+        &policy,
+        Some(NativeCacheMode::PersistentPrefix),
+        &store,
+    );
+    assert_importer_started(&diagnostic_again);
+    assert_released(&diagnostic_again, &diagnostic_again_owner);
+
+    assert_released(&warm, &warm_owner);
+}

@@ -391,7 +391,7 @@ dispatch callback seam は [phase_dispatch.md](./phase_dispatch.md) が定義す
 
 scheduler は、ready task が cache seam を miss または decline し、
 cancellation-before-start を通過し、worker/resource limits で admit された後にだけ
-dispatcher を呼ぶ。validated cache hit は dispatcher を呼ばない。
+`SchedulerTaskDispatcher::dispatch` を呼ぶ。validated cache hit は `dispatch` を呼ばない。
 running-checkpoint cancellation は callback execution を引き続き防ぎ、
 completed-before-publication freshness は stale callback results を引き続き suppress する。
 

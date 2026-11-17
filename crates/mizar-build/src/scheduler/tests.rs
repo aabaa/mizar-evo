@@ -1111,6 +1111,169 @@ fn validated_cache_hit_skips_dispatcher_callback() {
     }));
 }
 
+struct ReadinessCacheDispatcher {
+    target: TaskId,
+    accepted: BTreeSet<TaskId>,
+    queries: Vec<TaskId>,
+    calls: Vec<TaskId>,
+    cancel: Option<CancellationSignal>,
+}
+
+impl SchedulerTaskDispatcher for ReadinessCacheDispatcher {
+    fn cache_decision(
+        &mut self,
+        task: SchedulerDispatchTask<'_>,
+    ) -> Option<CacheSchedulingOutcome> {
+        assert!(
+            task.task
+                .dependencies
+                .iter()
+                .all(|id| self.accepted.contains(id))
+        );
+        self.queries.push(task.task.id.clone());
+        if task.task.id != self.target {
+            return None;
+        }
+        if let Some(signal) = &self.cancel {
+            signal.request(crate::cancel::CancellationReason::ExplicitRequest);
+        }
+        self.accepted.insert(task.task.id.clone());
+        Some(CacheSchedulingOutcome::ValidatedHit(
+            ValidatedCacheHit::new(
+                vec![CacheOutputRef::new("ready-frontend", "cached")],
+                Vec::new(),
+            ),
+        ))
+    }
+
+    fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome {
+        self.calls.push(task.task.id.clone());
+        self.accepted.insert(task.task.id.clone());
+        SchedulerDispatchOutcome::complete()
+    }
+}
+
+#[test]
+fn dependency_ready_cache_decisions_skip_only_after_accepted_parents() {
+    let graph = multi_module_graph();
+    let target = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+    let root = task_id_for_kind(&graph, TaskKind::PackageResolve);
+    let mut dispatcher = ReadinessCacheDispatcher {
+        target: target.clone(),
+        accepted: BTreeSet::from([root]),
+        queries: Vec::new(),
+        calls: Vec::new(),
+        cancel: None,
+    };
+    let run = run_scheduler_with_dispatcher(
+        SchedulerInput {
+            cache: CacheSchedulingPolicy::Enabled,
+            worker_count: 4,
+            ..SchedulerInput::new(graph)
+        },
+        &mut dispatcher,
+    )
+    .expect("ready lookup succeeds");
+    assert_eq!(state_for(&run, &target), TaskState::CacheHit);
+    assert!(dispatcher.queries.contains(&target));
+    assert!(!dispatcher.calls.contains(&target));
+    assert!(
+        run.events
+            .iter()
+            .all(|event| event.task_id.as_ref() != Some(&target)
+                || event.kind != SchedulerEventKind::TaskStarted)
+    );
+}
+
+#[test]
+fn cancellation_before_or_during_readiness_lookup_prevents_cache_acceptance() {
+    for cancel_before in [true, false] {
+        let graph = sample_graph();
+        let target = task_id_for_kind(&graph, TaskKind::Frontend);
+        let root = task_id_for_kind(&graph, TaskKind::PackageResolve);
+        let mut execution = SchedulerExecution::start(SchedulerInput {
+            cache: CacheSchedulingPolicy::Enabled,
+            cancellation: if cancel_before {
+                CancellationPolicy::default().with_cancelled_task(target.clone())
+            } else {
+                CancellationPolicy::default()
+            },
+            ..SchedulerInput::new(graph)
+        })
+        .expect("execution starts");
+        let mut dispatcher = ReadinessCacheDispatcher {
+            target: target.clone(),
+            accepted: BTreeSet::from([root]),
+            queries: Vec::new(),
+            calls: Vec::new(),
+            cancel: Some(execution.cancellation_signal()),
+        };
+        while !execution.is_finished() {
+            execution.advance(&mut dispatcher);
+        }
+        let run = execution.finish().expect("execution finishes");
+        assert_eq!(state_for(&run, &target), TaskState::Cancelled);
+        assert_eq!(dispatcher.queries.contains(&target), !cancel_before);
+        assert!(!dispatcher.calls.contains(&target));
+        assert!(
+            run.events
+                .iter()
+                .all(|event| event.task_id.as_ref() != Some(&target)
+                    || event.kind != SchedulerEventKind::TaskStarted)
+        );
+    }
+}
+
+#[test]
+fn disabled_and_static_hit_routes_do_not_call_readiness_lookup_for_hit() {
+    for enabled in [false, true] {
+        let graph = sample_graph();
+        let target = task_id_for_kind(&graph, TaskKind::Frontend);
+        let root = task_id_for_kind(&graph, TaskKind::PackageResolve);
+        let mut dispatcher = ReadinessCacheDispatcher {
+            target: target.clone(),
+            accepted: BTreeSet::from([root]),
+            queries: Vec::new(),
+            calls: Vec::new(),
+            cancel: None,
+        };
+        if enabled {
+            dispatcher.accepted.insert(target.clone());
+        }
+        let run = run_scheduler_with_dispatcher(
+            SchedulerInput {
+                cache: if enabled {
+                    CacheSchedulingPolicy::Enabled
+                } else {
+                    CacheSchedulingPolicy::Disabled
+                },
+                cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                    target.clone(),
+                    CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                        vec![CacheOutputRef::new("static", "cached")],
+                        Vec::new(),
+                    )),
+                )]),
+                ..SchedulerInput::new(graph)
+            },
+            &mut dispatcher,
+        )
+        .expect("existing route succeeds");
+        assert!(!dispatcher.queries.contains(&target));
+        assert_eq!(
+            state_for(&run, &target),
+            if enabled {
+                TaskState::CacheHit
+            } else {
+                TaskState::Completed
+            }
+        );
+        if !enabled {
+            assert!(dispatcher.queries.is_empty());
+        }
+    }
+}
+
 #[test]
 fn impossible_resource_request_prevents_dispatcher_callback() {
     let graph = sample_graph();

@@ -92,6 +92,8 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-session".to_owned(),
         "mizar-vc".to_owned(),
         "salsa".to_owned(),
+        // The approved native imported-cache projection uses canonical JSON arrays.
+        "serde_json".to_owned(),
     ]);
 
     assert_eq!(

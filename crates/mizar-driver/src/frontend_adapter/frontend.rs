@@ -209,6 +209,326 @@ pub(crate) struct FrontendService {
 }
 
 impl FrontendService {
+    pub(super) fn authenticated_workspace_summaries(
+        inputs: crate::registry::SourceLoadInputs<'_>,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        parent: &mizar_ir::storage::AnyPhaseOutputRef,
+    ) -> Option<
+        Vec<(
+            mizar_resolve::module_index::IndexedModuleId,
+            ModuleLexicalSummary,
+        )>,
+    > {
+        let WorkUnit::Module { module } = &input.work_unit else {
+            return None;
+        };
+        let snapshot = input.snapshot;
+        let workspace = PathBuf::from(inputs.snapshot.workspace_root.as_str());
+        let package = unique(
+            inputs
+                .build_plan
+                .packages
+                .iter()
+                .filter(|entry| entry.package_id == module.package),
+        )?;
+        let index_package = unique(
+            inputs
+                .module_index
+                .packages
+                .iter()
+                .filter(|entry| entry.package_id == module.package),
+        )?;
+        let mut dependencies = inputs
+            .module_index
+            .dependency_summaries
+            .iter()
+            .map(|entry| entry.content_hash)
+            .collect::<Vec<_>>();
+        dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+        use mizar_artifact::{module_summary::ModuleSummaryIdentity, store::canonical_json_string};
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector, env::NamespacePath,
+            module_index::IndexedModuleId, resolved_ast::ModuleId,
+            symbols::SignatureProjectionExtractor,
+        };
+        let mut summaries = Vec::new();
+        for handle in input.parent_outputs() {
+            let leaf = handle.as_output_ref();
+            if leaf == parent {
+                continue;
+            }
+            if leaf.phase() != &IrPipelinePhase::from(PipelinePhase::Frontend)
+                || leaf.output_kind() != &OutputKind::new("FrontendOutput")
+                || leaf.schema_version() != SchemaVersion::new(1)
+            {
+                return None;
+            }
+            let typed = publisher
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    leaf,
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .ok()?;
+            let output = publisher.storage().get(&typed).ok()?;
+            let leaf_source = &output.source;
+            let leaf_version =
+                unique(inputs.snapshot.source_versions.iter().filter(|candidate| {
+                    candidate.package_id == leaf_source.package_id
+                        && candidate.module_path == leaf_source.module_path
+                }))?;
+            let leaf_module = IndexedModuleId::new(
+                leaf_source.package_id.clone(),
+                leaf_source.module_path.clone(),
+            );
+            let leaf_entry = unique(
+                inputs
+                    .module_index
+                    .modules
+                    .iter()
+                    .filter(|candidate| candidate.module == leaf_module),
+            )?;
+            let ModuleIndexLocation::WorkspaceFile {
+                source_root: leaf_root,
+                normalized_path: leaf_path,
+                source_relative_path,
+            } = &leaf_entry.location
+            else {
+                return None;
+            };
+            let leaf_unit = IrWorkUnit::new(module_work_unit_label(
+                leaf_module.package.as_str(),
+                leaf_module.path.as_str(),
+            ));
+            let parent_lineages = leaf
+                .lineage()
+                .parents
+                .iter()
+                .map(|parent| publisher.registry().output_lineage(*parent))
+                .collect::<Option<Vec<_>>>()?;
+            let source_lineage = unique(parent_lineages.iter().filter(|parent| {
+                parent.phase == IrPipelinePhase::from(PipelinePhase::SourceLoad)
+            }))?;
+            let leaf_package = unique(
+                inputs
+                    .build_plan
+                    .packages
+                    .iter()
+                    .filter(|package| package.package_id == leaf_module.package),
+            )?;
+            let PackagePlanSource::Workspace {
+                root: target_root,
+                source_root: target_source_root,
+                manifest_path: target_manifest,
+            } = &leaf_package.source
+            else {
+                return None;
+            };
+            let leaf_index_package = unique(
+                inputs
+                    .module_index
+                    .packages
+                    .iter()
+                    .filter(|package| package.package_id == leaf_module.package),
+            )?;
+            let mizar_build::module_index::PackageIndexSource::Workspace {
+                package_root: indexed_root,
+                source_root: indexed_source_root,
+                manifest_path: indexed_manifest,
+            } = &leaf_index_package.source
+            else {
+                return None;
+            };
+            if target_root != indexed_root
+                || target_source_root != indexed_source_root
+                || target_manifest != indexed_manifest
+                || leaf_package.version != leaf_index_package.version
+                || leaf_package.edition != leaf_version.edition
+                || leaf_index_package.edition != leaf_version.edition
+                || !safe_relative(target_root)
+                || !safe_relative(target_source_root)
+                || !safe_relative(target_manifest)
+                || workspace.join(target_source_root) != workspace.join(target_root).join("src")
+                || workspace.join(target_manifest) != workspace.join(target_root).join("mizar.pkg")
+            {
+                return None;
+            }
+            let leaf_source_key = source_input_hash(leaf_version);
+            let native_leaf = if inputs
+                .captured
+                .is_some_and(|capture| capture.native_sources().is_some())
+            {
+                let (expected, raw) = inputs.native_source(leaf_version)?;
+                if leaf_source != &expected {
+                    return None;
+                }
+                Some(raw)
+            } else {
+                None
+            };
+            if leaf_module == *module
+                || leaf.work_unit() != &leaf_unit
+                || (native_leaf.is_none() && leaf_version.origin != SourceOrigin::Disk)
+                || (match native_leaf.as_ref().map(|raw| &raw.origin) {
+                    Some(SourceOriginInput::OpenBuffer { .. }) => {
+                        output.canonical_open_buffer_bytes(native_leaf.as_ref()?)
+                    }
+                    _ => output.canonical_disk_bytes(),
+                })
+                .is_none()
+                || leaf_source.source_id != leaf_version.source_id
+                || leaf_source.package_id != leaf_version.package_id
+                || leaf_source.module_path != leaf_version.module_path
+                || leaf_source.normalized_path != leaf_version.normalized_path
+                || leaf_source.edition != leaf_version.edition
+                || leaf_source.source_hash != leaf_version.source_hash
+                || leaf_source.origin != leaf_version.origin
+                || leaf_entry.package_id != leaf_module.package
+                || leaf_entry.module_path != leaf_module.path
+                || leaf_entry.edition != leaf_version.edition
+                || leaf_root != target_source_root
+                || leaf_path != leaf_version.normalized_path.as_str()
+                || leaf_path != &format!("src/{source_relative_path}")
+                || source_relative_path.is_empty()
+                || index_package.version != package.version
+                || source_lineage.snapshot != snapshot
+                || source_lineage.phase != IrPipelinePhase::from(PipelinePhase::SourceLoad)
+                || source_lineage.work_unit != leaf_unit
+                || source_lineage.output_kind != OutputKind::new("SourceUnit")
+                || !source_lineage.parents.is_empty()
+                || source_lineage.named_input_hashes.as_slice()
+                    != [NamedInputHash {
+                        name: "source".to_owned(),
+                        domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                        digest: leaf_source_key,
+                    }]
+                || output.cache_keys.source.stable_hash() != leaf_source_key
+                || !output.diagnostics.is_empty()
+                || output
+                    .ast
+                    .as_ref()
+                    .is_none_or(|ast| ast.node_views().any(|view| view.as_export_item().is_some()))
+            {
+                return None;
+            }
+            let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
+            let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
+                .resolve_frontend(&output, leaf_source)?;
+            if !resolution.unresolved().is_empty() {
+                return None;
+            }
+            let mut targets = Vec::new();
+            for import in resolution.resolved() {
+                let target = IndexedModuleId::new(
+                    import.target().package().clone(),
+                    import.target().path().clone(),
+                );
+                let entry = unique(
+                    inputs
+                        .module_index
+                        .modules
+                        .iter()
+                        .filter(|entry| entry.module == target),
+                )?;
+                match &entry.location {
+                    ModuleIndexLocation::WorkspaceFile { .. } => {
+                        if target == leaf_module {
+                            return None;
+                        }
+                    }
+                    ModuleIndexLocation::DependencySummary { .. } => continue,
+                    _ => return None,
+                }
+                let unit = IrWorkUnit::new(module_work_unit_label(
+                    target.package.as_str(),
+                    target.path.as_str(),
+                ));
+                if !targets.contains(&unit) {
+                    targets.push(unit);
+                }
+            }
+            for parent in &parent_lineages {
+                if parent.output == source_lineage.output {
+                    continue;
+                }
+                if parent.snapshot != snapshot
+                    || parent.phase != IrPipelinePhase::from(PipelinePhase::Frontend)
+                    || parent.output_kind != OutputKind::new("FrontendOutput")
+                {
+                    return None;
+                }
+                let position = targets.iter().position(|unit| unit == &parent.work_unit)?;
+                targets.remove(position);
+            }
+            if !targets.is_empty() {
+                return None;
+            }
+            let mut named_inputs = vec![
+                NamedInputHash {
+                    name: "active-lexical-environment".to_owned(),
+                    domain: ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION.to_owned(),
+                    digest: output.cache_keys.active_lexical_environment.stable_hash(),
+                },
+                NamedInputHash {
+                    name: "tokens".to_owned(),
+                    domain: TOKEN_STREAM_CACHE_KEY_VERSION.to_owned(),
+                    digest: output.cache_keys.tokens.stable_hash(),
+                },
+            ];
+            for (ordinal, digest) in dependencies.iter().enumerate() {
+                named_inputs.push(NamedInputHash {
+                    name: format!("dependency.{ordinal}"),
+                    domain: "mizar-frontend/dependency-summary/v1".to_owned(),
+                    digest: *digest,
+                });
+            }
+            named_inputs.sort_by(|left, right| {
+                left.name
+                    .cmp(&right.name)
+                    .then_with(|| left.domain.cmp(&right.domain))
+                    .then_with(|| left.digest.as_bytes().cmp(right.digest.as_bytes()))
+            });
+            if leaf.lineage().named_input_hashes != named_inputs {
+                return None;
+            }
+            let ast = output.ast.as_ref()?;
+            let resolver_module =
+                ModuleId::new(leaf_module.package.clone(), leaf_module.path.clone());
+            let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
+            let collection = SignatureProjectionExtractor::new(
+                ast,
+                &shells,
+                NamespacePath::new(resolver_module.path().as_str()),
+            )
+            .collect(&resolver_module);
+            if !collection.diagnostics().is_empty() {
+                return None;
+            }
+            let identity = ModuleSummaryIdentity {
+                package_id: leaf_module.package.as_str().to_owned(),
+                package_version: Some(leaf_package.version.to_string()),
+                lockfile_identity: None,
+                module_path: leaf_module.path.as_str().to_owned(),
+                language_edition: leaf_version.edition.as_str().to_owned(),
+            };
+            let module_id = canonical_json_string(&identity.canonical_json().ok()?);
+            let shapes = collection
+                .export_frontend_lexical_contributions(&output, &identity)?
+                .into_iter()
+                .map(|contribution| {
+                    ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+                })
+                .collect::<Option<Vec<_>>>()?;
+            let summary = ModuleLexicalSummary::from_exported_symbols(
+                mizar_frontend::lexical_env::ModuleId::new(module_id),
+                shapes,
+            )?;
+            summaries.push((leaf_module, summary));
+        }
+        Some(summaries)
+    }
+
     pub(crate) fn analyze_loaded(
         &self,
         inputs: crate::registry::SourceLoadInputs<'_>,
@@ -546,291 +866,9 @@ impl PhaseService for FrontendService {
         {
             return blocking();
         }
-        let Some(workspace_summaries) = (|| {
-            use mizar_artifact::{
-                module_summary::ModuleSummaryIdentity, store::canonical_json_string,
-            };
-            use mizar_resolve::{
-                declarations::DeclarationShellCollector, env::NamespacePath,
-                module_index::IndexedModuleId, resolved_ast::ModuleId,
-                symbols::SignatureProjectionExtractor,
-            };
-            let mut summaries = Vec::new();
-            for handle in input.parent_outputs() {
-                let leaf = handle.as_output_ref();
-                if leaf == parent {
-                    continue;
-                }
-                if leaf.phase() != &IrPipelinePhase::from(PipelinePhase::Frontend)
-                    || leaf.output_kind() != &OutputKind::new("FrontendOutput")
-                    || leaf.schema_version() != SchemaVersion::new(1)
-                {
-                    return None;
-                }
-                let typed = publisher
-                    .storage()
-                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
-                        leaf,
-                        &OutputKind::new("FrontendOutput"),
-                    )
-                    .ok()?;
-                let output = publisher.storage().get(&typed).ok()?;
-                let leaf_source = &output.source;
-                let leaf_version =
-                    unique(inputs.snapshot.source_versions.iter().filter(|candidate| {
-                        candidate.package_id == leaf_source.package_id
-                            && candidate.module_path == leaf_source.module_path
-                    }))?;
-                let leaf_module = IndexedModuleId::new(
-                    leaf_source.package_id.clone(),
-                    leaf_source.module_path.clone(),
-                );
-                let leaf_entry = unique(
-                    inputs
-                        .module_index
-                        .modules
-                        .iter()
-                        .filter(|candidate| candidate.module == leaf_module),
-                )?;
-                let ModuleIndexLocation::WorkspaceFile {
-                    source_root: leaf_root,
-                    normalized_path: leaf_path,
-                    source_relative_path,
-                } = &leaf_entry.location
-                else {
-                    return None;
-                };
-                let leaf_unit = IrWorkUnit::new(module_work_unit_label(
-                    leaf_module.package.as_str(),
-                    leaf_module.path.as_str(),
-                ));
-                let parent_lineages = leaf
-                    .lineage()
-                    .parents
-                    .iter()
-                    .map(|parent| publisher.registry().output_lineage(*parent))
-                    .collect::<Option<Vec<_>>>()?;
-                let source_lineage = unique(parent_lineages.iter().filter(|parent| {
-                    parent.phase == IrPipelinePhase::from(PipelinePhase::SourceLoad)
-                }))?;
-                let leaf_package = unique(
-                    inputs
-                        .build_plan
-                        .packages
-                        .iter()
-                        .filter(|package| package.package_id == leaf_module.package),
-                )?;
-                let PackagePlanSource::Workspace {
-                    root: target_root,
-                    source_root: target_source_root,
-                    manifest_path: target_manifest,
-                } = &leaf_package.source
-                else {
-                    return None;
-                };
-                let leaf_index_package = unique(
-                    inputs
-                        .module_index
-                        .packages
-                        .iter()
-                        .filter(|package| package.package_id == leaf_module.package),
-                )?;
-                let mizar_build::module_index::PackageIndexSource::Workspace {
-                    package_root: indexed_root,
-                    source_root: indexed_source_root,
-                    manifest_path: indexed_manifest,
-                } = &leaf_index_package.source
-                else {
-                    return None;
-                };
-                if target_root != indexed_root
-                    || target_source_root != indexed_source_root
-                    || target_manifest != indexed_manifest
-                    || leaf_package.version != leaf_index_package.version
-                    || leaf_package.edition != leaf_version.edition
-                    || leaf_index_package.edition != leaf_version.edition
-                    || !safe_relative(target_root)
-                    || !safe_relative(target_source_root)
-                    || !safe_relative(target_manifest)
-                    || workspace.join(target_source_root) != workspace.join(target_root).join("src")
-                    || workspace.join(target_manifest)
-                        != workspace.join(target_root).join("mizar.pkg")
-                {
-                    return None;
-                }
-                let leaf_source_key = source_input_hash(leaf_version);
-                let native_leaf = if inputs
-                    .captured
-                    .is_some_and(|capture| capture.native_sources().is_some())
-                {
-                    let (expected, raw) = inputs.native_source(leaf_version)?;
-                    if leaf_source != &expected {
-                        return None;
-                    }
-                    Some(raw)
-                } else {
-                    None
-                };
-                if leaf_module == *module
-                    || leaf.work_unit() != &leaf_unit
-                    || (native_leaf.is_none() && leaf_version.origin != SourceOrigin::Disk)
-                    || (match native_leaf.as_ref().map(|raw| &raw.origin) {
-                        Some(SourceOriginInput::OpenBuffer { .. }) => {
-                            output.canonical_open_buffer_bytes(native_leaf.as_ref()?)
-                        }
-                        _ => output.canonical_disk_bytes(),
-                    })
-                    .is_none()
-                    || leaf_source.source_id != leaf_version.source_id
-                    || leaf_source.package_id != leaf_version.package_id
-                    || leaf_source.module_path != leaf_version.module_path
-                    || leaf_source.normalized_path != leaf_version.normalized_path
-                    || leaf_source.edition != leaf_version.edition
-                    || leaf_source.source_hash != leaf_version.source_hash
-                    || leaf_source.origin != leaf_version.origin
-                    || leaf_entry.package_id != leaf_module.package
-                    || leaf_entry.module_path != leaf_module.path
-                    || leaf_entry.edition != leaf_version.edition
-                    || leaf_root != target_source_root
-                    || leaf_path != leaf_version.normalized_path.as_str()
-                    || leaf_path != &format!("src/{source_relative_path}")
-                    || source_relative_path.is_empty()
-                    || index_package.version != package.version
-                    || source_lineage.snapshot != snapshot
-                    || source_lineage.phase != IrPipelinePhase::from(PipelinePhase::SourceLoad)
-                    || source_lineage.work_unit != leaf_unit
-                    || source_lineage.output_kind != OutputKind::new("SourceUnit")
-                    || !source_lineage.parents.is_empty()
-                    || source_lineage.named_input_hashes.as_slice()
-                        != [NamedInputHash {
-                            name: "source".to_owned(),
-                            domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
-                            digest: leaf_source_key,
-                        }]
-                    || output.cache_keys.source.stable_hash() != leaf_source_key
-                    || !output.diagnostics.is_empty()
-                    || output.ast.as_ref().is_none_or(|ast| {
-                        ast.node_views().any(|view| view.as_export_item().is_some())
-                    })
-                {
-                    return None;
-                }
-                let index = mizar_resolve::module_index::ModuleIndexInput::new(inputs.module_index);
-                let resolution = mizar_resolve::imports::ImportPathResolver::new(index)
-                    .resolve_frontend(&output, leaf_source)?;
-                if !resolution.unresolved().is_empty() {
-                    return None;
-                }
-                let mut targets = Vec::new();
-                for import in resolution.resolved() {
-                    let target = IndexedModuleId::new(
-                        import.target().package().clone(),
-                        import.target().path().clone(),
-                    );
-                    let entry = unique(
-                        inputs
-                            .module_index
-                            .modules
-                            .iter()
-                            .filter(|entry| entry.module == target),
-                    )?;
-                    match &entry.location {
-                        ModuleIndexLocation::WorkspaceFile { .. } => {
-                            if target == leaf_module {
-                                return None;
-                            }
-                        }
-                        ModuleIndexLocation::DependencySummary { .. } => continue,
-                        _ => return None,
-                    }
-                    let unit = IrWorkUnit::new(module_work_unit_label(
-                        target.package.as_str(),
-                        target.path.as_str(),
-                    ));
-                    if !targets.contains(&unit) {
-                        targets.push(unit);
-                    }
-                }
-                for parent in &parent_lineages {
-                    if parent.output == source_lineage.output {
-                        continue;
-                    }
-                    if parent.snapshot != snapshot
-                        || parent.phase != IrPipelinePhase::from(PipelinePhase::Frontend)
-                        || parent.output_kind != OutputKind::new("FrontendOutput")
-                    {
-                        return None;
-                    }
-                    let position = targets.iter().position(|unit| unit == &parent.work_unit)?;
-                    targets.remove(position);
-                }
-                if !targets.is_empty() {
-                    return None;
-                }
-                let mut named_inputs = vec![
-                    NamedInputHash {
-                        name: "active-lexical-environment".to_owned(),
-                        domain: ACTIVE_LEXICAL_ENVIRONMENT_CACHE_KEY_VERSION.to_owned(),
-                        digest: output.cache_keys.active_lexical_environment.stable_hash(),
-                    },
-                    NamedInputHash {
-                        name: "tokens".to_owned(),
-                        domain: TOKEN_STREAM_CACHE_KEY_VERSION.to_owned(),
-                        digest: output.cache_keys.tokens.stable_hash(),
-                    },
-                ];
-                for (ordinal, digest) in dependencies.iter().enumerate() {
-                    named_inputs.push(NamedInputHash {
-                        name: format!("dependency.{ordinal}"),
-                        domain: "mizar-frontend/dependency-summary/v1".to_owned(),
-                        digest: *digest,
-                    });
-                }
-                named_inputs.sort_by(|left, right| {
-                    left.name
-                        .cmp(&right.name)
-                        .then_with(|| left.domain.cmp(&right.domain))
-                        .then_with(|| left.digest.as_bytes().cmp(right.digest.as_bytes()))
-                });
-                if leaf.lineage().named_input_hashes != named_inputs {
-                    return None;
-                }
-                let ast = output.ast.as_ref()?;
-                let resolver_module =
-                    ModuleId::new(leaf_module.package.clone(), leaf_module.path.clone());
-                let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
-                let collection = SignatureProjectionExtractor::new(
-                    ast,
-                    &shells,
-                    NamespacePath::new(resolver_module.path().as_str()),
-                )
-                .collect(&resolver_module);
-                if !collection.diagnostics().is_empty() {
-                    return None;
-                }
-                let identity = ModuleSummaryIdentity {
-                    package_id: leaf_module.package.as_str().to_owned(),
-                    package_version: Some(leaf_package.version.to_string()),
-                    lockfile_identity: None,
-                    module_path: leaf_module.path.as_str().to_owned(),
-                    language_edition: leaf_version.edition.as_str().to_owned(),
-                };
-                let module_id = canonical_json_string(&identity.canonical_json().ok()?);
-                let shapes = collection
-                    .export_frontend_lexical_contributions(&output, &identity)?
-                    .into_iter()
-                    .map(|contribution| {
-                        ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
-                    })
-                    .collect::<Option<Vec<_>>>()?;
-                let summary = ModuleLexicalSummary::from_exported_symbols(
-                    mizar_frontend::lexical_env::ModuleId::new(module_id),
-                    shapes,
-                )?;
-                summaries.push((leaf_module, summary));
-            }
-            Some(summaries)
-        })() else {
+        let Some(workspace_summaries) =
+            Self::authenticated_workspace_summaries(inputs, &input, &publisher, parent)
+        else {
             return blocking();
         };
         let Ok(output) = self.analyze_loaded(

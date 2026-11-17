@@ -437,7 +437,13 @@ CacheSchedulingPolicy::Enabled、dispatch provider なし、正確な組込み S
 ## Active-run cold Frontend binding
 
 retained oracle のない native cache submission も、真正 SourceLoad hit の retain と既存の厳密な source/root/Frontend graph 検査後、zero-import Disk Frontend lookup を試みる。assembled runtime は実 Frontend service/descriptor、installed policy、参加する running-image code を束縛する。protected capture、current source parent、未公開の真正 `Frontend::run_loaded` 結果から、Store record や Frontend handle に依存せず完全な current 期待値を作る。完全な Frontend 解析を実行するため parsing-avoidance credit はない。
-[adapter](frontend_adapter.md#cold-native-leaf-frontend-expectations) は owner key/codec/validation 規則を維持する。検証済み Frontend hit は既存 private scheduler decision、live physical/publication check、scoped retention/release を使う。miss、未対応 footprint、association 不成立は通常実行へ fallback し、miss では Frontend を再実行し得る。各 mode の Store routing/write policy と best-effort PersistentPrefix write は維持し、retained-oracle lookup は明示経路として残す。imports/Open、後段 dependency/proof/reuse、release attestation、full STEP6C は保留する。
+[adapter](frontend_adapter.md#cold-native-leaf-frontend-expectations) は owner key/codec/validation 規則を維持する。検証済み Frontend hit は既存 private scheduler decision、live physical/publication check、scoped retention/release を使う。miss、未対応 footprint、association 不成立は通常実行へ fallback し、miss では Frontend を再実行し得る。各 mode の Store routing/write policy と best-effort PersistentPrefix write は維持し、retained-oracle lookup は明示経路として残す。imported lookup は以下の別 dependency-ready profile を使う。Open、後段 dependency/proof/reuse、release attestation、full STEP6C は保留する。
+
+## Dependency-ready native Disk Frontend binding
+
+retained oracle のない native cache mode は、実 importer が graph-ready になった時点で imported lookup も試行する。assembled runtime/policy 対応、保護された Disk capture、受理済み PackageResolve・own SourceLoad・一つの distinct direct workspace leaf Frontend dependency の厳密な対応と、その leaf の受理済み SourceLoad result を要求する。重複 import の元 provenance は保持する。leaf は通常実行でも zero-import lookup でもよい。不完全・未対応 profile は通常実行へ戻る。
+scheduler readiness callback は、認証した不変 leaf summary と [完全な imported adapter footprint](frontend_adapter.md#imported-native-disk-frontend-cache) で真正な importer 全解析を準備する。受理された CacheHit だけが再構築した実 output を公開し TaskStarted を省く。期待値準備で parsing は行う。scoped IR owner は全 physical parent と再構築 importer を scheduler 消費・最終検証まで保持し、全経路で解放する。下位処理の前後で currentness・cancellation・publisher 権限を再検査し、retention は current use を与えない。
+PersistentPrefix は同一 closure・完全 payload 検証により、実際に受理した Completed/CacheHit result から best-effort imported write も行う。package Store routing、guard 喪失後の write 抑止、通常 error 優先順位、zero-import/retained 経路、pure NoKey は不変。この限定 profile は semantic import/export、後続 proof/publication/reuse、parsing-avoidance、full STEP6C を達成しない。
 
 ## Package-configured native Disk cache scheduling
 

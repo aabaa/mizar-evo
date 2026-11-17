@@ -248,12 +248,15 @@ fn scheduled_artifact_importing_intermediate_exports_only_its_own_symbol() {
         if mode == "missing_core_artifact" {
             fs::remove_file(root.join("dep/core.summary.json")).unwrap();
         }
-        let (request, mut input) =
-            fixture.scheduled_request(complete_leaf_import_overlay(), captured, indexed);
+        let (request, mut input) = fixture.scheduled_request(
+            complete_leaf_import_overlay(),
+            captured.clone(),
+            indexed.clone(),
+        );
         input.worker_count = 4;
         let mut builder = PhaseRegistryBuilder::new();
         builder.register_source_load();
-        builder.register_frontend(vec![(PackageId::new("dep"), root)]);
+        builder.register_frontend(vec![(PackageId::new("dep"), root.clone())]);
         let mut driver = CompilerDriver::new(builder.build().unwrap())
             .with_output_publisher(fixture.publisher.clone());
         let submission = driver
@@ -361,6 +364,210 @@ fn scheduled_artifact_importing_intermediate_exports_only_its_own_symbol() {
                 token.text.as_ref() == spelling && token.kind == TokenKind::UserSymbol
             }));
             active_hashes.push(loaded.cache_keys.active_lexical_environment.stable_hash());
+        }
+
+        if mode == "base" {
+            use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+            use mizar_cache::cache_store::CacheStoreRoot;
+
+            let snapshots = SnapshotRegistry::new();
+            let policy = mizar_proof::policy::VerifierPolicy::release();
+            let store = CacheStoreRoot::new(fixture.fixture.root.join("alpha/.mizar-cache"));
+            let main_unit = WorkUnit::Module {
+                module: mizar_build::module_index::ModuleId::new(
+                    PackageId::new("alpha"),
+                    ModulePath::new("main"),
+                ),
+            };
+            let native_capture = |generation| {
+                let (mut request, mut input) = fixture.scheduled_request(
+                    complete_leaf_import_overlay(),
+                    captured.clone(),
+                    indexed.clone(),
+                );
+                let plan = produce_build_plan(
+                    input.plan_request.clone(),
+                    input.workspace_packages.clone(),
+                    input.lockfile.clone(),
+                )
+                .unwrap();
+                request.generation = BuildRequestGeneration::new(generation);
+                request.source_inputs.versions.clear();
+                request.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+                request.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+                    &plan.verifier_config,
+                    &plan.build_config,
+                ));
+                let descriptors = ["leaf", "main"]
+                    .map(|module| {
+                        let path = format!("src/{module}.miz");
+                        (
+                            DiskSourceLoader::new(fixture.fixture.root.join("alpha")),
+                            SourceInput {
+                                package_id: PackageId::new("alpha"),
+                                module_path: ModulePath::new(module),
+                                normalized_path: normalize_path(
+                                    &fixture.fixture.root.join("alpha"),
+                                    Path::new(&path),
+                                )
+                                .unwrap(),
+                                edition: Edition::new("2025"),
+                                origin: SourceOriginInput::Disk { path: path.into() },
+                            },
+                        )
+                    })
+                    .to_vec();
+                let session = request
+                    .capture_sources(&fixture.ids, &snapshots, descriptors)
+                    .unwrap();
+                input.cache_policy = CacheSchedulingPolicy::Enabled;
+                input.worker_count = 4;
+                input.completion_order = CompletionOrder::Reverse;
+                (session, input)
+            };
+            let native_submit = |session: mizar_driver::request::BuildSession,
+                                 input: DriverSubmitInput<StaticSourceLayout>,
+                                 mode: Option<NativeCacheMode>| {
+                let snapshot = session.captured().snapshot().id;
+                let owner = publisher(snapshot, usize::MAX, &main_unit);
+                for module in ["leaf", "main"] {
+                    let unit = WorkUnit::Module {
+                        module: mizar_build::module_index::ModuleId::new(
+                            PackageId::new("alpha"),
+                            ModulePath::new(module),
+                        ),
+                    };
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new("SourceLoad"),
+                        OutputKind::new("SourceUnit"),
+                        IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                    ));
+                    allow_frontend(&owner, &unit);
+                }
+                let mut config = StageConfig::frontend(vec![(PackageId::new("dep"), root.clone())]);
+                config.verifier_policy = policy.clone();
+                let mut driver = CompilerDriver::new(assemble_registry(&config).unwrap())
+                    .with_output_publisher(owner.clone());
+                let options = if let Some(mode) = mode {
+                    SubmitOptions {
+                        native_cache: Some(NativeCacheOptions {
+                            policy: &policy,
+                            store: &store,
+                            mode,
+                        }),
+                        ..Default::default()
+                    }
+                } else {
+                    Default::default()
+                };
+                (
+                    driver
+                        .submit_captured(session, &fixture.ids, &snapshots, input, options)
+                        .unwrap(),
+                    owner,
+                )
+            };
+            let (cold_session, cold_input) = native_capture(101);
+            let (cold, _) = native_submit(
+                cold_session,
+                cold_input,
+                Some(NativeCacheMode::PersistentPrefix),
+            );
+            let (warm_session, warm_input) = native_capture(102);
+            let clean_session = warm_session.clone();
+            let (_, mut clean_input) = fixture.scheduled_request(
+                complete_leaf_import_overlay(),
+                captured.clone(),
+                indexed.clone(),
+            );
+            clean_input.worker_count = 4;
+            clean_input.completion_order = CompletionOrder::Reverse;
+            let (warm, warm_owner) = native_submit(
+                warm_session,
+                warm_input,
+                Some(NativeCacheMode::PersistentPrefix),
+            );
+            let (clean, clean_owner) = native_submit(clean_session, clean_input, None);
+            let frontend_task = |submission: &mizar_driver::driver::BuildSubmission| {
+                submission
+                    .task_graph
+                    .as_ref()
+                    .unwrap()
+                    .tasks()
+                    .iter()
+                    .find(|task| task.kind == TaskKind::Frontend && task.unit == main_unit)
+                    .unwrap()
+                    .clone()
+            };
+            let source_task = |submission: &mizar_driver::driver::BuildSubmission| {
+                submission
+                    .task_graph
+                    .as_ref()
+                    .unwrap()
+                    .tasks()
+                    .iter()
+                    .find(|task| task.kind == TaskKind::SourceLoad && task.unit == main_unit)
+                    .unwrap()
+                    .clone()
+            };
+            let warm_run = warm.scheduler_run.as_ref().unwrap();
+            let warm_frontend = frontend_task(&warm);
+            assert_eq!(
+                warm_run
+                    .task_states
+                    .iter()
+                    .find(|state| state.task_id == warm_frontend.id)
+                    .unwrap()
+                    .state,
+                TaskState::Completed
+            );
+            assert!(warm_run.events.iter().any(|event| {
+                event.task_id.as_ref() == Some(&warm_frontend.id)
+                    && event.kind == mizar_build::scheduler::SchedulerEventKind::TaskStarted
+            }));
+            let warm_source = source_task(&warm);
+            assert_eq!(
+                warm_run
+                    .task_states
+                    .iter()
+                    .find(|state| state.task_id == warm_source.id)
+                    .unwrap()
+                    .state,
+                TaskState::CacheHit
+            );
+            let clean_result =
+                &clean.scheduler_run.as_ref().unwrap().phase_results[&frontend_task(&clean).id][0];
+            let warm_result = &warm_run.phase_results[&warm_frontend.id][0];
+            assert_eq!(warm_result.status, PhaseStatus::Complete);
+            assert_eq!(warm_result.diagnostics, clean_result.diagnostics);
+            let output_bytes = |submission: &mizar_driver::driver::BuildSubmission,
+                                owner: &PhaseOutputPublisher| {
+                let result = &submission.scheduler_run.as_ref().unwrap().phase_results
+                    [&frontend_task(submission).id][0];
+                let output = &result.output_refs[0];
+                let handle = owner
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        output,
+                        &OutputKind::new("FrontendOutput"),
+                    )
+                    .unwrap();
+                owner
+                    .storage()
+                    .get(&handle)
+                    .unwrap()
+                    .canonical_disk_bytes()
+                    .unwrap()
+            };
+            assert_eq!(
+                output_bytes(&warm, &warm_owner),
+                output_bytes(&clean, &clean_owner)
+            );
+            assert_eq!(
+                cold.scheduler_run.as_ref().unwrap().phase_results[&frontend_task(&cold).id][0]
+                    .status,
+                PhaseStatus::Complete
+            );
         }
         lexical_hashes.push((active_hashes[0], active_hashes[1]));
     }

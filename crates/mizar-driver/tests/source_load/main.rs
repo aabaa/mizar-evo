@@ -2490,10 +2490,10 @@ fn persistent_native_frontend_case(
                     }
                     let result = &run.phase_results[&frontend_task.id][0];
                     let cold_frontend_hit = actual
-                        && replay == 1
+                        && replay > 0
                         && eligible
                         && source_hits[ordinal]
-                        && matches!(case, "hit" | "edits");
+                        && (case == "imports" || (replay == 1 && matches!(case, "hit" | "edits")));
                     let failed = *name == "alpha" && raw.contains("theorem T: ;");
                     assert_eq!(
                         result.status,
@@ -2617,11 +2617,13 @@ fn persistent_native_frontend_case(
                                 store.lookup(&source_key),
                                 CacheLookupOutcome::Hit(_)
                             ));
+                            // Approved dependency-aware Q5-A writes both leaf and importer;
+                            // the direct public encoder above remains leaf-only.
                             assert_eq!(
                                 fs::read_dir(store.root().join("records/Frontend"))
                                     .unwrap()
                                     .count(),
-                                1
+                                2
                             );
                         }
                         continue;

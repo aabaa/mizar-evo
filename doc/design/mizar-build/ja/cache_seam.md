@@ -112,6 +112,8 @@ validated hits は modeled worker / resource admission の前に考慮される�
 cache hit task は `TaskStarted` event も execution resource telemetry も生成しない。
 hit を execution attempt ではなく execution-skip optimization として保つためである。
 
+実 dispatcher の `SchedulerTaskDispatcher::cache_decision` は、実 ready task の pre-start cancellation 後、既存 hit 判定・resource admission 前に decision を供給できる。default は None。既存 static ValidatedHit はこの callback を省く。cache scheduling が enabled の場合だけ呼び、通常 readiness が correctness dependency の受理を保証する。callback は準備・retention を所有し scheduling metadata だけを返す。既存 freshness 検査が hit を独立して受理または cancel し、callback hit は TaskStarted を emit しない。static decision の既存挙動は不変。
+
 ## Determinism
 
 Cache decisions は `TaskId` で key 付けされる。duplicate decisions と graph に存在しない

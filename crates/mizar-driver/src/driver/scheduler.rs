@@ -4,6 +4,8 @@ use std::{
 };
 
 use mizar_build::{
+    cache_seam::{CacheOutputRef, CacheSchedulingOutcome, ValidatedCacheHit},
+    cancel::CancellationSignal,
     scheduler::{
         SchedulerDiagnosticRef, SchedulerDispatchOutcome, SchedulerDispatchTask, SchedulerRun,
         SchedulerTaskDispatcher, TaskState,
@@ -13,14 +15,17 @@ use mizar_build::{
 use mizar_ir::{
     dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest},
     publisher::{OutputAuthorization, PhaseOutputPublisher},
+    storage::RetainOwner,
 };
 use mizar_session::{BuildSessionId, module_work_unit_label};
 
 use crate::{
-    driver::{DriverSchedulerRun, NativeCheckpoint, NativeCheckpointObservation},
+    driver::{
+        DriverSchedulerRun, NativeCacheOptions, NativeCheckpoint, NativeCheckpointObservation,
+    },
     registry::{
         PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseResult,
-        PhaseStatus, SourceLoadInputs,
+        PhaseStatus, SourceLoadInputs, native_frontend_cache_parents,
     },
     request::BuildSessionOutcome,
 };
@@ -66,6 +71,8 @@ pub(super) struct RegistrySchedulerDispatcher<'a> {
     publisher: Option<&'a Arc<PhaseOutputPublisher>>,
     source_load: Option<SourceLoadInputs<'a>>,
     pub(super) phase_results: BTreeMap<TaskId, Vec<PhaseResult>>,
+    pub(super) native_cache: Option<(NativeCacheOptions<'a>, &'a TaskGraph, CancellationSignal)>,
+    pub(super) cache_owners: Vec<(TaskId, mizar_ir::identity::PhaseOutputId, RetainOwner)>,
     pub(super) native_checkpoint_observations:
         Option<(BuildSessionId, &'a mut Vec<NativeCheckpointObservation>)>,
 }
@@ -83,12 +90,188 @@ impl<'a> RegistrySchedulerDispatcher<'a> {
             publisher,
             source_load,
             phase_results: BTreeMap::new(),
+            native_cache: None,
+            cache_owners: Vec::new(),
             native_checkpoint_observations: None,
         }
     }
 }
 
 impl SchedulerTaskDispatcher for RegistrySchedulerDispatcher<'_> {
+    fn cache_decision(
+        &mut self,
+        task: SchedulerDispatchTask<'_>,
+    ) -> Option<CacheSchedulingOutcome> {
+        use mizar_ir::{
+            cache_adapter::{CacheRehydrateOutcome, IrCacheAdapter},
+            dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+        };
+        let (cache, graph, signal) = self.native_cache.as_ref()?;
+        if task.cancellation.is_some()
+            || signal.requested_reason().is_some()
+            || self.phase_inputs.is_some()
+        {
+            return None;
+        }
+        let inputs = self.source_load?;
+        let policy = self.registry.native_source_policy(cache.policy)?;
+        let service = self.registry.native_frontend_service()?;
+        let publisher = self.publisher?;
+        publisher.validate_current_snapshot(task.snapshot).ok()?;
+        inputs.validate_native_lock_content().ok()?;
+        inputs.validate_native_config_content().ok()?;
+        let (parents, leaf_sources) =
+            native_frontend_cache_parents(task.task, graph, &self.phase_results)?;
+        // Zero-import prestart lookup retains its existing route.
+        if leaf_sources.is_empty() {
+            return None;
+        }
+        let mizar_build::task_graph::WorkUnit::Module { module } = &task.task.unit else {
+            return None;
+        };
+        let mut packages = inputs
+            .build_plan
+            .packages
+            .iter()
+            .filter(|package| package.package_id == module.package);
+        let package = packages.next()?;
+        if packages.next().is_some() {
+            return None;
+        }
+        let mizar_build::planner::PackagePlanSource::Workspace { root, .. } = &package.source
+        else {
+            return None;
+        };
+        if cache.mode != crate::driver::NativeCacheMode::ReadOnly
+            && (!package.build_config.incremental
+                || package.build_config.cache_dir == "."
+                || !crate::frontend_adapter::safe_relative(&package.build_config.cache_dir)
+                || cache.store.root()
+                    != std::path::Path::new(inputs.build_plan.workspace_root.as_str())
+                        .join(root)
+                        .join(&package.build_config.cache_dir))
+        {
+            return None;
+        }
+        let mut versions = inputs.snapshot.source_versions.iter().filter(|version| {
+            version.package_id == module.package && version.module_path == module.path
+        });
+        let version = versions.next()?;
+        if versions.next().is_some() {
+            return None;
+        }
+        let owner = RetainOwner::new(format!(
+            "native-import-cache:{:p}:{}",
+            publisher,
+            task.task.id.as_str()
+        ));
+        let mut retained = Vec::new();
+        let lookup = (|| {
+            for parent in parents.iter().chain(&leaf_sources) {
+                publisher
+                    .storage()
+                    .retain(parent.output(), owner.clone())
+                    .ok()?;
+                retained.push(parent.output());
+            }
+            let sealed = parents
+                .iter()
+                .map(|parent| {
+                    SealedParentOutputHandle::from_published_output(
+                        publisher,
+                        task.snapshot,
+                        parent.clone(),
+                    )
+                    .ok()
+                })
+                .collect::<Option<Vec<_>>>()?;
+            let mut dependencies = inputs
+                .module_index
+                .dependency_summaries
+                .iter()
+                .map(|summary| summary.content_hash)
+                .collect::<Vec<_>>();
+            dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+            let bundle = PhaseDispatchInputBundle::new(
+                task.snapshot,
+                crate::frontend_adapter::source_input_hash(version),
+                dependencies,
+                sealed,
+            )
+            .ok()?;
+            let input = PhaseInput::new(task.task.unit.clone(), bundle);
+            let adapter = IrCacheAdapter::new(publisher.clone());
+            let CacheRehydrateOutcome::Rehydrated(handle) = inputs
+                .rehydrate_native_disk_frontend_cache_with_dependencies(
+                    &input,
+                    policy,
+                    cache.store,
+                    &adapter,
+                    service,
+                    &leaf_sources,
+                )
+                .ok()?
+            else {
+                return None;
+            };
+            publisher
+                .storage()
+                .retain(handle.output(), owner.clone())
+                .ok()?;
+            retained.push(handle.output());
+            if signal.requested_reason().is_some()
+                || publisher.validate_current_snapshot(task.snapshot).is_err()
+                || parents
+                    .iter()
+                    .chain(&leaf_sources)
+                    .chain(std::iter::once(handle.any()))
+                    .any(|output| {
+                        publisher
+                            .validate_output(
+                                task.snapshot,
+                                output,
+                                OutputAuthorization::CurrentPackage,
+                            )
+                            .is_err()
+                            || publisher.storage().validate_handle(output).is_err()
+                    })
+            {
+                return None;
+            }
+            native_frontend_cache_parents(task.task, graph, &self.phase_results)?;
+            Some(handle)
+        })();
+        let Some(handle) = lookup else {
+            for output in retained {
+                let _ = publisher.storage().release(output, &owner);
+            }
+            return None;
+        };
+        self.cache_owners.extend(
+            retained
+                .into_iter()
+                .map(|output| (task.task.id.clone(), output, owner.clone())),
+        );
+        let decision = CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+            vec![CacheOutputRef::new(
+                format!("{:?}", handle.output()),
+                format!("{:?}", handle.content_hash()),
+            )],
+            Vec::new(),
+        ));
+        self.phase_results.insert(
+            task.task.id.clone(),
+            vec![PhaseResult {
+                status: PhaseStatus::Complete,
+                diagnostics: Vec::new(),
+                output_refs: vec![handle.erase()],
+                cache_observation: None,
+                artifact_commit: None,
+            }],
+        );
+        Some(decision)
+    }
+
     fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome {
         dispatch_registry_phase(
             self.registry,
@@ -102,6 +285,7 @@ impl SchedulerTaskDispatcher for RegistrySchedulerDispatcher<'_> {
     }
 }
 
+/// Selects only exact graph dependencies; physical payload validation follows retention.
 pub(super) fn dispatch_gap_phases(
     task_graph: &TaskGraph,
     run: &SchedulerRun,

@@ -4,7 +4,7 @@ use mizar_build::{
     cancel::CancellationToken,
     module_index::ModuleIndex,
     planner::BuildPlan,
-    task_graph::{PipelinePhase, WorkUnit},
+    task_graph::{BuildTask, PipelinePhase, TaskGraph, TaskId, WorkUnit},
 };
 use mizar_diagnostics::sink::{DiagnosticBatch, DiagnosticSink};
 use mizar_ir::{
@@ -146,12 +146,11 @@ pub fn assemble_registry(config: &StageConfig) -> Result<PhaseRegistry, String> 
     }
     let mut registry = builder.build().map_err(|error| error.to_string())?;
     if let Ok(image) = crate::frontend_adapter::SourceLoadService::running_native_image() {
-        let descriptors = [PipelinePhase::SourceLoad, PipelinePhase::Frontend]
-            .into_iter()
-            .filter_map(|phase| registry.descriptor_for_phase(phase).ok().cloned())
-            .collect();
-        registry.native_source_bootstrap =
-            Some((config.verifier_policy.clone(), image.clone(), descriptors));
+        registry.native_source_bootstrap = Some((
+            config.verifier_policy.clone(),
+            image.clone(),
+            registry.services.clone(),
+        ));
     }
     Ok(registry)
 }
@@ -269,13 +268,125 @@ pub struct PhaseRegistry {
     native_source_bootstrap: Option<(
         mizar_proof::policy::VerifierPolicy,
         mizar_cache::cache_key::CompatibilityField,
-        Vec<PhaseDescriptor>,
+        Vec<RegisteredPhaseService>,
     )>,
 }
 
+#[derive(Clone)]
 struct RegisteredPhaseService {
     descriptor: PhaseDescriptor,
     service: Arc<dyn PhaseService>,
+}
+
+pub(crate) fn native_frontend_cache_parents(
+    task: &BuildTask,
+    graph: &TaskGraph,
+    results: &BTreeMap<TaskId, Vec<PhaseResult>>,
+) -> Option<(Vec<AnyPhaseOutputRef>, Vec<AnyPhaseOutputRef>)> {
+    use mizar_build::task_graph::{TaskKind, WorkUnit};
+    use mizar_session::module_work_unit_label;
+    use std::collections::BTreeSet;
+    if task.kind != TaskKind::Frontend
+        || task.phases != [PipelinePhase::Frontend]
+        || graph
+            .tasks()
+            .iter()
+            .filter(|candidate| candidate.id == task.id)
+            .count()
+            != 1
+        || graph
+            .tasks()
+            .iter()
+            .find(|candidate| candidate.id == task.id)?
+            != task
+    {
+        return None;
+    }
+    let mut roots = graph.tasks().iter().filter(|candidate| {
+        candidate.kind == TaskKind::PackageResolve
+            && candidate.unit == WorkUnit::Workspace
+            && candidate.phases == [PipelinePhase::PackageResolve]
+    });
+    let root = roots.next()?;
+    if roots.next().is_some()
+        || !root.dependencies.is_empty()
+        || !task.dependencies.contains(&root.id)
+    {
+        return None;
+    }
+    let output = |parent: &BuildTask, kind: &str| {
+        let [result] = results.get(&parent.id)?.as_slice() else {
+            return None;
+        };
+        let [output] = result.output_refs.as_slice() else {
+            return None;
+        };
+        let WorkUnit::Module { module } = &parent.unit else {
+            return None;
+        };
+        (result.status == PhaseStatus::Complete
+            && result.diagnostics.is_empty()
+            && output.snapshot() == graph.snapshot
+            && output.phase() == &mizar_ir::identity::PipelinePhase::from(parent.phases[0])
+            && output.output_kind() == &mizar_ir::identity::OutputKind::new(kind)
+            && output.work_unit().as_str()
+                == module_work_unit_label(module.package.as_str(), module.path.as_str()))
+        .then(|| output.clone())
+    };
+    let mut parents = Vec::new();
+    let mut leaf_sources = Vec::new();
+    let mut own_source = false;
+    let mut seen = BTreeSet::new();
+    for id in &task.dependencies {
+        if !seen.insert(id) {
+            return None;
+        }
+        if id == &root.id {
+            continue;
+        }
+        let mut matches = graph.tasks().iter().filter(|candidate| &candidate.id == id);
+        let parent = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        if parent.kind == TaskKind::SourceLoad
+            && parent.phases == [PipelinePhase::SourceLoad]
+            && parent.unit == task.unit
+            && !own_source
+            && parent.dependencies == [root.id.clone()]
+        {
+            own_source = true;
+            parents.push(output(parent, "SourceUnit")?);
+        } else if parent.kind == TaskKind::Frontend
+            && parent.phases == [PipelinePhase::Frontend]
+            && parent.unit != task.unit
+            && leaf_sources.is_empty()
+        {
+            let mut sources = graph.tasks().iter().filter(|candidate| {
+                candidate.unit == parent.unit && candidate.phases == [PipelinePhase::SourceLoad]
+            });
+            let source = sources.next()?;
+            if source.kind != TaskKind::SourceLoad
+                || sources.next().is_some()
+                || source.dependencies != [root.id.clone()]
+                || parent.dependencies.len() != 2
+                || !parent.dependencies.contains(&root.id)
+                || !parent.dependencies.contains(&source.id)
+            {
+                return None;
+            }
+            let leaf = output(parent, "FrontendOutput")?;
+            let source = output(source, "SourceUnit")?;
+            if leaf.lineage().parents != [source.output()] {
+                return None;
+            }
+            leaf_sources.push(source);
+            parents.push(leaf);
+        } else {
+            return None;
+        }
+    }
+    (own_source && parents.len() == 1 + leaf_sources.len()).then_some((parents, leaf_sources))
 }
 
 #[derive(Clone, Default)]
@@ -801,16 +912,20 @@ impl PhaseRegistry {
         &self,
         requested: &mizar_proof::policy::VerifierPolicy,
     ) -> Option<&mizar_proof::policy::VerifierPolicy> {
-        let (policy, image, descriptors) = self.native_source_bootstrap.as_ref()?;
+        let (policy, image, services) = self.native_source_bootstrap.as_ref()?;
         (policy.policy_fingerprint() == requested.policy_fingerprint()
-            && descriptors.iter().all(|descriptor| {
-                descriptor.phases.iter().all(|phase| {
-                    self.descriptor_for_phase(*phase).ok() == Some(descriptor)
-                        && self
-                            .service_for_phase(*phase)
-                            .is_ok_and(|service| service.phase() == *descriptor)
+            && services.len() == self.services.len()
+            && services
+                .iter()
+                .zip(&self.services)
+                .all(|(original, selected)| {
+                    Arc::ptr_eq(&original.service, &selected.service)
+                        && original.descriptor == selected.descriptor
+                        && selected.service.phase() == original.descriptor
+                        && original.descriptor.phases.iter().all(|phase| {
+                            self.descriptor_for_phase(*phase).ok() == Some(&original.descriptor)
+                        })
                 })
-            })
             && crate::frontend_adapter::SourceLoadService::running_native_image().ok()? == image)
             .then_some(policy)
     }
@@ -818,10 +933,11 @@ impl PhaseRegistry {
     pub(crate) fn native_frontend_service(
         &self,
     ) -> Option<&crate::frontend_adapter::FrontendService> {
-        let (_, _, descriptors) = self.native_source_bootstrap.as_ref()?;
+        let (policy, _, _) = self.native_source_bootstrap.as_ref()?;
+        self.native_source_policy(policy)?;
         let descriptor = self.descriptor_for_phase(PipelinePhase::Frontend).ok()?;
         let service = self.service_for_phase(PipelinePhase::Frontend).ok()?;
-        if !descriptors.contains(descriptor) || service.phase() != *descriptor {
+        if service.phase() != *descriptor {
             return None;
         }
         (service as &dyn std::any::Any).downcast_ref()

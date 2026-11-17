@@ -112,11 +112,13 @@ constructor helpers (`complete`, `failed`, `blocked`, `skipped`, and
 `cancelled`) so a driver/registry adapter can return scheduler states without
 constructing fake producer outputs or artifact publication tokens.
 
-The callback is invoked only for a task that has passed scheduler readiness,
+The `dispatch` callback is invoked only for a task that has passed scheduler readiness,
 cache fallback, cancellation-before-start, and resource admission. A validated
 cache hit still skips callback execution. The callback receives the
 build-owned task identity, snapshot, and an optional cooperative cancellation
 token. It does not receive mutable scheduler internals.
+
+The separate default readiness `cache_decision` method is owned by the [cache seam](cache_seam.md#scheduler-integration).
 
 The callback may return:
 

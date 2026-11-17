@@ -566,6 +566,7 @@ dependencies = [
  "mizar-session",
  "mizar-vc",
  "salsa",
+ "serde_json",
 ]
 
 [[package]]

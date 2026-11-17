@@ -130,6 +130,14 @@ pub enum SyntheticTaskStatus {
 }
 
 pub trait SchedulerTaskDispatcher {
+    /// Offers a cache decision only after all dependencies have been accepted.
+    fn cache_decision(
+        &mut self,
+        _task: SchedulerDispatchTask<'_>,
+    ) -> Option<CacheSchedulingOutcome> {
+        None
+    }
+
     fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome;
 }
 
@@ -722,21 +730,24 @@ impl SchedulerExecution {
         }
     }
 
-    fn advance_inner(&mut self, dispatcher: Option<&mut dyn SchedulerTaskDispatcher>) {
+    fn advance_inner(&mut self, mut dispatcher: Option<&mut dyn SchedulerTaskDispatcher>) {
         if self.finished {
             return;
         }
-        let uses_real_dispatcher = dispatcher.is_some();
         if let Some(task_id) = self.pending_dispatch.pop_front() {
-            self.dispatch_admitted_task(task_id, dispatcher);
+            match dispatcher.as_deref_mut() {
+                Some(dispatcher) => self.dispatch_admitted_task(task_id, Some(dispatcher)),
+                None => self.dispatch_admitted_task(task_id, None),
+            }
         }
         if self.pending_dispatch.is_empty() {
-            self.admit_next_batch(uses_real_dispatcher);
+            self.admit_next_batch(dispatcher);
             self.finished = self.pending_dispatch.is_empty();
         }
     }
 
-    fn admit_next_batch(&mut self, uses_real_dispatcher: bool) {
+    fn admit_next_batch(&mut self, mut dispatcher: Option<&mut dyn SchedulerTaskDispatcher>) {
+        let uses_real_dispatcher = dispatcher.is_some();
         loop {
             let mut ready = self.new_ready_tasks();
             if ready.is_empty() {
@@ -759,6 +770,31 @@ impl SchedulerExecution {
                         .get(&task_id)
                         .expect("ready task has task metadata")
                         .clone();
+                    if self.cancel_before_start_if_requested(&task) {
+                        made_progress = true;
+                        self.block_dependents(&task_id);
+                        continue;
+                    }
+                    if self.input.cache == CacheSchedulingPolicy::Enabled
+                        && !matches!(
+                            self.cache_decisions_by_task.get(&task.id),
+                            Some(CacheSchedulingOutcome::ValidatedHit(_))
+                        )
+                        && task.dependencies.iter().all(|dependency| {
+                            self.states.get(dependency).is_some_and(|record| {
+                                matches!(record.state, TaskState::Completed | TaskState::CacheHit)
+                            })
+                        })
+                        && let Some(dispatcher) = dispatcher.as_deref_mut()
+                        && let Some(decision) = dispatcher.cache_decision(SchedulerDispatchTask {
+                            task: &task,
+                            snapshot: self.input.graph.snapshot,
+                            cancellation: self.cancellation_state.token_for_task(&task.id),
+                        })
+                    {
+                        self.cache_decisions_by_task
+                            .insert(task.id.clone(), decision);
+                    }
                     if self.cancel_before_start_if_requested(&task) {
                         made_progress = true;
                         self.block_dependents(&task_id);

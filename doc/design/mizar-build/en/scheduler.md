@@ -401,9 +401,9 @@ The dispatch callback seam is specified in
 `run_scheduler_with_dispatcher` and `SchedulerTaskDispatcher` as a separate API
 from `SchedulerInput`.
 
-The scheduler calls the dispatcher only after a ready task has missed or
+The scheduler calls `SchedulerTaskDispatcher::dispatch` only after a ready task has missed or
 declined the cache seam, passed cancellation-before-start, and been admitted by
-worker/resource limits. Validated cache hits do not call the dispatcher.
+worker/resource limits. Validated cache hits do not call `dispatch`.
 Running-checkpoint cancellation still prevents callback execution, and
 completed-before-publication freshness still suppresses stale callback results.
 

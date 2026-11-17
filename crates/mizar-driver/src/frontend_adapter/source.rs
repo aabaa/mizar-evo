@@ -317,6 +317,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             >,
         >,
         frontend: Option<&FrontendService>,
+        leaf_sources: &[mizar_ir::storage::AnyPhaseOutputRef],
     ) -> Result<NativeFrontendCachePayload, String> {
         use mizar_cache::cache_key::{
             NamedHash, NamedSchemaVersion, PipelinePhase as CachePhase,
@@ -335,7 +336,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .modules
                 .iter()
                 .any(|entry| !matches!(entry.location, ModuleIndexLocation::WorkspaceFile { .. }))
-            || input.parent_outputs().len() != 1
+            || !(input.parent_outputs().len() == 1
+                || (frontend.is_some()
+                    && input.parent_outputs().len() == 2
+                    && leaf_sources.len() == 1))
         {
             return Err("native Frontend encoding requires the leaf profile".to_owned());
         }
@@ -360,7 +364,97 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .ok_or_else(|| "native Frontend encoding capture binding failed".to_owned())?;
         let publisher = adapter.publisher();
         let storage = publisher.storage();
-        let parent = input.parent_outputs()[0].as_output_ref();
+        let parent = unique(
+            input
+                .parent_outputs()
+                .iter()
+                .map(|parent| parent.as_output_ref())
+                .filter(|parent| {
+                    parent.phase().as_str() == "SourceLoad"
+                        && parent.work_unit().as_str() == request.work_unit.as_str()
+                }),
+        )
+        .ok_or_else(|| "native Frontend requires one own SourceLoad parent".to_owned())?;
+        let imported = input.parent_outputs().len() == 2;
+        if !imported && !leaf_sources.is_empty() {
+            return Err("native Frontend surplus leaf source parents".to_owned());
+        }
+        for physical in input
+            .parent_outputs()
+            .iter()
+            .map(|parent| parent.as_output_ref())
+            .chain(leaf_sources)
+        {
+            storage
+                .validate_handle(physical)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_output(
+                    input.snapshot,
+                    physical,
+                    OutputAuthorization::CurrentPackage,
+                )
+                .map_err(|error| error.to_string())?;
+        }
+        let workspace_summaries =
+            FrontendService::authenticated_workspace_summaries(self, input, publisher, parent)
+                .ok_or_else(|| "native Frontend dependency authentication failed".to_owned())?;
+        if imported {
+            use mizar_ir::dispatch_input::SealedParentOutputHandle;
+            let leaf = unique(
+                input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref())
+                    .filter(|candidate| *candidate != parent),
+            )
+            .ok_or_else(|| "native Frontend requires one leaf Frontend".to_owned())?;
+            let leaf_source = &leaf_sources[0];
+            if workspace_summaries.len() != 1
+                || leaf.lineage().parents != vec![leaf_source.output()]
+            {
+                return Err("native Frontend leaf SourceLoad correspondence mismatch".to_owned());
+            }
+            let (target, _) = &workspace_summaries[0];
+            let leaf_version = unique(self.snapshot.source_versions.iter().filter(|version| {
+                version.package_id == target.package && version.module_path == target.path
+            }))
+            .ok_or_else(|| "native Frontend leaf capture is unavailable".to_owned())?;
+            let leaf_input = PhaseInput::new(
+                WorkUnit::Module {
+                    module: target.clone(),
+                },
+                PhaseDispatchInputBundle::new(
+                    input.snapshot,
+                    source_input_hash(leaf_version),
+                    Vec::new(),
+                    vec![
+                        SealedParentOutputHandle::from_current_output(
+                            publisher,
+                            input.snapshot,
+                            leaf_source.clone(),
+                        )
+                        .map_err(|error| error.to_string())?,
+                    ],
+                )
+                .map_err(|error| error.to_string())?,
+            );
+            let leaf_handle = storage
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    leaf,
+                    &OutputKind::new("FrontendOutput"),
+                )
+                .map_err(|error| error.to_string())?;
+            self.prepare_native_disk_frontend_cache_payload(
+                &leaf_input,
+                policy,
+                adapter,
+                Some(&leaf_handle),
+                None,
+                &[],
+            )?;
+        }
+
         storage
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
@@ -412,7 +506,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err("native Frontend encoding source parent lineage mismatch".to_owned());
         }
-        let output = if let Some(handle) = handle {
+        let retained = if let Some(handle) = handle {
             storage
                 .validate_handle(handle.any())
                 .map_err(|error| error.to_string())?;
@@ -430,27 +524,40 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             {
                 return Err("native Frontend encoding output binding mismatch".to_owned());
             }
-            storage.get(handle).map_err(|error| error.to_string())?
+            Some(storage.get(handle).map_err(|error| error.to_string())?)
         } else {
-            let frontend =
-                frontend.ok_or_else(|| "native Frontend producer unavailable".to_owned())?;
-            let package = unique(
-                self.build_plan
-                    .packages
-                    .iter()
-                    .filter(|package| package.package_id == module.package),
-            )
-            .ok_or_else(|| "native Frontend producer requires one package".to_owned())?;
-            let PackagePlanSource::Workspace { root, .. } = &package.source else {
-                return Err("native Frontend producer requires a workspace package".to_owned());
-            };
-            Arc::new(frontend.analyze_loaded(
-                self,
-                PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
-                &[],
-                source.clone(),
-            )?)
+            None
         };
+        let output = match &retained {
+            Some(output) if !imported => output.clone(),
+            _ => {
+                let frontend =
+                    frontend.ok_or_else(|| "native Frontend producer unavailable".to_owned())?;
+                let package = unique(
+                    self.build_plan
+                        .packages
+                        .iter()
+                        .filter(|package| package.package_id == module.package),
+                )
+                .ok_or_else(|| "native Frontend producer requires one package".to_owned())?;
+                let PackagePlanSource::Workspace { root, .. } = &package.source else {
+                    return Err("native Frontend producer requires a workspace package".to_owned());
+                };
+                Arc::new(frontend.analyze_loaded(
+                    self,
+                    PathBuf::from(self.snapshot.workspace_root.as_str()).join(root),
+                    &workspace_summaries,
+                    source.clone(),
+                )?)
+            }
+        };
+        if imported
+            && retained.as_ref().is_some_and(|retained| {
+                retained.canonical_disk_bytes() != output.canonical_disk_bytes()
+            })
+        {
+            return Err("native Frontend output differs from independent analysis".to_owned());
+        }
         let named_input_hashes = vec![
             NamedInputHash {
                 name: "active-lexical-environment".to_owned(),
@@ -469,15 +576,120 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .matches_canonical_storage(&source, &captured_input)
             || output.ast.is_none()
             || !output.diagnostics.is_empty()
-            || !output.preprocessed.import_stubs.is_empty()
+            || (!imported && !output.preprocessed.import_stubs.is_empty())
             || output.cache_keys.source != SourceUnitCacheKey::from_source(&source)
             || output.cache_keys.preprocessed != PreprocessedSourceCacheKey::from_source(&source)
             || handle.is_some_and(|handle| {
-                handle.lineage().parents != vec![parent.output()]
+                handle.lineage().parents.len() != input.parent_outputs().len()
+                    || input
+                        .parent_outputs()
+                        .iter()
+                        .any(|parent| !handle.lineage().parents.contains(&parent.output()))
                     || handle.lineage().named_input_hashes != named_input_hashes
             })
         {
             return Err("native Frontend encoding output source or lineage mismatch".to_owned());
+        }
+        if imported {
+            let domain = "mizar-driver/native-disk-frontend-dependencies/v1";
+            let dependency_bytes = {
+                use mizar_resolve::{imports::ImportPathResolver, module_index::ModuleIndexInput};
+                use serde_json::json;
+                let unavailable = || "native Frontend dependency closure is unsupported".to_owned();
+                if workspace_summaries.len() != 1
+                    || output.ast.as_ref().is_none_or(|ast| {
+                        ast.node_views().any(|view| view.as_export_item().is_some())
+                    })
+                {
+                    return Err(unavailable());
+                }
+                let resolution = ImportPathResolver::new(ModuleIndexInput::new(self.module_index))
+                    .resolve_frontend(&output, &output.source)
+                    .ok_or_else(unavailable)?;
+                if !resolution.unresolved().is_empty() || resolution.resolved().is_empty() {
+                    return Err(unavailable());
+                }
+                let range = |span: mizar_session::SourceRange| json!([span.start, span.end]);
+                let mut resolved = resolution.resolved().iter().collect::<Vec<_>>();
+                resolved.sort_by_key(|import| import.ordinal());
+                let mut imports = Vec::new();
+                for import in resolved {
+                    if import.target().package() != &workspace_summaries[0].0.package
+                        || import.target().path() != &workspace_summaries[0].0.path
+                    {
+                        return Err(unavailable());
+                    }
+                    imports.push(json!([
+                        import.target().package().as_str(),
+                        import.target().path().as_str(),
+                        import.ordinal(),
+                        range(import.range()),
+                        import.alias_range().map(range),
+                        import.branch_base_range().map(range),
+                        import.branch_member_range().map(range)
+                    ]));
+                }
+                let mut ordered_workspace_summaries =
+                    workspace_summaries.iter().collect::<Vec<_>>();
+                ordered_workspace_summaries.sort_by(|left, right| {
+                    (left.0.package.as_str(), left.0.path.as_str())
+                        .cmp(&(right.0.package.as_str(), right.0.path.as_str()))
+                });
+                let mut summary_bytes = Vec::new();
+                for (target, summary) in ordered_workspace_summaries {
+                    let shapes = summary
+                        .exported_symbols
+                        .iter()
+                        .map(ExportedSymbolShape::canonical_bytes)
+                        .collect::<Option<Vec<_>>>()
+                        .ok_or_else(unavailable)?;
+                    summary_bytes.push(json!([
+                        target.package.as_str(),
+                        target.path.as_str(),
+                        summary.module_id.as_str(),
+                        summary.fingerprint.get(),
+                        shapes
+                    ]));
+                }
+                let mut parents = input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref())
+                    .chain(leaf_sources)
+                    .collect::<Vec<_>>();
+                parents.sort_by(|left, right| {
+                    (left.phase().as_str(), left.work_unit().as_str())
+                        .cmp(&(right.phase().as_str(), right.work_unit().as_str()))
+                });
+                let parents = parents
+                    .into_iter()
+                    .map(|parent| {
+                        json!([
+                            parent.phase().as_str(),
+                            parent.work_unit().as_str(),
+                            parent.content_hash().as_bytes(),
+                            parent.side_table_hash().as_bytes()
+                        ])
+                    })
+                    .collect::<Vec<_>>();
+                serde_json::to_vec(&json!([
+                    domain,
+                    output
+                        .preprocessed
+                        .canonical_bytes()
+                        .ok_or_else(unavailable)?,
+                    output.tokens.canonical_bytes().ok_or_else(unavailable)?,
+                    imports,
+                    summary_bytes,
+                    parents
+                ]))
+                .map_err(|error| error.to_string())?
+            };
+            request.input_hashes.push(NamedHash {
+                name: "frontend-dependencies".to_owned(),
+                domain: domain.to_owned(),
+                digest: Hash::from_bytes(blake3::derive_key(domain, &dependency_bytes)),
+            });
         }
         let ast_key = output
             .cache_keys
@@ -557,6 +769,24 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let mut canonical_payload = b"mizar-frontend/output-publication/v1\0".to_vec();
         canonical_payload.extend_from_slice(ast_key.stable_hash().as_bytes());
+        for physical in input
+            .parent_outputs()
+            .iter()
+            .map(|parent| parent.as_output_ref())
+            .chain(leaf_sources)
+            .chain(handle.map(|handle| handle.any()))
+        {
+            storage
+                .validate_handle(physical)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_output(
+                    input.snapshot,
+                    physical,
+                    OutputAuthorization::CurrentPackage,
+                )
+                .map_err(|error| error.to_string())?;
+        }
         Ok((
             request,
             canonical_payload,
@@ -585,6 +815,44 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 adapter,
                 Some(&handle),
                 None,
+                &[],
+            )?;
+        let key = match CacheKeyBuilder::new(request.clone()).build() {
+            CacheKeyBuildOutcome::Cacheable(key) => key,
+            _ => return Err("native Frontend encoding requires a cacheable key".to_owned()),
+        };
+        Ok(adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: key,
+            produced_by: request.validation_inputs.toolchain_compatibility,
+            canonical_payload,
+            storage_payload,
+            cacheability: CacheAdapterCacheability::Cacheable,
+        }))
+    }
+
+    pub(crate) fn encode_native_disk_frontend_cache_record_with_frontend(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        handle: mizar_ir::storage::PhaseOutputRef<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+        frontend: &FrontendService,
+        leaf_sources: &[mizar_ir::storage::AnyPhaseOutputRef],
+    ) -> Result<mizar_ir::cache_adapter::EncodeCacheRecordOutcome, String> {
+        use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+        use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
+
+        let (request, canonical_payload, storage_payload, _): NativeFrontendCachePayload = self
+            .prepare_native_disk_frontend_cache_payload(
+                input,
+                policy,
+                adapter,
+                Some(&handle),
+                Some(frontend),
+                leaf_sources,
             )?;
         let key = match CacheKeyBuilder::new(request.clone()).build() {
             CacheKeyBuildOutcome::Cacheable(key) => key,
@@ -627,6 +895,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             oracle_adapter,
             Some(oracle_handle),
             None,
+            &[],
         )?;
         if input.snapshot != oracle_input.snapshot
             || input.work_unit != oracle_input.work_unit
@@ -641,6 +910,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             adapter,
             payload,
             Some(oracle_input.parent_outputs()[0].output()),
+            &[],
         )
     }
 
@@ -663,8 +933,41 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             adapter,
             None,
             Some(frontend),
+            &[],
         )?;
-        self.rehydrate_native_disk_frontend_payload(input, store, adapter, payload, None)
+        self.rehydrate_native_disk_frontend_payload(input, store, adapter, payload, None, &[])
+    }
+
+    pub(crate) fn rehydrate_native_disk_frontend_cache_with_dependencies(
+        self,
+        input: &PhaseInput,
+        policy: &mizar_proof::policy::VerifierPolicy,
+        store: &mizar_cache::cache_store::CacheStoreRoot,
+        adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
+        frontend: &FrontendService,
+        leaf_sources: &[mizar_ir::storage::AnyPhaseOutputRef],
+    ) -> Result<
+        mizar_ir::cache_adapter::CacheRehydrateOutcome<
+            FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+        >,
+        String,
+    > {
+        let payload = self.prepare_native_disk_frontend_cache_payload(
+            input,
+            policy,
+            adapter,
+            None,
+            Some(frontend),
+            leaf_sources,
+        )?;
+        self.rehydrate_native_disk_frontend_payload(
+            input,
+            store,
+            adapter,
+            payload,
+            None,
+            leaf_sources,
+        )
     }
 
     fn rehydrate_native_disk_frontend_payload(
@@ -674,6 +977,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         adapter: &mizar_ir::cache_adapter::IrCacheAdapter,
         payload: NativeFrontendCachePayload,
         oracle_parent: Option<mizar_ir::identity::PhaseOutputId>,
+        leaf_sources: &[mizar_ir::storage::AnyPhaseOutputRef],
     ) -> Result<
         mizar_ir::cache_adapter::CacheRehydrateOutcome<
             FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
@@ -701,7 +1005,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .native_source(version)
             .ok_or_else(|| "native Frontend lookup capture binding failed".to_owned())?;
         let storage = publisher.storage();
-        let parent = input.parent_outputs()[0].as_output_ref();
+        let parent = unique(
+            input
+                .parent_outputs()
+                .iter()
+                .map(|parent| parent.as_output_ref())
+                .filter(|parent| {
+                    parent.phase().as_str() == "SourceLoad"
+                        && parent.work_unit().as_str() == request.work_unit.as_str()
+                }),
+        )
+        .ok_or_else(|| "native Frontend lookup requires one own SourceLoad parent".to_owned())?;
         storage
             .validate_handle(parent)
             .map_err(|error| error.to_string())?;
@@ -775,7 +1089,24 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err("native Frontend lookup producer binding mismatch".to_owned());
         }
-        Ok(adapter.rehydrate_with_expected_payload(
+        for physical in input
+            .parent_outputs()
+            .iter()
+            .map(|parent| parent.as_output_ref())
+            .chain(leaf_sources)
+        {
+            storage
+                .validate_handle(physical)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_output(
+                    input.snapshot,
+                    physical,
+                    OutputAuthorization::CurrentPackage,
+                )
+                .map_err(|error| error.to_string())?;
+        }
+        let outcome = adapter.rehydrate_with_expected_payload(
             RehydrateCacheHitInput {
                 lookup,
                 snapshot: input.snapshot,
@@ -783,7 +1114,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 work_unit: IrWorkUnit::new(request.work_unit.as_str()),
                 output_kind: OutputKind::new("FrontendOutput"),
                 schema_version: SchemaVersion::new(1),
-                parents: vec![parent.clone()],
+                parents: input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref().clone())
+                    .collect(),
                 named_input_hashes,
                 decode: BlobDecoder::new(move |bytes| {
                     if bytes != storage_payload {
@@ -806,7 +1141,25 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             },
             &semantic,
             &side_tables,
-        ))
+        );
+        for physical in input
+            .parent_outputs()
+            .iter()
+            .map(|parent| parent.as_output_ref())
+            .chain(leaf_sources)
+        {
+            storage
+                .validate_handle(physical)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_output(
+                    input.snapshot,
+                    physical,
+                    OutputAuthorization::CurrentPackage,
+                )
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(outcome)
     }
 
     /// Reconstructs an authorized current source from its genuine native Disk key.
@@ -1374,6 +1727,20 @@ impl SourceLoadService {
                     as usize,
                 <FrontendService as PhaseService>::execute as *const () as usize,
                 FrontendService::analyze_loaded as *const () as usize,
+                FrontendService::authenticated_workspace_summaries as *const () as usize,
+                <DependencyLexicalProvider<'static> as mizar_frontend::lexical_env::LexicalSummaryProvider>::resolve_imports as *const () as usize,
+                mizar_resolve::imports::ImportPathResolver::resolve_frontend as *const () as usize,
+                mizar_resolve::imports::ImportPathResolver::resolve as *const () as usize,
+                mizar_resolve::declarations::DeclarationShellCollector::collect as *const () as usize,
+                mizar_resolve::symbols::SignatureProjectionExtractor::collect as *const () as usize,
+                mizar_resolve::symbols::SymbolCollectionResult::export_frontend_lexical_contributions as *const () as usize,
+                mizar_artifact::module_summary::ModuleSummaryIdentity::canonical_json as *const () as usize,
+                mizar_artifact::store::canonical_json_string as *const () as usize,
+                ModuleLexicalSummary::from_exported_symbols as *const () as usize,
+                ExportedSymbolShape::canonical_bytes as *const () as usize,
+                ExportedSymbolShape::from_canonical_bytes as *const () as usize,
+                mizar_frontend::preprocess::PreprocessedSource::canonical_bytes as *const () as usize,
+                mizar_frontend::lexing::TokenStream::canonical_bytes as *const () as usize,
                 Frontend::<
                     FrontendSourceLoader<DiskSourceLoader>,
                     DependencyLexicalProvider<'static>,
@@ -1817,5 +2184,423 @@ impl PhaseService for SourceLoadService {
             },
             Err(_) => blocking(),
         }
+    }
+}
+
+#[cfg(test)]
+mod imported_native_frontend_cache_tests {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        sync::atomic::{AtomicU64, Ordering},
+    };
+
+    use super::*;
+    use crate::{
+        driver::{
+            CompilerDriver, DriverSubmitInput, NativeCacheMode, NativeCacheOptions, SubmitOptions,
+        },
+        registry::{PhaseInput, SourceLoadInputs, StageConfig, assemble_registry},
+        request::{
+            BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
+            BuildRequestGeneration, BuildRequestOrigin, BuildTargets, DependencyInputSet,
+            SourceInputSet, VerifierConfigInput,
+        },
+    };
+    use mizar_build::{
+        module_index::{ModuleId, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage},
+        planner::{
+            DependencySelection, PlanRequest, WorkspacePackage, lockfile_content_hash,
+            parse_lockfile, parse_package_manifest, produce_build_plan,
+            workspace_config_content_hash,
+        },
+        scheduler::CacheSchedulingPolicy,
+        task_graph::{
+            ModuleDependencyEdge, ModuleDependencyKind, ModuleDependencyOverlay, TaskKind, WorkUnit,
+        },
+    };
+    use mizar_ir::{
+        dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+        identity::{
+            OutputKind, PipelinePhase as IrPhase, SnapshotHandleRegistry, WorkUnit as IrUnit,
+        },
+        publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+        storage::{CollectInput, IrStorageService, StoragePolicy},
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
+        SnapshotRegistry, SourceInput, SourceOriginInput, ToolchainInfo, WorkspaceRoot,
+        normalize_path,
+    };
+
+    static NEXT_ROOT: AtomicU64 = AtomicU64::new(0);
+
+    struct ImportedFixture {
+        root: PathBuf,
+    }
+
+    impl ImportedFixture {
+        fn new() -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "mizar-driver-imported-frontend-unit-{}-{}",
+                std::process::id(),
+                NEXT_ROOT.fetch_add(1, Ordering::Relaxed),
+            ));
+            fs::create_dir_all(root.join("alpha/src")).unwrap();
+            fs::write(
+                root.join("alpha/src/main.miz"),
+                b"import alpha.leaf;\nimport alpha.leaf;\ndefinition\nend;\n",
+            )
+            .unwrap();
+            fs::write(root.join("alpha/src/leaf.miz"), b"definition\nend;\n").unwrap();
+            Self { root }
+        }
+
+        fn capture(
+            &self,
+            ids: &InMemorySessionIdAllocator,
+            snapshots: &SnapshotRegistry<InMemorySessionIdAllocator>,
+        ) -> (
+            crate::request::BuildSession,
+            DriverSubmitInput<StaticSourceLayout>,
+        ) {
+            let root = WorkspaceRoot::new(self.root.to_string_lossy().into_owned());
+            let toolchain = ToolchainInfo::new("mizar-evo-test");
+            let workspace_packages = vec![WorkspacePackage {
+                member_path: "alpha".to_owned(),
+                manifest: parse_package_manifest(
+                    "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+                )
+                .unwrap(),
+            }];
+            let lockfile = parse_lockfile(
+                "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n",
+            )
+            .unwrap();
+            let plan_request = PlanRequest {
+                workspace_root: root.clone(),
+                dependency_selection: DependencySelection::Normal,
+                toolchain: toolchain.clone(),
+            };
+            let mut input = DriverSubmitInput::new(
+                plan_request.clone(),
+                workspace_packages.clone(),
+                lockfile.clone(),
+                StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+                    package_id: PackageId::new("alpha"),
+                    files: ["leaf", "main"]
+                        .into_iter()
+                        .map(|module| {
+                            WorkspaceSourceFile::new(
+                                format!("src/{module}.miz"),
+                                format!("{module}.miz"),
+                            )
+                        })
+                        .collect(),
+                }]),
+            );
+            input.dependency_overlay =
+                ModuleDependencyOverlay::complete(vec![ModuleDependencyEdge::new(
+                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+                    ModuleDependencyKind::ImportSummary,
+                )]);
+            input.cache_policy = CacheSchedulingPolicy::Enabled;
+            let plan =
+                produce_build_plan(plan_request.clone(), workspace_packages, lockfile.clone())
+                    .unwrap();
+            let draft = BuildRequestDraft {
+                lane: BuildLaneId::new(1),
+                origin: BuildRequestOrigin::Batch(BatchRequest {
+                    invocation: BatchInvocation::default(),
+                }),
+                generation: BuildRequestGeneration::new(0),
+                workspace_root: root,
+                profile: BuildProfile::new("check"),
+                targets: BuildTargets::default(),
+                source_inputs: SourceInputSet { versions: vec![] },
+                dependency_inputs: DependencyInputSet::new(
+                    vec![],
+                    lockfile_content_hash(&plan.lockfile),
+                    toolchain,
+                ),
+                verifier_config: VerifierConfigInput::new(workspace_config_content_hash(
+                    &plan.verifier_config,
+                    &plan.build_config,
+                )),
+            };
+            let descriptors = ["leaf", "main"]
+                .into_iter()
+                .map(|module| {
+                    let path = format!("src/{module}.miz");
+                    (
+                        DiskSourceLoader::new(self.root.join("alpha")),
+                        SourceInput {
+                            package_id: PackageId::new("alpha"),
+                            module_path: ModulePath::new(module),
+                            normalized_path: normalize_path(
+                                &self.root.join("alpha"),
+                                Path::new(&path),
+                            )
+                            .unwrap(),
+                            edition: Edition::new("2025"),
+                            origin: SourceOriginInput::Disk { path: path.into() },
+                        },
+                    )
+                })
+                .collect();
+            (
+                draft.capture_sources(ids, snapshots, descriptors).unwrap(),
+                input,
+            )
+        }
+    }
+
+    impl Drop for ImportedFixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    fn allow(publisher: &PhaseOutputPublisher, unit: &WorkUnit) {
+        let WorkUnit::Module { module } = unit else {
+            unreachable!();
+        };
+        for (phase, kind) in [("SourceLoad", "SourceUnit"), ("Frontend", "FrontendOutput")] {
+            publisher.allow_work_unit(AllowedWorkUnit::new(
+                IrPhase::new(phase),
+                OutputKind::new(kind),
+                IrUnit::new(format!(
+                    "{:?}:{:?}",
+                    module.package.as_str(),
+                    module.path.as_str()
+                )),
+            ));
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    enum ImportedAttack {
+        WrongSource,
+        SwappedPhase,
+        CollectedSource,
+    }
+
+    fn run_imported_cache_case(attack: ImportedAttack) {
+        use mizar_cache::{
+            cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+            cache_store::{CacheLookupOutcome, CacheStoreRoot},
+        };
+        use mizar_ir::cache_adapter::{CacheRehydrateOutcome, IrCacheAdapter};
+
+        let fixture = ImportedFixture::new();
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (session, input) = fixture.capture(&ids, &snapshots);
+        let snapshot = session.captured().snapshot().id;
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+        let mut config = StageConfig::frontend(vec![]);
+        config.verifier_policy = policy.clone();
+        let registry = assemble_registry(&config).unwrap();
+        let importer = WorkUnit::Module {
+            module: ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+        };
+        let owner = std::sync::Arc::new(PhaseOutputPublisher::new(
+            std::sync::Arc::new(IrStorageService::with_policy(StoragePolicy::default())),
+            std::sync::Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        owner.register_current_snapshot(snapshot);
+        for module in ["leaf", "main"] {
+            allow(
+                &owner,
+                &WorkUnit::Module {
+                    module: ModuleId::new(PackageId::new("alpha"), ModulePath::new(module)),
+                },
+            );
+        }
+        let mut driver = CompilerDriver::new(registry).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(
+                session,
+                &ids,
+                &snapshots,
+                input,
+                SubmitOptions {
+                    native_cache: Some(NativeCacheOptions {
+                        policy: &policy,
+                        store: &store,
+                        mode: NativeCacheMode::PersistentPrefix,
+                    }),
+                    ..SubmitOptions::default()
+                },
+            )
+            .unwrap();
+        let captured = submission.session.captured();
+        let source_inputs = SourceLoadInputs {
+            snapshot: captured.snapshot(),
+            captured: Some(captured),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &ids,
+        };
+        let run = submission.scheduler_run.as_ref().unwrap();
+        let graph = submission.task_graph.as_ref().unwrap();
+        let output = |kind: TaskKind, module: &str| {
+            let task = graph
+                .tasks()
+                .iter()
+                .find(|task| {
+                    task.kind == kind
+                        && matches!(&task.unit, WorkUnit::Module { module: id } if id.path.as_str() == module)
+                })
+                .unwrap();
+            run.phase_results[&task.id][0].output_refs[0].clone()
+        };
+        let main_source = output(TaskKind::SourceLoad, "main");
+        let leaf_source = output(TaskKind::SourceLoad, "leaf");
+        let leaf_frontend = output(TaskKind::Frontend, "leaf");
+        let importer_frontend = output(TaskKind::Frontend, "main");
+        let main_version = captured
+            .snapshot()
+            .source_versions
+            .iter()
+            .find(|version| version.module_path == ModulePath::new("main"))
+            .unwrap();
+        let parents = [main_source.clone(), leaf_frontend.clone()]
+            .into_iter()
+            .map(|parent| {
+                SealedParentOutputHandle::from_published_output(&owner, snapshot, parent).unwrap()
+            })
+            .collect();
+        let input = PhaseInput::new(
+            importer,
+            PhaseDispatchInputBundle::new(
+                snapshot,
+                source_input_hash(main_version),
+                vec![],
+                parents,
+            )
+            .unwrap(),
+        );
+        let adapter = IrCacheAdapter::new(owner.clone());
+        let frontend = driver.registry().native_frontend_service().unwrap();
+        let handle = owner
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &importer_frontend,
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        let expected_bytes = owner.storage().get(&handle).unwrap().canonical_disk_bytes();
+        let (request, _, _, _) = source_inputs
+            .prepare_native_disk_frontend_cache_payload(
+                &input,
+                &policy,
+                &adapter,
+                None,
+                Some(frontend),
+                std::slice::from_ref(&leaf_source),
+            )
+            .unwrap();
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request).build() else {
+            panic!("captured imported Frontend cache key");
+        };
+        assert!(matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)));
+        let protected = vec![
+            main_source.output(),
+            leaf_source.output(),
+            leaf_frontend.output(),
+        ];
+        assert!(
+            owner
+                .storage()
+                .collect(CollectInput {
+                    snapshot,
+                    protected_outputs: protected.clone()
+                })
+                .outputs_dropped
+                > 0
+        );
+        let CacheRehydrateOutcome::Rehydrated(rehydrated) = source_inputs
+            .rehydrate_native_disk_frontend_cache_with_dependencies(
+                &input,
+                &policy,
+                &store,
+                &adapter,
+                frontend,
+                std::slice::from_ref(&leaf_source),
+            )
+            .unwrap()
+        else {
+            panic!("genuine imported cache record rehydrates against its captured leaf");
+        };
+        assert_eq!(adapter.successful_rehydrations(), 1);
+        assert_eq!(
+            owner
+                .storage()
+                .get(&rehydrated)
+                .unwrap()
+                .canonical_disk_bytes(),
+            expected_bytes
+        );
+
+        owner.storage().collect(CollectInput {
+            snapshot,
+            protected_outputs: protected.clone(),
+        });
+        let refusal_adapter = IrCacheAdapter::new(owner.clone());
+        let refusal = match attack {
+            ImportedAttack::WrongSource => source_inputs
+                .rehydrate_native_disk_frontend_cache_with_dependencies(
+                    &input,
+                    &policy,
+                    &store,
+                    &refusal_adapter,
+                    frontend,
+                    std::slice::from_ref(&main_source),
+                ),
+            ImportedAttack::SwappedPhase => source_inputs
+                .rehydrate_native_disk_frontend_cache_with_dependencies(
+                    &input,
+                    &policy,
+                    &store,
+                    &refusal_adapter,
+                    frontend,
+                    std::slice::from_ref(&leaf_frontend),
+                ),
+            ImportedAttack::CollectedSource => {
+                owner.storage().collect(CollectInput {
+                    snapshot,
+                    protected_outputs: vec![main_source.output(), leaf_frontend.output()],
+                });
+                source_inputs.rehydrate_native_disk_frontend_cache_with_dependencies(
+                    &input,
+                    &policy,
+                    &store,
+                    &refusal_adapter,
+                    frontend,
+                    std::slice::from_ref(&leaf_source),
+                )
+            }
+        };
+        assert!(refusal.is_err());
+        assert_eq!(refusal_adapter.successful_rehydrations(), 0);
+        assert!(owner.storage().validate_handle(&importer_frontend).is_err());
+    }
+
+    #[test]
+    fn imported_cache_refuses_a_wrong_leaf_source_association() {
+        run_imported_cache_case(ImportedAttack::WrongSource);
+    }
+
+    #[test]
+    fn imported_cache_refuses_a_swapped_leaf_phase() {
+        run_imported_cache_case(ImportedAttack::SwappedPhase);
+    }
+
+    #[test]
+    fn imported_cache_refuses_a_collected_leaf_source() {
+        run_imported_cache_case(ImportedAttack::CollectedSource);
     }
 }

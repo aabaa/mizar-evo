@@ -190,6 +190,12 @@ binding/key/current/producer error は handle なしの Err、既存 IR miss は
 active Driver 経路は、protected captured Disk source に対する真正で未公開の `Frontend::run_loaded` 結果から、Store record や retained Frontend handle に依存せず、retained lookup と同じ完全な request/payload 期待値を作る。native capture/config/lock/parent binding と zero-import・artifact/dependency なし・diagnostic-free AST profile を再利用し、不明または未対応の footprint は拒否する。実選択 Frontend runtime association は pure registry query の外で [Driver](driver.md#active-run-cold-frontend-binding) が所有する。
 既存の完全 canonical key、semantic/storage bytes、side table、named input を使う。current SourceId への decode 前に raw storage 全体の一致を要求し、Cache の厳密な key/produced-by 検証と IR の expected-payload/current physical parent/publication 検証を維持する。期待値は publication/retention や後段 phase の権限を与えない。retained API の独立 guard は残し、cold 経路は完全解析を行う。
 
+## Imported native Disk Frontend cache
+
+`serde_json` は private versioned dependency projection の encoding に使う。private dependency-aware 経路は cold expectation と guarded encoding を [承認済み単一 direct workspace-leaf profile](dependency_aware_frontend_caching.md#提案する限定-closure) に拡張する。通常 Frontend と実 supplied-summary 認証を共有し、leaf SourceLoad を含む受理済み own/leaf physical parent を厳密に対応付け、同じ不変 summary set で lookup 前に真正な unsealed 全解析を行う。public direct encoding と retained lookup は zero-import 契約を保持する。
+完全な owner key bundle は不変。private versioned canonical dependency projection は owner preprocessing と実 token bytes、重複を保つ順序付き import resolution provenance、完全 summary identity/fingerprint/canonical export shape、physical parent content/side commitment を追加する。既存 source/raw/config/lock/policy/runtime/schema 入力は保持する。lexical/operator/filter 根拠が欠ければ拒否し、unknown を complete-empty としない。imported encoding は同じ独立生成した全 output と照合する。lookup は owner decode 前の完全 raw storage 比較、厳密な semantic/side/named-input と Cache produced-by 検証を保持する。
+Driver が accepted-result 対応、live guard、scheduler 使用までの scoped physical-parent retention を所有する。adapter は retention/publication/後続 semantic 権限を与えない。未対応 profile、provider/context・Store 失敗は最適化のみ抑止する。全解析は parsing-avoidance credit を得ない。
+
 ## Native public theorem formula text candidates
 
 source-text candidate の入口は廃止。現行の入口は [semantic module candidates](#native-theorem-module-candidates)。

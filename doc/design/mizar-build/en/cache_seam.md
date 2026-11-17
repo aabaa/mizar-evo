@@ -117,6 +117,8 @@ A cache hit therefore produces no `TaskStarted` event and no execution
 resource telemetry for that task. This keeps the hit as an execution-skip
 optimization instead of an execution attempt.
 
+With a real dispatcher, `SchedulerTaskDispatcher::cache_decision` may supply a decision for the actual ready task after pre-start cancellation and before the existing hit check/resource admission. Its default returns None. Existing static ValidatedHit decisions skip this callback. The scheduler invokes it only when cache scheduling is enabled; ordinary readiness guarantees the task's correctness dependencies were accepted. The callback owns preparation/retention and returns scheduling metadata only. The existing freshness check independently accepts or cancels its hit, and no callback hit emits TaskStarted. Static decisions retain their existing behavior.
+
 ## Determinism
 
 Cache decisions are keyed by `TaskId`. Duplicate decisions and decisions for

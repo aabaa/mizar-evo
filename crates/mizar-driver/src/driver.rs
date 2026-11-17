@@ -32,7 +32,10 @@ use mizar_session::{
 
 use crate::{
     events::{BuildEventStream, OwnerGapClassification, PlanningEventStatus},
-    registry::{PhaseRegistry, PhaseRegistryError, PhaseResult, PhaseServiceAvailability},
+    registry::{
+        PhaseRegistry, PhaseRegistryError, PhaseResult, PhaseServiceAvailability,
+        native_frontend_cache_parents,
+    },
     request::{
         BuildRequestDraft, BuildRequestOrigin, BuildSession, BuildSessionOutcome,
         BuildSessionState, CaptureSnapshotError, DriverLanes, PublicationDecision,
@@ -1903,11 +1906,27 @@ impl CompilerDriver {
             }
         };
 
+        if cache_policy == CacheSchedulingPolicy::Enabled
+            && oracle.is_none()
+            && phase_dispatch_inputs.is_none()
+            && built_in_prefix
+            && session.captured.native_sources().is_some()
+            && session
+                .captured
+                .snapshot
+                .source_versions
+                .iter()
+                .all(|version| version.origin == mizar_session::SourceOrigin::Disk)
+            && let Some(cache) = native_cache
+        {
+            dispatcher.native_cache = Some((cache, &task_graph, execution.cancellation_signal()));
+        }
         if mode == SubmissionMode::Deferred {
             execution.advance(&mut dispatcher);
         }
         if mode == SubmissionMode::Deferred && !execution.is_finished() {
             let phase_results = std::mem::take(&mut dispatcher.phase_results);
+            cached_sources.append(&mut dispatcher.cache_owners);
             drop(dispatcher);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
             let events = submission_events(
@@ -1953,6 +1972,7 @@ impl CompilerDriver {
             execution.advance(&mut dispatcher);
         }
         let phase_results = std::mem::take(&mut dispatcher.phase_results);
+        cached_sources.append(&mut dispatcher.cache_owners);
         drop(dispatcher);
         self.finish_submission(
             session,
@@ -2131,6 +2151,7 @@ impl CompilerDriver {
                 allocator,
             };
             let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher.clone());
+            let mut write_guard_lost = false;
             for (task, input) in &pending_sources {
                 let Some(policy) = self.registry.native_source_policy(policy) else {
                     continue;
@@ -2175,68 +2196,47 @@ impl CompilerDriver {
                         .is_err()
                     || publisher.storage().validate_handle(output).is_err()
                 {
+                    write_guard_lost = true;
                     break;
                 }
                 let _ = store.insert(&record);
             }
-            if mode == NativeCacheMode::PersistentPrefix {
+            if mode == NativeCacheMode::PersistentPrefix && !write_guard_lost {
                 use crate::registry::{PhaseInput, PhaseStatus};
                 use mizar_ir::dispatch_input::{
                     PhaseDispatchInputBundle, SealedParentOutputHandle,
                 };
-                let mut roots = task_graph.tasks().iter().filter(|task| {
-                    task.kind == mizar_build::task_graph::TaskKind::PackageResolve
-                        && task.unit == mizar_build::task_graph::WorkUnit::Workspace
-                        && task.phases == [PipelinePhase::PackageResolve]
-                });
-                let root = roots.next().filter(|root| {
-                    roots.next().is_none()
-                        && scheduler_run.task_states.iter().any(|record| {
-                            record.task_id == root.id
-                                && record.state == mizar_build::scheduler::TaskState::Completed
-                        })
-                });
-                for (source_task, source_input) in &pending_sources {
-                    if !scheduler_run.task_states.iter().any(|record| {
-                        &record.task_id == source_task
+                let accepted = |id: &TaskId| {
+                    scheduler_run.task_states.iter().any(|record| {
+                        &record.task_id == id
                             && matches!(
                                 record.state,
                                 mizar_build::scheduler::TaskState::Completed
                                     | mizar_build::scheduler::TaskState::CacheHit
                             )
-                    }) {
-                        continue;
-                    }
-                    let Some([source_result]) = phase_results.get(source_task).map(Vec::as_slice)
-                    else {
-                        continue;
-                    };
-                    let [source_output] = source_result.output_refs.as_slice() else {
-                        continue;
-                    };
-                    if source_result.status != PhaseStatus::Complete {
-                        continue;
-                    }
-                    let mut frontends = task_graph.tasks().iter().filter(|task| {
-                        task.unit == source_input.work_unit
-                            && task.phases == [PipelinePhase::Frontend]
-                            && root.is_some_and(|root| {
-                                task.dependencies.len() == 2
-                                    && task.dependencies.contains(source_task)
-                                    && task.dependencies.contains(&root.id)
-                            })
-                    });
-                    let Some(frontend_task) = frontends.next() else {
-                        continue;
-                    };
-                    if frontends.next().is_some()
-                        || !scheduler_run.task_states.iter().any(|record| {
-                            record.task_id == frontend_task.id
-                                && record.state == mizar_build::scheduler::TaskState::Completed
-                        })
+                    })
+                };
+                for frontend_task in task_graph
+                    .tasks()
+                    .iter()
+                    .filter(|task| task.phases == [PipelinePhase::Frontend])
+                {
+                    if !accepted(&frontend_task.id)
+                        || !frontend_task.dependencies.iter().all(&accepted)
                     {
                         continue;
                     }
+                    let Some(policy) = self.registry.native_source_policy(policy) else {
+                        break;
+                    };
+                    let Some(service) = self.registry.native_frontend_service() else {
+                        break;
+                    };
+                    let Some((parents, leaf_sources)) =
+                        native_frontend_cache_parents(frontend_task, &task_graph, &phase_results)
+                    else {
+                        continue;
+                    };
                     let Some([result]) = phase_results.get(&frontend_task.id).map(Vec::as_slice)
                     else {
                         continue;
@@ -2247,54 +2247,143 @@ impl CompilerDriver {
                     if result.status != PhaseStatus::Complete || !result.diagnostics.is_empty() {
                         continue;
                     }
-                    let Ok(parent) = SealedParentOutputHandle::from_published_output(
-                        publisher,
-                        source_input.snapshot,
-                        source_output.clone(),
-                    ) else {
-                        continue;
-                    };
-                    let Ok(bundle) = PhaseDispatchInputBundle::new(
-                        source_input.snapshot,
-                        source_input.identities().input_hash(),
-                        Vec::new(),
-                        vec![parent],
-                    ) else {
-                        continue;
-                    };
-                    let input = PhaseInput::new(source_input.work_unit.clone(), bundle);
-                    let Ok(handle) = publisher.storage().typed_handle(
-                        output,
-                        &mizar_ir::identity::OutputKind::new("FrontendOutput"),
-                    ) else {
-                        continue;
-                    };
-                    let Ok(mizar_ir::cache_adapter::EncodeCacheRecordOutcome::Encoded(record)) =
-                        inputs.encode_native_disk_frontend_cache_record(
-                            &input, policy, &adapter, handle,
-                        )
+                    let Some((_, source_input)) = pending_sources
+                        .iter()
+                        .find(|(_, input)| input.work_unit == frontend_task.unit)
                     else {
                         continue;
                     };
-                    if self.lanes.publication_decision(snapshots, &session)
-                        != PublicationDecision::Current
-                        || [source_output, output].iter().any(|output| {
-                            publisher
-                                .validate_output(
-                                    input.snapshot,
-                                    output,
-                                    OutputAuthorization::CurrentPackage,
-                                )
+                    let owner = mizar_ir::storage::RetainOwner::new(format!(
+                        "native-import-write:{:p}:{}",
+                        self,
+                        frontend_task.id.as_str()
+                    ));
+                    let mut retained = Vec::new();
+                    let mut guard_lost = false;
+                    let _ = (|| {
+                        for parent in parents
+                            .iter()
+                            .chain(&leaf_sources)
+                            .chain(std::iter::once(output))
+                        {
+                            if publisher
+                                .storage()
+                                .retain(parent.output(), owner.clone())
                                 .is_err()
-                                || publisher.storage().validate_handle(output).is_err()
-                        })
-                    {
+                            {
+                                guard_lost = true;
+                                return None;
+                            }
+                            retained.push(parent.output());
+                        }
+                        if self.lanes.publication_decision(snapshots, &session)
+                            != PublicationDecision::Current
+                            || parents
+                                .iter()
+                                .chain(&leaf_sources)
+                                .chain(std::iter::once(output))
+                                .any(|output| {
+                                    publisher
+                                        .validate_output(
+                                            source_input.snapshot,
+                                            output,
+                                            OutputAuthorization::CurrentPackage,
+                                        )
+                                        .is_err()
+                                        || publisher.storage().validate_handle(output).is_err()
+                                })
+                        {
+                            guard_lost = true;
+                            return None;
+                        }
+                        let sealed = parents
+                            .iter()
+                            .map(|parent| {
+                                SealedParentOutputHandle::from_published_output(
+                                    publisher,
+                                    source_input.snapshot,
+                                    parent.clone(),
+                                )
+                                .ok()
+                            })
+                            .collect::<Option<Vec<_>>>()?;
+                        let mut dependencies = inputs
+                            .module_index
+                            .dependency_summaries
+                            .iter()
+                            .map(|summary| summary.content_hash)
+                            .collect::<Vec<_>>();
+                        dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+                        let bundle = PhaseDispatchInputBundle::new(
+                            source_input.snapshot,
+                            source_input.identities().input_hash(),
+                            dependencies,
+                            sealed,
+                        )
+                        .ok()?;
+                        let input = PhaseInput::new(source_input.work_unit.clone(), bundle);
+                        let handle = publisher
+                            .storage()
+                            .typed_handle(
+                                output,
+                                &mizar_ir::identity::OutputKind::new("FrontendOutput"),
+                            )
+                            .ok()?;
+                        if self.lanes.publication_decision(snapshots, &session)
+                            != PublicationDecision::Current
+                            || publisher.validate_current_snapshot(input.snapshot).is_err()
+                        {
+                            guard_lost = true;
+                            return None;
+                        }
+                        let encoded = inputs
+                            .encode_native_disk_frontend_cache_record_with_frontend(
+                                &input,
+                                policy,
+                                &adapter,
+                                handle,
+                                service,
+                                &leaf_sources,
+                            );
+                        if self.lanes.publication_decision(snapshots, &session)
+                            != PublicationDecision::Current
+                            || parents
+                                .iter()
+                                .chain(&leaf_sources)
+                                .chain(std::iter::once(output))
+                                .any(|output| {
+                                    publisher
+                                        .validate_output(
+                                            input.snapshot,
+                                            output,
+                                            OutputAuthorization::CurrentPackage,
+                                        )
+                                        .is_err()
+                                        || publisher.storage().validate_handle(output).is_err()
+                                })
+                        {
+                            guard_lost = true;
+                            return None;
+                        }
+                        let mizar_ir::cache_adapter::EncodeCacheRecordOutcome::Encoded(record) =
+                            encoded.ok()?
+                        else {
+                            return None;
+                        };
+                        native_frontend_cache_parents(frontend_task, &task_graph, &phase_results)?;
+                        let _ = store.insert(&record);
+                        Some(())
+                    })();
+                    for output in retained {
+                        let _ = publisher.storage().release(output, &owner);
+                    }
+                    if guard_lost {
                         break;
                     }
-                    let _ = store.insert(&record);
                 }
             }
         }
+
         let mut driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
         driver_scheduler_run.phase_results = phase_results;
         session.finish(outcome);
