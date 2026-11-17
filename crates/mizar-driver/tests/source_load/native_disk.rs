@@ -5470,6 +5470,13 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                workers: usize,
                reverse: bool,
                cached: bool| {
+        // Warm controls retain the metadata selected by stages 20/21/23.
+        let context_warm = matches!(cache_stage, 120 | 121 | 123);
+        let cache_stage = if context_warm {
+            cache_stage - 100
+        } else {
+            cache_stage
+        };
         let cross_package = family.starts_with("cross_");
         let family = family.strip_prefix("cross_").unwrap_or(family);
         let app_package = if cross_package { "app" } else { "alpha" };
@@ -5875,7 +5882,8 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     || (cache_stage == 14 && module != "base"));
             let source_hit = source_hit
                 || (cached && cache_stage == 15 && module != "leaf")
-                || (cached && (16..=18).contains(&cache_stage) && module != "main");
+                || (cached && (16..=18).contains(&cache_stage) && module != "main")
+                || (cached && context_warm);
             let frontend_hit = cached
                 && (cache_stage == 1
                     || cache_stage == 3
@@ -5890,7 +5898,8 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     || ((8..=10).contains(&cache_stage) && module != "main")
                     || (cache_stage == 11 && module == "leaf")
                     || (cache_stage == 15 && module == "base")
-                    || ((16..=18).contains(&cache_stage) && module != "main"));
+                    || ((16..=18).contains(&cache_stage) && module != "main")
+                    || context_warm);
             // This run supplies app's configured Store; core's ancestor executes normally.
             let source_hit = if cross_package && cache_stage == 4 && leaf_count > 1 {
                 cached && module == "leaf"
@@ -7308,6 +7317,56 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             assert_ne!(actual_outputs[0].2.1, cross_baseline[0].2.1);
         } else {
             assert_eq!(actual_outputs[0].2.1, cross_baseline[0].2.1);
+        }
+        for (workers, reverse) in [(1, false), (4, true)] {
+            let (warm, warm_outputs) = run_cross(
+                &cross_fixture,
+                &cross_ids,
+                &cross_snapshots,
+                &cross_store,
+                1,
+                "cross_main",
+                false,
+                stage + 100,
+                workers,
+                reverse,
+                true,
+            );
+            let warm_clean_fixture = Fixture::new(b"");
+            let warm_clean_ids = InMemorySessionIdAllocator::new();
+            let warm_clean_snapshots = independent_snapshots();
+            let warm_clean_store =
+                CacheStoreRoot::new(warm_clean_fixture.root.join("app/.mizar-cache"));
+            let (warm_clean, warm_clean_outputs) = run_cross(
+                &warm_clean_fixture,
+                &warm_clean_ids,
+                &warm_clean_snapshots,
+                &warm_clean_store,
+                1,
+                "cross_main",
+                false,
+                stage,
+                if reverse { 1 } else { 4 },
+                !reverse,
+                false,
+            );
+            assert!(!warm_clean_store.root().exists());
+            assert_eq!(warm.status, actual.status);
+            assert_eq!(warm.session.state(), actual.session.state());
+            assert_eq!(warm.status, warm_clean.status);
+            assert_eq!(warm.session.state(), warm_clean.session.state());
+            assert_eq!(warm_outputs.len(), actual_outputs.len());
+            assert_eq!(warm_outputs.len(), warm_clean_outputs.len());
+            for ((warm, actual), warm_clean) in warm_outputs
+                .iter()
+                .zip(&actual_outputs)
+                .zip(&warm_clean_outputs)
+            {
+                assert_ne!(warm.0, actual.0);
+                assert_ne!(warm.0, warm_clean.0);
+                assert_eq!((&warm.1, &warm.2), (&actual.1, &actual.2));
+                assert_eq!((&warm.1, &warm.2), (&warm_clean.1, &warm_clean.2));
+            }
         }
         let current_records = store_records(&cross_store);
         assert_ne!(
