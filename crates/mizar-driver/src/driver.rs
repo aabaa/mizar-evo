@@ -1735,27 +1735,15 @@ impl CompilerDriver {
                         }],
                     );
                     cached_sources.push((task.id.clone(), handle.output(), owner));
-                    let Some((oracle_input, oracle_adapter, oracle_result)) = oracle else {
-                        continue;
-                    };
-                    if oracle_result.status != PhaseStatus::Complete
-                        || !oracle_result.diagnostics.is_empty()
-                    {
-                        continue;
-                    }
-                    let [oracle_output] = oracle_result.output_refs.as_slice() else {
-                        continue;
-                    };
-                    if task.unit != oracle_input.work_unit
-                        || task_graph
-                            .tasks()
-                            .iter()
-                            .filter(|candidate| {
-                                candidate.unit == task.unit
-                                    && candidate.phases == [PipelinePhase::SourceLoad]
-                            })
-                            .count()
-                            != 1
+                    if task_graph
+                        .tasks()
+                        .iter()
+                        .filter(|candidate| {
+                            candidate.unit == task.unit
+                                && candidate.phases == [PipelinePhase::SourceLoad]
+                        })
+                        .count()
+                        != 1
                     {
                         continue;
                     }
@@ -1799,21 +1787,42 @@ impl CompilerDriver {
                         continue;
                     };
                     let frontend_input = PhaseInput::new(task.unit.clone(), bundle);
-                    let Ok(oracle_handle) = oracle_adapter.publisher().storage().typed_handle(
-                        oracle_output,
-                        &mizar_ir::identity::OutputKind::new("FrontendOutput"),
-                    ) else {
-                        continue;
-                    };
-                    let Ok(CacheRehydrateOutcome::Rehydrated(frontend_handle)) = inputs
-                        .rehydrate_native_disk_frontend_cache(
+                    let lookup = if let Some((oracle_input, oracle_adapter, oracle_result)) = oracle
+                    {
+                        if task.unit != oracle_input.work_unit
+                            || oracle_result.status != PhaseStatus::Complete
+                            || !oracle_result.diagnostics.is_empty()
+                        {
+                            continue;
+                        }
+                        let [oracle_output] = oracle_result.output_refs.as_slice() else {
+                            continue;
+                        };
+                        let Ok(oracle_handle) = oracle_adapter.publisher().storage().typed_handle(
+                            oracle_output,
+                            &mizar_ir::identity::OutputKind::new("FrontendOutput"),
+                        ) else {
+                            continue;
+                        };
+                        inputs.rehydrate_native_disk_frontend_cache(
                             &frontend_input,
                             policy,
                             store,
                             (oracle_input, oracle_adapter, &oracle_handle),
                             &adapter,
                         )
-                    else {
+                    } else if let Some(service) = self.registry.native_frontend_service() {
+                        inputs.rehydrate_native_disk_frontend_cache_cold(
+                            &frontend_input,
+                            policy,
+                            store,
+                            &adapter,
+                            service,
+                        )
+                    } else {
+                        continue;
+                    };
+                    let Ok(CacheRehydrateOutcome::Rehydrated(frontend_handle)) = lookup else {
                         continue;
                     };
                     let owner = RetainOwner::new(format!(

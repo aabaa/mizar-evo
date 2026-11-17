@@ -420,7 +420,7 @@ record identity/filter/dedup/sort は既存 Diagnostics に残す。
 
 ## Explicit native Disk cached SourceLoad scheduling
 
-`NativeCacheMode::ReadOnly` は明示的な source-only 最適化である。通常の captured-session 検証、planning、graph、scheduler、最後の lane/publisher guard を使う。既存 entry point と両登録 service の実 NoKey は維持する。この経路は caller の cache decision を実 SourceLoad decision で置き換え、文字列参照を typed output として受理しない。
+`NativeCacheMode::ReadOnly` は native cache lookup を明示的に有効にする。通常の captured-session 検証、planning、graph、scheduler、最後の lane/publisher guard を使う。既存 entry point と両登録 service の実 NoKey は維持する。この経路は caller の cache decision を実 SourceLoad decision で置き換え、文字列参照を typed output として受理しない。
 CacheSchedulingPolicy::Enabled、dispatch provider なし、正確な組込み SourceLoad/Frontend descriptor と具体的 service 型、空でない全 Disk native capture、current な supplied publisher、明示的 native lock/config content 比較の成功時だけ lookup する。他 profile は cache decision なしで通常実行する。既存 crate-local service lookup から登録 object の Any::type_id が SourceLoadService/FrontendService と一致することを要求し、自由に名乗れる descriptor だけで実装を認証しない。Store は caller が選び、実効 policy は後述の active-run bootstrap association が供給する。内容一致は released toolchain や依存 file の freshness を認証しない。
 実 graph の構築後、正確な module と一意な captured version から既存 source_input_hash を使い、dependency/parent なしの SourceLoad input を作る。同じ supplied publisher の IrCacheAdapter と既存 guarded native Disk lookup を使う。実 Rehydrated SourceUnit の current physical 検証と IR retain に成功した場合だけ、実 handle、空 diagnostics、架空の query observation なしの source-only Complete PhaseResult と、その実 identity/hash を投影した scheduler decision を作る。miss/error、未対応 binding、retain 失敗では通常 SourceLoad 実行を可能に保ち、scheduler 前の phase service 実行や Store 書込みはしない。
 準備した cached result は正確な task ID の下で private に保持する。通常 graph の dependency readiness が SourceLoad skip を受理してからだけ default Frontend が消費し、新 callback/readiness policy は追加しない。最終報告に残すのは該当 task が実際に CacheHit で終了した結果だけであり、disabled/cancelled/superseded/obsolete/未受理 skip に cached PhaseResult を出さない。最後の physical/publisher/lane guard は stale result 全体を抑止し続ける。後続・未登録 service の結果や prefix から build 成功を作らない。
@@ -432,7 +432,12 @@ CacheSchedulingPolicy::Enabled、dispatch provider なし、正確な組込み S
 
 `assemble_registry(StageConfig)` は実組込み選択と configured consumer に渡す Proof 所有 invocation policy を束縛する。Driver は submission ごとに protected capture、produced plan/index、SourceLoad task との private association を再構築し、cache-option policy 不一致または bootstrap provenance 不足時は SourceLoad 最適化を見送る。手動 registry は通常実行を維持し、直接の下位 cache API はこの association を確立しない。
 同じ bootstrap policy と [genuine running-image identity](frontend_adapter.md#native-disk-cache-preparation) を SourceLoad lookup/persistence に渡す。SourceLoad は execution policy、backend、artifact dependency を消費せず、保守的 policy key は選択 package config/lock identity と Store routing から分離する。config-to-policy mapping や precedence は推測しない。
-既存 live guard、scoped retention、error precedence を維持する。association は cold Frontend、import/proof/reuse、acceptance、publication、full STEP6C 権限を与えず、未対応の後段 profile により独立して完全な SourceLoad 適格性を取り消さない。
+既存 live guard、scoped retention、error precedence を維持する。SourceLoad association は import/proof/reuse、acceptance、publication、full STEP6C 権限を与えず、未対応の後段 profile により独立して完全な SourceLoad 適格性を取り消さない。
+
+## Active-run cold Frontend binding
+
+retained oracle のない native cache submission も、真正 SourceLoad hit の retain と既存の厳密な source/root/Frontend graph 検査後、zero-import Disk Frontend lookup を試みる。assembled runtime は実 Frontend service/descriptor、installed policy、参加する running-image code を束縛する。protected capture、current source parent、未公開の真正 `Frontend::run_loaded` 結果から、Store record や Frontend handle に依存せず完全な current 期待値を作る。完全な Frontend 解析を実行するため parsing-avoidance credit はない。
+[adapter](frontend_adapter.md#cold-native-leaf-frontend-expectations) は owner key/codec/validation 規則を維持する。検証済み Frontend hit は既存 private scheduler decision、live physical/publication check、scoped retention/release を使う。miss、未対応 footprint、association 不成立は通常実行へ fallback し、miss では Frontend を再実行し得る。各 mode の Store routing/write policy と best-effort PersistentPrefix write は維持し、retained-oracle lookup は明示経路として残す。imports/Open、後段 dependency/proof/reuse、release attestation、full STEP6C は保留する。
 
 ## Package-configured native Disk cache scheduling
 

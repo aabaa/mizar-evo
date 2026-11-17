@@ -560,6 +560,7 @@ dependencies = [
  "mizar-frontend",
  "mizar-ir",
  "mizar-kernel",
+ "mizar-parser",
  "mizar-proof",
  "mizar-resolve",
  "mizar-session",

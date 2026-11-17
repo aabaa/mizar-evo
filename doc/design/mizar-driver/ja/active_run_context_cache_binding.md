@@ -3,7 +3,7 @@ canonical English: [English companion](../en/active_run_context_cache_binding.md
 
 ## 状態と根拠
 
-**owner は Q1–Q6 を A として承認済み。** [Driver plan](00.crate_plan.md#task-index) が索引する歴史的定義案であり、inventory は実装前の境界を記す。現在の native Disk SourceLoad behavior は [active-run binding](driver.md#active-run-sourceload-binding) が所有する。cold Frontend と full STEP6C は別途とする。
+**owner は Q1–Q6 を A として承認済み。** [Driver plan](00.crate_plan.md#task-index) が索引する歴史的定義案であり、inventory は実装前の境界を記す。現在の native Disk SourceLoad behavior は [active-run binding](driver.md#active-run-sourceload-binding) が所有する。現在の限定 cold Frontend behavior は [cold Frontend binding](driver.md#active-run-cold-frontend-binding) が所有し、full STEP6C は別途とする。
 根拠は英語正本がリンクする仕様 §23.4、architecture 22 の equivalence、fallback、freshness、complete footprint。全選択肢で既存言語・proof behavior を保持する。
 
 ## 既存 producer と欠けている対応付け

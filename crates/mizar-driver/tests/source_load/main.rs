@@ -2089,7 +2089,13 @@ fn persistent_native_frontend_case(
     }
     let mut previous_keys = Vec::new();
     for (stage, raw) in stages.iter().enumerate() {
-        for replay in 0..2 {
+        let mut actual_source_ids = vec![None; settings.len()];
+        let replay_count = if matches!(case, "manual" | "policy-mismatch") {
+            2
+        } else {
+            3
+        };
+        for replay in 0..replay_count {
             let mut captured = None;
             let mut clean = None;
             let mut source_hits = Vec::new();
@@ -2240,8 +2246,19 @@ fn persistent_native_frontend_case(
                         },
                     );
                 }
-                let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy))
-                    .with_output_publisher(owner.clone());
+                let registry = if actual && replay == 1 && case == "manual" {
+                    let mut builder = PhaseRegistryBuilder::new();
+                    builder.register_source_load();
+                    builder.register_frontend(vec![]);
+                    builder.build().unwrap()
+                } else if actual && replay == 1 && case == "policy-mismatch" {
+                    genuine_source_frontend_registry(
+                        &mizar_proof::policy::VerifierPolicy::interactive(),
+                    )
+                } else {
+                    genuine_source_frontend_registry(&policy)
+                };
+                let mut driver = CompilerDriver::new(registry).with_output_publisher(owner.clone());
                 if case == "provider" {
                     input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
                 }
@@ -2351,6 +2368,12 @@ fn persistent_native_frontend_case(
                                 && version.module_path.as_str() == "main"
                         })
                         .unwrap();
+                    if actual {
+                        if let Some(previous) = actual_source_ids[ordinal] {
+                            assert_ne!(version.source_id, previous, "fresh replay SourceId");
+                        }
+                        actual_source_ids[ordinal] = Some(version.source_id);
+                    }
                     let source_input = PhaseInput::new(
                         source_task.unit.clone(),
                         PhaseDispatchInputBundle::without_parent_outputs(
@@ -2367,6 +2390,8 @@ fn persistent_native_frontend_case(
                     .build() else {
                         panic!("source key");
                     };
+                    let runtime_binding_matches =
+                        !(actual && replay == 1 && matches!(case, "manual" | "policy-mismatch"));
                     let eligible = !matches!(
                         case,
                         "disabled"
@@ -2418,7 +2443,7 @@ fn persistent_native_frontend_case(
                             .find(|state| state.task_id == source_task.id)
                             .unwrap()
                             .state,
-                        if actual && eligible && source_hits[ordinal] {
+                        if actual && eligible && source_hits[ordinal] && runtime_binding_matches {
                             TaskState::CacheHit
                         } else {
                             TaskState::Completed
@@ -2464,6 +2489,11 @@ fn persistent_native_frontend_case(
                         );
                     }
                     let result = &run.phase_results[&frontend_task.id][0];
+                    let cold_frontend_hit = actual
+                        && replay == 1
+                        && eligible
+                        && source_hits[ordinal]
+                        && matches!(case, "hit" | "edits");
                     let failed = *name == "alpha" && raw.contains("theorem T: ;");
                     assert_eq!(
                         result.status,
@@ -2504,8 +2534,21 @@ fn persistent_native_frontend_case(
                             .find(|state| state.task_id == frontend_task.id)
                             .unwrap()
                             .state,
-                        TaskState::Completed
+                        if cold_frontend_hit {
+                            TaskState::CacheHit
+                        } else {
+                            TaskState::Completed
+                        }
                     );
+                    assert_eq!(
+                        run.events.iter().any(|event| {
+                            event.task_id.as_ref() == Some(&frontend_task.id)
+                                && event.kind
+                                    == mizar_build::scheduler::SchedulerEventKind::TaskStarted
+                        }),
+                        !cold_frontend_hit
+                    );
+                    assert_eq!(result.cache_observation.is_none(), cold_frontend_hit);
                     let handle = owner
                         .storage()
                         .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
@@ -2515,6 +2558,7 @@ fn persistent_native_frontend_case(
                         .unwrap();
                     assert_eq!(frontend_task.phases, [PipelinePhase::Frontend]);
                     let output = owner.storage().get(&handle).unwrap();
+                    assert_eq!(output.source.source_id, version.source_id);
                     assert_eq!(
                         handle.lineage().parents.len(),
                         if case == "imports" { 2 } else { 1 }
@@ -2609,7 +2653,18 @@ fn persistent_native_frontend_case(
                     };
                     let key = record.header.key.clone();
                     if !actual {
-                        assert!(!store.record_path(&key).exists());
+                        let expect_stored_frontend = replay == 1
+                            && eligible
+                            && matches!(case, "hit" | "edits" | "manual" | "policy-mismatch");
+                        if expect_stored_frontend {
+                            let CacheLookupOutcome::Hit(readback) = store.lookup(&key) else {
+                                panic!("previous real Frontend producer record");
+                            };
+                            assert_eq!(readback.header.key, key);
+                            assert_eq!(readback.output, record.output);
+                        } else {
+                            assert!(!store.record_path(&key).exists());
+                        }
                         if replay == 0 && *name == "alpha" {
                             if stage > 0 {
                                 assert_ne!(key, previous_keys[ordinal]);
@@ -2624,10 +2679,25 @@ fn persistent_native_frontend_case(
                         continue;
                     }
                     assert_eq!(key, frontend_keys[ordinal]);
+                    if matches!(case, "manual" | "policy-mismatch") && replay == 1 {
+                        assert!(eligible && source_hits[ordinal]);
+                        let CacheLookupOutcome::Hit(readback) = store.lookup(&key) else {
+                            panic!("retained Frontend record after cold fallback");
+                        };
+                        assert_eq!(readback.header, record.header);
+                        assert_eq!(readback.output, record.output);
+                    }
                     assert_eq!(
                         matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)),
                         eligible && case != "source-only"
                     );
+                    if eligible && case != "source-only" {
+                        let CacheLookupOutcome::Hit(readback) = store.lookup(&key) else {
+                            panic!("persisted Frontend record");
+                        };
+                        assert_eq!(readback.header, record.header);
+                        assert_eq!(readback.output, record.output);
+                    }
                     assert_eq!(
                         matches!(store.lookup(&source_key), CacheLookupOutcome::Hit(_)),
                         eligible
@@ -2661,14 +2731,23 @@ fn persistent_native_frontend_case(
                             assert_eq!(target.successful_rehydrations(), 1);
                         }
                         // Force the next real SourceLoad hit to produce the Frontend record anew.
-                        fs::remove_file(store.record_path(&key)).unwrap();
-                        assert!(!store.record_path(&key).exists());
+                        if replay >= 1 {
+                            fs::remove_file(store.record_path(&key)).unwrap();
+                            assert!(!store.record_path(&key).exists());
+                        }
                     }
                 }
                 if actual
                     && !matches!(
                         case,
-                        "hit" | "edits" | "source-only" | "store-error" | "failed" | "imports"
+                        "hit"
+                            | "edits"
+                            | "manual"
+                            | "policy-mismatch"
+                            | "source-only"
+                            | "store-error"
+                            | "failed"
+                            | "imports"
                     )
                 {
                     assert!(!store.root().exists());

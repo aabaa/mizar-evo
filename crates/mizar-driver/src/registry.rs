@@ -146,7 +146,12 @@ pub fn assemble_registry(config: &StageConfig) -> Result<PhaseRegistry, String> 
     }
     let mut registry = builder.build().map_err(|error| error.to_string())?;
     if let Ok(image) = crate::frontend_adapter::SourceLoadService::running_native_image() {
-        registry.native_source_bootstrap = Some((config.verifier_policy.clone(), image.clone()));
+        let descriptors = [PipelinePhase::SourceLoad, PipelinePhase::Frontend]
+            .into_iter()
+            .filter_map(|phase| registry.descriptor_for_phase(phase).ok().cloned())
+            .collect();
+        registry.native_source_bootstrap =
+            Some((config.verifier_policy.clone(), image.clone(), descriptors));
     }
     Ok(registry)
 }
@@ -264,6 +269,7 @@ pub struct PhaseRegistry {
     native_source_bootstrap: Option<(
         mizar_proof::policy::VerifierPolicy,
         mizar_cache::cache_key::CompatibilityField,
+        Vec<PhaseDescriptor>,
     )>,
 }
 
@@ -795,10 +801,30 @@ impl PhaseRegistry {
         &self,
         requested: &mizar_proof::policy::VerifierPolicy,
     ) -> Option<&mizar_proof::policy::VerifierPolicy> {
-        let (policy, image) = self.native_source_bootstrap.as_ref()?;
+        let (policy, image, descriptors) = self.native_source_bootstrap.as_ref()?;
         (policy.policy_fingerprint() == requested.policy_fingerprint()
+            && descriptors.iter().all(|descriptor| {
+                descriptor.phases.iter().all(|phase| {
+                    self.descriptor_for_phase(*phase).ok() == Some(descriptor)
+                        && self
+                            .service_for_phase(*phase)
+                            .is_ok_and(|service| service.phase() == *descriptor)
+                })
+            })
             && crate::frontend_adapter::SourceLoadService::running_native_image().ok()? == image)
             .then_some(policy)
+    }
+
+    pub(crate) fn native_frontend_service(
+        &self,
+    ) -> Option<&crate::frontend_adapter::FrontendService> {
+        let (_, _, descriptors) = self.native_source_bootstrap.as_ref()?;
+        let descriptor = self.descriptor_for_phase(PipelinePhase::Frontend).ok()?;
+        let service = self.service_for_phase(PipelinePhase::Frontend).ok()?;
+        if !descriptors.contains(descriptor) || service.phase() != *descriptor {
+            return None;
+        }
+        (service as &dyn std::any::Any).downcast_ref()
     }
 
     pub fn empty() -> Self {

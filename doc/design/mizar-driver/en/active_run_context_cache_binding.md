@@ -3,7 +3,7 @@ Canonical language: English; [Japanese companion](../ja/active_run_context_cache
 
 ## Status and authority
 
-**The owner approved Q1–Q6 as A.** This is the historical definition proposal indexed by the [Driver plan](00.crate_plan.md#task-index); its inventory describes the pre-implementation boundary. Current native Disk SourceLoad behavior belongs to [active-run binding](driver.md#active-run-sourceload-binding). Cold Frontend and full STEP6C remain separate.
+**The owner approved Q1–Q6 as A.** This is the historical definition proposal indexed by the [Driver plan](00.crate_plan.md#task-index); its inventory describes the pre-implementation boundary. Current native Disk SourceLoad behavior belongs to [active-run binding](driver.md#active-run-sourceload-binding). Current bounded cold Frontend behavior belongs to [cold Frontend binding](driver.md#active-run-cold-frontend-binding); full STEP6C remains separate.
 Authority: spec [§23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility), architecture 22 [equivalence](../../architecture/en/22.incremental_verification_contract.md#clean-build-equivalence), [fallback](../../architecture/en/22.incremental_verification_contract.md#cache-miss-fallback), [freshness](../../architecture/en/22.incremental_verification_contract.md#snapshot-scoped-results) and [complete footprints](../../architecture/en/22.incremental_verification_contract.md#dependency-slice-completeness). All options preserve those requirements and existing language/proof behavior.
 
 ## Existing producers and missing association

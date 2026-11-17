@@ -3413,6 +3413,8 @@ fn persistent_native_frontend_cold_guards_errors_and_older_entries() {
     for case in [
         "disabled",
         "foreign",
+        "manual",
+        "policy-mismatch",
         "provider",
         "context",
         "cancel",

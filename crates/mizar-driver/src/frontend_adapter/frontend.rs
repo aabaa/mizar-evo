@@ -208,6 +208,31 @@ pub(crate) struct FrontendService {
     pub(crate) artifact_roots: Vec<(PackageId, PathBuf)>,
 }
 
+impl FrontendService {
+    pub(crate) fn analyze_loaded(
+        &self,
+        inputs: crate::registry::SourceLoadInputs<'_>,
+        package_root: PathBuf,
+        workspace_summaries: &[(
+            mizar_resolve::module_index::IndexedModuleId,
+            ModuleLexicalSummary,
+        )],
+        source: SourceUnit,
+    ) -> Result<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>, String> {
+        Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(package_root)),
+            DependencyLexicalProvider {
+                inputs,
+                artifact_roots: &self.artifact_roots,
+                workspace_summaries,
+            },
+            MizarParserSeam,
+        )
+        .run_loaded(source)
+        .map_err(|error| format!("{error:?}"))
+    }
+}
+
 impl PhaseService for FrontendService {
     fn phase(&self) -> PhaseDescriptor {
         PhaseDescriptor::new(
@@ -808,16 +833,12 @@ impl PhaseService for FrontendService {
         })() else {
             return blocking();
         };
-        let frontend = Frontend::new(
-            FrontendSourceLoader::new(DiskSourceLoader::new(package_root)),
-            DependencyLexicalProvider {
-                inputs,
-                artifact_roots: &self.artifact_roots,
-                workspace_summaries: &workspace_summaries,
-            },
-            MizarParserSeam,
-        );
-        let Ok(output) = frontend.run_loaded(source.as_ref().clone()) else {
+        let Ok(output) = self.analyze_loaded(
+            inputs,
+            package_root,
+            &workspace_summaries,
+            source.as_ref().clone(),
+        ) else {
             return blocking();
         };
         if output.ast.is_some() != output.cache_keys.ast.is_some() {

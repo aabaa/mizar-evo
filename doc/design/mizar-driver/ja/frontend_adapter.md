@@ -185,6 +185,11 @@ Cacheable な完全 current request key だけで Store.lookup を呼び、Hit �
 binding/key/current/producer error は handle なしの Err、既存 IR miss は miss とする。Store write・snapshot/work 許可・retain owner・dedup・scheduler/query decision は追加しない。caller が真正 service provenance、oracle/target の並行 lifetime、runtime 対応を所有し、generic publication は service 実行の証明ではない。両登録 NoKey 理由、Open/internal、cold pre-execution 期待値、full active runtime/toolchain/dependency、後続 phase は保留する。
 試験は実 scheduled Frontend oracle を使い、target は同一保護 capture から実 SourceLoad だけを独立実行する。三つの実 family で resident/blob の実 Store 復元と完全 current oracle/clean data/map 比較、実 source/raw/context/policy 変更の miss、current/physical/parent/producer/permission/duplicate/corruption 拒否を調べる。新 setup helper 一つはこの三つの実 consumer の場合だけ許す。実 data の敵対的変更は負の control 専用で、真正 producer/Hit/受理の根拠にしない。record self-hash を更新して expected side metadata を保った整合的な別 aggregate も拒否する。旧 test prefix 全体を保つ。
 
+## Cold native leaf Frontend expectations
+
+active Driver 経路は、protected captured Disk source に対する真正で未公開の `Frontend::run_loaded` 結果から、Store record や retained Frontend handle に依存せず、retained lookup と同じ完全な request/payload 期待値を作る。native capture/config/lock/parent binding と zero-import・artifact/dependency なし・diagnostic-free AST profile を再利用し、不明または未対応の footprint は拒否する。実選択 Frontend runtime association は pure registry query の外で [Driver](driver.md#active-run-cold-frontend-binding) が所有する。
+既存の完全 canonical key、semantic/storage bytes、side table、named input を使う。current SourceId への decode 前に raw storage 全体の一致を要求し、Cache の厳密な key/produced-by 検証と IR の expected-payload/current physical parent/publication 検証を維持する。期待値は publication/retention や後段 phase の権限を与えない。retained API の独立 guard は残し、cold 経路は完全解析を行う。
+
 ## Native public theorem formula text candidates
 
 source-text candidate の入口は廃止。現行の入口は [semantic module candidates](#native-theorem-module-candidates)。
