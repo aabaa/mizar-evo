@@ -5450,7 +5450,7 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
 
     let independent_snapshots = || {
         let source_ids = InMemorySessionIdAllocator::new();
-        for _ in 0..32 {
+        for _ in 0..128 {
             source_ids.next_source_id(snapshot_id(0x62)).unwrap();
         }
         SnapshotRegistry::with_allocator(source_ids)
@@ -6162,6 +6162,76 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         )
     };
 
+    let assert_edited_warm_recaptures =
+        |fixture: &Fixture,
+         ids: &InMemorySessionIdAllocator,
+         snapshots: &SnapshotRegistry,
+         store: &CacheStoreRoot,
+         family: &str,
+         edited: bool,
+         provenance: usize,
+         immediate: &mizar_driver::driver::BuildSubmission,
+         immediate_outputs: &[_]| {
+            for (workers, reverse) in [(1, false), (4, true)] {
+                let (warm, warm_outputs) = run(
+                    fixture,
+                    ids,
+                    snapshots,
+                    store,
+                    1,
+                    family,
+                    edited,
+                    Some(0),
+                    provenance,
+                    false,
+                    4,
+                    workers,
+                    reverse,
+                    true,
+                );
+                let clean_fixture = Fixture::new(b"");
+                let clean_ids = InMemorySessionIdAllocator::new();
+                let clean_snapshots = independent_snapshots();
+                let clean_store =
+                    CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+                let (clean, clean_outputs) = run(
+                    &clean_fixture,
+                    &clean_ids,
+                    &clean_snapshots,
+                    &clean_store,
+                    1,
+                    family,
+                    edited,
+                    Some(0),
+                    provenance,
+                    false,
+                    4,
+                    if reverse { 1 } else { 4 },
+                    !reverse,
+                    false,
+                );
+                assert!(!clean_store.root().exists());
+                assert_eq!(warm.session.state(), immediate.session.state());
+                assert_eq!(warm.status, immediate.status);
+                assert_eq!(warm.session.state(), clean.session.state());
+                assert_eq!(warm.status, clean.status);
+                assert_eq!(warm_outputs.len(), 3);
+                assert_eq!(warm_outputs.len(), immediate_outputs.len());
+                assert_eq!(warm_outputs.len(), clean_outputs.len());
+                for ((warm, (immediate_id, immediate_source, immediate_frontend)), clean) in
+                    warm_outputs
+                        .iter()
+                        .zip(immediate_outputs)
+                        .zip(&clean_outputs)
+                {
+                    assert_ne!(&warm.0, immediate_id);
+                    assert_ne!(warm.0, clean.0);
+                    assert_eq!((&warm.1, &warm.2), (immediate_source, immediate_frontend));
+                    assert_eq!((&warm.1, &warm.2), (&clean.1, &clean.2));
+                }
+            }
+        };
+
     for leaf_count in 1..=3 {
         let mut families = vec!["main".to_owned()];
         families.extend((0..leaf_count).map(|index| {
@@ -6406,6 +6476,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         assert_ne!(actual.0, clean.0);
         assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
     }
+    assert_edited_warm_recaptures(
+        &chain_fixture,
+        &chain_ids,
+        &chain_snapshots,
+        &chain_store,
+        "main",
+        true,
+        0,
+        &edited_importer,
+        &edited_importer_outputs,
+    );
 
     // Duplicate count, alias, and selected-branch provenance changes in I
     // invalidate its closure key while preserving the genuine M/A Frontends.
@@ -6452,6 +6533,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             assert_ne!(actual.0, clean.0);
             assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
         }
+        assert_edited_warm_recaptures(
+            &chain_fixture,
+            &chain_ids,
+            &chain_snapshots,
+            &chain_store,
+            "main",
+            false,
+            provenance,
+            &actual,
+            &actual_outputs,
+        );
     }
 
     // An A lexical edit changes M's token stream. M has no local exports in
@@ -6532,6 +6624,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         assert_ne!(actual.0, clean.0);
         assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
     }
+    assert_edited_warm_recaptures(
+        &lexical_fixture,
+        &lexical_ids,
+        &lexical_snapshots,
+        &lexical_store,
+        "base",
+        true,
+        0,
+        &edited_chain,
+        &edited_chain_outputs,
+    );
 
     // A change to M's own exported symbols invalidates M and I while the
     // independent import-free A Frontend remains reusable.
@@ -6601,6 +6704,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         assert_ne!(actual.0, clean.0);
         assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
     }
+    assert_edited_warm_recaptures(
+        &member_fixture,
+        &member_ids,
+        &member_snapshots,
+        &member_store,
+        "leaf",
+        true,
+        0,
+        &edited_member,
+        &edited_member_outputs,
+    );
 
     // Membership changes do not reuse the prior whole-closure importer: add
     // one target, then remove it, while unchanged member records stay usable.
