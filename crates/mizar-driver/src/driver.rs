@@ -1122,6 +1122,7 @@ impl CompilerDriver {
         };
         let reflexivity_profile;
         let reflexivity_artifact_profile;
+        let reflexivity_discharge_profile;
         let built_in_prefix = {
             use crate::{
                 frontend_adapter::{
@@ -1137,8 +1138,43 @@ impl CompilerDriver {
                 },
                 registry::PhaseService,
             };
+            reflexivity_discharge_profile = self.registry.descriptors().len() == 13
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::VcDischarge)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcDischargeService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::VcDischarge)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && {
+                    use mizar_build::task_graph::{TaskKind, WorkUnit};
+                    let mut modules = std::collections::BTreeSet::new();
+                    task_graph.tasks().iter().filter(|task| task.kind == TaskKind::VcDischarge).all(|task| {
+                        let WorkUnit::Vc { module, .. } = &task.unit else { return false; };
+                        task.phases == [PipelinePhase::VcDischarge]
+                            && modules.insert((module.package.as_str(), module.path.as_str()))
+                            && task.dependencies.len() == 2
+                            && task_graph.tasks().iter().any(|producer| {
+                                task.dependencies.contains(&producer.id)
+                                    && producer.kind == TaskKind::VcGenerate
+                                    && producer.phases == [PipelinePhase::VcGenerate]
+                                    && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
+                            })
+                            && task_graph.tasks().iter().any(|producer| {
+                                task.dependencies.contains(&producer.id)
+                                    && producer.kind == TaskKind::PackageResolve
+                                    && producer.unit == WorkUnit::Workspace
+                                    && producer.phases == [PipelinePhase::PackageResolve]
+                            })
+                    })
+                };
             reflexivity_artifact_profile =
-                self.registry.descriptors().len() == 12
+                (self.registry.descriptors().len() == 12 || reflexivity_discharge_profile)
                     && self
                         .registry
                         .service_for_phase(PipelinePhase::ArtifactCommit)
@@ -1410,6 +1446,7 @@ impl CompilerDriver {
                 let module = match (&task.kind, &task.unit) {
                     (TaskKind::KernelCheck, WorkUnit::EvidenceCandidate { module, .. }) => module,
                     (TaskKind::ArtifactCommit, WorkUnit::Module { module }) if reflexivity_artifact_profile => module,
+                    (TaskKind::VcDischarge, WorkUnit::Vc { module, .. }) if reflexivity_discharge_profile => module,
                     _ => return None,
                 };
                 let vc = task_graph.tasks().iter().find(|producer| {
@@ -1418,20 +1455,23 @@ impl CompilerDriver {
                         && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
                 })?;
                 let mut dependencies = vec![vc.id.clone()];
+                if matches!(task.kind, TaskKind::ArtifactCommit | TaskKind::VcDischarge) {
+                    let source = task_graph.tasks().iter().find(|producer| {
+                        producer.kind == TaskKind::CheckAndElaborate
+                            && vc.dependencies.contains(&producer.id)
+                            && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
+                    })?;
+                    dependencies.push(source.id.clone());
+                }
                 if task.kind == TaskKind::ArtifactCommit {
                     let kernel = task_graph.tasks().iter().find(|producer| {
                         producer.kind == TaskKind::KernelCheck
                             && producer.phases == [PipelinePhase::KernelCheck]
                             && matches!(&producer.unit, WorkUnit::EvidenceCandidate { module: parent, .. } if parent == module)
                     })?;
-                    let source = task_graph.tasks().iter().find(|producer| {
-                        producer.kind == TaskKind::CheckAndElaborate
-                            && vc.dependencies.contains(&producer.id)
-                            && matches!(&producer.unit, WorkUnit::Module { module: parent } if parent == module)
-                    })?;
-                    dependencies.extend([kernel.id.clone(), source.id.clone()]);
-                    dependencies.sort();
+                    dependencies.push(kernel.id.clone());
                 }
+                dependencies.sort();
                 Some((task.id.clone(), dependencies))
             }).collect::<Vec<_>>();
             for (dependent, dependencies) in replacements {

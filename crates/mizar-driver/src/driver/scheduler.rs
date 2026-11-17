@@ -242,8 +242,19 @@ fn dispatch_registry_phase(
                     task.task.unit,
                     mizar_build::task_graph::WorkUnit::Module { .. }
                 );
+            let reflexivity_discharge_service = registry.descriptors().len() == 13
+                && registry
+                    .service_for_phase(PipelinePhase::VcDischarge)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVcDischargeService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::VcDischarge)
+                                .ok()
+                                == Some(&service.phase())
+                    });
             let reflexivity_artifact_service =
-                registry.descriptors().len() == 12
+                (registry.descriptors().len() == 12 || reflexivity_discharge_service)
                     && registry
                         .service_for_phase(PipelinePhase::ArtifactCommit)
                         .is_ok_and(|service| {
@@ -488,7 +499,9 @@ fn dispatch_registry_phase(
                         Err(PhaseRegistryError::MissingPhaseService { .. })
                     ));
             let discharge_profile = vc_profile
-                && (registry.descriptors().len() == 11 || atp_service)
+                && (registry.descriptors().len() == 11
+                    || atp_service
+                    || (reflexivity_service && reflexivity_discharge_service))
                 && registry
                     .service_for_phase(PipelinePhase::VcDischarge)
                     .is_ok_and(|service| {
@@ -754,6 +767,9 @@ fn dispatch_registry_phase(
                 {
                     let mut dependencies = phase_results.iter().filter_map(|(id, results)| {
                         if ((!discharge_prefix && !candidate_prefix && !reflexivity_prefix)
+                            || (discharge_prefix
+                                && reflexivity_service
+                                && reflexivity_discharge_service)
                             || reflexivity_artifact_prefix)
                             && !task.task.dependencies.contains(id)
                         {

@@ -542,6 +542,7 @@ fn scheduled_theorem_vc_generation_matches_genuine_publication() {
         }
     }
 }
+
 #[test]
 fn scheduled_theorem_vc_generation_preserves_resource_refusals() {
     use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
@@ -2279,6 +2280,7 @@ fn reflexivity_artifact_registry(
     producer_policy: mizar_proof::policy::VerifierPolicy,
     consumer_policy: mizar_proof::policy::VerifierPolicy,
     output_parent: &str,
+    include_discharge: bool,
 ) -> mizar_driver::registry::PhaseRegistry {
     use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
 
@@ -2298,6 +2300,10 @@ fn reflexivity_artifact_registry(
             VcSchemaVersion::new("vc-v1"),
         )
         .register_source_theorem_reflexivity_kernel_check(producer_policy);
+    if include_discharge {
+        builder
+            .register_source_theorem_vc_discharge(mizar_vc::discharge::DischargePolicy::default());
+    }
     builder
         .register_source_theorem_reflexivity_artifact_commit(
             consumer_policy,
@@ -2311,7 +2317,11 @@ fn reflexivity_artifact_registry(
     builder.build().unwrap()
 }
 
-fn allow_reflexivity_artifact_outputs(owner: &PhaseOutputPublisher, unit: &WorkUnit) {
+fn allow_reflexivity_artifact_outputs(
+    owner: &PhaseOutputPublisher,
+    unit: &WorkUnit,
+    include_discharge: bool,
+) {
     allow_frontend(owner, unit);
     for (phase, kind) in [
         ("ModuleResolve", "SourceTheoremModuleCandidates"),
@@ -2328,6 +2338,13 @@ fn allow_reflexivity_artifact_outputs(owner: &PhaseOutputPublisher, unit: &WorkU
         owner.allow_work_unit(AllowedWorkUnit::new(
             IrPipelinePhase::new(phase),
             OutputKind::new(kind),
+            IrWorkUnit::new("\"alpha\":\"main\""),
+        ));
+    }
+    if include_discharge {
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("VcDischarge"),
+            OutputKind::new("SourceTheoremDischarge"),
             IrWorkUnit::new("\"alpha\":\"main\""),
         ));
     }
@@ -2438,15 +2455,19 @@ fn scheduled_reflexivity_artifact_consumer_commits_genuine_outputs() {
         };
         fs::create_dir_all(fixture.root.join("alpha/reflexivity-artifacts")).unwrap();
         let owner = publisher(snapshot, 0, &unit);
-        allow_reflexivity_artifact_outputs(&owner, &unit);
+        allow_reflexivity_artifact_outputs(&owner, &unit, false);
         let policy = VerifierPolicy::release();
         let consumer_policy = if wrong_policy {
             VerifierPolicy::development()
         } else {
             policy.clone()
         };
-        let registry =
-            reflexivity_artifact_registry(policy.clone(), consumer_policy, "reflexivity-artifacts");
+        let registry = reflexivity_artifact_registry(
+            policy.clone(),
+            consumer_policy,
+            "reflexivity-artifacts",
+            false,
+        );
         assert_eq!(registry.descriptors().len(), 12);
         let descriptor = registry
             .descriptor_for_phase(PipelinePhase::ArtifactCommit)
@@ -2927,11 +2948,12 @@ fn scheduled_reflexivity_artifact_consumer_commits_genuine_outputs() {
         let clean_parent = "reflexivity-artifacts/clean-worker4";
         fs::create_dir_all(fixture.root.join("alpha").join(clean_parent)).unwrap();
         let clean_owner = publisher(snapshot, 0, &unit);
-        allow_reflexivity_artifact_outputs(&clean_owner, &unit);
+        allow_reflexivity_artifact_outputs(&clean_owner, &unit, false);
         let clean_registry = reflexivity_artifact_registry(
             VerifierPolicy::release(),
             VerifierPolicy::release(),
             clean_parent,
+            false,
         );
         let (_, mut clean_submit) = fixture.submit_request(vec![], vec![]);
         let WorkUnit::Module { module } = &unit else {
@@ -3149,10 +3171,14 @@ fn scheduled_reflexivity_artifact_consumer_commits_genuine_outputs() {
         let swapped_parent = "reflexivity-artifacts/other-policy";
         fs::create_dir_all(fixture.root.join("alpha").join(swapped_parent)).unwrap();
         let swapped_owner = publisher(snapshot, 0, &unit);
-        allow_reflexivity_artifact_outputs(&swapped_owner, &unit);
+        allow_reflexivity_artifact_outputs(&swapped_owner, &unit, false);
         let swapped_policy = VerifierPolicy::release().with_require_kernel_certificates(false);
-        let swapped_registry =
-            reflexivity_artifact_registry(swapped_policy.clone(), swapped_policy, swapped_parent);
+        let swapped_registry = reflexivity_artifact_registry(
+            swapped_policy.clone(),
+            swapped_policy,
+            swapped_parent,
+            false,
+        );
         let (_, mut swapped_submit) = fixture.submit_request(vec![], vec![]);
         swapped_submit.vc_descriptors = vec![VcTaskDescriptor::new(
             VcTaskDescriptorId::new("other-policy"),
@@ -3432,6 +3458,7 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
                    workers: usize,
                    reverse: bool,
                    output_parent: &str,
+                   include_discharge: bool,
                    ids: &InMemorySessionIdAllocator,
                    snapshots: &SnapshotRegistry<InMemorySessionIdAllocator>| {
         fixture.write(bytes);
@@ -3478,13 +3505,17 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
             ),
         };
         let owner = publisher(snapshot, 0, &unit);
-        allow_reflexivity_artifact_outputs(&owner, &unit);
+        allow_reflexivity_artifact_outputs(&owner, &unit, include_discharge);
         let registry = reflexivity_artifact_registry(
             VerifierPolicy::release(),
             VerifierPolicy::release(),
             output_parent,
+            include_discharge,
         );
-        assert_eq!(registry.descriptors().len(), 12);
+        assert_eq!(
+            registry.descriptors().len(),
+            12 + usize::from(include_discharge)
+        );
         let cache_input = PhaseInput::new(
             unit.clone(),
             PhaseDispatchInputBundle::without_parent_outputs(
@@ -3526,17 +3557,26 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
         (submission, owner)
     };
 
-    for (case_index, (case, edited_text)) in edits.into_iter().enumerate() {
+    for (include_discharge, case_index, (case, edited_text)) in
+        [false, true].into_iter().flat_map(|include_discharge| {
+            edits
+                .iter()
+                .copied()
+                .enumerate()
+                .map(move |(case_index, case)| (include_discharge, case_index, case))
+        })
+    {
         let fixture = Fixture::new(baseline_text.as_bytes());
         let ids = InMemorySessionIdAllocator::new();
         let snapshots = SnapshotRegistry::new();
-        let (baseline, _) = execute(
+        let (baseline, baseline_owner) = execute(
             &fixture,
             baseline_text.as_bytes(),
             (case_index * 3) as u64,
             1,
             false,
             &format!("reflexivity-artifacts/{case}-baseline"),
+            include_discharge,
             &ids,
             &snapshots,
         );
@@ -3549,6 +3589,7 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
             1,
             false,
             &format!("reflexivity-artifacts/{case}-edited"),
+            include_discharge,
             &ids,
             &snapshots,
         );
@@ -3573,6 +3614,7 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
             4,
             true,
             &format!("reflexivity-artifacts/{case}-clean"),
+            include_discharge,
             &clean_ids,
             &clean_snapshots,
         );
@@ -3596,29 +3638,45 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
             clean.session.captured().snapshot().source_versions[0].source_hash
         );
 
-        for submission in [&baseline, &edited, &clean] {
+        for (submission, owner) in [
+            (&baseline, &baseline_owner),
+            (&edited, &edited_owner),
+            (&clean, &clean_owner),
+        ] {
             assert_eq!(
                 submission.session.state(),
-                BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+                BuildSessionState::Finished(if include_discharge {
+                    BuildSessionOutcome::Succeeded
+                } else {
+                    BuildSessionOutcome::Blocked
+                })
             );
             assert_eq!(
                 submission.status,
-                DriverSubmissionStatus::BlockedByMissingPhaseServices
+                if include_discharge {
+                    DriverSubmissionStatus::SchedulerValidated
+                } else {
+                    DriverSubmissionStatus::BlockedByMissingPhaseServices
+                }
             );
-            assert_eq!(
-                submission
-                    .missing_services
-                    .iter()
-                    .map(|missing| missing.phase)
-                    .collect::<Vec<_>>(),
-                [PipelinePhase::VcDischarge]
-            );
+            if include_discharge {
+                assert!(submission.missing_services.is_empty());
+            } else {
+                assert_eq!(
+                    submission
+                        .missing_services
+                        .iter()
+                        .map(|missing| missing.phase)
+                        .collect::<Vec<_>>(),
+                    [PipelinePhase::VcDischarge]
+                );
+            }
             let graph = submission.task_graph.as_ref().unwrap();
             let run = submission.scheduler_run.as_ref().unwrap();
             assert_eq!(
                 run.phase_results.values().flatten().count(),
-                12,
-                "{case}: all twelve registered services produced actual phase results"
+                12 + usize::from(include_discharge),
+                "{case}: all registered services produced actual phase results"
             );
             for task in graph.tasks() {
                 let state = run
@@ -3629,7 +3687,7 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
                     .state;
                 assert_eq!(
                     state,
-                    if task.kind == TaskKind::VcDischarge {
+                    if task.kind == TaskKind::VcDischarge && !include_discharge {
                         TaskState::Blocked
                     } else {
                         TaskState::Completed
@@ -3656,6 +3714,81 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
                 }),
                 "{case}: completed phases retain actual cache observations and no phase diagnostics"
             );
+            if include_discharge {
+                let refs = run
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter())
+                    .collect::<Vec<_>>();
+                let core_ref = refs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremCore"))
+                    .unwrap();
+                let vc_ref = refs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremVC"))
+                    .unwrap();
+                let discharge_ref = refs
+                    .iter()
+                    .find(|output| {
+                        output.output_kind() == &OutputKind::new("SourceTheoremDischarge")
+                    })
+                    .unwrap();
+                let core = owner
+                    .storage()
+                    .typed_handle::<mizar_core::core_ir::CoreIr>(core_ref, core_ref.output_kind())
+                    .unwrap();
+                let core = owner.storage().get(&core).unwrap();
+                let vcs = owner
+                    .storage()
+                    .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, vc_ref.output_kind())
+                    .unwrap();
+                let vcs = owner.storage().get(&vcs).unwrap();
+                let discharge = owner
+                    .storage()
+                    .typed_handle::<mizar_vc::discharge::DischargeOutput>(
+                        discharge_ref,
+                        discharge_ref.output_kind(),
+                    )
+                    .unwrap();
+                let discharge = owner.storage().get(&discharge).unwrap();
+                assert_eq!(
+                    core.source_id(),
+                    submission.session.captured().snapshot().source_versions[0].source_id
+                );
+                assert_eq!(vcs.source(), core.source_id());
+                assert_eq!(vcs.vcs().len(), 1);
+                assert_eq!(discharge.vc_set().vcs().len(), 1);
+                assert_eq!(
+                    *discharge,
+                    mizar_vc::discharge::try_discharge(mizar_vc::discharge::DischargeInput {
+                        vc_set: &vcs,
+                        policy: &mizar_vc::discharge::DischargePolicy::default(),
+                    },)
+                    .unwrap(),
+                    "{case}: retained discharge equals native discharge reconstruction"
+                );
+                assert_eq!(discharge_ref.lineage().parents.len(), 2);
+                assert!(discharge_ref.lineage().parents.contains(&core_ref.output()));
+                assert!(discharge_ref.lineage().parents.contains(&vc_ref.output()));
+                assert_eq!(
+                    graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == TaskKind::VcDischarge)
+                        .count(),
+                    1
+                );
+                assert_eq!(
+                    graph
+                        .tasks()
+                        .iter()
+                        .filter(|task| task.kind == TaskKind::KernelCheck)
+                        .count(),
+                    1
+                );
+            }
             let artifact_task = graph
                 .tasks()
                 .iter()
@@ -3826,12 +3959,35 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
                     &VerifierPolicy::release(),
                 )
                 .unwrap();
+            let discharge = if include_discharge {
+                let discharge_ref = run
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter())
+                    .find(|output| {
+                        output.output_kind() == &OutputKind::new("SourceTheoremDischarge")
+                    })
+                    .unwrap();
+                let discharge_handle = owner
+                    .storage()
+                    .typed_handle::<mizar_vc::discharge::DischargeOutput>(
+                        discharge_ref,
+                        discharge_ref.output_kind(),
+                    )
+                    .unwrap();
+                let discharge = owner.storage().get(&discharge_handle).unwrap();
+                Some((*discharge).clone())
+            } else {
+                None
+            };
             (
                 artifact,
                 read.manifest,
                 wire,
                 projected_metadata,
                 projected_wire,
+                discharge,
             )
         };
         let edited_output = output(
@@ -3907,5 +4063,283 @@ fn scheduled_reflexivity_artifact_edits_match_independent_clean_outputs() {
             edited_output.1, normalized_manifest,
             "{case}: validated manifest module entries"
         );
+        if include_discharge {
+            let edited_discharge = edited_output.5.as_ref().unwrap();
+            let clean_discharge = clean_output.5.as_ref().unwrap();
+            let clean_vcs = clean_discharge.vc_set();
+            let normalized_vcs = mizar_vc::vc_ir::VcSet::try_new(mizar_vc::vc_ir::VcSetParts {
+                schema_version: clean_vcs.schema_version().clone(),
+                snapshot: edited_discharge.vc_set().snapshot(),
+                source: clean_vcs.source(),
+                module: clean_vcs.module().clone(),
+                generated_formulas: clean_vcs.generated_formulas().to_vec(),
+                vcs: clean_vcs.vcs().to_vec(),
+                seed_accounting: clean_vcs.seed_accounting().to_vec(),
+            })
+            .unwrap();
+            assert_eq!(
+                edited_discharge.vc_set(),
+                &normalized_vcs,
+                "{case}: retained discharge VC data agrees after snapshot-local set identity normalization"
+            );
+            assert_eq!(
+                edited_discharge.evidence_records(),
+                clean_discharge.evidence_records(),
+                "{case}: retained discharge evidence records agree"
+            );
+            assert_eq!(
+                edited_discharge.explanations(),
+                clean_discharge.explanations(),
+                "{case}: retained discharge explanations agree"
+            );
+        }
+    }
+}
+
+#[test]
+fn scheduled_reflexivity_discharge_admission_requires_the_exact_profile() {
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, TaskKind, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::vc_ir::{GenerationSchemaVersion, VcSchemaVersion};
+
+    #[derive(Debug)]
+    struct DescriptorService(mizar_driver::registry::PhaseDescriptor);
+    impl mizar_driver::registry::PhaseService for DescriptorService {
+        fn phase(&self) -> mizar_driver::registry::PhaseDescriptor {
+            self.0.clone()
+        }
+        fn cache_key(
+            &self,
+            _input: &mizar_driver::registry::PhaseInput,
+            _context: &mizar_driver::registry::PhaseCacheContext,
+        ) -> PhaseCacheIntent {
+            PhaseCacheIntent::NoKey {
+                reason: "admission spoof has no cache identity".to_owned(),
+            }
+        }
+        fn execute(
+            &self,
+            _input: mizar_driver::registry::PhaseInput,
+            _context: mizar_driver::registry::PhaseExecutionContext<'_>,
+        ) -> mizar_driver::registry::PhaseResult {
+            mizar_driver::registry::PhaseResult::complete()
+        }
+    }
+
+    let source = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let fixture = Fixture::new(source.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (mut draft, _) = fixture.submit_request(vec![], vec![]);
+    draft.source_inputs.versions.clear();
+    let input = SourceInput {
+        package_id: PackageId::new("alpha"),
+        module_path: ModulePath::new("main"),
+        normalized_path: fixture.version.normalized_path.clone(),
+        edition: Edition::new("2025"),
+        origin: SourceOriginInput::Disk {
+            path: "src/main.miz".into(),
+        },
+    };
+    let session = draft
+        .capture_sources(
+            &ids,
+            &snapshots,
+            vec![(DiskSourceLoader::new(fixture.root.join("alpha")), input)],
+        )
+        .unwrap();
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    let WorkUnit::Module { module } = &unit else {
+        unreachable!()
+    };
+
+    let nominal = reflexivity_artifact_registry(
+        VerifierPolicy::release(),
+        VerifierPolicy::release(),
+        "reflexivity-artifacts/admission",
+        true,
+    );
+    let exact_discharge = nominal
+        .descriptor_for_phase(PipelinePhase::VcDischarge)
+        .unwrap()
+        .clone();
+
+    let profile = |variant: &str| {
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation(
+                GenerationSchemaVersion::new("source-theorem-local-v1"),
+                VcSchemaVersion::new("vc-v1"),
+            )
+            .register_source_theorem_reflexivity_kernel_check(VerifierPolicy::release());
+        match variant {
+            "spoofed-concrete-type" => {
+                builder.register(DescriptorService(exact_discharge.clone()));
+            }
+            "mismatched-descriptor" => {
+                builder.register(DescriptorService(
+                    mizar_driver::registry::PhaseDescriptor::new(
+                        "UnexpectedDischargeService",
+                        mizar_driver::registry::PhaseOwner::MizarVc,
+                        vec![PipelinePhase::VcDischarge],
+                        exact_discharge.schema_version.clone(),
+                        exact_discharge.output_kind.clone(),
+                    )
+                    .unwrap(),
+                ));
+            }
+            _ => {
+                builder.register_source_theorem_vc_discharge(
+                    mizar_vc::discharge::DischargePolicy::default(),
+                );
+            }
+        }
+        builder
+            .register_source_theorem_reflexivity_artifact_commit(
+                VerifierPolicy::release(),
+                (
+                    "proof-witnesses".to_owned(),
+                    "main.mizir.json".to_owned(),
+                    "reflexivity-artifacts/admission".to_owned(),
+                ),
+            )
+            .unwrap();
+        if variant == "surplus-service" {
+            let config = mizar_driver::registry::StageConfig::source_theorem(vec![]);
+            builder
+                .register_source_theorem_atp_solve(
+                    config.discharge_policy,
+                    config.logic_profile,
+                    config.concrete_format,
+                )
+                .unwrap();
+        }
+        builder.build().unwrap()
+    };
+
+    for case in [
+        "nominal",
+        "spoofed-concrete-type",
+        "mismatched-descriptor",
+        "surplus-service",
+        "duplicate-discharge-module",
+        "duplicate-kernel-module",
+    ] {
+        let registry = profile(case);
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_reflexivity_artifact_outputs(&owner, &unit, true);
+        let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+        let descriptor = |id: &str, evidence: &[&str]| {
+            VcTaskDescriptor::new(
+                VcTaskDescriptorId::new(id),
+                module.clone(),
+                VcOrderKey::new(id),
+                vec![],
+                evidence
+                    .iter()
+                    .map(|candidate| EvidenceCandidateId::new(*candidate))
+                    .collect(),
+            )
+        };
+        submit.vc_descriptors = match case {
+            "duplicate-discharge-module" => vec![
+                descriptor("admission-discharge-a", &[]),
+                descriptor("admission-discharge-b", &[]),
+            ],
+            "duplicate-kernel-module" => {
+                vec![descriptor(
+                    "admission-kernel",
+                    &["candidate-a", "candidate-b"],
+                )]
+            }
+            _ => vec![descriptor("admission-single", &["candidate"])],
+        };
+        let submission = CompilerDriver::new(registry)
+            .with_output_publisher(owner)
+            .submit_captured(
+                session.clone(),
+                &ids,
+                &snapshots,
+                submit,
+                Default::default(),
+            )
+            .unwrap();
+        assert!(submission.missing_services.is_empty());
+        assert!(submission.scheduler_run.is_some());
+        let graph = submission.task_graph.as_ref().unwrap();
+        let discharges = graph
+            .tasks()
+            .iter()
+            .filter(|task| task.kind == TaskKind::VcDischarge)
+            .collect::<Vec<_>>();
+        let kernels = graph
+            .tasks()
+            .iter()
+            .filter(|task| task.kind == TaskKind::KernelCheck)
+            .collect::<Vec<_>>();
+        assert!(
+            !graph
+                .tasks()
+                .iter()
+                .any(|task| { matches!(task.kind, TaskKind::AtpSolve | TaskKind::BackendRun) })
+        );
+        let has_discharge_output = submission.scheduler_run.as_ref().is_some_and(|run| {
+            run.phase_results.values().flatten().any(|row| {
+                row.output_refs.iter().any(|output| {
+                    output.output_kind() == &OutputKind::new("SourceTheoremDischarge")
+                })
+            })
+        });
+        assert_eq!(has_discharge_output, case == "nominal", "{case}");
+        assert_eq!(
+            discharges.len(),
+            if case == "duplicate-discharge-module" {
+                2
+            } else {
+                1
+            }
+        );
+        assert_eq!(
+            kernels.len(),
+            match case {
+                "duplicate-discharge-module" => 0,
+                "duplicate-kernel-module" => 2,
+                _ => 1,
+            }
+        );
+        for discharge in discharges {
+            let mut dependencies = graph
+                .tasks()
+                .iter()
+                .filter(|task| discharge.dependencies.contains(&task.id))
+                .map(|task| task.kind)
+                .collect::<Vec<_>>();
+            dependencies.sort();
+            assert_eq!(
+                dependencies,
+                if case == "nominal" {
+                    [TaskKind::CheckAndElaborate, TaskKind::VcGenerate]
+                } else {
+                    [TaskKind::PackageResolve, TaskKind::VcGenerate]
+                },
+                "{case}: only the exact profile gains the direct source-check bridge"
+            );
+        }
     }
 }
