@@ -3,7 +3,7 @@ Canonical language: English; [Japanese companion](../ja/cross_package_intermedia
 
 ## Status and authority
 
-**Q1–Q5 are pending owner approval.** This [Driver-plan](00.crate_plan.md#task-index) definition proposes the existing STEP6A47 app/main→app/mid→core/base producer as a prerequisite for [STEP6C](../../mizar-build/en/incremental_parallel_equivalence.md). It activates no caching; implementation requires owner decisions and a subsequent Muse dispatch/freeze. No full STEP6C, language, diagnostic, semantic acceptance, proof/reuse, trace/audit or parsing-avoidance credit follows.
+**Q1–Q5 approved A on 2026-11-17.** This [Driver-plan](00.crate_plan.md#task-index) design bounds the existing STEP6A47 app/main→app/mid→core/base producer as a prerequisite for [STEP6C](../../mizar-build/en/incremental_parallel_equivalence.md). Implementation follows the approved A decisions below. No full STEP6C, language, diagnostic, semantic acceptance, proof/reuse, trace/audit or parsing-avoidance credit follows.
 Retain the approved same-package [authority](intermediate_workspace_frontend_caching.md#status-and-authority), [owner boundaries](intermediate_workspace_frontend_caching.md#existing-boundary-and-proposed-closure), [complete footprint](intermediate_workspace_frontend_caching.md#footprint-and-encoding-decision) and [independent expectations](intermediate_workspace_frontend_caching.md#ancestor-authentication-and-independent-cold-expectations). Spec [workspace layout](../../../spec/en/23.package_management_and_build_system.md#233-workspace-layout) supplies the shared workspace lock; [supplied summaries](frontend_adapter.md#supplied-workspace-leaf-summaries) supply target-owned package metadata. This proposal owns only the cross-package delta; existing ordinary sealed-publication trust is unchanged.
 
 ## Exact admission delta
@@ -35,7 +35,7 @@ No new public seam, schema or transitive-retention API is proposed.
 
 ## Owner Q-decisions
 
-Q2/Q4/Q5 carry approved protections into the new admission boundary.
+All five A options are approved; B alternatives remain excluded. Q2/Q4/Q5 carry approved protections into the new admission boundary.
 **Q1 — profile.** A: admit exactly I/M in app and import-free A in core as above. B: retain current admission and defer. **Recommend A:** existing STEP6A47 supplies this producer; arbitrary package topologies remain excluded.
 **Q2 — authentication.** A: retain independent bottom-up full-source expectations and complete accepted-payload comparison with target-owned package contexts. B: defer until a separately approved independent ancestor-receipt design exists. **Recommend A:** current sealed-publication trust alone does not authenticate this cache closure.
 **Q3 — compatibility.** A: reuse private v2 only with the complete coverage mapping above and unchanged legacy bytes. B: defer to a separately frozen private-version encoding proposal. **Recommend A:** v2 already qualifies every target/relation by package; a new domain alone supplies no missing authentication. Any mapping failure returns to owner before implementation admission.

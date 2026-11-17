@@ -3,7 +3,7 @@ Canonical language: English; [英語正本](../en/cross_package_intermediate_fro
 
 ## Status and authority
 
-**Q1–Q5 は owner 承認待ち。** [Driver 計画](00.crate_plan.md#task-index)の本定義は、既存 STEP6A47 の app/main→app/mid→core/base producer を [STEP6C](../../mizar-build/ja/incremental_parallel_equivalence.md) の前提として提案する。cache は有効化しない。実装には owner 判断と後続 Muse dispatch/freeze が必要。full STEP6C、言語、診断、意味的 acceptance、proof/reuse、trace/audit、parsing 回避の credit は得ない。
+**Q1–Q5 は 2026-11-17 に A 承認済み。** [Driver 計画](00.crate_plan.md#task-index)の本設計は、既存 STEP6A47 の app/main→app/mid→core/base producer を [STEP6C](../../mizar-build/ja/incremental_parallel_equivalence.md) の前提に限定する。実装は以下の承認済み A 判断に従う。full STEP6C、言語、診断、意味的 acceptance、proof/reuse、trace/audit、parsing 回避の credit は得ない。
 承認済み同一 package 設計の [authority](../en/intermediate_workspace_frontend_caching.md#status-and-authority)、[owner 境界](../en/intermediate_workspace_frontend_caching.md#existing-boundary-and-proposed-closure)、[完全 footprint](../en/intermediate_workspace_frontend_caching.md#footprint-and-encoding-decision)、[独立期待値](../en/intermediate_workspace_frontend_caching.md#ancestor-authentication-and-independent-cold-expectations)を維持する。仕様の [workspace layout](../../../spec/ja/23.package_management_and_build_system.md#233-ワークスペースのレイアウト)は共有 workspace lock、[supplied summaries](frontend_adapter.md#supplied-workspace-leaf-summaries) は target 所有の package metadata を規定する。本提案は cross-package 差分のみを所有し、通常実行の sealed-publication trust は変更しない。
 
 ## Exact admission delta
@@ -35,7 +35,7 @@ Q5-A は同じ whole-closure expectation の下、genuine accepted clean I outpu
 
 ## Owner Q-decisions
 
-Q2/Q4/Q5 は既承認の保護を新 admission 境界に適用する。
+五つとも A を承認し、B は対象外とする。Q2/Q4/Q5 は既承認の保護を新 admission 境界に適用する。
 **Q1 — profile。** A: 上記 I/M=app、import-free A=core のみを許可。B: 現 admission を維持し延期。**A 推奨:** 既存 STEP6A47 producer を使い、任意 package topology は除外する。
 **Q2 — authentication。** A: target 所有 context で独立 bottom-up full-source expectation と accepted payload 全体比較を維持。B: 別途承認する independent ancestor-receipt 設計まで延期。**A 推奨:** sealed-publication trust 単独では cache closure を認証できない。
 **Q3 — compatibility。** A: 上記完全 coverage mapping と legacy byte 不変を条件に private v2 を再利用。B: 別途 freeze する private-version encoding 提案まで延期。**A 推奨:** v2 は既に全 target/relation を package で区別し、新 domain 単独では不足認証を補えない。mapping 不成立なら実装 admission 前に owner に戻す。
