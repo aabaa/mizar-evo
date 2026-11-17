@@ -404,18 +404,11 @@ pub(crate) fn native_frontend_cache_parents(
                 else {
                     return None;
                 };
-                let WorkUnit::Module {
-                    module: ancestor_module,
-                } = &ancestor.unit
-                else {
-                    return None;
-                };
                 if ancestor.kind != TaskKind::Frontend
                     || ancestor.phases != [PipelinePhase::Frontend]
                     || ancestor.unit == task.unit
                     || ancestor.unit == parent.unit
                     || own_module.package != middle_module.package
-                    || own_module.package != ancestor_module.package
                 {
                     return None;
                 }

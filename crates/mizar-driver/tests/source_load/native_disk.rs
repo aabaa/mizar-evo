@@ -5456,12 +5456,6 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         SnapshotRegistry::with_allocator(source_ids)
     };
     let policy = mizar_proof::policy::VerifierPolicy::release();
-    let main_unit = WorkUnit::Module {
-        module: mizar_build::module_index::ModuleId::new(
-            PackageId::new("alpha"),
-            ModulePath::new("main"),
-        ),
-    };
     let run = |fixture: &Fixture,
                ids: &InMemorySessionIdAllocator,
                snapshots: &SnapshotRegistry,
@@ -5476,6 +5470,22 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                workers: usize,
                reverse: bool,
                cached: bool| {
+        let cross_package = family.starts_with("cross_");
+        let family = family.strip_prefix("cross_").unwrap_or(family);
+        let app_package = if cross_package { "app" } else { "alpha" };
+        let package_for = |module: &str| {
+            if cross_package && module == "base" {
+                "core"
+            } else {
+                app_package
+            }
+        };
+        let main_unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new(app_package),
+                ModulePath::new("main"),
+            ),
+        };
         let leaf_names = (0..leaf_count)
             .map(|index| {
                 if index == 0 {
@@ -5491,36 +5501,50 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             .iter()
             .enumerate()
             .map(|(index, leaf)| match (index, provenance) {
-                (0, 2) => format!("import alpha.{leaf} as l;\n"),
-                (0, 3) => format!("import alpha.{{{leaf}}};\n"),
-                _ => format!("import alpha.{leaf};\n"),
+                (0, 2) => format!("import {app_package}.{leaf} as l;\n"),
+                (0, 3) => format!("import {app_package}.{{{leaf}}};\n"),
+                _ => format!("import {app_package}.{leaf};\n"),
             })
             .collect::<String>();
-        importer.push_str(&format!("import alpha.{};\n", leaf_names[0]));
+        importer.push_str(&format!("import {app_package}.{};\n", leaf_names[0]));
         if provenance == 1 {
-            importer.push_str(&format!("import alpha.{};\n", leaf_names[0]));
+            importer.push_str(&format!("import {app_package}.{};\n", leaf_names[0]));
         }
-        importer.push_str(if leaf_count == 1 && transitive_leaf.is_some() {
-            if family == "main" && edited {
-                "theorem T: spare = other;\n"
+        importer.push_str(
+            if (leaf_count == 1 || cross_package) && transitive_leaf.is_some() {
+                if family == "main" && edited {
+                    "theorem T: spare = other;\n"
+                } else {
+                    "theorem T: spare = spare;\n"
+                }
+            } else if family == "main" && edited {
+                "theorem T: a combine b = b;\ntheorem S: spare = spare;\n"
             } else {
-                "theorem T: spare = spare;\n"
-            }
-        } else if family == "main" && edited {
-            "theorem T: a combine b = b;\ntheorem S: spare = spare;\n"
-        } else {
-            "theorem T: a combine b = a;\ntheorem S: spare = spare;\n"
-        });
+                "theorem T: a combine b = a;\ntheorem S: spare = spare;\n"
+            },
+        );
         let raw_main = format!("\u{feff}{}", importer.replace('\n', "\r\n"));
-        fixture.write(raw_main.as_bytes());
+        if cross_package {
+            fs::create_dir_all(fixture.root.join("app/src")).unwrap();
+            fs::create_dir_all(fixture.root.join("core/src")).unwrap();
+            fs::write(fixture.root.join("app/src/main.miz"), raw_main.as_bytes()).unwrap();
+        } else {
+            fixture.write(raw_main.as_bytes());
+        }
         for (index, leaf) in leaf_names.iter().enumerate() {
             let bytes = if transitive_leaf == Some(index) {
                 if family == "base" {
-                    "import alpha.base;\ntheorem T: spare = spare;\n".to_owned()
+                    format!(
+                        "import {}.base;\ntheorem T: spare = spare;\n",
+                        package_for("base")
+                    )
                 } else if family == "leaf" && edited {
-                    "import alpha.base;\ndefinition\nlet x be set;\npublic func Spare: spare -> set equals x;\nend;\n".to_owned()
+                    format!(
+                        "import {}.base;\ndefinition\nlet x be set;\npublic func Spare: spare -> set equals x;\nend;\n",
+                        package_for("base")
+                    )
                 } else {
-                    "import alpha.base;\ndefinition\nend;\n".to_owned()
+                    format!("import {}.base;\ndefinition\nend;\n", package_for("base"))
                 }
             } else if index == 0 {
                 if family == leaf.as_str() && edited {
@@ -5547,10 +5571,47 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     "definition\nlet x, y be set;\npublic func Symbol{index}: symbol{index} -> set equals x;\nend;\n"
                 )
             };
-            fs::write(fixture.root.join(format!("alpha/src/{leaf}.miz")), bytes).unwrap();
+            fs::write(
+                fixture
+                    .root
+                    .join(package_for(leaf))
+                    .join(format!("src/{leaf}.miz")),
+                bytes,
+            )
+            .unwrap();
         }
 
         let (mut request, mut input) = fixture.submit_request(vec![], vec![]);
+        if cross_package {
+            let core_version = if cache_stage == 20 { "2.0.0" } else { "1.0.0" };
+            let core_edition = "2025";
+            let core_config = if cache_stage == 21 {
+                "max_axioms = 65\n"
+            } else {
+                ""
+            };
+            input.workspace_packages = vec![
+                WorkspacePackage {
+                    member_path: "app".to_owned(),
+                    manifest: parse_package_manifest(&format!(
+                        "[package]\nname = \"app\"\nversion = \"0.1.0\"\nedition = \"2025\"\n[dependencies]\ncore = \"{core_version}\"\n"
+                    )).unwrap(),
+                },
+                WorkspacePackage {
+                    member_path: "core".to_owned(),
+                    manifest: parse_package_manifest(&format!(
+                        "[package]\nname = \"core\"\nversion = \"{core_version}\"\nedition = \"{core_edition}\"\n[verifier]\n{core_config}"
+                    )).unwrap(),
+                },
+            ];
+            let mut lockfile = format!(
+                "schema_version = 1\n[[package]]\nname = \"app\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"app\" }}\ndependencies = [{{ name = \"core\", version = \"{core_version}\" }}]\n[[package]]\nname = \"core\"\nversion = \"{core_version}\"\nsource = {{ kind = \"workspace\", path = \"core\" }}\ndependencies = []\n"
+            );
+            if cache_stage == 23 {
+                lockfile.push_str("[[package]]\nname = \"unused\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:unused\" }\ndependencies = []\n");
+            }
+            input.lockfile = parse_lockfile(&lockfile).unwrap();
+        }
         request.source_inputs.versions.clear();
         let plan = produce_build_plan(
             input.plan_request.clone(),
@@ -5569,11 +5630,11 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             .map(|leaf| {
                 ModuleDependencyEdge::new(
                     mizar_build::module_index::ModuleId::new(
-                        PackageId::new("alpha"),
+                        PackageId::new(app_package),
                         ModulePath::new("main"),
                     ),
                     mizar_build::module_index::ModuleId::new(
-                        PackageId::new("alpha"),
+                        PackageId::new(package_for(leaf)),
                         ModulePath::new(leaf),
                     ),
                     ModuleDependencyKind::ImportSummary,
@@ -5583,11 +5644,11 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         if let Some(index) = transitive_leaf {
             dependency_edges.push(ModuleDependencyEdge::new(
                 mizar_build::module_index::ModuleId::new(
-                    PackageId::new("alpha"),
+                    PackageId::new(app_package),
                     ModulePath::new(&leaf_names[index]),
                 ),
                 mizar_build::module_index::ModuleId::new(
-                    PackageId::new("alpha"),
+                    PackageId::new(package_for("base")),
                     ModulePath::new("base"),
                 ),
                 ModuleDependencyKind::ImportSummary,
@@ -5613,11 +5674,23 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             } else {
                 b"definition\nend;\n".as_slice()
             };
-            fs::write(fixture.root.join("alpha/src/base.miz"), base).unwrap();
+            fs::write(
+                fixture.root.join(package_for("base")).join("src/base.miz"),
+                base,
+            )
+            .unwrap();
         }
         modules.push("main".to_owned());
-        let mut files = modules
+        let mut app_files = modules
             .iter()
+            .filter(|module| package_for(module) == app_package)
+            .map(|module| {
+                WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
+            })
+            .collect::<Vec<_>>();
+        let mut core_files = modules
+            .iter()
+            .filter(|module| package_for(module) == "core")
             .map(|module| {
                 WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
             })
@@ -5625,17 +5698,15 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         let mut descriptors = modules
             .iter()
             .map(|module| {
+                let package = package_for(module);
+                let root = fixture.root.join(package);
                 let path = format!("src/{module}.miz");
                 (
-                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    DiskSourceLoader::new(root.clone()),
                     SourceInput {
-                        package_id: PackageId::new("alpha"),
+                        package_id: PackageId::new(package),
                         module_path: ModulePath::new(module),
-                        normalized_path: normalize_path(
-                            &fixture.root.join("alpha"),
-                            Path::new(&path),
-                        )
-                        .unwrap(),
+                        normalized_path: normalize_path(&root, Path::new(&path)).unwrap(),
                         edition: Edition::new("2025"),
                         origin: SourceOriginInput::Disk { path: path.into() },
                     },
@@ -5644,12 +5715,20 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             .collect::<Vec<_>>();
         if reverse {
             descriptors.reverse();
-            files.reverse();
+            app_files.reverse();
+            core_files.reverse();
         }
-        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
-            package_id: PackageId::new("alpha"),
-            files,
-        }]);
+        let mut source_packages = vec![WorkspaceSourcePackage {
+            package_id: PackageId::new(app_package),
+            files: app_files,
+        }];
+        if cross_package {
+            source_packages.push(WorkspaceSourcePackage {
+                package_id: PackageId::new("core"),
+                files: core_files,
+            });
+        }
+        input.source_layout = StaticSourceLayout::new(source_packages);
         let session = request
             .capture_sources(ids, snapshots, descriptors)
             .unwrap();
@@ -5659,14 +5738,14 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             .iter()
             .map(|leaf| WorkUnit::Module {
                 module: mizar_build::module_index::ModuleId::new(
-                    PackageId::new("alpha"),
+                    PackageId::new(package_for(leaf)),
                     ModulePath::new(leaf),
                 ),
             })
             .collect::<Vec<_>>();
         let base_unit = WorkUnit::Module {
             module: mizar_build::module_index::ModuleId::new(
-                PackageId::new("alpha"),
+                PackageId::new(package_for("base")),
                 ModulePath::new("base"),
             ),
         };
@@ -5682,7 +5761,7 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             owner.allow_work_unit(AllowedWorkUnit::new(
                 IrPipelinePhase::new("SourceLoad"),
                 OutputKind::new("SourceUnit"),
-                IrWorkUnit::new(format!("{:?}:{:?}", "alpha", name)),
+                IrWorkUnit::new(format!("{:?}:{:?}", package_for(name), name)),
             ));
             allow_frontend(&owner, unit);
         }
@@ -5812,6 +5891,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     || (cache_stage == 11 && module == "leaf")
                     || (cache_stage == 15 && module == "base")
                     || ((16..=18).contains(&cache_stage) && module != "main"));
+            // This run supplies app's configured Store; core's ancestor executes normally.
+            let source_hit = if cross_package && cache_stage == 4 && leaf_count > 1 {
+                cached && module == "leaf"
+            } else {
+                source_hit && (!cross_package || module != "base")
+            };
+            let frontend_hit = if cross_package && cache_stage == 4 && leaf_count > 1 {
+                cached && module == "leaf"
+            } else {
+                frontend_hit && (!cross_package || module != "base")
+            };
             for (task, hit) in [(source_task, source_hit), (frontend_task, frontend_hit)] {
                 let state = &scheduler
                     .task_states
@@ -5874,7 +5964,7 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 assert_eq!(map.source_id, version.source_id);
             }
             if module == "main" {
-                if leaf_count != 1 || transitive_leaf.is_none() {
+                if (leaf_count != 1 && !cross_package) || transitive_leaf.is_none() {
                     assert!(frontend.tokens.tokens().iter().any(|token| {
                         token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
                     }));
@@ -6042,6 +6132,34 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         assert_eq!(collected.retained_outputs, 0);
         assert_eq!(collected.outputs_dropped, expected_outputs);
         (submission, outputs)
+    };
+    let run_cross = |fixture: &Fixture,
+                     ids: &InMemorySessionIdAllocator,
+                     snapshots: &SnapshotRegistry,
+                     store: &CacheStoreRoot,
+                     leaf_count: usize,
+                     family: &str,
+                     edited: bool,
+                     cache_stage: usize,
+                     workers: usize,
+                     reverse: bool,
+                     cached: bool| {
+        run(
+            fixture,
+            ids,
+            snapshots,
+            store,
+            leaf_count,
+            family,
+            edited,
+            Some(0),
+            0,
+            false,
+            cache_stage,
+            workers,
+            reverse,
+            cached,
+        )
     };
 
     for leaf_count in 1..=3 {
@@ -6758,6 +6876,327 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             previous_records.get(&importer_records),
             current_records.get(&importer_records),
             "lexically conflicting importer wrote a Frontend record at stage {stage}"
+        );
+        previous_records = current_records;
+    }
+
+    // Exercise the same fully observed prefix runner across app/main→app/leaf→core/base.
+    let cross_fixture = Fixture::new(b"");
+    let cross_ids = InMemorySessionIdAllocator::new();
+    let cross_snapshots = SnapshotRegistry::new();
+    let cross_store = CacheStoreRoot::new(cross_fixture.root.join("app/.mizar-cache"));
+    let (_cross_cold, cross_baseline) = run_cross(
+        &cross_fixture,
+        &cross_ids,
+        &cross_snapshots,
+        &cross_store,
+        1,
+        "cross_main",
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    assert_eq!(cross_baseline.len(), 3);
+    let mut cross_records = store_records(&cross_store);
+    for (phase, package, module) in [
+        ("SourceLoad", "app", "main"),
+        ("Frontend", "app", "main"),
+        ("SourceLoad", "app", "leaf"),
+        ("Frontend", "app", "leaf"),
+    ] {
+        assert!(
+            cross_records.contains_key(&(phase.to_owned(), format!("\"{package}\":\"{module}\""))),
+            "cold cross-package run did not persist {phase} {package}/{module}"
+        );
+    }
+    let (cross_warm, cross_warm_outputs) = run_cross(
+        &cross_fixture,
+        &cross_ids,
+        &cross_snapshots,
+        &cross_store,
+        1,
+        "cross_main",
+        false,
+        4,
+        4,
+        true,
+        true,
+    );
+    let clean_cross_fixture = Fixture::new(b"");
+    let clean_cross_ids = InMemorySessionIdAllocator::new();
+    let clean_cross_snapshots = independent_snapshots();
+    let clean_cross_store = CacheStoreRoot::new(clean_cross_fixture.root.join("app/.mizar-cache"));
+    let (clean_cross, clean_cross_outputs) = run_cross(
+        &clean_cross_fixture,
+        &clean_cross_ids,
+        &clean_cross_snapshots,
+        &clean_cross_store,
+        1,
+        "cross_main",
+        false,
+        4,
+        1,
+        false,
+        false,
+    );
+    assert!(!clean_cross_store.root().exists());
+    assert_eq!(cross_warm.status, clean_cross.status);
+    assert_eq!(cross_warm.session.state(), clean_cross.session.state());
+    for (cold, warm) in cross_baseline.iter().zip(&cross_warm_outputs) {
+        assert_ne!(cold.0, warm.0);
+        assert_eq!((&cold.1, &cold.2), (&warm.1, &warm.2));
+    }
+    for (actual, clean) in cross_warm_outputs.iter().zip(&clean_cross_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+
+    let base_fixture = Fixture::new(b"");
+    let base_ids = InMemorySessionIdAllocator::new();
+    let base_snapshots = SnapshotRegistry::new();
+    let base_store = CacheStoreRoot::new(base_fixture.root.join("app/.mizar-cache"));
+    let (_, cross_base_baseline) = run_cross(
+        &base_fixture,
+        &base_ids,
+        &base_snapshots,
+        &base_store,
+        1,
+        "cross_base",
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    // Editing core/base changes app/leaf's lexical tokens while its exports
+    // and app/main's active environment remain unchanged.
+    let (cross_edited, cross_edited_outputs) = run_cross(
+        &base_fixture,
+        &base_ids,
+        &base_snapshots,
+        &base_store,
+        1,
+        "cross_base",
+        true,
+        14,
+        2,
+        false,
+        true,
+    );
+    let clean_edited_fixture = Fixture::new(b"");
+    let clean_edited_ids = InMemorySessionIdAllocator::new();
+    let clean_edited_snapshots = independent_snapshots();
+    let clean_edited_store =
+        CacheStoreRoot::new(clean_edited_fixture.root.join("app/.mizar-cache"));
+    let (clean_edited, clean_edited_outputs) = run_cross(
+        &clean_edited_fixture,
+        &clean_edited_ids,
+        &clean_edited_snapshots,
+        &clean_edited_store,
+        1,
+        "cross_base",
+        true,
+        14,
+        4,
+        true,
+        false,
+    );
+    assert!(!clean_edited_store.root().exists());
+    assert_eq!(cross_edited.status, clean_edited.status);
+    assert_eq!(cross_edited.session.state(), clean_edited.session.state());
+    assert_ne!(cross_edited_outputs[0].2.7, cross_base_baseline[0].2.7);
+    assert_eq!(cross_edited_outputs[0].2.8, cross_base_baseline[0].2.8);
+    assert_eq!(cross_edited_outputs[2].2.2, cross_base_baseline[2].2.2);
+    for (actual, clean) in cross_edited_outputs.iter().zip(&clean_edited_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+
+    for family in ["cross_leaf", "cross_main"] {
+        let fixture = Fixture::new(b"");
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let store = CacheStoreRoot::new(fixture.root.join("app/.mizar-cache"));
+        let (_, baseline) = run_cross(
+            &fixture, &ids, &snapshots, &store, 1, family, false, 0, 1, false, true,
+        );
+        let (actual, actual_outputs) = run_cross(
+            &fixture, &ids, &snapshots, &store, 1, family, true, 2, 4, true, true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("app/.mizar-cache"));
+        let (clean, clean_outputs) = run_cross(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            1,
+            family,
+            true,
+            2,
+            1,
+            false,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual.session.state(), clean.session.state());
+        assert_eq!(actual_outputs.len(), clean_outputs.len());
+        for ((actual, clean), baseline) in actual_outputs.iter().zip(&clean_outputs).zip(&baseline)
+        {
+            assert_ne!(actual.0, clean.0);
+            assert_ne!(actual.0, baseline.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+        assert_eq!(actual_outputs[1].1, baseline[1].1);
+        assert_eq!(actual_outputs[1].2, baseline[1].2);
+        assert_ne!(actual_outputs[2].2.1, baseline[2].2.1);
+        if family == "cross_leaf" {
+            assert_ne!(actual_outputs[0].2.8, baseline[0].2.8);
+            assert_ne!(actual_outputs[2].2.2, baseline[2].2.2);
+        } else {
+            assert_eq!(
+                (&actual_outputs[0].1, &actual_outputs[0].2),
+                (&baseline[0].1, &baseline[0].2)
+            );
+        }
+    }
+
+    // Target-owned core version, verifier config, and shared lock
+    // changes all miss the cross-package Frontend prefix and match clean runs.
+    for stage in [20, 21, 23] {
+        let (actual, actual_outputs) = run_cross(
+            &cross_fixture,
+            &cross_ids,
+            &cross_snapshots,
+            &cross_store,
+            1,
+            "cross_main",
+            false,
+            stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("app/.mizar-cache"));
+        let (clean, clean_outputs) = run_cross(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            1,
+            "cross_main",
+            false,
+            stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual.session.state(), clean.session.state());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+        assert_eq!(actual_outputs[1].2.1, cross_baseline[1].2.1);
+        assert_eq!(actual_outputs[2].2.1, cross_baseline[2].2.1);
+        if stage == 20 {
+            assert_ne!(actual_outputs[0].2.1, cross_baseline[0].2.1);
+        } else {
+            assert_eq!(actual_outputs[0].2.1, cross_baseline[0].2.1);
+        }
+        let current_records = store_records(&cross_store);
+        assert_ne!(
+            cross_records.get(&("Frontend".to_owned(), "\"app\":\"main\"".to_owned())),
+            current_records.get(&("Frontend".to_owned(), "\"app\":\"main\"".to_owned())),
+            "cross-package importer record did not reflect changed core context at stage {stage}"
+        );
+        cross_records = current_records;
+    }
+
+    // A second direct app dependency makes the whole importer closure
+    // inadmissible. Its Frontend record stays untouched while eligible
+    // dependency records remain available across repeated attempts.
+    let rejected_fixture = Fixture::new(b"");
+    let rejected_ids = InMemorySessionIdAllocator::new();
+    let rejected_snapshots = SnapshotRegistry::new();
+    let rejected_store = CacheStoreRoot::new(rejected_fixture.root.join("app/.mizar-cache"));
+    let _ = run_cross(
+        &rejected_fixture,
+        &rejected_ids,
+        &rejected_snapshots,
+        &rejected_store,
+        1,
+        "cross_main",
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    let importer_key = ("Frontend".to_owned(), "\"app\":\"main\"".to_owned());
+    let leaf_key = ("Frontend".to_owned(), "\"app\":\"leaf\"".to_owned());
+    let mut previous_records = store_records(&rejected_store);
+    assert!(previous_records.contains_key(&importer_key));
+    for stage in [4, 5] {
+        let (actual, actual_outputs) = run_cross(
+            &rejected_fixture,
+            &rejected_ids,
+            &rejected_snapshots,
+            &rejected_store,
+            2,
+            "cross_main",
+            false,
+            stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("app/.mizar-cache"));
+        let (clean, clean_outputs) = run_cross(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            2,
+            "cross_main",
+            false,
+            stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.status, clean.status);
+        assert_eq!(actual.session.state(), clean.session.state());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+        let current_records = store_records(&rejected_store);
+        assert_eq!(
+            previous_records.get(&importer_key),
+            current_records.get(&importer_key),
+            "inadmissible cross-package importer changed its Frontend Store records at stage {stage}"
+        );
+        assert_eq!(
+            previous_records.get(&leaf_key),
+            current_records.get(&leaf_key)
+        );
+
+        assert!(
+            current_records.contains_key(&("Frontend".to_owned(), "\"app\":\"leaf1\"".to_owned()))
         );
         previous_records = current_records;
     }

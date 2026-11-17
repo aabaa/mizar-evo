@@ -813,9 +813,6 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 if intermediate
                     && (module_entries.len() != 3
                         || module_entries
-                            .iter()
-                            .any(|entry| entry[0].as_str() != Some(module.package.as_str()))
-                        || module_entries
                             .windows(2)
                             .any(|pair| pair[0][0] == pair[1][0] && pair[0][1] == pair[1][1]))
                 {
@@ -2426,6 +2423,7 @@ pub(crate) mod imported_native_frontend_cache_tests {
 
     pub(crate) struct ImportedFixture {
         pub(crate) root: PathBuf,
+        chain_packages: bool,
     }
 
     impl ImportedFixture {
@@ -2443,7 +2441,35 @@ pub(crate) mod imported_native_frontend_cache_tests {
             .unwrap();
             fs::write(root.join("alpha/src/leaf.miz"), b"definition\nend;\n").unwrap();
             fs::write(root.join("alpha/src/twig.miz"), b"definition\nend;\n").unwrap();
-            Self { root }
+            Self {
+                root,
+                chain_packages: false,
+            }
+        }
+
+        pub(crate) fn cross_package_chain() -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "mizar-driver-cross-package-frontend-unit-{}-{}",
+                std::process::id(),
+                NEXT_ROOT.fetch_add(1, Ordering::Relaxed),
+            ));
+            fs::create_dir_all(root.join("app/src")).unwrap();
+            fs::create_dir_all(root.join("core/src")).unwrap();
+            fs::write(
+                root.join("app/src/main.miz"),
+                b"import app.mid;\ndefinition\nend;\n",
+            )
+            .unwrap();
+            fs::write(
+                root.join("app/src/mid.miz"),
+                b"import core.mid;\ndefinition\nend;\n",
+            )
+            .unwrap();
+            fs::write(root.join("core/src/mid.miz"), b"definition\nend;\n").unwrap();
+            Self {
+                root,
+                chain_packages: true,
+            }
         }
 
         pub(crate) fn capture(
@@ -2456,27 +2482,93 @@ pub(crate) mod imported_native_frontend_cache_tests {
         ) {
             let root = WorkspaceRoot::new(self.root.to_string_lossy().into_owned());
             let toolchain = ToolchainInfo::new("mizar-evo-test");
-            let workspace_packages = vec![WorkspacePackage {
-                member_path: "alpha".to_owned(),
-                manifest: parse_package_manifest(
-                    "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
-                )
-                .unwrap(),
-            }];
-            let lockfile = parse_lockfile(
-                "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n",
-            )
-            .unwrap();
-            let plan_request = PlanRequest {
-                workspace_root: root.clone(),
-                dependency_selection: DependencySelection::Normal,
-                toolchain: toolchain.clone(),
-            };
-            let mut input = DriverSubmitInput::new(
-                plan_request.clone(),
-                workspace_packages.clone(),
-                lockfile.clone(),
-                StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            let (workspace_packages, lockfile, source_layout, edges, descriptors) = if self
+                .chain_packages
+            {
+                let packages = vec![
+                    WorkspacePackage {
+                        member_path: "app".to_owned(),
+                        manifest: parse_package_manifest(
+                            "[package]\nname = \"app\"\nversion = \"0.1.0\"\n",
+                        )
+                        .unwrap(),
+                    },
+                    WorkspacePackage {
+                        member_path: "core".to_owned(),
+                        manifest: parse_package_manifest(
+                            "[package]\nname = \"core\"\nversion = \"0.1.0\"\n",
+                        )
+                        .unwrap(),
+                    },
+                ];
+                let lockfile = parse_lockfile(
+                        "schema_version = 1\n[[package]]\nname = \"app\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"app\" }\ndependencies = []\n[[package]]\nname = \"core\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"core\" }\ndependencies = []\n",
+                    )
+                    .unwrap();
+                let layout = StaticSourceLayout::new(vec![
+                    WorkspaceSourcePackage {
+                        package_id: PackageId::new("app"),
+                        files: ["main", "mid"]
+                            .into_iter()
+                            .map(|module| {
+                                WorkspaceSourceFile::new(
+                                    format!("src/{module}.miz"),
+                                    format!("{module}.miz"),
+                                )
+                            })
+                            .collect(),
+                    },
+                    WorkspaceSourcePackage {
+                        package_id: PackageId::new("core"),
+                        files: vec![WorkspaceSourceFile::new("src/mid.miz", "mid.miz")],
+                    },
+                ]);
+                let edges = vec![
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("app"), ModulePath::new("main")),
+                        ModuleId::new(PackageId::new("app"), ModulePath::new("mid")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("app"), ModulePath::new("mid")),
+                        ModuleId::new(PackageId::new("core"), ModulePath::new("mid")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                ];
+                let descriptors = [("app", "main"), ("app", "mid"), ("core", "mid")]
+                    .into_iter()
+                    .map(|(package, module)| {
+                        let path = format!("src/{module}.miz");
+                        (
+                            DiskSourceLoader::new(self.root.join(package)),
+                            SourceInput {
+                                package_id: PackageId::new(package),
+                                module_path: ModulePath::new(module),
+                                normalized_path: normalize_path(
+                                    &self.root.join(package),
+                                    Path::new(&path),
+                                )
+                                .unwrap(),
+                                edition: Edition::new("2025"),
+                                origin: SourceOriginInput::Disk { path: path.into() },
+                            },
+                        )
+                    })
+                    .collect();
+                (packages, lockfile, layout, edges, descriptors)
+            } else {
+                let packages = vec![WorkspacePackage {
+                    member_path: "alpha".to_owned(),
+                    manifest: parse_package_manifest(
+                        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+                    )
+                    .unwrap(),
+                }];
+                let lockfile = parse_lockfile(
+                        "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = []\n",
+                    )
+                    .unwrap();
+                let layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
                     package_id: PackageId::new("alpha"),
                     files: ["leaf", "main", "twig"]
                         .into_iter()
@@ -2487,20 +2579,53 @@ pub(crate) mod imported_native_frontend_cache_tests {
                             )
                         })
                         .collect(),
-                }]),
+                }]);
+                let edges = vec![
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("twig")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                ];
+                let descriptors = ["leaf", "main", "twig"]
+                    .into_iter()
+                    .map(|module| {
+                        let path = format!("src/{module}.miz");
+                        (
+                            DiskSourceLoader::new(self.root.join("alpha")),
+                            SourceInput {
+                                package_id: PackageId::new("alpha"),
+                                module_path: ModulePath::new(module),
+                                normalized_path: normalize_path(
+                                    &self.root.join("alpha"),
+                                    Path::new(&path),
+                                )
+                                .unwrap(),
+                                edition: Edition::new("2025"),
+                                origin: SourceOriginInput::Disk { path: path.into() },
+                            },
+                        )
+                    })
+                    .collect();
+                (packages, lockfile, layout, edges, descriptors)
+            };
+            let plan_request = PlanRequest {
+                workspace_root: root.clone(),
+                dependency_selection: DependencySelection::Normal,
+                toolchain: toolchain.clone(),
+            };
+            let mut input = DriverSubmitInput::new(
+                plan_request.clone(),
+                workspace_packages.clone(),
+                lockfile.clone(),
+                source_layout,
             );
-            input.dependency_overlay = ModuleDependencyOverlay::complete(vec![
-                ModuleDependencyEdge::new(
-                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
-                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
-                    ModuleDependencyKind::ImportSummary,
-                ),
-                ModuleDependencyEdge::new(
-                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
-                    ModuleId::new(PackageId::new("alpha"), ModulePath::new("twig")),
-                    ModuleDependencyKind::ImportSummary,
-                ),
-            ]);
+            input.dependency_overlay = ModuleDependencyOverlay::complete(edges);
             input.cache_policy = CacheSchedulingPolicy::Enabled;
             let plan =
                 produce_build_plan(plan_request.clone(), workspace_packages, lockfile.clone())
@@ -2525,26 +2650,6 @@ pub(crate) mod imported_native_frontend_cache_tests {
                     &plan.build_config,
                 )),
             };
-            let descriptors = ["leaf", "main", "twig"]
-                .into_iter()
-                .map(|module| {
-                    let path = format!("src/{module}.miz");
-                    (
-                        DiskSourceLoader::new(self.root.join("alpha")),
-                        SourceInput {
-                            package_id: PackageId::new("alpha"),
-                            module_path: ModulePath::new(module),
-                            normalized_path: normalize_path(
-                                &self.root.join("alpha"),
-                                Path::new(&path),
-                            )
-                            .unwrap(),
-                            edition: Edition::new("2025"),
-                            origin: SourceOriginInput::Disk { path: path.into() },
-                        },
-                    )
-                })
-                .collect();
             (
                 draft.capture_sources(ids, snapshots, descriptors).unwrap(),
                 input,
