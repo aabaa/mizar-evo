@@ -60,7 +60,7 @@ cache reuse・compiler IR access・一般 artifact emission は既存 producer/v
 | Q1 — version optionality | Architecture13 に従い新 plan/index の Version は必須。保存 version 欠落を拒否し、保存 optional identity は変えず version を合成しない。 |
 | Q2 — source optionality | Architecture13 に従い保存 source_file と item source range は必須。placeholder path/range を作らず、optional native source の有無で必須 metadata を補わない。 |
 | Q3 — package/current-build binding | caller の expected publication hash と current build snapshot から owning-package/current-workspace binding を認証し、不一致は plan を返さない。raw reader だけでは引き続きこの binding を与えない。 |
-| Q4 — Doc6 comment source | task6 が artifact projection と PreprocessedSource/frontend transport の選択を保持する。optional native Lexer 入力はどちらも選ばず、frontend 依存や attachment rule をここでは追加しない。 |
+| Q4 — Doc6 コメント供給元 | [Doc6 Q1](./comments.md#owner-q-decisions) で emission 時 Artifact 投影を承認済み。定義と実装前提が Doc7 を gate し、optional native Lexer input はコメント fallback にしない。 |
 
 ### Doc5 Acceptance Matrix
 planning/index test は六つの構造的 publication case を上限とし、下位 reader の検証 matrix は元の所有者に残す。

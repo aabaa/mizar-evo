@@ -12,6 +12,8 @@ task 10 がこの仕様を導入し、task 11 が schema、projection-input cont
 writer、validating reader、test を実装し、task 15 が provenance envelope と
 local verified-artifact metadata 用の store-level artifact-hash exclusion を確定する。
 
+source comment/map 投影定義は [comment_projection.md](./comment_projection.md) が所有し、既存 schema profile は変更しない。
+
 ## Ownership
 
 verified-artifact schema が所有するもの:

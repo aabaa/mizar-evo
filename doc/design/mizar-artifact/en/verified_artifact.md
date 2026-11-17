@@ -13,6 +13,8 @@ projection-input contract, writer, validating reader, and tests, and task 15
 finalizes the provenance envelope plus store-level artifact-hash exclusions for
 local verified-artifact metadata.
 
+Source comment/map projection definitions are owned by [comment_projection.md](./comment_projection.md); existing schema profiles remain unchanged.
+
 ## Ownership
 
 The verified-artifact schema owns:

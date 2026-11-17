@@ -1,0 +1,33 @@
+# Artifact ソースコメント投影
+正本は英語: [English companion](../en/comment_projection.md)。
+状態: 承認された emission 時投影の定義。transport・schema profile・API は未実装。本データ契約は Artifact が所有し、[VerifiedArtifact](../en/verified_artifact.md#ownership) が schema/version/hash の権限を保持する。
+
+## 所有と引き渡し
+所有者が選択した [Doc6 Q1](../../mizar-doc/en/comments.md#owner-q-decisions) は、emission 時に source 由来 comment/map を公開 artifact へ投影する。source 再読はコメント transport/fallback ではない。snippet/source link 用の optional な binding 済み source loading は既存 owner に残る。
+1. **Frontend producer:** Lexer trivia と Session [map](../../mizar-session/en/source_map.md#data-structures) に基づく[前処理](../../mizar-frontend/en/preprocess.md#comments-and-doc-comments)が、実 captured source から正確な comment text・位置・隣接性の根拠を収集する。結果は source metadata であり検証済み attachment ではない。Syntax は構文上の item/annotation 候補を、検証済み export producer は意味上の item identity を保持する。
+2. **IR projection:** [ArtifactProjectionService](../../mizar-ir/en/projection.md#ownership) は producer record、その sealed/readable な current-snapshot output lineage、対応する検証済み item record を消費する。source/module/lineage 一致を確認し、安定データのみを Artifact 所有の形へ変換して unpublished draft に入れる。source 再解析や検証済み target の捏造はしない。
+3. **Driver orchestration:** [captured-source binding](../../mizar-driver/en/frontend_adapter.md#native-captured-sources) は producer → IR → emission を通じ実 source/map を保持する。一致する snapshot/package/source と検証済み output を供給し、既存 ArtifactCommit/store/manifest 検証と atomic publication 境界を用いる。再読・代替 SourceId・公開後 sidecar で不足コメントを補わない。OpenBuffer/InternalOnly draft に package publication 資格を与えない。
+4. **Artifact reader と Doc:** validating reader は検証した enclosing artifact とともにのみ投影を供給する。Doc の[公開入力 plan](../../mizar-doc/en/doc_build.md#full-build-and-index-inputs) が選択 publication/current request に結合し、[comments](../../mizar-doc/ja/comments.md) が後で block 化・attachment・Markdown 導出を行う。Artifact/IR は Doc attachment・tag parsing・link 解決・描画を行わない。
+以上は必須 handoff であり既存の呼出 seam ではない。producer 収集/landmark、schema reader/writer/hash、IR input 検証、Driver 保持/emission、Doc 消費の実装が揃うまで Doc7 は利用できない。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
+
+## Availability と Identity
+Unavailable は profile/producer が完全な comment 投影を供給しなかった状態。Available は captured source 全体の収集が完了した状態であり、doc 行ゼロは available-empty、空の `:::` 本文は存在する行である。対応 profile は availability を明示し、legacy profile の欠落は empty ではなく unavailable とする。部分収集/不正 payload を available とせず、検証失敗後に unavailable へ格下げしない。
+enclosing artifact が module identity、正規化 package-relative source path/hash、実 captured origin/version を所有する。完全な package/version/module identity、source frame 長、record の解釈に必要な normalization/preprocessing identity を保持する。basename・FQN prefix・range・lexical hash だけで結合しない。コメントのみの変更で lexical reuse hash が同じでも source hash/投影は変わり得る。
+publication binding は payload の外で、選択 manifest/publication hash、完全 module entry と source identity により検証済み enclosing artifact を結合する。自分の最終 publication/artifact digest を循環参照として埋め込まない。captured SourceId は既存 provenance 方針の非可搬 association であり、安定座標 key・registry membership・現在性の証明ではない。
+item landmark は source 隣接候補を元の検証済み export origin/FQN と完全な module/publication 文脈に対応させる。producer は association に必要な実 item/付属 annotation 境界を供給し、formula range や export 名一致で代用しない。検証済み target 情報の欠落/衝突は Doc 診断用に未解決で保つ。label・raw AST/IR handle・storage generation・local absolute path・worker identity を追加しない。
+
+## Text・座標・隣接性
+Available data は marker・空白・空本文を含む順序付き raw `:::` lexeme、行境界、正確な source span を保持する。通常 comment は文書本文ではないが、その位置と間の source/trivia/annotation 境界を、source 再読なしで隣接性を判定できるだけ保持する。物理空行と item 付属/standalone annotation の区別を保持し、収集の列挙順で source 順を置換しない。投影時に module/item attachment を先に決めず、module-leading trivia/複数 block の意味も決めない。
+座標 frame は元の captured Disk bytes/OpenBuffer text、normalized loaded source、preprocessed lexical text、後の Markdown を明示する。range は宣言 frame の半開 byte offset とし、長さ/UTF8 境界を整合させる。各投影行・gap・target landmark に必要な可搬 loading/preprocess map を保持し、BOM 除去・改行正規化・削除 comment segment を含める。Session の runtime map/bridge handle は serialize しない。
+lexical → loaded → original は同じ binding 済み source 内でのみ合成する。exact mapping・composite anchor・degraded/generated 位置を区別し、primary anchor を正確な source slice/隣接性の証明にしない。coverage 欠落・異なる frame・範囲外 span・長さ/hash 不整合は該当 input を拒否し、exact location を捏造しない。投影が available でも全 lexical query に exact authored range があるとは限らない。
+emission 時に実 source producer が captured text と text slice・frame 長・UTF8 境界・map 対応を照合する。reader は serialize された構造・bounds・frame/source binding と payload から検査可能な map 整合性を確認する。hash は選択 publication を認証し、source 導出を独立に証明しない。正しく hash 済みの caller-created record も実 producer output/検証済み attachment にはならない。
+[Q3 本文導出と逆 map](../../mizar-doc/ja/comments.md#markdown-と構造化タグ) は Doc が所有する。既存 Frontend `raw_body` は marker のみ除くため導出済み本文と誤認しない。Markdown/tag 解析結果は本投影へ出力しない。
+
+## 互換性・Hash・拒否
+本定義は normal1.0/1.1/1.2 や Builtin2.0 をその場で拡張しない。既存 field・bytes/hash projection・拒否順・version bound を保ち、これらは投影コメントを供給しない。後の実装契約が別の対応 profile/version と正確な field/API encoding を指定してから data を追加する。未対応 version・未知/必須欠落 field は error とし、reader 失敗後に別 profile を試したり source から回収したりしない。
+対応 profile 内では availability、raw text、順序付き span/landmark、安定 frame/map、source/origin binding を implementation/full Artifact hash に含める。これらは公開 local metadata であり importer-visible 意味 interface field ではないため、同一 enclosing version では既存 export/dependency interface 投影を維持する。既存 version framing/local exclusion を保ち、comment 専用除外で内容を隠さない。schema version 間や semantic export 変更時の interface hash 同一性は保証しない。
+canonical serialization は source/line/segment 順・semantic vector 順と既存 object-key 順を保つ。worker・map insertion・input 列挙順で同等 output を変えない。同じ投影 source occurrence の衝突/重複 record を拒否し、無関係 item/anchor 全体の unique-range 規則を追加しない。
+version/schema/path/hash/source/module/provenance 不一致、不正 map、producer lineage 不整合は下位 owner の integrity refusal のままとし、利用可能 comment payload/部分 publication を返さない。有効な unavailable legacy input でも意味 metadata の Doc page は生成できる。orphan/曖昧 attachment、tag/Markdown 表示 warning は Doc に属し text を保持するが、integrity failure を隠さず proof validity・reuse・抽出受理を変えない。
+
+## 残る Gate
+Q1 の transport 所有と data invariant はここで定義し、実装は未完了とする。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。

@@ -60,7 +60,7 @@ The owner approved Q1–Q3 as option ①. These decisions govern the new represe
 | Q1 — version optionality | Required Version in the new plan/index, following Architecture13. Refuse missing stored versions; retain stored optional identities unchanged and synthesize no version. |
 | Q2 — source optionality | Required stored source_file and item source range, following Architecture13; no placeholder path/range. Optional native source availability does not supply missing required metadata. |
 | Q3 — package/current-build binding | Authenticate owning-package/current-workspace binding from the caller's expected publication hash and current build snapshot; mismatch yields no plan. Raw readers alone still grant no such binding. |
-| Q4 — Doc6 comment source | Task6 retains artifact-projected comments versus PreprocessedSource/frontend transport. Optional native Lexer input selects neither; no frontend dependency or attachment rule is chosen here. |
+| Q4 — Doc6 comment source | Approved through [Doc6 Q1](./comments.md#owner-q-decisions): emission-time Artifact projection. Its definitions and implemented prerequisites gate Doc7; optional native Lexer input is not comment fallback. |
 
 ### Doc5 Acceptance Matrix
 Six structural publication cases bound planning/index tests; lower reader validation matrices remain their owners' responsibility.
