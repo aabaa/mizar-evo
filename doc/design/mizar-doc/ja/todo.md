@@ -22,7 +22,7 @@ internal 05 を精緻化する。
 |---|---|---|---|
 | artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [~] |
-| comments | `comments.md`（task 6） | `src/comments.rs` | [ ] |
+| comments | [comments.md](./comments.md)（task6 提案、承認待ち） | `src/comments.rs` | [~] |
 | links | `links.md`（task 9） | `src/links.rs` | [ ] |
 | math | `math.md`（task 11） | `src/math.rs` | [ ] |
 | render | `render.md`（task 13） | `src/render.rs` | [ ] |
@@ -63,11 +63,7 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
   レンダリングと抽出をここに統合し、現在の architecture/internal docs は
   `mizar-doc` module 名を使う。抽出が大きく育った場合は、その時点で
   分割判断を提起しトップレベルに登録する。
-- **ドキュメントコメントの供給源: 未解決。task 6 で解決する。**
-  ドキュメントコメントが phase 16 に届く方法を決める: emission 時に
-  artifact へ射影する（既定候補。消費 phase の規則に忠実）か、
-  `mizar-frontend` 経由で `PreprocessedSource` から再読込するか。この
-  決定はこの crate が frontend 依存を持つかどうかを定める。task34 は optional native input に既存 identity-free Lexer 前処理を選ぶだけで、完全 task6 と artifact/bundle transport は未解決に保つ。
+- **ドキュメントコメントの供給源: owner 判断待ち。** task6 [提案 Q1](./comments.md#owner-q-decisions) が Doc4 Q4 を保持し、artifact 投影/source 再取得のいずれも選ばない。task34 は raw native lexical input のみである。Doc7 は承認と source/attachment 定義の完成を待つ。
 - **最初の抽出ターゲット: 未解決。task 21 で解決する。** まず 1 つの
   ターゲットバックエンド、その後一般化（アーキテクチャ 13 の採用方針）。
   最初のターゲット言語を選び、決定を `extract_backend.md` に記録する。
@@ -118,22 +114,22 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
 
 ### ドキュメントの strand
 
-6. **仕様: `comments.md`。** [ ]
+6. **仕様: `comments.md`。** [~]
+   - [DOC6-COMMENTS-DEFINITION](../../task_contracts/ja/DOC6-COMMENTS-DEFINITION.md): 英日提案の Q-decision は owner 承認待ち。実装は含まない。
    - ドキュメントコメントの仕様を執筆する（英語と日本語、コードなし）:
-     attachment の対象、Markdown サブセット、診断ポリシー（緩やかな
-     劣化）、ドキュメントコメント供給源の決定。
+     attachment の対象、Markdown surface、診断ポリシー（緩やかな
+     劣化）、保持されたコメント供給源の選択を含む owner Q-decision。
    - 依存: 4。仕様: アーキテクチャ 13「Step 2」、
      [24.documentation_generation.md](../../../spec/ja/24.documentation_generation.md)。
 
 7. **ドキュメントコメントの attachment。** [ ]
-   - 決定された供給源に従い、ドキュメントコメントを文書化対象の item に
-     取り付ける。
+   - owner 承認と [comments.md](./comments.md) の選択 source/attachment 定義の完成後に、コメントを文書化対象 item へ取り付ける。
    - テスト: item 種別ごとの attachment フィクスチャ。取り付け先のない
      コメントは診断され、黙って捨てられない。
    - 依存: 5、6。仕様: `comments.md`。
 
 8. **Markdown の構文解析。** [ ]
-   - 文書化された Markdown サブセットを、緩やかな劣化と表示診断つきで
+   - body/tag/Markdown の Q-decision と定義の完成後、文書化された Markdown surface を緩やかな劣化と表示診断つきで
      構文解析する。
    - テスト: サブセットのフィクスチャ。不正な Markdown がビルドを中断
      せずに劣化する。

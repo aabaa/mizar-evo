@@ -22,7 +22,7 @@ crate refines architecture 13 and internal 05.
 |---|---|---|---|
 | artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [~] |
-| comments | `comments.md` (task 6) | `src/comments.rs` | [ ] |
+| comments | [comments.md](./comments.md) (task 6 proposal; approval pending) | `src/comments.rs` | [~] |
 | links | `links.md` (task 9) | `src/links.rs` | [ ] |
 | math | `math.md` (task 11) | `src/math.rs` | [ ] |
 | render | `render.md` (task 13) | `src/render.rs` | [ ] |
@@ -62,11 +62,7 @@ internal: [05](../../internal/en/05.documentation_extraction.md).
   and extraction here, and architecture/internal docs now use `mizar-doc`
   module names. If extraction grows large, a split decision will be raised and
   registered at the top level then.
-- **Doc-comment source: open, resolved by task 6.** Decide how doc comments
-  reach phase 16: projected into artifacts at emission (default candidate,
-  honoring the consumer-phase rule) or re-read from `PreprocessedSource`
-  via `mizar-frontend`. The decision sets whether this crate gains a
-  frontend dependency. Task34 separately selects existing identity-free Lexer preprocessing for optional native inputs; it does not resolve full task6 or artifact/bundle transport.
+- **Doc-comment source: owner decision pending.** Task6 [proposal Q1](./comments.md#owner-q-decisions) preserves Doc4 Q4; neither artifact projection nor source recovery is selected. Task34 remains raw native lexical input only. Doc7 waits for approval and completed source/attachment definitions.
 - **First extraction target: open, resolved by task 21.** One target
   backend first, then generalize (architecture 13 adopted approach); choose
   the first target language and record the decision in
@@ -120,21 +116,22 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
 
 ### Documentation strand
 
-6. **Spec: `comments.md`.** [ ]
+6. **Spec: `comments.md`.** [~]
+   - [DOC6-COMMENTS-DEFINITION](../../task_contracts/en/DOC6-COMMENTS-DEFINITION.md): paired proposal; Q-decisions await owner approval, with no implementation.
    - Write the doc-comment spec (English and Japanese, no code):
-     attachment targets, Markdown subset, diagnostics policy (degrade
-     gracefully), and the doc-comment-source decision.
+     attachment targets, Markdown surface, diagnostics policy (degrade
+     gracefully), and owner Q-decisions including the preserved doc-comment-source choice.
    - Deps: 4. Spec: architecture 13 "Step 2",
      [24.documentation_generation.md](../../../spec/en/24.documentation_generation.md).
 
 7. **Doc-comment attachment.** [ ]
-   - Attach doc comments to documented items per the decided source.
+   - Attach doc comments to documented items only after owner approval and completion of the selected source/attachment definitions in [comments.md](./comments.md).
    - Tests: attachment fixtures per item kind; unattached comments
      diagnosed, not dropped silently.
    - Deps: 5, 6. Spec: `comments.md`.
 
 8. **Markdown parsing.** [ ]
-   - Parse the documented Markdown subset with graceful degradation and
+   - After the body/tag/Markdown Q-decisions and definitions are complete, parse the documented Markdown surface with graceful degradation and
      presentation diagnostics.
    - Tests: subset fixtures; malformed Markdown degrades without aborting
      the build.
