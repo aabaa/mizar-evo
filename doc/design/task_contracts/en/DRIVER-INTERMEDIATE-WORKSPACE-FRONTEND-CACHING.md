@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/DRIVER-INTERMEDIATE-WORKSPACE-FRONTEND-CACHING.md).
 Status: frozen implementation scope. Tier: full (cache-admission boundary expansion).
 Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md#task-index). Consumer: [STEP6C](STEP6C-REAL-SERVICE-EQUIVALENCE.md), without completion credit.
-Dependencies: [approved proposal](../../mizar-driver/en/intermediate_workspace_frontend_caching.md), owner Q1–Q5 all A on 2026-11-17; [predecessor](DRIVER-MULTIPLE-DIRECT-LEAF-FRONTEND-CACHING.md). Ready for implementation.
+Dependencies: [approved proposal](../../mizar-driver/en/intermediate_workspace_frontend_caching.md), owner Q1–Q5 all A on 2026-11-17; [predecessor](DRIVER-MULTIPLE-DIRECT-LEAF-FRONTEND-CACHING.md).
 
 ## Authority and scope
 
@@ -22,10 +22,10 @@ Writes: registry.rs, frontend_adapter/{source,frontend}.rs, existing driver.rs/d
 
 Six-family cap; extra cases require authority. Reuse proposal-named genuine intermediate/imported controls and affected owner matrices:
 1. Automatic cold writes; warm/fresh resident/blob and mixed Completed/CacheHit ancestry equal independent separate-workspace/registry/empty-Store clean full outputs, keys/maps/sides/direct lineage/diagnostics/outcomes, distinct SourceIds and reordered scheduling.
-2. A lexical edits change M tokens despite unchanged M exports/I environment and conservatively invalidate I; independent M/I/provenance edits miss; edited warm equals independent clean. Local IDs/order preserve keys; retain existing parser/config/runtime controls.
+2. A lexical edits change M tokens despite unchanged M exports/I environment and conservatively invalidate I; independent M/I/provenance edits miss. Pattern amendment, predecessor freeze `909528b94` / implementation `47298620d`: append fresh edited-state warm recaptures for existing same-package A-lexical, M-export, I-source, duplicate-count, alias and selected-branch edits under worker1/canonical and worker4/reverse. Compare complete existing payloads with independent clean outputs and distinct SourceIds; require all three SourceLoad/Frontend hits without TaskStarted. Preserve local-ID/order and parser/config/runtime controls.
 3. Otherwise viable records: missing/surplus/duplicate/swapped/foreign/stale/collected source/ancestor/summary/provider/edge evidence and coherent hash-rewritten corruption refuse.
 4. Staggered readiness/mixed parents, ancestor failure/cancellation, supersession/publisher replacement during preparation/I/O/handoff, partial acquisition: no premature lookup, complete retention/cleanup.
 5. Inadmissible ancestor suppresses whole I hit/write; independent eligible writes stand. Unsupported profiles/Store errors preserve clean ordinary outcomes, conflicts, qualification/aliases and error precedence.
 6. Legacy zero/one/multiple-leaf canonical bytes, retained/persistent/NoKey and deferrals remain intact.
-Reviews: specification before freeze; sufficiency, precision, volume/scope and final consistency. Freeze: both lint_policy suites, links/fragments/parity/diff. Implementation: fmt, Clippy all-targets/all-features denied warnings, both lint_policy suites, Driver/Build/Frontend/Resolver/Cache/IR owner tests, short proof-verification E2E; changed cache/lifecycle and resolver edit-clean obligations immediately. Unchanged evidence heavy matrices defer to cadence. Full cargo test only on named cadence trigger.
+Amendment: pattern tier, test-only in tests/source_load/native_disk.rs; combined implementation/test-sufficiency and volume/scope reviews. Freeze: both lint_policy suites, links/fragments/parity/diff. Implementation: fmt, Clippy all-targets/all-features denied warnings, both lint_policy suites, Driver/Build/Frontend/Cache tests, proof-verification E2E. Unchanged Resolver/evidence heavy matrices defer to cadence. Full cargo test only on named cadence trigger.
 Exit: freeze then implementation local commits, one changed task, push:no; contract ≤60 lines/660 words, documentation ≤200 added lines. No coverage-audit boundary change.
