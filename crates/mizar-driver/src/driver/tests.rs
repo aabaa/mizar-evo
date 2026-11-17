@@ -1,7 +1,7 @@
 use mizar_build::cancel::CancellationPolicy;
 use mizar_session::{
-    DependencyArtifactRef, Hash, InMemorySessionIdAllocator, SnapshotRegistry, ToolchainInfo,
-    WorkspaceRoot,
+    DependencyArtifactRef, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
+    SnapshotRegistry, ToolchainInfo, WorkspaceRoot,
 };
 
 use super::*;
@@ -183,7 +183,7 @@ fn request_with_lane_generation(
 
 #[cfg(test)]
 mod imported_cache_lifecycle_tests {
-    use std::sync::Arc;
+    use std::{fs, sync::Arc};
 
     use super::*;
     use crate::{
@@ -194,8 +194,11 @@ mod imported_cache_lifecycle_tests {
     use mizar_build::{
         cache_seam::CacheSchedulingOutcome,
         cancel::{CancellationReason, CancellationSignal},
+        module_index::ModuleId,
         scheduler::{SchedulerDispatchTask, SchedulerTaskDispatcher},
-        task_graph::{TaskKind, WorkUnit},
+        task_graph::{
+            ModuleDependencyEdge, ModuleDependencyKind, ModuleDependencyOverlay, TaskKind, WorkUnit,
+        },
     };
     use mizar_cache::cache_store::CacheStoreRoot;
     use mizar_ir::{
@@ -219,11 +222,37 @@ mod imported_cache_lifecycle_tests {
     }
 
     impl CacheCase {
-        fn new() -> Self {
+        fn new(intermediate: bool) -> Self {
             let fixture = ImportedFixture::new();
+            if intermediate {
+                fs::write(
+                    fixture.root.join("alpha/src/main.miz"),
+                    b"import alpha.leaf;\ndefinition\nend;\n",
+                )
+                .unwrap();
+                fs::write(
+                    fixture.root.join("alpha/src/leaf.miz"),
+                    b"import alpha.twig;\ndefinition\nend;\n",
+                )
+                .unwrap();
+            }
             let ids = InMemorySessionIdAllocator::new();
             let snapshots = SnapshotRegistry::new();
-            let (session, input) = fixture.capture(&ids, &snapshots);
+            let (session, mut input) = fixture.capture(&ids, &snapshots);
+            if intermediate {
+                input.dependency_overlay = ModuleDependencyOverlay::complete(vec![
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("main")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                    ModuleDependencyEdge::new(
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("leaf")),
+                        ModuleId::new(PackageId::new("alpha"), ModulePath::new("twig")),
+                        ModuleDependencyKind::ImportSummary,
+                    ),
+                ]);
+            }
             let snapshot = session.captured().snapshot().id;
             let policy = mizar_proof::policy::VerifierPolicy::release();
             let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
@@ -359,28 +388,32 @@ mod imported_cache_lifecycle_tests {
         }
 
         fn importer_cache_key(&self) -> mizar_cache::cache_key::CacheKey {
+            self.importer_cache_key_with_order(false)
+        }
+
+        fn importer_cache_key_with_order(&self, reverse: bool) -> mizar_cache::cache_key::CacheKey {
             use mizar_frontend::{
                 orchestration::FrontendOutput,
                 parsing::{MizarParserSeam, ParserSeam},
             };
 
-            let snapshot = self.submission.session.captured().snapshot();
             let run = self.submission.scheduler_run.as_ref().unwrap();
-            let get = |kind, module: &str| {
-                let task = self.task(kind, module);
-                run.phase_results[&task.id][0].output_refs[0].clone()
-            };
-            let own_source = get(TaskKind::SourceLoad, "main");
-            let leaf_frontend = get(TaskKind::Frontend, "leaf");
-            let twig_frontend = get(TaskKind::Frontend, "twig");
-            let leaf_source = get(TaskKind::SourceLoad, "leaf");
-            let twig_source = get(TaskKind::SourceLoad, "twig");
-            let parents = [own_source, leaf_frontend, twig_frontend]
+            let snapshot = self.submission.session.captured().snapshot();
+            let graph = self.submission.task_graph.as_ref().unwrap();
+            let importer = self.task(TaskKind::Frontend, "main");
+            let (mut direct, mut supplemental) =
+                native_frontend_cache_parents(importer, graph, &run.phase_results)
+                    .expect("genuine imported closure supplies cache parents");
+            if reverse {
+                direct.reverse();
+                supplemental.reverse();
+            }
+            let parents = direct
                 .into_iter()
                 .map(|parent| {
                     SealedParentOutputHandle::from_published_output(
                         &self.publisher,
-                        snapshot.id,
+                        self.submission.session.captured().snapshot().id,
                         parent,
                     )
                     .unwrap()
@@ -392,7 +425,7 @@ mod imported_cache_lifecycle_tests {
                 .find(|version| version.module_path.as_str() == "main")
                 .unwrap();
             let input = crate::registry::PhaseInput::new(
-                self.task(TaskKind::Frontend, "main").unit.clone(),
+                importer.unit.clone(),
                 PhaseDispatchInputBundle::new(
                     snapshot.id,
                     crate::frontend_adapter::source_input_hash(main_version),
@@ -414,7 +447,7 @@ mod imported_cache_lifecycle_tests {
                 .publisher
                 .storage()
                 .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
-                    &get(TaskKind::Frontend, "main"),
+                    &run.phase_results[&importer.id][0].output_refs[0],
                     &OutputKind::new("FrontendOutput"),
                 )
                 .unwrap();
@@ -425,7 +458,7 @@ mod imported_cache_lifecycle_tests {
                     &adapter,
                     handle,
                     service,
-                    &[leaf_source, twig_source],
+                    &supplemental,
                 )
                 .unwrap()
             else {
@@ -437,7 +470,7 @@ mod imported_cache_lifecycle_tests {
 
     #[test]
     fn multi_leaf_cache_hit_retains_every_real_parent_until_scheduler_consumption() {
-        let case = CacheCase::new();
+        let case = CacheCase::new(false);
         let mut dispatcher = case.dispatcher();
         assert!(matches!(
             case.invoke(&mut dispatcher),
@@ -461,7 +494,7 @@ mod imported_cache_lifecycle_tests {
 
     #[test]
     fn multi_leaf_cache_hit_releases_partial_acquisition_when_later_parent_is_collected() {
-        let case = CacheCase::new();
+        let case = CacheCase::new(false);
         let run = case.submission.scheduler_run.as_ref().unwrap();
         let missing_later_parent =
             run.phase_results[&case.task(TaskKind::SourceLoad, "twig").id][0].output_refs[0]
@@ -492,9 +525,603 @@ mod imported_cache_lifecycle_tests {
     }
 
     #[test]
+    fn intermediate_chain_cache_hit_retains_every_ancestor_and_releases_partial_acquisition() {
+        let case = CacheCase::new(true);
+        let mut dispatcher = case.dispatcher();
+        assert!(matches!(
+            case.invoke(&mut dispatcher),
+            Some(CacheSchedulingOutcome::ValidatedHit(_))
+        ));
+        assert_eq!(dispatcher.cache_owners.len(), 6);
+        let retained = case.publisher.storage().collect(CollectInput {
+            snapshot: case.submission.session.captured().snapshot().id,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(retained.retained_outputs, 6);
+        for (_, output, owner) in &dispatcher.cache_owners {
+            case.publisher.storage().release(*output, owner).unwrap();
+        }
+        assert_eq!(
+            case.publisher
+                .storage()
+                .collect(CollectInput {
+                    snapshot: case.submission.session.captured().snapshot().id,
+                    protected_outputs: Vec::new(),
+                })
+                .retained_outputs,
+            0
+        );
+
+        for (kind, module) in [
+            (TaskKind::SourceLoad, "main"),
+            (TaskKind::Frontend, "leaf"),
+            (TaskKind::SourceLoad, "leaf"),
+            (TaskKind::Frontend, "twig"),
+            (TaskKind::SourceLoad, "twig"),
+        ] {
+            let missing = case
+                .submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results[&case.task(kind, module).id][0]
+                .output_refs[0]
+                .output();
+            let protected = case
+                .submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| result.output_refs.iter().map(|output| output.output()))
+                .filter(|output| *output != missing)
+                .collect();
+            case.publisher.storage().collect(CollectInput {
+                snapshot: case.submission.session.captured().snapshot().id,
+                protected_outputs: protected,
+            });
+            let mut dispatcher = case.dispatcher();
+            assert!(case.invoke(&mut dispatcher).is_none(), "{kind:?} {module}");
+            assert!(dispatcher.cache_owners.is_empty(), "{kind:?} {module}");
+            assert_eq!(
+                case.publisher
+                    .storage()
+                    .collect(CollectInput {
+                        snapshot: case.submission.session.captured().snapshot().id,
+                        protected_outputs: Vec::new(),
+                    })
+                    .retained_outputs,
+                0,
+                "partial owners are released after {kind:?} {module} is missing"
+            );
+        }
+    }
+
+    #[test]
+    fn intermediate_chain_cache_requires_each_ancestor_result_to_be_accepted() {
+        let case = CacheCase::new(true);
+        let mut dispatcher = case.dispatcher();
+        let middle = case.task(TaskKind::Frontend, "leaf").id.clone();
+        let ancestor = case.task(TaskKind::Frontend, "twig").id.clone();
+        let middle_result = dispatcher.phase_results.remove(&middle).unwrap();
+        let ancestor_result = dispatcher.phase_results.remove(&ancestor).unwrap();
+        assert!(case.invoke(&mut dispatcher).is_none());
+        assert!(dispatcher.cache_owners.is_empty());
+        dispatcher.phase_results.insert(ancestor, ancestor_result);
+        assert!(case.invoke(&mut dispatcher).is_none());
+        assert!(dispatcher.cache_owners.is_empty());
+        dispatcher.phase_results.insert(middle, middle_result);
+        assert!(matches!(
+            case.invoke(&mut dispatcher),
+            Some(CacheSchedulingOutcome::ValidatedHit(_))
+        ));
+        drop(dispatcher);
+        for (kind, module) in [
+            (TaskKind::Frontend, "leaf"),
+            (TaskKind::SourceLoad, "leaf"),
+            (TaskKind::Frontend, "twig"),
+            (TaskKind::SourceLoad, "twig"),
+        ] {
+            let case = CacheCase::new(true);
+            let mut dispatcher = case.dispatcher();
+            let result = &mut dispatcher
+                .phase_results
+                .get_mut(&case.task(kind, module).id)
+                .unwrap()[0];
+            result.status = PhaseStatus::Recoverable;
+            assert!(case.invoke(&mut dispatcher).is_none(), "{kind:?} {module}");
+            assert!(dispatcher.cache_owners.is_empty());
+            assert!(
+                !dispatcher
+                    .phase_results
+                    .contains_key(&case.task(TaskKind::Frontend, "main").id)
+            );
+        }
+
+        let case = CacheCase::new(true);
+        let mut dispatcher = case.dispatcher();
+        let middle = case.task(TaskKind::Frontend, "leaf").id.clone();
+        let ancestor = case.task(TaskKind::Frontend, "twig").id.clone();
+        let wrong = dispatcher.phase_results[&ancestor][0].output_refs[0].clone();
+        dispatcher.phase_results.get_mut(&middle).unwrap()[0].output_refs[0] = wrong;
+        assert!(case.invoke(&mut dispatcher).is_none());
+        assert!(dispatcher.cache_owners.is_empty());
+        assert!(
+            !dispatcher
+                .phase_results
+                .contains_key(&case.task(TaskKind::Frontend, "main").id)
+        );
+
+        for status in [PhaseStatus::Fatal, PhaseStatus::Cancelled] {
+            let case = CacheCase::new(true);
+            let mut dispatcher = case.dispatcher();
+            dispatcher
+                .phase_results
+                .get_mut(&case.task(TaskKind::Frontend, "twig").id)
+                .unwrap()[0]
+                .status = status;
+            assert!(
+                case.invoke(&mut dispatcher).is_none(),
+                "{status:?} ancestor"
+            );
+            assert!(dispatcher.cache_owners.is_empty());
+            assert!(
+                !dispatcher
+                    .phase_results
+                    .contains_key(&case.task(TaskKind::Frontend, "main").id)
+            );
+        }
+
+        let case = CacheCase::new(true);
+        let mut dispatcher = case.dispatcher();
+        let middle = case.task(TaskKind::SourceLoad, "leaf").id.clone();
+        let ancestor = case.task(TaskKind::SourceLoad, "twig").id.clone();
+        let wrong = dispatcher.phase_results[&ancestor][0].output_refs[0].clone();
+        dispatcher.phase_results.get_mut(&middle).unwrap()[0].output_refs[0] = wrong;
+        assert!(case.invoke(&mut dispatcher).is_none());
+        assert!(dispatcher.cache_owners.is_empty());
+        assert!(
+            !dispatcher
+                .phase_results
+                .contains_key(&case.task(TaskKind::Frontend, "main").id)
+        );
+    }
+
+    #[test]
+    fn intermediate_chain_cache_rejects_coherently_rehashed_corrupt_payload() {
+        use mizar_cache::cache_store::{CacheLookupOutcome, CacheRecord};
+
+        let case = CacheCase::new(true);
+        let key = case.importer_cache_key();
+        let CacheLookupOutcome::Hit(record) = case.store.lookup(&key) else {
+            panic!("cold chain run writes a genuine intermediate record");
+        };
+        let mut corrupted = record.output.clone();
+        *corrupted.last_mut().expect("cache payload is nonempty") ^= 0x01;
+        fs::remove_file(case.store.record_path(&key)).unwrap();
+        case.store
+            .insert(&CacheRecord::new_inline(
+                key,
+                record.header.produced_by.clone(),
+                corrupted,
+            ))
+            .unwrap();
+        let CacheLookupOutcome::Hit(rewritten) = case.store.lookup(&case.importer_cache_key())
+        else {
+            panic!("rewritten corrupt record remains addressable");
+        };
+        assert_ne!(rewritten.output, record.output);
+
+        let mut dispatcher = case.dispatcher();
+        assert!(case.invoke(&mut dispatcher).is_none());
+        assert!(dispatcher.cache_owners.is_empty());
+        assert!(
+            !dispatcher
+                .phase_results
+                .contains_key(&case.task(TaskKind::Frontend, "main").id)
+        );
+    }
+
+    #[test]
+    fn native_frontend_closure_keys_ignore_parent_permutation() {
+        let case = CacheCase::new(true);
+        let canonical = case.importer_cache_key();
+        let reversed = case.importer_cache_key_with_order(true);
+        assert_eq!(canonical, reversed);
+    }
+
+    #[test]
+    fn intermediate_chain_refuses_incomplete_duplicate_and_foreign_closure_for_reads_and_writes() {
+        use mizar_frontend::{
+            orchestration::FrontendOutput,
+            parsing::{MizarParserSeam, ParserSeam},
+        };
+        use mizar_ir::cache_adapter::IrCacheAdapter;
+        let case = CacheCase::new(true);
+        let foreign = CacheCase::new(true);
+        let snapshot = case.submission.session.captured().snapshot();
+        let graph = case.submission.task_graph.as_ref().unwrap();
+        let run = case.submission.scheduler_run.as_ref().unwrap();
+        let task = case.task(TaskKind::Frontend, "main");
+        let (direct, supplemental) =
+            native_frontend_cache_parents(task, graph, &run.phase_results).unwrap();
+        let version = snapshot
+            .source_versions
+            .iter()
+            .find(|version| version.module_path.as_str() == "main")
+            .unwrap();
+        let input = crate::registry::PhaseInput::new(
+            task.unit.clone(),
+            PhaseDispatchInputBundle::new(
+                snapshot.id,
+                crate::frontend_adapter::source_input_hash(version),
+                Vec::new(),
+                direct
+                    .iter()
+                    .map(|parent| {
+                        SealedParentOutputHandle::from_published_output(
+                            &case.publisher,
+                            snapshot.id,
+                            parent.clone(),
+                        )
+                        .unwrap()
+                    })
+                    .collect(),
+            )
+            .unwrap(),
+        );
+        let inputs = SourceLoadInputs {
+            captured: Some(case.submission.session.captured()),
+            snapshot,
+            build_plan: case.submission.build_plan.as_ref().unwrap(),
+            module_index: case.submission.module_index.as_ref().unwrap(),
+            allocator: &case.ids,
+        };
+        let adapter = IrCacheAdapter::new(case.publisher.clone());
+        let service = case.driver.registry().native_frontend_service().unwrap();
+        let handle = case
+            .publisher
+            .storage()
+            .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                &run.phase_results[&task.id][0].output_refs[0],
+                &OutputKind::new("FrontendOutput"),
+            )
+            .unwrap();
+        assert!(matches!(
+            case.store.lookup(&case.importer_cache_key()),
+            mizar_cache::cache_store::CacheLookupOutcome::Hit(_)
+        ));
+        for index in 0..supplemental.len() {
+            let mut missing = supplemental.clone();
+            missing.remove(index);
+            let mut duplicate = supplemental.clone();
+            duplicate.push(supplemental[index].clone());
+            let mut wrong = supplemental.clone();
+            wrong[index] = direct[0].clone();
+            let mut foreign_parents = supplemental.clone();
+            foreign_parents[index] = foreign
+                .submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .find(|output| {
+                    output.phase() == supplemental[index].phase()
+                        && output.work_unit() == supplemental[index].work_unit()
+                })
+                .unwrap()
+                .clone();
+            for invalid in [missing, duplicate, wrong, foreign_parents] {
+                assert!(
+                    inputs
+                        .rehydrate_native_disk_frontend_cache_with_dependencies(
+                            &input,
+                            &case.policy,
+                            &case.store,
+                            &adapter,
+                            service,
+                            &invalid
+                        )
+                        .is_err()
+                );
+                assert!(
+                    inputs
+                        .encode_native_disk_frontend_cache_record_with_frontend(
+                            &input,
+                            &case.policy,
+                            &adapter,
+                            handle.clone(),
+                            service,
+                            &invalid
+                        )
+                        .is_err()
+                );
+                assert_eq!(adapter.successful_rehydrations(), 0);
+            }
+        }
+        // The complete genuine set still prepares the same record after every refusal.
+        assert!(matches!(
+            inputs
+                .encode_native_disk_frontend_cache_record_with_frontend(
+                    &input,
+                    &case.policy,
+                    &adapter,
+                    handle,
+                    service,
+                    &supplemental
+                )
+                .unwrap(),
+            mizar_ir::cache_adapter::EncodeCacheRecordOutcome::Encoded(_)
+        ));
+    }
+
+    #[test]
+    fn intermediate_chain_rejects_ancestor_with_forged_semantic_commitment() {
+        use mizar_frontend::{
+            orchestration::FrontendOutput,
+            parsing::{MizarParserSeam, ParserSeam},
+            source::SourceUnit,
+        };
+        use mizar_ir::{
+            publisher::{OutputOrigin, PublicationTarget, PublishOutputInput},
+            storage::{AnyPhaseOutputRef, BlobDecodeError, BlobDecoder, SchemaVersion},
+        };
+
+        let case = CacheCase::new(true);
+        let captured = case.submission.session.captured();
+        let snapshot = captured.snapshot();
+        let run = case.submission.scheduler_run.as_ref().unwrap();
+        let graph = case.submission.task_graph.as_ref().unwrap();
+        for attack in [
+            None,
+            Some((TaskKind::SourceLoad, "twig")),
+            Some((TaskKind::Frontend, "twig")),
+            Some((TaskKind::SourceLoad, "leaf")),
+            Some((TaskKind::Frontend, "leaf")),
+        ] {
+            let publisher = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::with_policy(StoragePolicy::default())),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            publisher.register_current_snapshot(snapshot.id);
+            publisher.allow_work_unit(AllowedWorkUnit::new(
+                IrPhase::new("Frontend"),
+                OutputKind::new("FrontendOutput"),
+                IrUnit::new(format!("{:?}:{:?}", "alpha", "main")),
+            ));
+            let mut copied: Vec<(mizar_ir::identity::PhaseOutputId, AnyPhaseOutputRef)> =
+                Vec::new();
+            let mut results = run.phase_results.clone();
+            for (kind, module) in [
+                (TaskKind::SourceLoad, "twig"),
+                (TaskKind::Frontend, "twig"),
+                (TaskKind::SourceLoad, "leaf"),
+                (TaskKind::Frontend, "leaf"),
+                (TaskKind::SourceLoad, "main"),
+            ] {
+                let task = case.task(kind, module);
+                let original = &run.phase_results[&task.id][0].output_refs[0];
+                publisher.allow_work_unit(AllowedWorkUnit::new(
+                    original.phase().clone(),
+                    original.output_kind().clone(),
+                    original.work_unit().clone(),
+                ));
+                let parents = original
+                    .lineage()
+                    .parents
+                    .iter()
+                    .map(|id| copied.iter().find(|(old, _)| old == id).unwrap().1.clone())
+                    .collect();
+                let descriptor = captured
+                    .native_sources()
+                    .unwrap()
+                    .iter()
+                    .find(|(_, _, source)| source.module_path.as_str() == module)
+                    .unwrap()
+                    .2
+                    .clone();
+                let forged = attack == Some((kind, module));
+                let replacement = if kind == TaskKind::SourceLoad {
+                    let typed = case
+                        .publisher
+                        .storage()
+                        .typed_handle::<SourceUnit>(original, &OutputKind::new("SourceUnit"))
+                        .unwrap();
+                    let payload = case.publisher.storage().get(&typed).unwrap();
+                    let source_id = payload.source_id;
+                    let semantic = if forged {
+                        b"forged source commitment".to_vec()
+                    } else {
+                        original.lineage().named_input_hashes[0]
+                            .digest
+                            .as_bytes()
+                            .to_vec()
+                    };
+                    publisher
+                        .publish(PublishOutputInput {
+                            slot: publisher.allocate(
+                                snapshot.id,
+                                original.phase().clone(),
+                                original.work_unit().clone(),
+                                original.output_kind().clone(),
+                                SchemaVersion::new(1),
+                            ),
+                            snapshot: snapshot.id,
+                            phase: original.phase().clone(),
+                            work_unit: original.work_unit().clone(),
+                            output_kind: original.output_kind().clone(),
+                            schema_version: SchemaVersion::new(1),
+                            payload: (*payload).clone(),
+                            canonical_payload: Some(semantic),
+                            storage_payload: payload.canonical_disk_bytes(),
+                            decode: BlobDecoder::new(move |bytes| {
+                                SourceUnit::from_canonical_storage_bytes(
+                                    bytes,
+                                    source_id,
+                                    &descriptor,
+                                )
+                                .ok_or_else(|| BlobDecodeError::new("invalid source bytes"))
+                            }),
+                            parents,
+                            named_input_hashes: original.lineage().named_input_hashes.clone(),
+                            side_tables: (*case.publisher.storage().side_tables(&typed).unwrap())
+                                .clone(),
+                            origin: OutputOrigin::PackageSource,
+                            target: PublicationTarget::CurrentPackage,
+                        })
+                        .unwrap()
+                        .erase()
+                } else {
+                    let typed = case
+                        .publisher
+                        .storage()
+                        .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                            original,
+                            &OutputKind::new("FrontendOutput"),
+                        )
+                        .unwrap();
+                    let payload = case.publisher.storage().get(&typed).unwrap();
+                    let source_id = payload.source.source_id;
+                    let mut semantic = b"mizar-frontend/output-publication/v1\0".to_vec();
+                    semantic.extend_from_slice(
+                        payload
+                            .cache_keys
+                            .ast
+                            .as_ref()
+                            .unwrap()
+                            .stable_hash()
+                            .as_bytes(),
+                    );
+                    if forged {
+                        semantic = b"forged frontend commitment".to_vec();
+                    }
+                    publisher
+                        .publish(PublishOutputInput {
+                            slot: publisher.allocate(
+                                snapshot.id,
+                                original.phase().clone(),
+                                original.work_unit().clone(),
+                                original.output_kind().clone(),
+                                SchemaVersion::new(1),
+                            ),
+                            snapshot: snapshot.id,
+                            phase: original.phase().clone(),
+                            work_unit: original.work_unit().clone(),
+                            output_kind: original.output_kind().clone(),
+                            schema_version: SchemaVersion::new(1),
+                            payload: (*payload).clone(),
+                            canonical_payload: Some(semantic),
+                            storage_payload: payload.canonical_disk_bytes(),
+                            decode: BlobDecoder::new(move |bytes| {
+                                FrontendOutput::from_canonical_storage_bytes(
+                                    bytes,
+                                    source_id,
+                                    &descriptor,
+                                )
+                                .ok_or_else(|| BlobDecodeError::new("invalid frontend bytes"))
+                            }),
+                            parents,
+                            named_input_hashes: original.lineage().named_input_hashes.clone(),
+                            side_tables: (*case.publisher.storage().side_tables(&typed).unwrap())
+                                .clone(),
+                            origin: OutputOrigin::PackageSource,
+                            target: PublicationTarget::CurrentPackage,
+                        })
+                        .unwrap()
+                        .erase()
+                };
+                if forged {
+                    assert_ne!(replacement.content_hash(), original.content_hash());
+                } else if attack.is_none() {
+                    assert_eq!(
+                        replacement.content_hash(),
+                        original.content_hash(),
+                        "{kind:?} {module}"
+                    );
+                }
+                assert_eq!(replacement.side_table_hash(), original.side_table_hash());
+                copied.push((original.output(), replacement.clone()));
+                results.get_mut(&task.id).unwrap()[0].output_refs = vec![replacement];
+            }
+            let (direct, supplemental) = native_frontend_cache_parents(
+                case.task(TaskKind::Frontend, "main"),
+                graph,
+                &results,
+            )
+            .expect("all copied direct relations are current and structurally valid");
+            let parents = direct
+                .into_iter()
+                .map(|parent| {
+                    SealedParentOutputHandle::from_published_output(&publisher, snapshot.id, parent)
+                        .unwrap()
+                })
+                .collect();
+            let version = snapshot
+                .source_versions
+                .iter()
+                .find(|v| v.module_path.as_str() == "main")
+                .unwrap();
+            let input = crate::registry::PhaseInput::new(
+                case.task(TaskKind::Frontend, "main").unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    snapshot.id,
+                    crate::frontend_adapter::source_input_hash(version),
+                    Vec::new(),
+                    parents,
+                )
+                .unwrap(),
+            );
+            let inputs = SourceLoadInputs {
+                captured: Some(captured),
+                snapshot,
+                build_plan: case.submission.build_plan.as_ref().unwrap(),
+                module_index: case.submission.module_index.as_ref().unwrap(),
+                allocator: &case.ids,
+            };
+            let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher);
+            let outcome = inputs.rehydrate_native_disk_frontend_cache_with_dependencies(
+                &input,
+                &case.policy,
+                &case.store,
+                &adapter,
+                case.driver.registry().native_frontend_service().unwrap(),
+                &supplemental,
+            );
+            if let Some((kind, _)) = attack {
+                let Err(error) = outcome else {
+                    panic!("forged {attack:?} must fail before Store lookup");
+                };
+                assert_eq!(
+                    error,
+                    if kind == TaskKind::SourceLoad {
+                        "native Frontend source commitment mismatch"
+                    } else {
+                        "native Frontend independent commitment mismatch"
+                    }
+                );
+                assert_eq!(adapter.successful_rehydrations(), 0);
+            } else {
+                let outcome = outcome.unwrap();
+                assert!(
+                    matches!(
+                        outcome,
+                        mizar_ir::cache_adapter::CacheRehydrateOutcome::Rehydrated(_)
+                    ),
+                    "{outcome:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn multi_leaf_cache_lookup_requires_all_accepted_frontend_and_source_results() {
         for missing in [(TaskKind::Frontend, "twig"), (TaskKind::SourceLoad, "twig")] {
-            let case = CacheCase::new();
+            let case = CacheCase::new(false);
             let task = case.task(missing.0, missing.1);
             let mut dispatcher = case.dispatcher();
             dispatcher.phase_results.remove(&task.id);
@@ -505,19 +1132,21 @@ mod imported_cache_lifecycle_tests {
 
     #[test]
     fn multi_leaf_cache_lookup_observes_cancellation_and_publisher_replacement() {
-        let cancelled = CacheCase::new();
-        let mut dispatcher = cancelled.dispatcher();
-        let (_, _, signal) = dispatcher.native_cache.as_mut().unwrap();
-        signal.request(CancellationReason::ExplicitRequest);
-        assert!(cancelled.invoke(&mut dispatcher).is_none());
-        assert!(dispatcher.cache_owners.is_empty());
+        for intermediate in [false, true] {
+            let cancelled = CacheCase::new(intermediate);
+            let mut dispatcher = cancelled.dispatcher();
+            let (_, _, signal) = dispatcher.native_cache.as_mut().unwrap();
+            signal.request(CancellationReason::ExplicitRequest);
+            assert!(cancelled.invoke(&mut dispatcher).is_none());
+            assert!(dispatcher.cache_owners.is_empty());
 
-        let replaced = CacheCase::new();
-        let snapshot = replaced.submission.session.captured().snapshot().id;
-        replaced.publisher.mark_obsolete(snapshot).unwrap();
-        let mut dispatcher = replaced.dispatcher();
-        assert!(replaced.invoke(&mut dispatcher).is_none());
-        assert!(dispatcher.cache_owners.is_empty());
+            let replaced = CacheCase::new(intermediate);
+            let snapshot = replaced.submission.session.captured().snapshot().id;
+            replaced.publisher.mark_obsolete(snapshot).unwrap();
+            let mut dispatcher = replaced.dispatcher();
+            assert!(replaced.invoke(&mut dispatcher).is_none());
+            assert!(dispatcher.cache_owners.is_empty());
+        }
     }
 
     #[cfg(target_os = "linux")]
@@ -530,69 +1159,72 @@ mod imported_cache_lifecycle_tests {
             thread,
         };
 
-        for interruption in [
-            Some(CancellationReason::ExplicitRequest),
-            Some(CancellationReason::SupersededSnapshot),
-            None,
-        ] {
-            let case = CacheCase::new();
-            let key = case.importer_cache_key();
-            let path = case.store.record_path(&key);
-            let bytes = fs::read(&path).expect("cold submission writes the real importer record");
-            fs::remove_file(&path).unwrap();
-            assert!(
-                Command::new("mkfifo")
-                    .arg(&path)
-                    .status()
-                    .unwrap()
-                    .success()
-            );
+        for intermediate in [false, true] {
+            for interruption in [
+                Some(CancellationReason::ExplicitRequest),
+                Some(CancellationReason::SupersededSnapshot),
+                None,
+            ] {
+                let case = CacheCase::new(intermediate);
+                let key = case.importer_cache_key();
+                let path = case.store.record_path(&key);
+                let bytes =
+                    fs::read(&path).expect("cold submission writes the real importer record");
+                fs::remove_file(&path).unwrap();
+                assert!(
+                    Command::new("mkfifo")
+                        .arg(&path)
+                        .status()
+                        .unwrap()
+                        .success()
+                );
 
-            let mut dispatcher = case.dispatcher();
-            let signal = dispatcher.native_cache.as_ref().unwrap().2.clone();
-            let publisher = case.publisher.clone();
-            let snapshot = case.submission.session.captured().snapshot().id;
-            let storage = publisher.storage().clone();
-            let fifo_path = path.clone();
-            let unblock_path = path.clone();
-            thread::scope(|scope| {
-                scope.spawn(move || {
-                    let mut fifo = OpenOptions::new().write(true).open(fifo_path).unwrap();
-                    let retained = storage.collect(CollectInput {
-                        snapshot,
-                        protected_outputs: Vec::new(),
+                let mut dispatcher = case.dispatcher();
+                let signal = dispatcher.native_cache.as_ref().unwrap().2.clone();
+                let publisher = case.publisher.clone();
+                let snapshot = case.submission.session.captured().snapshot().id;
+                let storage = publisher.storage().clone();
+                let fifo_path = path.clone();
+                let unblock_path = path.clone();
+                thread::scope(|scope| {
+                    scope.spawn(move || {
+                        let mut fifo = OpenOptions::new().write(true).open(fifo_path).unwrap();
+                        let retained = storage.collect(CollectInput {
+                            snapshot,
+                            protected_outputs: Vec::new(),
+                        });
+                        assert_eq!(retained.retained_outputs, 5);
+                        if let Some(reason) = interruption {
+                            signal.request(reason);
+                        } else {
+                            publisher.mark_obsolete(snapshot).unwrap();
+                        }
+                        fifo.write_all(&bytes).unwrap();
                     });
-                    assert_eq!(retained.retained_outputs, 5);
-                    if let Some(reason) = interruption {
-                        signal.request(reason);
-                    } else {
-                        publisher.mark_obsolete(snapshot).unwrap();
-                    }
-                    fifo.write_all(&bytes).unwrap();
+                    let outcome = case.invoke(&mut dispatcher);
+                    // If a regression skips Store I/O, this nonblocking FIFO endpoint lets the
+                    // writer finish so the retained-parent assertion fails instead of hanging.
+                    let unblock = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(unblock_path)
+                        .unwrap();
+                    drop(unblock);
+                    assert!(outcome.is_none());
                 });
-                let outcome = case.invoke(&mut dispatcher);
-                // If a regression skips Store I/O, this nonblocking FIFO endpoint lets the
-                // writer finish so the retained-parent assertion fails instead of hanging.
-                let unblock = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(unblock_path)
-                    .unwrap();
-                drop(unblock);
-                assert!(outcome.is_none());
-            });
-            assert!(dispatcher.cache_owners.is_empty());
-            assert!(
-                !dispatcher
-                    .phase_results
-                    .contains_key(&case.task(TaskKind::Frontend, "main").id)
-            );
-            let released = case.publisher.storage().collect(CollectInput {
-                snapshot,
-                protected_outputs: Vec::new(),
-            });
-            assert_eq!(released.retained_outputs, 0);
-            fs::remove_file(path).unwrap();
+                assert!(dispatcher.cache_owners.is_empty());
+                assert!(
+                    !dispatcher
+                        .phase_results
+                        .contains_key(&case.task(TaskKind::Frontend, "main").id)
+                );
+                let released = case.publisher.storage().collect(CollectInput {
+                    snapshot,
+                    protected_outputs: Vec::new(),
+                });
+                assert_eq!(released.retained_outputs, 0);
+                fs::remove_file(path).unwrap();
+            }
         }
     }
 
@@ -601,7 +1233,7 @@ mod imported_cache_lifecycle_tests {
         use std::fs;
 
         for corrupt in [false, true] {
-            let case = CacheCase::new();
+            let case = CacheCase::new(false);
             let path = case.store.record_path(&case.importer_cache_key());
             if corrupt {
                 fs::write(&path, b"not a cache record").unwrap();

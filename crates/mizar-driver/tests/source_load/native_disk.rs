@@ -5464,7 +5464,13 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         if provenance == 1 {
             importer.push_str(&format!("import alpha.{};\n", leaf_names[0]));
         }
-        importer.push_str(if family == "main" && edited {
+        importer.push_str(if leaf_count == 1 && transitive_leaf.is_some() {
+            if family == "main" && edited {
+                "theorem T: spare = other;\n"
+            } else {
+                "theorem T: spare = spare;\n"
+            }
+        } else if family == "main" && edited {
             "theorem T: a combine b = b;\ntheorem S: spare = spare;\n"
         } else {
             "theorem T: a combine b = a;\ntheorem S: spare = spare;\n"
@@ -5473,7 +5479,13 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         fixture.write(raw_main.as_bytes());
         for (index, leaf) in leaf_names.iter().enumerate() {
             let bytes = if transitive_leaf == Some(index) {
-                "import alpha.base;\ndefinition\nend;\n".to_owned()
+                if family == "base" {
+                    "import alpha.base;\ntheorem T: spare = spare;\n".to_owned()
+                } else if family == "leaf" && edited {
+                    "import alpha.base;\ndefinition\nlet x be set;\npublic func Spare: spare -> set equals x;\nend;\n".to_owned()
+                } else {
+                    "import alpha.base;\ndefinition\nend;\n".to_owned()
+                }
             } else if index == 0 {
                 if family == leaf.as_str() && edited {
                     "definition\nlet x, y be set;\npublic func Infix: x combine y -> set equals x;\npublic func Spare: spare -> set equals x;\nend;\n".to_owned()
@@ -5556,11 +5568,16 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
         let mut modules = leaf_names.clone();
         if transitive_leaf.is_some() {
             modules.push("base".to_owned());
-            fs::write(
-                fixture.root.join("alpha/src/base.miz"),
-                b"definition\nend;\n",
-            )
-            .unwrap();
+            let base = if family == "base" && edited {
+                b"definition\nlet x be set;\npublic func Other: other -> set equals x;\nend;\n"
+                    .as_slice()
+            } else if family == "base" {
+                b"definition\nlet x be set;\npublic func Spare: spare -> set equals x;\nend;\n"
+                    .as_slice()
+            } else {
+                b"definition\nend;\n".as_slice()
+            };
+            fs::write(fixture.root.join("alpha/src/base.miz"), base).unwrap();
         }
         modules.push("main".to_owned());
         let mut files = modules
@@ -5700,12 +5717,17 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             return (submission, Vec::new());
         }
         let mut outputs = Vec::new();
-        for (module, unit) in leaf_names
+        let mut checked_units = leaf_names
             .iter()
             .map(String::as_str)
             .zip(leaf_units.iter())
-            .chain(std::iter::once(("main", &main_unit)))
-        {
+            .map(|(module, unit)| (module, unit.clone()))
+            .collect::<Vec<_>>();
+        if transitive_leaf.is_some() {
+            checked_units.push(("base", base_unit.clone()));
+        }
+        checked_units.push(("main", main_unit.clone()));
+        for (module, unit) in checked_units {
             let version = captured
                 .snapshot()
                 .source_versions
@@ -5715,35 +5737,45 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
             let source_task = graph
                 .tasks()
                 .iter()
-                .find(|task| task.kind == TaskKind::SourceLoad && task.unit == *unit)
+                .find(|task| task.kind == TaskKind::SourceLoad && task.unit == unit)
                 .unwrap();
             let frontend_task = graph
                 .tasks()
                 .iter()
-                .find(|task| task.kind == TaskKind::Frontend && task.unit == *unit)
+                .find(|task| task.kind == TaskKind::Frontend && task.unit == unit)
                 .unwrap();
             let transitive_name = transitive_leaf.map(|index| leaf_names[index].as_str());
             let source_hit = cached
                 && (cache_stage == 1
                     || cache_stage == 3
                     || (cache_stage == 2 && module != family)
-                    || (cache_stage == 4 && transitive_name != Some(module))
+                    || (cache_stage == 4
+                        && (leaf_count == 1
+                            || (transitive_name != Some(module) && module != "base")))
                     || (cache_stage == 6 && module != "main" && module != "leaf2")
                     || (cache_stage == 7 && module != "main")
                     || ((8..=10).contains(&cache_stage) && module != "main")
                     || (cache_stage == 11 && module == "leaf")
-                    || cache_stage == 5);
+                    || cache_stage == 5
+                    || (cache_stage == 14 && module != "base"));
+            let source_hit = source_hit
+                || (cached && cache_stage == 15 && module != "leaf")
+                || (cached && (16..=18).contains(&cache_stage) && module != "main");
             let frontend_hit = cached
                 && (cache_stage == 1
                     || cache_stage == 3
                     || (cache_stage == 2 && module != "main" && module != family)
+                    || ((cache_stage == 4 || cache_stage == 5) && leaf_count == 1)
                     || ((cache_stage == 4 || cache_stage == 5)
                         && module != "main"
+                        && (cache_stage == 5 || module != "base")
                         && (cache_stage == 5 || transitive_name != Some(module)))
                     || (cache_stage == 6 && module != "main" && module != "leaf2")
                     || (cache_stage == 7 && module != "main")
                     || ((8..=10).contains(&cache_stage) && module != "main")
-                    || (cache_stage == 11 && module == "leaf"));
+                    || (cache_stage == 11 && module == "leaf")
+                    || (cache_stage == 15 && module == "base")
+                    || ((16..=18).contains(&cache_stage) && module != "main"));
             for (task, hit) in [(source_task, source_hit), (frontend_task, frontend_hit)] {
                 let state = &scheduler
                     .task_states
@@ -5758,10 +5790,11 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     } else {
                         TaskState::Completed
                     },
-                    "{} {:?} {:?} stage {cache_stage}",
+                    "{} {:?} {:?} stage {cache_stage} targets={leaf_count} transitive={transitive_leaf:?} result={:?}",
                     family,
                     task.kind,
-                    module
+                    module,
+                    scheduler.phase_results.get(&task.id)
                 );
                 assert_eq!(
                     scheduler.events.iter().any(|event| {
@@ -5795,15 +5828,21 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 )
                 .unwrap();
             let frontend = owner.storage().get(&frontend_handle).unwrap();
+            assert_eq!(
+                matches!(frontend_ref.placement(), StoragePlacement::Resident),
+                reverse
+            );
             assert_eq!(frontend.source, *source);
             assert_eq!(source.line_map.source_id(), version.source_id);
             if let Some(map) = &source.loading_map {
                 assert_eq!(map.source_id, version.source_id);
             }
             if module == "main" {
-                assert!(frontend.tokens.tokens().iter().any(|token| {
-                    token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
-                }));
+                if leaf_count != 1 || transitive_leaf.is_none() {
+                    assert!(frontend.tokens.tokens().iter().any(|token| {
+                        token.text.as_ref() == "combine" && token.kind == TokenKind::UserSymbol
+                    }));
+                }
                 let spare = frontend
                     .tokens
                     .tokens()
@@ -5814,6 +5853,15 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     spare.kind == TokenKind::UserSymbol,
                     family == "leaf" && edited
                 );
+            }
+            if family == "base" && module == leaf_names[0].as_str() {
+                let spare = frontend
+                    .tokens
+                    .tokens()
+                    .iter()
+                    .find(|token| token.text.as_ref() == "spare")
+                    .unwrap();
+                assert_eq!(spare.kind == TokenKind::UserSymbol, !edited);
             }
             let frontend_side = owner.storage().side_tables(&frontend_handle).unwrap();
             let mut parent_hashes;
@@ -5882,6 +5930,45 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 parent_hashes = vec![source_ref.content_hash()];
             }
             parent_hashes.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+            let local_summary = if leaf_count == 1 && transitive_leaf.is_some() {
+                let module =
+                    ResolverModuleId::new(source.package_id.clone(), source.module_path.clone());
+                let shells =
+                    DeclarationShellCollector::new(frontend.ast.as_ref().unwrap(), &module)
+                        .collect();
+                let symbols = SignatureProjectionExtractor::new(
+                    frontend.ast.as_ref().unwrap(),
+                    &shells,
+                    NamespacePath::new(module.path().as_str()),
+                )
+                .collect(&module);
+                assert!(symbols.diagnostics().is_empty());
+                let identity = ModuleSummaryIdentity {
+                    package_id: source.package_id.as_str().to_owned(),
+                    package_version: Some(
+                        submission
+                            .build_plan
+                            .as_ref()
+                            .unwrap()
+                            .packages
+                            .iter()
+                            .find(|package| package.package_id == source.package_id)
+                            .unwrap()
+                            .version
+                            .to_string(),
+                    ),
+                    lockfile_identity: None,
+                    module_path: source.module_path.as_str().to_owned(),
+                    language_edition: source.edition.as_str().to_owned(),
+                };
+                Some(
+                    symbols
+                        .export_frontend_lexical_contributions(&frontend, &identity)
+                        .unwrap(),
+                )
+            } else {
+                None
+            };
             // Owner codecs preserve maps and complete payloads while omitting local IDs/roots.
             outputs.push((
                 source.source_id,
@@ -5901,6 +5988,8 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                     (frontend_ref.content_hash(), frontend_ref.side_table_hash()),
                     frontend_ref.lineage().named_input_hashes.clone(),
                     parent_hashes,
+                    frontend.tokens.canonical_bytes().unwrap(),
+                    local_summary,
                 ),
             ));
         }
@@ -6016,6 +6105,347 @@ fn imported_native_disk_edits_match_independent_clean_runs_across_profiles() {
                 }
             }
         }
+    }
+
+    // The exact I → M → A chain admits an automatic persistent-prefix write,
+    // then rehydrates all three genuine members on a fresh capture. A's
+    // complete-empty exports are exercised by the family="main" profile.
+    let chain_fixture = Fixture::new(b"");
+    let chain_ids = InMemorySessionIdAllocator::new();
+    let chain_snapshots = SnapshotRegistry::new();
+    let chain_store = CacheStoreRoot::new(chain_fixture.root.join("alpha/.mizar-cache"));
+    let (chain_cold, _) = run(
+        &chain_fixture,
+        &chain_ids,
+        &chain_snapshots,
+        &chain_store,
+        1,
+        "main",
+        false,
+        Some(0),
+        0,
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    let (chain_warm, chain_warm_outputs) = run(
+        &chain_fixture,
+        &chain_ids,
+        &chain_snapshots,
+        &chain_store,
+        1,
+        "main",
+        false,
+        Some(0),
+        0,
+        false,
+        4,
+        4,
+        true,
+        true,
+    );
+    let clean_chain_fixture = Fixture::new(b"");
+    let clean_chain_ids = InMemorySessionIdAllocator::new();
+    let clean_chain_snapshots = independent_snapshots();
+    let clean_chain_store =
+        CacheStoreRoot::new(clean_chain_fixture.root.join("alpha/.mizar-cache"));
+    let (clean_chain, clean_chain_outputs) = run(
+        &clean_chain_fixture,
+        &clean_chain_ids,
+        &clean_chain_snapshots,
+        &clean_chain_store,
+        1,
+        "main",
+        false,
+        Some(0),
+        0,
+        false,
+        4,
+        1,
+        false,
+        false,
+    );
+    assert!(!clean_chain_store.root().exists());
+    assert_eq!(chain_warm.session.state(), clean_chain.session.state());
+    assert_eq!(chain_warm.status, clean_chain.status);
+    assert_eq!(chain_warm_outputs.len(), 3);
+    for (actual, clean) in chain_warm_outputs.iter().zip(&clean_chain_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+    assert_ne!(
+        chain_cold.session.captured().snapshot().source_versions[0].source_id,
+        chain_warm.session.captured().snapshot().source_versions[0].source_id
+    );
+    let (_, blob_chain_outputs) = run(
+        &chain_fixture,
+        &chain_ids,
+        &chain_snapshots,
+        &chain_store,
+        1,
+        "main",
+        false,
+        Some(0),
+        0,
+        false,
+        4,
+        2,
+        false,
+        true,
+    );
+    for (actual, clean) in blob_chain_outputs.iter().zip(&clean_chain_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+
+    // Editing I itself keeps the cached M/A ancestors usable while I's source
+    // and Frontend rerun; the edited warm output still matches an independent
+    // clean workspace.
+    let (edited_importer, edited_importer_outputs) = run(
+        &chain_fixture,
+        &chain_ids,
+        &chain_snapshots,
+        &chain_store,
+        1,
+        "main",
+        true,
+        Some(0),
+        0,
+        false,
+        2,
+        2,
+        false,
+        true,
+    );
+    assert_eq!(edited_importer_outputs[0].2.7, chain_warm_outputs[0].2.7);
+    assert_eq!(edited_importer_outputs[1].2.7, chain_warm_outputs[1].2.7);
+    assert_ne!(edited_importer_outputs[2].2.7, chain_warm_outputs[2].2.7);
+    let clean_importer_fixture = Fixture::new(b"");
+    let clean_importer_ids = InMemorySessionIdAllocator::new();
+    let clean_importer_snapshots = independent_snapshots();
+    let clean_importer_store =
+        CacheStoreRoot::new(clean_importer_fixture.root.join("alpha/.mizar-cache"));
+    let (clean_importer, clean_importer_outputs) = run(
+        &clean_importer_fixture,
+        &clean_importer_ids,
+        &clean_importer_snapshots,
+        &clean_importer_store,
+        1,
+        "main",
+        true,
+        Some(0),
+        0,
+        false,
+        2,
+        4,
+        true,
+        false,
+    );
+    assert!(!clean_importer_store.root().exists());
+    assert_eq!(
+        edited_importer.session.state(),
+        clean_importer.session.state()
+    );
+    for (actual, clean) in edited_importer_outputs.iter().zip(&clean_importer_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+
+    // Duplicate count, alias, and selected-branch provenance changes in I
+    // invalidate its closure key while preserving the genuine M/A Frontends.
+    for (provenance, stage) in [(1, 16), (2, 17), (3, 18)] {
+        let (actual, actual_outputs) = run(
+            &chain_fixture,
+            &chain_ids,
+            &chain_snapshots,
+            &chain_store,
+            1,
+            "main",
+            false,
+            Some(0),
+            provenance,
+            false,
+            stage,
+            2,
+            false,
+            true,
+        );
+        let clean_fixture = Fixture::new(b"");
+        let clean_ids = InMemorySessionIdAllocator::new();
+        let clean_snapshots = independent_snapshots();
+        let clean_store = CacheStoreRoot::new(clean_fixture.root.join("alpha/.mizar-cache"));
+        let (clean, clean_outputs) = run(
+            &clean_fixture,
+            &clean_ids,
+            &clean_snapshots,
+            &clean_store,
+            1,
+            "main",
+            false,
+            Some(0),
+            provenance,
+            false,
+            stage,
+            4,
+            true,
+            false,
+        );
+        assert!(!clean_store.root().exists());
+        assert_eq!(actual.session.state(), clean.session.state());
+        for (actual, clean) in actual_outputs.iter().zip(&clean_outputs) {
+            assert_ne!(actual.0, clean.0);
+            assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+        }
+    }
+
+    // An A lexical edit changes M's token stream. M has no local exports in
+    // this source, so I's active environment remains stable while I misses
+    // conservatively because the authenticated ancestor payload changed.
+    let lexical_fixture = Fixture::new(b"");
+    let lexical_ids = InMemorySessionIdAllocator::new();
+    let lexical_snapshots = SnapshotRegistry::new();
+    let lexical_store = CacheStoreRoot::new(lexical_fixture.root.join("alpha/.mizar-cache"));
+    let (_, lexical_baseline_outputs) = run(
+        &lexical_fixture,
+        &lexical_ids,
+        &lexical_snapshots,
+        &lexical_store,
+        1,
+        "base",
+        false,
+        Some(0),
+        0,
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    let (edited_chain, edited_chain_outputs) = run(
+        &lexical_fixture,
+        &lexical_ids,
+        &lexical_snapshots,
+        &lexical_store,
+        1,
+        "base",
+        true,
+        Some(0),
+        0,
+        false,
+        14,
+        2,
+        false,
+        true,
+    );
+    assert_ne!(edited_chain_outputs[0].2.7, lexical_baseline_outputs[0].2.7);
+    assert_eq!(edited_chain_outputs[2].2.2, lexical_baseline_outputs[2].2.2);
+    assert_eq!(edited_chain_outputs[0].2.8, lexical_baseline_outputs[0].2.8);
+    assert!(edited_chain_outputs[0].2.8.as_ref().unwrap().is_empty());
+    assert_eq!(edited_chain_outputs[0].1.1, lexical_baseline_outputs[0].1.1);
+    assert_eq!(edited_chain_outputs[2].1.1, lexical_baseline_outputs[2].1.1);
+    assert_eq!(edited_chain_outputs[2].2.1, lexical_baseline_outputs[2].2.1);
+    assert_eq!(edited_chain_outputs[2].2.7, lexical_baseline_outputs[2].2.7);
+    let clean_edited_fixture = Fixture::new(b"");
+    let clean_edited_ids = InMemorySessionIdAllocator::new();
+    let clean_edited_snapshots = independent_snapshots();
+    let clean_edited_store =
+        CacheStoreRoot::new(clean_edited_fixture.root.join("alpha/.mizar-cache"));
+    let (clean_edited_chain, clean_edited_outputs) = run(
+        &clean_edited_fixture,
+        &clean_edited_ids,
+        &clean_edited_snapshots,
+        &clean_edited_store,
+        1,
+        "base",
+        true,
+        Some(0),
+        0,
+        false,
+        14,
+        4,
+        true,
+        false,
+    );
+    assert!(!clean_edited_store.root().exists());
+    assert_eq!(
+        edited_chain.session.state(),
+        clean_edited_chain.session.state()
+    );
+    assert_eq!(edited_chain.status, clean_edited_chain.status);
+    for (actual, clean) in edited_chain_outputs.iter().zip(&clean_edited_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
+    }
+
+    // A change to M's own exported symbols invalidates M and I while the
+    // independent import-free A Frontend remains reusable.
+    let member_fixture = Fixture::new(b"");
+    let member_ids = InMemorySessionIdAllocator::new();
+    let member_snapshots = SnapshotRegistry::new();
+    let member_store = CacheStoreRoot::new(member_fixture.root.join("alpha/.mizar-cache"));
+    let (_, member_baseline_outputs) = run(
+        &member_fixture,
+        &member_ids,
+        &member_snapshots,
+        &member_store,
+        1,
+        "leaf",
+        false,
+        Some(0),
+        0,
+        false,
+        0,
+        1,
+        false,
+        true,
+    );
+    let (edited_member, edited_member_outputs) = run(
+        &member_fixture,
+        &member_ids,
+        &member_snapshots,
+        &member_store,
+        1,
+        "leaf",
+        true,
+        Some(0),
+        0,
+        false,
+        15,
+        2,
+        false,
+        true,
+    );
+    let clean_member_fixture = Fixture::new(b"");
+    let clean_member_ids = InMemorySessionIdAllocator::new();
+    let clean_member_snapshots = independent_snapshots();
+    let clean_member_store =
+        CacheStoreRoot::new(clean_member_fixture.root.join("alpha/.mizar-cache"));
+    let (clean_member, clean_member_outputs) = run(
+        &clean_member_fixture,
+        &clean_member_ids,
+        &clean_member_snapshots,
+        &clean_member_store,
+        1,
+        "leaf",
+        true,
+        Some(0),
+        0,
+        false,
+        15,
+        4,
+        true,
+        false,
+    );
+    assert!(!clean_member_store.root().exists());
+    assert_eq!(edited_member.session.state(), clean_member.session.state());
+    assert_ne!(edited_member_outputs[0].2.7, member_baseline_outputs[0].2.7);
+    assert_eq!(edited_member_outputs[1].2.7, member_baseline_outputs[1].2.7);
+    assert_ne!(edited_member_outputs[2].2.7, member_baseline_outputs[2].2.7);
+    for (actual, clean) in edited_member_outputs.iter().zip(&clean_member_outputs) {
+        assert_ne!(actual.0, clean.0);
+        assert_eq!((&actual.1, &actual.2), (&clean.1, &clean.2));
     }
 
     // Membership changes do not reuse the prior whole-closure importer: add

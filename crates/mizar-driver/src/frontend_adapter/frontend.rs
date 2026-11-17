@@ -246,12 +246,7 @@ impl FrontendService {
             .map(|entry| entry.content_hash)
             .collect::<Vec<_>>();
         dependencies.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-        use mizar_artifact::{module_summary::ModuleSummaryIdentity, store::canonical_json_string};
-        use mizar_resolve::{
-            declarations::DeclarationShellCollector, env::NamespacePath,
-            module_index::IndexedModuleId, resolved_ast::ModuleId,
-            symbols::SignatureProjectionExtractor,
-        };
+        use mizar_resolve::module_index::IndexedModuleId;
         let mut summaries = Vec::new();
         for handle in input.parent_outputs() {
             let leaf = handle.as_output_ref();
@@ -492,41 +487,60 @@ impl FrontendService {
             if leaf.lineage().named_input_hashes != named_inputs {
                 return None;
             }
-            let ast = output.ast.as_ref()?;
-            let resolver_module =
-                ModuleId::new(leaf_module.package.clone(), leaf_module.path.clone());
-            let shells = DeclarationShellCollector::new(ast, &resolver_module).collect();
-            let collection = SignatureProjectionExtractor::new(
-                ast,
-                &shells,
-                NamespacePath::new(resolver_module.path().as_str()),
-            )
-            .collect(&resolver_module);
-            if !collection.diagnostics().is_empty() {
-                return None;
-            }
-            let identity = ModuleSummaryIdentity {
-                package_id: leaf_module.package.as_str().to_owned(),
-                package_version: Some(leaf_package.version.to_string()),
-                lockfile_identity: None,
-                module_path: leaf_module.path.as_str().to_owned(),
-                language_edition: leaf_version.edition.as_str().to_owned(),
-            };
-            let module_id = canonical_json_string(&identity.canonical_json().ok()?);
-            let shapes = collection
-                .export_frontend_lexical_contributions(&output, &identity)?
-                .into_iter()
-                .map(|contribution| {
-                    ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
-                })
-                .collect::<Option<Vec<_>>>()?;
-            let summary = ModuleLexicalSummary::from_exported_symbols(
-                mizar_frontend::lexical_env::ModuleId::new(module_id),
-                shapes,
-            )?;
+            let summary = Self::local_workspace_summary(inputs, &output)?;
             summaries.push((leaf_module, summary));
         }
         Some(summaries)
+    }
+
+    pub(super) fn local_workspace_summary(
+        inputs: crate::registry::SourceLoadInputs<'_>,
+        output: &FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+    ) -> Option<ModuleLexicalSummary> {
+        use mizar_artifact::{module_summary::ModuleSummaryIdentity, store::canonical_json_string};
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector, env::NamespacePath, resolved_ast::ModuleId,
+            symbols::SignatureProjectionExtractor,
+        };
+        let source = &output.source;
+        let package = unique(
+            inputs
+                .build_plan
+                .packages
+                .iter()
+                .filter(|package| package.package_id == source.package_id),
+        )?;
+        let ast = output.ast.as_ref()?;
+        let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collection = SignatureProjectionExtractor::new(
+            ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        if !collection.diagnostics().is_empty() {
+            return None;
+        }
+        let identity = ModuleSummaryIdentity {
+            package_id: source.package_id.as_str().to_owned(),
+            package_version: Some(package.version.to_string()),
+            lockfile_identity: None,
+            module_path: source.module_path.as_str().to_owned(),
+            language_edition: source.edition.as_str().to_owned(),
+        };
+        let module_id = canonical_json_string(&identity.canonical_json().ok()?);
+        let shapes = collection
+            .export_frontend_lexical_contributions(output, &identity)?
+            .into_iter()
+            .map(|contribution| {
+                ExportedSymbolShape::from_canonical_bytes(contribution.payload.as_bytes())
+            })
+            .collect::<Option<Vec<_>>>()?;
+        ModuleLexicalSummary::from_exported_symbols(
+            mizar_frontend::lexical_env::ModuleId::new(module_id),
+            shapes,
+        )
     }
 
     pub(crate) fn analyze_loaded(

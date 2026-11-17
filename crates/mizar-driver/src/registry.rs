@@ -371,24 +371,97 @@ pub(crate) fn native_frontend_cache_parents(
             if source.kind != TaskKind::SourceLoad
                 || sources.next().is_some()
                 || source.dependencies != [root.id.clone()]
-                || parent.dependencies.len() != 2
+                || !(2..=3).contains(&parent.dependencies.len())
                 || !parent.dependencies.contains(&root.id)
                 || !parent.dependencies.contains(&source.id)
             {
                 return None;
             }
             let leaf = output(parent, "FrontendOutput")?;
-            let source = output(source, "SourceUnit")?;
-            if leaf.lineage().parents != [source.output()] {
+            let source_output = output(source, "SourceUnit")?;
+            if parent.dependencies.len() == 3 {
+                if task.dependencies.len() != 3 || !leaf_sources.is_empty() {
+                    return None;
+                }
+                let mut ancestors = parent
+                    .dependencies
+                    .iter()
+                    .filter(|id| **id != root.id && **id != source.id);
+                let ancestor_id = ancestors.next()?;
+                if ancestors.next().is_some() {
+                    return None;
+                }
+                let ancestor = graph
+                    .tasks()
+                    .iter()
+                    .find(|candidate| &candidate.id == ancestor_id)?;
+                let WorkUnit::Module { module: own_module } = &task.unit else {
+                    return None;
+                };
+                let WorkUnit::Module {
+                    module: middle_module,
+                } = &parent.unit
+                else {
+                    return None;
+                };
+                let WorkUnit::Module {
+                    module: ancestor_module,
+                } = &ancestor.unit
+                else {
+                    return None;
+                };
+                if ancestor.kind != TaskKind::Frontend
+                    || ancestor.phases != [PipelinePhase::Frontend]
+                    || ancestor.unit == task.unit
+                    || ancestor.unit == parent.unit
+                    || own_module.package != middle_module.package
+                    || own_module.package != ancestor_module.package
+                {
+                    return None;
+                }
+                let mut ancestor_sources = graph.tasks().iter().filter(|candidate| {
+                    candidate.unit == ancestor.unit
+                        && candidate.phases == [PipelinePhase::SourceLoad]
+                });
+                let ancestor_source = ancestor_sources.next()?;
+                if ancestor_sources.next().is_some()
+                    || ancestor_source.kind != TaskKind::SourceLoad
+                    || ancestor_source.dependencies != [root.id.clone()]
+                    || ancestor.dependencies.len() != 2
+                    || !ancestor.dependencies.contains(&root.id)
+                    || !ancestor.dependencies.contains(&ancestor_source.id)
+                    || graph
+                        .tasks()
+                        .iter()
+                        .filter(|candidate| candidate.id == ancestor.id)
+                        .count()
+                        != 1
+                {
+                    return None;
+                }
+                let ancestor_output = output(ancestor, "FrontendOutput")?;
+                let ancestor_source_output = output(ancestor_source, "SourceUnit")?;
+                if ancestor_output.lineage().parents != [ancestor_source_output.output()]
+                    || leaf.lineage().parents.len() != 2
+                    || !leaf.lineage().parents.contains(&source_output.output())
+                    || !leaf.lineage().parents.contains(&ancestor_output.output())
+                {
+                    return None;
+                }
+                leaf_sources.extend([ancestor_output, ancestor_source_output]);
+            } else if leaf.lineage().parents != [source_output.output()] {
                 return None;
             }
-            leaf_sources.push(source);
+            leaf_sources.push(source_output);
             parents.push(leaf);
         } else {
             return None;
         }
     }
-    (own_source && parents.len() == 1 + leaf_sources.len()).then_some((parents, leaf_sources))
+    (own_source
+        && (parents.len() == 1 + leaf_sources.len()
+            || (parents.len() == 2 && leaf_sources.len() == 3)))
+        .then_some((parents, leaf_sources))
 }
 
 #[derive(Clone, Default)]

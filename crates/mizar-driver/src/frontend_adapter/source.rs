@@ -5,6 +5,8 @@ type NativeFrontendCachePayload = (
     Vec<u8>,
     Vec<u8>,
     Vec<NamedInputHash>,
+    Arc<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>,
+    Vec<serde_json::Value>,
 );
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
@@ -339,7 +341,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             || !(input.parent_outputs().len() == 1
                 || (frontend.is_some()
                     && !leaf_sources.is_empty()
-                    && input.parent_outputs().len() == 1 + leaf_sources.len()))
+                    && (input.parent_outputs().len() == 1 + leaf_sources.len()
+                        || (input.parent_outputs().len() == 2 && leaf_sources.len() == 3))))
         {
             return Err("native Frontend encoding requires the leaf profile".to_owned());
         }
@@ -400,17 +403,28 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .map_err(|error| error.to_string())?;
         }
-        let workspace_summaries =
+        let intermediate = leaf_sources
+            .iter()
+            .any(|parent| parent.phase().as_str() == "Frontend");
+        if intermediate && (input.parent_outputs().len() != 2 || leaf_sources.len() != 3) {
+            return Err("native Frontend intermediate closure is unsupported".to_owned());
+        }
+        let mut module_entries = Vec::new();
+        let mut workspace_summaries =
             FrontendService::authenticated_workspace_summaries(self, input, publisher, parent)
                 .ok_or_else(|| "native Frontend dependency authentication failed".to_owned())?;
         if imported {
             use mizar_ir::dispatch_input::SealedParentOutputHandle;
-            if workspace_summaries.len() != leaf_sources.len() {
+            if workspace_summaries.len() != if intermediate { 1 } else { leaf_sources.len() } {
                 return Err("native Frontend leaf SourceLoad correspondence mismatch".to_owned());
             }
             let mut targets = std::collections::BTreeSet::new();
-            for (target, _) in &workspace_summaries {
-                if !targets.insert((target.package.as_str(), target.path.as_str())) {
+            for (target, summary) in &mut workspace_summaries {
+                if !targets.insert((
+                    target.package.as_str().to_owned(),
+                    target.path.as_str().to_owned(),
+                )) || (intermediate && (target.package != module.package || target == module))
+                {
                     return Err("native Frontend duplicate leaf target".to_owned());
                 }
                 let unit = mizar_session::module_work_unit_label(
@@ -433,10 +447,43 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         && candidate.work_unit().as_str() == unit
                 }))
                 .ok_or_else(|| "native Frontend requires one SourceLoad per target".to_owned())?;
-                if leaf.lineage().parents != [leaf_source.output()] {
-                    return Err(
-                        "native Frontend leaf SourceLoad correspondence mismatch".to_owned()
-                    );
+                let ancestor = if intermediate {
+                    let ancestor = unique(
+                        leaf_sources
+                            .iter()
+                            .filter(|candidate| candidate.phase().as_str() == "Frontend"),
+                    )
+                    .ok_or_else(|| "native Frontend ancestor is unavailable".to_owned())?;
+                    if leaf.lineage().parents.len() != 2
+                        || !leaf.lineage().parents.contains(&leaf_source.output())
+                        || !leaf.lineage().parents.contains(&ancestor.output())
+                        || ancestor.work_unit() == leaf.work_unit()
+                        || ancestor.work_unit() == parent.work_unit()
+                    {
+                        return Err("native Frontend intermediate lineage mismatch".to_owned());
+                    }
+                    Some(ancestor)
+                } else {
+                    if leaf.lineage().parents != [leaf_source.output()] {
+                        return Err(
+                            "native Frontend leaf SourceLoad correspondence mismatch".to_owned()
+                        );
+                    }
+                    None
+                };
+                let mut direct = vec![leaf_source.clone()];
+                let mut supplemental = Vec::new();
+                if let Some(ancestor) = ancestor {
+                    let ancestor_source = unique(leaf_sources.iter().filter(|candidate| {
+                        candidate.phase().as_str() == "SourceLoad"
+                            && candidate.work_unit() == ancestor.work_unit()
+                    }))
+                    .ok_or_else(|| "native Frontend ancestor SourceLoad unavailable".to_owned())?;
+                    if ancestor.lineage().parents != [ancestor_source.output()] {
+                        return Err("native Frontend ancestor lineage mismatch".to_owned());
+                    }
+                    direct.push(ancestor.clone());
+                    supplemental.push(ancestor_source.clone());
                 }
                 let leaf_version = unique(self.snapshot.source_versions.iter().filter(|version| {
                     version.package_id == target.package && version.module_path == target.path
@@ -450,14 +497,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         input.snapshot,
                         source_input_hash(leaf_version),
                         Vec::new(),
-                        vec![
-                            SealedParentOutputHandle::from_current_output(
-                                publisher,
-                                input.snapshot,
-                                leaf_source.clone(),
-                            )
-                            .map_err(|error| error.to_string())?,
-                        ],
+                        direct
+                            .into_iter()
+                            .map(|physical| {
+                                SealedParentOutputHandle::from_current_output(
+                                    publisher,
+                                    input.snapshot,
+                                    physical,
+                                )
+                                .map_err(|error| error.to_string())
+                            })
+                            .collect::<Result<Vec<_>, _>>()?,
                     )
                     .map_err(|error| error.to_string())?,
                 );
@@ -467,14 +517,21 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         &OutputKind::new("FrontendOutput"),
                     )
                     .map_err(|error| error.to_string())?;
-                self.prepare_native_disk_frontend_cache_payload(
-                    &leaf_input,
-                    policy,
-                    adapter,
-                    Some(&leaf_handle),
-                    None,
-                    &[],
-                )?;
+                let (_, _, _, _, independent, entries) = self
+                    .prepare_native_disk_frontend_cache_payload(
+                        &leaf_input,
+                        policy,
+                        adapter,
+                        Some(&leaf_handle),
+                        frontend,
+                        &supplemental,
+                    )?;
+                if intermediate && independent.source.package_id != module.package {
+                    return Err("native Frontend ancestor package mismatch".to_owned());
+                }
+                *summary = FrontendService::local_workspace_summary(self, &independent)
+                    .ok_or_else(|| "native Frontend independent summary unavailable".to_owned())?;
+                module_entries.extend(entries);
             }
         }
 
@@ -529,6 +586,19 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err("native Frontend encoding source parent lineage mismatch".to_owned());
         }
+        if frontend.is_some()
+            && !matches!(
+                self.encode_native_disk_cache_record(
+                    &source_input,
+                    policy,
+                    adapter,
+                    typed_parent.clone(),
+                )?,
+                mizar_ir::cache_adapter::EncodeCacheRecordOutcome::Encoded(_)
+            )
+        {
+            return Err("native Frontend source commitment mismatch".to_owned());
+        }
         let retained = if let Some(handle) = handle {
             storage
                 .validate_handle(handle.any())
@@ -552,7 +622,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             None
         };
         let output = match &retained {
-            Some(output) if !imported => output.clone(),
+            Some(output) if frontend.is_none() && !imported => output.clone(),
             _ => {
                 let frontend =
                     frontend.ok_or_else(|| "native Frontend producer unavailable".to_owned())?;
@@ -574,7 +644,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )?)
             }
         };
-        if imported
+        if frontend.is_some()
             && retained.as_ref().is_some_and(|retained| {
                 retained.canonical_disk_bytes() != output.canonical_disk_bytes()
             })
@@ -613,23 +683,29 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         {
             return Err("native Frontend encoding output source or lineage mismatch".to_owned());
         }
-        if imported {
-            let domain = "mizar-driver/native-disk-frontend-dependencies/v1";
+        {
+            let domain = if intermediate {
+                "mizar-driver/native-disk-frontend-dependencies/v2"
+            } else {
+                "mizar-driver/native-disk-frontend-dependencies/v1"
+            };
             let dependency_bytes = {
                 use mizar_resolve::{imports::ImportPathResolver, module_index::ModuleIndexInput};
                 use serde_json::json;
                 let unavailable = || "native Frontend dependency closure is unsupported".to_owned();
-                if output
-                    .ast
-                    .as_ref()
-                    .is_none_or(|ast| ast.node_views().any(|view| view.as_export_item().is_some()))
+                if imported
+                    && output.ast.as_ref().is_none_or(|ast| {
+                        ast.node_views().any(|view| view.as_export_item().is_some())
+                    })
                 {
                     return Err(unavailable());
                 }
                 let resolution = ImportPathResolver::new(ModuleIndexInput::new(self.module_index))
                     .resolve_frontend(&output, &output.source)
                     .ok_or_else(unavailable)?;
-                if !resolution.unresolved().is_empty() || resolution.resolved().is_empty() {
+                if !resolution.unresolved().is_empty()
+                    || (imported && resolution.resolved().is_empty())
+                {
                     return Err(unavailable());
                 }
                 let range = |span: mizar_session::SourceRange| json!([span.start, span.end]);
@@ -702,8 +778,22 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         ])
                     })
                     .collect::<Vec<_>>();
-                serde_json::to_vec(&json!([
-                    domain,
+                let mut direct = input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| {
+                        let parent = parent.as_output_ref();
+                        (parent.phase().as_str(), parent.work_unit().as_str())
+                    })
+                    .collect::<Vec<_>>();
+                direct.sort();
+                module_entries.push(json!([
+                    module.package.as_str(),
+                    module.path.as_str(),
+                    output
+                        .cache_keys
+                        .canonical_bytes()
+                        .ok_or_else(unavailable)?,
                     output
                         .preprocessed
                         .canonical_bytes()
@@ -711,15 +801,55 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     output.tokens.canonical_bytes().ok_or_else(unavailable)?,
                     imports,
                     summary_bytes,
-                    parents
-                ]))
+                    direct
+                        .into_iter()
+                        .map(|(phase, unit)| json!([phase, unit]))
+                        .collect::<Vec<_>>()
+                ]));
+                module_entries.sort_by(|left, right| {
+                    (left[0].as_str(), left[1].as_str())
+                        .cmp(&(right[0].as_str(), right[1].as_str()))
+                });
+                if intermediate
+                    && (module_entries.len() != 3
+                        || module_entries
+                            .iter()
+                            .any(|entry| entry[0].as_str() != Some(module.package.as_str()))
+                        || module_entries
+                            .windows(2)
+                            .any(|pair| pair[0][0] == pair[1][0] && pair[0][1] == pair[1][1]))
+                {
+                    return Err(unavailable());
+                }
+                serde_json::to_vec(&if intermediate {
+                    json!([
+                        domain,
+                        [module.package.as_str(), module.path.as_str()],
+                        module_entries,
+                        parents
+                    ])
+                } else {
+                    json!([
+                        domain,
+                        output
+                            .preprocessed
+                            .canonical_bytes()
+                            .ok_or_else(unavailable)?,
+                        output.tokens.canonical_bytes().ok_or_else(unavailable)?,
+                        imports,
+                        summary_bytes,
+                        parents
+                    ])
+                })
                 .map_err(|error| error.to_string())?
             };
-            request.input_hashes.push(NamedHash {
-                name: "frontend-dependencies".to_owned(),
-                domain: domain.to_owned(),
-                digest: Hash::from_bytes(blake3::derive_key(domain, &dependency_bytes)),
-            });
+            if imported {
+                request.input_hashes.push(NamedHash {
+                    name: "frontend-dependencies".to_owned(),
+                    domain: domain.to_owned(),
+                    digest: Hash::from_bytes(blake3::derive_key(domain, &dependency_bytes)),
+                });
+            }
         }
         let ast_key = output
             .cache_keys
@@ -799,6 +929,32 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let mut canonical_payload = b"mizar-frontend/output-publication/v1\0".to_vec();
         canonical_payload.extend_from_slice(ast_key.stable_hash().as_bytes());
+        if frontend.is_some()
+            && let Some(handle) = handle
+        {
+            use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
+            use mizar_ir::cache_adapter::{
+                CacheAdapterCacheability, EncodeCacheRecordInput, EncodeCacheRecordOutcome,
+            };
+            let CacheKeyBuildOutcome::Cacheable(key) =
+                CacheKeyBuilder::new(request.clone()).build()
+            else {
+                return Err("native Frontend expectation key unavailable".to_owned());
+            };
+            if !matches!(
+                adapter.encode(EncodeCacheRecordInput {
+                    handle: handle.clone(),
+                    cache_key: key,
+                    produced_by: request.validation_inputs.toolchain_compatibility.clone(),
+                    canonical_payload: canonical_payload.clone(),
+                    storage_payload: storage_payload.clone(),
+                    cacheability: CacheAdapterCacheability::Cacheable,
+                }),
+                EncodeCacheRecordOutcome::Encoded(_)
+            ) {
+                return Err("native Frontend independent commitment mismatch".to_owned());
+            }
+        }
         for physical in input
             .parent_outputs()
             .iter()
@@ -822,6 +978,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             canonical_payload,
             storage_payload,
             named_input_hashes,
+            output,
+            module_entries,
         ))
     }
 
@@ -838,8 +996,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
         use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
 
-        let (request, canonical_payload, storage_payload, _): NativeFrontendCachePayload = self
-            .prepare_native_disk_frontend_cache_payload(
+        let (request, canonical_payload, storage_payload, _, _, _): NativeFrontendCachePayload =
+            self.prepare_native_disk_frontend_cache_payload(
                 input,
                 policy,
                 adapter,
@@ -875,8 +1033,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         use mizar_cache::cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder};
         use mizar_ir::cache_adapter::{CacheAdapterCacheability, EncodeCacheRecordInput};
 
-        let (request, canonical_payload, storage_payload, _): NativeFrontendCachePayload = self
-            .prepare_native_disk_frontend_cache_payload(
+        let (request, canonical_payload, storage_payload, _, _, _): NativeFrontendCachePayload =
+            self.prepare_native_disk_frontend_cache_payload(
                 input,
                 policy,
                 adapter,
@@ -1019,7 +1177,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             cache_store::CacheLookupOutcome,
         };
         use mizar_ir::cache_adapter::RehydrateCacheHitInput;
-        let (request, semantic, storage_payload, named_input_hashes) = payload;
+        let (request, semantic, storage_payload, named_input_hashes, _, _) = payload;
         let publisher = adapter.publisher();
         publisher
             .validate_current_snapshot(input.snapshot)
@@ -1758,6 +1916,7 @@ impl SourceLoadService {
                 <FrontendService as PhaseService>::execute as *const () as usize,
                 FrontendService::analyze_loaded as *const () as usize,
                 FrontendService::authenticated_workspace_summaries as *const () as usize,
+                FrontendService::local_workspace_summary as *const () as usize,
                 <DependencyLexicalProvider<'static> as mizar_frontend::lexical_env::LexicalSummaryProvider>::resolve_imports as *const () as usize,
                 mizar_resolve::imports::ImportPathResolver::resolve_frontend as *const () as usize,
                 mizar_resolve::imports::ImportPathResolver::resolve as *const () as usize,
@@ -2561,7 +2720,7 @@ pub(crate) mod imported_native_frontend_cache_tests {
             authenticated[0].1.exported_symbols, authenticated[1].1.exported_symbols,
             "equal exported content does not collapse distinct leaf targets"
         );
-        let (request, _, _, _) = source_inputs
+        let (request, _, _, _, _, _) = source_inputs
             .prepare_native_disk_frontend_cache_payload(
                 &input,
                 &policy,
@@ -2571,11 +2730,28 @@ pub(crate) mod imported_native_frontend_cache_tests {
                 &leaf_sources,
             )
             .unwrap();
+        // Golden v1 dependency bytes from the genuine pre-v2 producer.
+        let legacy = request
+            .input_hashes
+            .iter()
+            .find(|hash| hash.name == "frontend-dependencies")
+            .unwrap();
+        assert_eq!(
+            legacy.domain,
+            "mizar-driver/native-disk-frontend-dependencies/v1"
+        );
+        assert_eq!(
+            legacy.digest,
+            Hash::from_bytes([
+                231, 175, 232, 121, 17, 228, 40, 229, 50, 141, 120, 107, 75, 211, 23, 2, 133, 183,
+                196, 79, 248, 34, 14, 191, 167, 67, 48, 11, 116, 100, 145, 176,
+            ])
+        );
         let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(request).build() else {
             panic!("captured imported Frontend cache key");
         };
         assert!(matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)));
-        let (reordered, _, _, _) = source_inputs
+        let (reordered, _, _, _, _, _) = source_inputs
             .prepare_native_disk_frontend_cache_payload(
                 &make_input(vec![
                     twig_frontend.clone(),
