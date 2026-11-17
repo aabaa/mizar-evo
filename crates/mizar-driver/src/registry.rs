@@ -144,7 +144,11 @@ pub fn assemble_registry(config: &StageConfig) -> Result<PhaseRegistry, String> 
             _ => unreachable!("source adapter stage list is fixed"),
         };
     }
-    builder.build().map_err(|error| error.to_string())
+    let mut registry = builder.build().map_err(|error| error.to_string())?;
+    if let Ok(image) = crate::frontend_adapter::SourceLoadService::running_native_image() {
+        registry.native_source_bootstrap = Some((config.verifier_policy.clone(), image.clone()));
+    }
+    Ok(registry)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -257,6 +261,10 @@ pub struct PhaseRegistry {
     services: Vec<RegisteredPhaseService>,
     phase_index: BTreeMap<PipelinePhase, usize>,
     query_boundary: DriverQueryBoundary,
+    native_source_bootstrap: Option<(
+        mizar_proof::policy::VerifierPolicy,
+        mizar_cache::cache_key::CompatibilityField,
+    )>,
 }
 
 struct RegisteredPhaseService {
@@ -777,16 +785,28 @@ impl PhaseRegistryBuilder {
             services,
             phase_index,
             query_boundary: DriverQueryBoundary::default(),
+            native_source_bootstrap: None,
         })
     }
 }
 
 impl PhaseRegistry {
+    pub(crate) fn native_source_policy(
+        &self,
+        requested: &mizar_proof::policy::VerifierPolicy,
+    ) -> Option<&mizar_proof::policy::VerifierPolicy> {
+        let (policy, image) = self.native_source_bootstrap.as_ref()?;
+        (policy.policy_fingerprint() == requested.policy_fingerprint()
+            && crate::frontend_adapter::SourceLoadService::running_native_image().ok()? == image)
+            .then_some(policy)
+    }
+
     pub fn empty() -> Self {
         Self {
             services: Vec::new(),
             phase_index: BTreeMap::new(),
             query_boundary: DriverQueryBoundary::default(),
+            native_source_bootstrap: None,
         }
     }
 

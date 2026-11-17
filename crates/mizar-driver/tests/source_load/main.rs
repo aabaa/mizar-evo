@@ -44,7 +44,7 @@ use mizar_driver::{
     events::BuildEventKind,
     registry::{
         PhaseCacheIntent, PhaseExecutionResources, PhaseInput, PhaseRegistryBuilder, PhaseStatus,
-        SourceLoadInputs,
+        SourceLoadInputs, StageConfig, assemble_registry,
     },
     request::{
         BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
@@ -736,6 +736,14 @@ fn source_registry() -> mizar_driver::registry::PhaseRegistry {
     builder.build().unwrap()
 }
 
+fn genuine_source_frontend_registry(
+    policy: &mizar_proof::policy::VerifierPolicy,
+) -> mizar_driver::registry::PhaseRegistry {
+    let mut config = StageConfig::frontend(vec![]);
+    config.verifier_policy = policy.clone();
+    assemble_registry(&config).unwrap()
+}
+
 fn publisher(
     snapshot: BuildSnapshotId,
     threshold: usize,
@@ -1250,11 +1258,8 @@ fn configured_native_cache_case(
             ));
             allow_frontend(&owner, &unit);
         }
-        let mut builder = PhaseRegistryBuilder::new();
-        builder.register_source_load();
-        builder.register_frontend(vec![]);
-        let mut driver =
-            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy))
+            .with_output_publisher(owner.clone());
         let submission = match route {
             0 | 1 => driver.submit_captured(session, &ids, &snapshots, input, Default::default()),
             2 => driver.submit_captured(
@@ -1638,11 +1643,19 @@ fn persistent_native_cache_case(
             if case == "publisher" {
                 owner.mark_obsolete(snapshot).unwrap();
             }
-            let mut builder = PhaseRegistryBuilder::new();
-            builder.register_source_load();
-            builder.register_frontend(vec![]);
-            let mut driver =
-                CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+            let registry = if case == "manual" {
+                let mut builder = PhaseRegistryBuilder::new();
+                builder.register_source_load();
+                builder.register_frontend(vec![]);
+                builder.build().unwrap()
+            } else {
+                genuine_source_frontend_registry(&if case == "policy-mismatch" {
+                    mizar_proof::policy::VerifierPolicy::interactive()
+                } else {
+                    policy.clone()
+                })
+            };
+            let mut driver = CompilerDriver::new(registry).with_output_publisher(owner.clone());
             if case == "provider" {
                 input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
             }
@@ -2227,10 +2240,7 @@ fn persistent_native_frontend_case(
                         },
                     );
                 }
-                let mut builder = PhaseRegistryBuilder::new();
-                builder.register_source_load();
-                builder.register_frontend(vec![]);
-                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy))
                     .with_output_publisher(owner.clone());
                 if case == "provider" {
                     input.phase_dispatch_inputs = Some(Box::new(SuppliedInput::None));
@@ -2761,11 +2771,9 @@ fn retained_native_frontend_cache_case(case: &str, threshold: usize, reverse: bo
         for unit in &units {
             allow_frontend(&owner, unit);
         }
-        let mut builder = PhaseRegistryBuilder::new();
-        builder.register_source_load();
-        builder.register_frontend(vec![]);
         (
-            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone()),
+            CompilerDriver::new(genuine_source_frontend_registry(&policy))
+                .with_output_publisher(owner.clone()),
             owner,
         )
     };

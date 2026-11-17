@@ -132,7 +132,7 @@ Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage�
 ## Native Disk cache preparation
 
 `SourceLoadInputs::prepare_native_disk_cache_request(self, &PhaseInput, &VerifierPolicy) -> Result<CacheKeyRequest, String>` は保護された native Disk capture から Cache owner の通常 request data を準備する。同一 snapshot、一意の束縛 module/version、実 SourceUnitCacheKey dispatch hash、parent/dependency hash なし、plan/snapshot toolchain 一致を要求する。既存 native_source guard を使い、root canonicalization は純粋 registry query の外の filesystem metadata I/O として明記し、source body は再取得しない。capture 不足・曖昧・foreign、Open/Generated、空 policy profile、POLICY_SCHEMA_VERSION 以外の policy schema、DEFAULT_CHECKER_SCHEMA_VERSION 以外の checker schema は拒否する。
-本体 mizar-cache/mizar-proof 依存は既存 metadata API と後述の Cache owner の Store lookup を消費する。明示 policy の policy_fingerprint().hash() をコピーし、config identity と分離する。互換性値は供給された識別を運ぶだけで、active-run 選択・現 lock file 認証・toolchain 互換性を証明しない。
+本体 mizar-cache/mizar-proof 依存は既存 metadata API と後述の Cache owner の Store lookup を消費する。明示 policy の policy_fingerprint().hash() をコピーし、config identity と分離する。記録 toolchain metadata は genuine running-image identity と分離し、この直接 API は active policy/registry 選択や release/pin 認証を確立しない。
 | Field | Exact projection |
 |---|---|
 | phase/work_unit/source_identity | SourceLoad、既存 IR package/module 表記、実 capture の package/module/path/hash/edition。allocator ID・診断 path を含めない |
@@ -140,9 +140,10 @@ Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage�
 | config_hash / policy_fingerprint | 実 snapshot.verifier_config_hash / Cache PolicyFingerprint::new(policy.policy_fingerprint().hash()) |
 | schema_versions | phase-output/SourceUnit = 実 SourceLoad descriptor schema; source-key/SourceUnit = SOURCE_UNIT_CACHE_KEY_VERSION; source-storage/Disk = mizar-frontend-source-disk-v1 |
 | cache schema / compatibility | key schema と cache_schema_compatibility は共に CACHE_KEY_SCHEMA_VERSION |
-| toolchain_compatibility | family mizar-session/toolchain、field identity、実 snapshot.toolchain.identity() |
+| toolchain_compatibility | mizar-session/toolchain identity = snapshot.toolchain.identity(); mizar-driver/running-native-image/v1 identity = 取得可能時の実 executed-artifact digest |
 | policy_compatibility | family mizar-proof/verifier-policy: schema_version・profile_id・checker_schema_version は実 public getter、fingerprint は実 policy fingerprint lower hex |
 | footprint / optional inputs | 上の source-only 検査後 Complete、uncacheable=false。消費 dependency/slice/artifact・VC/context/witness/reuse・diagnostic input はなし |
+Running-image 取得は純粋 query の外で Linux `/proc/self/exe` を開き、参加 Mizar 実装/codec が実 executable device/inode の実行 mapping 内にあることを要求する。全 bytes を BLAKE3 derive-key `mizar-driver/running-native-image/v1` で hash して lowercase hex とする。対応 workspace Cargo rlib closure は OS library と external backend を除き、未対応 linkage/platform や取得失敗は unavailable とする。Cache の既存 canonical-key/produced-by 完全一致を使い、異なる artifact の互換性は導入しない。取得不能時も直接 legacy API は metadata-only projection を維持するが、active Driver admission は image field を必須とする。この immutable process identity は currentness や release attestation ではない。
 captured-lockfile domain は保持 digest の派生 identity-carrier namespace であり、上流 digest algorithm や現 lock producer を主張しない。既存 source/storage owner の digest と bytes は保つ。Complete はこの SourceLoad の入力を全て束縛した footprint のみを表し、同 phase は output parent・lexical provider・dependency artifact を読まない。
 lease/currentness・active policy 対応・互換性検証・lookup・保持 output・scheduling は caller/runtime と Cache が所有する。request data/key 構築は hit/publication/proof receipt ではない。両登録 cache intent は NoKey のままとし、summary-only 動作・Open/editor uncacheability・cold Frontend key production と Steps 6–8 全体は保留する。
 

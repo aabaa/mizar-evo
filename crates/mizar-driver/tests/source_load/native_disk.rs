@@ -176,7 +176,10 @@ fn native_disk_cache_request_projects_real_storage_and_replays_without_local_ids
                 validation.cache_schema_compatibility.as_str(),
                 CACHE_KEY_SCHEMA_VERSION
             );
-            assert_eq!(validation.toolchain_compatibility.len(), 1);
+            assert_eq!(
+                validation.toolchain_compatibility.len(),
+                if cfg!(target_os = "linux") { 2 } else { 1 }
+            );
             assert_eq!(
                 validation.toolchain_compatibility[0].family,
                 "mizar-session/toolchain"
@@ -186,6 +189,22 @@ fn native_disk_cache_request_projects_real_storage_and_replays_without_local_ids
                 validation.toolchain_compatibility[0].value,
                 captured.snapshot().toolchain.identity()
             );
+            #[cfg(target_os = "linux")]
+            {
+                let image_bytes = fs::read("/proc/self/exe").unwrap();
+                let mut image_hasher =
+                    blake3::Hasher::new_derive_key("mizar-driver/running-native-image/v1");
+                image_hasher.update(&image_bytes);
+                assert_eq!(
+                    validation.toolchain_compatibility[1].family,
+                    "mizar-driver/running-native-image/v1"
+                );
+                assert_eq!(validation.toolchain_compatibility[1].field_name, "identity");
+                assert_eq!(
+                    validation.toolchain_compatibility[1].value,
+                    image_hasher.finalize().to_hex().to_string()
+                );
+            }
             assert_eq!(
                 validation
                     .policy_compatibility
@@ -2217,10 +2236,7 @@ fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
                 };
                 let owner = publisher(snapshot, threshold, &unit);
                 allow_frontend(&owner, &unit);
-                let mut builder = PhaseRegistryBuilder::new();
-                builder.register_source_load();
-                builder.register_frontend(vec![]);
-                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy))
                     .with_output_publisher(owner.clone());
                 fs::remove_file(fixture.root.join("alpha/src/main.miz")).unwrap();
                 if old {
@@ -2276,10 +2292,7 @@ fn native_disk_cache_scheduled_results_match_clean_runs_and_release_owners() {
                 let (_, clean_input) = fixture.submit_request(vec![], vec![]);
                 let clean_owner = publisher(snapshot, threshold, &unit);
                 allow_frontend(&clean_owner, &unit);
-                let mut clean_builder = PhaseRegistryBuilder::new();
-                clean_builder.register_source_load();
-                clean_builder.register_frontend(vec![]);
-                let clean = CompilerDriver::new(clean_builder.build().unwrap())
+                let clean = CompilerDriver::new(genuine_source_frontend_registry(&policy))
                     .with_output_publisher(clean_owner.clone())
                     .submit_captured(
                         session.clone(),
@@ -2481,11 +2494,8 @@ fn native_disk_cache_edits_match_independent_clean_prefixes_across_replay_contro
         fs::write(fixture.root.join("alpha/src/leaf.miz"), leaf).unwrap();
         let ids = InMemorySessionIdAllocator::new();
         let snapshots = SnapshotRegistry::new();
-        let mut builder = PhaseRegistryBuilder::new();
-        builder.register_source_load();
-        builder.register_frontend(vec![]);
-        let mut driver = CompilerDriver::new(builder.build().unwrap());
         let policy = mizar_proof::policy::VerifierPolicy::release();
+        let mut driver = CompilerDriver::new(genuine_source_frontend_registry(&policy));
         let store = CacheStoreRoot::new(fixture.root.join("equivalence-cache"));
         let mut baselines = Vec::new();
         let mut unused = None;
@@ -2601,11 +2611,9 @@ fn native_disk_cache_edits_match_independent_clean_prefixes_across_replay_contro
                         },
                     );
                 }
-                let mut clean_builder = PhaseRegistryBuilder::new();
-                clean_builder.register_source_load();
-                clean_builder.register_frontend(vec![]);
-                let mut clean_driver = CompilerDriver::new(clean_builder.build().unwrap())
-                    .with_output_publisher(owner.clone());
+                let mut clean_driver =
+                    CompilerDriver::new(genuine_source_frontend_registry(&policy))
+                        .with_output_publisher(owner.clone());
                 if !clean {
                     driver = driver.with_output_publisher(owner.clone());
                 }

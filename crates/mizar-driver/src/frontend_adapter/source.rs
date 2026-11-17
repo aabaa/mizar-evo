@@ -92,6 +92,14 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let fingerprint = policy.policy_fingerprint().hash();
         let descriptor = SourceLoadService.phase();
+        let mut toolchain_compatibility = vec![CompatibilityField {
+            family: "mizar-session/toolchain".to_owned(),
+            field_name: "identity".to_owned(),
+            value: self.snapshot.toolchain.identity().to_owned(),
+        }];
+        if let Ok(image) = SourceLoadService::running_native_image() {
+            toolchain_compatibility.push(image.clone());
+        }
         Ok(CacheKeyRequest {
             cache_schema_version: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
             phase: CachePhase::new(descriptor.service_name),
@@ -149,11 +157,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             policy_fingerprint: PolicyFingerprint::new(fingerprint),
             validation_inputs: CacheValidationInputs {
                 cache_schema_compatibility: CacheSchema::new(CACHE_KEY_SCHEMA_VERSION),
-                toolchain_compatibility: vec![CompatibilityField {
-                    family: "mizar-session/toolchain".to_owned(),
-                    field_name: "identity".to_owned(),
-                    value: self.snapshot.toolchain.identity().to_owned(),
-                }],
+                toolchain_compatibility,
                 dependency_artifacts: Vec::new(),
                 footprint_completeness: FootprintCompleteness::Complete,
                 uncacheable: false,
@@ -1248,6 +1252,115 @@ impl mizar_frontend::lexical_env::LexicalSummaryProvider for DependencyLexicalPr
 pub(crate) struct SourceLoadService;
 
 impl SourceLoadService {
+    // Only the opened executing artifact and OS executable mappings confer image provenance.
+    pub(crate) fn running_native_image()
+    -> Result<&'static mizar_cache::cache_key::CompatibilityField, String> {
+        static IMAGE: std::sync::OnceLock<mizar_cache::cache_key::CompatibilityField> =
+            std::sync::OnceLock::new();
+        if let Some(image) = IMAGE.get() {
+            return Ok(image);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            use mizar_cache::{cache_key::CacheKeyBuilder, cache_store::CacheStoreRoot};
+            use mizar_frontend::source::SourceUnit;
+            use mizar_ir::cache_adapter::IrCacheAdapter;
+            use std::{io::Read, os::unix::fs::MetadataExt};
+            let unavailable = || "running native image provenance is unavailable".to_owned();
+            let mut executable =
+                std::fs::File::open("/proc/self/exe").map_err(|_| unavailable())?;
+            let metadata = executable.metadata().map_err(|_| unavailable())?;
+            if !metadata.is_file() || metadata.ino() == 0 || metadata.len() == 0 {
+                return Err(unavailable());
+            }
+            let device = metadata.dev();
+            let major = ((device >> 8) & 0xfff) | ((device >> 32) & 0xfffff000);
+            let minor = (device & 0xff) | ((device >> 12) & 0xffffff00);
+            let mappings = std::fs::read_to_string("/proc/self/maps").map_err(|_| unavailable())?;
+            let anchors = [
+                Self::running_native_image as *const () as usize,
+                crate::registry::assemble_registry as *const () as usize,
+                <crate::frontend_adapter::SourceLoadService as PhaseService>::execute as *const ()
+                    as usize,
+                SourceUnit::canonical_disk_bytes as *const () as usize,
+                SourceUnit::from_canonical_storage_bytes as *const () as usize,
+                CacheKeyBuilder::build as *const () as usize,
+                CacheStoreRoot::lookup as *const () as usize,
+                CacheStoreRoot::insert as *const () as usize,
+                IrCacheAdapter::new as *const () as usize,
+                IrCacheAdapter::encode::<SourceUnit> as *const () as usize,
+                IrCacheAdapter::rehydrate_with_expected_payload::<SourceUnit> as *const () as usize,
+                mizar_proof::policy::VerifierPolicy::policy_fingerprint as *const () as usize,
+                mizar_build::planner::workspace_config_content_hash as *const () as usize,
+                mizar_session::source::normalize_path as *const () as usize,
+            ];
+            let mut found = vec![false; anchors.len()];
+            for line in mappings.lines() {
+                let mut fields = line.split_whitespace();
+                let Some(range) = fields.next() else { continue };
+                let Some(permissions) = fields.next() else {
+                    continue;
+                };
+                let _ = fields.next(); // file offset
+                let Some(device) = fields.next() else {
+                    continue;
+                };
+                let Some(inode) = fields.next() else { continue };
+                if !permissions.contains('x') || inode.parse::<u64>().ok() != Some(metadata.ino()) {
+                    continue;
+                }
+                let Some((map_major, map_minor)) = device.split_once(':') else {
+                    continue;
+                };
+                if u64::from_str_radix(map_major, 16).ok() != Some(major)
+                    || u64::from_str_radix(map_minor, 16).ok() != Some(minor)
+                {
+                    continue;
+                }
+                let Some((start, end)) = range.split_once('-') else {
+                    continue;
+                };
+                let (Ok(start), Ok(end)) = (
+                    usize::from_str_radix(start, 16),
+                    usize::from_str_radix(end, 16),
+                ) else {
+                    continue;
+                };
+                for (address, present) in anchors.iter().zip(&mut found) {
+                    *present |= (start..end).contains(address);
+                }
+            }
+            if !found.into_iter().all(|present| present) {
+                return Err(unavailable());
+            }
+            let mut hasher = blake3::Hasher::new_derive_key("mizar-driver/running-native-image/v1");
+            let mut buffer = [0; 64 * 1024];
+            let mut length = 0;
+            loop {
+                let read = executable.read(&mut buffer).map_err(|_| unavailable())?;
+                if read == 0 {
+                    break;
+                }
+                hasher.update(&buffer[..read]);
+                length += read as u64;
+            }
+            if length != metadata.len() {
+                return Err(unavailable());
+            }
+            let image = mizar_cache::cache_key::CompatibilityField {
+                family: "mizar-driver/running-native-image/v1".to_owned(),
+                field_name: "identity".to_owned(),
+                value: hasher.finalize().to_hex().to_string(),
+            };
+            let _ = IMAGE.set(image);
+            Ok(IMAGE
+                .get()
+                .expect("successful running image acquisition initializes identity"))
+        }
+        #[cfg(not(target_os = "linux"))]
+        Err("running native image provenance is unsupported on this platform".to_owned())
+    }
+
     pub(crate) fn failure_draft(
         snapshot: mizar_session::BuildSnapshotId,
         source_input: &SourceInput,

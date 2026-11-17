@@ -3057,6 +3057,261 @@ fn persistent_native_cache_cold_write_then_fresh_warm_matches_clean() {
 }
 
 #[test]
+fn native_disk_cache_rejects_a_different_running_elf() {
+    use mizar_cache::cache_store::CacheStoreRoot;
+    #[cfg(target_os = "linux")]
+    use mizar_cache::{
+        cache_key::{CacheKeyBuildOutcome, CacheKeyBuilder},
+        cache_store::CacheLookupOutcome,
+    };
+    use std::sync::Arc;
+    #[cfg(target_os = "linux")]
+    use std::{fs::OpenOptions, io::Write, process::Command};
+
+    const CHILD_STORE: &str = "MIZAR_DRIVER_IMAGE_CACHE_CHILD_STORE";
+    const CHILD_HIT: &str = "MIZAR_DRIVER_IMAGE_CACHE_CHILD_HIT";
+    #[cfg(target_os = "linux")]
+    const TEST_NAME: &str = "misc::native_disk_cache_rejects_a_different_running_elf";
+    const SOURCE: &[u8] = b"definition\nend;\n";
+
+    fn submit(
+        fixture: &Fixture,
+        ids: &InMemorySessionIdAllocator,
+        snapshots: &SnapshotRegistry,
+        store: &CacheStoreRoot,
+        mode: Option<NativeCacheMode>,
+    ) -> (
+        mizar_driver::driver::BuildSubmission,
+        Arc<PhaseOutputPublisher>,
+    ) {
+        use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        input.cache_policy = CacheSchedulingPolicy::Enabled;
+        let plan = produce_build_plan(
+            input.plan_request.clone(),
+            input.workspace_packages.clone(),
+            input.lockfile.clone(),
+        )
+        .unwrap();
+        draft.source_inputs.versions.clear();
+        draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+        draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+            &plan.verifier_config,
+            &plan.build_config,
+        ));
+        let session = draft
+            .capture_sources(
+                ids,
+                snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new("main"),
+                        normalized_path: normalize_path(
+                            &fixture.root.join("alpha"),
+                            Path::new("src/main.miz"),
+                        )
+                        .unwrap(),
+                        edition: Edition::new("2025"),
+                        origin: SourceOriginInput::Disk {
+                            path: "src/main.miz".into(),
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        let unit = WorkUnit::Module {
+            module: mizar_build::module_index::ModuleId::new(
+                PackageId::new("alpha"),
+                ModulePath::new("main"),
+            ),
+        };
+        let owner = publisher(session.captured().snapshot().id, usize::MAX, &unit);
+        allow_frontend(&owner, &unit);
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let options = mode.map(|mode| NativeCacheOptions {
+            policy: &policy,
+            store,
+            mode,
+        });
+        let submission = CompilerDriver::new(genuine_source_frontend_registry(&policy))
+            .with_output_publisher(owner.clone())
+            .submit_captured(
+                session,
+                ids,
+                snapshots,
+                input,
+                SubmitOptions {
+                    native_cache: options,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        (submission, owner)
+    }
+
+    fn source_result(
+        submission: &mizar_driver::driver::BuildSubmission,
+        owner: &PhaseOutputPublisher,
+    ) -> (
+        DriverSubmissionStatus,
+        BuildSessionState,
+        PhaseStatus,
+        Vec<u8>,
+        Vec<mizar_diagnostics::sink::DiagnosticBatch>,
+    ) {
+        let task = source_task(submission);
+        let result = &submission.scheduler_run.as_ref().unwrap().phase_results[&task.id][0];
+        let handle = owner
+            .storage()
+            .typed_handle::<SourceUnit>(&result.output_refs[0], &OutputKind::new("SourceUnit"))
+            .unwrap();
+        (
+            submission.status,
+            submission.session.state(),
+            result.status,
+            owner
+                .storage()
+                .get(&handle)
+                .unwrap()
+                .canonical_disk_bytes()
+                .unwrap(),
+            result.diagnostics.clone(),
+        )
+    }
+
+    if let Some(store_path) = std::env::var_os(CHILD_STORE) {
+        let store = CacheStoreRoot::new(store_path);
+        let fixture = Fixture::new(SOURCE);
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let clean = submit(&fixture, &ids, &snapshots, &store, None);
+        let cached = submit(
+            &fixture,
+            &ids,
+            &snapshots,
+            &store,
+            Some(NativeCacheMode::ReadOnly),
+        );
+        let expected_hit = std::env::var_os(CHILD_HIT).is_some_and(|value| value == "1");
+        let task = source_task(&cached.0);
+        let run = cached.0.scheduler_run.as_ref().unwrap();
+        assert_eq!(
+            run.task_states
+                .iter()
+                .find(|state| state.task_id == task.id)
+                .unwrap()
+                .state,
+            if expected_hit {
+                TaskState::CacheHit
+            } else {
+                TaskState::Completed
+            }
+        );
+        assert_eq!(
+            source_result(&cached.0, &cached.1),
+            source_result(&clean.0, &clean.1)
+        );
+        println!("native-image-child: source outcome matched clean run");
+        return;
+    }
+
+    let fixture = Fixture::new(SOURCE);
+    let store = CacheStoreRoot::new(fixture.root.join("alpha/.mizar-cache"));
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let cold = submit(
+        &fixture,
+        &ids,
+        &snapshots,
+        &store,
+        Some(NativeCacheMode::PersistentSource),
+    );
+    let cold_task = source_task(&cold.0);
+    assert_eq!(
+        cold.0
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .task_states
+            .iter()
+            .find(|state| state.task_id == cold_task.id)
+            .unwrap()
+            .state,
+        TaskState::Completed
+    );
+    #[cfg(not(target_os = "linux"))]
+    {
+        assert!(!store.root().exists());
+        let clean = submit(&fixture, &ids, &snapshots, &store, None);
+        assert_eq!(
+            source_result(&cold.0, &cold.1),
+            source_result(&clean.0, &clean.1)
+        );
+    }
+    #[cfg(target_os = "linux")]
+    {
+        assert!(store.root().exists());
+        let (inputs, source_input) = native_disk_lookup_context(&cold.0, &ids);
+        let policy = mizar_proof::policy::VerifierPolicy::release();
+        let CacheKeyBuildOutcome::Cacheable(key) = CacheKeyBuilder::new(
+            inputs
+                .prepare_native_disk_cache_request(&source_input, &policy)
+                .unwrap(),
+        )
+        .build() else {
+            panic!("cold native Disk record has a viable key");
+        };
+        assert!(matches!(store.lookup(&key), CacheLookupOutcome::Hit(_)));
+
+        let executable = std::env::current_exe().unwrap();
+        let run_child = |mut command: Command, expected_hit: bool| {
+            let output = command
+                .args(["--exact", TEST_NAME, "--nocapture"])
+                .env(CHILD_STORE, store.root())
+                .env(CHILD_HIT, if expected_hit { "1" } else { "0" })
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "child failed: {}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(String::from_utf8_lossy(&output.stdout).contains("native-image-child:"));
+        };
+        run_child(Command::new(&executable), true);
+
+        let altered = fixture.root.join("different-running-image-test");
+        fs::copy(&executable, &altered).unwrap();
+        OpenOptions::new()
+            .append(true)
+            .open(&altered)
+            .unwrap()
+            .write_all(b"mizar-driver-different-running-image\n")
+            .unwrap();
+        run_child(Command::new(&altered), false);
+        #[cfg(all(target_os = "linux", target_env = "gnu"))]
+        {
+            let mappings = fs::read_to_string("/proc/self/maps").unwrap();
+            let interpreter = mappings
+                .lines()
+                .filter_map(|line| line.split_whitespace().last())
+                .find(|path| {
+                    Path::new(path)
+                        .file_name()
+                        .is_some_and(|name| name.to_string_lossy().starts_with("ld-linux"))
+                })
+                .expect("GNU Linux executable has a native ELF interpreter");
+            let mut command = Command::new(interpreter);
+            command.arg(&executable);
+            run_child(command, false);
+        }
+    }
+}
+#[test]
 fn persistent_native_cache_cold_guards_cancellation_and_real_store_error() {
     for case in [
         "disabled",
@@ -3069,6 +3324,8 @@ fn persistent_native_cache_cold_guards_cancellation_and_real_store_error() {
         "publisher",
         "store-error",
         "opt-out",
+        "manual",
+        "policy-mismatch",
     ] {
         let build = if case == "opt-out" {
             "[build]\nincremental = false\n"

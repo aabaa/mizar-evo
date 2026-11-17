@@ -1577,6 +1577,7 @@ impl CompilerDriver {
             store,
             mode,
         }) = native_cache
+            && let Some(policy) = self.registry.native_source_policy(policy)
             && cache_policy == CacheSchedulingPolicy::Enabled
             && phase_dispatch_inputs.is_none()
             && built_in_prefix
@@ -2122,6 +2123,9 @@ impl CompilerDriver {
             };
             let adapter = mizar_ir::cache_adapter::IrCacheAdapter::new(publisher.clone());
             for (task, input) in &pending_sources {
+                let Some(policy) = self.registry.native_source_policy(policy) else {
+                    continue;
+                };
                 if !scheduler_run.task_states.iter().any(|record| {
                     &record.task_id == task
                         && record.state == mizar_build::scheduler::TaskState::Completed
