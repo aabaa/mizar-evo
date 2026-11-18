@@ -3100,3 +3100,787 @@ fn doc_q1_comment_only_republication_preserves_old_plans_and_refuses_old_binding
     );
     std::fs::remove_dir_all(root).unwrap();
 }
+
+fn doc7_range(start: usize, end: usize) -> mizar_artifact::store::CanonicalJson {
+    use mizar_artifact::store::CanonicalJson as J;
+    J::array([J::integer(start as i64), J::integer(end as i64)])
+}
+
+fn doc7_landmark(
+    kind: &str,
+    start: usize,
+    end: usize,
+    parent: Option<usize>,
+    export: Option<&mizar_artifact::verified_artifact::VerifiedExport>,
+) -> mizar_artifact::store::CanonicalJson {
+    use mizar_artifact::store::CanonicalJson as J;
+    J::array([
+        J::string(kind),
+        doc7_range(start, end),
+        parent.map_or(J::Null, |p| J::integer(p as i64)),
+        J::Bool(false),
+        export.map_or(J::Null, |e| {
+            J::array([J::string(&e.origin_id), J::string(&e.fully_qualified_name)])
+        }),
+    ])
+}
+
+fn doc7_projection(
+    original: &str,
+    landmarks: Vec<mizar_artifact::store::CanonicalJson>,
+) -> mizar_artifact::store::CanonicalJson {
+    use mizar_artifact::store::CanonicalJson as J;
+    use mizar_lexer::{CommentKind, SourcePreprocessMapSegment as P};
+    use mizar_session::LoadingMapSegment as L;
+    let (loaded, loading) = mizar_session::normalize_source_text(original);
+    let lexical = mizar_lexer::preprocess_source_for_lexing(&loaded);
+    assert!(lexical.diagnostics.is_empty());
+    let kind = |kind| match kind {
+        CommentKind::SingleLine => "single_line",
+        CommentKind::MultiLine => "multi_line",
+        CommentKind::Documentation => "documentation",
+        _ => unreachable!(),
+    };
+    let loading = loading.unwrap_or_else(|| {
+        vec![L::Original {
+            loaded: mizar_session::TextRange::new(0, loaded.len()),
+            original: mizar_session::TextRange::new(0, original.len()),
+        }]
+    });
+    J::object([
+        ("original", J::string(original)),
+        ("loaded", J::string(&loaded)),
+        ("lexical", J::string(&lexical.lexical_text)),
+        (
+            "loading",
+            J::array(loading.into_iter().map(|segment| {
+                let (kind, output, input) = match segment {
+                    L::Original { loaded, original } => ("original", Some(loaded), original),
+                    L::NormalizedNewline { loaded, original } => {
+                        ("newline", Some(loaded), original)
+                    }
+                    L::RemovedLeadingBom { original } => ("bom", None, original),
+                    _ => unreachable!(),
+                };
+                J::array([
+                    J::string(kind),
+                    output.map_or(J::Null, |r| doc7_range(r.start, r.end)),
+                    doc7_range(input.start, input.end),
+                ])
+            })),
+        ),
+        (
+            "preprocess",
+            J::array(lexical.preprocess_map.segments.iter().map(|segment| {
+                let (tag, output, input, comment) = match *segment {
+                    P::Original { lexical, source } => ("original", Some(lexical), source, J::Null),
+                    P::RemovedComment { source, kind: k } => {
+                        ("removed", None, source, J::string(kind(k)))
+                    }
+                    P::SyntheticWhitespace { lexical, anchor } => {
+                        ("synthetic", Some(lexical), anchor, J::Null)
+                    }
+                    _ => unreachable!(),
+                };
+                J::array([
+                    J::string(tag),
+                    output.map_or(J::Null, |r| doc7_range(r.start, r.end)),
+                    doc7_range(input.start, input.end),
+                    comment,
+                ])
+            })),
+        ),
+        (
+            "comments",
+            J::array(lexical.comments.iter().map(|c| {
+                J::array([
+                    J::string(kind(c.kind)),
+                    doc7_range(c.span.start, c.span.end),
+                    J::string(&c.lexeme),
+                ])
+            })),
+        ),
+        (
+            "whitespace",
+            J::array(
+                loaded
+                    .char_indices()
+                    .filter(|&(at, ch)| {
+                        ch.is_whitespace()
+                            && !lexical
+                                .comments
+                                .iter()
+                                .any(|c| c.span.start <= at && at < c.span.end)
+                    })
+                    .map(|(at, ch)| doc7_range(at, at + ch.len_utf8())),
+            ),
+        ),
+        ("landmarks", J::array(landmarks)),
+    ])
+    .unwrap()
+}
+
+// Publish real Session normalization and Lexer preprocessing through Artifact's
+// codec and Doc's bound-plan reader. Structural verifier metadata permits cases
+// (missing labels, recovery, competing targets) a successful producer cannot emit.
+fn doc7_fixture(
+    package: &str,
+    original: &str,
+    target: Option<(&str, &str, &str)>,
+    adjust: impl FnOnce(
+        &mut mizar_artifact::verified_artifact::VerifiedArtifact,
+        &mut mizar_artifact::module_summary::ModuleSummary,
+        &mut Vec<mizar_artifact::store::CanonicalJson>,
+    ),
+) -> (
+    PathBuf,
+    mizar_doc::doc_build::DocBuildPlan,
+    mizar_session::LoadedSource,
+) {
+    use mizar_artifact::{comment_projection::*, manifest::*, module_summary::*, store::*};
+    use mizar_session::{DiskSourceLoader, SourceLoader};
+    let (root, mut manifest, mut artifacts, mut summaries, _) =
+        doc_build_summary_fixture(package, true, false);
+    let path = root.join("src/source.miz");
+    std::fs::write(&path, original).unwrap();
+    let loader = DiskSourceLoader::new(&root);
+    let source = loader
+        .load(
+            super::super::shared::snapshot_id(40_007),
+            mizar_session::SourceInput {
+                package_id: mizar_session::PackageId::new(package),
+                module_path: mizar_session::ModulePath::new("module_0"),
+                normalized_path: loader.normalize_path(&root, &path).unwrap(),
+                edition: mizar_session::Edition::new(artifacts[0].module.language_edition.clone()),
+                origin: mizar_session::SourceOriginInput::Disk { path },
+            },
+            &mizar_session::InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
+    doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, None);
+    let artifact = &mut artifacts[0];
+    artifact.source_hash = source.source_hash;
+    manifest.modules[0].source_hash = source.source_hash;
+    artifact.provenance.captured_source =
+        Some((source.source_id, source.origin.clone(), source.source_hash));
+    let summary = &mut summaries[0];
+    summary.source_hash = source.source_hash;
+    let mut landmarks = Vec::new();
+    if let Some((kind, syntax, body)) = target {
+        let start = source.text.find(body).unwrap();
+        let lexical = mizar_lexer::preprocess_source_for_lexing(&source.text).lexical_text;
+        let lexical_start = lexical.find(body).unwrap();
+        let export = &mut artifact.exports[0];
+        export.export_kind = kind.into();
+        export.proof_status = Some(
+            if matches!(kind, "definition" | "functor" | "redefinition") {
+                mizar_artifact::verified_artifact::ExportProofStatus::NotRequired
+            } else {
+                mizar_artifact::verified_artifact::ExportProofStatus::Accepted
+            },
+        );
+        export.source_range = SourceRangeSummary {
+            start_byte: lexical_start as u64,
+            end_byte: (lexical_start + body.len()) as u64,
+        };
+        summary.exported_labels.push(ExportedLabelSummary {
+            origin_id: "stored-label-origin".into(),
+            label: "StoredLabel".into(),
+            owner_fully_qualified_name: export.fully_qualified_name.clone(),
+            visibility: "public".into(),
+            source_range: export.source_range,
+            target_kind: match kind {
+                "functor" | "redefinition" => "definition",
+                "lemma" => "theorem",
+                _ => kind,
+            }
+            .into(),
+        });
+        landmarks.push(doc7_landmark(
+            syntax,
+            start,
+            start + body.len(),
+            None,
+            Some(export),
+        ));
+    }
+    adjust(artifact, summary, &mut landmarks);
+    artifact.refresh_hashes().unwrap();
+    summary.refresh_interface_hash().unwrap();
+    let summary_path =
+        PublishedArtifactPath::new(manifest.modules[0].module_summary_file.as_ref().unwrap())
+            .unwrap();
+    let summary_write = write_published_artifact(
+        &root,
+        &summary_path,
+        &module_summary_json(summary).unwrap(),
+        &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+        &[],
+    )
+    .unwrap();
+    let entry = &mut manifest.modules[0];
+    entry.module_summary_hash.as_mut().unwrap().digest = summary_write.artifact_hash;
+    entry.module_summary_interface_hash.as_mut().unwrap().digest = summary.interface_hash;
+    let commented = CommentedArtifact {
+        artifact: artifact.clone(),
+        comments: doc7_projection(original, landmarks),
+    };
+    let write = write_published_artifact(
+        &root,
+        &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+        &commented_artifact_json(&commented).unwrap(),
+        &artifact_hash_domain(
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        ),
+        &artifact_hash_excluded_paths(),
+    )
+    .unwrap();
+    entry.artifact_hash.digest = write.artifact_hash;
+    entry.interface_hash.digest = commented.compute_interface_hash().unwrap();
+    entry.implementation_hash.digest = commented.compute_implementation_hash().unwrap();
+    let hash = write_manifest_file(&root, &manifest).unwrap().artifact_hash;
+    let (registry, request, snapshot, workspace) =
+        doc_build_registry(&[(&root, &manifest, &artifacts)]);
+    let mut plans = mizar_doc::doc_build::build_doc_plans(
+        &registry,
+        request,
+        snapshot.id,
+        &workspace,
+        &doc_q1_request(&root, &manifest, hash),
+    )
+    .unwrap();
+    (root, plans.remove(0), source)
+}
+
+fn doc7_attach(
+    plan: &mizar_doc::doc_build::DocBuildPlan,
+) -> mizar_doc::comments::CommentAttachments<'_> {
+    let module = plan
+        .index
+        .modules
+        .keys()
+        .find(|m| m.module_path == "module_0")
+        .unwrap();
+    mizar_doc::comments::attach_comments(plan, module, None).unwrap()
+}
+
+fn doc7_codes(result: &mizar_doc::comments::CommentAttachments<'_>) -> Vec<String> {
+    result
+        .warnings
+        .iter()
+        .map(|w| w.code().to_string())
+        .collect()
+}
+
+#[test]
+fn doc7_module_prefix_keeps_separated_raw_blocks_module_only() {
+    use mizar_doc::comments::CommentTarget;
+    let text = " \t\n:: preface\n::: first λ\n  :::\n\t::: third\n\n::: second block\n::= separator =::\n::: final block\ntheorem T: true;\n";
+    let (root, plan, _) = doc7_fixture(
+        "doc7",
+        text,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |_, _, _| {},
+    );
+    let result = doc7_attach(&plan);
+    assert!(result.available());
+    assert!(result.warnings.is_empty());
+    assert_eq!(result.blocks.len(), 3);
+    assert_eq!(
+        result
+            .blocks
+            .iter()
+            .map(|b| b.lines.len())
+            .collect::<Vec<_>>(),
+        [3, 1, 1]
+    );
+    for block in &result.blocks {
+        assert!(matches!(block.target, Some(CommentTarget::Module)));
+        assert!(block.candidates.is_empty());
+        let raw = &text[block.range.start..block.range.end];
+        assert!(raw.starts_with(":::"));
+        assert!(!raw.contains("separator"));
+    }
+    assert!(
+        result
+            .blocks
+            .windows(2)
+            .all(|b| b[0].range.end < b[1].range.start)
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc7_exact_named_targets_use_original_export_and_labels_with_attached_annotation() {
+    use mizar_doc::comments::CommentTarget;
+    for (kind, syntax, body) in [
+        ("functor", "FunctorDefinition", "func f -> object equals x;"),
+        (
+            "redefinition",
+            "FunctorRedefinition",
+            "redefine func f -> object equals x;",
+        ),
+        ("theorem", "TheoremItem", "theorem T: true;"),
+        ("lemma", "LemmaItem", "lemma T: true;"),
+        (
+            "registration",
+            "ExistentialRegistration",
+            "cluster inhabited for set;",
+        ),
+        ("algorithm", "AlgorithmDefinition", "algorithm A;"),
+    ] {
+        let text = format!("import X;\n::: item\n@proof_hint(\"trivial\")\n{body}\n");
+        let (root, plan, _) = doc7_fixture(
+            "doc7",
+            &text,
+            Some((kind, syntax, body)),
+            |artifact, _, landmarks| {
+                let start = text.find('@').unwrap();
+                let item_start = text.find(body).unwrap();
+                let item_end = item_start + body.len();
+                let item = landmarks.pop().unwrap();
+                landmarks.push(doc7_landmark(
+                    "ImportItem",
+                    0,
+                    "import X;".len(),
+                    None,
+                    None,
+                ));
+                let mut item = item;
+                if matches!(syntax, "TheoremItem" | "LemmaItem") {
+                    // parser/module.rs::parse_theorem_item owns leading Annotation
+                    // children; its covering_token_range begins at the annotation.
+                    if let mizar_artifact::store::CanonicalJson::Array(row) = &mut item {
+                        row[1] = doc7_range(start, item_end);
+                    }
+                    landmarks.push(item);
+                    landmarks.push(doc7_landmark(
+                        "Annotation",
+                        start,
+                        item_start - 1,
+                        Some(1),
+                        None,
+                    ));
+                } else {
+                    landmarks.push(doc7_landmark(
+                        "AnnotatedStatement",
+                        start,
+                        item_end,
+                        None,
+                        None,
+                    ));
+                    landmarks.push(doc7_landmark(
+                        "Annotation",
+                        start,
+                        item_start - 1,
+                        Some(1),
+                        None,
+                    ));
+                    if let mizar_artifact::store::CanonicalJson::Array(row) = &mut item {
+                        row[2] = mizar_artifact::store::CanonicalJson::integer(1);
+                    }
+                    landmarks.push(item);
+                }
+                assert_eq!(artifact.exports[0].fully_qualified_name, "fixture::export");
+            },
+        );
+        let result = doc7_attach(&plan);
+        assert!(result.warnings.is_empty(), "{kind}: {:?}", result.warnings);
+        assert_eq!(result.blocks.len(), 1);
+        let Some(CommentTarget::Item(export)) = result.blocks[0].target else {
+            panic!("{kind} did not attach")
+        };
+        assert!(std::ptr::eq(export, &result.input.exports[0]));
+        assert_eq!(export.origin_id, "structural-export");
+        assert_eq!(export.fully_qualified_name, "fixture::export");
+        assert_eq!(result.blocks[0].lines.len(), 1);
+        assert!(!result.blocks[0].candidates.is_empty());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn doc7_interruptions_never_skip_to_later_target_and_retain_orphan_text() {
+    for interruption in [
+        "\n",
+        ":: ordinary\n",
+        "import Y;\n",
+        "reserve x for set;\n",
+        "@standalone\n",
+        "@proof_hint(\"trivial\")\n\n",
+        "@proof_hint(\"trivial\")\n:: interruption\n",
+        "",
+    ] {
+        let trailing = interruption.is_empty();
+        let body = "theorem T: true;";
+        let text = if trailing {
+            "import X;\n::: retained trailing\n".into()
+        } else {
+            format!("import X;\n::: retained\n{interruption}{body}\n")
+        };
+        let (root, plan, _) = doc7_fixture(
+            "doc7",
+            &text,
+            (!trailing).then_some(("theorem", "TheoremItem", body)),
+            |_, _, landmarks| {
+                let mut target = landmarks.pop();
+                landmarks.push(doc7_landmark(
+                    "ImportItem",
+                    0,
+                    "import X;".len(),
+                    None,
+                    None,
+                ));
+                if interruption.starts_with("@proof_hint") {
+                    let start = text.find(interruption).unwrap();
+                    let end = text.find(body).unwrap() + body.len();
+                    // Same direct-child shape emitted by parse_theorem_item.
+                    let Some(mizar_artifact::store::CanonicalJson::Array(row)) = &mut target else {
+                        unreachable!()
+                    };
+                    row[1] = doc7_range(start, end);
+                    landmarks.push(target.take().unwrap());
+                    landmarks.push(doc7_landmark(
+                        "Annotation",
+                        start,
+                        start + "@proof_hint(\"trivial\")".len(),
+                        Some(1),
+                        None,
+                    ));
+                } else if !trailing && !interruption.starts_with(['\n', ':']) {
+                    let start = text.find(interruption).unwrap();
+                    let kind = if interruption.starts_with('@') {
+                        "StandaloneDiagnosticAnnotation"
+                    } else if interruption.starts_with("reserve") {
+                        "ReserveItem"
+                    } else {
+                        "ImportItem"
+                    };
+                    landmarks.push(doc7_landmark(
+                        kind,
+                        start,
+                        start + interruption.len() - 1,
+                        None,
+                        None,
+                    ));
+                }
+                landmarks.extend(target);
+            },
+        );
+        let result = doc7_attach(&plan);
+        assert_eq!(doc7_codes(&result), ["W0400"], "{interruption:?}");
+        assert!(result.blocks[0].target.is_none());
+        assert!(
+            text[result.blocks[0].range.start..result.blocks[0].range.end].contains("retained")
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn doc7_missing_ambiguous_unsupported_and_unverified_targets_choose_none() {
+    use mizar_artifact::{store::CanonicalJson as J, verified_artifact::ExportProofStatus};
+    for (case, code) in [
+        ("identity", "W0401"),
+        ("label", "W0401"),
+        ("unsupported", "W0401"),
+        ("nested", "W0401"),
+        ("recovered", "W0403"),
+        ("unverified", "W0403"),
+        ("absent-status", "W0403"),
+        ("ambiguous", "W0402"),
+        ("range", "W0402"),
+    ] {
+        let text = if case == "nested" {
+            "import X;\ntheorem Outer: true;\n::: retained\ntheorem T: true;\n"
+        } else {
+            "import X;\n::: retained\ntheorem T: true;\n"
+        };
+        let (root, plan, _) = doc7_fixture(
+            "doc7",
+            text,
+            Some(("theorem", "TheoremItem", "theorem T: true;")),
+            |artifact, summary, landmarks| {
+                let J::Array(row) = &mut landmarks[0] else {
+                    unreachable!()
+                };
+                match case {
+                    "identity" => row[4] = J::Null,
+                    "label" => summary.exported_labels.clear(),
+                    "unsupported" => row[0] = J::string("StatementItem"),
+                    "nested" => {
+                        row[2] = J::integer(1);
+                    }
+                    "recovered" => row[3] = J::Bool(true),
+                    "unverified" => {
+                        artifact.exports[0].proof_status = Some(ExportProofStatus::NotAccepted)
+                    }
+                    "absent-status" => artifact.exports[0].proof_status = None,
+                    "ambiguous" => {
+                        let mut other = artifact.exports[0].clone();
+                        other.origin_id.push_str("-other");
+                        other.fully_qualified_name.push_str("Other");
+                        let mut label = summary.exported_labels[0].clone();
+                        label.origin_id.push_str("-other");
+                        label.owner_fully_qualified_name = other.fully_qualified_name.clone();
+                        summary.exported_labels.push(label);
+                        let start = text.find("theorem").unwrap();
+                        landmarks.push(doc7_landmark(
+                            "FunctorDefinition",
+                            start,
+                            start + "theorem T: true;".len(),
+                            None,
+                            Some(&other),
+                        ));
+                        artifact.exports.push(other);
+                    }
+                    "range" => {
+                        artifact.exports[0].source_range.start_byte = 0;
+                        artifact.exports[0].source_range.end_byte = 1;
+                    }
+                    _ => unreachable!(),
+                }
+                let target = landmarks.remove(0);
+                landmarks.insert(
+                    0,
+                    doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+                );
+                if case == "nested" {
+                    let start = text.find("theorem Outer").unwrap();
+                    landmarks.push(doc7_landmark("TheoremItem", start, text.len(), None, None));
+                    landmarks.push(target);
+                } else {
+                    landmarks.insert(1, target);
+                }
+            },
+        );
+        let result = doc7_attach(&plan);
+        assert_eq!(doc7_codes(&result), [code], "{case}");
+        assert!(result.blocks[0].target.is_none(), "{case}");
+        assert_eq!(result.blocks[0].lines.len(), 1);
+        assert!(!result.blocks[0].candidates.is_empty());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn doc7_composes_unicode_bom_newlines_and_preprocessing_or_warns_with_provenance() {
+    use mizar_diagnostics::failure_record::DiagnosticPrimaryLocation;
+    use mizar_doc::comments::{CommentTarget, attach_comments};
+    let text = "\u{feff}import X;\r\n:: λ preface\r\n::: λ docs\r\ntheorem T: true;\r\n";
+    let (root, plan, source) = doc7_fixture(
+        "doc7",
+        text,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |_, _, landmarks| {
+            landmarks.insert(
+                0,
+                doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+            );
+        },
+    );
+    let result = doc7_attach(&plan);
+    assert!(result.warnings.is_empty());
+    assert!(matches!(
+        result.blocks[0].target,
+        Some(CommentTarget::Item(_))
+    ));
+    assert_eq!(
+        &source.text[result.blocks[0].range.start..result.blocks[0].range.end],
+        "::: λ docs\n"
+    );
+    let saved = result.input.comment_projection.clone();
+    assert_eq!(
+        saved,
+        doc7_projection(
+            text,
+            match &saved {
+                mizar_artifact::store::CanonicalJson::Object(o) => match &o["landmarks"] {
+                    mizar_artifact::store::CanonicalJson::Array(a) => a.clone(),
+                    _ => unreachable!(),
+                },
+                _ => unreachable!(),
+            }
+        )
+    );
+    let foreign_source = source;
+    std::fs::remove_dir_all(root).unwrap();
+    let (root, plan, source) = doc7_fixture(
+        "doc7",
+        "import X;\n::: kept\ntheorem T: true;\n",
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |artifact, _, landmarks| {
+            artifact.exports[0].source_range.start_byte = 10_000;
+            artifact.exports[0].source_range.end_byte = 10_001;
+            landmarks.insert(
+                0,
+                doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+            );
+        },
+    );
+    let result = doc7_attach(&plan);
+    assert_eq!(doc7_codes(&result), ["W0404"]);
+    assert!(result.blocks[0].target.is_none());
+    assert!(
+        matches!(result.warnings[0].primary_location(), DiagnosticPrimaryLocation::Documentation { publication_hash, package_id, package_version, lockfile_identity, module_path, language_edition, block_ordinal: 0 } if *publication_hash == plan.manifest.artifact_hash && package_id == &result.module.package_id && package_version == &result.module.package_version && lockfile_identity == &result.module.lockfile_identity && module_path == &result.module.module_path && language_edition == &result.module.language_edition)
+    );
+    let bound = attach_comments(&plan, result.module, Some(&source)).unwrap();
+    assert!(
+        matches!(bound.warnings[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == mizar_session::SourceRange { source_id: source.source_id, start: bound.blocks[0].range.start, end: bound.blocks[0].range.end })
+    );
+    let incompatible = attach_comments(&plan, result.module, Some(&foreign_source)).unwrap();
+    assert_eq!(incompatible.warnings, result.warnings);
+    assert!(incompatible.blocks[0].source_range.is_none());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc7_replay_availability_private_option_and_warning_promotion_preserve_inputs() {
+    let (root, mut plan, _) = doc7_fixture(
+        "doc7",
+        "import X;\n::: retained\n",
+        None,
+        |_, _, landmarks| {
+            landmarks.push(doc7_landmark(
+                "ImportItem",
+                0,
+                "import X;".len(),
+                None,
+                None,
+            ));
+        },
+    );
+    let saved = plan.clone();
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(std::iter::once("src/source.miz".to_owned()))
+        .chain(
+            plan.manifest
+                .manifest
+                .modules
+                .iter()
+                .flat_map(|m| [Some(m.artifact_file.clone()), m.module_summary_file.clone()])
+                .flatten(),
+        )
+        .chain(
+            plan.manifest
+                .manifest
+                .modules
+                .iter()
+                .flat_map(|m| m.proof_witnesses.iter().map(|w| w.witness_path.clone())),
+        )
+        .collect::<Vec<_>>();
+    let before = paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    let initial = doc7_attach(&plan);
+    assert_eq!(doc7_codes(&initial), ["W0400"]);
+    assert!(!initial.documentation_failed());
+    let blocks = format!("{:?}", initial.blocks);
+    let warnings = initial.warnings.clone();
+    assert_eq!(blocks, format!("{:?}", doc7_attach(&plan).blocks));
+    assert_eq!(initial.warnings, doc7_attach(&plan).warnings);
+    drop(initial);
+    plan.profile.include_private_docs = true;
+    assert_eq!(blocks, format!("{:?}", doc7_attach(&plan).blocks));
+    assert_eq!(warnings, doc7_attach(&plan).warnings);
+    plan.profile.fail_on_doc_warnings = true;
+    assert!(doc7_attach(&plan).documentation_failed());
+    assert_eq!(plan.index, saved.index);
+    assert_eq!(
+        before,
+        paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>()
+    );
+    let absent = plan
+        .index
+        .modules
+        .keys()
+        .find(|m| m.module_path == "module_1")
+        .unwrap();
+    let unavailable = mizar_doc::comments::attach_comments(&plan, absent, None).unwrap();
+    assert!(!unavailable.available());
+    assert!(unavailable.blocks.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+    let (root, plan, _) = doc7_fixture("doc7", "", None, |_, _, _| {});
+    let empty = doc7_attach(&plan);
+    assert!(empty.available());
+    assert!(empty.blocks.is_empty());
+    assert!(empty.warnings.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+
+    // Identical origin/FQN/label text in distinct owning packages is not one item.
+    let text = "import X;\n::: same label\ntheorem T: true;\n";
+    let target = Some(("theorem", "TheoremItem", "theorem T: true;"));
+    let (left, lp, _) = doc7_fixture("doc7-left", text, target, |_, _, rows| {
+        rows.insert(
+            0,
+            doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+        );
+    });
+    let (right, rp, _) = doc7_fixture("doc7-right", text, target, |_, _, rows| {
+        rows.insert(
+            0,
+            doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+        );
+    });
+    let la = mizar_doc::artifact_reader::read_published_artifacts(&left, lp.manifest.artifact_hash)
+        .unwrap()
+        .1;
+    let ra =
+        mizar_doc::artifact_reader::read_published_artifacts(&right, rp.manifest.artifact_hash)
+            .unwrap()
+            .1;
+    let (registry, request_id, snapshot, workspace) = doc_build_registry(&[
+        (&left, &lp.manifest.manifest, &la),
+        (&right, &rp.manifest.manifest, &ra),
+    ]);
+    let mut request = mizar_doc::doc_build::DocBuildRequest {
+        profile: lp.profile,
+        publications: vec![lp.request.clone(), rp.request.clone()],
+    };
+    let plans = mizar_doc::doc_build::build_doc_plans(
+        &registry,
+        request_id,
+        snapshot.id,
+        &workspace,
+        &request,
+    )
+    .unwrap();
+    request.publications.reverse();
+    let reversed = mizar_doc::doc_build::build_doc_plans(
+        &registry,
+        request_id,
+        snapshot.id,
+        &workspace,
+        &request,
+    )
+    .unwrap();
+    assert_eq!(plans, reversed);
+    let (first, second) = (doc7_attach(&plans[0]), doc7_attach(&plans[1]));
+    assert_ne!(first.module, second.module);
+    assert_eq!(
+        first.input.exports[0].origin_id,
+        second.input.exports[0].origin_id
+    );
+    assert_eq!(
+        first.input.exports[0].fully_qualified_name,
+        second.input.exports[0].fully_qualified_name
+    );
+    for (plan, replay) in plans.iter().zip(&reversed) {
+        let result = doc7_attach(plan);
+        assert!(
+            matches!(result.blocks[0].target, Some(mizar_doc::comments::CommentTarget::Item(export)) if std::ptr::eq(export, &result.input.exports[0]))
+        );
+        assert_eq!(
+            format!("{:?}", result.blocks),
+            format!("{:?}", doc7_attach(replay).blocks)
+        );
+        assert_eq!(result.warnings, doc7_attach(replay).warnings);
+    }
+    std::fs::remove_dir_all(left).unwrap();
+    std::fs::remove_dir_all(right).unwrap();
+}

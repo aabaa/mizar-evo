@@ -62,7 +62,7 @@ internal: [05](../../internal/en/05.documentation_extraction.md).
   and extraction here, and architecture/internal docs now use `mizar-doc`
   module names. If extraction grows large, a split decision will be raised and
   registered at the top level then.
-- **Doc-comment source: artifact projection approved.** [Q1](./comments.md#owner-q-decisions) selects emission-time projection; its implementation prerequisites and remaining attachment definitions gate Doc7. Task34 stays optional raw lexical input, without comment fallback.
+- **Doc-comment source: artifact projection approved.** [Q1](./comments.md#owner-q-decisions) selects emission-time projection; the implemented route supplies Doc7 attachment inputs. Task34 stays optional raw lexical input, without comment fallback.
 - **First extraction target: open, resolved by task 21.** One target
   backend first, then generalize (architecture 13 adopted approach); choose
   the first target language and record the decision in
@@ -124,8 +124,8 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
    - Deps: 4. Spec: architecture 13 "Step 2",
      [24.documentation_generation.md](../../../spec/en/24.documentation_generation.md).
 
-7. **Doc-comment attachment.** [ ]
-   - [Doc7 gates](./comments.md#handoff-boundary): completed Q1 definitions and implemented prerequisites, Q2 module-leading-trivia/multiple-block and attachment-diagnostic definitions.
+7. **Doc-comment attachment.** [x]
+   - [DOC7-COMMENT-ATTACHMENT](../../task_contracts/en/DOC7-COMMENT-ATTACHMENT.md): validated Q1 inputs, approved Q5/Q6 association and shared Documentation diagnostics; [consumer boundary](./comments.md#handoff-boundary).
    - Tests: attachment fixtures per item kind; unattached comments
      diagnosed, not dropped silently.
    - Deps: 5, 6. Spec: `comments.md`.

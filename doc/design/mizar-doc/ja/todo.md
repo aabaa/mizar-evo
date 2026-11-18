@@ -63,7 +63,7 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
   レンダリングと抽出をここに統合し、現在の architecture/internal docs は
   `mizar-doc` module 名を使う。抽出が大きく育った場合は、その時点で
   分割判断を提起しトップレベルに登録する。
-- **ドキュメントコメントの供給源: artifact 投影を承認済み。** [Q1](./comments.md#owner-q-decisions) は emission 時投影を選択し、実装前提と残る attachment 定義が Doc7 を gate する。task34 は optional raw lexical input のまま、コメント fallback にしない。
+- **ドキュメントコメントの供給源: artifact 投影を承認済み。** [Q1](./comments.md#owner-q-decisions) は emission 時投影を選択し、実装済み route が Doc7 attachment 入力を供給する。task34 は optional raw lexical input のまま、コメント fallback にしない。
 - **最初の抽出ターゲット: 未解決。task 21 で解決する。** まず 1 つの
   ターゲットバックエンド、その後一般化（アーキテクチャ 13 の採用方針）。
   最初のターゲット言語を選び、決定を `extract_backend.md` に記録する。
@@ -122,8 +122,8 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
    - 依存: 4。仕様: アーキテクチャ 13「Step 2」、
      [24.documentation_generation.md](../../../spec/ja/24.documentation_generation.md)。
 
-7. **ドキュメントコメントの attachment。** [ ]
-   - [Doc7 gate](./comments.md#引き渡し境界): Q1 定義と実装前提、Q2 module-leading-trivia/複数 block と attachment 診断定義の完成。
+7. **ドキュメントコメントの attachment。** [x]
+   - [DOC7-COMMENT-ATTACHMENT](../../task_contracts/ja/DOC7-COMMENT-ATTACHMENT.md): 検証済み Q1 入力、承認 Q5/Q6 の対応付けと共有 Documentation 診断。[consumer 境界](./comments.md#引き渡し境界)。
    - テスト: item 種別ごとの attachment フィクスチャ。取り付け先のない
      コメントは診断され、黙って捨てられない。
    - 依存: 5、6。仕様: `comments.md`。

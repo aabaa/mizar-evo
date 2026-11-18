@@ -35,4 +35,4 @@ envelope interface hash は envelope framing で export/dependency projection �
 `COMMENTED_ARTIFACT_SCHEMA_FAMILY`、`COMMENTED_ARTIFACT_SCHEMA_VERSION`、`artifact_hash_excluded_paths()` は汎用 atomic store caller に既存 framing を公開する。検証付き codec が canonical JSON を供給し、[manifest profile selector](../en/manifest.md#declared-enclosing-profiles) が選択 envelope を検証する。emission currentness は Driver、selected-publication/current-request binding と consumption は Doc が所有する。
 
 ## 残る Gate
-Q1 の transport 所有、data invariant、structural codec と限定された統合 handoff は利用可能である。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。
+Q1 の transport 所有、data invariant、structural codec と限定された統合 handoff は利用可能である。Doc は承認 Q5/Q6 と共有 spec22 診断に従い、この route を [attachment](../../mizar-doc/ja/comments.md) に利用する。Doc8 はさらに tag-validation/CommonMark 定義の完成を必要とする。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。

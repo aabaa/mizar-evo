@@ -22,6 +22,7 @@ mizar-syntax = { path = "../mizar-syntax" }
 mizar-vc = { path = "../mizar-vc" }
 
 [dev-dependencies]
+mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-doc = { path = "../mizar-doc" }
 mizar-atp = { path = "../mizar-atp" }
 mizar-artifact = { path = "../mizar-artifact" }

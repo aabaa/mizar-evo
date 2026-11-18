@@ -70,5 +70,9 @@ integrity/staleness/schema error は下位 reader の error のままで、表�
 | Q7 — parameter 以外の重複 / Doc8 | `@returns`/`@since`/`@deprecated` は単一。`@requires`/`@ensures`/`@see` は複数可だが同一 raw tag/payload の反復は warning。 | `@param` の名前 key 以外は同一 raw tag/payload のみ重複とし、異なる payload は全 tag で複数可。 |
 | Q8 — 説明本文の欠落 / Doc8 | `@returns`/`@requires`/`@ensures` と `@deprecated version` 後の message に空でない説明を要求し、不在なら warning。 | 明示 name/ref/version slot のみ必須とし、説明 prose が空なだけでは warning にしない。 |
 
+## Attachment Consumer
+[`comments::attach_comments`](../../../../crates/mizar-doc/src/comments.rs) は検証済み DocBuildPlan の完全 identity を持つ module を消費する。借用結果は元の projection/map、別々の raw line row、loaded block range と元の landmark 候補を保ち、target は元の module または export を参照する。投影の unavailable と available-empty は区別する。Markdown 本文や tag は解析しない。
+正しく結合済みの optional LoadedSource は identity/path/hash/text 確認後に実 primary span を供給し、それ以外は共有 Documentation provenance location を使う。source/snapshot 結合は caller の責務であり、attachment は currentness 権限を追加しない。結果の documentation-failure query は保持した warning 昇格 profile を適用し、proof metadata は変更しない。未対応・不在の対応付け情報は診断して未結合に保つ。
+
 ## 引き渡し境界
 Doc7 は実装済み Q1 route と共有 Documentation 診断を承認 Q5/Q6 の下で利用し、[task7](./todo.md#ドキュメントの-strand) が attachment 実装を所有する。Doc8 はさらに Doc7 と承認 Q7/Q8 に基づく CommonMark/tag-field 定義を必要とする。広範な Doc4/5、link/UsedBy、描画、抽出、公開、crate/Steps6–8 の完了は未達のままとする。

@@ -541,6 +541,7 @@ name = "mizar-doc"
 version = "0.1.0"
 dependencies = [
  "mizar-artifact",
+ "mizar-diagnostics",
  "mizar-lexer",
  "mizar-session",
 ]
@@ -693,6 +694,7 @@ dependencies = [
  "mizar-atp",
  "mizar-checker",
  "mizar-core",
+ "mizar-diagnostics",
  "mizar-doc",
  "mizar-frontend",
  "mizar-kernel",
