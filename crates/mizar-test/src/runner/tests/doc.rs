@@ -2491,3 +2491,612 @@ fn doc_native_lexical_delegated_errors_edit_restore_and_complete_diagnostics() {
     assert_eq!(std::fs::read(&path).unwrap(), text.as_bytes());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+fn doc_q1_publish(
+    root: &Path,
+    manifest: &mut mizar_artifact::manifest::ArtifactManifest,
+    artifacts: &mut [mizar_artifact::verified_artifact::VerifiedArtifact],
+    index: usize,
+    text: Option<&str>,
+) -> (mizar_artifact::store::CanonicalJson, mizar_session::Hash) {
+    use mizar_artifact::{
+        comment_projection::*, manifest::write_manifest_file, module_summary::SourceRangeSummary,
+        store::*,
+    };
+    let artifact = &mut artifacts[index];
+    artifact.schema_version = SchemaVersion::new(1, 2);
+    artifact.source_hash = mizar_session::hash_text(text.unwrap_or("unavailable comments"));
+    artifact.provenance.captured_source = Some((
+        mizar_session::SourceId::from_nonportable_provenance_str(
+            "mizar-session-source-nonportable-v1:0000000000000001",
+        )
+        .unwrap(),
+        mizar_session::SourceOrigin::Disk,
+        artifact.source_hash,
+    ));
+    let zero = SourceRangeSummary {
+        start_byte: 0,
+        end_byte: 0,
+    };
+    for export in &mut artifact.exports {
+        export.source_range = zero;
+    }
+    for expression in &mut artifact.expressions {
+        expression.source_range = zero;
+    }
+    for diagnostic in &mut artifact.diagnostics {
+        diagnostic.primary_range = Some(zero);
+        for related in &mut diagnostic.related {
+            related.source_range = zero;
+        }
+    }
+    for obligation in &mut artifact.obligations {
+        obligation.source_range = zero;
+    }
+    artifact.refresh_hashes().unwrap();
+    let comments = text.map_or(CanonicalJson::Null, |text| {
+        let whole = CanonicalJson::array([
+            CanonicalJson::integer(0),
+            CanonicalJson::integer(text.len() as i64),
+        ]);
+        CanonicalJson::object([
+            ("original", CanonicalJson::string(text)),
+            ("loaded", CanonicalJson::string(text)),
+            ("lexical", CanonicalJson::string("")),
+            (
+                "loading",
+                CanonicalJson::array([CanonicalJson::array([
+                    CanonicalJson::string("original"),
+                    whole.clone(),
+                    whole.clone(),
+                ])]),
+            ),
+            (
+                "preprocess",
+                CanonicalJson::array(if text.is_empty() {
+                    vec![]
+                } else {
+                    vec![CanonicalJson::array([
+                        CanonicalJson::string("removed"),
+                        CanonicalJson::Null,
+                        whole.clone(),
+                        CanonicalJson::string("documentation"),
+                    ])]
+                }),
+            ),
+            (
+                "comments",
+                CanonicalJson::array(if text.is_empty() {
+                    vec![]
+                } else {
+                    vec![CanonicalJson::array([
+                        CanonicalJson::string("documentation"),
+                        whole,
+                        CanonicalJson::string(text),
+                    ])]
+                }),
+            ),
+            ("whitespace", CanonicalJson::array([])),
+            ("landmarks", CanonicalJson::array([])),
+        ])
+        .unwrap()
+    });
+    let value = CommentedArtifact {
+        artifact: artifact.clone(),
+        comments: comments.clone(),
+    };
+    let entry = &mut manifest.modules[index];
+    let write = write_published_artifact(
+        root,
+        &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+        &commented_artifact_json(&value).unwrap(),
+        &artifact_hash_domain(
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        ),
+        &artifact_hash_excluded_paths(),
+    )
+    .unwrap();
+    entry.module = artifact.module.clone();
+    entry.source_file = artifact.source_file.clone();
+    entry.source_hash = artifact.source_hash;
+    for (reference, digest) in [
+        (&mut entry.artifact_hash, write.artifact_hash),
+        (
+            &mut entry.interface_hash,
+            value.compute_interface_hash().unwrap(),
+        ),
+        (
+            &mut entry.implementation_hash,
+            value.compute_implementation_hash().unwrap(),
+        ),
+    ] {
+        reference.schema_family = COMMENTED_ARTIFACT_SCHEMA_FAMILY.into();
+        reference.schema_version = COMMENTED_ARTIFACT_SCHEMA_VERSION;
+        reference.digest = digest;
+    }
+    (
+        comments,
+        write_manifest_file(root, manifest).unwrap().artifact_hash,
+    )
+}
+
+fn doc_q1_request(
+    root: &Path,
+    manifest: &mizar_artifact::manifest::ArtifactManifest,
+    hash: mizar_session::Hash,
+) -> mizar_doc::doc_build::DocBuildRequest {
+    use mizar_doc::doc_build::*;
+    DocBuildRequest {
+        profile: Phase16Profile {
+            render_docs: true,
+            extract_code: false,
+            fail_on_doc_warnings: false,
+            fail_on_extraction_warnings: false,
+            include_private_docs: false,
+        },
+        publications: vec![DocPublicationRequest {
+            package: manifest.package.clone(),
+            artifact_root: root.into(),
+            expected_manifest_hash: hash,
+            output_dir: root.join("out"),
+            source_bundle: Some(root.join("absent-native-source")),
+            dependency_indexes: None,
+            import_order: BTreeMap::new(),
+        }],
+    }
+}
+
+#[test]
+fn doc_q1_mixed_publication_preserves_complete_inputs_and_readers() {
+    use mizar_artifact::{manifest::*, store::CanonicalJson};
+    use mizar_doc::{artifact_reader::*, doc_build::*};
+    let (root, mut manifest, mut artifacts, summaries, _) =
+        doc_build_summary_fixture("doc-q1-mixed", false, false);
+    let mut commented = artifacts[0].clone();
+    commented.module.module_path = "module_2".into();
+    artifacts.push(commented);
+    let mut entry = manifest.modules[0].clone();
+    entry.artifact_file = "modules/commented.json".into();
+    entry.module_summary_file = None;
+    entry.module_summary_hash = None;
+    entry.module_summary_interface_hash = None;
+    manifest.modules.push(entry);
+    let (projection, hash) = doc_q1_publish(&root, &mut manifest, &mut artifacts, 2, Some("::: λ"));
+    let paths = std::iter::once("artifact-manifest.json".into())
+        .chain(
+            manifest
+                .modules
+                .iter()
+                .map(|entry| entry.artifact_file.clone()),
+        )
+        .chain(
+            manifest
+                .modules
+                .iter()
+                .filter_map(|entry| entry.module_summary_file.clone()),
+        )
+        .chain(
+            manifest
+                .modules
+                .iter()
+                .flat_map(|entry| entry.proof_witnesses.iter().map(|w| w.witness_path.clone())),
+        )
+        .collect::<Vec<String>>();
+    let before = paths
+        .iter()
+        .map(|path| std::fs::read(root.join(path)).unwrap())
+        .collect::<Vec<_>>();
+    let expected = read_manifest_file(&root, Default::default()).unwrap();
+    let (actual, loaded) = read_published_artifacts_with_comments(&root, hash).unwrap();
+    assert_eq!(actual, expected);
+    assert_eq!(actual.artifact_hash, hash);
+    assert_eq!(actual.manifest, manifest);
+    assert_eq!(
+        loaded,
+        vec![
+            (artifacts[0].clone(), CanonicalJson::Null),
+            (artifacts[1].clone(), CanonicalJson::Null),
+            (artifacts[2].clone(), projection)
+        ]
+    );
+    assert_eq!(
+        read_published_artifacts(&root, hash).unwrap(),
+        (expected.clone(), artifacts.clone())
+    );
+    let (export_manifest, exports) = read_published_export_index(&root, hash).unwrap();
+    assert_eq!(export_manifest, expected);
+    for artifact in &artifacts {
+        assert_eq!(exports[&artifact.module], artifact.exports);
+    }
+    let (summary_manifest, indexed) = read_published_module_summary_index(&root, hash).unwrap();
+    assert_eq!(summary_manifest, expected);
+    for summary in &summaries {
+        assert_eq!(indexed[&summary.module], Some(summary.clone()));
+    }
+    assert_eq!(indexed[&artifacts[2].module], None);
+    let label = &summaries[0].exported_labels[0];
+    let (label_manifest, candidates) =
+        read_published_label_export_candidates(&root, hash, &summaries[0].module, label).unwrap();
+    assert_eq!(label_manifest, expected);
+    assert_eq!(
+        candidates,
+        Some(
+            artifacts[0]
+                .exports
+                .iter()
+                .filter(|export| export.fully_qualified_name == label.owner_fully_qualified_name)
+                .cloned()
+                .collect()
+        )
+    );
+    assert_eq!(
+        paths
+            .iter()
+            .map(|path| std::fs::read(root.join(path)).unwrap())
+            .collect::<Vec<_>>(),
+        before
+    );
+    assert!(!root.join("out").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_q1_availability_and_empty_doc_lines_remain_distinct_without_source() {
+    use mizar_artifact::store::CanonicalJson;
+    use mizar_doc::artifact_reader::read_published_artifacts_with_comments;
+    let mut projections = Vec::new();
+    for text in [None, Some(""), Some(":::")] {
+        let (root, mut manifest, mut artifacts) = doc_published_fixture();
+        let (projection, hash) = doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, text);
+        assert!(!root.join(&manifest.modules[0].source_file).exists());
+        let (loaded_manifest, loaded) =
+            read_published_artifacts_with_comments(&root, hash).unwrap();
+        assert_eq!(loaded_manifest.manifest, manifest);
+        assert_eq!(loaded[0], (artifacts[0].clone(), projection.clone()));
+        assert_eq!(loaded[1].1, CanonicalJson::Null);
+        projections.push(projection);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    assert_eq!(projections[0], CanonicalJson::Null);
+    assert_ne!(projections[0], projections[1]);
+    assert_ne!(projections[1], projections[2]);
+    let CanonicalJson::Object(empty) = &projections[1] else {
+        panic!("available-empty projection")
+    };
+    assert_eq!(empty["comments"], CanonicalJson::array([]));
+    let CanonicalJson::Object(line) = &projections[2] else {
+        panic!("present empty documentation line")
+    };
+    assert_eq!(
+        line["comments"],
+        CanonicalJson::array([CanonicalJson::array([
+            CanonicalJson::string("documentation"),
+            CanonicalJson::array([CanonicalJson::integer(0), CanonicalJson::integer(3)]),
+            CanonicalJson::string(":::"),
+        ])])
+    );
+}
+
+#[test]
+fn doc_q1_bound_plans_keep_projections_full_identity_empty_modules_and_replay() {
+    use mizar_artifact::store::CanonicalJson;
+    use mizar_doc::doc_build::*;
+    let (left, mut lm, mut la, _) = doc_build_case_fixture("doc-q1-left");
+    let (right, mut rm, mut ra, _) = doc_build_case_fixture("doc-q1-right");
+    la[0].exports.clear();
+    let (lp, lh) = doc_q1_publish(&left, &mut lm, &mut la, 0, Some("::: left"));
+    let (rp, rh) = doc_q1_publish(&right, &mut rm, &mut ra, 0, Some("::: right"));
+    let (registry, request_id, snapshot, workspace) =
+        doc_build_registry(&[(&left, &lm, &la), (&right, &rm, &ra)]);
+    let mut request = doc_q1_request(&left, &lm, lh);
+    request
+        .publications
+        .extend(doc_q1_request(&right, &rm, rh).publications);
+    let plans = build_doc_plans(&registry, request_id, snapshot.id, &workspace, &request).unwrap();
+    let mut reversed = request.clone();
+    reversed.publications.reverse();
+    assert_eq!(
+        plans,
+        build_doc_plans(&registry, request_id, snapshot.id, &workspace, &reversed).unwrap()
+    );
+    for (plan, manifest, artifacts, projection, hash) in [
+        (&plans[0], &lm, &la, &lp, lh),
+        (&plans[1], &rm, &ra, &rp, rh),
+    ] {
+        assert_eq!(plan.manifest.manifest, *manifest);
+        assert_eq!(plan.manifest.artifact_hash, hash);
+        assert_eq!(plan.request.expected_manifest_hash, hash);
+        assert_eq!(plan.snapshot, snapshot.id);
+        assert_eq!(plan.build_request, request_id);
+        assert_eq!(plan.index.modules.len(), 2);
+        for (index, entry) in manifest.modules.iter().enumerate() {
+            let module = &plan.index.modules[&entry.module];
+            assert_eq!(&module.artifact, entry);
+            assert_eq!(module.exports, artifacts[index].exports);
+            assert_eq!(
+                &module.comment_projection,
+                if index == 0 {
+                    projection
+                } else {
+                    &CanonicalJson::Null
+                }
+            );
+        }
+    }
+    assert_eq!(la[0].module.module_path, ra[0].module.module_path);
+    assert_ne!(la[0].module, ra[0].module);
+    assert!(plans[0].index.modules[&la[0].module].exports.is_empty());
+    assert!(!plans[0].index.modules.contains_key(&ra[0].module));
+    std::fs::remove_dir_all(left).unwrap();
+    std::fs::remove_dir_all(right).unwrap();
+}
+
+#[test]
+fn doc_q1_malformed_maps_and_declared_profiles_keep_lower_refusals() {
+    use mizar_artifact::{
+        comment_projection::*, manifest::*, store::*, verified_artifact::VerifiedArtifactError,
+    };
+    use mizar_doc::artifact_reader::read_published_artifacts_with_comments;
+    let (root, mut manifest, mut artifacts) = doc_published_fixture();
+    doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, Some("::: valid"));
+    let path = PublishedArtifactPath::new(&manifest.modules[0].artifact_file).unwrap();
+    let domain = artifact_hash_domain(
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+        COMMENTED_ARTIFACT_SCHEMA_VERSION,
+    );
+    let original = read_published_artifact(&root, &path, Default::default())
+        .unwrap()
+        .value;
+    for case in 0..4 {
+        let mut bad = manifest.clone();
+        let mut json = original.clone();
+        if case < 2 {
+            let CanonicalJson::Object(fields) = &mut json else {
+                unreachable!()
+            };
+            if case == 0 {
+                fields.insert("comments".into(), CanonicalJson::array([]));
+            } else {
+                let CanonicalJson::Object(comments) = fields.get_mut("comments").unwrap() else {
+                    unreachable!()
+                };
+                comments.insert("loading".into(), CanonicalJson::array([]));
+            }
+        } else if case == 2 {
+            bad.modules[0].artifact_hash.schema_version = SchemaVersion::new(9, 0);
+            bad.modules[0].interface_hash.schema_version = SchemaVersion::new(9, 0);
+            bad.modules[0].implementation_hash.schema_version = SchemaVersion::new(9, 0);
+        } else {
+            bad.modules[0].interface_hash.schema_family = "mizar/verified-artifact".into();
+        }
+        bad.modules[0].artifact_hash.digest = write_published_artifact(
+            &root,
+            &path,
+            &json,
+            &domain,
+            &artifact_hash_excluded_paths(),
+        )
+        .unwrap()
+        .artifact_hash;
+        let mut manifest_json = artifact_manifest_json(&manifest).unwrap();
+        let CanonicalJson::Object(fields) = &mut manifest_json else {
+            unreachable!()
+        };
+        let CanonicalJson::Array(modules) = fields.get_mut("modules").unwrap() else {
+            unreachable!()
+        };
+        let CanonicalJson::Object(entry) = &mut modules[0] else {
+            unreachable!()
+        };
+        entry.insert(
+            "artifact_hash".into(),
+            CanonicalJson::string(bad.modules[0].artifact_hash.to_artifact_hash_string()),
+        );
+        entry.insert(
+            "interface_hash".into(),
+            CanonicalJson::string(bad.modules[0].interface_hash.to_artifact_hash_string()),
+        );
+        entry.insert(
+            "implementation_hash".into(),
+            CanonicalJson::string(bad.modules[0].implementation_hash.to_artifact_hash_string()),
+        );
+        let hash = write_published_artifact(
+            &root,
+            &PublishedArtifactPath::new("artifact-manifest.json").unwrap(),
+            &manifest_json,
+            &manifest_hash_domain(manifest.schema_version),
+            &[],
+        )
+        .unwrap()
+        .artifact_hash;
+        let lower = read_manifest_file(
+            &root,
+            ManifestFileReadOptions {
+                expected_manifest_hash: Some(hash),
+                validate_references: true,
+                validate_witness_files: true,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        let error = read_published_artifacts_with_comments(&root, hash).unwrap_err();
+        assert_eq!(error, lower, "case {case}");
+        let expected_layer = match &error {
+            ManifestError::VerifiedArtifact {
+                path: failed,
+                error,
+            } if failed == path.as_str() => match (case, error.as_ref()) {
+                (0, VerifiedArtifactError::UnexpectedType { path, .. }) => path == "$.comments",
+                (1, VerifiedArtifactError::InvalidField { path, .. }) => {
+                    path == "$.comments.loading"
+                }
+                _ => false,
+            },
+            ManifestError::InvalidHash { path, .. } => {
+                path == if case == 2 {
+                    "$.modules[0].artifact_hash"
+                } else {
+                    "$.modules[0].interface_hash"
+                } && case >= 2
+            }
+            _ => false,
+        };
+        assert!(expected_layer, "case {case}: {error:?}");
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc_q1_bound_plans_refuse_hash_source_package_provenance_request_and_snapshot() {
+    use mizar_artifact::manifest::write_manifest_file;
+    use mizar_doc::doc_build::*;
+    let (root, mut manifest, mut artifacts, _) = doc_build_case_fixture("doc-q1-binding");
+    let (_, hash) = doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, Some("::: bound"));
+    let (registry, request_id, snapshot, workspace) =
+        doc_build_registry(&[(&root, &manifest, &artifacts)]);
+    let request = doc_q1_request(&root, &manifest, hash);
+    assert!(build_doc_plans(&registry, request_id, snapshot.id, &workspace, &request).is_ok());
+    let mut wrong = request.clone();
+    wrong.publications[0].expected_manifest_hash = mizar_session::hash_text("wrong selection");
+    assert!(matches!(
+        build_doc_plans(&registry, request_id, snapshot.id, &workspace, &wrong),
+        Err(DocBuildError::Publication(_))
+    ));
+    wrong = request.clone();
+    wrong.publications[0].package.package_id = "wrong package".into();
+    assert!(matches!(
+        build_doc_plans(&registry, request_id, snapshot.id, &workspace, &wrong),
+        Err(DocBuildError::Binding(_))
+    ));
+    let other_id = mizar_session::InMemorySessionIdAllocator::new();
+    other_id.next_request_id().unwrap();
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            other_id.next_request_id().unwrap(),
+            snapshot.id,
+            &workspace,
+            &request
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+    let (bad_root, mut bad_manifest, mut bad_artifacts, _) =
+        doc_build_case_fixture("doc-q1-binding");
+    let (_, bad_hash) = doc_q1_publish(
+        &bad_root,
+        &mut bad_manifest,
+        &mut bad_artifacts,
+        0,
+        Some("::: changed source"),
+    );
+    let mut later_bad = request.clone();
+    later_bad
+        .publications
+        .extend(doc_q1_request(&bad_root, &bad_manifest, bad_hash).publications);
+    assert!(matches!(
+        build_doc_plans(&registry, request_id, snapshot.id, &workspace, &later_bad),
+        Err(DocBuildError::Binding(_))
+    ));
+    let mut provenance = manifest.clone();
+    provenance.toolchain.push_str("-wrong");
+    let provenance_hash = write_manifest_file(&root, &provenance)
+        .unwrap()
+        .artifact_hash;
+    assert!(matches!(
+        build_doc_plans(
+            &registry,
+            request_id,
+            snapshot.id,
+            &workspace,
+            &doc_q1_request(&root, &provenance, provenance_hash)
+        ),
+        Err(DocBuildError::Binding(_))
+    ));
+    write_manifest_file(&root, &manifest).unwrap();
+    registry
+        .create_snapshot(
+            request_id,
+            mizar_session::SnapshotInput {
+                workspace_root: workspace.clone(),
+                source_versions: snapshot.source_versions.clone(),
+                dependency_artifacts: snapshot.dependency_artifacts.clone(),
+                lockfile_hash: snapshot.lockfile_hash,
+                toolchain: snapshot.toolchain.clone(),
+                verifier_config_hash: mizar_session::hash_text("new snapshot"),
+            },
+        )
+        .unwrap();
+    assert!(matches!(
+        build_doc_plans(&registry, request_id, snapshot.id, &workspace, &request),
+        Err(DocBuildError::Binding(_))
+    ));
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(bad_root).unwrap();
+}
+
+#[test]
+fn doc_q1_comment_only_republication_preserves_old_plans_and_refuses_old_bindings() {
+    use mizar_doc::{artifact_reader::read_published_artifacts_with_comments, doc_build::*};
+    let (root, mut manifest, mut artifacts, _) = doc_build_case_fixture("doc-q1-change");
+    let (old_projection, old_hash) =
+        doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, Some("::: old"));
+    let old_manifest = manifest.clone();
+    let old_artifacts = artifacts.clone();
+    let (registry, request_id, old_snapshot, workspace) =
+        doc_build_registry(&[(&root, &manifest, &artifacts)]);
+    let old_request = doc_q1_request(&root, &manifest, old_hash);
+    let old_plan = build_doc_plans(
+        &registry,
+        request_id,
+        old_snapshot.id,
+        &workspace,
+        &old_request,
+    )
+    .unwrap();
+    let saved = old_plan.clone();
+    let (projection, hash) =
+        doc_q1_publish(&root, &mut manifest, &mut artifacts, 0, Some("::: new"));
+    assert_ne!(old_hash, hash);
+    assert_ne!(old_artifacts[0].source_hash, artifacts[0].source_hash);
+    assert_ne!(old_projection, projection);
+    assert_eq!(
+        old_manifest.modules[0].interface_hash,
+        manifest.modules[0].interface_hash
+    );
+    assert!(read_published_artifacts_with_comments(&root, old_hash).is_err());
+    let request = doc_q1_request(&root, &manifest, hash);
+    assert!(matches!(
+        build_doc_plans(&registry, request_id, old_snapshot.id, &workspace, &request),
+        Err(DocBuildError::Binding(_))
+    ));
+    let mut input = mizar_session::SnapshotInput {
+        workspace_root: workspace.clone(),
+        source_versions: old_snapshot.source_versions.clone(),
+        dependency_artifacts: old_snapshot.dependency_artifacts.clone(),
+        lockfile_hash: old_snapshot.lockfile_hash,
+        toolchain: old_snapshot.toolchain.clone(),
+        verifier_config_hash: old_snapshot.verifier_config_hash,
+    };
+    input.source_versions[0].source_hash = artifacts[0].source_hash;
+    let (current, _) = registry.create_snapshot(request_id, input).unwrap();
+    let plans = build_doc_plans(&registry, request_id, current.id, &workspace, &request).unwrap();
+    assert_eq!(plans[0].manifest.artifact_hash, hash);
+    assert_eq!(
+        plans[0].index.modules[&artifacts[0].module].comment_projection,
+        projection
+    );
+    assert_eq!(
+        plans[0].index.modules[&artifacts[0].module]
+            .artifact
+            .source_hash,
+        artifacts[0].source_hash
+    );
+    assert!(build_doc_plans(&registry, request_id, old_snapshot.id, &workspace, &request).is_err());
+    assert_eq!(old_plan, saved);
+    assert_eq!(
+        old_plan[0].index.modules[&old_artifacts[0].module].comment_projection,
+        old_projection
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}

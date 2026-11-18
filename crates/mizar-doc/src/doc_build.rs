@@ -132,6 +132,7 @@ use std::{error::Error, fmt, path::PathBuf};
 use mizar_artifact::{
     manifest::{ModuleArtifactEntry, PackageIdentity},
     module_summary::{ExportedLabelSummary, ModuleSummary},
+    store::CanonicalJson,
 };
 use mizar_session::{
     BuildRequestId, BuildSnapshotId, SessionIdAllocator, SnapshotRegistry, WorkspaceRoot,
@@ -200,6 +201,8 @@ pub struct DocModuleInput {
     pub exports: Vec<VerifiedExport>,
     /// Complete optional summary; absence differs from an empty summary.
     pub summary: Option<ModuleSummary>,
+    /// Validated raw comment projection; null is unavailable, including legacy profiles.
+    pub comment_projection: CanonicalJson,
 }
 
 /// Unresolved package index inputs; no links, anchors or UsedBy are inferred.
@@ -305,9 +308,11 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
         ))?;
     let mut plans = Vec::new();
     for selected in &request.publications {
-        let (manifest, artifacts) =
-            read_published_artifacts(&selected.artifact_root, selected.expected_manifest_hash)
-                .map_err(DocBuildError::Publication)?;
+        let (manifest, artifacts) = crate::artifact_reader::read_published_artifacts_with_comments(
+            &selected.artifact_root,
+            selected.expected_manifest_hash,
+        )
+        .map_err(DocBuildError::Publication)?;
         let stored = &manifest.manifest;
         if stored.package != selected.package
             || !snapshot
@@ -333,7 +338,7 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
         )
         .map_err(DocBuildError::Publication)?;
         let mut modules = BTreeMap::new();
-        for (entry, mut artifact) in stored.modules.iter().zip(artifacts) {
+        for (entry, (mut artifact, comment_projection)) in stored.modules.iter().zip(artifacts) {
             let identity = &entry.module;
             if identity.package_id != stored.package.package_id
                 || identity.package_version.as_ref() != Some(&package_version)
@@ -367,6 +372,7 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
                     artifact: entry.clone(),
                     exports: artifact.exports,
                     summary: summaries.remove(identity).flatten(),
+                    comment_projection,
                 },
             );
         }
