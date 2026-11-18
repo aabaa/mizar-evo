@@ -1,0 +1,29 @@
+# Task DRIVER-Q1-COMMENT-RETENTION: captured unpublished comment drafts
+Canonical language: English; [Japanese pointer](../ja/DRIVER-Q1-COMMENT-RETENTION.md).
+Status: frozen implementation scope. Tier: full (new Driver handoff surface).
+Owner: [Driver plan](../../mizar-driver/en/00.crate_plan.md); producer: [IR handoff](./IR-Q1-COMMENT-DRAFT.md); consumers: future Driver emission, Artifact and Doc.
+Purpose: retain the validated unpublished Q1 draft with its genuine native BuildSession capture.
+
+## Authority And Scope
+Authority: spec [2.9](../../../spec/en/02.lexical_structure.md#29-comments-and-annotations), [24.1](../../../spec/en/24.documentation_generation.md#241-documentation-comments-syntax), approved [Q1 invariants](../../mizar-artifact/en/comment_projection.md), [IR bound draft](../../mizar-ir/en/projection.md#commented-draft-handoff), Driver [native capture](../../mizar-driver/en/request.md#native-source-capture).
+Driver capture/retention is a bounded source/design gap. Approved option 1 only; no language change, attachment/target inference, Markdown/tags, diagnostics/recovery, proof/reuse authority, schema/hash changes, audit/trace credit or milestone closure.
+Driver emission, Artifact envelope selection/store/manifest integration and Doc validated-publication consumption remain open. No scheduler activation, automatic metadata acquisition, source rereading/reparsing, reconstructed original frames, replacement SourceIds or unavailable fallback. This explicit handoff consumes already genuine Frontend metadata and its sealed output, invoking the existing IR conversion once.
+Write scope: this pair; Driver request source and focused tests; paired request/plan boundary links; minimal Artifact and IR handoff-status sentences. Lower-owner source, protocol, spec, expectations and existing publication paths stay unchanged.
+
+## Capture And Retention Contract
+Add BuildSession::capture_commented_module with publisher, Session SnapshotRegistry, ordinary ProjectVerifiedArtifactInput, typed sealed FrontendOutput<SurfaceAst>, immutable CommentMetadata and explicit optional target pairs. Return an error or retain the exact IR-produced CommentedArtifactDraft privately, keyed by captured SourceId. Repeated successful capture replaces only that source; failure changes no retained entry.
+Require an actual native capture, matching session/request snapshot and registered snapshot contents, and the complete readable Frontend SourceUnit equal to the protected LoadedSource converted with the captured SourceInput's existing diagnostic display-path policy. Reject foreign source, origin/version, maps/text or snapshot even when normalized text or lexical reuse hashes agree. Reuse IR's full source/module/provenance, target, codec, publication-root, ancestry and currentness validation; never accept caller-mutated drafts or duplicate that validation.
+Retain one immutable shared draft and its required sealed handles across BuildSession clones and Driver submission/result/error clones; no parallel comment representation. Draft values outlive source-file edits without I/O. Retention lasts with those session values; it neither pins storage generations nor upgrades snapshot/output eligibility.
+Add read-only BuildSession::commented_module(publisher, Session SnapshotRegistry, SourceId) returning an optional borrowed draft or error. Absence is distinct from available-empty metadata. Before returning a retained draft, reject cancelled sessions, obsolete Session/request or publisher snapshots, unreadable Frontend payloads and unpublished/collected or generation-mismatched required handles through existing storage/publication checks. Decoding arbitrary descendant payloads stays with their typed owners. No stale fallback. Preserve unresolved targets and all existing external dependency gaps; OpenBuffer/InternalOnly remains unpublished-only.
+
+## Test Matrix And Exit
+Six Rust cases (cap six), using genuine producer, Session, IR storage/publisher and Driver capture:
+1. Disk capture through real Frontend and IR: retain exact complete draft, explicit/null targets, original frames/maps and enclosing identity; read after disk edit/removal and session clone without I/O or publication.
+2. OpenBuffer version, BOM/CRLF and Unicode/doc/ordinary comments: exact retained evidence, InternalOnly roots, no package-publication upgrade; foreign capture/version rejected.
+3. Available-empty versus empty doc line and absent entry: distinct results; successful replacement is source-local and failed capture preserves prior entry.
+4. Summary-only session, foreign snapshot/source/payload/map/origin and incompatible target/required-output ancestry: error, no partial retention, sealed data unchanged.
+5. Independently obsolete Session/request or publisher snapshots, unpublished outputs, unreadable Frontend, collected/generation-mismatched required descendant with Frontend intact, or cancelled session: read refuses; unrelated/missing entry cannot expose stale data.
+6. Comment-only edit with equal lexical reuse hash: distinct source-bound retained drafts, deterministic equivalent capture and unchanged legacy Driver publication behavior.
+Independent specification, sufficiency, precision, volume/scope and final consistency reviews; full task-scoped gates. No spec-coverage audit status/ownership changes.
+Freeze: both lint_policy suites including links/fragments/pairing/volume and diff checks. Implementation: fmt, Clippy, both lint_policy suites, Driver owner suite, explicit new regressions, IR Q1 and Artifact codec regressions and short proof-verification end-to-end; CARGO_BUILD_JOBS=4. Unchanged resolver/evidence/cache heavy obligations defer to cadence; full cargo test only on a protocol trigger.
+Exit: native-session capture/retention committed locally; emission/publication/Doc handoffs and Doc7/8/Artifact17 gates remain open.
