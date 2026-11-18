@@ -463,3 +463,164 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn doc13_g4_real_doc8_transport_and_browser_witnesses() {
+    use mizar_doc::{markdown::parse_comments, render::opaque_math_fragments};
+
+    let cases = [
+        ("ordered", "$x$ $x$\n\n$$y$$\n\n> $$\n> α\n> β\n> $$".to_owned(), vec!["rendered"; 4]),
+        ("invalid", "$\\frac{$ $\\mizarUnknown$ $z$".into(), vec!["error", "error", "rendered"]),
+        ("hostile", "$$\n\\mizarUnknown </script><script>globalThis.payloadRan=1</script><img src=x onerror=\"globalThis.payloadRan=2\"> &lt; &#0; \" ' λ\u{202e}\t\n$$".into(), vec!["error"]),
+        ("trust", "$\\href{https://remote.invalid/}{x}$ $\\htmlClass{injected}{x}$ $\\includegraphics{https://remote.invalid/x}$ $z$".into(), vec!["safe", "safe", "safe", "rendered"]),
+        ("macros", "$\\gdef\\mizarLeak{7}\\mizarLeak$ $\\mizarLeak$ $z$".into(), vec!["rendered", "error", "rendered"]),
+        ("expansion", "$\\def\\a{\\a}\\a$ $z$".into(), vec!["error", "rendered"]),
+        ("size", "$\\rule{100em}{100em}$".into(), vec!["rendered"]),
+        ("limit", format!("${}{}$", "\\relax", " ".repeat(65530)), vec!["rendered"]),
+        ("oversize", format!("${}$ $z$", "λ".repeat(32769)), vec!["error", "rendered"]),
+        ("empty", "no math; $$ $$".into(), vec![]),
+    ];
+    for (name, markdown, expected_states) in cases {
+        let (root, plan, _) = doc8_fixture(&markdown);
+        let attachments = doc7_attach(&plan);
+        let parsed = parse_comments(&attachments, &[]);
+        let before = format!("{:?}", parsed);
+        let fragments = opaque_math_fragments(&parsed).unwrap();
+        assert_eq!(fragments, opaque_math_fragments(&parsed).unwrap());
+        assert_eq!(before, format!("{:?}", parsed));
+        assert!(std::ptr::eq(parsed.attachments, &attachments));
+        assert!(std::ptr::eq(parsed.attachments.plan, &plan));
+        assert_eq!(fragments.len(), expected_states.len(), "{name}");
+        let mut ordinal = 0;
+        for (block_index, block) in parsed.blocks.iter().enumerate() {
+            for (occurrence, math) in block.math.iter().enumerate() {
+                let payload: String = math
+                    .content
+                    .iter()
+                    .map(|r| &block.text[r.clone()])
+                    .collect();
+                let hex: String = payload
+                    .as_bytes()
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect();
+                let tag = if math.display { "div" } else { "span" };
+                assert!(fragments[ordinal].starts_with(&format!("<{tag} class=\"mizar-math\" data-mizar-block=\"{block_index}\" data-mizar-occurrence=\"{occurrence}\" data-mizar-display=\"{}\" data-mizar-tex=\"{hex}\"", math.display)), "{name}");
+                assert!(!fragments[ordinal].contains("<script>"));
+                if name == "ordered" && ordinal == 3 {
+                    assert_eq!(payload, "α\nβ\n");
+                    assert!(math.content.windows(2).any(|r| r[0].end < r[1].start));
+                    assert!(block.source_map.len() > 2);
+                }
+                if let Some(export) = std::env::var_os("MIZAR_DOC_MATH_WITNESS_DIR") {
+                    let dir = PathBuf::from(export).join(name);
+                    std::fs::create_dir_all(&dir).unwrap();
+                    std::fs::write(dir.join(format!("{ordinal}.tex")), &payload).unwrap();
+                    std::fs::write(
+                        dir.join(format!("{ordinal}.state")),
+                        expected_states[ordinal],
+                    )
+                    .unwrap();
+                    std::fs::write(dir.join("fragments.html"), fragments.join("\n")).unwrap();
+                }
+                ordinal += 1;
+            }
+        }
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    // Doc8 rejects empty delimiters and normalizes source newlines. These
+    // explicitly classified boundary inputs test transport without claiming
+    // that those spellings originated in the parser.
+    let (root, plan, _) = doc8_fixture("$x$");
+    let attachments = doc7_attach(&plan);
+    let mut parsed = parse_comments(&attachments, &[]);
+    for (name, payload) in [
+        ("controls", "\u{feff}\0\r\n\u{1}\u{7f}λ&<>\"'\\mizarUnknown"),
+        ("empty_payload", ""),
+    ] {
+        parsed.blocks[0].text = format!("${payload}$");
+        parsed.blocks[0].math[0].range = 0..payload.len() + 2;
+        parsed.blocks[0].math[0].content = std::iter::once(1..payload.len() + 1).collect();
+        let fragments = opaque_math_fragments(&parsed).unwrap();
+        let hex: String = payload
+            .as_bytes()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        assert!(fragments[0].contains(&format!("data-mizar-tex=\"{hex}\"")));
+        assert!(!fragments[0].contains('\0'));
+        if let Some(export) = std::env::var_os("MIZAR_DOC_MATH_WITNESS_DIR") {
+            let dir = PathBuf::from(export).join(name);
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("0.tex"), payload).unwrap();
+            std::fs::write(
+                dir.join("0.state"),
+                if payload.is_empty() {
+                    "rendered"
+                } else {
+                    "error"
+                },
+            )
+            .unwrap();
+            std::fs::write(dir.join("fragments.html"), fragments.join("\n")).unwrap();
+        }
+    }
+    let length = parsed.blocks[0].text.len();
+    parsed.blocks[0].math[0].content = std::iter::once(0..length + 1).collect();
+    assert!(opaque_math_fragments(&parsed).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc13_g4_fragments_leave_full_targets_publication_and_segment_maps_borrowed() {
+    use mizar_doc::comments::{CommentTarget, attach_comments};
+    use mizar_doc::{markdown::parse_comments, render::opaque_math_fragments};
+
+    let original = "::: $m$\r\nimport X;\r\n::: > $α\r\n::: > β$\r\ntheorem T: true;\r\n";
+    let (root, plan, source) = doc7_fixture(
+        "doc13_targets",
+        original,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |_, _, landmarks| {
+            let start = original.replace("\r\n", "\n").find("import").unwrap();
+            landmarks.insert(0, doc7_landmark("ImportItem", start, start + 9, None, None));
+        },
+    );
+    let module = plan
+        .index
+        .modules
+        .keys()
+        .find(|m| m.module_path == "module_0")
+        .unwrap();
+    let attachments = attach_comments(&plan, module, Some(&source)).unwrap();
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(parsed.blocks.len(), 2);
+    assert_eq!(attachments.blocks[0].target, Some(CommentTarget::Module));
+    let Some(CommentTarget::Item(export)) = attachments.blocks[1].target else {
+        panic!("item target")
+    };
+    assert!(std::ptr::eq(export, &attachments.input.exports[0]));
+    let publication = attachments.plan.manifest.artifact_hash;
+    let identity = attachments.module.clone();
+    let snapshot = format!("{parsed:?}");
+    let fragments = opaque_math_fragments(&parsed).unwrap();
+    assert_eq!(fragments.len(), 2);
+    assert!(fragments[0].contains("data-mizar-block=\"0\" data-mizar-occurrence=\"0\""));
+    assert!(fragments[1].contains("data-mizar-block=\"1\" data-mizar-occurrence=\"0\""));
+    let math = &parsed.blocks[1].math[0];
+    assert!(math.content.windows(2).any(|r| r[0].end < r[1].start));
+    for (block, attachment) in parsed.blocks.iter().zip(&attachments.blocks) {
+        assert_eq!(attachment.source_range.unwrap().source_id, source.source_id);
+        for (logical, loaded) in &block.source_map {
+            assert_eq!(
+                &block.text[logical.clone()],
+                &source.text[loaded.start..loaded.end]
+            );
+        }
+    }
+    assert_eq!(snapshot, format!("{parsed:?}"));
+    assert_eq!(parsed.attachments.plan.manifest.artifact_hash, publication);
+    assert_eq!(*parsed.attachments.module, identity);
+    std::fs::remove_dir_all(root).unwrap();
+}

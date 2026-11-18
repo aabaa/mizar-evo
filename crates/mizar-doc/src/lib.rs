@@ -6,3 +6,5 @@ pub mod comments;
 pub mod doc_build;
 pub mod links;
 pub mod markdown;
+pub mod math;
+pub mod render;
