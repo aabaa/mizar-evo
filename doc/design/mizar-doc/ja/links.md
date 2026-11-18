@@ -41,7 +41,7 @@ spec24.2 は定理から定理 T への直接 `by` 引用をすべて要求す�
 | Q10 — 表示診断 / 不完全 graph | 未解決・曖昧参照を安全な非リンク text と決定的 Documentation warning にし、不完全 link/UsedBy 入力を利用不可と完全性警告案で示す。 | 必須の未解決・曖昧警告を保ち、不完全入力が影響する link/UsedBy output を gate。診断 severity と拒否範囲は所有者定義を要する。 |
 
 ## 採用とレビュー用 witness
-非規範的な [Doc10 前提条件提案](./link_prerequisites.md) は残る producer/allocation handoff を定義し、正確な共有診断提案にリンクする。定義だけではこれらの gate はどれも充足しない。
+採用済みの [Doc10 前提 interface](./link_prerequisites.md) は producer/allocation handoff と readiness gate の順序を定義する。採用は producer、認証、coverage、allocation、診断、実装の gate のどれも充足しない。正確な共有診断は別途の未採用の提案のままとする。
 候補①は既存の diagnostic stage/file/range 規則と安定 target/publication 識別の tie-breaker で表示 draft を整列する。source occurrence は attachment/loading 変換を通る segment map を保持し、不在 map には既存の provenance location を使い offset を捏造しない。Documentation 診断所有者は実装前に未解決・曖昧・不完全入力の意味、位置、順序、profile 挙動を定義する必要がある。ここで新たな共有診断 code は割り当てず、W0400–W0404 は attachment 警告のまま。警告昇格は documentation のみ失敗させ verification/extraction acceptance を変えない。
 review witness は exact code label と式、明示/@see の label/FQN/section/URL、import 不在時の local hit、完全空と import 不在、重複経路と異なる一致 import、package/version FQN 衝突、dependency index の誤 hash、full/short/section anchor 衝突、section registry 不在、直接反復/self/cross-package by record と used_axioms 単独、不在と完全空 citation coverage を含む。候補の期待結果は上の段落と Q 選択肢に従い、実行 fixture や採用済み test intent ではない。
 現行 Doc10 gate は、認証済みで完全かつ順序付きの import/dependency-closure 入力と Artifact 所有の publication-bound direct-by producer、検証済み page/anchor/section allocation、厳密な shared diagnostic descriptor と detail/location/重複除去/順序規則。Doc9/Doc8 の採用はこれらの入力や診断定義を供給しない。link 解決、schema/診断割当、math/HTML render、extraction/publication、coverage/owner credit、広い Doc4/5/crate 完了は主張しない。

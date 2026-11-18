@@ -143,7 +143,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
      Share Symbol Identity".
 
 10. **Cross-reference resolution.** [ ]
-    - Gated on the unadopted [producer/allocation prerequisites](./link_prerequisites.md) and [exact shared diagnostics](../../mizar-diagnostics/en/documentation_links.md); definition alone grants no readiness.
+    - Gated on producer/authentication/validation work for the adopted [prerequisite interfaces](./link_prerequisites.md) and separate adoption/allocation of [exact shared diagnostics](../../mizar-diagnostics/en/documentation_links.md); interface adoption alone grants no readiness.
     - Resolve doc links against artifact symbol identity with deterministic
       unresolved-link diagnostics.
     - Tests: intra- and inter-package link fixtures; unresolved links
