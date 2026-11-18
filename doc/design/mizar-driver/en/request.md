@@ -223,6 +223,10 @@ values even when they appear in different sessions. Reusing a
 `BuildSnapshotId` does not imply that allocator-issued session, request, source,
 source-map, or lease ids are reusable.
 
+## Commented draft capture and retention
+`BuildSession::capture_commented_module` binds genuine metadata and the sealed Frontend payload to protected native capture, invokes the [IR handoff](../../mizar-ir/en/projection.md#commented-draft-handoff) once, and retains its immutable unpublished draft with required handles across session clones. Failed capture leaves retention unchanged.
+`commented_module` borrows a retained draft only after Session/request and publisher currentness, publication-root, physical-handle and typed Frontend readability checks; cancelled sessions refuse reads. Missing entries remain distinct from available-empty comments. Session values retain drafts without pinning IR storage. No automatic acquisition, source reload/reconstruction, scheduler activation, emission, publication eligibility upgrade or Doc attachment is supplied here.
+
 ## Native source capture
 
 `BuildSession::capture_source_load_failures` supplements an unchanged successful native capture with real, once-only Disk loading failures, retaining request/error pairs privately. It requires original captured package/loader binding and rejects unsupported, duplicate or unexpectedly successful requests atomically. Failed requests acquire no SourceVersion or text; initial all-or-fail capture and its nonempty native currentness requirement remain unchanged. [Diagnostic-only submission](driver.md#captured-source-load-failures) consumes these retained errors without reopening them.

@@ -1,11 +1,24 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
+
+use mizar_frontend::{
+    orchestration::{CommentMetadata, FrontendOutput},
+    parsing::{MizarParserSeam, ParserSeam},
+    source::{diagnostic_file_path, source_unit_from_loaded},
+};
+use mizar_ir::{
+    projection::{ArtifactProjectionService, CommentedArtifactDraft, ProjectVerifiedArtifactInput},
+    publisher::{OutputAuthorization, PhaseOutputPublisher},
+    storage::{AnyPhaseOutputRef, PhaseOutputRef},
+};
 
 use mizar_session::{
     BuildRequestId, BuildSessionId, BuildSnapshot, BuildSnapshotId, DependencyArtifactRef,
     DiskSourceLoader, Hash, IdError, LoadedSource, ModulePath, NormalizedPath, PackageId,
-    SessionIdAllocator, SnapshotError, SnapshotInput, SnapshotLease, SnapshotRegistry, SourceInput,
-    SourceLoadError, SourceLoader, SourceOriginInput, SourceVersion, ToolchainInfo, WorkspaceRoot,
+    SessionIdAllocator, SnapshotError, SnapshotInput, SnapshotLease, SnapshotRegistry, SourceId,
+    SourceInput, SourceLoadError, SourceLoader, SourceOriginInput, SourceVersion, ToolchainInfo,
+    WorkspaceRoot,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,6 +74,14 @@ pub struct BuildSession {
     pub(crate) request: BuildRequest,
     pub(crate) captured: CapturedSnapshot,
     pub(crate) state: BuildSessionState,
+    commented_modules: HashMap<
+        SourceId,
+        Arc<(
+            CommentedArtifactDraft,
+            Vec<AnyPhaseOutputRef>,
+            mizar_ir::identity::PhaseOutputId,
+        )>,
+    >,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -289,6 +310,7 @@ impl BuildRequestDraft {
                 ),
             },
             state: BuildSessionState::SnapshotCaptured,
+            commented_modules: HashMap::new(),
         })
     }
 
@@ -354,6 +376,7 @@ impl PendingBuildRequest {
                 source_load_failures: Vec::new(),
             },
             state: BuildSessionState::SnapshotCaptured,
+            commented_modules: HashMap::new(),
         })
     }
 }
@@ -375,6 +398,124 @@ impl CapturedSnapshot {
 }
 
 impl BuildSession {
+    /// Retains an unpublished comment draft bound to this session's native capture.
+    pub fn capture_commented_module<A: SessionIdAllocator>(
+        &mut self,
+        publisher: &Arc<PhaseOutputPublisher>,
+        snapshots: &SnapshotRegistry<A>,
+        input: ProjectVerifiedArtifactInput,
+        frontend: &PhaseOutputRef<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>,
+        metadata: &CommentMetadata,
+        targets: &[Option<(String, String)>],
+    ) -> Result<(), String> {
+        if matches!(
+            self.state,
+            BuildSessionState::Cancelling
+                | BuildSessionState::Finished(
+                    BuildSessionOutcome::Cancelled | BuildSessionOutcome::Superseded
+                )
+        ) || input.snapshot != self.captured.snapshot.id
+            || snapshots.get(input.snapshot).as_ref() != Some(&self.captured.snapshot)
+            || !snapshots.is_current_for_request(input.snapshot, self.request.id)
+        {
+            return Err("comment draft requires a current captured session snapshot".into());
+        }
+        let sources = self
+            .captured
+            .native_sources()
+            .ok_or("comment draft requires a native source capture")?;
+        let output = publisher
+            .storage()
+            .get(frontend)
+            .map_err(|error| error.to_string())?;
+        let source = &output.source;
+        let mut captured = sources
+            .iter()
+            .filter(|(_, loaded, _)| loaded.source_id == source.source_id);
+        let (_, loaded, captured_input) = captured
+            .next()
+            .ok_or("comment draft source is not captured by this session")?;
+        if captured.next().is_some()
+            || source_unit_from_loaded(loaded.clone(), diagnostic_file_path(captured_input))
+                != *source
+        {
+            return Err("comment draft source differs from the native capture".into());
+        }
+        let handles = input.required_outputs.clone();
+        let draft = ArtifactProjectionService::new(Arc::clone(publisher))
+            .project_commented_module(input, snapshots, frontend, metadata, targets)
+            .map_err(|error| error.to_string())?;
+        if snapshots.get(self.captured.snapshot.id).as_ref() != Some(&self.captured.snapshot)
+            || !snapshots.is_current_for_request(self.captured.snapshot.id, self.request.id)
+        {
+            return Err("comment draft capture is no longer current".into());
+        }
+        self.commented_modules.insert(
+            source.source_id,
+            Arc::new((draft, handles, frontend.output())),
+        );
+        Ok(())
+    }
+
+    /// Borrows a retained draft only while its session and original sealed handles remain eligible.
+    pub fn commented_module<A: SessionIdAllocator>(
+        &self,
+        publisher: &PhaseOutputPublisher,
+        snapshots: &SnapshotRegistry<A>,
+        source: SourceId,
+    ) -> Result<Option<&CommentedArtifactDraft>, String> {
+        if matches!(
+            self.state,
+            BuildSessionState::Cancelling
+                | BuildSessionState::Finished(
+                    BuildSessionOutcome::Cancelled | BuildSessionOutcome::Superseded
+                )
+        ) || snapshots.get(self.captured.snapshot.id).as_ref() != Some(&self.captured.snapshot)
+            || !snapshots.is_current_for_request(self.captured.snapshot.id, self.request.id)
+        {
+            return Err(
+                "comment draft session is cancelled, superseded or no longer current".into(),
+            );
+        }
+        publisher
+            .validate_current_snapshot(self.captured.snapshot.id)
+            .map_err(|error| error.to_string())?;
+        let Some(retained) = self.commented_modules.get(&source) else {
+            return Ok(None);
+        };
+        for handle in &retained.1 {
+            publisher
+                .validate_output(retained.0.snapshot, handle, OutputAuthorization::Published)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .storage()
+                .validate_handle(handle)
+                .map_err(|error| error.to_string())?;
+            if handle.output() == retained.2 {
+                let frontend = publisher
+                    .storage()
+                    .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                        handle,
+                        handle.output_kind(),
+                    )
+                    .map_err(|error| error.to_string())?;
+                publisher
+                    .storage()
+                    .get(&frontend)
+                    .map_err(|error| error.to_string())?;
+            }
+        }
+        publisher
+            .validate_current_snapshot(self.captured.snapshot.id)
+            .map_err(|error| error.to_string())?;
+        if snapshots.get(self.captured.snapshot.id).as_ref() != Some(&self.captured.snapshot)
+            || !snapshots.is_current_for_request(self.captured.snapshot.id, self.request.id)
+        {
+            return Err("comment draft session is no longer current".into());
+        }
+        Ok(Some(&retained.0))
+    }
+
     /// Retains genuine additional Disk failures without changing the original capture.
     pub fn capture_source_load_failures(
         &mut self,

@@ -216,6 +216,10 @@ supersession currentness は driver-owned lane table で確認する。
 を生まなければならない。`BuildSnapshotId` の再利用は、allocator-issued な session、
 request、source、source-map、lease id が再利用可能であることを意味しない。
 
+## Commented draft capture and retention
+`BuildSession::capture_commented_module` は genuine metadata と sealed Frontend payload を protected native capture に結合し、[IR handoff](../../mizar-ir/ja/projection.md#commented-draft-handoff) を一度呼び、未公開の immutable draft と required handle を session clone 間で保持する。capture 失敗時は保持内容を変えない。
+`commented_module` は Session/request と publisher の currentness・publication root・physical handle・typed Frontend の readability を確認して draft を借用し、cancelled session は拒否する。未登録と available-empty は区別する。session value は IR storage を pin せず draft を保持する。自動取得・source 再読/再構成・scheduler 起動・emission・publication 資格の昇格・Doc attachment は供給しない。
+
 ## Native source capture
 
 `BuildSession::capture_source_load_failures` は成功済み native capture を変えず、実 Disk load を一度だけ試みた request/error を private に保持する。元の package/loader 束縛を要求し、非対応・重複・予想外の成功は原子的に拒否する。失敗 request に SourceVersion/text を作らず、初回の全件成功 capture と nonempty native currentness 条件は維持する。[診断専用 submit](driver.md#captured-source-load-failures) は保持 error を再読込せず消費する。
