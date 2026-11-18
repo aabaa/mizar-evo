@@ -1,6 +1,6 @@
 //! Read-only resolution of explicitly classified documentation occurrences.
 
-use std::{cmp::Ordering, ops::Range};
+use std::{cmp::Ordering, collections::BTreeSet, ops::Range};
 
 use mizar_artifact::{
     direct_by::{DirectByEndpoint, DirectByOccurrence, DirectByTarget},
@@ -337,26 +337,56 @@ fn matches(
     hash: Hash,
     text: &str,
     fqn: bool,
-) -> Vec<DocLinkTarget> {
-    inputs
-        .exports(module, hash)
-        .into_iter()
-        .flatten()
-        .filter(|export| {
-            if fqn {
-                export.fully_qualified_name == text
-            } else {
-                inputs.summary(module, hash).is_some_and(|summary| {
-                    summary.exported_labels.iter().any(|label| {
-                        label.label == text
-                            && label.owner_fully_qualified_name == export.fully_qualified_name
-                            && (label.visibility == "public" || label.visibility == "reexported")
-                    })
+) -> (Vec<DocLinkTarget>, bool) {
+    let mut pending = vec![(module, hash)];
+    let mut visited = BTreeSet::new();
+    let mut candidates = Vec::new();
+    let mut complete = true;
+    while let Some((module, hash)) = pending.pop() {
+        if !visited.insert(module) {
+            continue;
+        }
+        let summary = inputs.summary(module, hash);
+        candidates.extend(
+            inputs
+                .exports(module, hash)
+                .into_iter()
+                .flatten()
+                .filter(|export| {
+                    if fqn {
+                        export.fully_qualified_name == text
+                    } else {
+                        summary.is_some_and(|summary| {
+                            summary.exported_labels.iter().any(|label| {
+                                label.label == text
+                                    && label.owner_fully_qualified_name
+                                        == export.fully_qualified_name
+                                    && (label.visibility == "public"
+                                        || label.visibility == "reexported")
+                            })
+                        })
+                    }
                 })
+                .map(|export| target(inputs, module, hash, export)),
+        );
+        if !fqn {
+            let Some(summary) = summary else {
+                complete = false;
+                continue;
+            };
+            for edge in &summary.reexports {
+                if let Some(endpoint) = inputs
+                    .inventory()
+                    .find(|(module, _)| *module == &edge.target_module)
+                {
+                    pending.push(endpoint);
+                } else {
+                    complete = false;
+                }
             }
-        })
-        .map(|export| target(inputs, module, hash, export))
-        .collect()
+        }
+    }
+    (candidates, complete)
 }
 
 fn coverage_reason(
@@ -455,14 +485,21 @@ fn resolve_reference(
     let mut causes = Vec::new();
     match occurrence.classification {
         DocReferenceClassification::Label => {
+            let (candidates, complete) = matches(inputs, module, publication, text, false);
             route(
                 &mut reference,
-                matches(inputs, module, publication, text, false),
+                candidates,
                 "current",
                 None,
                 module,
                 publication,
             );
+            if !complete && !reference.candidates.is_empty() {
+                causes.push(cause(
+                    "imports_partial",
+                    affected(module, publication, None),
+                ));
+            }
             if reference.candidates.is_empty() {
                 if let Some(reason) = coverage_reason(
                     inputs.coverage(module, publication),
@@ -482,7 +519,7 @@ fn resolve_reference(
                         if let Some((module, hash)) = endpoint {
                             route(
                                 &mut reference,
-                                matches(inputs, module, hash, text, false),
+                                matches(inputs, module, hash, text, false).0,
                                 "import",
                                 Some(binding.ordinal()),
                                 module,
@@ -500,7 +537,7 @@ fn resolve_reference(
             for (module, hash) in inputs.inventory() {
                 route(
                     &mut reference,
-                    matches(inputs, module, hash, text, true),
+                    matches(inputs, module, hash, text, true).0,
                     "closure",
                     None,
                     module,

@@ -6562,6 +6562,452 @@ mod doc10_authenticated {
                     .collect()
             }
 
+            fn forwarding_publication(package: &str, label: &str, text: &str) -> Publication {
+                let mut publication = publication(&[("placeholder.Owner", label)]);
+                publication.manifest.package.package_id = package.into();
+                for (index, (artifact, summary)) in publication
+                    .artifacts
+                    .iter_mut()
+                    .zip(&mut publication.summaries)
+                    .enumerate()
+                {
+                    artifact.module.package_id = package.into();
+                    summary.module = artifact.module.clone();
+                    for export in &mut artifact.exports {
+                        export.fully_qualified_name = format!("{package}.module_{index}.Owner");
+                        export.export_kind = "theorem".into();
+                    }
+                    for (label, export) in summary.exported_labels.iter_mut().zip(&artifact.exports)
+                    {
+                        label.owner_fully_qualified_name = export.fully_qualified_name.clone();
+                    }
+                    summary.exported_symbols = artifact
+                        .exports
+                        .iter()
+                        .map(
+                            |export| mizar_artifact::module_summary::ExportedSymbolSummary {
+                                origin_id: export.origin_id.clone(),
+                                fully_qualified_name: export.fully_qualified_name.clone(),
+                                namespace_path: vec![],
+                                visibility: "public".into(),
+                                declaration_kind: export.export_kind.clone(),
+                                source_range: export.source_range,
+                                rendered_signature: export.rendered_signature.clone(),
+                                interface_fingerprint: export.interface_fingerprint.digest,
+                                proof_status: None,
+                            },
+                        )
+                        .collect();
+                    summary.refresh_interface_hash().unwrap();
+                }
+                document(&mut publication, text);
+                publication
+            }
+
+            fn forwarding_allocations(
+                app: &Publication,
+                imports: &AuthenticatedDocImports,
+                dependencies: &[&Publication],
+            ) -> ValidatedDocAllocations {
+                let mut supplied = table(app);
+                for dependency in dependencies {
+                    let mut pages = table(dependency).pages;
+                    for page in &mut pages {
+                        page.path =
+                            format!("{}/{}", dependency.manifest.package.package_id, page.path);
+                    }
+                    supplied.pages.extend(pages);
+                }
+                validate(app, imports, supplied).unwrap()
+            }
+
+            #[test]
+            fn doc10_resolver_forwarded_import_preserves_original_target_and_direct_route() {
+                let mut app = forwarding_publication(
+                    "app",
+                    "App",
+                    "import middle.module_0 as M;\n::: Leaf\n",
+                );
+                let mut middle = forwarding_publication(
+                    "middle",
+                    "Middle",
+                    "import leaf.module_0 as L; export L;",
+                );
+                let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                let (registry, workspace, plans, views) =
+                    context(&mut [&mut app, &mut middle, &mut leaf]);
+                let producers = inputs(&app, &views[0])
+                    .into_iter()
+                    .chain(inputs(&middle, &views[1]))
+                    .chain(inputs(&leaf, &views[2]))
+                    .collect::<Vec<_>>();
+                let inventory = [
+                    (&middle.manifest.package, middle.hash, middle.root.as_path()),
+                    (&leaf.manifest.package, leaf.hash, leaf.root.as_path()),
+                ];
+                let imports = authenticate_doc_imports(
+                    &registry, &workspace, &plans[0], &inventory, &producers,
+                )
+                .unwrap();
+                assert_eq!(imports.closure_coverage(), DocImportCoverage::Complete);
+                let allocations = forwarding_allocations(&app, &imports, &[&middle, &leaf]);
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let result = resolve(
+                    &parsed,
+                    &imports,
+                    &allocations,
+                    &[occurrence(&parsed.blocks[0].text, "Leaf", "Leaf")],
+                );
+                let reference = &result.references[0];
+                let target = DocLinkTarget {
+                    module: leaf.artifacts[0].module.clone(),
+                    publication_hash: leaf.hash,
+                    export: leaf.artifacts[0].exports[0].clone(),
+                    labels: leaf.summaries[0].exported_labels.clone(),
+                };
+                assert_eq!(
+                    reference.outcome,
+                    DocLinkOutcome::Linked {
+                        href: "leaf/pages/module-0.html#leaf.module_0.Owner".into()
+                    }
+                );
+                assert_eq!(reference.candidates, std::slice::from_ref(&target));
+                assert_eq!(
+                    reference.routes,
+                    [DocLinkRoute {
+                        candidate: target,
+                        kind: "import",
+                        position: Some(0),
+                        endpoint: (middle.artifacts[0].module.clone(), middle.hash)
+                    }]
+                );
+            }
+
+            #[test]
+            fn doc10_resolver_current_forwarding_precedes_ordinary_imports() {
+                let mut app = forwarding_publication(
+                    "app",
+                    "App",
+                    "import middle.module_0 as M, other.module_0 as O; export M;\n::: Leaf App\n",
+                );
+                let mut middle = forwarding_publication(
+                    "middle",
+                    "Middle",
+                    "import leaf.module_0 as L; export L;",
+                );
+                let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                let mut other = forwarding_publication("other", "Leaf", "");
+                let (registry, workspace, plans, views) =
+                    context(&mut [&mut app, &mut middle, &mut leaf, &mut other]);
+                let producers = [&app, &middle, &leaf, &other]
+                    .into_iter()
+                    .zip(&views)
+                    .flat_map(|(publication, views)| inputs(publication, views))
+                    .collect::<Vec<_>>();
+                let inventory = [&middle, &leaf, &other]
+                    .map(|p| (&p.manifest.package, p.hash, p.root.as_path()));
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                for missing_ordinary in [false, true] {
+                    let producers = producers
+                        .iter()
+                        .filter(|(module, _, _)| !missing_ordinary || module.package_id != "other")
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    let inventory = &inventory[..if missing_ordinary { 2 } else { 3 }];
+                    let imports = authenticate_doc_imports(
+                        &registry, &workspace, &plans[0], inventory, &producers,
+                    )
+                    .unwrap();
+                    let dependencies = if missing_ordinary {
+                        vec![&middle, &leaf]
+                    } else {
+                        vec![&middle, &leaf, &other]
+                    };
+                    let allocations = forwarding_allocations(&app, &imports, &dependencies);
+                    let text = &parsed.blocks[0].text;
+                    let result = resolve(
+                        &parsed,
+                        &imports,
+                        &allocations,
+                        &[occurrence(text, "Leaf", "Leaf"), occurrence(text, "App", "App")],
+                    );
+                    for (reference, owner) in result.references.iter().zip([&leaf, &app]) {
+                        assert!(matches!(reference.outcome, DocLinkOutcome::Linked { .. }));
+                        assert_eq!(reference.candidates.len(), 1);
+                        assert_eq!(reference.candidates[0].module, owner.artifacts[0].module);
+                        assert_eq!(reference.routes.len(), 1);
+                        assert_eq!(reference.routes[0].kind, "current");
+                        assert_eq!(reference.routes[0].position, None);
+                        assert_eq!(
+                            reference.routes[0].endpoint,
+                            (app.artifacts[0].module.clone(), app.hash)
+                        );
+                    }
+                }
+            }
+
+            #[test]
+            fn doc10_resolver_forwarded_duplicates_keep_routes_and_ignore_storage_order() {
+                let mut app = forwarding_publication(
+                    "app",
+                    "App",
+                    "import leaf.module_0 as L, middle.module_0 as M, middle.module_0 as M;\n::: Leaf\n",
+                );
+                let mut middle = forwarding_publication(
+                    "middle",
+                    "Middle",
+                    "import leaf.module_0 as L; export L;",
+                );
+                let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                let (registry, workspace, plans, views) =
+                    context(&mut [&mut app, &mut middle, &mut leaf]);
+                let mut producers = inputs(&app, &views[0])
+                    .into_iter()
+                    .chain(inputs(&middle, &views[1]))
+                    .chain(inputs(&leaf, &views[2]))
+                    .collect::<Vec<_>>();
+                let mut inventory = [
+                    (&middle.manifest.package, middle.hash, middle.root.as_path()),
+                    (&leaf.manifest.package, leaf.hash, leaf.root.as_path()),
+                ];
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let mut previous = None;
+                for _ in 0..2 {
+                    let imports = authenticate_doc_imports(
+                        &registry, &workspace, &plans[0], &inventory, &producers,
+                    )
+                    .unwrap();
+                    let allocations = forwarding_allocations(&app, &imports, &[&middle, &leaf]);
+                    let result = resolve(
+                        &parsed,
+                        &imports,
+                        &allocations,
+                        &[occurrence(&parsed.blocks[0].text, "Leaf", "Leaf")],
+                    );
+                    let reference = &result.references[0];
+                    assert!(matches!(reference.outcome, DocLinkOutcome::Linked { .. }));
+                    assert_eq!(reference.candidates.len(), 1);
+                    assert_eq!(
+                        reference
+                            .routes
+                            .iter()
+                            .map(|r| (r.position, r.endpoint.clone()))
+                            .collect::<Vec<_>>(),
+                        [
+                            (Some(0), (leaf.artifacts[0].module.clone(), leaf.hash)),
+                            (Some(1), (middle.artifacts[0].module.clone(), middle.hash)),
+                            (Some(2), (middle.artifacts[0].module.clone(), middle.hash))
+                        ]
+                    );
+                    if let Some(previous) = &previous {
+                        assert_eq!(reference, previous);
+                    }
+                    previous = Some(reference.clone());
+                    inventory.reverse();
+                    producers.reverse();
+                }
+            }
+
+            #[test]
+            fn doc10_resolver_distinct_forwarded_targets_are_ambiguous() {
+                let mut app = forwarding_publication(
+                    "app",
+                    "App",
+                    "import middle.module_0 as M;\n::: Leaf\n",
+                );
+                let mut middle = forwarding_publication(
+                    "middle",
+                    "Middle",
+                    "import leaf.module_0 as L, other.module_0 as O; export L, O;",
+                );
+                let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                let mut other = forwarding_publication("other", "Leaf", "");
+                let (registry, workspace, plans, views) =
+                    context(&mut [&mut app, &mut middle, &mut leaf, &mut other]);
+                let producers = [&app, &middle, &leaf, &other]
+                    .into_iter()
+                    .zip(&views)
+                    .flat_map(|(publication, views)| inputs(publication, views))
+                    .collect::<Vec<_>>();
+                let inventory = [&middle, &leaf, &other]
+                    .map(|p| (&p.manifest.package, p.hash, p.root.as_path()));
+                let imports = authenticate_doc_imports(
+                    &registry, &workspace, &plans[0], &inventory, &producers,
+                )
+                .unwrap();
+                let allocations = forwarding_allocations(&app, &imports, &[&middle, &leaf, &other]);
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let result = resolve(
+                    &parsed,
+                    &imports,
+                    &allocations,
+                    &[occurrence(&parsed.blocks[0].text, "Leaf", "Leaf")],
+                );
+                let reference = &result.references[0];
+                assert_eq!(reference.outcome, DocLinkOutcome::Ambiguous);
+                assert_eq!(
+                    reference
+                        .candidates
+                        .iter()
+                        .map(|target| target.module.package_id.as_str())
+                        .collect::<Vec<_>>(),
+                    ["leaf", "other"]
+                );
+                assert_eq!(reference.routes.len(), 2);
+                assert!(
+                    reference
+                        .routes
+                        .iter()
+                        .all(|route| route.position == Some(0)
+                            && route.endpoint == (middle.artifacts[0].module.clone(), middle.hash))
+                );
+            }
+
+            #[test]
+            fn doc10_resolver_forwarding_requires_export_and_exact_labels() {
+                for exported in [false, true] {
+                    let mut app = forwarding_publication(
+                        "app",
+                        "App",
+                        "import middle.module_0 as M;\n::: Leaf leaf spaced\n",
+                    );
+                    let mut middle = forwarding_publication(
+                        "middle",
+                        "Middle",
+                        if exported {
+                            "import leaf.module_0 as L; export L;"
+                        } else {
+                            "import leaf.module_0 as L;"
+                        },
+                    );
+                    let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                    let (registry, workspace, plans, views) =
+                        context(&mut [&mut app, &mut middle, &mut leaf]);
+                    let producers = inputs(&app, &views[0])
+                        .into_iter()
+                        .chain(inputs(&middle, &views[1]))
+                        .chain(inputs(&leaf, &views[2]))
+                        .collect::<Vec<_>>();
+                    let inventory = [
+                        (&middle.manifest.package, middle.hash, middle.root.as_path()),
+                        (&leaf.manifest.package, leaf.hash, leaf.root.as_path()),
+                    ];
+                    let imports = authenticate_doc_imports(
+                        &registry, &workspace, &plans[0], &inventory, &producers,
+                    )
+                    .unwrap();
+                    let allocations = forwarding_allocations(&app, &imports, &[&middle, &leaf]);
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    let text = &parsed.blocks[0].text;
+                    let result = resolve(
+                        &parsed,
+                        &imports,
+                        &allocations,
+                        &[
+                            occurrence(text, "Leaf", "Leaf"),
+                            occurrence(text, "leaf", "leaf"),
+                            occurrence(text, "spaced", "Leaf "),
+                        ],
+                    );
+                    assert_eq!(
+                        matches!(result.references[0].outcome, DocLinkOutcome::Linked { .. }),
+                        exported
+                    );
+                    for reference in &result.references[usize::from(exported)..] {
+                        assert_eq!(reference.outcome, DocLinkOutcome::Unresolved);
+                        assert!(reference.candidates.is_empty());
+                    }
+                }
+            }
+
+            #[test]
+            fn doc10_resolver_forwarded_missing_inputs_keep_known_candidates_incomplete() {
+                for current in [false, true] {
+                    let mut app = forwarding_publication(
+                        "app",
+                        "App",
+                        if current {
+                            "import middle.module_0 as M; export M;\n::: Leaf\n"
+                        } else {
+                            "import middle.module_0 as M;\n::: Leaf\n"
+                        },
+                    );
+                    let mut middle = forwarding_publication(
+                        "middle",
+                        "Leaf",
+                        "import leaf.module_0 as L; export L;",
+                    );
+                    let mut leaf = forwarding_publication("leaf", "Leaf", "");
+                    let (registry, workspace, plans, views) =
+                        context(&mut [&mut app, &mut middle, &mut leaf]);
+                    let producers = inputs(&app, &views[0])
+                        .into_iter()
+                        .chain(inputs(&middle, &views[1]))
+                        .chain(inputs(&leaf, &views[2]))
+                        .collect::<Vec<_>>();
+                    let inventory = [
+                        (&middle.manifest.package, middle.hash, middle.root.as_path()),
+                        (&leaf.manifest.package, leaf.hash, leaf.root.as_path()),
+                    ];
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    for missing in 0..3 {
+                        let producers = producers
+                            .iter()
+                            .filter(|(module, _, _)| match missing {
+                                1 => module.package_id != "middle",
+                                _ => module.package_id != "leaf",
+                            })
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        let inventory = if missing == 0 {
+                            &inventory[..1]
+                        } else {
+                            &inventory[..]
+                        };
+                        let imports = authenticate_doc_imports(
+                            &registry, &workspace, &plans[0], inventory, &producers,
+                        )
+                        .unwrap();
+                        let dependencies = if missing == 0 {
+                            vec![&middle]
+                        } else {
+                            vec![&middle, &leaf]
+                        };
+                        let allocations = forwarding_allocations(&app, &imports, &dependencies);
+                        let result = resolve(
+                            &parsed,
+                            &imports,
+                            &allocations,
+                            &[occurrence(&parsed.blocks[0].text, "Leaf", "Leaf")],
+                        );
+                        let reference = &result.references[0];
+                        assert_eq!(
+                            reference.outcome,
+                            if current && missing > 0 {
+                                // Stored summaries still establish the current exported namespace.
+                                DocLinkOutcome::Ambiguous
+                            } else {
+                                DocLinkOutcome::Incomplete
+                            },
+                            "current={current}, missing={missing}"
+                        );
+                        assert!(
+                            reference
+                                .candidates
+                                .iter()
+                                .any(|target| target.module == middle.artifacts[0].module
+                                    && target.publication_hash == middle.hash)
+                        );
+                    }
+                }
+            }
+
             fn reasons(warning: &DiagnosticDraft) -> Vec<&str> {
                 let V::List(causes) = &warning.details().entries()["documentation.link.causes"]
                 else {
