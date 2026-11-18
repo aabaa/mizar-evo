@@ -23,7 +23,7 @@ internal 05 を精緻化する。
 | artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [~] |
 | comments | [comments.md](./comments.md)（選択は承認済み、残る定義あり） | `src/comments.rs` | [~] |
-| links | [links.md](./links.md)（未採用提案） | `src/links.rs` | [ ] |
+| links | [links.md](./links.md)（モデル採用済み、実装はゲート付き） | `src/links.rs` | [ ] |
 | math | [math.md](./math.md)（未採用提案） | `src/math.rs` | [ ] |
 | render | `render.md`（task 13） | `src/render.rs` | [ ] |
 | extract_select | `extract_select.md`（task 16） | `src/extract_select.rs` | [ ] |
@@ -135,15 +135,13 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
      せずに劣化する。
    - 依存: 7。仕様: `comments.md`。
 
-9. **仕様: `links.md`。** [ ]
-   - [Link-model 定義提案](../../task_contracts/ja/DOC9-LINKS-DEFINITION.md)。新しい所有者選択は未選択に保つ。
-   - 相互参照の仕様を執筆する（英語と日本語、コードなし）: リンク構文、
-     export 済みシンボル識別（抽出と共有）に対する解決、未解決リンクの
-     ポリシー。
+9. **仕様: `links.md`。** [x]
+   - [整合的採用](../../task_contracts/ja/DOC9-COHERENT-ADOPTION.md) が Doc9 Q1–Q10 ① と Doc13 Q3 href interface を spec24.2 に固定する。producer・allocation・diagnostic gate は残す。
    - 依存: 4。仕様: アーキテクチャ 13「Step 3」「Documentation and
      Extraction Share Symbol Identity」。
 
 10. **相互参照の解決。** [ ]
+    - 認証済みの完全な順序付き import/dependency と direct-by citation producer、検証済み page/anchor/section 割当、正確な共有診断を要する（[links readiness](../en/links.md#adoption-and-review-witnesses)）。
     - artifact のシンボル識別に対してドキュメントリンクを解決し、
       決定的な未解決リンク診断を出す。
     - テスト: パッケージ内・パッケージ間リンクのフィクスチャ。未解決

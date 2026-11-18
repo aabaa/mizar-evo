@@ -1,8 +1,9 @@
 # Doc9 Link-Model 定義提案
 正本は英語: [English companion](../en/links.md)。
-状態: 非規範的提案。以下の Doc9 固有 Q1–Q10 はすべて未選択であり、どの選択肢も実装・規範的採用を許可しない。[Doc4 の決定](./doc_build.md#owner-q-decisions)、承認済み [comments Q1–Q8](./comments.md#owner-q-decisions)、[Doc8 Q9–Q18](./commonmark.md) とは別の識別子であり、それらを変更しない。
+状態: 歴史的提案。Doc9 Q1–Q10 全①は [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) に採用済み。本状態と規範仕様は、保存した以下の提案本文・表の候補/未選択表記と②に優先し、それらは現行の採用 gate ではない。[Doc4](./doc_build.md#owner-q-decisions)、[comments](./comments.md#owner-q-decisions)、採用済み [Doc8](./commonmark.md) の所有境界を保つ。
 
 ## 権威と固定境界
+現行 handoff: 採用済み link semantics は spec24.2 が所有し、Q9 は Artifact 所有の publication-bound direct-by record を要求する。export も `used_axioms` も citation fallback にはしない。[Doc13 Q3](../en/render.md#candidate-destinations-and-page-content) は採用済み href encoding interface だけを供給し、filesystem/source routing は選ばない。
 spec [24.1–2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) が label 参照、探索優先順位、曖昧性警告、UsedBy、export label anchor を規定する。architecture13 [共有識別](../../architecture/en/13.documentation_and_extraction.md#documentation-and-extraction-share-symbol-identity)・[Step3](../../architecture/en/13.documentation_and_extraction.md#step-3-resolve-links-and-render-math)、internal05 [index](../../internal/en/05.documentation_extraction.md#documentation-index)・[diagnostics](../../internal/en/05.documentation_extraction.md#diagnostics) が消費側所有を制限する。提案の依存は承認範囲内の [Doc4 入力](./doc_build.md#index-inputs-and-later-completion) であり、Doc8 の採用や解析ではない。
 Doc4 は package/version/lock/module/edition の完全識別、選択 publication hash、格納済み export origin/FQN、optional label 候補を渡す。canonical 順序は保存順序であり import の意味上の優先順位ではない。None・利用可能な空・曖昧な候補を区別し、reader の integrity/schema/binding 拒否を維持する。source fallback、label 捏造、package/version 選択、証明受理、直列化 index schema は認めない。
 固定対象は exact label/FQN の inline code、明示 `[text](ref)`、`@see ref`。明示リンクと @see は label/FQN・仕様 section・外部 URL を受け取る。code 内の式・定理断片・overload 表記は code のまま。非修飾参照は現 module の export label、次に意味上の import 順で探索し、曖昧なら警告して非リンク表示とする。FQN は overload 解決を行わない。
@@ -24,9 +25,9 @@ spec24.2 は定理から定理 T への直接 `by` 引用をすべて要求す�
 直接写像済み theorem-to-theorem edge だけを反転し UsedBy とする。候補①は occurrence 来歴を保持し、target ごとに引用元定理を一度表示する。権威ある self-citation は含め、cross-package edge は結合済み両 endpoint を要する。@see・Markdown link・推移的 dependency・used_axioms 単独 entry は direct-by evidence ではない。表示は既存の完全 module 識別順、正確な FQN、origin、最後に publication hash で整列し、反復 occurrence の順は別に保持する。不完全 citation coverage は網羅的な空 UsedBy とせず明示する。UI と不完全入力警告方針は Q10 に残す。
 
 ## 未選択の所有者 Q 決定
-全行が未選択であり、記載した Doc9/10 または後続 render 部分の gate となる。どの案も固定された spec24 義務を保つ必要がある。言語意図の変更が必要ならここで採用せず停止して明示的な仕様権威を求める。
+歴史的決定表: ①列は上記状態に従い採用済み。候補の前提と②列は来歴として保存し、現行の選択肢や採用 gate にはしない。
 
-| 質問 / gate | 未選択① | 未選択② |
+| 歴史的質問 / gate | 採用済み①（上記状態優先） | 歴史的未選択② |
 |---|---|---|
 | Q1 — occurrence 比較 / syntax handoff | 上述の将来 parser が渡す解釈済み destination を厳密比較し raw map は別保持。 | raw 参照 spelling のみ比較。escape/entity/code-span 正規化と完全 CommonMark の整合を採用前に所有者が定義する。いずれも Doc8 認識は決めない。 |
 | Q2 — 重複経路 / import 曖昧性 | 経路間の同一完全 target をまとめ、複数の異なる import target 一致を曖昧とする。 | 一つの完全 target でも経路の複数性を曖昧とし、警告境界を採用前に定義する。異なる target を列挙順で選ぶことはどちらも許可しない。 |
@@ -40,6 +41,6 @@ spec24.2 は定理から定理 T への直接 `by` 引用をすべて要求す�
 | Q10 — 表示診断 / 不完全 graph | 未解決・曖昧参照を安全な非リンク text と決定的 Documentation warning にし、不完全 link/UsedBy 入力を利用不可と完全性警告案で示す。 | 必須の未解決・曖昧警告を保ち、不完全入力が影響する link/UsedBy output を gate。診断 severity と拒否範囲は所有者定義を要する。 |
 
 ## 採用とレビュー用 witness
-候補①は既存の diagnostic stage/file/range 規則と安定 target/publication 識別の tie-breaker で表示 draft を整列する。source occurrence は attachment/loading 変換を通る segment map を保持し、不在 map には既存の provenance location を使い offset を捏造しない。Documentation 診断所有者は実装前に未解決・曖昧・不完全入力の意味、位置、順序、profile 挙動を定義する必要がある。spec24 の W0002-class はここで新 shared code を割り当てず、W0400–W0404 は attachment 警告のまま。警告昇格は documentation のみ失敗させ verification/extraction acceptance を変えない。
+候補①は既存の diagnostic stage/file/range 規則と安定 target/publication 識別の tie-breaker で表示 draft を整列する。source occurrence は attachment/loading 変換を通る segment map を保持し、不在 map には既存の provenance location を使い offset を捏造しない。Documentation 診断所有者は実装前に未解決・曖昧・不完全入力の意味、位置、順序、profile 挙動を定義する必要がある。ここで新たな共有診断 code は割り当てず、W0400–W0404 は attachment 警告のまま。警告昇格は documentation のみ失敗させ verification/extraction acceptance を変えない。
 review witness は exact code label と式、明示/@see の label/FQN/section/URL、import 不在時の local hit、完全空と import 不在、重複経路と異なる一致 import、package/version FQN 衝突、dependency index の誤 hash、full/short/section anchor 衝突、section registry 不在、直接反復/self/cross-package by record と used_axioms 単独、不在と完全空 citation coverage を含む。候補の期待結果は上の段落と Q 選択肢に従い、実行 fixture や採用済み test intent ではない。
-Doc9 は提案のままで、Doc10 実装は整合的な所有者採用、検証済み import/dependency/citation producer、page/anchor 定義、shared diagnostics が gate。Doc8 は別途 Q9–Q18 が gate。link 解決、schema/診断割当、math/HTML render、extraction/publication、coverage/owner credit、広い Doc4/5/crate 完了は主張しない。
+現行 Doc10 gate は、認証済みで完全かつ順序付きの import/dependency-closure 入力と Artifact 所有の publication-bound direct-by producer、検証済み page/anchor/section allocation、厳密な shared diagnostic descriptor と detail/location/重複除去/順序規則。Doc9/Doc8 の採用はこれらの入力や診断定義を供給しない。link 解決、schema/診断割当、math/HTML render、extraction/publication、coverage/owner credit、広い Doc4/5/crate 完了は主張しない。

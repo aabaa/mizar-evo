@@ -23,7 +23,7 @@ crate refines architecture 13 and internal 05.
 | artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [~] |
 | comments | [comments.md](./comments.md) (approved choices; remaining definitions) | `src/comments.rs` | [~] |
-| links | [links.md](./links.md) (unadopted proposal) | `src/links.rs` | [ ] |
+| links | [links.md](./links.md) (adopted model; implementation gated) | `src/links.rs` | [ ] |
 | math | [math.md](./math.md) (unadopted proposal) | `src/math.rs` | [ ] |
 | render | `render.md` (task 13) | `src/render.rs` | [ ] |
 | extract_select | `extract_select.md` (task 16) | `src/extract_select.rs` | [ ] |
@@ -137,15 +137,13 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
      the build.
    - Deps: 7. Spec: `comments.md`.
 
-9. **Spec: `links.md`.** [ ]
-   - [Link-model definition proposal](../../task_contracts/en/DOC9-LINKS-DEFINITION.md); new owner choices remain unselected.
-   - Write the cross-reference spec (English and Japanese, no code): link
-     syntax, resolution against exported symbol identity (shared with
-     extraction), and unresolved-link policy.
+9. **Spec: `links.md`.** [x]
+   - [Coherent adoption](../../task_contracts/en/DOC9-COHERENT-ADOPTION.md) fixes Doc9 Q1–Q10 ① and the Doc13 Q3 href interface in spec24.2; producer/allocation/diagnostic gates remain.
    - Deps: 4. Spec: architecture 13 "Step 3"/"Documentation and Extraction
      Share Symbol Identity".
 
 10. **Cross-reference resolution.** [ ]
+    - Gated on authenticated complete ordered import/dependency and direct-by citation producers, validated page/anchor/section allocations and exact shared diagnostics; see [links readiness](./links.md#adoption-and-review-witnesses).
     - Resolve doc links against artifact symbol identity with deterministic
       unresolved-link diagnostics.
     - Tests: intra- and inter-package link fixtures; unresolved links
