@@ -40,7 +40,7 @@ Both drafts and records carry these fields:
 | `category` | `FailureCategory` | yes | Stable machine-readable failure class. |
 | `stable_detail_key` | `String` | yes | Deterministic key for deduplication and sorting. It must not contain localized text. |
 | `message` | `String` | yes | Human-facing primary message. It may change across versions and is never identity. |
-| `primary_location` | `DiagnosticPrimaryLocation` | yes | Main span or source-loading request location. |
+| `primary_location` | `DiagnosticPrimaryLocation` | yes | Main span, source-loading request or Documentation provenance location. |
 | `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | Supporting locations retain producer order and multiplicity; aggregation selects one representative payload. |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | Human-facing note/help text plus optional source anchors. |
 | `details` | `DiagnosticDetails` | yes, may be empty | Machine-readable payload map. |
@@ -411,7 +411,7 @@ exhaustive where the crate needs deliberate review.
 
 ## Source-loading primary locations
 
-`DiagnosticPrimaryLocation` is non-exhaustive: `Span(DiagnosticSpan)` or `SourceLoad { package_id: PackageId, path: NormalizedPath }`. Draft input and immutable records use `primary_location`; accessors return that sum. Source-loading descriptors (currently E0600–E0603) require the latter, `PipelinePhase::SourceLoad`, and `FailureCategory::SourceLoadError` (`source_load`, `source_load_error`). Other codes require a span and cannot use these phase/category values. Empty package identities are invalid. Secondary spans retain their role validation for either primary variant. Debug output retains existing span formatting and renders source-load package/path as escaped strings.
+`DiagnosticPrimaryLocation` is non-exhaustive: `Span(DiagnosticSpan)` or `SourceLoad { package_id: PackageId, path: NormalizedPath }`. Draft input and immutable records use `primary_location`; accessors return that sum. Source-loading descriptors (currently E0600–E0603) require the latter, `PipelinePhase::SourceLoad`, and `FailureCategory::SourceLoadError` (`source_load`, `source_load_error`). Other codes cannot use these phase/category values; only Documentation also permits its own non-range location below. Empty package identities are invalid. Secondary spans retain their role validation for either primary variant. Debug output retains existing span formatting and renders source-load package/path as escaped strings.
 
 For E0600, `stable_detail_key` names the structured failure reason; no duplicate reason field is required. Source-load primary debug text is `source_load(package={package:?},path={path:?})` using the underlying strings. Validation rejects mismatches without promising precedence among multiple invalid fields.
 
@@ -421,3 +421,8 @@ For E0600, `stable_detail_key` names the structured failure reason; no duplicate
 The existing range constructors retain their validation. `from_anchor` also accepts unspecified intent for Point and zero-length Range, including generated forms; it rejects reversed ranges, explicit intent on nonzero geometry and unknown anchor variants. GeneratedSpanOrigin already requires a nonblank reason. Source binding, text length and UTF-8 validation remain the future converter/source-map consumer's responsibility.
 Individual secondary order and multiplicity survive draft/record creation. Debug snapshots retain legacy Range output and distinguish Point and Generated payloads; [aggregation](./aggregator.md#deduplication-identity) retains its geometric identity and canonical representative selection. Rendering uses geometry, with a single marker at a point and no inferred intent.
 Tests cover anchor forms, exact reasons, repeated ordered secondaries, explicit versus unspecified intent, malformed ranges, legacy constructor rejection and point rendering. Source-bound conversion, registry activation and producer adoption remain separate work.
+
+## Documentation primary locations
+
+Under [spec22 locations](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display), extend `DiagnosticPrimaryLocation` inline with `Documentation { publication_hash: Hash, package_id: String, package_version: Option<String>, lockfile_identity: Option<String>, module_path: String, language_edition: String, block_ordinal: u64 }`. Hash is the authenticated publication identity; the five module fields retain complete identity and optional-value distinctions, not a display label. Block ordinal is zero-based preserved source order, not a byte offset or association decision. Required strings must be nonblank; identity is never trimmed or repaired.
+Documentation codes allow either a real primary Span or this variant, require `PipelinePhase::Documentation` and `FailureCategory::DocumentationWarning` (`documentation`, `documentation_warning`), and other families cannot use that location or metadata. Preserve fields in draft/record/accessors/debug; no wrapper, Artifact dependency, new SourceId, or durable serialization is introduced. Existing freshness, secondary-span and explanation validation still applies. Range-only consumers continue to fail explicitly for unsupported primary locations.

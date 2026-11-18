@@ -40,7 +40,7 @@ draft と record は次の field を共有する。
 | `category` | `FailureCategory` | yes | 安定した machine-readable failure class。 |
 | `stable_detail_key` | `String` | yes | deduplication と sorting のための deterministic key。localized text を含めてはならない。 |
 | `message` | `String` | yes | 人間向け primary message。version 間で変わってよく、identity ではない。 |
-| `primary_location` | `DiagnosticPrimaryLocation` | yes | 主スパンまたはソース読込み要求の位置。 |
+| `primary_location` | `DiagnosticPrimaryLocation` | yes | 主スパン、ソース読込み要求、または Documentation の由来位置。 |
 | `secondary_spans` | `Vec<DiagnosticSpan>` | 必須、空を許す | 生成元の順序と重複を保持し、集約は代表payloadを選択する。 |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | 人間向け note/help text と任意の source anchor。 |
 | `details` | `DiagnosticDetails` | yes, may be empty | machine-readable payload map。 |
@@ -405,7 +405,7 @@ trap になることを防ぐ。crate 内部の match は deliberate review が�
 
 ## Source-loading primary locations
 
-`DiagnosticPrimaryLocation` は non-exhaustive な `Span(DiagnosticSpan)` または `SourceLoad { package_id: PackageId, path: NormalizedPath }`。draft 入力と record は `primary_location` を使用し、accessor はこの列挙型を返す。ソース読込み descriptor（現在 E0600–E0603）は後者と `PipelinePhase::SourceLoad`、`FailureCategory::SourceLoadError`（`source_load`、`source_load_error`）を必須とする。他コードはスパンを必須とし、この phase/category を使えない。空の package 識別子は不正。どちらの主位置でも副スパンの role 検証を維持する。debug は既存スパン表示を維持し、読込み位置の package/path をエスケープした文字列で表示する。
+`DiagnosticPrimaryLocation` は non-exhaustive な `Span(DiagnosticSpan)` または `SourceLoad { package_id: PackageId, path: NormalizedPath }`。draft 入力と record は `primary_location` を使用し、accessor はこの列挙型を返す。ソース読込み descriptor（現在 E0600–E0603）は後者と `PipelinePhase::SourceLoad`、`FailureCategory::SourceLoadError`（`source_load`、`source_load_error`）を必須とする。他コードはこの phase/category を使えず、Documentation のみ以下の専用非範囲位置も使用できる。空の package 識別子は不正。どちらの主位置でも副スパンの role 検証を維持する。debug は既存スパン表示を維持し、読込み位置の package/path をエスケープした文字列で表示する。
 
 E0600 の構造化された失敗理由は `stable_detail_key` で表し、重複する reason field は要求しない。読込み主位置の debug 表示は基底文字列に対する `source_load(package={package:?},path={path:?})`。複数フィールドが不正な場合、拒否するが検証エラーの優先順位は規定しない。
 
@@ -415,3 +415,8 @@ E0600 の構造化された失敗理由は `stable_detail_key` で表し、重�
 既存range constructorの検証は維持する。`from_anchor`は生成形式を含むPoint・ゼロ長Rangeの意図未指定を許し、逆転範囲・非ゼロ位置への明示意図・未知アンカー形式を拒否する。GeneratedSpanOriginは既に非空白理由を要求する。ソース結合・本文長・UTF-8検証は後続の変換側・source-map利用側が所有する。
 個々の副位置列の順序と重複をdraft/recordに保持する。debugは既存Range表示を維持し、Point・Generatedのpayloadを区別する。[集約](../en/aggregator.md#deduplication-identity) の幾何的識別子と正準代表選択を維持する。描画は幾何位置を使い、点には単一マーカーを付け、意図を推測しない。
 テスト対象はアンカー各形式・理由原文・順序付き重複副位置・明示と未指定意図・逆転範囲・既存constructorの拒否・点描画。ソース結合済み変換・registry登録・生成元への採用は別作業とする。
+
+## Documentation primary locations
+
+[spec22 の位置](../../../spec/ja/22.error_handling_and_diagnostics.md#2212-sourceスパンとコンテキストの表示)に従い `DiagnosticPrimaryLocation` に `Documentation { publication_hash: Hash, package_id: String, package_version: Option<String>, lockfile_identity: Option<String>, module_path: String, language_edition: String, block_ordinal: u64 }` を直接追加する。Hash は認証済み publication 識別子で、5つの module フィールドは表示ラベルではなく任意値の区別を含む完全な識別を保持する。Block ordinal は保存されたソース順のゼロ始まり番号であり、byte offset や関連付け判断ではない。必須文字列は空白のみを認めず、識別子の trim・修復を行わない。
+Documentation コードは実在する主 Span またはこの variant を許可し、`PipelinePhase::Documentation` と `FailureCategory::DocumentationWarning`（`documentation`、`documentation_warning`）を必須とする。他 family はこの位置・metadata を使用できない。draft/record/accessor/debug に全フィールドを保持し、wrapper・Artifact 依存・新しい SourceId・永続化形式を導入しない。既存の鮮度、副スパン、explanation 検証は維持する。範囲専用 consumer は未対応主位置を引き続き明示的に拒否する。
