@@ -10,6 +10,11 @@ mizar-session = { path = "../mizar-session" }
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
+pulldown-cmark = { version = "=0.13.6", default-features = false }
+
+[dev-dependencies]
+serde_json = "1.0.150"
+pulldown-cmark = { version = "=0.13.6", default-features = false, features = ["html"] }
 
 [lints]
 workspace = true

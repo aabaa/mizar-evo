@@ -3984,3 +3984,479 @@ fn doc7_replay_availability_private_option_and_warning_promotion_preserve_inputs
     std::fs::remove_dir_all(left).unwrap();
     std::fs::remove_dir_all(right).unwrap();
 }
+
+fn doc8_fixture(
+    markdown: &str,
+) -> (
+    PathBuf,
+    mizar_doc::doc_build::DocBuildPlan,
+    mizar_session::LoadedSource,
+) {
+    let source = markdown
+        .lines()
+        .map(|line| format!("::: {line}\n"))
+        .collect::<String>();
+    doc7_fixture("doc8", &source, None, |_, _, _| {})
+}
+
+fn doc8_codes(warnings: &[mizar_diagnostics::failure_record::DiagnosticDraft]) -> Vec<String> {
+    warnings
+        .iter()
+        .map(|warning| warning.code().to_string())
+        .collect()
+}
+
+#[test]
+fn doc8_paragraph_frontiers_and_literal_markers() {
+    use mizar_doc::markdown::parse_comments;
+    let markdown = "@param a\n@param b\n@returns\n@requires\n@see\n\n- @param tight\n  - @see nested\n\n- @since loose\n\n  @ensures prose\n\n> @deprecated v message\n>\n> @returns **\n\n# @param heading\n\n    @param indented\n\n```\n@param fenced\n```\n\n<div>\n@param html\n</div>\n\n[@param]: /url\n\n\\@param escape\n\n&#64;param entity\n\n`@param` code\n\n*@param* emphasis\n\n[@param](/url) link\n\n@PARAM uppercase\n\n@param, punctuation\n\n@param\u{a0}unicode\n\n@unknown untouched\n";
+    let (root, plan, _) = doc8_fixture(markdown);
+    let attachments = doc7_attach(&plan);
+    let parsed = parse_comments(&attachments, &[]);
+    assert!(parsed.warnings.is_empty(), "{:?}", parsed.warnings);
+    let block = &parsed.blocks[0];
+    assert_eq!(block.text, markdown);
+    assert_eq!(
+        block
+            .fields
+            .iter()
+            .map(|field| &block.text[field.marker.clone()])
+            .collect::<Vec<_>>(),
+        [
+            "@param",
+            "@param",
+            "@see",
+            "@since",
+            "@ensures",
+            "@deprecated",
+            "@returns"
+        ]
+    );
+    let first = &block.fields[0];
+    assert_eq!(&block.text[first.slot.clone().unwrap()], "a");
+    assert_eq!(
+        &block.text[first.payload.clone()],
+        " a\n@param b\n@returns\n@requires\n@see"
+    );
+    assert_eq!(
+        first
+            .body
+            .iter()
+            .map(|r| &block.text[r.clone()])
+            .collect::<String>(),
+        "@param b\n@returns\n@requires\n@see"
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc8_raw_slots_breaks_and_required_bodies() {
+    use mizar_doc::markdown::parse_comments;
+    let markdown = "@param\n`a&amp;`  explanation  \ncontinued\n\n@see\n[opaque](ref)\n\n@since \"v raw\n\n@deprecated v\nmessage\n\n@returns \u{a0}\n\n@requires **\n\n@ensures &amp;\n\n@param x\u{a0}y\n";
+    let (root, plan, _) = doc8_fixture(markdown);
+    let attachments = doc7_attach(&plan);
+    let parsed = parse_comments(&attachments, &[]);
+    assert!(parsed.warnings.is_empty(), "{:?}", parsed.warnings);
+    let block = &parsed.blocks[0];
+    assert_eq!(
+        block
+            .fields
+            .iter()
+            .map(|f| f.slot.as_ref().map(|r| &block.text[r.clone()]))
+            .collect::<Vec<_>>(),
+        [
+            Some("`a&amp;`"),
+            Some("[opaque](ref)"),
+            Some("\"v"),
+            Some("v"),
+            None,
+            None,
+            None,
+            Some("x\u{a0}y")
+        ]
+    );
+    assert_eq!(
+        block.fields[0]
+            .body
+            .iter()
+            .map(|r| &block.text[r.clone()])
+            .collect::<String>(),
+        "explanation  \ncontinued"
+    );
+    assert_eq!(
+        &block.text[block.fields[0].payload.clone()],
+        "\n`a&amp;`  explanation  \ncontinued"
+    );
+    assert_eq!(
+        block.fields[3]
+            .body
+            .iter()
+            .map(|r| &block.text[r.clone()])
+            .collect::<String>(),
+        "message"
+    );
+    std::fs::remove_dir_all(root).unwrap();
+
+    let (root, plan, _) = doc8_fixture(
+        "@param\n\n@see\n\n@since\n\n@deprecated\n\n@returns \t\n\n@requires\n\n@ensures\n",
+    );
+    let attachments = doc7_attach(&plan);
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(
+        doc8_codes(&parsed.warnings),
+        [
+            "W0405", "W0405", "W0405", "W0405", "W0406", "W0406", "W0406", "W0406"
+        ]
+    );
+    use mizar_diagnostics::failure_record::DiagnosticDetailValue as V;
+    assert_eq!(
+        parsed
+            .warnings
+            .iter()
+            .map(
+                |warning| match &warning.details().entries()["documentation.subreason"] {
+                    V::String(s) => s.as_str(),
+                    _ => panic!("subreason must be a string"),
+                }
+            )
+            .collect::<Vec<_>>(),
+        [
+            "name",
+            "reference",
+            "version",
+            "version",
+            "deprecated",
+            "returns",
+            "requires",
+            "ensures"
+        ]
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc8_exact_duplicates_span_blocks_and_keep_all_fields() {
+    use mizar_doc::markdown::parse_comments;
+    let markdown = "@param a first\n\n@param a second\n\n@param A distinct\n\n@param a&amp; distinct\n\n@param a& distinct\n\n@returns first\n\n@returns second\n\n@since v1\n\n@since v2\n\n@deprecated v1 first\n\n@deprecated v2 second\n\n@requires same\n\n@requires same\n\n@requires  same\n\n@ensures same\n\n@ensures same \n\n@ensures same\n\n@see ref\n\n@see ref\n\n@see REF\n";
+    let (root, plan, _) = doc8_fixture(markdown);
+    let attachments = doc7_attach(&plan);
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(parsed.blocks[0].fields.len(), 20);
+    assert_eq!(doc8_codes(&parsed.warnings), vec!["W0407"; 7]);
+    assert_eq!(parsed.blocks[0].text, markdown);
+    std::fs::remove_dir_all(root).unwrap();
+
+    let text = "::: @param a first\n\n::: @param a second\nimport X;\n::: @param a item\ntheorem T: true;\n";
+    let (root, plan, _) = doc7_fixture(
+        "doc8",
+        text,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |_, _, landmarks| {
+            let start = text.find("import X;").unwrap();
+            landmarks.insert(
+                0,
+                doc7_landmark("ImportItem", start, start + "import X;".len(), None, None),
+            );
+        },
+    );
+    let attachments = doc7_attach(&plan);
+    assert!(attachments.warnings.is_empty());
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(parsed.blocks.len(), 3);
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0407"]);
+    assert_ne!(attachments.blocks[1].target, attachments.blocks[2].target);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc8_metadata_is_authoritative_complete_and_target_specific() {
+    use mizar_doc::{
+        comments::CommentTarget,
+        markdown::{TargetMetadata, parse_comments},
+    };
+    let text = "import X;\n::: @param absentλ body\n:::\n::: @returns value\ntheorem T: true;\n";
+    let (root, plan, source) = doc7_fixture(
+        "doc8",
+        text,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |artifact, _, landmarks| {
+            artifact.exports[0].rendered_signature = "signature(absentλ) returns result".into();
+            landmarks.insert(
+                0,
+                doc7_landmark("ImportItem", 0, "import X;".len(), None, None),
+            );
+        },
+    );
+    let unbound = doc7_attach(&plan);
+    let attachments =
+        mizar_doc::comments::attach_comments(&plan, unbound.module, Some(&source)).unwrap();
+    let item = attachments.blocks[0].target.unwrap();
+    assert!(matches!(item, CommentTarget::Item(_)));
+    assert!(parse_comments(&attachments, &[]).warnings.is_empty());
+    for (parameters, complete, returns, target, expected) in [
+        (None, true, None, item, 0),
+        (Some(&[][..]), false, None, item, 0),
+        (Some(&["present"][..]), false, Some(true), item, 0),
+        (Some(&["absentλ"][..]), true, Some(true), item, 0),
+        (Some(&["Absentλ"][..]), true, None, item, 1),
+        (Some(&[][..]), true, Some(false), item, 2),
+        (Some(&[][..]), true, Some(false), CommentTarget::Module, 0),
+    ] {
+        let metadata = [TargetMetadata {
+            target,
+            parameters,
+            parameters_complete: complete,
+            has_return: returns,
+        }];
+        let parsed = parse_comments(&attachments, &metadata);
+        assert_eq!(doc8_codes(&parsed.warnings), vec!["W0408"; expected]);
+        if expected > 0 {
+            use mizar_diagnostics::failure_record::{
+                DiagnosticDetailValue as V, DiagnosticPrimaryLocation,
+            };
+            let start = text.find("absentλ").unwrap();
+            assert!(
+                matches!(parsed.warnings[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == mizar_session::SourceRange { source_id: source.source_id, start, end: start + "absentλ".len() })
+            );
+            assert_eq!(
+                parsed.warnings[0].details().entries()["documentation.subreason"],
+                V::String("parameter_absent".into())
+            );
+            if expected == 2 {
+                let start = text.find("@returns").unwrap();
+                assert!(
+                    matches!(parsed.warnings[1].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == mizar_session::SourceRange { source_id: source.source_id, start, end: start + "@returns".len() })
+                );
+                assert_eq!(
+                    parsed.warnings[1].details().entries()["documentation.subreason"],
+                    V::String("no_return".into())
+                );
+            }
+        }
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc8_real_parser_diagnostics_replay_cli_and_profile_leave_inputs_unchanged() {
+    use mizar_diagnostics::{
+        aggregator::BuildDiagnosticIndex,
+        failure_record::PipelinePhase,
+        render::{
+            DiagnosticRenderInput, DiagnosticSourceContext, RenderOptions, render_diagnostics,
+        },
+        sink::{DiagnosticProducerScope, DiagnosticSink},
+    };
+    use mizar_doc::markdown::parse_comments;
+    struct PortableContext;
+    impl DiagnosticSourceContext for PortableContext {
+        fn path_for(&self, _: mizar_session::SourceId) -> Option<&str> {
+            None
+        }
+        fn source_key_for(&self, _: mizar_session::SourceId) -> String {
+            "portable".into()
+        }
+        fn line_text(&self, _: mizar_session::SourceId, _: u32) -> Option<&str> {
+            None
+        }
+        fn line_column(
+            &self,
+            _: mizar_session::SourceRange,
+        ) -> Option<mizar_session::LineColumnRange> {
+            None
+        }
+    }
+    let (root, mut plan, _) = doc8_fixture("@param\n\n@returns\n\n$unclosed\n");
+    let saved = plan.clone();
+    let paths = std::iter::once("artifact-manifest.json".to_owned())
+        .chain(std::iter::once("src/source.miz".to_owned()))
+        .chain(
+            plan.manifest
+                .manifest
+                .modules
+                .iter()
+                .flat_map(|m| [Some(m.artifact_file.clone()), m.module_summary_file.clone()])
+                .flatten(),
+        )
+        .collect::<Vec<_>>();
+    let bytes = paths
+        .iter()
+        .map(|p| std::fs::read(root.join(p)).unwrap())
+        .collect::<Vec<_>>();
+    let attachments = doc7_attach(&plan);
+    let raw = format!("{:?}", attachments.blocks);
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0405", "W0406", "W0409"]);
+    assert!(!parsed.documentation_failed());
+    use mizar_diagnostics::failure_record::DiagnosticDetailValue as V;
+    for (warning, (start, end, subreason)) in
+        parsed
+            .warnings
+            .iter()
+            .zip([(0, 6, "name"), (8, 16, "returns"), (18, 19, "inline")])
+    {
+        let details = warning.details().entries();
+        let V::List(occurrence) = &details["documentation.occurrence"] else {
+            panic!("occurrence must be a list")
+        };
+        assert_eq!(occurrence.len(), 6);
+        assert_eq!(occurrence[2], V::List(vec![V::String("module".into())]));
+        assert_eq!(occurrence[3], V::String("0".into()));
+        assert_eq!(occurrence[4], V::String(warning.stable_detail_key().into()));
+        assert_eq!(
+            occurrence[5],
+            V::List(vec![
+                V::String(start.to_string()),
+                V::String(end.to_string())
+            ])
+        );
+        assert_eq!(
+            details["documentation.subreason"],
+            V::String(subreason.into())
+        );
+    }
+    assert_eq!(
+        parsed.warnings[0].details().entries()["documentation.raw"],
+        V::List(vec![
+            V::String("@param".into()),
+            V::String(String::new()),
+            V::List(vec![])
+        ])
+    );
+    assert_eq!(
+        parsed.warnings[2].details().entries()["documentation.raw"],
+        V::List(vec![])
+    );
+    assert_eq!(parsed.warnings, parse_comments(&attachments, &[]).warnings);
+    let drafts = parsed.warnings.clone();
+    let snapshot = drafts[0].source_snapshot();
+    let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+        PipelinePhase::Documentation,
+        snapshot,
+        "doc8-parser",
+    ));
+    for warning in drafts.iter().cloned() {
+        sink.emit(warning).unwrap();
+    }
+    let index = BuildDiagnosticIndex::from_batches(snapshot, vec![sink.into_batch()]).unwrap();
+    let mut reversed = DiagnosticSink::new(DiagnosticProducerScope::new(
+        PipelinePhase::Documentation,
+        snapshot,
+        "doc8-parser",
+    ));
+    for warning in drafts.iter().rev().cloned() {
+        reversed.emit(warning).unwrap();
+    }
+    let replay = BuildDiagnosticIndex::from_batches(snapshot, vec![reversed.into_batch()]).unwrap();
+    assert_eq!(index.records(), replay.records());
+    assert_eq!(index.len(), 3);
+    let output = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &PortableContext,
+        RenderOptions::plain(),
+    ));
+    for code in ["W0405", "W0406", "W0409"] {
+        assert!(output.contains(code), "{output}");
+    }
+    assert!(output.contains("doc8"), "{output}");
+    drop(parsed);
+    drop(attachments);
+    plan.profile.include_private_docs = true;
+    plan.profile.fail_on_doc_warnings = true;
+    let promoted = doc7_attach(&plan);
+    let parsed = parse_comments(&promoted, &[]);
+    assert!(parsed.documentation_failed());
+    assert_eq!(parsed.warnings, drafts);
+    assert_eq!(format!("{:?}", promoted.blocks), raw);
+    assert_eq!(plan.index, saved.index);
+    assert_eq!(
+        bytes,
+        paths
+            .iter()
+            .map(|p| std::fs::read(root.join(p)).unwrap())
+            .collect::<Vec<_>>()
+    );
+    let absent = plan
+        .index
+        .modules
+        .keys()
+        .find(|m| m.module_path == "module_1")
+        .unwrap();
+    let unavailable = mizar_doc::comments::attach_comments(&plan, absent, None).unwrap();
+    let unavailable = parse_comments(&unavailable, &[]);
+    assert!(!unavailable.available());
+    assert!(unavailable.blocks.is_empty());
+    assert!(unavailable.warnings.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+    let (root, plan, _) = doc8_fixture("");
+    let empty = doc7_attach(&plan);
+    let empty = parse_comments(&empty, &[]);
+    assert!(empty.available());
+    assert!(empty.blocks.is_empty());
+    assert!(empty.warnings.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[path = "doc8_math.rs"]
+mod doc8_math;
+
+#[test]
+fn doc8_production_parser_disables_optional_commonmark_extensions() {
+    let (root, plan, _) = doc8_fixture(
+        "~~literal~~\n\n| a | b |\n| - | - |\n| x | y |\n\n- [x] literal\n\n[^note]: ordinary\n\n[^note]\n\n# heading {#id}\n\n---\ntitle: ordinary\n---\n",
+    );
+    let attachments = doc7_attach(&plan);
+    let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+    let events = format!("{:?}", parsed.blocks[0].events);
+    let block = &parsed.blocks[0];
+    let text = block
+        .events
+        .iter()
+        .filter(|(event, _)| format!("{event:?}").starts_with("Text("))
+        .map(|(_, range)| &block.text[range.clone()])
+        .collect::<String>();
+    assert!(text.contains("~~literal~~"));
+    assert!(!events.contains("Strikethrough"));
+    assert!(!events.contains("Table"));
+    assert!(!events.contains("TaskListMarker"));
+    assert!(!events.contains("FootnoteDefinition"));
+    assert!(!events.contains("FootnoteReference"));
+    assert!(!events.contains("MetadataBlock"));
+    assert!(!events.contains("Some(\"id\")"));
+    assert!(parsed.warnings.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc8_tight_paragraphs_preserve_raw_trailing_whitespace_duplicate_keys() {
+    let (root, plan, _) = doc8_fixture(
+        "- @requires x  \n- @requires x\n- @requires x  \n- @see ref\n  continued\t \n- @see ref\n  continued\n",
+    );
+    let attachments = doc7_attach(&plan);
+    let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+    let block = &parsed.blocks[0];
+    assert_eq!(
+        block
+            .fields
+            .iter()
+            .map(|field| &block.text[field.payload.clone()])
+            .collect::<Vec<_>>(),
+        [
+            " x  ",
+            " x",
+            " x  ",
+            " ref\n  continued\t ",
+            " ref\n  continued"
+        ]
+    );
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0407"]);
+    assert_eq!(
+        block.fields[0]
+            .body
+            .iter()
+            .map(|range| &block.text[range.clone()])
+            .collect::<String>(),
+        "x  "
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}

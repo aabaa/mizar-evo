@@ -75,5 +75,9 @@ integrity/staleness/schema error は下位 reader の error のままで、表�
 [`comments::attach_comments`](../../../../crates/mizar-doc/src/comments.rs) は検証済み DocBuildPlan の完全 identity を持つ module を消費する。借用結果は元の projection/map、別々の raw line row、loaded block range と元の landmark 候補を保ち、target は元の module または export を参照する。投影の unavailable と available-empty は区別する。Markdown 本文や tag は解析しない。
 正しく結合済みの optional LoadedSource は identity/path/hash/text 確認後に実 primary span を供給し、それ以外は共有 Documentation provenance location を使う。source/snapshot 結合は caller の責務であり、attachment は currentness 権限を追加しない。結果の documentation-failure query は保持した warning 昇格 profile を適用し、proof metadata は変更しない。未対応・不在の対応付け情報は診断して未結合に保つ。
 
+## Parsing Consumer
+[`markdown::parse_comments`](../../../../crates/mizar-doc/src/markdown.rs) は attachment と元の target に対する optional authoritative metadata を消費する。Q3 text、分割された loaded-source map、固定 CommonMark offset event と raw field/opaque math range は公開 artifact ではなく presentation view として保持する。引数一覧の完全性と戻り値の有無は明示入力であり、rendered signature から復元しない。
+block 変換は transactional とし、完成した view のみ tag/math warning を確定する。失敗時は raw block を保持し、既に確立した condition を伴う採用済み conversion warning を出す。結果は元の attachment と documentation 専用 warning profile を保つ。link 解決、formula 解釈、HTML 出力は後段の責務とする。
+
 ## 引き渡し境界
-Doc7 は実装済み Q1 route と共有 Documentation 診断を承認 Q5/Q6 の下で利用し、[task7](./todo.md#ドキュメントの-strand) が attachment 実装を所有する。Doc8 は採用済み spec24.1/3 と spec22.6.9 の下で Doc7 上に構文解析を実装できるが、ここでは parser 完了を主張しない。広範な Doc4/5、link/UsedBy、描画、抽出、公開、crate/Steps6–8 の完了は未達のままとする。
+Doc7 は実装済み Q1 route と共有 Documentation 診断を承認 Q5/Q6 の下で利用し、[task7](./todo.md#ドキュメントの-strand) が attachment 実装を所有する。広範な Doc4/5、link/UsedBy、描画、抽出、公開、crate/Steps6–8 の完了は未達のままとする。
