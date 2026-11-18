@@ -198,3 +198,7 @@ Task 18 は `DiagnosticAggregationError` を downstream forward compatibility �
 範囲付き診断のソースキーと順序は維持する。読込み位置のキーは独立した `source-load:` 接頭辞に、debug エスケープした package と正規化パスを `:` 区切りで連結し、`by_source`・順序・重複除去に使用する。範囲なし位置の順序比較用 offset はゼロとするが、スパンを捏造しない。重複除去は位置の variant と package/path 全体を含む。鮮度抑制、詳細・fix・explanation の区別、代表選択は維持する。
 
 読込みキーの厳密な形式は基底文字列に対する `source-load:{package:?}:{path:?}`（Rust debug の引用符・エスケープを含む）。既存 `by_source()` で公開し、`handles_for_source(SourceId)` は範囲付き診断専用のままとする。新しい公開 lookup API は不要。
+
+## Documentation locations
+
+Documentation の source key は `documentation:{publication_hash}:{package_id:?}:{package_version:?}:{lockfile_identity:?}:{module_path:?}:{language_edition:?}`。publication hash は小文字16進数、identity の文字列・Option は Rust debug escape を用いる。block ordinal を除外し、`by_source` は同じ publication/module のブロックをまとめる。重複排除は位置 variant・完全な key・block ordinal を含み、順序は u64 を切り詰めず ordinal を数値比較する。既存の stale 抑止、code/detail/payload 規則を維持し、新しい公開 lookup API は導入しない。

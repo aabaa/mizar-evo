@@ -3,7 +3,8 @@
 use std::{cmp::Ordering, collections::BTreeMap, error::Error, fmt};
 
 use mizar_session::{
-    BuildSnapshotId, GeneratedSpanAnchor, NormalizedPath, PackageId, SourceAnchor, SourceRange,
+    BuildSnapshotId, GeneratedSpanAnchor, Hash, NormalizedPath, PackageId, SourceAnchor,
+    SourceRange,
 };
 
 use crate::registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity, DiagnosticStatus};
@@ -51,6 +52,8 @@ pub enum PipelinePhase {
     Compatibility,
     /// Build/session infrastructure diagnostics.
     Build,
+    /// Documentation attachment diagnostics.
+    Documentation,
     /// Developer-only internal diagnostics.
     Internal,
 }
@@ -72,6 +75,7 @@ impl PipelinePhase {
             Self::Algorithm => "algorithm",
             Self::Compatibility => "compatibility",
             Self::Build => "build",
+            Self::Documentation => "documentation",
             Self::Internal => "internal",
         }
     }
@@ -109,6 +113,8 @@ pub enum FailureCategory {
     LogicFailure,
     /// Compatibility or packaging warning.
     CompatibilityWarning,
+    /// Documentation attachment warning.
+    DocumentationWarning,
     /// Informational display diagnostic after `I` codes are allocated.
     Informational,
     /// Developer-mode internal diagnostic that is not normal user output.
@@ -130,6 +136,7 @@ impl FailureCategory {
             Self::KernelRejection => "kernel_rejection",
             Self::LogicFailure => "logic_failure",
             Self::CompatibilityWarning => "compatibility_warning",
+            Self::DocumentationWarning => "documentation_warning",
             Self::Informational => "informational",
             Self::InternalInvariant => "internal_invariant",
         }
@@ -481,7 +488,7 @@ impl DiagnosticSpan {
     }
 }
 
-/// Primary diagnostic location, either a loaded-source span or a source-load request.
+/// Primary diagnostic location grounded in source or authenticated provenance.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum DiagnosticPrimaryLocation {
@@ -493,6 +500,23 @@ pub enum DiagnosticPrimaryLocation {
         package_id: PackageId,
         /// Normalized package-relative source path.
         path: NormalizedPath,
+    },
+    /// A documentation block without a usable source-bound primary range.
+    Documentation {
+        /// Authenticated publication identity supplied by the producer.
+        publication_hash: Hash,
+        /// Package identity owning the module.
+        package_id: String,
+        /// Exact optional package version.
+        package_version: Option<String>,
+        /// Exact optional lockfile identity.
+        lockfile_identity: Option<String>,
+        /// Canonical module path.
+        module_path: String,
+        /// Module language edition.
+        language_edition: String,
+        /// Zero-based block ordinal in preserved module source order.
+        block_ordinal: u64,
     },
 }
 
@@ -1060,6 +1084,25 @@ pub enum DiagnosticRecordError {
         /// Observed failure category.
         category: FailureCategory,
     },
+    /// A non-Documentation code used Documentation provenance as its location.
+    NonDocumentationCodeUsesDocumentationLocation {
+        /// Diagnostic code.
+        code: DiagnosticCode,
+    },
+    /// A Documentation location omitted a required identity string.
+    BlankDocumentationIdentity {
+        /// Required identity field.
+        field: &'static str,
+    },
+    /// Documentation phase/category did not match the code family.
+    DocumentationMetadataMismatch {
+        /// Diagnostic code.
+        code: DiagnosticCode,
+        /// Observed pipeline phase.
+        phase: PipelinePhase,
+        /// Observed failure category.
+        category: FailureCategory,
+    },
     /// Secondary spans must not use the primary role.
     SecondarySpanMustNotUsePrimaryRole {
         /// Rejected secondary span index.
@@ -1200,6 +1243,22 @@ impl fmt::Display for DiagnosticRecordError {
             } => write!(
                 formatter,
                 "diagnostic code {code} used source-loading phase {phase} or category {category}"
+            ),
+            Self::NonDocumentationCodeUsesDocumentationLocation { code } => write!(
+                formatter,
+                "diagnostic code {code} cannot use a Documentation location"
+            ),
+            Self::BlankDocumentationIdentity { field } => write!(
+                formatter,
+                "Documentation location requires nonblank {field}"
+            ),
+            Self::DocumentationMetadataMismatch {
+                code,
+                phase,
+                category,
+            } => write!(
+                formatter,
+                "diagnostic code {code} has mismatched Documentation phase {phase} and category {category}"
             ),
             Self::SecondarySpanMustNotUsePrimaryRole { index } => {
                 write!(formatter, "secondary span {index} used primary role")

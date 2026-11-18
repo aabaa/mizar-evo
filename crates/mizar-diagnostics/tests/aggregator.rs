@@ -262,6 +262,147 @@ fn source_load_locations_have_stable_keys_identity_order_and_stale_filtering() {
 }
 
 #[test]
+fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
+    let snapshot = snapshot_id(40);
+    let location = DiagnosticPrimaryLocation::Documentation {
+        publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+        package_id: "pkg".into(),
+        package_version: None,
+        lockfile_identity: None,
+        module_path: "src/doc.miz".into(),
+        language_edition: "2026".into(),
+        block_ordinal: 2,
+    };
+    let make_input = |primary_location, message: String| DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("W0400").unwrap(),
+        phase: PipelinePhase::Documentation,
+        category: FailureCategory::DocumentationWarning,
+        stable_detail_key: "documentation.attachment.orphan".into(),
+        message,
+        primary_location,
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    };
+    let mut drafts = Vec::new();
+    for ordinal in [0, 2, 12, u64::MAX] {
+        let mut primary = location.clone();
+        if let DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } = &mut primary {
+            *block_ordinal = ordinal;
+        }
+        drafts.push(DiagnosticDraft::new(make_input(primary, format!("block{ordinal}"))).unwrap());
+    }
+    for field in 0..6 {
+        let mut primary = location.clone();
+        if let DiagnosticPrimaryLocation::Documentation {
+            publication_hash,
+            package_id,
+            package_version,
+            lockfile_identity,
+            module_path,
+            language_edition,
+            ..
+        } = &mut primary
+        {
+            match field {
+                0 => *publication_hash = Hash::from_bytes([0xcd; Hash::BYTE_LEN]),
+                1 => *package_id = "other".into(),
+                2 => *package_version = Some(String::new()),
+                3 => *lockfile_identity = Some(String::new()),
+                4 => *module_path = "other.miz".into(),
+                _ => *language_edition = "other".into(),
+            }
+        }
+        drafts.push(DiagnosticDraft::new(make_input(primary, format!("field{field}"))).unwrap());
+    }
+    drafts.push(DiagnosticDraft::new(make_input(location.clone(), "zeta wording".into())).unwrap());
+    for difference in 0..3 {
+        let mut input = make_input(location.clone(), format!("difference{difference}"));
+        match difference {
+            0 => input.code = DiagnosticCode::from_str("W0401").unwrap(),
+            1 => input.stable_detail_key = "documentation.other_reason".into(),
+            _ => {
+                input.details = DiagnosticDetails::from_entries([(
+                    "documentation.reason",
+                    DiagnosticDetailValue::Integer(1),
+                )])
+                .unwrap()
+            }
+        }
+        drafts.push(DiagnosticDraft::new(input).unwrap());
+    }
+    let split = drafts.len() / 2;
+    let a = batch(
+        snapshot,
+        PipelinePhase::Documentation,
+        "documentation-a",
+        drafts[..split].to_vec(),
+    );
+    let b = batch(
+        snapshot,
+        PipelinePhase::Documentation,
+        "documentation-b",
+        drafts[split..].to_vec(),
+    );
+    let forward = BuildDiagnosticIndex::from_batches(snapshot, vec![a, b]).unwrap();
+    drafts.reverse();
+    let reversed = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![
+            batch(
+                snapshot,
+                PipelinePhase::Documentation,
+                "documentation-b",
+                drafts[..drafts.len() - split].to_vec(),
+            ),
+            batch(
+                snapshot,
+                PipelinePhase::Documentation,
+                "documentation-a",
+                drafts[drafts.len() - split..].to_vec(),
+            ),
+        ],
+    )
+    .unwrap();
+    assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
+    assert_eq!(forward.len(), 13);
+    assert_eq!(forward.by_source().len(), 7);
+    let key = format!(
+        "documentation:{}:\"pkg\":None:None:\"src/doc.miz\":\"2026\"",
+        "ab".repeat(32)
+    );
+    assert!(
+        forward
+            .by_source()
+            .keys()
+            .any(|actual| actual.as_str() == key)
+    );
+    let positions = [0, 2, 12, u64::MAX].map(|ordinal| {
+        forward
+            .records()
+            .iter()
+            .position(|record| record.message() == format!("block{ordinal}"))
+            .unwrap()
+    });
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    let stale_snapshot = snapshot_id(41);
+    let mut stale_input = make_input(location, "stale".into());
+    stale_input.source_snapshot = stale_snapshot;
+    let stale_batch = batch(
+        stale_snapshot,
+        PipelinePhase::Documentation,
+        "documentation-stale",
+        vec![DiagnosticDraft::new(stale_input).unwrap()],
+    );
+    let current = BuildDiagnosticIndex::from_batches(snapshot, vec![stale_batch]).unwrap();
+    assert!(current.records().is_empty());
+    assert_eq!(current.obsolete_drafts().len(), 1);
+}
+
+#[test]
 fn deduplication_ignores_message_text_and_uses_deterministic_representative() {
     let snapshot = snapshot_id(2);
     let source_id = source_id(snapshot);

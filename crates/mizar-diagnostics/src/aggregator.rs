@@ -65,6 +65,18 @@ impl DiagnosticSourceKey {
                 package_id.as_str(),
                 path.as_str()
             )),
+            DiagnosticPrimaryLocation::Documentation {
+                publication_hash,
+                package_id,
+                package_version,
+                lockfile_identity,
+                module_path,
+                language_edition,
+                ..
+            } => Self(format!(
+                "documentation:{}:{package_id:?}:{package_version:?}:{lockfile_identity:?}:{module_path:?}:{language_edition:?}",
+                publication_hash.to_lower_hex()
+            )),
         }
     }
 
@@ -397,8 +409,8 @@ impl DraftCandidate {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct AggregationSortKey {
     primary_source: DiagnosticSourceKey,
-    primary_start: usize,
-    primary_end: usize,
+    primary_start: u128,
+    primary_end: u128,
     phase: PipelinePhase,
     severity: DiagnosticSeverity,
     code: DiagnosticCode,
@@ -420,14 +432,19 @@ impl AggregationSortKey {
                 let range = span.range();
                 (
                     DiagnosticSourceKey::from_source_id(range.source_id),
-                    range.start,
-                    range.end,
+                    range.start as u128,
+                    range.end as u128,
                 )
             }
             DiagnosticPrimaryLocation::SourceLoad { .. } => (
                 DiagnosticSourceKey::from_primary_location(draft.primary_location()),
                 0,
                 0,
+            ),
+            DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } => (
+                DiagnosticSourceKey::from_primary_location(draft.primary_location()),
+                u128::from(*block_ordinal),
+                u128::from(*block_ordinal),
             ),
         };
         Self {
@@ -496,7 +513,14 @@ struct SpanIdentityKey {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum PrimaryLocationIdentityKey {
     Span(SpanIdentityKey),
-    SourceLoad { package_id: String, path: String },
+    SourceLoad {
+        package_id: String,
+        path: String,
+    },
+    Documentation {
+        source: DiagnosticSourceKey,
+        block_ordinal: u64,
+    },
 }
 
 impl PrimaryLocationIdentityKey {
@@ -506,6 +530,10 @@ impl PrimaryLocationIdentityKey {
             DiagnosticPrimaryLocation::SourceLoad { package_id, path } => Self::SourceLoad {
                 package_id: package_id.as_str().to_owned(),
                 path: path.as_str().to_owned(),
+            },
+            DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } => Self::Documentation {
+                source: DiagnosticSourceKey::from_primary_location(location),
+                block_ordinal: *block_ordinal,
             },
         }
     }

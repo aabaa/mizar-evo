@@ -113,7 +113,7 @@ Deduplication is keyed on stable machine-readable fields:
 1. `DiagnosticCode`.
 2. `PipelinePhase`.
 3. `FailureCategory`.
-4. Primary location variant and identity: span source key, offsets, role, freshness and zero-width intent, or source-load package/path.
+4. Primary location variant and identity: span source key, offsets, role, freshness and zero-width intent, source-load package/path, or Documentation publication/module/block provenance.
 5. `stable_detail_key`.
 6. Canonically ordered structured details.
 7. Ordered canonical fix payloads: suggestion id, producer key,
@@ -209,3 +209,7 @@ and this spec; downstream consumers must keep wildcard handling.
 Range-backed source keys and ordering remain unchanged. Source-load keys use a disjoint `source-load:` prefix followed by debug-escaped package and normalized path strings separated by `:`; these keys are used in `by_source`, ordering, and deduplication. Offset ordering slots are zero for a non-range location only, never a fabricated span. Deduplication includes the location variant and full package/path identity. Snapshot suppression, detail/fix/explanation distinctions, and representative selection apply unchanged.
 
 The exact source-load key is `source-load:{package:?}:{path:?}` over the underlying strings (including Rust debug quotes/escapes). Existing `by_source()` exposes it; `handles_for_source(SourceId)` remains for span-backed records only. No new public lookup API is needed.
+
+## Documentation locations
+
+Documentation source keys use `documentation:{publication_hash}:{package_id:?}:{package_version:?}:{lockfile_identity:?}:{module_path:?}:{language_edition:?}` with lowercase hexadecimal publication hash and Rust debug-escaped identity strings/options. They exclude the block ordinal so `by_source` groups blocks of the same publication/module. Deduplication includes the location variant, complete key and block ordinal; ordering compares ordinals numerically without truncating u64 values. Existing stale suppression and code/detail/payload rules apply unchanged. No new public lookup API is introduced.

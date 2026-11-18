@@ -183,6 +183,18 @@ fn render_primary_location(location: &DiagnosticPrimaryLocation) -> String {
             package_id.as_str(),
             path.as_str()
         ),
+        DiagnosticPrimaryLocation::Documentation {
+            publication_hash,
+            package_id,
+            package_version,
+            lockfile_identity,
+            module_path,
+            language_edition,
+            block_ordinal,
+        } => format!(
+            "documentation(publication={},package={package_id:?},version={package_version:?},lockfile={lockfile_identity:?},module={module_path:?},edition={language_edition:?},block={block_ordinal})",
+            publication_hash.to_lower_hex()
+        ),
     }
 }
 

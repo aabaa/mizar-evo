@@ -14,8 +14,8 @@ external consumers.
 This task defines the initial stable code space for the diagnostics enumerated by
 `doc/spec/en/22.error_handling_and_diagnostics.md`. Other architecture surfaces
 that mention diagnostics, such as build failures, cache/artifact compatibility,
-documentation extraction, and editor-only overlays, remain code-space gaps until
-their normative ranges and descriptors are added here. `mizar-diagnostics`
+documentation beyond the attachment allocation below, extraction, and editor-only
+overlays, remain code-space gaps until their normative ranges and descriptors are added here. `mizar-diagnostics`
 remains the owner for those future allocations, but task 3 must not invent
 placeholder ranges or descriptors for them.
 
@@ -50,6 +50,7 @@ table are the canonical registry vocabulary used by descriptors and tests.
 | `W0100`-`W0199` | `ProofWarning` | Proof and ATP warnings | Warning |
 | `W0200`-`W0299` | `AlgorithmWarning` | Algorithm and contract warnings | Warning |
 | `W0300`-`W0399` | `CompatibilityWarning` | Compatibility and packaging warnings | Warning |
+| `W0400`-`W0499` | `Documentation` | Documentation attachment warnings | Warning |
 | `I0001`-`I0099` | `Info` | Informational display diagnostics | Info |
 
 An implementation diagnostic outside these ranges is a registry error, not a
@@ -88,13 +89,17 @@ For the initial registry, unless a row explicitly overrides it:
 - `aliases`, `retired_since`, and `replacement_codes` are empty;
 - `summary` is the row's `Summary` value in the initial-allocation table.
 
+## Documentation attachment allocation
+
+[Spec22 §22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) owns the five W0400–W0404 names, meanings and summaries. Derive those descriptors with `phase_family = Documentation`, `default_severity = Warning`, `meaning_key = semantic_name`, `status = active`, `since = spec-22-documentation-v1`, and `doc_url = doc/spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings`; aliases, retirement marker and replacement codes are empty. W0405–W0499 remain unallocated. Warning remains the single family default; profile promotion is consumer policy and changes no descriptor identity. The [record location](./failure_record.md#documentation-primary-locations) supports unavailable source binding without a fabricated span. This prerequisite does not implement Doc7 or allocate other Documentation/Extraction conditions.
+
 ## Deferred Code-Space Gaps
 
 The following surfaces are explicitly outside the task-2 initial allocation:
 
 | Surface | Classification | Task-2 disposition |
 |---|---|---|
-| Build, cache, artifact, and documentation-extraction diagnostics described by architecture/internal documents | `external_dependency_gap` / `spec_gap` | Do not allocate codes or publish current records until a later spec update adds canonical ranges and descriptors. |
+| Build, cache, artifact, Extraction and Documentation diagnostics beyond the attachment allocation below | `external_dependency_gap` / `spec_gap` | Do not allocate codes or publish current records until a later spec update adds canonical ranges and descriptors. |
 | Existing lexer, frontend, parser, and resolver diagnostics that predate this crate | `external_dependency_gap` / `deferred` | Keep local diagnostics untouched until task 16 records a real adoption trigger; do not infer codes from message text. |
 | Spec-21 display annotation names such as `info.thesis`, `info.resolution`, and `info.type` | `spec_gap` | Reserve `I0001`-`I0099`; do not allocate concrete info codes until the language specification maps those semantic names to numeric `DiagnosticCode` values. |
 

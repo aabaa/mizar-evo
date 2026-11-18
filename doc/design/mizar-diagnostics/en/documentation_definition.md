@@ -1,6 +1,6 @@
 # Documentation Diagnostics Definition Proposal
 Canonical language: English; [Japanese companion](../ja/documentation_definition.md).
-Status: proposal only; DD-Q1–DD-Q7 below are unselected. No range, descriptor or API is allocated, reserved or adopted by this document.
+Status: historical proposal; owner approved DD-Q1–DD-Q7 option ① on 2026-11-18. Current normative definitions and adoption are owned by [spec22](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) and [registry](./registry.md#documentation-attachment-allocation). The proposal and alternatives below record the pre-adoption state; option ② is not authorized.
 
 ## Authority And Fixed Boundaries
 [Spec22](../../../spec/en/22.error_handling_and_diagnostics.md#2211-error-code-system-e-series) owns permanent severity-prefixed codes; [registry gaps](./registry.md#deferred-code-space-gaps) prohibit Documentation allocation/publication until a later specification update. [Internal05](../../internal/en/05.documentation_extraction.md#diagnostics) calls the phase family `Documentation`, separately from `Extraction`; this proposal covers only [Doc7 attachment outcomes](../../mizar-doc/en/comments.md#residual-association-definitions).

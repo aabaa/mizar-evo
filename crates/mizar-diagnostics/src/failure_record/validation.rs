@@ -69,8 +69,9 @@ pub(super) fn validate_primary_location(
     secondary_spans: &[DiagnosticSpan],
 ) -> Result<(), DiagnosticRecordError> {
     let is_source_load_code = code.phase_family() == Some(PhaseFamily::SourceLoad);
+    let is_documentation_code = code.phase_family() == Some(PhaseFamily::Documentation);
     match (is_source_load_code, primary_location) {
-        (true, DiagnosticPrimaryLocation::Span(_)) => {
+        (true, location) if !matches!(location, DiagnosticPrimaryLocation::SourceLoad { .. }) => {
             return Err(DiagnosticRecordError::SourceLoadCodeRequiresSourceLoadLocation { code });
         }
         (false, DiagnosticPrimaryLocation::SourceLoad { .. }) => {
@@ -81,11 +82,35 @@ pub(super) fn validate_primary_location(
         {
             return Err(DiagnosticRecordError::EmptySourceLoadPackageId);
         }
-        (false, DiagnosticPrimaryLocation::Span(primary_span)) => {
+        (_, DiagnosticPrimaryLocation::Span(primary_span)) => {
             if primary_span.role != DiagnosticSpanRole::Primary {
                 return Err(DiagnosticRecordError::PrimarySpanMustUsePrimaryRole {
                     actual: primary_span.role,
                 });
+            }
+        }
+        (_, DiagnosticPrimaryLocation::Documentation { .. }) if !is_documentation_code => {
+            return Err(
+                DiagnosticRecordError::NonDocumentationCodeUsesDocumentationLocation { code },
+            );
+        }
+        (
+            _,
+            DiagnosticPrimaryLocation::Documentation {
+                package_id,
+                module_path,
+                language_edition,
+                ..
+            },
+        ) => {
+            for (field, value) in [
+                ("package_id", package_id),
+                ("module_path", module_path),
+                ("language_edition", language_edition),
+            ] {
+                if value.trim().is_empty() {
+                    return Err(DiagnosticRecordError::BlankDocumentationIdentity { field });
+                }
             }
         }
         (_, DiagnosticPrimaryLocation::SourceLoad { .. }) => {}
@@ -104,6 +129,20 @@ pub(super) fn validate_primary_location(
         && (phase == PipelinePhase::SourceLoad || category == FailureCategory::SourceLoadError)
     {
         return Err(DiagnosticRecordError::NonSourceLoadMetadata {
+            code,
+            phase,
+            category,
+        });
+    }
+
+    if (is_documentation_code
+        && (phase != PipelinePhase::Documentation
+            || category != FailureCategory::DocumentationWarning))
+        || (!is_documentation_code
+            && (phase == PipelinePhase::Documentation
+                || category == FailureCategory::DocumentationWarning))
+    {
+        return Err(DiagnosticRecordError::DocumentationMetadataMismatch {
             code,
             phase,
             category,

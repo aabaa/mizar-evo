@@ -23,7 +23,7 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0352", "E0353", "E0401", "E0410", "E0411", "E0420", "E0421", "E0422", "E0423", "E0424",
     "E0425", "E0426", "E0430", "E0600", "E0601", "E0602", "E0603", "W0001", "W0002", "W0003",
     "W0010", "W0101", "W0102", "W0103", "W0201", "W0202", "W0210", "W0301", "W0302", "W0303",
-    "W0304", "W0305",
+    "W0304", "W0305", "W0400", "W0401", "W0402", "W0403", "W0404",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -105,6 +105,80 @@ fn source_load_descriptors_lock_codes_metadata_and_family() {
         assert_eq!(descriptor.phase_family, PhaseFamily::SourceLoad);
         assert_eq!(descriptor.since, "spec-22-source-load-v1");
     }
+}
+
+#[test]
+fn documentation_descriptors_lock_the_five_attachment_meanings() {
+    let registry = DiagnosticRegistry::builtin();
+    let expected = [
+        (
+            "orphan",
+            "No eligible module or adjacent named-item candidate for the documentation block.",
+        ),
+        (
+            "unresolved_target",
+            "Adjacent documentation target lacks supported verified identity, label or target boundary.",
+        ),
+        (
+            "ambiguous",
+            "Multiple identities or contradictory candidate/range associations remain for the documentation block.",
+        ),
+        (
+            "unverified_target",
+            "Documentation target is invalid or unverified.",
+        ),
+        (
+            "unresolved_coordinates",
+            "Required documentation association coordinates are absent or cannot be related to the verified target.",
+        ),
+    ];
+    let documentation = registry
+        .descriptors()
+        .iter()
+        .filter(|row| row.phase_family == PhaseFamily::Documentation)
+        .collect::<Vec<_>>();
+    assert_eq!(documentation.len(), expected.len());
+    for (index, (suffix, summary)) in expected.into_iter().enumerate() {
+        let code =
+            DiagnosticCode::from_parts(DiagnosticSeverity::Warning, 400 + index as u16).unwrap();
+        let row = registry
+            .lookup(code)
+            .expect("allocated Documentation warning");
+        assert_eq!(
+            row.semantic_name,
+            format!("documentation.attachment.{suffix}")
+        );
+        assert_eq!(row.meaning_key, row.semantic_name);
+        assert_eq!(row.summary, summary);
+        assert_eq!(row.phase_family, PhaseFamily::Documentation);
+        assert_eq!(row.default_severity, DiagnosticSeverity::Warning);
+        assert_eq!(row.status, DiagnosticStatus::Active);
+        assert_eq!(row.retired_since, None);
+        assert!(row.aliases.is_empty());
+        assert!(row.replacement_codes.is_empty());
+        assert_eq!(row.since, "spec-22-documentation-v1");
+        assert_eq!(
+            row.doc_url,
+            "doc/spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings"
+        );
+    }
+    for number in 400..=499 {
+        let code = DiagnosticCode::from_parts(DiagnosticSeverity::Warning, number).unwrap();
+        assert_eq!(code.phase_family(), Some(PhaseFamily::Documentation));
+        assert_eq!(code.default_severity(), Some(DiagnosticSeverity::Warning));
+        assert_eq!(registry.lookup(code).is_some(), number <= 404);
+    }
+    for text in ["W0500", "W0700"] {
+        assert_eq!(DiagnosticCode::from_str(text).unwrap().phase_family(), None);
+    }
+    assert_eq!(
+        DiagnosticCode::from_str("E0401").unwrap().phase_family(),
+        Some(PhaseFamily::Logic)
+    );
+    assert_eq!(
+        DiagnosticCode::from_str("W0399").unwrap().phase_family(),
+        Some(PhaseFamily::CompatibilityWarning)
+    );
 }
 
 #[test]
@@ -417,33 +491,66 @@ fn descriptor_validation_rejects_range_severity_and_alias_gaps() {
 
 #[test]
 fn compatibility_validation_rejects_code_reuse_and_disappearance() {
-    let baseline = [descriptor(
+    let original = descriptor(
         "E0001",
         "syntax.unexpected_token",
         PhaseFamily::Syntax,
         DiagnosticSeverity::Error,
-    )];
-    let reused = [DiagnosticDescriptor {
-        meaning_key: "syntax.different_meaning",
-        semantic_name: "syntax.different_meaning",
-        ..baseline[0]
-    }];
-
-    assert!(matches!(
-        validate_registry_compatibility(&baseline, &reused),
-        Err(RegistryValidationError::MeaningKeyChanged { .. })
-    ));
-    let summary_changed = [DiagnosticDescriptor {
-        summary: "summary text may improve without changing identity",
-        ..baseline[0]
-    }];
-    assert!(validate_registry_compatibility(&baseline, &summary_changed).is_ok());
-    assert_eq!(
-        validate_registry_compatibility(&baseline, &[]),
-        Err(RegistryValidationError::MissingCode {
-            code: baseline[0].code,
-        })
     );
+    for row in std::iter::once(original).chain(
+        BUILTIN_DESCRIPTORS
+            .iter()
+            .copied()
+            .filter(|row| row.phase_family == PhaseFamily::Documentation),
+    ) {
+        let baseline = [row];
+        let reused = [DiagnosticDescriptor {
+            meaning_key: "syntax.different_meaning",
+            semantic_name: "syntax.different_meaning",
+            ..baseline[0]
+        }];
+
+        assert!(matches!(
+            validate_registry_compatibility(&baseline, &reused),
+            Err(RegistryValidationError::MeaningKeyChanged { .. })
+        ));
+        for mutation in [
+            DiagnosticDescriptor {
+                phase_family: PhaseFamily::Info,
+                ..row
+            },
+            DiagnosticDescriptor {
+                default_severity: DiagnosticSeverity::Info,
+                ..row
+            },
+            DiagnosticDescriptor {
+                semantic_name: "documentation.renamed",
+                ..row
+            },
+        ] {
+            assert!(validate_registry_compatibility(&baseline, &[mutation]).is_err());
+        }
+        let retired = DiagnosticDescriptor {
+            status: DiagnosticStatus::Retired,
+            retired_since: Some("test-retirement"),
+            ..row
+        };
+        assert!(matches!(
+            validate_registry_compatibility(&[retired], &baseline),
+            Err(RegistryValidationError::RetiredCodeReactivated { .. })
+        ));
+        let summary_changed = [DiagnosticDescriptor {
+            summary: "summary text may improve without changing identity",
+            ..baseline[0]
+        }];
+        assert!(validate_registry_compatibility(&baseline, &summary_changed).is_ok());
+        assert_eq!(
+            validate_registry_compatibility(&baseline, &[]),
+            Err(RegistryValidationError::MissingCode {
+                code: baseline[0].code,
+            })
+        );
+    }
 }
 
 #[test]

@@ -20,7 +20,7 @@ use mizar_diagnostics::{
     },
 };
 use mizar_session::{
-    BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, InMemorySessionIdAllocator,
+    BuildSnapshotId, GeneratedSpanAnchor, GeneratedSpanOrigin, Hash, InMemorySessionIdAllocator,
     NormalizedPath, PackageId, SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
     normalize_source_path,
 };
@@ -330,6 +330,193 @@ fn every_allocated_source_load_code_accepts_a_source_request_location() {
         assert_eq!(draft.phase(), PipelinePhase::SourceLoad);
         assert_eq!(draft.category(), FailureCategory::SourceLoadError);
     }
+}
+
+#[test]
+fn documentation_locations_round_trip_complete_provenance_and_ordered_secondaries() {
+    let snapshot = snapshot_id(40);
+    let source = source_id(snapshot);
+    let secondary = DiagnosticSpan::secondary(
+        SourceRange {
+            source_id: source,
+            start: 1,
+            end: 3,
+        },
+        Some("candidate".into()),
+    )
+    .unwrap();
+    let other = DiagnosticSpan::secondary(
+        SourceRange {
+            source_id: source,
+            start: 4,
+            end: 5,
+        },
+        None,
+    )
+    .unwrap();
+    let input = documentation_input(snapshot);
+    let debug_location = format!(
+        "documentation(publication={},package=\"pkg\",version=Some(\"\"),lockfile=None,module=\"src/doc.miz\",edition=\"2026\",block=12)",
+        "ab".repeat(32)
+    );
+    let primary = DiagnosticPrimaryLocation::Span(
+        DiagnosticSpan::primary(
+            SourceRange {
+                source_id: source,
+                start: 0,
+                end: 1,
+            },
+            None,
+        )
+        .unwrap(),
+    );
+    let mut optional = documentation_input(snapshot);
+    if let DiagnosticPrimaryLocation::Documentation {
+        package_version,
+        lockfile_identity,
+        ..
+    } = &mut optional.primary_location
+    {
+        *package_version = None;
+        *lockfile_identity = Some(String::new());
+    }
+    let provenance = input.primary_location.clone();
+    for location in [provenance.clone(), optional.primary_location, primary] {
+        let mut input = input.clone();
+        input.primary_location = location.clone();
+        input.secondary_spans = vec![other.clone(), secondary.clone(), other.clone()];
+        let expected_debug = location == provenance;
+        let draft =
+            DiagnosticDraft::new(input).expect("Documentation permits real spans and provenance");
+        assert_eq!(draft.primary_location(), &location);
+        assert_eq!(draft.phase().as_str(), "documentation");
+        assert_eq!(draft.category().as_str(), "documentation_warning");
+        let record = DiagnosticRecord::from_draft(
+            draft.clone(),
+            DiagnosticHandle::new(snapshot, DiagnosticId::new(0)),
+            DiagnosticFreshness::Current {
+                source_snapshot: snapshot,
+            },
+            vec![],
+        )
+        .unwrap();
+        assert_eq!(record.primary_location(), &location);
+        assert_eq!(
+            record.secondary_spans(),
+            &[other.clone(), secondary.clone(), other.clone()]
+        );
+        assert_eq!(record.secondary_spans(), draft.secondary_spans());
+        if expected_debug {
+            assert!(draft.debug_snapshot().contains(&debug_location));
+            assert!(record.debug_snapshot().contains(&debug_location));
+        }
+    }
+}
+
+#[test]
+fn documentation_validation_refuses_incomplete_identity_and_metadata_mismatches() {
+    let snapshot = snapshot_id(41);
+    let input = documentation_input(snapshot);
+    for field in ["package_id", "module_path", "language_edition"] {
+        for blank in ["", " \t\n"] {
+            let mut invalid = input.clone();
+            if let DiagnosticPrimaryLocation::Documentation {
+                package_id,
+                module_path,
+                language_edition,
+                ..
+            } = &mut invalid.primary_location
+            {
+                *match field {
+                    "package_id" => package_id,
+                    "module_path" => module_path,
+                    _ => language_edition,
+                } = blank.into();
+            }
+            assert!(
+                matches!(DiagnosticDraft::new(invalid), Err(DiagnosticRecordError::BlankDocumentationIdentity { field: actual }) if actual == field)
+            );
+        }
+    }
+    let span = DiagnosticPrimaryLocation::Span(
+        DiagnosticSpan::primary(
+            SourceRange {
+                source_id: source_id(snapshot),
+                start: 0,
+                end: 1,
+            },
+            None,
+        )
+        .unwrap(),
+    );
+    for location in [input.primary_location.clone(), span.clone()] {
+        for (phase, category) in [
+            (PipelinePhase::Parser, FailureCategory::DocumentationWarning),
+            (PipelinePhase::Documentation, FailureCategory::ParseError),
+        ] {
+            let mut invalid = input.clone();
+            invalid.primary_location = location.clone();
+            invalid.phase = phase;
+            invalid.category = category;
+            assert!(matches!(
+                DiagnosticDraft::new(invalid),
+                Err(DiagnosticRecordError::DocumentationMetadataMismatch { .. })
+            ));
+        }
+    }
+    for (code, phase, category) in [
+        ("E0001", PipelinePhase::Parser, FailureCategory::ParseError),
+        (
+            "E0602",
+            PipelinePhase::SourceLoad,
+            FailureCategory::SourceLoadError,
+        ),
+    ] {
+        let mut invalid = input.clone();
+        invalid.code = DiagnosticCode::from_str(code).unwrap();
+        invalid.phase = phase;
+        invalid.category = category;
+        assert!(
+            DiagnosticDraft::new(invalid).is_err(),
+            "{code} must refuse Documentation provenance"
+        );
+    }
+    for (phase, category) in [
+        (PipelinePhase::Documentation, FailureCategory::ParseError),
+        (PipelinePhase::Parser, FailureCategory::DocumentationWarning),
+    ] {
+        let mut invalid = input.clone();
+        invalid.code = DiagnosticCode::from_str("E0001").unwrap();
+        invalid.primary_location = span.clone();
+        invalid.phase = phase;
+        invalid.category = category;
+        assert!(matches!(
+            DiagnosticDraft::new(invalid),
+            Err(DiagnosticRecordError::DocumentationMetadataMismatch { .. })
+        ));
+    }
+    let mut invalid = input.clone();
+    invalid.primary_location = DiagnosticPrimaryLocation::SourceLoad {
+        package_id: PackageId::new("pkg"),
+        path: normalized_path("src/doc.miz"),
+    };
+    assert!(DiagnosticDraft::new(invalid).is_err());
+    let mut invalid = input;
+    invalid.secondary_spans = vec![
+        DiagnosticSpan::primary(
+            SourceRange {
+                source_id: source_id(snapshot),
+                start: 0,
+                end: 1,
+            },
+            None,
+        )
+        .unwrap(),
+    ];
+    assert!(matches!(
+        DiagnosticDraft::new(invalid),
+        Err(DiagnosticRecordError::SecondarySpanMustNotUsePrimaryRole { index: 0 })
+    ));
 }
 
 #[test]
@@ -1193,6 +1380,31 @@ fn draft_input(
             }),
         )])
         .expect("valid details"),
+        fixes: vec![],
+        explanation: None,
+    }
+}
+
+fn documentation_input(snapshot: BuildSnapshotId) -> DiagnosticDraftInput {
+    DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("W0400").unwrap(),
+        phase: PipelinePhase::Documentation,
+        category: FailureCategory::DocumentationWarning,
+        stable_detail_key: "documentation.attachment.orphan".into(),
+        message: "orphan documentation".into(),
+        primary_location: DiagnosticPrimaryLocation::Documentation {
+            publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+            package_id: "pkg".into(),
+            package_version: Some(String::new()),
+            lockfile_identity: None,
+            module_path: "src/doc.miz".into(),
+            language_edition: "2026".into(),
+            block_ordinal: 12,
+        },
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
         fixes: vec![],
         explanation: None,
     }

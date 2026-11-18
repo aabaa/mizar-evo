@@ -1,6 +1,6 @@
 # Documentation 診断の定義提案
 正本は英語: [English companion](../en/documentation_definition.md)。
-状態: 提案のみ。末尾の DD-Q1–DD-Q7 はすべて未選択。本書は範囲、descriptor、API の割当・予約・採用を行わない。
+状態: 過去の提案。2026-11-18 に DD-Q1–DD-Q7 の全①を所有者が承認。現行規範と採用は [spec22](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) と[registry](../en/registry.md#documentation-attachment-allocation)が所有する。以下は採用前の提案記録であり、②は未承認。
 
 ## 権威と固定境界
 [spec22](../../../spec/en/22.error_handling_and_diagnostics.md#2211-error-code-system-e-series) が severity prefix 付き恒久 code を所有し、[registry の gap](../en/registry.md#deferred-code-space-gaps) は後続の仕様更新まで Documentation の割当・公開を禁止する。[internal05](../../internal/en/05.documentation_extraction.md#diagnostics) の phase family は `Documentation` で、`Extraction` とは別。本提案は [Doc7 attachment outcomes](../../mizar-doc/en/comments.md#residual-association-definitions) のみを扱う。

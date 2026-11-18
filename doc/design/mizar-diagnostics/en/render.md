@@ -182,4 +182,8 @@ record ordering, or LSP conversion boundaries.
 
 ## Source-loading locations
 
-A non-range primary location renders `  --> {normalized_path}` without consulting `DiagnosticSourceContext`, adding coordinates, underlines, or a source excerpt. Header, notes, real secondary spans, fixes, and explanation rendering retain their existing behavior.
+A source-loading primary location renders `  --> {normalized_path}` without consulting `DiagnosticSourceContext`, adding coordinates, underlines, or a source excerpt. Header, notes, real secondary spans, fixes, and explanation rendering retain their existing behavior.
+
+## Documentation locations
+
+The non-range primary line is `  --> documentation publication={hash} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?} block={ordinal}`. Hash is lowercase hexadecimal and identity strings/options use Rust debug escaping. Rendering consults no source context for this primary and fabricates no coordinates, underline or excerpt; real secondary spans and other payloads retain their existing rendering.

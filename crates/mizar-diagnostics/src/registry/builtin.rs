@@ -7,6 +7,9 @@ use super::{
 const INITIAL_SINCE: &str = "spec-22.7-v1";
 const IMPORT_SINCE: &str = "spec-22-import-v1";
 const FRONTEND_SINCE: &str = "spec-22-frontend-v1";
+const DOCUMENTATION_SINCE: &str = "spec-22-documentation-v1";
+const DOCUMENTATION_DOC_URL: &str =
+    "doc/spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings";
 const INITIAL_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference";
 
@@ -15,6 +18,17 @@ macro_rules! builtin_descriptor {
         builtin_descriptor!($severity, $number, $name, $family, $summary, INITIAL_SINCE)
     };
     ($severity:ident, $number:literal, $name:literal, $family:ident, $summary:literal, $since:expr) => {
+        builtin_descriptor!(
+            $severity,
+            $number,
+            $name,
+            $family,
+            $summary,
+            $since,
+            INITIAL_DOC_URL
+        )
+    };
+    ($severity:ident, $number:literal, $name:literal, $family:ident, $summary:literal, $since:expr, $doc_url:expr) => {
         DiagnosticDescriptor {
             code: DiagnosticCode::from_parts_unchecked(DiagnosticSeverity::$severity, $number),
             meaning_key: $name,
@@ -22,7 +36,7 @@ macro_rules! builtin_descriptor {
             default_severity: DiagnosticSeverity::$severity,
             phase_family: PhaseFamily::$family,
             summary: $summary,
-            doc_url: INITIAL_DOC_URL,
+            doc_url: $doc_url,
             status: DiagnosticStatus::Active,
             since: $since,
             retired_since: None,
@@ -796,5 +810,50 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "compat.edition_increase",
         CompatibilityWarning,
         "Package edition raised; MAJOR by default, review recommended"
+    ),
+    builtin_descriptor!(
+        Warning,
+        400,
+        "documentation.attachment.orphan",
+        Documentation,
+        "No eligible module or adjacent named-item candidate for the documentation block.",
+        DOCUMENTATION_SINCE,
+        DOCUMENTATION_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        401,
+        "documentation.attachment.unresolved_target",
+        Documentation,
+        "Adjacent documentation target lacks supported verified identity, label or target boundary.",
+        DOCUMENTATION_SINCE,
+        DOCUMENTATION_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        402,
+        "documentation.attachment.ambiguous",
+        Documentation,
+        "Multiple identities or contradictory candidate/range associations remain for the documentation block.",
+        DOCUMENTATION_SINCE,
+        DOCUMENTATION_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        403,
+        "documentation.attachment.unverified_target",
+        Documentation,
+        "Documentation target is invalid or unverified.",
+        DOCUMENTATION_SINCE,
+        DOCUMENTATION_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        404,
+        "documentation.attachment.unresolved_coordinates",
+        Documentation,
+        "Required documentation association coordinates are absent or cannot be related to the verified target.",
+        DOCUMENTATION_SINCE,
+        DOCUMENTATION_DOC_URL
     ),
 ];

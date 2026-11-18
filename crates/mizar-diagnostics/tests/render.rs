@@ -213,6 +213,77 @@ fn source_load_primary_keeps_real_secondary_span_rendering() {
 }
 
 #[test]
+fn documentation_draft_to_cli_renders_provenance_without_primary_source_lookup() {
+    let snapshot = snapshot_id(40);
+    let input = DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("W0404").unwrap(),
+        phase: PipelinePhase::Documentation,
+        category: FailureCategory::DocumentationWarning,
+        stable_detail_key: "documentation.attachment.unresolved_coordinates".into(),
+        message: "association coordinates unavailable".into(),
+        primary_location: DiagnosticPrimaryLocation::Documentation {
+            publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+            package_id: "pkg".into(),
+            package_version: Some(String::new()),
+            lockfile_identity: None,
+            module_path: "src/doc.miz".into(),
+            language_edition: "2026".into(),
+            block_ordinal: 12,
+        },
+        secondary_spans: vec![],
+        notes: vec![],
+        details: DiagnosticDetails::new(),
+        fixes: vec![],
+        explanation: None,
+    };
+    let publish = |input| {
+        let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+            PipelinePhase::Documentation,
+            snapshot,
+            "documentation",
+        ));
+        sink.emit(DiagnosticDraft::new(input).unwrap()).unwrap();
+        BuildDiagnosticIndex::from_batches(snapshot, vec![sink.into_batch()]).unwrap()
+    };
+    let index = publish(input.clone());
+    let expected = format!(
+        "warning[W0404]: association coordinates unavailable (documentation.attachment.unresolved_coordinates)\n  --> documentation publication={} package=\"pkg\" version=Some(\"\") lockfile=None module=\"src/doc.miz\" edition=\"2026\" block=12",
+        "ab".repeat(32)
+    );
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &PanicSourceContext,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(rendered, expected);
+    let source = source_id(snapshot);
+    let context = TestSourceContext::new().with_source(source, "related.miz", "candidate", "abc\n");
+    let mut related = input;
+    related.secondary_spans = vec![
+        DiagnosticSpan::secondary(
+            SourceRange {
+                source_id: source,
+                start: 0,
+                end: 3,
+            },
+            Some("candidate".into()),
+        )
+        .unwrap(),
+    ];
+    let index = publish(related);
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &context,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(
+        rendered,
+        format!("{expected}\n  --> related.miz:1:1\n   |\n 1 | abc\n   | --- candidate")
+    );
+}
+
+#[test]
 fn fix_rendering_projects_edit_and_command_metadata_without_application_payloads() {
     let snapshot = snapshot_id(7);
     let source_id = source_id(snapshot);

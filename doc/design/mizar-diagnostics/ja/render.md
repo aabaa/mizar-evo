@@ -177,4 +177,8 @@ conversion boundary を変えてはならない。
 
 ## Source-loading locations
 
-範囲なし主位置は `  --> {normalized_path}` と表示し、`DiagnosticSourceContext` 参照、座標、下線、ソース抜粋を追加しない。ヘッダー、note、実在する副スパン、fix、explanation の表示は維持する。
+ソース読込みの範囲なし主位置は `  --> {normalized_path}` と表示し、`DiagnosticSourceContext` 参照、座標、下線、ソース抜粋を追加しない。ヘッダー、note、実在する副スパン、fix、explanation の表示は維持する。
+
+## Documentation locations
+
+非範囲主位置の行は `  --> documentation publication={hash} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?} block={ordinal}`。hash は小文字16進数、identity の文字列・Option は Rust debug escape を用いる。この主位置の source context を参照せず、座標・下線・抜粋を捏造しない。実在する副スパンと他の payload は既存の表示を維持する。

@@ -74,6 +74,8 @@ pub enum PhaseFamily {
     AlgorithmWarning,
     /// Compatibility and packaging warnings.
     CompatibilityWarning,
+    /// Documentation attachment warnings.
+    Documentation,
     /// Informational display diagnostics.
     Info,
 }
@@ -92,7 +94,8 @@ impl PhaseFamily {
             Self::StructuralWarning
             | Self::ProofWarning
             | Self::AlgorithmWarning
-            | Self::CompatibilityWarning => DiagnosticSeverity::Warning,
+            | Self::CompatibilityWarning
+            | Self::Documentation => DiagnosticSeverity::Warning,
             Self::Info => DiagnosticSeverity::Info,
         }
     }
@@ -112,6 +115,7 @@ impl fmt::Display for PhaseFamily {
             Self::ProofWarning => "ProofWarning",
             Self::AlgorithmWarning => "AlgorithmWarning",
             Self::CompatibilityWarning => "CompatibilityWarning",
+            Self::Documentation => "Documentation",
             Self::Info => "Info",
         })
     }
@@ -164,6 +168,7 @@ impl DiagnosticCode {
             (DiagnosticSeverity::Warning, 100..=199) => Some(PhaseFamily::ProofWarning),
             (DiagnosticSeverity::Warning, 200..=299) => Some(PhaseFamily::AlgorithmWarning),
             (DiagnosticSeverity::Warning, 300..=399) => Some(PhaseFamily::CompatibilityWarning),
+            (DiagnosticSeverity::Warning, 400..=499) => Some(PhaseFamily::Documentation),
             (DiagnosticSeverity::Info, 1..=99) => Some(PhaseFamily::Info),
             _ => None,
         }

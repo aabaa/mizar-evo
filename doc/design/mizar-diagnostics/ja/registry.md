@@ -14,7 +14,7 @@ metadata を公開する。
 この task は
 `doc/spec/en/22.error_handling_and_diagnostics.md` に列挙された diagnostic の
 ための初期 stable code space を定義する。build failure、cache/artifact
-compatibility、documentation extraction、editor-only overlay など、diagnostic に
+compatibility、以下の添付割当以外の Documentation、Extraction、editor-only overlay など、diagnostic に
 言及する他の architecture surface は、normative range と descriptor がここに追加
 されるまで code-space gap として残る。`mizar-diagnostics` はそれらの将来の割り
 当てについても owner であり続けるが、task 3 は placeholder range や descriptor
@@ -51,6 +51,7 @@ test で用いる canonical registry vocabulary である。
 | `W0100`-`W0199` | `ProofWarning` | Proof and ATP warnings | Warning |
 | `W0200`-`W0299` | `AlgorithmWarning` | Algorithm and contract warnings | Warning |
 | `W0300`-`W0399` | `CompatibilityWarning` | Compatibility and packaging warnings | Warning |
+| `W0400`-`W0499` | `Documentation` | Documentation attachment warnings | Warning |
 | `I0001`-`I0099` | `Info` | Informational display diagnostics | Info |
 
 これらの範囲外の実装 diagnostic は registry error であり、通常の user
@@ -90,13 +91,17 @@ projection である。これらは registry identity ではない。
 - `aliases`、`retired_since`、`replacement_codes` は空である。
 - `summary` は initial-allocation table の `Summary` 値である。
 
+## Documentation attachment allocation
+
+[spec22 §22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) が W0400–W0404 の5つの名前・意味・summary を所有する。descriptor は `phase_family = Documentation`、`default_severity = Warning`、`meaning_key = semantic_name`、`status = active`、`since = spec-22-documentation-v1`、`doc_url = doc/spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings` として導出する。aliases・retirement marker・replacement codes は空。W0405–W0499 は未割当。単一 family 既定は Warning のままで、profile 昇格は consumer policy であり descriptor identity を変えない。[record 位置](./failure_record.md#documentation-primary-locations) によりソース結合がない場合も架空のスパンなしに表現できる。この前提整備は Doc7 の実装でも他の Documentation/Extraction 条件の割当でもない。
+
 ## Deferred Code-Space Gaps
 
 次の surface は task-2 initial allocation の外に明示的に置く。
 
 | Surface | Classification | task-2 disposition |
 |---|---|---|
-| architecture/internal document に書かれた build、cache、artifact、documentation-extraction diagnostics | `external_dependency_gap` / `spec_gap` | 後続の仕様更新が canonical range と descriptor を追加するまで、code を割り当てず、current record として公開しない。 |
+| build、cache、artifact、Extraction と以下の添付割当以外の Documentation 診断 | `external_dependency_gap` / `spec_gap` | 後続の仕様更新が canonical range と descriptor を追加するまで、code を割り当てず、current record として公開しない。 |
 | この crate より前からある lexer、frontend、parser、resolver diagnostics | `external_dependency_gap` / `deferred` | task 16 が実 adoption trigger を記録するまで local diagnostics を触らない。message text から code を推測しない。 |
 | `info.thesis`、`info.resolution`、`info.type` などの spec-21 display annotation name | `spec_gap` | `I0001`-`I0099` を reserve する。言語仕様がそれらの semantic name を数値 `DiagnosticCode` に map するまで concrete info code を割り当てない。 |
 
