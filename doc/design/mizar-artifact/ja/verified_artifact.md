@@ -570,3 +570,5 @@ runtime export は先に実際の実行内容生成側を消費し、後の計�
 
 ## In-memory identity projection
 `project_frontend_identity` は [限定的な Doc13 G1 引渡し](../../mizar-doc/ja/render_prerequisites.md#採用済み-g1-identity-binding) に完全な元 artifact/publication/source identity と lossless native module 成分を保持する。明示的な語彙・版互換性で未対応 product を拒否し、汎用 reader、artifact storage、proof acceptance は変えない。構造的 capture には別途 Driver lineage と Doc publication/current-plan 認証が必要である。
+
+`ArtifactHashRef::source_owner_fingerprint` は有限の対応 producer と厳密な hash class/family/version に対する既存 native source-artifact framing を所有する。Driver は publication と selected-root provenance 検証で同じ recipe を使い、捕捉した lock v1/v2 選択を保持する。未知 producer には commitment を与えない。hash domain や serialized shape は追加しない。

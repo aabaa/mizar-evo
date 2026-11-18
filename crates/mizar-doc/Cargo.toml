@@ -11,6 +11,7 @@ mizar-resolve = { path = "../mizar-resolve" }
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
+mizar-driver = { path = "../mizar-driver" }
 pulldown-cmark = { version = "=0.13.6", default-features = false }
 
 [dev-dependencies]

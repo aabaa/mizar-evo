@@ -2461,7 +2461,12 @@ impl CompilerDriver {
                     module_index: &module_index,
                     allocator,
                 }
-                .complete_snapshot_publication(&task_graph, &driver_scheduler_run, publisher)
+                .complete_snapshot_publication(
+                    session.request.id,
+                    &task_graph,
+                    &driver_scheduler_run,
+                    publisher,
+                )
                 .filter(|_| {
                     self.lanes.publication_decision(snapshots, &session)
                         == PublicationDecision::Current

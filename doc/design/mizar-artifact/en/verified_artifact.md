@@ -623,3 +623,5 @@ Expression metadata alone is not executable content; serialization/loader detail
 
 ## In-memory Identity Projection
 `project_frontend_identity` retains complete original artifact/publication/source identity and lossless native module components for the [bounded Doc13 G1 handoff](../../mizar-doc/en/render_prerequisites.md#adopted-g1-identity-binding). Its explicit vocabulary/version compatibility refuses unsupported products without changing generic readers, artifact storage or proof acceptance. A structural capture requires separate Driver lineage and Doc publication/current-plan authentication.
+
+`ArtifactHashRef::source_owner_fingerprint` owns the existing native source-artifact framing for its finite supported producers and exact hash classes, family and version. Driver uses the same recipe for publication and selected-root provenance checks, including captured lock v1/v2 selection; unknown producers have no commitment. It introduces no hash domain or serialized shape.

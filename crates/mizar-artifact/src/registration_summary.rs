@@ -427,6 +427,37 @@ impl RegistrationSummary {
 }
 
 impl ArtifactHashRef {
+    /// Frames a supported native source-artifact owner commitment without changing its domain.
+    pub fn source_owner_fingerprint(producer: &str, digest: Hash) -> Option<Self> {
+        let (class, hash_class) = match producer {
+            "mizar-build/parsed-lock-content/v1" | "mizar-build/parsed-lock-content/v2" => {
+                (ArtifactHashClass::Artifact, HashClass::Artifact)
+            }
+            "mizar-vc/source-theorem-canonical-vc/v1"
+            | "mizar-vc/source-theorem-canonical-context/v1"
+            | "mizar-vc-dependency-slice-v1"
+            | "mizar-build/package-config-content/v1" => {
+                (ArtifactHashClass::Interface, HashClass::Interface)
+            }
+            _ => return None,
+        };
+        let value = CanonicalJson::Object(BTreeMap::from([
+            ("producer".to_owned(), CanonicalJson::string(producer)),
+            (
+                "digest".to_owned(),
+                CanonicalJson::string(digest.to_lower_hex()),
+            ),
+        ]));
+        let family = "mizar-driver/source-artifact-owner-fingerprint";
+        let version = SchemaVersion::new(1, 0);
+        Some(Self::new(
+            class,
+            family,
+            version,
+            CanonicalHashDomain::new(hash_class, family, version).hash(&value, &[]),
+        ))
+    }
+
     /// Builds a producer-owned artifact-framed hash reference.
     pub fn new(
         class: ArtifactHashClass,

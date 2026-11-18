@@ -127,7 +127,7 @@ pub fn read_published_label_export_candidates(
     Ok((manifest, candidates))
 }
 
-use std::{error::Error, fmt, path::PathBuf};
+use std::{error::Error, fmt, path::PathBuf, sync::Arc};
 
 use mizar_artifact::{
     manifest::{ModuleArtifactEntry, PackageIdentity},
@@ -242,6 +242,7 @@ impl DocIndex {
 /// One authenticated publication with its unresolved index and retained options.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocBuildPlan {
+    native_publication: Option<Arc<mizar_driver::events::SnapshotPublication>>,
     /// Original publication request with canonically ordered dependency references.
     pub request: DocPublicationRequest,
     /// Independent consumer choices and policies.
@@ -713,7 +714,7 @@ pub fn authenticate_doc_imports<A: SessionIdAllocator>(
     )],
 ) -> Result<AuthenticatedDocImports, DocBuildError> {
     use std::collections::BTreeSet;
-    let current = build_doc_plans(
+    let current = build_doc_plans_inner(
         registry,
         root.build_request,
         root.snapshot,
@@ -722,6 +723,7 @@ pub fn authenticate_doc_imports<A: SessionIdAllocator>(
             profile: root.profile.clone(),
             publications: vec![root.request.clone()],
         },
+        root.native_publication.clone(),
     )?;
     if current.as_slice() != [root.clone()] {
         return Err(DocBuildError::Binding(
@@ -974,6 +976,44 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
     workspace_root: &WorkspaceRoot,
     request: &DocBuildRequest,
 ) -> Result<Vec<DocBuildPlan>, DocBuildError> {
+    build_doc_plans_inner(
+        registry,
+        build_request,
+        snapshot_id,
+        workspace_root,
+        request,
+        None,
+    )
+}
+
+/// Plans native selected roots using Driver's retained original capture and publication.
+/// Registry currentness and all ordinary publication readers remain authoritative.
+pub fn build_native_doc_plans<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    build_request: BuildRequestId,
+    snapshot_id: BuildSnapshotId,
+    workspace_root: &WorkspaceRoot,
+    request: &DocBuildRequest,
+    publication: Arc<mizar_driver::events::SnapshotPublication>,
+) -> Result<Vec<DocBuildPlan>, DocBuildError> {
+    build_doc_plans_inner(
+        registry,
+        build_request,
+        snapshot_id,
+        workspace_root,
+        request,
+        Some(publication),
+    )
+}
+
+fn build_doc_plans_inner<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    build_request: BuildRequestId,
+    snapshot_id: BuildSnapshotId,
+    workspace_root: &WorkspaceRoot,
+    request: &DocBuildRequest,
+    native_publication: Option<Arc<mizar_driver::events::SnapshotPublication>>,
+) -> Result<Vec<DocBuildPlan>, DocBuildError> {
     if !request.profile.render_docs {
         return Ok(Vec::new());
     }
@@ -986,6 +1026,40 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
         .ok_or(DocBuildError::Binding(
             "snapshot is not current for request/workspace",
         ))?;
+    use mizar_artifact::registration_summary::ArtifactHashRef;
+    let native_hashes = if let Some(publication) = &native_publication {
+        if publication.build_request() != build_request
+            || publication.captured().snapshot() != &snapshot
+            || publication.manifests().len() != publication.artifact_roots().len()
+            || publication.manifests().len() != publication.artifacts().len()
+            || publication.artifacts().len() != publication.source_metadata().len()
+        {
+            return Err(DocBuildError::Binding("native capture context mismatch"));
+        }
+        Some((
+            ArtifactHashRef::source_owner_fingerprint(
+                publication.lockfile_producer(),
+                snapshot.lockfile_hash,
+            )
+            .ok_or(DocBuildError::Binding("unsupported native lock producer"))?,
+            ArtifactHashRef::source_owner_fingerprint(
+                "mizar-build/package-config-content/v1",
+                snapshot.verifier_config_hash,
+            )
+            .ok_or(DocBuildError::Binding("unsupported native config producer"))?,
+        ))
+    } else {
+        None
+    };
+    let hashes_match = |lock: &ArtifactHashRef, config: &ArtifactHashRef| {
+        native_hashes.as_ref().map_or_else(
+            || {
+                lock.digest == snapshot.lockfile_hash
+                    && config.digest == snapshot.verifier_config_hash
+            },
+            |(expected_lock, expected_config)| lock == expected_lock && config == expected_config,
+        )
+    };
     let mut plans = Vec::new();
     for selected in &request.publications {
         let (manifest, artifacts) = crate::artifact_reader::read_published_artifacts_with_comments(
@@ -993,6 +1067,23 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
             selected.expected_manifest_hash,
         )
         .map_err(DocBuildError::Publication)?;
+        if let Some(publication) = &native_publication {
+            let original = publication
+                .artifact_roots()
+                .iter()
+                .zip(publication.manifests())
+                .zip(publication.artifacts())
+                .find(|((root, original), _)| {
+                    *root == &selected.artifact_root && *original == &manifest
+                });
+            if !original
+                .is_some_and(|(_, original)| artifacts.len() == 1 && artifacts[0].0 == **original)
+            {
+                return Err(DocBuildError::Binding(
+                    "native original publication changed",
+                ));
+            }
+        }
         let stored = &manifest.manifest;
         if stored.package != selected.package
             || !snapshot
@@ -1000,8 +1091,7 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
                 .iter()
                 .any(|source| source.package_id.as_str() == stored.package.package_id)
             || stored.toolchain != snapshot.toolchain.identity()
-            || stored.lockfile_hash.digest != snapshot.lockfile_hash
-            || stored.verifier_config_hash.digest != snapshot.verifier_config_hash
+            || !hashes_match(&stored.lockfile_hash, &stored.verifier_config_hash)
         {
             return Err(DocBuildError::Binding(
                 "package or manifest build provenance mismatch",
@@ -1033,8 +1123,10 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
                         && source.edition.as_str() == identity.language_edition
                 })
                 || artifact.provenance.toolchain != snapshot.toolchain.identity()
-                || artifact.provenance.lockfile_hash.digest != snapshot.lockfile_hash
-                || artifact.provenance.verifier_config_hash.digest != snapshot.verifier_config_hash
+                || !hashes_match(
+                    &artifact.provenance.lockfile_hash,
+                    &artifact.provenance.verifier_config_hash,
+                )
                 || artifact.provenance.language_edition != identity.language_edition
             {
                 return Err(DocBuildError::Binding(
@@ -1076,6 +1168,7 @@ pub fn build_doc_plans<A: SessionIdAllocator>(
             });
         }
         plans.push(DocBuildPlan {
+            native_publication: native_publication.clone(),
             request: selected,
             profile: request.profile.clone(),
             snapshot: snapshot_id,

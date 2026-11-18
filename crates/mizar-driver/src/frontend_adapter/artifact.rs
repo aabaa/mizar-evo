@@ -4,6 +4,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
     /// Resolves a complete original cohort after Driver has filtered fresh owner handoffs.
     pub(crate) fn complete_snapshot_publication(
         self,
+        build_request: mizar_session::BuildRequestId,
         graph: &mizar_build::task_graph::TaskGraph,
         run: &crate::driver::DriverSchedulerRun,
         publisher: &mizar_ir::publisher::PhaseOutputPublisher,
@@ -24,6 +25,23 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return None;
         }
         captured.native_sources()?;
+        self.validate_native_lock_content().ok()?;
+        self.validate_native_config_content().ok()?;
+        let lockfile_producer = if self.build_plan.lockfile.toolchain_version.is_some() {
+            "mizar-build/parsed-lock-content/v2"
+        } else {
+            "mizar-build/parsed-lock-content/v1"
+        };
+        let lockfile_hash =
+            mizar_artifact::registration_summary::ArtifactHashRef::source_owner_fingerprint(
+                lockfile_producer,
+                self.snapshot.lockfile_hash,
+            )?;
+        let verifier_config_hash =
+            mizar_artifact::registration_summary::ArtifactHashRef::source_owner_fingerprint(
+                "mizar-build/package-config-content/v1",
+                self.snapshot.verifier_config_hash,
+            )?;
         publisher.validate_current_snapshot(self.snapshot.id).ok()?;
         let modules = self
             .module_index
@@ -47,6 +65,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             return None;
         }
         let mut manifests = Vec::new();
+        let mut artifact_roots = Vec::new();
         let mut artifacts = Vec::new();
         let mut development_artifacts = Vec::new();
         let mut source_metadata = Vec::new();
@@ -95,7 +114,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 },
             )
             .ok()?;
-            if manifest.manifest != *commit.manifest() {
+            if manifest.manifest != *commit.manifest()
+                || manifest.manifest.lockfile_hash != lockfile_hash
+                || manifest.manifest.verifier_config_hash != verifier_config_hash
+                || manifest.manifest.toolchain != self.snapshot.toolchain.identity()
+            {
                 return None;
             }
             let [entry] = manifest.manifest.modules.as_slice() else {
@@ -114,6 +137,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             let artifact = publisher.storage().get(&handle).ok()?;
             let value = verified_artifact_json(&artifact).ok()?;
             if entry.module != artifact.module
+                || artifact.provenance.lockfile_hash != lockfile_hash
+                || artifact.provenance.verifier_config_hash != verifier_config_hash
+                || artifact.provenance.toolchain != self.snapshot.toolchain.identity()
                 || artifact.module.package_id != version.package_id.as_str()
                 || artifact.module.module_path != version.module_path.as_str()
                 || artifact.provenance.captured_source
@@ -401,6 +427,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             })());
             artifacts.push(artifact);
             manifests.push(manifest);
+            artifact_roots.push(root);
         }
         let diagnostics = mizar_diagnostics::aggregator::BuildDiagnosticIndex::from_batches(
             self.snapshot.id,
@@ -413,6 +440,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         .ok()?;
         publisher.validate_current_snapshot(self.snapshot.id).ok()?;
         Some(crate::events::SnapshotPublication {
+            build_request,
+            artifact_roots,
+            lockfile_producer,
             captured: captured.clone(),
             diagnostics,
             manifests,
@@ -479,9 +509,8 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             module_summary::{MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummary, SourceRangeSummary},
             registration_summary::{ArtifactHashClass, ArtifactHashRef},
             store::{
-                CanonicalHashDomain, CanonicalJson, HashClass, PublishedArtifactPath,
-                PublishedArtifactReadOptions, artifact_hash_domain, read_published_artifact,
-                write_published_artifact,
+                CanonicalJson, PublishedArtifactPath, PublishedArtifactReadOptions,
+                artifact_hash_domain, read_published_artifact, write_published_artifact,
             },
             verified_artifact::{
                 BuildProvenance, ExportVisibility, ExpressionMetadata, ObligationMetadata,
@@ -1439,26 +1468,18 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let raw_refs = [
             (
-                ArtifactHashClass::Interface,
-                HashClass::Interface,
                 "mizar-vc/source-theorem-canonical-vc/v1",
                 reuse.vc_fingerprint(),
             ),
             (
-                ArtifactHashClass::Interface,
-                HashClass::Interface,
                 "mizar-vc/source-theorem-canonical-context/v1",
                 reuse.local_context_fingerprint(),
             ),
             (
-                ArtifactHashClass::Interface,
-                HashClass::Interface,
                 mizar_vc::dependency_slice::DEPENDENCY_SLICE_SCHEMA_VERSION,
                 reuse.dependency_slice_fingerprint(),
             ),
             (
-                ArtifactHashClass::Artifact,
-                HashClass::Artifact,
                 if self.build_plan.lockfile.toolchain_version.is_some() {
                     "mizar-build/parsed-lock-content/v2"
                 } else {
@@ -1467,28 +1488,13 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 self.snapshot.lockfile_hash,
             ),
             (
-                ArtifactHashClass::Interface,
-                HashClass::Interface,
                 "mizar-build/package-config-content/v1",
                 self.snapshot.verifier_config_hash,
             ),
         ]
-        .map(|(class, hash_class, producer, digest)| {
-            let value = CanonicalJson::Object(std::collections::BTreeMap::from([
-                ("producer".to_owned(), CanonicalJson::string(producer)),
-                (
-                    "digest".to_owned(),
-                    CanonicalJson::string(digest.to_lower_hex()),
-                ),
-            ]));
-            let family = "mizar-driver/source-artifact-owner-fingerprint";
-            let version = mizar_artifact::store::SchemaVersion::new(1, 0);
-            ArtifactHashRef::new(
-                class,
-                family,
-                version,
-                CanonicalHashDomain::new(hash_class, family, version).hash(&value, &[]),
-            )
+        .map(|(producer, digest)| {
+            ArtifactHashRef::source_owner_fingerprint(producer, digest)
+                .expect("native owner producers have fixed supported bindings")
         });
         let [
             vc_fingerprint,
@@ -2669,6 +2675,9 @@ mod native_artifact_staging_cleanup_tests {
 /// One complete manifest-backed build; retained data grants no currentness authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotPublication {
+    pub(crate) build_request: mizar_session::BuildRequestId,
+    pub(crate) artifact_roots: Vec<PathBuf>,
+    pub(crate) lockfile_producer: &'static str,
     pub(crate) captured: crate::request::CapturedSnapshot,
     pub(crate) diagnostics: mizar_diagnostics::aggregator::BuildDiagnosticIndex,
     pub(crate) manifests: Vec<mizar_artifact::manifest::PublishedManifestRead>,
@@ -2708,6 +2717,20 @@ impl PublishedSourceMetadata {
 }
 
 impl SnapshotPublication {
+    pub fn build_request(&self) -> mizar_session::BuildRequestId {
+        self.build_request
+    }
+
+    /// Original roots, in manifest order; copying an artifact grants no provenance.
+    pub fn artifact_roots(&self) -> &[PathBuf] {
+        &self.artifact_roots
+    }
+
+    /// Exact lock content producer selected by the captured typed build plan.
+    pub fn lockfile_producer(&self) -> &'static str {
+        self.lockfile_producer
+    }
+
     pub fn captured(&self) -> &crate::request::CapturedSnapshot {
         &self.captured
     }
@@ -3271,6 +3294,7 @@ mod snapshot_test_support {
                 allocator: &self.ids,
             }
             .complete_snapshot_publication(
+                submission.session.request().id,
                 submission.task_graph.as_ref().unwrap(),
                 submission.scheduler_run.as_ref().unwrap(),
                 publisher,
@@ -4532,6 +4556,71 @@ mod snapshot_payload_tests {
             assert_eq!(fs::read(path).unwrap(), bytes);
         }
         assert!(!fixture.root.join("identity-doc-output").exists());
+    }
+
+    #[test]
+    fn source_owner_commitments_keep_exact_supported_framing() {
+        use mizar_artifact::registration_summary::{ArtifactHashClass, ArtifactHashRef};
+        use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass, SchemaVersion};
+        let digest = mizar_session::hash_text("original captured input");
+        for (producer, class, hash_class) in [
+            (
+                "mizar-build/parsed-lock-content/v1",
+                ArtifactHashClass::Artifact,
+                HashClass::Artifact,
+            ),
+            (
+                "mizar-build/parsed-lock-content/v2",
+                ArtifactHashClass::Artifact,
+                HashClass::Artifact,
+            ),
+            (
+                "mizar-build/package-config-content/v1",
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+            ),
+            (
+                "mizar-vc/source-theorem-canonical-vc/v1",
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+            ),
+            (
+                "mizar-vc/source-theorem-canonical-context/v1",
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+            ),
+            (
+                "mizar-vc-dependency-slice-v1",
+                ArtifactHashClass::Interface,
+                HashClass::Interface,
+            ),
+        ] {
+            let family = "mizar-driver/source-artifact-owner-fingerprint";
+            let version = SchemaVersion::new(1, 0);
+            let value = CanonicalJson::Object(std::collections::BTreeMap::from([
+                ("producer".into(), CanonicalJson::string(producer)),
+                (
+                    "digest".into(),
+                    CanonicalJson::string(digest.to_lower_hex()),
+                ),
+            ]));
+            assert_eq!(
+                ArtifactHashRef::source_owner_fingerprint(producer, digest),
+                Some(ArtifactHashRef::new(
+                    class,
+                    family,
+                    version,
+                    CanonicalHashDomain::new(hash_class, family, version).hash(&value, &[]),
+                ))
+            );
+        }
+        for unsupported in [
+            "mizar-build/parsed-lock-content/v3",
+            "mizar-build/package-config-content/v2",
+            "forged",
+        ] {
+            assert!(ArtifactHashRef::source_owner_fingerprint(unsupported, digest).is_none());
+        }
     }
 
     #[test]

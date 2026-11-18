@@ -4985,3 +4985,619 @@ fn native_theorem_artifact_ir_preserves_late_denial_and_duplicates() {
         );
     }
 }
+
+#[test]
+fn genuine_native_selected_roots_revalidate_original_publication() {
+    use mizar_artifact::{
+        manifest::{artifact_manifest_json, manifest_hash_domain, write_manifest_file},
+        registration_summary::ArtifactHashClass,
+        store::{
+            PublishedArtifactPath, SchemaVersion, artifact_hash_domain, write_published_artifact,
+        },
+        verified_artifact::{
+            VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact_hash_excluded_paths, verified_artifact_json,
+        },
+    };
+    use mizar_atp::problem::*;
+    use mizar_build::{
+        planner::{lockfile_content_hash, workspace_config_content_hash},
+        task_graph::{EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId},
+    };
+    use mizar_doc::{artifact_reader::read_published_artifacts, doc_build::*};
+    use mizar_proof::policy::VerifierPolicy;
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargePolicy},
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    use std::sync::Arc;
+
+    for v2 in [false, true] {
+        let fixture = Fixture::new(
+            b"theorem Main: for X being set holds X = X proof let X be set; thus X = X; end;",
+        );
+        fs::write(
+            fixture.root.join("alpha/src/leaf.miz"),
+            b"theorem Leaf: for X being set holds X = X proof let X be set; thus X = X; end;",
+        )
+        .unwrap();
+        fs::create_dir(fixture.root.join("alpha/artifacts")).unwrap();
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut draft, mut input) = fixture.submit_request(vec![], vec![]);
+        if v2 {
+            input.lockfile.toolchain_version =
+                parse_lockfile("schema_version = 1\ntoolchain_version = \"0.1.0\"\npackage = []\n")
+                    .unwrap()
+                    .toolchain_version;
+        }
+        input.source_layout = StaticSourceLayout::new(vec![WorkspaceSourcePackage {
+            package_id: PackageId::new("alpha"),
+            files: ["main", "leaf"]
+                .map(|module| {
+                    WorkspaceSourceFile::new(format!("src/{module}.miz"), format!("{module}.miz"))
+                })
+                .to_vec(),
+        }]);
+        input.vc_descriptors = ["main", "leaf"]
+            .map(|module| {
+                VcTaskDescriptor::new(
+                    VcTaskDescriptorId::new(format!("native-doc-{module}")),
+                    mizar_build::module_index::ModuleId::new(
+                        PackageId::new("alpha"),
+                        ModulePath::new(module),
+                    ),
+                    VcOrderKey::new("00000000000000000000"),
+                    vec![],
+                    vec![EvidenceCandidateId::new("native-reflexivity")],
+                )
+            })
+            .to_vec();
+        let plan = produce_build_plan(
+            input.plan_request.clone(),
+            input.workspace_packages.clone(),
+            input.lockfile.clone(),
+        )
+        .unwrap();
+        draft.source_inputs.versions.clear();
+        draft.dependency_inputs.lockfile_hash = lockfile_content_hash(&plan.lockfile);
+        draft.verifier_config = VerifierConfigInput::new(workspace_config_content_hash(
+            &plan.verifier_config,
+            &plan.build_config,
+        ));
+        let session = draft
+            .capture_sources(
+                &ids,
+                &snapshots,
+                ["main", "leaf"]
+                    .map(|module| {
+                        (
+                            DiskSourceLoader::new(fixture.root.join("alpha")),
+                            SourceInput {
+                                package_id: PackageId::new("alpha"),
+                                module_path: ModulePath::new(module),
+                                normalized_path: normalize_path(
+                                    &fixture.root.join("alpha"),
+                                    Path::new(&format!("src/{module}.miz")),
+                                )
+                                .unwrap(),
+                                edition: Edition::new("2025"),
+                                origin: SourceOriginInput::Disk {
+                                    path: format!("src/{module}.miz").into(),
+                                },
+                            },
+                        )
+                    })
+                    .to_vec(),
+            )
+            .unwrap();
+        let owner = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        owner.register_current_snapshot(session.captured().snapshot().id);
+        for module in ["main", "leaf"] {
+            for (phase, kind) in [
+                ("SourceLoad", "SourceUnit"),
+                ("Frontend", "FrontendOutput"),
+                ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                ("SignatureCollection", "SourceTheoremModuleSummary"),
+                ("TypeChecking", "SourceTheoremTypedAst"),
+                ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                ("OverloadResolution", "SourceTheoremMetadata"),
+                ("Elaboration", "SourceTheoremCore"),
+                ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                ("VcGenerate", "SourceTheoremVC"),
+                ("VcDischarge", "SourceTheoremDischarge"),
+                ("AtpSolve", "SourceTheoremCandidateInputs"),
+                ("KernelCheck", "SourceTheoremCandidateCheck"),
+                ("KernelCheck", "SourceTheoremCandidateWitnessFile"),
+                ("ArtifactCommit", "SourceTheoremArtifactData"),
+            ] {
+                owner.allow_work_unit(AllowedWorkUnit::new(
+                    IrPipelinePhase::new(phase),
+                    OutputKind::new(kind),
+                    IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                ));
+            }
+        }
+        let policy = DischargePolicy {
+            computation_limit: ComputationLimit {
+                policy: PolicyKey::new("snapshot-reflexivity"),
+                max_steps: 64,
+            },
+        };
+        let profile = LogicProfile::try_new(
+            "snapshot-native",
+            LogicFragment::Fof,
+            EqualitySupport::Supported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::ScopedGuardPredicates,
+            NativePropertySupport::Supported,
+            [ConcreteFormat::Tptp].into_iter().collect(),
+        )
+        .unwrap();
+        let verifier = VerifierPolicy::default();
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation(
+                GenerationSchemaVersion::new("snapshot-generation-v1"),
+                VcSchemaVersion::new("snapshot-vc-v1"),
+            )
+            .register_source_theorem_vc_discharge(policy.clone())
+            .register_source_theorem_atp_solve(
+                policy.clone(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+            )
+            .unwrap()
+            .register_source_theorem_candidate_check_with_witness_files(
+                policy.clone(),
+                profile.clone(),
+                ConcreteFormat::Tptp,
+                verifier.clone(),
+                "proof-witnesses/snapshot".into(),
+            )
+            .unwrap()
+            .register_source_theorem_artifact_commit(
+                policy,
+                profile,
+                ConcreteFormat::Tptp,
+                verifier,
+                (
+                    "proof-witnesses/snapshot".into(),
+                    "main.mizir.json".into(),
+                    "artifacts".into(),
+                ),
+            )
+            .unwrap();
+        let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner);
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, input, Default::default())
+            .unwrap();
+        let events = driver.events(submission.session.id());
+        let publication = events
+            .events()
+            .iter()
+            .find_map(|event| match &event.kind {
+                BuildEventKind::SnapshotPublished { snapshot } => Some(Arc::clone(snapshot)),
+                _ => None,
+            })
+            .expect("public Driver event contains genuine immutable publication");
+        assert_eq!(
+            publication.lockfile_producer(),
+            if v2 {
+                "mizar-build/parsed-lock-content/v2"
+            } else {
+                "mizar-build/parsed-lock-content/v1"
+            }
+        );
+        let snapshot = publication.captured().snapshot();
+        let request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: publication
+                .manifests()
+                .iter()
+                .zip(publication.artifact_roots())
+                .map(|(read, root)| DocPublicationRequest {
+                    package: read.manifest.package.clone(),
+                    artifact_root: root.clone(),
+                    expected_manifest_hash: read.artifact_hash,
+                    output_dir: fixture.root.join("native-doc-output"),
+                    source_bundle: None,
+                    dependency_indexes: None,
+                    import_order: Default::default(),
+                })
+                .collect(),
+        };
+        let build = |registry: &SnapshotRegistry<InMemorySessionIdAllocator>,
+                     request: &DocBuildRequest| {
+            build_native_doc_plans(
+                registry,
+                submission.session.request().id,
+                snapshot.id,
+                &snapshot.workspace_root,
+                request,
+                Arc::clone(&publication),
+            )
+        };
+        assert!(matches!(
+            build_doc_plans(
+                &snapshots,
+                submission.session.request().id,
+                snapshot.id,
+                &snapshot.workspace_root,
+                &request
+            ),
+            Err(DocBuildError::Binding(_))
+        ));
+        let plans = build(&snapshots, &request).unwrap();
+        assert_eq!(plans.len(), 2);
+        assert_eq!(plans, build(&snapshots, &request).unwrap());
+        for plan in &plans {
+            let original = publication
+                .manifests()
+                .iter()
+                .find(|original| original.artifact_hash == plan.manifest.artifact_hash)
+                .unwrap();
+            assert_eq!(&plan.manifest, original);
+            for (module, product) in &plan.index.modules {
+                let artifact = publication
+                    .artifacts()
+                    .iter()
+                    .find(|artifact| &artifact.module == module)
+                    .unwrap();
+                assert_eq!(product.exports, artifact.exports);
+                assert_eq!(product.artifact.source_hash, artifact.source_hash);
+                assert_eq!(product.artifact.source_file, artifact.source_file);
+            }
+        }
+        let inventory = request
+            .publications
+            .iter()
+            .map(|selected| {
+                (
+                    &selected.package,
+                    selected.expected_manifest_hash,
+                    selected.artifact_root.as_path(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let identities = publication
+            .source_metadata()
+            .iter()
+            .flatten()
+            .map(|metadata| metadata.identity().unwrap())
+            .collect::<Vec<_>>();
+        let imports = publication
+            .source_metadata()
+            .iter()
+            .flatten()
+            .map(|metadata| {
+                let identity = metadata.identity().unwrap();
+                (
+                    identity.artifact().module.clone(),
+                    identity.publication_hash(),
+                    metadata.imports().unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let inputs = authenticate_doc_imports(
+            &snapshots,
+            &snapshot.workspace_root,
+            &plans[0],
+            &inventory,
+            &imports,
+        )
+        .unwrap();
+        assert_eq!(inputs.closure_coverage(), DocImportCoverage::Complete);
+        let authenticated = authenticate_doc_identities(
+            &snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &inventory,
+            &identities,
+        )
+        .unwrap();
+        assert_eq!(authenticated.identities().len(), 2);
+        assert!(
+            authenticated
+                .identities()
+                .iter()
+                .all(|identity| identities.contains(&identity))
+        );
+        let saved = request
+            .publications
+            .iter()
+            .zip(publication.manifests())
+            .flat_map(|(selected, read)| {
+                std::iter::once(selected.artifact_root.join("artifact-manifest.json")).chain(
+                    read.manifest.modules.iter().flat_map(|entry| {
+                        std::iter::once(selected.artifact_root.join(&entry.artifact_file))
+                            .chain(
+                                entry
+                                    .module_summary_file
+                                    .iter()
+                                    .map(|path| selected.artifact_root.join(path)),
+                            )
+                            .chain(
+                                entry
+                                    .registration_summary_file
+                                    .iter()
+                                    .map(|path| selected.artifact_root.join(path)),
+                            )
+                            .chain(
+                                entry
+                                    .proof_witnesses
+                                    .iter()
+                                    .map(|entry| selected.artifact_root.join(&entry.witness_path)),
+                            )
+                    }),
+                )
+            })
+            .chain(
+                ["main", "leaf"].map(|module| fixture.root.join(format!("alpha/src/{module}.miz"))),
+            )
+            .map(|path| {
+                let bytes = fs::read(&path).unwrap();
+                (path, bytes)
+            })
+            .collect::<Vec<_>>();
+        let refuse_downstream = || {
+            assert!(
+                authenticate_doc_imports(
+                    &snapshots,
+                    &snapshot.workspace_root,
+                    &plans[0],
+                    &inventory,
+                    &imports
+                )
+                .is_err()
+            );
+            assert!(
+                authenticate_doc_identities(
+                    &snapshots,
+                    &snapshot.workspace_root,
+                    &inputs,
+                    &inventory,
+                    &identities
+                )
+                .is_err()
+            );
+        };
+        // Later selections cannot leak an otherwise valid first plan.
+        for (path, bytes) in &saved {
+            if !path.starts_with(&request.publications[1].artifact_root) {
+                continue;
+            }
+            // The reader owns witness reachability; proof bytes belong to Proof.
+            if !path
+                .components()
+                .any(|component| component.as_os_str() == "proof-witnesses")
+            {
+                fs::write(path, b"{}").unwrap();
+                assert!(matches!(
+                    build(&snapshots, &request),
+                    Err(DocBuildError::Publication(_))
+                ));
+                refuse_downstream();
+            }
+            fs::remove_file(path).unwrap();
+            assert!(matches!(
+                build(&snapshots, &request),
+                Err(DocBuildError::Publication(_))
+            ));
+            fs::write(path, bytes).unwrap();
+        }
+        let selected = &request.publications[0];
+        let original_manifest = &publication.manifests()[0].manifest;
+        let manifest_path = selected.artifact_root.join("artifact-manifest.json");
+        let original_manifest_bytes = fs::read(&manifest_path).unwrap();
+        // Fresh hashes isolate commitment binding from stale outer hashes.
+        // An impossible class retains the lower manifest schema error.
+        for field in 0..10 {
+            let mut altered = original_manifest.clone();
+            match field {
+                0..=5 => {
+                    let commitment = if field < 3 { &mut altered.lockfile_hash } else { &mut altered.verifier_config_hash };
+                    match field % 3 {
+                        0 => commitment.class = ArtifactHashClass::Diagnostic,
+                        1 => commitment.schema_family.push_str("-forged"),
+                        _ => commitment.schema_version = SchemaVersion::new(2, 0),
+                    }
+                }
+                6 => altered.lockfile_hash.digest = mizar_session::hash_text("unsupported lock producer"),
+                7 => altered.toolchain.push_str("-changed"),
+                8 => altered.package.package_version = Some("0.1.0-changed".into()),
+                _ => altered.lockfile_hash.digest = mizar_artifact::registration_summary::ArtifactHashRef::source_owner_fingerprint(if v2 { "mizar-build/parsed-lock-content/v1" } else { "mizar-build/parsed-lock-content/v2" }, snapshot.lockfile_hash).unwrap().digest,
+            }
+            let invalid_class = field == 0 || field == 3;
+            let write = if invalid_class {
+                let mut json = artifact_manifest_json(original_manifest).unwrap();
+                let CanonicalJson::Object(fields) = &mut json else {
+                    unreachable!()
+                };
+                let (name, commitment) = if field == 0 {
+                    ("lockfile_hash", &altered.lockfile_hash)
+                } else {
+                    ("verifier_config_hash", &altered.verifier_config_hash)
+                };
+                fields.insert(
+                    name.into(),
+                    CanonicalJson::string(commitment.to_artifact_hash_string()),
+                );
+                write_published_artifact(
+                    &selected.artifact_root,
+                    &PublishedArtifactPath::new("artifact-manifest.json").unwrap(),
+                    &json,
+                    &manifest_hash_domain(original_manifest.schema_version),
+                    &[],
+                )
+                .unwrap()
+            } else {
+                write_manifest_file(&selected.artifact_root, &altered).unwrap()
+            };
+            let lower = read_published_artifacts(&selected.artifact_root, write.artifact_hash);
+            let mut changed = request.clone();
+            changed.publications[0].expected_manifest_hash = write.artifact_hash;
+            if invalid_class {
+                assert!(matches!(
+                    lower,
+                    Err(mizar_artifact::manifest::ManifestError::InvalidHash { .. })
+                ));
+                assert!(matches!(
+                    build(&snapshots, &changed),
+                    Err(DocBuildError::Publication(
+                        mizar_artifact::manifest::ManifestError::InvalidHash { .. }
+                    ))
+                ));
+            } else {
+                assert!(lower.is_ok(), "commitment case {field}: {lower:?}");
+                assert!(matches!(
+                    build(&snapshots, &changed),
+                    Err(DocBuildError::Binding(_))
+                ));
+            }
+            refuse_downstream();
+            fs::write(&manifest_path, &original_manifest_bytes).unwrap();
+        }
+        // A self-consistent republication at the original root still cannot
+        // replace the exact immutable artifact retained by the Driver event.
+        let mut artifact = publication.artifacts()[0].as_ref().clone();
+        artifact.provenance.cache_key = Some("republished-artifact".into());
+        let entry = &original_manifest.modules[0];
+        let artifact_path = selected.artifact_root.join(&entry.artifact_file);
+        let original_artifact_bytes = fs::read(&artifact_path).unwrap();
+        let write = write_published_artifact(
+            &selected.artifact_root,
+            &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+            &verified_artifact_json(&artifact).unwrap(),
+            &artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version),
+            &artifact_hash_excluded_paths(),
+        )
+        .unwrap();
+        let mut altered = original_manifest.clone();
+        altered.modules[0].artifact_hash.digest = write.artifact_hash;
+        altered.provenance.generated_by.push_str("-republished");
+        let write = write_manifest_file(&selected.artifact_root, &altered).unwrap();
+        let (_, read_artifacts) =
+            read_published_artifacts(&selected.artifact_root, write.artifact_hash).unwrap();
+        assert_eq!(read_artifacts, vec![artifact]);
+        let mut changed = request.clone();
+        changed.publications[0].expected_manifest_hash = write.artifact_hash;
+        assert!(matches!(
+            build(&snapshots, &changed),
+            Err(DocBuildError::Binding(_))
+        ));
+        refuse_downstream();
+        fs::write(&artifact_path, original_artifact_bytes).unwrap();
+        fs::write(&manifest_path, original_manifest_bytes).unwrap();
+        let foreign_root = fixture.root.join("foreign-root");
+        for (path, bytes) in &saved {
+            if let Ok(relative) = path.strip_prefix(&selected.artifact_root) {
+                let destination = foreign_root.join(relative);
+                fs::create_dir_all(destination.parent().unwrap()).unwrap();
+                fs::write(destination, bytes).unwrap();
+            }
+        }
+        let mut changed = request.clone();
+        changed.publications[0].artifact_root = foreign_root;
+        assert!(build(&snapshots, &changed).is_err());
+        changed = request.clone();
+        changed.publications[0]
+            .package
+            .package_id
+            .push_str("-foreign");
+        assert!(build(&snapshots, &changed).is_err());
+        assert!(build(&SnapshotRegistry::new(), &request).is_err());
+        assert!(
+            build_native_doc_plans(
+                &snapshots,
+                submission.session.request().id,
+                snapshot.id,
+                &WorkspaceRoot::new("foreign-workspace"),
+                &request,
+                Arc::clone(&publication)
+            )
+            .is_err()
+        );
+        let original_input = mizar_session::SnapshotInput {
+            workspace_root: snapshot.workspace_root.clone(),
+            source_versions: snapshot.source_versions.clone(),
+            dependency_artifacts: snapshot.dependency_artifacts.clone(),
+            lockfile_hash: snapshot.lockfile_hash,
+            toolchain: snapshot.toolchain.clone(),
+            verifier_config_hash: snapshot.verifier_config_hash,
+        };
+        let foreign_request = ids.next_request_id().unwrap();
+        snapshots
+            .create_snapshot(foreign_request, original_input.clone())
+            .unwrap();
+        assert!(
+            build_native_doc_plans(
+                &snapshots,
+                foreign_request,
+                snapshot.id,
+                &snapshot.workspace_root,
+                &request,
+                Arc::clone(&publication)
+            )
+            .is_err()
+        );
+        // Source IDs and origins are excluded from snapshot hashing: registry
+        // equality must compare the complete captured record even with the same ID.
+        for origin in [false, true] {
+            let mut altered = original_input.clone();
+            if origin {
+                altered.source_versions[0].origin = SourceOrigin::OpenBuffer { version: 7 };
+            } else {
+                altered.source_versions[0].source_id = ids.next_source_id(snapshot.id).unwrap();
+            }
+            let (replacement, _) = snapshots
+                .create_snapshot(submission.session.request().id, altered)
+                .unwrap();
+            assert_eq!(replacement.id, snapshot.id);
+            assert!(build(&snapshots, &request).is_err());
+            refuse_downstream();
+            snapshots
+                .create_snapshot(submission.session.request().id, original_input.clone())
+                .unwrap();
+        }
+        let mut superseded = original_input;
+        superseded.verifier_config_hash = mizar_session::hash_text("superseded current plan");
+        let (new_snapshot, _) = snapshots
+            .create_snapshot(submission.session.request().id, superseded)
+            .unwrap();
+        assert!(
+            build_native_doc_plans(
+                &snapshots,
+                submission.session.request().id,
+                new_snapshot.id,
+                &snapshot.workspace_root,
+                &request,
+                Arc::clone(&publication)
+            )
+            .is_err()
+        );
+        assert!(build(&snapshots, &request).is_err());
+        refuse_downstream();
+        for (path, bytes) in &saved {
+            assert_eq!(fs::read(path).unwrap(), *bytes);
+        }
+        assert!(!fixture.root.join("native-doc-output").exists());
+    }
+}

@@ -544,6 +544,7 @@ version = "0.1.0"
 dependencies = [
  "mizar-artifact",
  "mizar-diagnostics",
+ "mizar-driver",
  "mizar-lexer",
  "mizar-resolve",
  "mizar-session",

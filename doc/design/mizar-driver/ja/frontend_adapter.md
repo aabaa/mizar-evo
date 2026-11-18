@@ -121,6 +121,8 @@ Open は OpenBuffer/InternalOnly、捕捉 Disk は PackageSource/CurrentPackage�
 
 非公開の native publication-route 関数が SourceOrigin を既存の origin/target ペアへ変換する。OpenBuffer は OpenBuffer/InternalOnly、他の origin は従来の PackageSource/CurrentPackage を維持する。producer の適格性判定は独立して行う。
 
+`SnapshotPublication` は native lock/config content 検証後にのみ、元 artifact root と捕捉済み lock producer の厳密な選択を保持する。不変の capture/publication 対応が、Doc の明示的 native selected-root 経路に対して元 manifest/artifact と Artifact 所有 commitment reference を認証する。registry の retention/currentness は Session の権限に残り、保持データだけでは与えない。
+
 ## Native lock content association
 
 `SourceLoadInputs::validate_native_lock_content(self) -> Result<(), String>` は保護された native capture と供給 snapshot 全体の一致、plan/snapshot toolchain の一致を明示的に要求し、snapshot.lockfile_hash を既存 Build [lockfile_content_hash](../../mizar-build/ja/planner.md#lock-content-fingerprint) と比較する。既存 content profile を用い、capture 不足・非 native・foreign・不一致を拒否する。file read と mutation は行わない。caller 限定の前提であり、untagged Hash から profile を選ばず、generic native/cache/submit 経路を変更しない。file freshness、pin/config/toolchain 真正性、retention、scheduler/host 権限は与えない。
