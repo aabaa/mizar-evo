@@ -7,6 +7,7 @@ repository.workspace = true
 
 [dependencies]
 mizar-session = { path = "../mizar-session" }
+mizar-resolve = { path = "../mizar-resolve" }
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-lexer = { path = "../mizar-lexer" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }

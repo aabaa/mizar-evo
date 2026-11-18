@@ -283,6 +283,401 @@ impl Error for DocBuildError {
     }
 }
 
+/// Authentication coverage for one source's imports or the finite closure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DocImportCoverage {
+    /// No genuine producer view establishes this source's import scope.
+    Unavailable,
+    /// Known inputs remain usable, but some required coverage is missing.
+    Incomplete,
+    /// The explicit scope is complete, including an authoritative empty scope.
+    Complete,
+}
+
+/// Publication-authenticated inputs for later documentation link consumers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthenticatedDocImports {
+    publications: Vec<PublishedManifestRead>,
+    // Reuse the validating readers' native indexes without another public row type.
+    #[allow(clippy::type_complexity)]
+    modules: BTreeMap<ModuleSummaryIdentity, (Hash, Vec<VerifiedExport>, Option<ModuleSummary>)>,
+    producers: BTreeMap<ModuleSummaryIdentity, mizar_resolve::imports::PublishedImportView>,
+    targets: BTreeMap<ModuleSummaryIdentity, Vec<Option<(ModuleSummaryIdentity, Hash)>>>,
+    coverage: BTreeMap<ModuleSummaryIdentity, DocImportCoverage>,
+}
+
+impl AuthenticatedDocImports {
+    /// Returns the validated selected publication, followed by the supplied inventory.
+    pub fn publications(&self) -> &[PublishedManifestRead] {
+        &self.publications
+    }
+
+    /// Returns exact stored exports for a full module/publication identity.
+    pub fn exports(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+    ) -> Option<&[VerifiedExport]> {
+        self.modules
+            .get(module)
+            .filter(|row| row.0 == publication)
+            .map(|row| row.1.as_slice())
+    }
+
+    /// Returns a stored summary only for its authenticated publication.
+    pub fn summary(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+    ) -> Option<&ModuleSummary> {
+        self.modules
+            .get(module)
+            .filter(|row| row.0 == publication)?
+            .2
+            .as_ref()
+    }
+
+    /// Returns the genuine source view, retaining semantic order and unresolved occurrences.
+    pub fn producer(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+    ) -> Option<&mizar_resolve::imports::PublishedImportView> {
+        self.modules
+            .get(module)
+            .filter(|row| row.0 == publication)?;
+        self.producers.get(module)
+    }
+
+    /// Pairs every resolved occurrence with its authenticated finite-inventory endpoint.
+    pub fn bound_imports(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+    ) -> Option<
+        impl Iterator<
+            Item = (
+                &mizar_resolve::imports::ResolvedImportCandidate,
+                Option<(&ModuleSummaryIdentity, Hash)>,
+            ),
+        >,
+    > {
+        let view = self.producer(module, publication)?;
+        Some(
+            view.resolution()
+                .resolved()
+                .iter()
+                .zip(self.targets.get(module)?)
+                .map(|(binding, target)| {
+                    (
+                        binding,
+                        target.as_ref().map(|(module, hash)| (module, *hash)),
+                    )
+                }),
+        )
+    }
+
+    /// Returns coverage for exactly this source module and publication.
+    pub fn coverage(&self, module: &ModuleSummaryIdentity, publication: Hash) -> DocImportCoverage {
+        if self
+            .modules
+            .get(module)
+            .is_none_or(|row| row.0 != publication)
+        {
+            return DocImportCoverage::Unavailable;
+        }
+        self.coverage
+            .get(module)
+            .copied()
+            .unwrap_or(DocImportCoverage::Unavailable)
+    }
+
+    /// Returns completeness of all explicitly inventoried source import scopes.
+    pub fn closure_coverage(&self) -> DocImportCoverage {
+        if self
+            .coverage
+            .values()
+            .all(|coverage| *coverage == DocImportCoverage::Unavailable)
+        {
+            DocImportCoverage::Unavailable
+        } else if self
+            .coverage
+            .values()
+            .all(|coverage| *coverage == DocImportCoverage::Complete)
+        {
+            DocImportCoverage::Complete
+        } else {
+            DocImportCoverage::Incomplete
+        }
+    }
+}
+
+/// Authenticates genuine producer imports against an explicit finite publication inventory.
+///
+/// Inventory paths are artifact roots, independent of raw Doc4 dependency-index paths.
+/// Revalidates the selected root and its current snapshot before retaining any inputs.
+pub fn authenticate_doc_imports<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    workspace_root: &WorkspaceRoot,
+    root: &DocBuildPlan,
+    inventory: &[(&PackageIdentity, Hash, &Path)],
+    producers: &[(
+        ModuleSummaryIdentity,
+        Hash,
+        &mizar_resolve::imports::PublishedImportView,
+    )],
+) -> Result<AuthenticatedDocImports, DocBuildError> {
+    use std::collections::BTreeSet;
+    let current = build_doc_plans(
+        registry,
+        root.build_request,
+        root.snapshot,
+        workspace_root,
+        &DocBuildRequest {
+            profile: root.profile.clone(),
+            publications: vec![root.request.clone()],
+        },
+    )?;
+    if current.as_slice() != [root.clone()] {
+        return Err(DocBuildError::Binding(
+            "selected documentation plan changed",
+        ));
+    }
+    let mut result = AuthenticatedDocImports {
+        publications: Vec::new(),
+        modules: BTreeMap::new(),
+        producers: BTreeMap::new(),
+        targets: BTreeMap::new(),
+        coverage: BTreeMap::new(),
+    };
+    for (package, hash, path) in std::iter::once((
+        &root.request.package,
+        root.request.expected_manifest_hash,
+        root.request.artifact_root.as_path(),
+    ))
+    .chain(inventory.iter().copied())
+    {
+        let (manifest, mut exports) =
+            read_published_export_index(path, hash).map_err(DocBuildError::Publication)?;
+        let (summary_manifest, mut summaries) =
+            read_published_module_summary_index(path, hash).map_err(DocBuildError::Publication)?;
+        if manifest.manifest.package != *package || manifest != summary_manifest {
+            return Err(DocBuildError::Binding(
+                "publication package or index binding mismatch",
+            ));
+        }
+        if let Some(previous) = result
+            .publications
+            .iter()
+            .find(|previous| previous.artifact_hash == hash)
+        {
+            if previous != &manifest {
+                return Err(DocBuildError::Binding("conflicting duplicate publication"));
+            }
+            continue;
+        }
+        for entry in &manifest.manifest.modules {
+            let identity = &entry.module;
+            if identity.package_id != package.package_id
+                || identity.package_version != package.package_version
+                || identity.lockfile_identity != package.lockfile_identity
+                || identity.language_edition != manifest.manifest.language_edition
+            {
+                return Err(DocBuildError::Binding(
+                    "inventory module package binding mismatch",
+                ));
+            }
+            let summary = summaries.remove(identity).flatten();
+            if summary
+                .as_ref()
+                .is_some_and(|summary| summary.source_hash != entry.source_hash)
+            {
+                return Err(DocBuildError::Binding(
+                    "inventory summary source binding mismatch",
+                ));
+            }
+            if result
+                .modules
+                .insert(
+                    identity.clone(),
+                    (
+                        hash,
+                        exports
+                            .remove(identity)
+                            .ok_or(DocBuildError::Binding("inventory export coverage mismatch"))?,
+                        summary,
+                    ),
+                )
+                .is_some()
+            {
+                return Err(DocBuildError::Binding("ambiguous module publications"));
+            }
+        }
+        result.publications.push(manifest);
+    }
+    let mut incomplete = BTreeSet::new();
+    for (module, hash, view) in producers {
+        let Some((publication, _, summary)) = result.modules.get(module) else {
+            return Err(DocBuildError::Binding("producer source outside inventory"));
+        };
+        let entry = result
+            .publications
+            .iter()
+            .flat_map(|publication| &publication.manifest.modules)
+            .find(|entry| &entry.module == module)
+            .ok_or(DocBuildError::Binding("producer source missing"))?;
+        if hash != publication
+            || view.module().package().as_str() != module.package_id
+            || view.module().path().as_str() != module.module_path
+            || view.source_hash() != entry.source_hash
+        {
+            return Err(DocBuildError::Binding(
+                "producer source publication binding mismatch",
+            ));
+        }
+        if *hash == root.request.expected_manifest_hash
+            && !registry.get(root.snapshot).is_some_and(|snapshot| {
+                snapshot.source_versions.iter().any(|source| {
+                    source.source_id == view.source_id()
+                        && source.package_id.as_str() == module.package_id
+                        && source.module_path.as_str() == module.module_path
+                        && source.source_hash == view.source_hash()
+                })
+            })
+        {
+            return Err(DocBuildError::Binding("producer source identity mismatch"));
+        }
+        if view.visible_surfaces().is_some() {
+            if let Some(summary) = summary {
+                let mut declarations = summary.clone();
+                declarations.reexports.clear();
+                declarations.dependency_interfaces.clear();
+                declarations.refresh_interface_hash().map_err(|_| {
+                    DocBuildError::Binding("producer declaration summary binding mismatch")
+                })?;
+                if view.compose_summary(declarations).as_ref() != Some(summary) {
+                    return Err(DocBuildError::Binding(
+                        "producer summary composition mismatch",
+                    ));
+                }
+            }
+        } else {
+            incomplete.insert(module.clone());
+        }
+        for captured in view.summaries() {
+            if let Some((_, _, Some(stored))) = result.modules.get(&captured.module) {
+                if captured != stored {
+                    return Err(DocBuildError::Binding(
+                        "producer dependency summary binding mismatch",
+                    ));
+                }
+            } else {
+                incomplete.insert(module.clone());
+            }
+        }
+        let targets = view
+            .resolution()
+            .resolved()
+            .iter()
+            .map(|binding| {
+                let captured = view.summaries().iter().find(|summary| {
+                    summary.module.package_id == binding.target().package().as_str()
+                        && summary.module.module_path == binding.target().path().as_str()
+                });
+                let target = captured.and_then(|summary| {
+                    result
+                        .modules
+                        .get(&summary.module)
+                        .map(|row| (summary.module.clone(), row.0))
+                });
+                if target.is_none() {
+                    incomplete.insert(module.clone());
+                }
+                target
+            })
+            .collect();
+        if let Some(previous) = result.producers.insert(module.clone(), (*view).clone())
+            && previous != **view
+        {
+            return Err(DocBuildError::Binding("conflicting duplicate producer"));
+        }
+        result.targets.insert(module.clone(), targets);
+    }
+    for (module, (_, _, summary)) in &result.modules {
+        if !result.producers.contains_key(module) {
+            incomplete.insert(module.clone());
+        }
+        let Some(summary) = summary else {
+            incomplete.insert(module.clone());
+            continue;
+        };
+        for edge in &summary.dependency_interfaces {
+            match result.modules.get(&edge.module) {
+                Some((_, _, Some(target))) if target.interface_hash != edge.interface_hash => {
+                    return Err(DocBuildError::Binding(
+                        "dependency interface binding mismatch",
+                    ));
+                }
+                Some((_, _, Some(_))) => {}
+                _ => {
+                    incomplete.insert(module.clone());
+                }
+            }
+        }
+        for edge in &summary.reexports {
+            if !summary
+                .dependency_interfaces
+                .iter()
+                .any(|dependency| dependency.module == edge.target_module)
+            {
+                return Err(DocBuildError::Binding(
+                    "forwarding edge lacks dependency binding",
+                ));
+            }
+        }
+    }
+    loop {
+        let before = incomplete.len();
+        for (module, (_, _, summary)) in &result.modules {
+            if summary.as_ref().is_some_and(|summary| {
+                summary
+                    .dependency_interfaces
+                    .iter()
+                    .any(|edge| incomplete.contains(&edge.module))
+            }) || result.targets.get(module).is_some_and(|targets| {
+                targets
+                    .iter()
+                    .flatten()
+                    .any(|(target, _)| incomplete.contains(target))
+            }) {
+                incomplete.insert(module.clone());
+            }
+        }
+        if incomplete.len() == before {
+            break;
+        }
+    }
+    for module in result.modules.keys() {
+        result.coverage.insert(
+            module.clone(),
+            if !result.producers.contains_key(module) {
+                DocImportCoverage::Unavailable
+            } else if incomplete.contains(module) {
+                DocImportCoverage::Incomplete
+            } else {
+                DocImportCoverage::Complete
+            },
+        );
+    }
+    if !registry.is_current_for_request(root.snapshot, root.build_request) {
+        return Err(DocBuildError::Binding(
+            "snapshot became stale during import authentication",
+        ));
+    }
+    Ok(result)
+}
+
 /// Plans all selected publications atomically against a retained current snapshot.
 ///
 /// Disabled documentation performs no registry or publication reads. Extraction

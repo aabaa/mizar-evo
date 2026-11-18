@@ -251,8 +251,51 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .collect(&module);
                 let imports = ImportPathResolver::new(ModuleIndexInput::new(self.module_index))
-                    .publish_frontend(&frontend, source, |_, _| None)?;
-                if imports.compose_summary(summary.clone())? != summary {
+                    .publish_frontend(&frontend, source, |target, expected| {
+                        let unit = IrWorkUnit::new(module_work_unit_label(
+                            target.package.as_str(),
+                            target.path.as_str(),
+                        ));
+                        let output = unique(
+                            run.phase_results
+                                .values()
+                                .flatten()
+                                .flat_map(|result| &result.output_refs)
+                                .filter(|output| {
+                                    output.work_unit() == &unit
+                                        && output.phase()
+                                            == &IrPipelinePhase::from(
+                                                PipelinePhase::SignatureCollection,
+                                            )
+                                        && output.output_kind()
+                                            == &OutputKind::new("SourceTheoremModuleSummary")
+                                }),
+                        )?;
+                        publisher
+                            .validate_output(
+                                self.snapshot.id,
+                                output,
+                                OutputAuthorization::Published,
+                            )
+                            .ok()?;
+                        let handle = publisher
+                            .storage()
+                            .typed_handle::<mizar_artifact::module_summary::ModuleSummary>(
+                                output,
+                                &OutputKind::new("SourceTheoremModuleSummary"),
+                            )
+                            .ok()?;
+                        let summary = publisher.storage().get(&handle).ok()?;
+                        if expected.is_some_and(|hash| hash != summary.interface_hash) {
+                            return None;
+                        }
+                        mizar_artifact::module_summary::module_summary_json(&summary).ok()
+                    })?;
+                let mut declarations = summary.clone();
+                declarations.reexports.clear();
+                declarations.dependency_interfaces.clear();
+                declarations.refresh_interface_hash().ok()?;
+                if imports.compose_summary(declarations)? != summary {
                     return None;
                 }
                 Some(PublishedSourceMetadata {
@@ -3663,6 +3706,424 @@ mod snapshot_payload_tests {
             )
             .unwrap();
         (submission, publisher)
+    }
+
+    #[test]
+    fn authenticated_same_run_imports_survive_snapshot_capture() {
+        use super::super::*;
+        use mizar_artifact::{
+            manifest::{ManifestCommitOptions, ManifestTransaction},
+            module_summary::{
+                MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryReadOptions, module_summary_json,
+                read_module_summary,
+            },
+            store::{
+                PublishedArtifactPath, artifact_hash_domain, parse_canonical_json_bytes,
+                write_published_artifact,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, read_verified_artifact, verified_artifact_json,
+            },
+        };
+        use mizar_build::module_index::DependencyModuleSummaryRef;
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            imports::ImportPathResolver,
+            module_index::{IndexedModuleId, ModuleIndexInput},
+            resolved_ast::ModuleId,
+            symbols::SignatureProjectionExtractor,
+        };
+
+        fn seal<T: Send + Sync + 'static>(
+            owner: &mizar_ir::publisher::PhaseOutputPublisher,
+            snapshot: mizar_session::BuildSnapshotId,
+            identity: (IrPipelinePhase, IrWorkUnit, OutputKind),
+            payload: T,
+            bytes: Vec<u8>,
+            decode: BlobDecoder<T>,
+            parents: Vec<mizar_ir::storage::AnyPhaseOutputRef>,
+        ) -> mizar_ir::storage::AnyPhaseOutputRef {
+            publish_native_output(
+                owner,
+                snapshot,
+                identity,
+                |slot, phase, work_unit, output_kind| PublishOutputInput {
+                    slot,
+                    snapshot,
+                    phase,
+                    work_unit,
+                    output_kind,
+                    schema_version: SchemaVersion::new(1),
+                    payload,
+                    canonical_payload: Some(bytes.clone()),
+                    storage_payload: Some(bytes),
+                    decode,
+                    parents,
+                    named_input_hashes: vec![],
+                    side_tables: IrSideTables::default(),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                },
+            )
+            .unwrap()
+            .erase()
+        }
+
+        let fixture = Fixture::new();
+        let (baseline, baseline_owner) = publish(&fixture, 1);
+        let baseline = fixture.resolve(&baseline, &baseline_owner).unwrap();
+        fs::write(
+            fixture.root.join("alpha/src/main.miz"),
+            "import alpha.leaf as First, alpha.leaf as Second;",
+        )
+        .unwrap();
+        fs::write(fixture.root.join("alpha/src/leaf.miz"), "").unwrap();
+        let (session, input, owner) = fixture.prepare(2);
+        let mut submission = CompilerDriver::new(registry(false))
+            .with_output_publisher(owner.clone())
+            .submit_captured(
+                session,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
+            .unwrap();
+        let snapshot = submission.session.captured().snapshot().id;
+        let leaf_summary_ref = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|output| {
+                output.work_unit().as_str() == module_work_unit_label("alpha", "leaf")
+                    && output.output_kind() == &OutputKind::new("SourceTheoremModuleSummary")
+            })
+            .unwrap()
+            .clone();
+        let leaf_summary = owner
+            .storage()
+            .get(
+                &owner
+                    .storage()
+                    .typed_handle::<mizar_artifact::module_summary::ModuleSummary>(
+                        &leaf_summary_ref,
+                        leaf_summary_ref.output_kind(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap()
+            .as_ref()
+            .clone();
+        let leaf_value = module_summary_json(&leaf_summary).unwrap();
+        let leaf_module = IndexedModuleId::new(
+            PackageId::new("alpha"),
+            mizar_session::ModulePath::new("leaf"),
+        );
+        submission
+            .module_index
+            .as_mut()
+            .unwrap()
+            .dependency_summaries
+            .push(DependencyModuleSummaryRef {
+                module: leaf_module.clone(),
+                artifact: "leaf.summary.json".into(),
+                content_hash: artifact_hash_domain(
+                    MODULE_SUMMARY_SCHEMA_FAMILY,
+                    leaf_summary.schema_version,
+                )
+                .hash(&leaf_value, &[]),
+            });
+        let lexical = ModuleLexicalSummary::from_exported_symbols(
+            mizar_frontend::lexical_env::ModuleId::new(
+                mizar_artifact::store::canonical_json_string(
+                    &leaf_summary.module.canonical_json().unwrap(),
+                ),
+            ),
+            vec![],
+        )
+        .unwrap();
+        let workspace_summaries = [(leaf_module, lexical)];
+        let inputs = crate::registry::SourceLoadInputs {
+            snapshot: submission.session.captured().snapshot(),
+            captured: Some(submission.session.captured()),
+            build_plan: submission.build_plan.as_ref().unwrap(),
+            module_index: submission.module_index.as_ref().unwrap(),
+            allocator: &fixture.ids,
+        };
+        let version = inputs
+            .snapshot
+            .source_versions
+            .iter()
+            .find(|version| version.module_path.as_str() == "main")
+            .unwrap();
+        let (source, source_input) = inputs.native_source(version).unwrap();
+        let frontend = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(fixture.root.join("alpha"))),
+            DependencyLexicalProvider {
+                inputs,
+                artifact_roots: &[],
+                workspace_summaries: &workspace_summaries,
+            },
+            MizarParserSeam,
+        )
+        .run_loaded(source.clone())
+        .unwrap();
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{:?}",
+            frontend.diagnostics
+        );
+        let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+        let ast = frontend.ast.as_ref().unwrap();
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let collection =
+            SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("main"))
+                .collect(&module);
+        let main_identity = baseline
+            .source_metadata()
+            .iter()
+            .flatten()
+            .find(|metadata| metadata.summary().module.module_path == "main")
+            .unwrap()
+            .summary()
+            .module
+            .clone();
+        let declarations = collection
+            .source_notation_module_summary_candidate(&frontend, &main_identity)
+            .unwrap()
+            .unwrap();
+        let imports = ImportPathResolver::new(ModuleIndexInput::new(inputs.module_index))
+            .publish_frontend(&frontend, &source, |_, _| Some(leaf_value.clone()))
+            .unwrap();
+        let main_summary = imports.compose_summary(declarations).unwrap();
+        let frontend_bytes = frontend.canonical_disk_bytes().unwrap();
+        let decode_input = source_input.clone();
+        let source_id = source.source_id;
+        let frontend_ref = seal(
+            &owner,
+            snapshot,
+            (
+                IrPipelinePhase::from(PipelinePhase::Frontend),
+                IrWorkUnit::new(module_work_unit_label("alpha", "main")),
+                OutputKind::new("FrontendOutput"),
+            ),
+            frontend,
+            frontend_bytes,
+            BlobDecoder::new(move |bytes| {
+                FrontendOutput::from_canonical_storage_bytes(bytes, source_id, &decode_input)
+                    .ok_or_else(|| BlobDecodeError::new("invalid fixture frontend"))
+            }),
+            vec![],
+        );
+
+        // Assemble the publication boundary with real owner handles. The native proof route
+        // deliberately remains leaf-only; these artifacts are publication test fixtures.
+        let mut published = Vec::new();
+        for (artifact, manifest) in baseline.artifacts().iter().zip(baseline.manifests()) {
+            let name = artifact.module.module_path.as_str();
+            let summary = if name == "main" {
+                main_summary.clone()
+            } else {
+                leaf_summary.clone()
+            };
+            let version = submission
+                .session
+                .captured()
+                .snapshot()
+                .source_versions
+                .iter()
+                .find(|version| version.module_path.as_str() == name)
+                .unwrap();
+            let mut artifact = artifact.as_ref().clone();
+            artifact.source_hash = version.source_hash;
+            artifact.provenance.captured_source = Some((
+                version.source_id,
+                version.origin.clone(),
+                version.source_hash,
+            ));
+            let relative_root = format!("artifacts/import-capture-{name}");
+            let root = fixture.root.join("alpha").join(&relative_root);
+            fs::create_dir_all(&root).unwrap();
+            let old_root = fixture
+                .root
+                .join("alpha")
+                .join(&manifest.manifest.artifact_root);
+            for witness in &artifact.proof_witnesses {
+                let target = root.join(&witness.witness_path);
+                fs::create_dir_all(target.parent().unwrap()).unwrap();
+                fs::copy(old_root.join(&witness.witness_path), target).unwrap();
+            }
+            let mut entry = manifest.manifest.modules[0].clone();
+            entry.source_hash = version.source_hash;
+            artifact.refresh_hashes().unwrap();
+            entry.interface_hash.digest = artifact.interface_hash;
+            entry.implementation_hash.digest = artifact.implementation_hash;
+            let value = verified_artifact_json(&artifact).unwrap();
+            let artifact_write = write_published_artifact(
+                &root,
+                &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+                &value,
+                &artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version),
+                &artifact_hash_excluded_paths(),
+            )
+            .unwrap();
+            entry.artifact_hash.digest = artifact_write.artifact_hash;
+            let summary_bytes =
+                mizar_artifact::module_summary::write_module_summary(&summary).unwrap();
+            let summary_write = write_published_artifact(
+                &root,
+                &PublishedArtifactPath::new(entry.module_summary_file.as_ref().unwrap()).unwrap(),
+                &module_summary_json(&summary).unwrap(),
+                &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+                &[],
+            )
+            .unwrap();
+            entry.module_summary_hash.as_mut().unwrap().digest = summary_write.artifact_hash;
+            entry.module_summary_interface_hash.as_mut().unwrap().digest = summary.interface_hash;
+            let mut seed = manifest.manifest.clone();
+            seed.artifact_root = relative_root;
+            seed.modules.clear();
+            let mut transaction = ManifestTransaction::begin(&root, seed, None).unwrap();
+            transaction.stage_module(entry).unwrap();
+            let commit = transaction
+                .commit(ManifestCommitOptions::default())
+                .unwrap();
+            let summary_ref = if name == "main" {
+                seal(
+                    &owner,
+                    snapshot,
+                    (
+                        IrPipelinePhase::from(PipelinePhase::SignatureCollection),
+                        IrWorkUnit::new(module_work_unit_label("alpha", name)),
+                        OutputKind::new("SourceTheoremModuleSummary"),
+                    ),
+                    summary,
+                    summary_bytes,
+                    BlobDecoder::new(|bytes| {
+                        let value = parse_canonical_json_bytes(bytes, "summary")
+                            .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                        read_module_summary(&value, ModuleSummaryReadOptions::default())
+                            .map_err(|error| BlobDecodeError::new(error.to_string()))
+                    }),
+                    vec![frontend_ref.clone()],
+                )
+            } else {
+                leaf_summary_ref.clone()
+            };
+            let bytes =
+                mizar_artifact::verified_artifact::write_verified_artifact(&artifact).unwrap();
+            let artifact_ref = seal(
+                &owner,
+                snapshot,
+                (
+                    IrPipelinePhase::from(PipelinePhase::ArtifactCommit),
+                    IrWorkUnit::new(module_work_unit_label("alpha", name)),
+                    OutputKind::new("SourceTheoremArtifactData"),
+                ),
+                artifact,
+                bytes,
+                BlobDecoder::new(|bytes| {
+                    let value = parse_canonical_json_bytes(bytes, "artifact")
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                    read_verified_artifact(&value, VerifiedArtifactReadOptions::default())
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))
+                }),
+                vec![summary_ref.clone()],
+            );
+            published.push((name.to_owned(), summary_ref, artifact_ref, commit));
+        }
+        let graph = submission.task_graph.as_ref().unwrap();
+        let run = submission.scheduler_run.as_mut().unwrap();
+        for state in &mut run.task_states {
+            state.state = mizar_build::scheduler::TaskState::Completed;
+        }
+        for results in run.phase_results.values_mut() {
+            for result in results {
+                result.output_refs.retain(|output| {
+                    output.work_unit().as_str() != module_work_unit_label("alpha", "main")
+                });
+            }
+        }
+        for (name, summary_ref, artifact_ref, commit) in published {
+            let task = graph
+                .tasks()
+                .iter()
+                .find(|task| {
+                    task.kind == mizar_build::task_graph::TaskKind::ArtifactCommit
+                        && matches!(&task.unit, WorkUnit::Module { module } if module.package.as_str() == "alpha" && module.path.as_str() == name)
+                })
+                .unwrap();
+            run.phase_results.insert(
+                task.id.clone(),
+                vec![PhaseResult {
+                    output_refs: vec![artifact_ref],
+                    artifact_commit: Some(commit),
+                    ..PhaseResult::complete()
+                }],
+            );
+            if name == "main" {
+                let task = graph
+                    .tasks()
+                    .iter()
+                    .find(|task| {
+                        task.phases == [PipelinePhase::Frontend]
+                            && matches!(&task.unit, WorkUnit::Module { module } if module.package.as_str() == "alpha" && module.path.as_str() == "main")
+                    })
+                    .unwrap();
+                run.phase_results.insert(
+                    task.id.clone(),
+                    vec![PhaseResult {
+                        output_refs: vec![frontend_ref.clone(), summary_ref],
+                        ..PhaseResult::complete()
+                    }],
+                );
+            }
+        }
+        let publication = fixture.resolve(&submission, &owner).unwrap();
+        let metadata = publication
+            .source_metadata()
+            .iter()
+            .flatten()
+            .find(|metadata| metadata.summary().module.module_path == "main")
+            .unwrap();
+        let view = metadata.imports().unwrap();
+        assert_eq!(view.source_id(), source_id);
+        assert_eq!(view.source_hash(), main_summary.source_hash);
+        assert_eq!(
+            view.visible_surfaces()
+                .unwrap()
+                .map(|(binding, _)| binding.alias().to_owned())
+                .collect::<Vec<_>>(),
+            ["First", "Second"]
+        );
+        assert_eq!(metadata.summary(), &main_summary);
+        for results in submission
+            .scheduler_run
+            .as_mut()
+            .unwrap()
+            .phase_results
+            .values_mut()
+        {
+            for result in results {
+                result.output_refs.retain(|output| {
+                    !(output.work_unit().as_str() == module_work_unit_label("alpha", "leaf")
+                        && output.output_kind() == &OutputKind::new("SourceTheoremModuleSummary"))
+                });
+            }
+        }
+        let unavailable = fixture.resolve(&submission, &owner).unwrap();
+        let index = unavailable
+            .artifacts()
+            .iter()
+            .position(|artifact| artifact.module.module_path == "main")
+            .unwrap();
+        assert!(unavailable.source_metadata()[index].is_none());
     }
 
     #[test]

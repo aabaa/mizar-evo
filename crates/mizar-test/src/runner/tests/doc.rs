@@ -4480,3 +4480,892 @@ fn doc8_tight_paragraphs_preserve_raw_trailing_whitespace_duplicate_keys() {
     );
     std::fs::remove_dir_all(root).unwrap();
 }
+
+mod doc10_authenticated {
+    use super::*;
+    use mizar_artifact::{
+        manifest::{ArtifactManifest, PackageIdentity, write_manifest_file},
+        module_summary::{ModuleSummary, ModuleSummaryIdentity, module_summary_json},
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{PublishedArtifactPath, artifact_hash_domain, write_published_artifact},
+        verified_artifact::VerifiedArtifact,
+    };
+    use mizar_doc::doc_build::*;
+    use mizar_frontend::{
+        lexical_env::{
+            FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+            ResolvedImport, ResolvedImportEntry, ResolvedImports,
+        },
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_resolve::{
+        imports::{ImportPathCandidate, ImportPathResolver, PublishedImportView},
+        module_index::*,
+        module_summary_reuse::{ModuleSummaryReuse, ModuleSummaryReuseRequest},
+        resolved_ast::ModuleId,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
+        SnapshotInput, SnapshotRegistry, SourceAnchor, SourceInput, SourceOriginInput,
+        SourceVersion, ToolchainInfo, WorkspaceRoot, normalize_path,
+    };
+
+    struct Publication {
+        root: PathBuf,
+        manifest: ArtifactManifest,
+        artifacts: Vec<VerifiedArtifact>,
+        summaries: Vec<ModuleSummary>,
+        hash: Hash,
+    }
+
+    impl Publication {
+        fn new(package: &str, texts: [&str; 2]) -> Self {
+            let (root, mut manifest, mut artifacts, mut summaries, hash) =
+                doc_build_summary_fixture(package, true, false);
+            for (index, (artifact, summary)) in artifacts.iter_mut().zip(&mut summaries).enumerate()
+            {
+                let path = format!("src/module_{index}.miz");
+                std::fs::write(root.join(&path), texts[index]).unwrap();
+                artifact.source_file = path.clone();
+                artifact.source_hash = mizar_session::hash_text(texts[index]);
+                summary.source_hash = artifact.source_hash;
+                summary.lexical_summary.schema_version = "mizar-resolve/exported-lexical/v1".into();
+                summary.lexical_summary.fingerprint =
+                    Some(mizar_session::hash_text("empty exported lexical surface"));
+                summary.refresh_interface_hash().unwrap();
+                manifest.modules[index].source_file = path;
+                manifest.modules[index].source_hash = artifact.source_hash;
+            }
+            let mut publication = Self {
+                root,
+                manifest,
+                artifacts,
+                summaries,
+                hash,
+            };
+            publication.publish();
+            publication
+        }
+
+        fn publish(&mut self) {
+            use mizar_artifact::module_summary::MODULE_SUMMARY_SCHEMA_FAMILY;
+            doc_export_index_publish(&self.root, &mut self.manifest, &mut self.artifacts);
+            for (entry, summary) in self.manifest.modules.iter_mut().zip(&self.summaries) {
+                let path = PublishedArtifactPath::new(format!(
+                    "summaries/{}.json",
+                    summary.module.module_path
+                ))
+                .unwrap();
+                let write = write_published_artifact(
+                    &self.root,
+                    &path,
+                    &module_summary_json(summary).unwrap(),
+                    &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+                    &[],
+                )
+                .unwrap();
+                entry.module_summary_file = Some(path.as_str().into());
+                entry.module_summary_hash = Some(ArtifactHashRef::new(
+                    ArtifactHashClass::Artifact,
+                    MODULE_SUMMARY_SCHEMA_FAMILY,
+                    summary.schema_version,
+                    write.artifact_hash,
+                ));
+                entry.module_summary_interface_hash = Some(ArtifactHashRef::new(
+                    ArtifactHashClass::Interface,
+                    MODULE_SUMMARY_SCHEMA_FAMILY,
+                    summary.schema_version,
+                    summary.interface_hash,
+                ));
+            }
+            self.hash = write_manifest_file(&self.root, &self.manifest)
+                .unwrap()
+                .artifact_hash;
+        }
+    }
+
+    impl Drop for Publication {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.root);
+        }
+    }
+
+    struct Producer<'a> {
+        index: WorkspaceStubModuleIndexProvider,
+        summaries: &'a [ModuleSummary],
+        source: ModuleId,
+    }
+    impl LexicalSummaryProvider for Producer<'_> {
+        fn resolve_imports(
+            &self,
+            request: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+            let index = ModuleIndexInput::new(&self.index);
+            let mut imports = Vec::new();
+            let mut summaries = BTreeMap::new();
+            for candidate in ImportPathCandidate::from_frontend_imports(request).unwrap() {
+                let resolution = ImportPathResolver::new(index)
+                    .resolve(&self.source, std::slice::from_ref(&candidate));
+                let Some(binding) = resolution.resolved().first() else {
+                    continue;
+                };
+                let module = IndexedModuleId::new(
+                    binding.target().package().clone(),
+                    binding.target().path().clone(),
+                );
+                let summary = self
+                    .summaries
+                    .iter()
+                    .find(|summary| {
+                        summary.module.package_id == module.package.as_str()
+                            && summary.module.module_path == module.path.as_str()
+                    })
+                    .unwrap();
+                let value = module_summary_json(summary).unwrap();
+                let lexical = ModuleSummaryReuse::new(index)
+                    .read_lexical_summary(
+                        ModuleSummaryReuseRequest::new(
+                            &module,
+                            SourceAnchor::Range(candidate.range()),
+                        ),
+                        &value,
+                    )
+                    .unwrap();
+                imports.push(ResolvedImportEntry {
+                    stub_ordinal: candidate.ordinal(),
+                    stub_span: candidate.range(),
+                    import: ResolvedImport {
+                        module_id: lexical.module_id.clone(),
+                    },
+                });
+                summaries.insert(lexical.module_id.clone(), lexical);
+            }
+            Ok(ResolvedImports {
+                imports,
+                summaries: summaries.into_values().collect(),
+                diagnostics: Vec::new(),
+            })
+        }
+    }
+
+    fn producer_index(publications: &[&Publication]) -> WorkspaceStubModuleIndexProvider {
+        use mizar_artifact::module_summary::MODULE_SUMMARY_SCHEMA_FAMILY;
+        let packages = publications
+            .iter()
+            .map(|publication| PackageIndexEntry {
+                package_id: PackageId::new(&publication.manifest.package.package_id),
+                version: publication
+                    .manifest
+                    .package
+                    .package_version
+                    .as_ref()
+                    .unwrap()
+                    .parse()
+                    .unwrap(),
+                edition: Edition::new(&publication.manifest.language_edition),
+                source: mizar_build::module_index::PackageIndexSource::Workspace {
+                    package_root: publication.root.to_string_lossy().into_owned(),
+                    source_root: publication.root.join("src").to_string_lossy().into_owned(),
+                    manifest_path: "mizar.toml".into(),
+                },
+                dependencies: Vec::new(),
+            })
+            .collect();
+        let namespaces = publications
+            .iter()
+            .map(|publication| NamespaceIndexEntry {
+                root: NamespaceRoot::PackageName,
+                prefix: vec![publication.manifest.package.package_id.clone()],
+                package_id: PackageId::new(&publication.manifest.package.package_id),
+            })
+            .collect();
+        let references = publications
+            .iter()
+            .flat_map(|publication| &publication.summaries)
+            .map(|summary| {
+                let value = module_summary_json(summary).unwrap();
+                DependencyModuleSummaryRef {
+                    module: IndexedModuleId::new(
+                        PackageId::new(&summary.module.package_id),
+                        ModulePath::new(&summary.module.module_path),
+                    ),
+                    artifact: format!(
+                        "{}-{}.summary",
+                        summary.module.package_id, summary.module.module_path
+                    ),
+                    content_hash: artifact_hash_domain(
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                    )
+                    .hash(&value, &[]),
+                }
+            })
+            .collect::<Vec<_>>();
+        let modules = references
+            .iter()
+            .map(|reference| ModuleIndexEntry {
+                module: reference.module.clone(),
+                package_id: reference.module.package.clone(),
+                module_path: reference.module.path.clone(),
+                edition: Edition::new(&publications[0].manifest.language_edition),
+                location: ModuleIndexLocation::DependencySummary {
+                    artifact: reference.artifact.clone(),
+                    content_hash: reference.content_hash,
+                },
+            })
+            .collect();
+        WorkspaceStubModuleIndexProvider::new(packages, namespaces, modules, references)
+    }
+
+    fn produce(
+        publication: &Publication,
+        publications: &[&Publication],
+        snapshot: mizar_session::BuildSnapshotId,
+        ids: &InMemorySessionIdAllocator,
+    ) -> (Vec<Option<PublishedImportView>>, Vec<SourceVersion>) {
+        let summaries = publications
+            .iter()
+            .flat_map(|publication| publication.summaries.clone())
+            .collect::<Vec<_>>();
+        let mut views = Vec::new();
+        let mut versions = Vec::new();
+        for artifact in &publication.artifacts {
+            let index = producer_index(publications);
+            let source = ModuleId::new(
+                PackageId::new(&artifact.module.package_id),
+                ModulePath::new(&artifact.module.module_path),
+            );
+            let output = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&publication.root)),
+                Producer {
+                    index: index.clone(),
+                    summaries: &summaries,
+                    source,
+                },
+                MizarParserSeam,
+            )
+            .run(
+                SourceUnitRequest {
+                    snapshot,
+                    input: SourceInput {
+                        package_id: PackageId::new(&artifact.module.package_id),
+                        module_path: ModulePath::new(&artifact.module.module_path),
+                        normalized_path: normalize_path(
+                            &publication.root,
+                            &publication.root.join(&artifact.source_file),
+                        )
+                        .unwrap(),
+                        edition: Edition::new(&artifact.module.language_edition),
+                        origin: SourceOriginInput::Disk {
+                            path: artifact.source_file.clone().into(),
+                        },
+                    },
+                },
+                ids,
+            )
+            .unwrap();
+            versions.push(SourceVersion {
+                source_id: output.source.source_id,
+                package_id: output.source.package_id.clone(),
+                module_path: output.source.module_path.clone(),
+                normalized_path: output.source.normalized_path.clone(),
+                source_hash: output.source.source_hash,
+                edition: output.source.edition.clone(),
+                origin: output.source.origin.clone(),
+            });
+            views.push(
+                ImportPathResolver::new(ModuleIndexInput::new(&index)).publish_frontend(
+                    &output,
+                    &output.source,
+                    |module, _| {
+                        summaries
+                            .iter()
+                            .find(|summary| {
+                                summary.module.package_id == module.package.as_str()
+                                    && summary.module.module_path == module.path.as_str()
+                            })
+                            .map(|summary| module_summary_json(summary).unwrap())
+                    },
+                ),
+            );
+        }
+        (views, versions)
+    }
+
+    fn context(
+        publications: &mut [&mut Publication],
+    ) -> (
+        SnapshotRegistry,
+        WorkspaceRoot,
+        Vec<DocBuildPlan>,
+        Vec<Vec<Option<PublishedImportView>>>,
+    ) {
+        let ids = InMemorySessionIdAllocator::new();
+        let registry = SnapshotRegistry::new();
+        let request = ids.next_request_id().unwrap();
+        let workspace = WorkspaceRoot::new("authenticated-documentation-inputs");
+        let mut input = SnapshotInput {
+            workspace_root: workspace.clone(),
+            source_versions: Vec::new(),
+            dependency_artifacts: Vec::new(),
+            lockfile_hash: publications[0].manifest.lockfile_hash.digest,
+            toolchain: ToolchainInfo::new(&publications[0].manifest.toolchain),
+            verifier_config_hash: publications[0].manifest.verifier_config_hash.digest,
+        };
+        let (initial, _) = registry.create_snapshot(request, input.clone()).unwrap();
+        let mut views = vec![Vec::new(); publications.len()];
+        // Dependencies are supplied after their consumers, then published before use.
+        for index in (0..publications.len()).rev() {
+            let (produced, versions) = produce(
+                publications[index],
+                &publications.iter().map(|p| &**p).collect::<Vec<_>>(),
+                initial.id,
+                &ids,
+            );
+            input.source_versions.extend(versions);
+            let publication = &mut publications[index];
+            for (summary, view) in publication.summaries.iter_mut().zip(&produced) {
+                if let Some(view) = view {
+                    *summary = view.compose_summary(summary.clone()).unwrap();
+                }
+            }
+            publication.publish();
+            views[index] = produced;
+        }
+        let (snapshot, _) = registry.create_snapshot(request, input).unwrap();
+        let request_inputs = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: publications
+                .iter()
+                .map(|publication| DocPublicationRequest {
+                    package: publication.manifest.package.clone(),
+                    artifact_root: publication.root.clone(),
+                    expected_manifest_hash: publication.hash,
+                    output_dir: publication.root.join("out"),
+                    source_bundle: None,
+                    dependency_indexes: None,
+                    import_order: BTreeMap::new(),
+                })
+                .collect(),
+        };
+        let plans =
+            build_doc_plans(&registry, request, snapshot.id, &workspace, &request_inputs).unwrap();
+        (registry, workspace, plans, views)
+    }
+
+    fn inputs<'a>(
+        publication: &Publication,
+        views: &'a [Option<PublishedImportView>],
+    ) -> Vec<(ModuleSummaryIdentity, Hash, &'a PublishedImportView)> {
+        publication
+            .summaries
+            .iter()
+            .zip(views)
+            .filter_map(|(summary, view)| {
+                view.as_ref()
+                    .map(|view| (summary.module.clone(), publication.hash, view))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn doc10_genuine_import_order_routes_and_full_targets_survive_inventory_order() {
+        let mut app = Publication::new(
+            "app",
+            [
+                "import other.module_1 as O, dep.module_1 as D, other.module_1 as O;",
+                "",
+            ],
+        );
+        let mut dep = Publication::new("dep", ["", ""]);
+        let mut other = Publication::new("other", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep, &mut other]);
+        let root = plans
+            .iter()
+            .find(|plan| plan.request.package == app.manifest.package)
+            .unwrap();
+        let producers = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&dep, &views[1]))
+            .chain(inputs(&other, &views[2]))
+            .collect::<Vec<_>>();
+        let forward = [
+            (&dep.manifest.package, dep.hash, dep.root.as_path()),
+            (&other.manifest.package, other.hash, other.root.as_path()),
+        ];
+        let reverse = [forward[1], forward[0], forward[1]];
+        for inventory in [&forward[..], &reverse[..]] {
+            let result =
+                authenticate_doc_imports(&registry, &workspace, root, inventory, &producers)
+                    .unwrap();
+            assert_eq!(result.closure_coverage(), DocImportCoverage::Complete);
+            let source = &app.summaries[0].module;
+            let bindings = result
+                .bound_imports(source, app.hash)
+                .unwrap()
+                .collect::<Vec<_>>();
+            assert_eq!(
+                bindings
+                    .iter()
+                    .map(|(_, target)| target.unwrap().0.package_id.as_str())
+                    .collect::<Vec<_>>(),
+                ["other", "dep", "other"]
+            );
+            assert_eq!(bindings[0].1, bindings[2].1);
+            assert_ne!(bindings[0].1, bindings[1].1);
+            assert_ne!(bindings[0].0.range(), bindings[2].0.range());
+            assert_eq!(result.producer(source, app.hash), views[0][0].as_ref());
+            assert_eq!(
+                result.exports(&dep.summaries[1].module, dep.hash),
+                Some(dep.artifacts[1].exports.as_slice())
+            );
+        }
+        let known = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&dep, &views[1]))
+            .collect::<Vec<_>>();
+        let omitted =
+            authenticate_doc_imports(&registry, &workspace, root, &forward[..1], &known).unwrap();
+        assert_eq!(
+            omitted.coverage(&app.summaries[0].module, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        let targets = omitted
+            .bound_imports(&app.summaries[0].module, app.hash)
+            .unwrap()
+            .map(|(_, target)| target.map(|(identity, _)| identity.package_id.as_str()))
+            .collect::<Vec<_>>();
+        assert_eq!(targets, [None, Some("dep"), None]);
+    }
+
+    #[test]
+    fn doc10_complete_empty_is_explicit_and_missing_views_are_unavailable() {
+        let mut app = Publication::new("empty", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+        let producers = inputs(&app, &views[0]);
+        let complete =
+            authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &producers).unwrap();
+        assert_eq!(complete.closure_coverage(), DocImportCoverage::Complete);
+        assert_eq!(
+            complete
+                .bound_imports(&app.summaries[0].module, app.hash)
+                .unwrap()
+                .count(),
+            0
+        );
+        let unavailable =
+            authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &[]).unwrap();
+        assert_eq!(
+            unavailable.closure_coverage(),
+            DocImportCoverage::Unavailable
+        );
+        assert_eq!(
+            unavailable.coverage(&app.summaries[0].module, app.hash),
+            DocImportCoverage::Unavailable
+        );
+        let partial =
+            authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &producers[..1])
+                .unwrap();
+        assert_eq!(partial.closure_coverage(), DocImportCoverage::Incomplete);
+        assert_eq!(
+            partial.coverage(&app.summaries[0].module, app.hash),
+            DocImportCoverage::Complete
+        );
+        let mut unresolved = Publication::new("unresolved", ["import .absent;", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut unresolved]);
+        assert!(views[0][0].is_none());
+        let known = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&unresolved, &views[0]),
+        )
+        .unwrap();
+        assert_eq!(
+            known.coverage(&unresolved.summaries[0].module, unresolved.hash),
+            DocImportCoverage::Unavailable
+        );
+        assert_eq!(known.closure_coverage(), DocImportCoverage::Incomplete);
+        assert!(
+            known
+                .exports(&unresolved.summaries[0].module, unresolved.hash)
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn doc10_omitted_endpoint_retains_occurrences_and_blocks_complete_coverage() {
+        let mut app = Publication::new("app", ["import dep.module_1 as D, dep.module_1 as D;", ""]);
+        let mut dep = Publication::new("dep", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+        let root = plans
+            .iter()
+            .find(|plan| plan.request.package == app.manifest.package)
+            .unwrap();
+        let producers = inputs(&app, &views[0]);
+        let partial =
+            authenticate_doc_imports(&registry, &workspace, root, &[], &producers).unwrap();
+        let source = &app.summaries[0].module;
+        assert_eq!(
+            partial.coverage(source, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        assert_eq!(partial.producer(source, app.hash), views[0][0].as_ref());
+        assert_eq!(
+            partial
+                .bound_imports(source, app.hash)
+                .unwrap()
+                .map(|(_, target)| target)
+                .collect::<Vec<_>>(),
+            [None, None]
+        );
+        assert_eq!(partial.summary(source, app.hash), Some(&app.summaries[0]));
+        assert_eq!(partial.closure_coverage(), DocImportCoverage::Incomplete);
+        let entry = &mut dep.manifest.modules[1];
+        entry.module_summary_file = None;
+        entry.module_summary_hash = None;
+        entry.module_summary_interface_hash = None;
+        dep.hash = write_manifest_file(&dep.root, &dep.manifest)
+            .unwrap()
+            .artifact_hash;
+        let missing_summary = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            root,
+            &[(&dep.manifest.package, dep.hash, &dep.root)],
+            &producers,
+        )
+        .unwrap();
+        assert_eq!(
+            missing_summary.coverage(source, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        assert!(
+            missing_summary
+                .summary(&dep.summaries[1].module, dep.hash)
+                .is_none()
+        );
+        assert!(
+            missing_summary
+                .bound_imports(source, app.hash)
+                .unwrap()
+                .all(|(_, target)| target.is_some())
+        );
+
+        // Genuine cyclic selections remain bounded even when neither consumed summary is available.
+        let mut cyclic = Publication::new("cycle", ["import .module_1;", "import .module_0;"]);
+        let (cycle_registry, cycle_workspace, cycle_plans, cycle_views) =
+            context(&mut [&mut cyclic]);
+        for entry in &mut cyclic.manifest.modules {
+            entry.module_summary_file = None;
+            entry.module_summary_hash = None;
+            entry.module_summary_interface_hash = None;
+        }
+        cyclic.hash = write_manifest_file(&cyclic.root, &cyclic.manifest)
+            .unwrap()
+            .artifact_hash;
+        let mut selected = cycle_plans[0].request.clone();
+        selected.expected_manifest_hash = cyclic.hash;
+        let cycle_plan = build_doc_plans(
+            &cycle_registry,
+            cycle_plans[0].build_request,
+            cycle_plans[0].snapshot,
+            &cycle_workspace,
+            &DocBuildRequest {
+                profile: cycle_plans[0].profile.clone(),
+                publications: vec![selected],
+            },
+        )
+        .unwrap()
+        .remove(0);
+        let bounded = authenticate_doc_imports(
+            &cycle_registry,
+            &cycle_workspace,
+            &cycle_plan,
+            &[],
+            &inputs(&cyclic, &cycle_views[0]),
+        )
+        .unwrap();
+        assert_eq!(bounded.closure_coverage(), DocImportCoverage::Incomplete);
+        for (index, summary) in cyclic.summaries.iter().enumerate() {
+            assert_eq!(
+                bounded.coverage(&summary.module, cyclic.hash),
+                DocImportCoverage::Incomplete
+            );
+            let targets = bounded
+                .bound_imports(&summary.module, cyclic.hash)
+                .unwrap()
+                .collect::<Vec<_>>();
+            assert_eq!(targets.len(), 1);
+            assert_eq!(
+                targets[0].1,
+                Some((&cyclic.summaries[1 - index].module, cyclic.hash))
+            );
+        }
+        assert!(!cyclic.root.join("out").exists());
+
+        let mut app = Publication::new("app", ["import middle.module_0 as M;", ""]);
+        let mut middle = Publication::new("middle", ["import leaf.module_1 as L; export L;", ""]);
+        let mut leaf = Publication::new("leaf", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut middle, &mut leaf]);
+        let root = plans
+            .iter()
+            .find(|plan| plan.request.package == app.manifest.package)
+            .unwrap();
+        let source = &app.summaries[0].module;
+        assert_eq!(middle.summaries[0].dependency_interfaces.len(), 1);
+        assert_eq!(middle.summaries[0].reexports.len(), 1);
+        let producers = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&middle, &views[1]))
+            .chain(inputs(&leaf, &views[2]))
+            .collect::<Vec<_>>();
+        let inventory = [
+            (&middle.manifest.package, middle.hash, middle.root.as_path()),
+            (&leaf.manifest.package, leaf.hash, leaf.root.as_path()),
+        ];
+        let complete =
+            authenticate_doc_imports(&registry, &workspace, root, &inventory, &producers).unwrap();
+        assert_eq!(complete.closure_coverage(), DocImportCoverage::Complete);
+        let known = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&middle, &views[1]))
+            .collect::<Vec<_>>();
+        let omitted =
+            authenticate_doc_imports(&registry, &workspace, root, &inventory[..1], &known).unwrap();
+        assert_eq!(omitted.closure_coverage(), DocImportCoverage::Incomplete);
+        assert_eq!(
+            omitted.coverage(source, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        assert_eq!(
+            omitted.coverage(&middle.summaries[0].module, middle.hash),
+            DocImportCoverage::Incomplete
+        );
+        let direct = omitted
+            .bound_imports(source, app.hash)
+            .unwrap()
+            .collect::<Vec<_>>();
+        assert_eq!(direct.len(), 1);
+        assert_eq!(
+            direct[0].1,
+            Some((&middle.summaries[0].module, middle.hash))
+        );
+        assert_eq!(
+            omitted.summary(&middle.summaries[0].module, middle.hash),
+            Some(&middle.summaries[0])
+        );
+
+        // A newly valid publication cannot replace the summary captured by the producer.
+        leaf.summaries[1].lexical_summary.fingerprint =
+            Some(mizar_session::hash_text("changed genuine target interface"));
+        leaf.summaries[1].refresh_interface_hash().unwrap();
+        leaf.publish();
+        let (_, validated) = read_published_module_summary_index(&leaf.root, leaf.hash).unwrap();
+        assert_eq!(
+            validated[&leaf.summaries[1].module].as_ref(),
+            Some(&leaf.summaries[1])
+        );
+        assert_ne!(
+            views[1][0].as_ref().unwrap().summaries()[0],
+            leaf.summaries[1]
+        );
+        let producers = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&middle, &views[1]))
+            .chain(inputs(&leaf, &views[2]))
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            authenticate_doc_imports(
+                &registry,
+                &workspace,
+                root,
+                &[
+                    (&middle.manifest.package, middle.hash, &middle.root),
+                    (&leaf.manifest.package, leaf.hash, &leaf.root)
+                ],
+                &producers
+            ),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_duplicate_full_publications_and_wrong_producer_bindings_refuse() {
+        let mut app = Publication::new("app", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+        let producers = inputs(&app, &views[0]);
+        for mutation in 0..3 {
+            let mut bad = producers.clone();
+            match mutation {
+                0 => bad[0].0.package_id = "other".into(),
+                1 => bad[0].1 = mizar_session::hash_text("wrong publication"),
+                _ => bad[0].2 = producers[1].2,
+            }
+            assert!(matches!(
+                authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &bad),
+                Err(DocBuildError::Binding(_))
+            ));
+        }
+        let mut wrong_package: PackageIdentity = app.manifest.package.clone();
+        wrong_package.package_id = "other".into();
+        assert!(matches!(
+            authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[(&wrong_package, app.hash, &app.root)],
+                &producers
+            ),
+            Err(DocBuildError::Binding(_))
+        ));
+        let other = Publication::new("app", [":: different publication\n", ""]);
+        assert!(matches!(
+            authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[(&other.manifest.package, other.hash, &other.root)],
+                &producers
+            ),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_lower_reader_refusals_and_stale_inputs_remain_refusals() {
+        use mizar_artifact::manifest::ManifestError;
+        let mut app = Publication::new("app", ["", ""]);
+        let mut dep = Publication::new("dep", ["", ""]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+        let root = plans
+            .iter()
+            .find(|plan| plan.request.package == app.manifest.package)
+            .unwrap();
+        let producers = inputs(&app, &views[0]);
+        let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
+        let path = dep
+            .root
+            .join(dep.manifest.modules[1].module_summary_file.as_ref().unwrap());
+        let bytes = std::fs::read(&path).unwrap();
+        std::fs::write(&path, b"{}").unwrap();
+        let lower = read_published_module_summary_index(&dep.root, dep.hash).unwrap_err();
+        let error = authenticate_doc_imports(&registry, &workspace, root, &inventory, &producers)
+            .unwrap_err();
+        assert_eq!(error.to_string(), lower.to_string());
+        assert!(
+            matches!(error, DocBuildError::Publication(ManifestError::StoreIo(_))),
+            "{error:?}"
+        );
+        std::fs::write(path, bytes).unwrap();
+        let manifest_path = dep.root.join("artifact-manifest.json");
+        let manifest_bytes = std::fs::read_to_string(&manifest_path).unwrap();
+        let mut unsupported =
+            mizar_artifact::manifest::artifact_manifest_json(&dep.manifest).unwrap();
+        let mizar_artifact::store::CanonicalJson::Object(fields) = &mut unsupported else {
+            panic!("manifest object");
+        };
+        fields.insert(
+            "schema_version".into(),
+            mizar_artifact::store::CanonicalJson::string("9.0"),
+        );
+        std::fs::write(
+            &manifest_path,
+            mizar_artifact::store::canonical_json_bytes(&unsupported),
+        )
+        .unwrap();
+        assert!(matches!(
+            authenticate_doc_imports(&registry, &workspace, root, &inventory, &producers),
+            Err(DocBuildError::Publication(ManifestError::SchemaVersion(_)))
+        ));
+        std::fs::write(manifest_path, manifest_bytes).unwrap();
+        assert!(matches!(
+            authenticate_doc_imports(
+                &registry,
+                &workspace,
+                root,
+                &[(
+                    &dep.manifest.package,
+                    mizar_session::hash_text("wrong publication"),
+                    &dep.root
+                )],
+                &producers
+            ),
+            Err(DocBuildError::Publication(_))
+        ));
+        let mut changed = root.clone();
+        changed.index.modules.clear();
+        assert!(matches!(
+            authenticate_doc_imports(&registry, &workspace, &changed, &inventory, &producers),
+            Err(DocBuildError::Binding(_))
+        ));
+        let snapshot = registry.get(root.snapshot).unwrap();
+        registry
+            .create_snapshot(
+                root.build_request,
+                SnapshotInput {
+                    workspace_root: workspace.clone(),
+                    source_versions: Vec::new(),
+                    dependency_artifacts: Vec::new(),
+                    lockfile_hash: snapshot.lockfile_hash,
+                    toolchain: snapshot.toolchain.clone(),
+                    verifier_config_hash: snapshot.verifier_config_hash,
+                },
+            )
+            .unwrap();
+        assert!(matches!(
+            authenticate_doc_imports(&registry, &workspace, root, &inventory, &producers),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_authentication_leaves_raw_doc4_options_and_publication_bytes_unchanged() {
+        let mut app = Publication::new("raw", ["", ""]);
+        let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+        let root = &mut plans[0];
+        root.request.import_order.insert(
+            app.summaries[0].module.clone(),
+            Some(vec![app.summaries[1].module.clone()]),
+        );
+        root.request.dependency_indexes = Some(vec![DependencyDocIndexRef {
+            package: app.manifest.package.clone(),
+            publication_hash: app.hash,
+            path: app.root.join("unavailable-doc4-index"),
+        }]);
+        let root = build_doc_plans(
+            &registry,
+            root.build_request,
+            root.snapshot,
+            &workspace,
+            &DocBuildRequest {
+                profile: root.profile.clone(),
+                publications: vec![root.request.clone()],
+            },
+        )
+        .unwrap()
+        .remove(0);
+        let before = root.clone();
+        let bytes = std::fs::read(app.root.join("artifact-manifest.json")).unwrap();
+        let result =
+            authenticate_doc_imports(&registry, &workspace, &root, &[], &inputs(&app, &views[0]))
+                .unwrap();
+        assert_eq!(result.closure_coverage(), DocImportCoverage::Complete);
+        assert_eq!(root, before);
+        assert_eq!(
+            std::fs::read(app.root.join("artifact-manifest.json")).unwrap(),
+            bytes
+        );
+        assert!(!app.root.join("out").exists());
+        assert!(!app.root.join("unavailable-doc4-index").exists());
+    }
+}

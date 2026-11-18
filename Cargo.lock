@@ -543,6 +543,7 @@ dependencies = [
  "mizar-artifact",
  "mizar-diagnostics",
  "mizar-lexer",
+ "mizar-resolve",
  "mizar-session",
  "pulldown-cmark",
  "serde_json",
@@ -694,6 +695,7 @@ version = "0.1.0"
 dependencies = [
  "mizar-artifact",
  "mizar-atp",
+ "mizar-build",
  "mizar-checker",
  "mizar-core",
  "mizar-diagnostics",
