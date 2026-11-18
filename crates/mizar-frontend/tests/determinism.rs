@@ -1146,44 +1146,126 @@ mod comment_metadata {
     fn equivalent_captures_ignore_runtime_ids_and_local_paths_and_retain_storage() {
         let first_fixture = PackageFixture::new();
         let second_fixture = PackageFixture::new();
-        let text = "::: docs\ntheorem T: thesis;\n";
-        first_fixture.write("src/metadata.miz", text);
-        second_fixture.write("src/metadata.miz", text);
         let ids = InMemorySessionIdAllocator::new();
-        let mut baseline = None;
-        for fixture in [&first_fixture, &second_fixture, &first_fixture] {
-            let request = fixture.request("src/metadata.miz");
-            let source = load(fixture, request.clone(), &ids);
-            let (output, metadata) = frontend(fixture)
-                .run_loaded_with_comment_metadata(source.clone(), text)
-                .unwrap();
-            let metadata = metadata.unwrap();
-            assert_eq!(metadata.package_id(), &source.package_id);
-            assert_eq!(metadata.module_path(), &source.module_path);
-            assert_eq!(metadata.normalized_path(), &source.normalized_path);
-            assert_eq!(metadata.edition(), &source.edition);
-            if let Some((id, path, previous)) = &baseline {
-                assert_ne!(*id, source.source_id);
-                if fixture.root() == second_fixture.root() {
-                    assert_ne!(*path, source.file_path);
+        for text in [
+            "::: docs β\ntheorem::= Ω =::T: thesis;\n",
+            "\u{feff}::: docs β\ntheorem::= Ω =::T: thesis;\n",
+            "::: docs β\r\ntheorem::= Ω =::T: thesis;\r\n",
+            "\u{feff}::: docs β\r\ntheorem::= Ω =::T: thesis;\r\n",
+        ] {
+            for open_buffer in [false, true] {
+                let mut baseline = None;
+                for (index, fixture) in [&first_fixture, &second_fixture, &first_fixture]
+                    .into_iter()
+                    .enumerate()
+                {
+                    fixture.write("src/metadata.miz", text);
+                    let mut request = fixture.request("src/metadata.miz");
+                    if open_buffer {
+                        request.input.origin = SourceOriginInput::OpenBuffer {
+                            uri: format!("file://{}", fixture.path("src/metadata.miz").display()),
+                            expected_version: 3,
+                            actual_version: 3,
+                            text: Arc::from(text),
+                        };
+                    }
+                    let source = load(fixture, request.clone(), &ids);
+                    let (output, metadata) = frontend(fixture)
+                        .run_loaded_with_comment_metadata(source.clone(), text)
+                        .unwrap();
+                    let metadata = metadata.unwrap();
+                    assert_eq!(metadata.package_id(), &source.package_id);
+                    assert_eq!(metadata.module_path(), &source.module_path);
+                    assert_eq!(metadata.normalized_path(), &source.normalized_path);
+                    assert_eq!(metadata.edition(), &source.edition);
+                    assert!(metadata.matches_output(&output));
+                    let debug = format!("{metadata:?}");
+                    for root in [first_fixture.root(), second_fixture.root()] {
+                        assert!(!debug.contains(root.to_str().unwrap()));
+                    }
+                    let bytes = if open_buffer {
+                        output.canonical_open_buffer_bytes(&request.input)
+                    } else {
+                        output.canonical_disk_bytes()
+                    }
+                    .unwrap();
+                    if let Some((previous_output, previous_metadata, previous_debug)) = &baseline {
+                        let previous_output: &FrontendOutput<SurfaceAst> = previous_output;
+                        assert_ne!(previous_output.source.source_id, source.source_id);
+                        if index == 1 {
+                            assert_ne!(previous_output.source.file_path, source.file_path);
+                        }
+                        assert_eq!(&metadata, previous_metadata);
+                        assert_eq!(&debug, previous_debug);
+                        assert!(metadata.matches_output(previous_output));
+                        assert!(previous_metadata.matches_output(&output));
+                    } else {
+                        baseline = Some((output.clone(), metadata.clone(), debug));
+                    }
+                    let restored = FrontendOutput::from_canonical_storage_bytes(
+                        &bytes,
+                        ids.next_source_id(snapshot_id(1)).unwrap(),
+                        &request.input,
+                    )
+                    .unwrap();
+                    assert!(metadata.matches_output(&restored));
+                    let restored_bytes = if open_buffer {
+                        restored.canonical_open_buffer_bytes(&request.input)
+                    } else {
+                        restored.canonical_disk_bytes()
+                    }
+                    .unwrap();
+                    assert_eq!(restored_bytes, bytes);
+                    let (replayed, replay_metadata) = frontend(fixture)
+                        .run_loaded_with_comment_metadata(restored.source.clone(), text)
+                        .unwrap();
+                    assert_eq!(replayed, restored);
+                    assert_eq!(replay_metadata.as_ref(), Some(&metadata));
+
+                    if open_buffer
+                        && index == 0
+                        && text.starts_with('\u{feff}')
+                        && text.contains("\r\n")
+                    {
+                        let mut changed_source = output.clone();
+                        changed_source.source.source_text = Arc::from("theorem Other: thesis;\n");
+                        let mut changed_loading = output.clone();
+                        changed_loading
+                            .source
+                            .loading_map
+                            .as_mut()
+                            .unwrap()
+                            .segments
+                            .clear();
+                        let mut changed_preprocess = output.clone();
+                        changed_preprocess
+                            .preprocessed
+                            .source_map
+                            .preprocess_map
+                            .segments
+                            .clear();
+                        let mut changed_tokens = output.clone();
+                        changed_tokens.tokens.tokens.remove(0);
+                        let mut changed_ast = output.clone();
+                        assert!(changed_ast.ast.take().is_some());
+                        let mut changed_version = output.clone();
+                        changed_version.source.origin = SourceOrigin::OpenBuffer { version: 4 };
+                        for (label, changed) in [
+                            ("source", changed_source),
+                            ("loading map", changed_loading),
+                            ("preprocess map", changed_preprocess),
+                            ("tokens", changed_tokens),
+                            ("AST", changed_ast),
+                            ("version", changed_version),
+                        ] {
+                            assert!(
+                                !metadata.matches_output(&changed),
+                                "accepted changed {label}"
+                            );
+                        }
+                    }
                 }
-                assert_eq!(&metadata, previous);
-            } else {
-                baseline = Some((source.source_id, source.file_path.clone(), metadata.clone()));
             }
-            let bytes = output.canonical_disk_bytes().unwrap();
-            let restored = FrontendOutput::from_canonical_disk_bytes(
-                &bytes,
-                ids.next_source_id(snapshot_id(1)).unwrap(),
-                &request.input,
-            )
-            .unwrap();
-            assert_eq!(restored.canonical_disk_bytes().unwrap(), bytes);
-            let (replayed, replay_metadata) = frontend(fixture)
-                .run_loaded_with_comment_metadata(restored.source.clone(), text)
-                .unwrap();
-            assert_eq!(replayed, restored);
-            assert_eq!(replay_metadata.as_ref(), Some(&metadata));
         }
     }
 }

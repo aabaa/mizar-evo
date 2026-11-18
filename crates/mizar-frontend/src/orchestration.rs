@@ -149,6 +149,42 @@ impl FrontendOutput<mizar_syntax::SurfaceAst> {
         self.canonical_storage_bytes(Some(input))
     }
 
+    fn comment_metadata_fingerprint(
+        &self,
+        original_text: &Arc<str>,
+    ) -> Option<mizar_session::Hash> {
+        use mizar_session::{LoadingOrigin, SourceOrigin};
+        let bytes = match self.source.origin {
+            SourceOrigin::Disk => self.canonical_disk_bytes(),
+            SourceOrigin::OpenBuffer { version } => {
+                let mut portable = self.clone();
+                if let Some(map) = &mut portable.source.loading_map {
+                    let LoadingOrigin::OpenBufferText { uri, .. } = &mut map.origin else {
+                        return None;
+                    };
+                    // URI is local capture provenance, not portable metadata identity.
+                    uri.clear();
+                }
+                portable.canonical_open_buffer_bytes(&SourceInput {
+                    package_id: self.source.package_id.clone(),
+                    module_path: self.source.module_path.clone(),
+                    normalized_path: self.source.normalized_path.clone(),
+                    edition: self.source.edition.clone(),
+                    origin: SourceOriginInput::OpenBuffer {
+                        uri: String::new(),
+                        expected_version: version,
+                        actual_version: version,
+                        text: original_text.clone(),
+                    },
+                })
+            }
+            _ => None,
+        }?;
+        Some(mizar_session::Hash::from_bytes(
+            *blake3::hash(&bytes).as_bytes(),
+        ))
+    }
+
     fn canonical_storage_bytes(&self, input: Option<&SourceInput>) -> Option<Vec<u8>> {
         // Native correction evidence is retained in memory, never in the phase codec.
         if self
@@ -507,7 +543,6 @@ where
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommentMetadata {
     output_fingerprint: Option<mizar_session::Hash>,
-    captured_input: Option<SourceInput>,
     package_id: mizar_session::PackageId,
     module_path: mizar_session::ModulePath,
     normalized_path: NormalizedPath,
@@ -528,14 +563,8 @@ impl CommentMetadata {
     /// Checks the complete portable payload against this invocation's private evidence.
     /// Unsupported canonical representations cannot establish a binding.
     pub fn matches_output(&self, output: &FrontendOutput<mizar_syntax::SurfaceAst>) -> bool {
-        let bytes = match &self.captured_input {
-            Some(input) => output.canonical_open_buffer_bytes(input),
-            None => output.canonical_disk_bytes(),
-        };
         self.output_fingerprint.is_some_and(|expected| {
-            bytes.is_some_and(|bytes| {
-                mizar_session::Hash::from_bytes(*blake3::hash(&bytes).as_bytes()) == expected
-            })
+            output.comment_metadata_fingerprint(&self.original_text) == Some(expected)
         })
     }
 
@@ -652,10 +681,9 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                 return None;
             }
             let original_text: Arc<str> = Arc::from(captured_text);
-            let captured_input = match &source.origin {
+            match &source.origin {
                 SourceOrigin::Disk => {
                     source.canonical_disk_bytes()?;
-                    None
                 }
                 SourceOrigin::OpenBuffer { version } => {
                     let uri = match source.loading_map.as_ref().map(|map| &map.origin) {
@@ -676,7 +704,6 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                         },
                     };
                     source.canonical_open_buffer_bytes(&input)?;
-                    Some(input)
                 }
                 _ => return None,
             };
@@ -836,12 +863,7 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                 })
                 .collect();
             Some(CommentMetadata {
-                output_fingerprint: match &captured_input {
-                    Some(input) => output.canonical_open_buffer_bytes(input),
-                    None => output.canonical_disk_bytes(),
-                }
-                .map(|bytes| mizar_session::Hash::from_bytes(*blake3::hash(&bytes).as_bytes())),
-                captured_input,
+                output_fingerprint: output.comment_metadata_fingerprint(&original_text),
                 package_id: source.package_id.clone(),
                 module_path: source.module_path.clone(),
                 normalized_path: source.normalized_path.clone(),
