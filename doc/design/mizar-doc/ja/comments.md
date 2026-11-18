@@ -35,6 +35,7 @@ module-leading 適格性は import または source item より前の file prefi
 ## Markdown と構造化タグ
 Markdown 本文の導出でも raw block と各行の map を保持する。承認 Q3 に従い各行の `:::` と続く ASCII space 最大1個を除き、残りと逆 map を保持する。全体 trim/deindent、Unicode/tab/改行の再正規化は CommonMark の字下げ・code・診断位置を変え得るため行わない。
 必要な surface は独自縮小言語ではなく CommonMark であり、段落・見出し・強調・list・fenced/indented code・block quote・標準 link を利用できる。空の `:::` 行で段落を区切れる。Doc8 は parser/version と拡張間の扱いを固定し、spec24.1 を黙って縮小しない。観測可能な曖昧さは owner の明確化へ戻す。
+[Doc8 CommonMark/tag-field 提案](./commonmark.md) は候補定義と未選択 Q9–Q18 を記録する。新意味論の採用や実装 gate の開放ではない。
 Mizar inline code と code block の内容は後続 highlighting 用に保つ。正確な label/FQN の code 参照、明示的 `[text](ref)`、`@see` は Doc9/10 へ渡し、式は code のままにする。inline `$…$` と単独行の display `$$…$$` math は [24.3](../../../spec/en/24.documentation_generation.md#243-mathematical-formula-rendering) に従い range とともに Doc11/12 へ渡す。comments は link/anchor/UsedBy を解決せず、数式・code example・verifier annotation を描画/評価しない。HTML 出力方針は Doc13–15 の責務である。
 タグは Markdown 段落の最初の token の場合だけ認識し、名前・raw 引数/本文・range を保つ。spec24.1 の7種は `@param name`（parameter ごとに1個）、`@returns`（戻り値、`result`）、`@requires`/`@ensures`（説明の補足）、`@see ref`、`@since version`、`@deprecated version`（続く非推奨説明）である。この意味を保ち、formal contract の追加・検証変更・code 評価・新 version 文法の強制を行わない。
 未知タグは spec2.9.2 に従い verbatim で通し、未知の statement annotation にしない。承認 Q4 は不正/重複/利用可能 metadata と不一致の既知 tag に text を保持する既定表示 warning を出すが、下記残余規則を適用し 承認 Q7/Q8 を適用する。text の黙示破棄・tag 上書き・不在 parameter metadata の推測をしない。Markdown 解析結果は派生 view であり、新 serialized schema や意味 AST の代替ではない。
