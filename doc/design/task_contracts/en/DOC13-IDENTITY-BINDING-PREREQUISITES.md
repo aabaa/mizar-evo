@@ -1,0 +1,29 @@
+# Task DOC13-IDENTITY-BINDING-PREREQUISITES: identity binding
+Canonical language: English; [Japanese pointer](../ja/DOC13-IDENTITY-BINDING-PREREQUISITES.md).
+Status: frozen implementation scope. Tier: full; freeze and implementation are one changed task.
+Purpose: adopt and supply only the bounded identity prerequisites of [Doc13 G1](../../mizar-doc/en/render_prerequisites.md#ordered-readiness-gates).
+Owners: [Doc](../../mizar-doc/en/00.crate_plan.md), [Artifact](../../mizar-artifact/en/00.crate_plan.md), [Driver](../../mizar-driver/en/00.crate_plan.md). Consumer: later coherent Doc13 adoption. Dependencies: adopted Doc4/8/9/10 inputs and Q3 hrefs.
+
+## Authority And Scope
+Authority: [spec24](../../../spec/en/24.documentation_generation.md#244-html-output), [module paths](../../../spec/en/12.modules_and_namespaces.md), [published artifacts](../../../spec/en/23.package_management_and_build_system.md#235-verifier-artifacts-and-build-output), [render identity proposal](../../mizar-doc/en/render_prerequisites.md#identity-and-allocation-handoffs), [Doc4 inputs](../../mizar-doc/en/doc_build.md), [Artifact projection](../../mizar-artifact/en/verified_artifact.md), and [Driver capture](../../mizar-driver/en/frontend_adapter.md).
+Classified source_gap: complete stored export inventory and authenticated Doc10 inputs exist, but no owner-bound kind/version compatibility and structured module-path product exists. Classified design_drift: identity wording is proposal-only despite this bounded authorization.
+Adopt only an immutable in-memory identity handoff: full original module identity, publication, exact complete exports, original structured module components and explicit compatible kind vocabulary/version binding. Preserve required stored package version, absent lock, exact Unicode and empty available display strings. Preserve existing module Ord and FQN/origin export order; distinct duplicate FQNs, versions, origins and Public/Reexported identities never merge.
+Artifact owns structural projection and explicit supported producer vocabulary/version checks; Driver owns genuine compilation/snapshot lineage. Producer derives components only from existing authoritative module/source rules, validates lossless reconstruction and retains original identity. Doc never splits FQNs, guesses separators, parses versions or infers kinds from statements/names.
+Doc authenticates the complete product against the selected current plan and finite publication/export inventory; missing, duplicate, foreign, stale, partial or mismatched products refuse without usable partial results. Complete-empty modules require explicit complete products. Unknown kinds and unsupported vocabulary/schema versions remain incompatible; this does not tighten generic Artifact readers or change proof acceptance.
+Internal API/provenance/refusal naming is autonomous within these boundaries. No new serialized schema, hash domain, acceptance authority or proof/extraction behavior.
+Forbidden: language intent changes, ② alternatives, coherent Doc13 adoption, G2–G5 remainders (dedicated/reserved/case allocations, original ordinals/coordinates/source routing/degraded summaries, render diagnostics/math/templates/pinned assets, Doc14/15), schema/publication, Doc23/24, owner-gated scope and coverage/owner/milestone credit. No spec/audit/trace/AGENTS/protocol edits.
+
+## Artifacts And Review
+Write set: this pair and paired owner-plan links; paired render identity boundary documents, Artifact verified-artifact and Driver frontend-adapter owners as needed; necessary existing Artifact/Driver/Doc source and existing owner/integration tests. Preserve existing test intent and expectations.
+Reviews: independent specification before freeze; sufficiency, precision, volume/scope, final source/documentation consistency and scoped quality assessment over the whole unit. Repeat specification only if this contract changes.
+
+## Acceptance Matrix
+Six families, cap six; additional families require cited authority:
+1. Complete exports: genuine publication/capture to authenticated Doc identities retains every exact export, both visibilities, empty display values and explicitly complete-empty modules; absent/partial products refuse.
+2. Identity: duplicate FQNs with distinct origins, packages and stored versions plus reexports survive without merging; permutation retains existing canonical order and full publication binding.
+3. Kind compatibility: enumerate actual owner vocabulary and its exact version binding; genuine supported producer spellings pass, unknown/case-changed kinds and unsupported versions refuse without inference. Stored reexport preservation does not claim new semantic production.
+4. Lossless paths: genuine source/snapshot producer supplies one/nested and non-ASCII components with exact reconstruction; empty/invalid/non-lossless or foreign module/path/source bindings refuse, never derive components from FQNs.
+5. Authentication: missing/duplicate producers, forged publication/export/source fields, stale selected plan and representative lower-reader integrity/schema refusals yield no usable product, including complete-empty inventories.
+6. Consumer boundary: short genuine Driver publication-to-G1 positive/refusal witness, replay/read-only input preservation, and independent existing Doc10 coverage/allocations remain unchanged; no renderer, wire output or later-gate activation.
+Verification: CARGO_BUILD_JOBS=4; freeze runs both lint_policy suites and links/fragments. Implementation runs fmt, all-target/all-feature Clippy -D warnings, both policy suites, affected Artifact/Driver/Doc owner groups and Doc corpus including short end-to-end witnesses. Full cargo test only on a named cadence trigger; unaffected heavy proof/cache/evidence groups defer to cadence/integration.
+Exit: reviewed bounded G1 handoff committed locally after freeze, push:no; coherent adoption and every later gate remain open.
