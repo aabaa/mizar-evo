@@ -5764,4 +5764,601 @@ mod doc10_authenticated {
         );
         assert!(!app.root.join("out").exists());
     }
+
+    mod allocations {
+        use super::*;
+        use mizar_artifact::module_summary::ExportedLabelSummary;
+        use mizar_doc::allocations::*;
+
+        const VERSION: &str = "specification-v1";
+
+        fn publication(items: &[(&str, &str)]) -> Publication {
+            let mut app = Publication::new("allocations", ["", ""]);
+            for index in 0..2 {
+                let template = app.artifacts[index].exports[0].clone();
+                app.artifacts[index].exports.clear();
+                let rows = if index == 0 {
+                    items
+                } else {
+                    &[("unaffected.Exact", "Unchanged")][..]
+                };
+                for (ordinal, (fqn, short)) in rows.iter().enumerate() {
+                    let mut export = template.clone();
+                    export.origin_id = format!("allocation-export-{index}-{ordinal}");
+                    export.fully_qualified_name = (*fqn).into();
+                    app.summaries[index]
+                        .exported_labels
+                        .push(ExportedLabelSummary {
+                            origin_id: format!("allocation-label-{index}-{ordinal}"),
+                            label: (*short).into(),
+                            owner_fully_qualified_name: (*fqn).into(),
+                            visibility: "public".into(),
+                            source_range: export.source_range,
+                            target_kind: "theorem".into(),
+                        });
+                    app.artifacts[index].exports.push(export);
+                }
+                app.summaries[index].refresh_interface_hash().unwrap();
+            }
+            app.publish();
+            app
+        }
+
+        fn authenticated(app: &mut Publication) -> AuthenticatedDocImports {
+            let (registry, workspace, plans, views) = context(&mut [&mut *app]);
+            authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[],
+                &inputs(app, &views[0]),
+            )
+            .unwrap()
+        }
+
+        fn table(app: &Publication) -> DocAllocationTable {
+            DocAllocationTable {
+                output_root: app.root.join("out"),
+                coverage: DocImportCoverage::Complete,
+                pages: app
+                    .artifacts
+                    .iter()
+                    .enumerate()
+                    .map(|(index, artifact)| DocPageAllocation {
+                        path: format!("pages/module-{index}.html"),
+                        module: Some((artifact.module.clone(), app.hash)),
+                        items: artifact
+                            .exports
+                            .iter()
+                            .map(|export| DocItemAllocation {
+                                export: export.clone(),
+                                label: app.summaries[index]
+                                    .exported_labels
+                                    .iter()
+                                    .find(|label| {
+                                        label.owner_fully_qualified_name == export.fully_qualified_name
+                                    })
+                                    .cloned(),
+                                alias: None,
+                            })
+                            .collect(),
+                        section_ids: vec![],
+                    })
+                    .collect(),
+                sections: None,
+            }
+        }
+
+        fn validate(
+            app: &Publication,
+            imports: &AuthenticatedDocImports,
+            table: DocAllocationTable,
+        ) -> Result<ValidatedDocAllocations, DocBuildError> {
+            validate_doc_allocations(imports, &app.root.join("out"), VERSION, table)
+        }
+
+        fn item<'a>(
+            result: &'a ValidatedDocAllocations,
+            app: &Publication,
+            ordinal: usize,
+        ) -> Option<(&'a str, &'a str, Option<&'a str>)> {
+            result.item(
+                &app.artifacts[0].module,
+                app.hash,
+                &app.artifacts[0].exports[ordinal],
+            )
+        }
+
+        #[test]
+        fn doc10_allocation_bound_publications_preserve_upstream_inputs() {
+            let mut app = publication(&[("exact.FQN", "StoredLabel")]);
+            let (registry, workspace, plans, views) = context(&mut [&mut app]);
+            let before = plans[0].clone();
+            let bytes = std::fs::read(app.root.join("artifact-manifest.json")).unwrap();
+            let imports = authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[],
+                &inputs(&app, &views[0]),
+            )
+            .unwrap();
+            let saved = imports.clone();
+            let citations = authenticate_doc_direct_by(&imports, &[]).unwrap();
+            let original = table(&app);
+            let valid = validate(&app, &imports, original.clone()).unwrap();
+            assert_eq!(valid.output_root(), original.output_root);
+            assert_eq!(
+                item(&valid, &app, 0),
+                Some(("pages/module-0.html", "exact.FQN", None))
+            );
+            for mutation in 0..10 {
+                let mut forged = original.clone();
+                match mutation {
+                    0 => forged.output_root.push("other-root"),
+                    1 => forged.pages[0]
+                        .module
+                        .as_mut()
+                        .unwrap()
+                        .0
+                        .package_id
+                        .push_str("-foreign"),
+                    2 => {
+                        forged.pages[0].module.as_mut().unwrap().0.package_version = Some("2.0".into())
+                    }
+                    3 => {
+                        forged.pages[0].module.as_mut().unwrap().0.lockfile_identity =
+                            Some("foreign-lock".into())
+                    }
+                    4 => {
+                        forged.pages[0].module.as_mut().unwrap().1 =
+                            mizar_session::hash_text("stale publication")
+                    }
+                    5 => forged.pages[0].items[0]
+                        .export
+                        .origin_id
+                        .push_str("-foreign"),
+                    6 => forged.pages[0].items[0]
+                        .label
+                        .as_mut()
+                        .unwrap()
+                        .origin_id
+                        .push_str("-foreign"),
+                    7 => {
+                        forged.pages[0].items[0].label =
+                            Some(app.summaries[1].exported_labels[0].clone())
+                    }
+                    8 => forged.pages[0].items[0]
+                        .label
+                        .as_mut()
+                        .unwrap()
+                        .label
+                        .push_str("-guessed"),
+                    _ => forged.pages[0].module = None,
+                }
+                assert!(
+                    matches!(
+                        validate(&app, &imports, forged),
+                        Err(DocBuildError::Binding(_))
+                    ),
+                    "mutation {mutation}"
+                );
+            }
+            assert_eq!(imports, saved);
+            assert_eq!(
+                authenticate_doc_direct_by(&imports, &[]).unwrap(),
+                citations
+            );
+            assert_eq!(plans[0], before);
+            assert_eq!(
+                std::fs::read(app.root.join("artifact-manifest.json")).unwrap(),
+                bytes
+            );
+            assert!(!app.root.join("out").exists());
+            // Import and direct-by coverage remain independent of destination readiness.
+            let unavailable =
+                authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &[]).unwrap();
+            assert_eq!(
+                unavailable.closure_coverage(),
+                DocImportCoverage::Unavailable
+            );
+            assert!(item(&validate(&app, &unavailable, original).unwrap(), &app, 0).is_some());
+
+            // Identical FQNs in separately authenticated packages/versions keep separate routes.
+            let mut dependency = publication(&[("exact.FQN", "StoredLabel")]);
+            dependency.manifest.package.package_id = "allocation-dependency".into();
+            dependency.manifest.package.package_version = Some("2.0.0".into());
+            for (artifact, summary) in dependency
+                .artifacts
+                .iter_mut()
+                .zip(&mut dependency.summaries)
+            {
+                artifact.module.package_id = dependency.manifest.package.package_id.clone();
+                artifact.module.package_version = dependency.manifest.package.package_version.clone();
+                summary.module = artifact.module.clone();
+                summary.refresh_interface_hash().unwrap();
+            }
+            let (registry, workspace, plans, _) = context(&mut [&mut app, &mut dependency]);
+            let root = plans
+                .iter()
+                .find(|plan| plan.request.package == app.manifest.package)
+                .unwrap();
+            let imports = authenticate_doc_imports(
+                &registry,
+                &workspace,
+                root,
+                &[(
+                    &dependency.manifest.package,
+                    dependency.hash,
+                    dependency.root.as_path(),
+                )],
+                &[],
+            )
+            .unwrap();
+            let mut combined = table(&app);
+            for mut page in table(&dependency).pages {
+                page.path = format!("dependency-v2/{}", page.path);
+                combined.pages.push(page);
+            }
+            for reverse in [false, true] {
+                if reverse {
+                    combined.pages.reverse();
+                }
+                let valid = validate(&app, &imports, combined.clone()).unwrap();
+                assert_eq!(item(&valid, &app, 0).unwrap().0, "pages/module-0.html");
+                let export = &dependency.artifacts[0].exports[0];
+                assert_eq!(
+                    valid.item(&dependency.artifacts[0].module, dependency.hash, export),
+                    Some(("dependency-v2/pages/module-0.html", "exact.FQN", None))
+                );
+                assert!(
+                    valid
+                        .item(&dependency.artifacts[0].module, app.hash, export)
+                        .is_none()
+                );
+            }
+        }
+
+        #[test]
+        fn doc10_allocation_validates_entire_path_namespace_and_coverage() {
+            let mut app = publication(&[("exact.FQN", "StoredLabel")]);
+            let imports = authenticated(&mut app);
+            let original = table(&app);
+            for path in [
+                "",
+                "/absolute.html",
+                "../escape.html",
+                "a/../b",
+                "./a",
+                "a//b",
+                "a/",
+                "a\\b",
+                "a\0b",
+                "C:/drive.html",
+            ] {
+                let mut forged = original.clone();
+                forged.pages[0].path = path.into();
+                assert!(
+                    matches!(
+                        validate(&app, &imports, forged),
+                        Err(DocBuildError::Binding(_))
+                    ),
+                    "{path:?}"
+                );
+            }
+            for mutation in 0..5 {
+                let mut forged = original.clone();
+                match mutation {
+                    0 => forged.pages[1].path = forged.pages[0].path.clone(),
+                    1 => forged.pages[1].path = format!("{}/child", forged.pages[0].path),
+                    2 => {
+                        forged.pages[0].path = "parent/child".into();
+                        forged.pages[1].path = "parent".into();
+                    }
+                    3 => forged.pages[1].module = forged.pages[0].module.clone(),
+                    _ => forged.pages.push(DocPageAllocation {
+                        path: original.pages[0].path.clone(),
+                        module: None,
+                        items: vec![],
+                        section_ids: vec![],
+                    }),
+                }
+                for coverage in [
+                    DocImportCoverage::Complete,
+                    DocImportCoverage::Incomplete,
+                    DocImportCoverage::Unavailable,
+                ] {
+                    forged.coverage = coverage;
+                    assert!(
+                        matches!(
+                            validate(&app, &imports, forged.clone()),
+                            Err(DocBuildError::Binding(_))
+                        ),
+                        "mutation {mutation}, {coverage:?}"
+                    );
+                }
+            }
+            for coverage in [
+                DocImportCoverage::Incomplete,
+                DocImportCoverage::Unavailable,
+            ] {
+                let mut partial = original.clone();
+                partial.coverage = coverage;
+                let result = validate(&app, &imports, partial).unwrap();
+                assert_eq!(result.coverage(), coverage);
+                assert!(
+                    result
+                        .module_page(&app.summaries[0].module, app.hash)
+                        .is_none()
+                );
+                assert!(item(&result, &app, 0).is_none());
+            }
+            // Exact spelling is retained; allocation does not choose case or directory policy.
+            let mut distinct = original;
+            distinct.pages[0].path = "Pages/É.html".into();
+            distinct.pages[1].path = "pages/é.html".into();
+            assert_eq!(
+                validate(&app, &imports, distinct)
+                    .unwrap()
+                    .module_page(&app.summaries[0].module, app.hash),
+                Some("Pages/É.html")
+            );
+        }
+
+        #[test]
+        fn doc10_allocation_full_anchors_block_only_affected_destinations() {
+            let mut app = publication(&[("m.É%#", "Authoritative"), ("other.Exact", "Other")]);
+            let imports = authenticated(&mut app);
+            let mut supplied = table(&app);
+            supplied.pages[0].items[0].label = None;
+            supplied.pages[0].items[1].alias = Some("Other".into());
+            let missing = validate(&app, &imports, supplied).unwrap();
+            assert!(item(&missing, &app, 0).is_none());
+            assert_eq!(
+                item(&missing, &app, 1),
+                Some(("pages/module-0.html", "other.Exact", None))
+            );
+            assert!(
+                missing
+                    .module_page(&app.summaries[0].module, app.hash)
+                    .is_some()
+            );
+            let mut duplicate = table(&app);
+            let repeated = duplicate.pages[0].items[0].clone();
+            duplicate.pages[0].items.push(repeated);
+            assert_eq!(
+                item(
+                    &validate(&app, &imports, duplicate.clone()).unwrap(),
+                    &app,
+                    0
+                )
+                .unwrap()
+                .1,
+                "m.É%#"
+            );
+            duplicate.pages[0].items.last_mut().unwrap().label = None;
+            assert!(matches!(
+                validate(&app, &imports, duplicate),
+                Err(DocBuildError::Binding(_))
+            ));
+            for section in ["m.É%#", "other.Exact"] {
+                let mut collision = table(&app);
+                collision.pages[0].section_ids.push(section.into());
+                let result = validate(&app, &imports, collision).unwrap();
+                assert!(item(&result, &app, 0).is_none());
+                assert!(
+                    result
+                        .module_page(&app.summaries[0].module, app.hash)
+                        .is_none()
+                );
+                assert!(
+                    result
+                        .module_page(&app.summaries[1].module, app.hash)
+                        .is_some()
+                );
+            }
+            let mut duplicate_app = publication(&[("duplicate.FQN", "One"), ("duplicate.FQN", "Two")]);
+            let duplicate_imports = authenticated(&mut duplicate_app);
+            let blocked = validate(&duplicate_app, &duplicate_imports, table(&duplicate_app)).unwrap();
+            assert!(item(&blocked, &duplicate_app, 0).is_none());
+            assert!(item(&blocked, &duplicate_app, 1).is_none());
+            assert!(
+                blocked
+                    .module_page(&duplicate_app.summaries[0].module, duplicate_app.hash)
+                    .is_none()
+            );
+            assert!(
+                blocked
+                    .module_page(&duplicate_app.summaries[1].module, duplicate_app.hash)
+                    .is_some()
+            );
+        }
+
+        #[test]
+        fn doc10_allocation_aliases_require_authoritative_unique_collision_free_labels() {
+            let mut app = publication(&[
+                ("full.One", "Unique"),
+                ("full.Two", "Shared"),
+                ("full.Three", "Shared"),
+                ("full.Four", "full.One"),
+                ("full.Five", "section-id"),
+            ]);
+            let imports = authenticated(&mut app);
+            let mut supplied = table(&app);
+            supplied.pages[0].section_ids.push("section-id".into());
+            for row in &mut supplied.pages[0].items {
+                row.alias = row.label.as_ref().map(|label| label.label.clone());
+            }
+            // Shared labels collide even when only one of their targets requests an alias.
+            for both_request in [false, true] {
+                supplied.pages[0].items[2].alias = both_request.then(|| "Shared".into());
+                for reverse in [false, true] {
+                    let mut ordered = supplied.clone();
+                    if reverse {
+                        ordered.pages.reverse();
+                        for page in &mut ordered.pages {
+                            page.items.reverse();
+                        }
+                    }
+                    let result = validate(&app, &imports, ordered).unwrap();
+                    assert_eq!(item(&result, &app, 0).unwrap().2, Some("Unique"));
+                    for ordinal in 1..5 {
+                        assert_eq!(item(&result, &app, ordinal).unwrap().2, None);
+                    }
+                    for ordinal in 0..5 {
+                        assert_eq!(
+                            item(&result, &app, ordinal).unwrap().1,
+                            app.artifacts[0].exports[ordinal].fully_qualified_name
+                        );
+                    }
+                }
+            }
+            supplied.pages[0].items[0].alias = Some("Invented".into());
+            assert_eq!(
+                item(
+                    &validate(&app, &imports, supplied.clone()).unwrap(),
+                    &app,
+                    0
+                )
+                .unwrap()
+                .2,
+                None
+            );
+            supplied.pages[0].items[0].alias = Some("Unique".into());
+            supplied.pages[0].items[2].label = None;
+            let unknown_labels = validate(&app, &imports, supplied).unwrap();
+            assert_eq!(item(&unknown_labels, &app, 0).unwrap().2, None);
+            assert!(item(&unknown_labels, &app, 2).is_none());
+        }
+
+        #[test]
+        fn doc10_allocation_sections_retain_version_coverage_and_exact_existence() {
+            let mut app = publication(&[("full.One", "Stored")]);
+            let imports = authenticated(&mut app);
+            let mut supplied = table(&app);
+            supplied.pages[0].section_ids.push("sec-20-5-1".into());
+            let unavailable = validate(&app, &imports, supplied.clone()).unwrap();
+            assert_eq!(
+                unavailable.section_coverage(),
+                DocImportCoverage::Unavailable
+            );
+            assert_eq!(unavailable.section("§20.5.1"), None);
+            supplied.sections = Some(DocSectionIndex {
+                version: VERSION.into(),
+                coverage: DocImportCoverage::Complete,
+                sections: vec![],
+            });
+            let empty = validate(&app, &imports, supplied.clone()).unwrap();
+            assert_eq!(empty.section_coverage(), DocImportCoverage::Complete);
+            assert_eq!(empty.section("§20.5.1"), None);
+            supplied
+                .sections
+                .as_mut()
+                .unwrap()
+                .sections
+                .push(DocSectionAllocation {
+                    id: "§20.5.1".into(),
+                    path: supplied.pages[0].path.clone(),
+                    fragment: "sec-20-5-1".into(),
+                });
+            for coverage in [
+                DocImportCoverage::Complete,
+                DocImportCoverage::Incomplete,
+                DocImportCoverage::Unavailable,
+            ] {
+                supplied.sections.as_mut().unwrap().coverage = coverage;
+                let result = validate(&app, &imports, supplied.clone()).unwrap();
+                assert_eq!(result.section_coverage(), coverage);
+                assert_eq!(result.section("§unknown"), None);
+                assert_eq!(
+                    result.section("§20.5.1"),
+                    if coverage == DocImportCoverage::Unavailable {
+                        None
+                    } else {
+                        Some(("pages/module-0.html", "sec-20-5-1"))
+                    }
+                );
+            }
+            supplied.sections.as_mut().unwrap().coverage = DocImportCoverage::Complete;
+            for mutation in 0..6 {
+                let mut invalid = supplied.clone();
+                let index = invalid.sections.as_mut().unwrap();
+                match mutation {
+                    0 => index.version.push_str("-wrong"),
+                    1 => index.sections.push(index.sections[0].clone()),
+                    2 => index.sections[0].path = "missing.html".into(),
+                    3 => index.sections[0].fragment = "missing-fragment".into(),
+                    4 => index.sections[0].fragment = "full.One".into(),
+                    _ => invalid.pages[0].section_ids.push("sec-20-5-1".into()),
+                }
+                assert!(
+                    matches!(
+                        validate(&app, &imports, invalid),
+                        Err(DocBuildError::Binding(_))
+                    ),
+                    "mutation {mutation}"
+                );
+            }
+            let mut blocked = supplied.clone();
+            blocked.pages[0].section_ids.push("full.One".into());
+            let result = validate(&app, &imports, blocked).unwrap();
+            assert_eq!(result.section_coverage(), DocImportCoverage::Incomplete);
+            assert_eq!(result.section("§20.5.1"), None);
+            for coverage in [
+                DocImportCoverage::Incomplete,
+                DocImportCoverage::Unavailable,
+            ] {
+                let mut partial = supplied.clone();
+                partial.coverage = coverage;
+                let result = validate(&app, &imports, partial).unwrap();
+                assert_eq!(result.section_coverage(), DocImportCoverage::Incomplete);
+                assert_eq!(result.section("§20.5.1"), None);
+            }
+        }
+
+        #[test]
+        fn doc10_allocation_href_encoding_preserves_logical_ids_end_to_end() {
+            assert_eq!(
+                encode_doc_href("p/é%#.html", Some("m.é%#")),
+                "p/%C3%A9%25%23.html#m.%C3%A9%25%23"
+            );
+            assert_eq!(
+                encode_doc_href("AZaz09-._~/x y?+.html", Some("a/b#% é")),
+                "AZaz09-._~/x%20y%3F%2B.html#a%2Fb%23%25%20%C3%A9"
+            );
+            assert_eq!(encode_doc_href("a.html", None), "a.html");
+            assert_eq!(encode_doc_href("a.html", Some("")), "a.html#");
+            let mut app = publication(&[("m.é%#", "ExactStoredLabel")]);
+            let imports = authenticated(&mut app);
+            let mut supplied = table(&app);
+            supplied.pages[0].path = "p/é%#.html".into();
+            let validated = validate(&app, &imports, supplied.clone()).unwrap();
+            let (path, id, alias) = item(&validated, &app, 0).unwrap();
+            assert_eq!(id, "m.é%#");
+            assert_eq!(alias, None);
+            assert_eq!(
+                encode_doc_href(path, Some(id)),
+                "p/%C3%A9%25%23.html#m.%C3%A9%25%23"
+            );
+            assert_eq!(id, app.artifacts[0].exports[0].fully_qualified_name);
+            supplied.pages[0].items[0].label = None;
+            assert!(
+                item(
+                    &validate(&app, &imports, supplied.clone()).unwrap(),
+                    &app,
+                    0
+                )
+                .is_none()
+            );
+            supplied.pages[0].path = "../é%#.html".into();
+            assert_eq!(
+                encode_doc_href(&supplied.pages[0].path, Some(id)),
+                "../%C3%A9%25%23.html#m.%C3%A9%25%23"
+            );
+            assert!(matches!(
+                validate(&app, &imports, supplied),
+                Err(DocBuildError::Binding(_))
+            ));
+        }
+    }
 }
