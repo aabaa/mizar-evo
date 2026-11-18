@@ -135,12 +135,15 @@ fn ir_manifest_dependency_boundary_stays_narrow() {
                 "blake3 = \"1.8.5\"",
                 "mizar-artifact = { path = \"../mizar-artifact\" }",
                 "mizar-cache = { path = \"../mizar-cache\" }",
+                "mizar-frontend = { path = \"../mizar-frontend\" }",
+                "mizar-lexer = { path = \"../mizar-lexer\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
+                "mizar-syntax = { path = \"../mizar-syntax\" }",
             ],
         )],
-        "{} task 12 must keep production dependencies limited to deterministic \
-         hashing, mizar-session, mizar-cache validation, and mizar-artifact \
-         stable schemas; mizar-driver/mizar-diagnostics must remain absent",
+        "{} must limit dependencies to hashing, session/cache/artifact owners \
+         and Q1 Frontend/Lexer/Syntax producer types; \
+         mizar-driver/mizar-diagnostics must remain absent",
         manifest_path.display()
     );
 

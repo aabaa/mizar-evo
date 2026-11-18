@@ -8,7 +8,7 @@
 2. **IR projection:** [ArtifactProjectionService](../../mizar-ir/en/projection.md#ownership) は producer record、その sealed/readable な current-snapshot output lineage、対応する検証済み item record を消費する。source/module/lineage 一致を確認し、安定データのみを Artifact 所有の形へ変換して unpublished draft に入れる。source 再解析や検証済み target の捏造はしない。
 3. **Driver orchestration:** [captured-source binding](../../mizar-driver/en/frontend_adapter.md#native-captured-sources) は producer → IR → emission を通じ実 source/map を保持する。一致する snapshot/package/source と検証済み output を供給し、既存 ArtifactCommit/store/manifest 検証と atomic publication 境界を用いる。再読・代替 SourceId・公開後 sidecar で不足コメントを補わない。OpenBuffer/InternalOnly draft に package publication 資格を与えない。
 4. **Artifact reader と Doc:** validating reader は検証した enclosing artifact とともにのみ投影を供給する。Doc の[公開入力 plan](../../mizar-doc/en/doc_build.md#full-build-and-index-inputs) が選択 publication/current request に結合し、[comments](../../mizar-doc/ja/comments.md) が後で block 化・attachment・Markdown 導出を行う。Artifact/IR は Doc attachment・tag parsing・link 解決・描画を行わない。
-以上は必須 handoff であり統合済み呼出経路ではない。Frontend は genuine source metadata、Artifact は structural codec を供給する。IR input 検証、Driver 保持/emission、Doc 消費が揃うまで Doc7 は利用できない。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
+以上は必須 handoff であり統合済み呼出経路ではない。Frontend は genuine metadata、IR は検証済み unpublished comment draft、Artifact は structural codec を供給する。Driver 保持/emission、Artifact publication 統合、Doc 消費が揃うまで Doc7 は利用できない。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
 
 ## Availability と Identity
 Unavailable は profile/producer が完全な comment 投影を供給しなかった状態。Available は captured source 全体の収集が完了した状態であり、doc 行ゼロは available-empty、空の `:::` 本文は存在する行である。対応 profile は availability を明示し、legacy profile の欠落は empty ではなく unavailable とする。部分収集/不正 payload を available とせず、検証失敗後に unavailable へ格下げしない。
@@ -32,7 +32,7 @@ version/schema/path/hash/source/module/provenance 不一致、不正 map、produ
 ## Structural Codec Profile
 [`comment_projection`](../../../../crates/mizar-artifact/src/comment_projection.rs) は、独立 family `mizar-artifact/commented-verified-artifact`、厳密 version `1.0` の `CommentedArtifact` と検証付き JSON reader/writer を公開する。envelope は検証済み normal1.2 artifact と必須 `comments` を持つ。null は unavailable、original/loaded/lexical text、portable loading/preprocess map、raw comment、whitespace、source 順 landmark の完全な object は available を表す。任意 target pair は enclosing export を参照するが、attachment や producer lineage を証明しない。
 envelope interface hash は envelope framing で export/dependency projection を保ち、implementation/full hash は全 comment data を含む。既存 local exclusion は `artifact` 配下に適用する。enclosing artifact が完全 identity/origin を供給し、normalized frame text はその source hash と一致する。reader は直列化された bounds/map/binding を検証するが、caller-created data を genuine metadata に昇格しない。
-この profile は structural transport の前提である。既存 manifest/store publication dispatch はこの envelope を選択しない。IR projection、Driver emission、current publication binding、Doc consumption は独立 handoff として残る。
+この profile は structural transport の前提である。既存 manifest/store publication dispatch はこの envelope を選択しない。Driver emission、current publication binding、Doc consumption は独立 handoff として残る。
 
 ## 残る Gate
 Q1 の transport 所有、data invariant、structural codec は利用可能だが、統合 handoff は未完了とする。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。

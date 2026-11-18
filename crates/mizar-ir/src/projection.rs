@@ -6,9 +6,11 @@
 use std::{collections::HashSet, error::Error, fmt, sync::Arc};
 
 use mizar_artifact::{
+    comment_projection::{CommentedArtifact, write_commented_artifact},
     module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
     proof_witness::{EvidenceKind, ProofStatus, ProofWitnessRef},
     registration_summary::ArtifactHashRef,
+    store::CanonicalJson,
     verified_artifact::{
         ArtifactDiagnostic, BuildProvenance, DependencyArtifactHash, DiagnosticRelated,
         ExpressionMetadata, ObligationMetadata, OverloadMetadata, StatementMetadata,
@@ -16,12 +18,14 @@ use mizar_artifact::{
         current_schema_version, write_verified_artifact,
     },
 };
-use mizar_session::{BuildSnapshotId, Hash};
+use mizar_frontend::orchestration::{CommentMetadata, FrontendOutput};
+use mizar_session::{BuildSnapshotId, Hash, SessionIdAllocator, SnapshotRegistry};
+use mizar_syntax::SurfaceAst;
 
 use crate::{
     identity::PhaseOutputId,
     publisher::{OutputAuthorization, PhaseOutputPublisher, PublishError},
-    storage::{AnyPhaseOutputRef, StorageError},
+    storage::{AnyPhaseOutputRef, PhaseOutputRef, SchemaVersion, StorageError},
 };
 
 /// Projection service over sealed IR handles.
@@ -73,6 +77,19 @@ pub struct VerifiedArtifactDraft {
     pub external_dependency_gaps: Vec<ProjectionExternalDependencyGap>,
 }
 
+/// Unpublished, source-bound comment envelope; publication remains downstream.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommentedArtifactDraft {
+    /// Snapshot for which this draft is current.
+    pub snapshot: BuildSnapshotId,
+    /// Sealed output ids used as projection inputs.
+    pub required_outputs: Vec<PhaseOutputId>,
+    /// The single enclosing artifact and complete comment projection.
+    pub artifact: CommentedArtifact,
+    /// Downstream integrations deliberately not stubbed by this crate.
+    pub external_dependency_gaps: Vec<ProjectionExternalDependencyGap>,
+}
+
 /// Downstream integration that remains outside `mizar-ir`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, std::hash::Hash)]
 #[non_exhaustive]
@@ -91,6 +108,11 @@ pub enum ProjectionExternalDependencyGap {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ProjectionError {
+    /// Source, producer payload, target shape or lineage failed to bind.
+    CommentBinding {
+        /// Failed integrity requirement.
+        reason: &'static str,
+    },
     /// No sealed output was supplied as projection input.
     MissingRequiredOutput,
     /// Snapshot is not eligible for current/package projection.
@@ -157,6 +179,234 @@ impl ArtifactProjectionService {
         input: ProjectVerifiedArtifactInput,
     ) -> Result<VerifiedArtifactDraft, ProjectionError> {
         self.project_module_for_profile(input, true)
+    }
+
+    /// Binds genuine Frontend metadata to sealed outputs and the registered snapshot.
+    /// Explicit targets name enclosing exports without establishing Doc attachment.
+    pub fn project_commented_module<A: SessionIdAllocator>(
+        &self,
+        input: ProjectVerifiedArtifactInput,
+        snapshots: &SnapshotRegistry<A>,
+        frontend: &PhaseOutputRef<FrontendOutput<SurfaceAst>>,
+        metadata: &CommentMetadata,
+        targets: &[Option<(String, String)>],
+    ) -> Result<CommentedArtifactDraft, ProjectionError> {
+        let invalid = |reason| ProjectionError::CommentBinding { reason };
+        if targets.len() != metadata.boundaries().len() {
+            return Err(invalid("target count must equal landmark count"));
+        }
+        if frontend.phase().as_str() != "Frontend"
+            || frontend.output_kind().as_str() != "FrontendOutput"
+            || frontend.schema_version() != SchemaVersion::new(1)
+            || !input
+                .required_outputs
+                .iter()
+                .any(|output| output == frontend.any())
+        {
+            return Err(invalid(
+                "required outputs must include the current-schema Frontend payload",
+            ));
+        }
+        let required_handles = input.required_outputs.clone();
+        let snapshot_id = input.snapshot;
+        let validate_outputs = || {
+            self.validate_required_outputs(snapshot_id, &required_handles)?;
+            for output in &required_handles {
+                let mut pending = vec![output.output()];
+                let mut seen = HashSet::new();
+                let mut descends = false;
+                while let Some(id) = pending.pop() {
+                    if !seen.insert(id) {
+                        continue;
+                    }
+                    let lineage = self
+                        .publisher
+                        .registry()
+                        .output_lineage(id)
+                        .ok_or_else(|| invalid("missing registered output ancestry"))?;
+                    if lineage.snapshot != snapshot_id {
+                        return Err(invalid("foreign-snapshot output ancestry"));
+                    }
+                    descends |= id == frontend.output();
+                    pending.extend(lineage.parents);
+                }
+                if !descends {
+                    return Err(invalid("required output does not descend from Frontend"));
+                }
+            }
+            let output = self.publisher.storage().get(frontend).map_err(|error| {
+                ProjectionError::Storage {
+                    error: Box::new(error),
+                }
+            })?;
+            if !metadata.matches_output(&output) {
+                return Err(invalid(
+                    "metadata does not bind the complete readable Frontend payload",
+                ));
+            }
+            Ok(output)
+        };
+        let output = validate_outputs()?;
+        let snapshot = snapshots
+            .get(input.snapshot)
+            .ok_or_else(|| invalid("snapshot is not registered with Session"))?;
+        let source = &output.source;
+        let mut versions = snapshot.source_versions.iter().filter(|version| {
+            version.source_id == source.source_id
+                || (version.package_id == source.package_id
+                    && (version.module_path == source.module_path
+                        || version.normalized_path == source.normalized_path))
+        });
+        let version = versions
+            .next()
+            .ok_or_else(|| invalid("missing source version"))?;
+        if versions.next().is_some()
+            || version.source_id != source.source_id
+            || version.package_id != source.package_id
+            || version.module_path != source.module_path
+            || version.normalized_path != source.normalized_path
+            || version.source_hash != source.source_hash
+            || version.edition != source.edition
+            || version.origin != source.origin
+            || input.module.package_id != source.package_id.as_str()
+            || input.module.module_path != source.module_path.as_str()
+            || input.module.language_edition != source.edition.as_str()
+            || input.source_file != source.normalized_path.as_str()
+            || input.source_hash != source.source_hash
+            || input.provenance.language_edition != source.edition.as_str()
+            || input.provenance.captured_source.as_ref()
+                != Some(&(source.source_id, source.origin.clone(), source.source_hash))
+            || input.provenance.toolchain != snapshot.toolchain.identity()
+            || input.provenance.lockfile_hash.digest != snapshot.lockfile_hash
+            || input.provenance.verifier_config_hash.digest != snapshot.verifier_config_hash
+        {
+            return Err(invalid(
+                "source version, artifact identity or build provenance mismatch",
+            ));
+        }
+        let range = |start: usize, end: usize| {
+            CanonicalJson::array([
+                CanonicalJson::Integer(start as i64),
+                CanonicalJson::Integer(end as i64),
+            ])
+        };
+        let kind = |kind| match kind {
+            mizar_lexer::CommentKind::SingleLine => Ok(CanonicalJson::string("single_line")),
+            mizar_lexer::CommentKind::MultiLine => Ok(CanonicalJson::string("multi_line")),
+            mizar_lexer::CommentKind::Documentation => Ok(CanonicalJson::string("documentation")),
+            _ => Err(invalid("unsupported comment kind")),
+        };
+        let mut loading = Vec::new();
+        for segment in metadata.loading_segments() {
+            use mizar_session::LoadingMapSegment;
+            let (kind, loaded, original) = match segment {
+                LoadingMapSegment::Original { loaded, original } => {
+                    ("original", Some(loaded), original)
+                }
+                LoadingMapSegment::NormalizedNewline { loaded, original } => {
+                    ("newline", Some(loaded), original)
+                }
+                LoadingMapSegment::RemovedLeadingBom { original } => ("bom", None, original),
+                _ => return Err(invalid("unsupported loading map segment")),
+            };
+            loading.push(CanonicalJson::array([
+                CanonicalJson::string(kind),
+                loaded.map_or(CanonicalJson::Null, |span| range(span.start, span.end)),
+                range(original.start, original.end),
+            ]));
+        }
+        let mut preprocess = Vec::new();
+        for segment in &metadata.preprocess_map().segments {
+            use mizar_lexer::SourcePreprocessMapSegment;
+            let (tag, lexical, source, comment) = match segment {
+                SourcePreprocessMapSegment::Original { lexical, source } => {
+                    ("original", Some(lexical), source, CanonicalJson::Null)
+                }
+                SourcePreprocessMapSegment::RemovedComment {
+                    source,
+                    kind: comment,
+                } => ("removed", None, source, kind(*comment)?),
+                SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor } => {
+                    ("synthetic", Some(lexical), anchor, CanonicalJson::Null)
+                }
+                _ => return Err(invalid("unsupported preprocess map segment")),
+            };
+            preprocess.push(CanonicalJson::array([
+                CanonicalJson::string(tag),
+                lexical.map_or(CanonicalJson::Null, |span| range(span.start, span.end)),
+                range(source.start, source.end),
+                comment,
+            ]));
+        }
+        let comments = metadata
+            .comments()
+            .iter()
+            .map(|comment| {
+                Ok(CanonicalJson::array([
+                    kind(comment.kind)?,
+                    range(comment.span.start, comment.span.end),
+                    CanonicalJson::string(&comment.lexeme),
+                ]))
+            })
+            .collect::<Result<Vec<_>, ProjectionError>>()?;
+        let landmarks = metadata
+            .boundaries()
+            .iter()
+            .zip(targets)
+            .map(|(boundary, target)| {
+                CanonicalJson::array([
+                    CanonicalJson::string(format!("{:?}", boundary.kind())),
+                    range(boundary.range().start, boundary.range().end),
+                    boundary.parent().map_or(CanonicalJson::Null, |index| {
+                        CanonicalJson::Integer(index as i64)
+                    }),
+                    CanonicalJson::Bool(boundary.recovered()),
+                    target
+                        .as_ref()
+                        .map_or(CanonicalJson::Null, |(origin, fqn)| {
+                            CanonicalJson::array([
+                                CanonicalJson::string(origin),
+                                CanonicalJson::string(fqn),
+                            ])
+                        }),
+                ])
+            });
+        let comments = CanonicalJson::object([
+            ("original", CanonicalJson::string(metadata.original_text())),
+            ("loaded", CanonicalJson::string(metadata.loaded_text())),
+            ("lexical", CanonicalJson::string(metadata.lexical_text())),
+            ("loading", CanonicalJson::array(loading)),
+            ("preprocess", CanonicalJson::array(preprocess)),
+            ("comments", CanonicalJson::array(comments)),
+            (
+                "whitespace",
+                CanonicalJson::array(
+                    metadata
+                        .whitespace()
+                        .iter()
+                        .map(|span| range(span.start, span.end)),
+                ),
+            ),
+            ("landmarks", CanonicalJson::array(landmarks)),
+        ])
+        .map_err(|error| ProjectionError::Artifact {
+            error: Box::new(VerifiedArtifactError::CanonicalJson(error)),
+        })?;
+        let draft = self.project_module(input)?;
+        let artifact = CommentedArtifact {
+            artifact: draft.artifact,
+            comments,
+        };
+        write_commented_artifact(&artifact).map_err(|error| ProjectionError::Artifact {
+            error: Box::new(error),
+        })?;
+        validate_outputs()?;
+        Ok(CommentedArtifactDraft {
+            snapshot: draft.snapshot,
+            required_outputs: draft.required_outputs,
+            artifact,
+            external_dependency_gaps: draft.external_dependency_gaps,
+        })
     }
 
     fn project_module_for_profile(
@@ -264,6 +514,9 @@ impl ArtifactProjectionService {
 impl fmt::Display for ProjectionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::CommentBinding { reason } => {
+                write!(formatter, "comment projection binding error: {reason}")
+            }
             Self::MissingRequiredOutput => {
                 formatter.write_str("artifact projection requires at least one sealed output")
             }
@@ -300,7 +553,8 @@ impl Error for ProjectionError {
             Self::Publisher { error } => Some(error),
             Self::Storage { error } => Some(error),
             Self::Artifact { error } => Some(error),
-            Self::MissingRequiredOutput
+            Self::CommentBinding { .. }
+            | Self::MissingRequiredOutput
             | Self::OutputSnapshotMismatch { .. }
             | Self::DuplicateRequiredOutput { .. }
             | Self::RawInternalLeak { .. } => None,

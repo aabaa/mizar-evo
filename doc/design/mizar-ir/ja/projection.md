@@ -57,6 +57,10 @@ producer token、diagnostics token、driver session、publication token API を�
 
 ## Draft model
 
+### Commented Draft Handoff
+`project_commented_module` は [Q1 handoff](../../mizar-artifact/en/comment_projection.md#ownership-and-handoffs) に従い、Artifact 所有 envelope を一つ持つ unpublished `CommentedArtifactDraft` を返す。実際の sealed Frontend payload と登録済み Session snapshot を読み、完全な source/version/provenance、required-output 祖先関係、genuine metadata binding を検証してから、損失なく変換し codec 全体を検証する。caller-created snapshot 内容や無関係な current output は draft の根拠にならない。
+明示的な optional export target pair を使い、未解決 landmark は null で保つ。IR は attachment を推論せず verified target を作らない。既存 external gap と OpenBuffer/InternalOnly の制限を保つ。Driver capture/retention/emission、Artifact store/manifest 選択、Doc validated-publication 消費は別の未完了統合である。legacy projection method の profile と挙動は不変。
+
 `VerifiedArtifactDraft` は `mizar-ir` task 12 が所有する未 publish の in-memory
 候補である。これは `mizar-artifact` の `VerifiedArtifact` 値と、draft がどのように
 作られたかを説明するのに十分な projection-local provenance を含む。

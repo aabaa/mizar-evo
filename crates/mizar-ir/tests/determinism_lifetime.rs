@@ -427,3 +427,957 @@ impl DeterministicRng {
         (self.next_u64() as usize) % len
     }
 }
+
+mod q1_comments {
+    use super::*;
+    use mizar_artifact::{
+        comment_projection::{
+            commented_artifact_json, read_commented_artifact, write_commented_artifact,
+        },
+        module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
+        registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        store::{CanonicalJson, SchemaVersion as ArtifactSchemaVersion},
+        verified_artifact::{
+            BuildProvenance, ExportVisibility, VerifiedArtifactReadOptions, VerifiedExport,
+        },
+    };
+    use mizar_frontend::{
+        lexical_env::{
+            FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+            ResolvedImports,
+        },
+        orchestration::{CommentMetadata, Frontend, FrontendOutput},
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, source_unit_from_loaded},
+    };
+    use mizar_ir::{
+        projection::{
+            ArtifactProjectionService, CommentedArtifactDraft, ProjectVerifiedArtifactInput,
+        },
+        publisher::OutputAuthorization,
+    };
+    use mizar_session::{
+        BuildSnapshot, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath,
+        PackageId, SessionIdAllocator, SnapshotInput, SnapshotRegistry, SourceInput, SourceOrigin,
+        SourceOriginInput, ToolchainInfo, WorkspaceRoot, normalize_path,
+    };
+    use mizar_syntax::{SurfaceAst, SyntaxKind};
+    use std::{
+        fs,
+        path::PathBuf,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
+
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    const TEXT: &str = "::: retained\n@[label(\"attached\")] public theorem Named: thesis;\n";
+
+    struct EmptyImports;
+    impl LexicalSummaryProvider for EmptyImports {
+        fn resolve_imports(
+            &self,
+            _: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+            Ok(ResolvedImports {
+                imports: vec![],
+                summaries: vec![],
+                diagnostics: vec![],
+            })
+        }
+    }
+
+    struct Fixture {
+        root: PathBuf,
+        snapshots: SnapshotRegistry,
+        snapshot: BuildSnapshot,
+        publisher: Arc<PhaseOutputPublisher>,
+        output: FrontendOutput<SurfaceAst>,
+        metadata: CommentMetadata,
+        open: bool,
+    }
+
+    impl Fixture {
+        fn new(text: &str, version: Option<i64>) -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "mizar-ir-q1-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            fs::create_dir_all(root.join("src")).unwrap();
+            let path = root.join("src/main.miz");
+            fs::write(&path, text).unwrap();
+            let source = SourceInput {
+                package_id: PackageId::new("fixture"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2026"),
+                origin: match version {
+                    None => SourceOriginInput::Disk { path: path.clone() },
+                    Some(version) => SourceOriginInput::OpenBuffer {
+                        uri: format!("file://{}", path.display()),
+                        expected_version: version,
+                        actual_version: version,
+                        text: Arc::from(text),
+                    },
+                },
+            };
+            let snapshots = SnapshotRegistry::new();
+            let (snapshot, _, mut loaded) = snapshots
+                .load_snapshot(
+                    InMemorySessionIdAllocator::new().next_request_id().unwrap(),
+                    (
+                        WorkspaceRoot::new(root.to_string_lossy()),
+                        vec![],
+                        hash(90),
+                        ToolchainInfo::new("mizar-2026.1"),
+                        hash(91),
+                    ),
+                    vec![(DiskSourceLoader::new(&root), source)],
+                )
+                .unwrap();
+            let (loaded, _) = loaded.pop().unwrap();
+            let (output, metadata) = Frontend::new(
+                FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+                EmptyImports,
+                MizarParserSeam,
+            )
+            .run_loaded_with_comment_metadata(source_unit_from_loaded(loaded, path), text)
+            .unwrap();
+            let publisher = Arc::new(PhaseOutputPublisher::new(
+                Arc::new(IrStorageService::new()),
+                Arc::new(SnapshotHandleRegistry::new()),
+            ));
+            publisher.register_current_snapshot(snapshot.id);
+            Self {
+                root,
+                snapshots,
+                snapshot,
+                publisher,
+                output,
+                metadata: metadata.unwrap(),
+                open: version.is_some(),
+            }
+        }
+
+        fn publish<T: Send + Sync + 'static>(
+            &self,
+            payload: T,
+            unit: &str,
+            frontend: bool,
+            parents: Vec<AnyPhaseOutputRef>,
+        ) -> PhaseOutputRef<T> {
+            let phase = PipelinePhase::new(if frontend { "Frontend" } else { "verify" });
+            let kind = OutputKind::new(if frontend {
+                "FrontendOutput"
+            } else {
+                "VerifiedModule"
+            });
+            let work = WorkUnit::new(unit);
+            self.publisher.allow_work_unit(AllowedWorkUnit::new(
+                phase.clone(),
+                kind.clone(),
+                work.clone(),
+            ));
+            self.publisher
+                .publish(PublishOutputInput {
+                    slot: self.publisher.allocate(
+                        self.snapshot.id,
+                        phase.clone(),
+                        work.clone(),
+                        kind.clone(),
+                        schema(),
+                    ),
+                    snapshot: self.snapshot.id,
+                    phase,
+                    work_unit: work,
+                    output_kind: kind,
+                    schema_version: schema(),
+                    payload,
+                    storage_payload: Some(unit.as_bytes().to_vec()),
+                    canonical_payload: Some(unit.as_bytes().to_vec()),
+                    decode: BlobDecoder::new(|_| {
+                        Err(BlobDecodeError::new("resident-only fixture"))
+                    }),
+                    parents,
+                    named_input_hashes: vec![],
+                    side_tables: IrSideTables::default(),
+                    origin: if self.open {
+                        OutputOrigin::OpenBuffer
+                    } else {
+                        OutputOrigin::PackageSource
+                    },
+                    target: if self.open {
+                        PublicationTarget::InternalOnly
+                    } else {
+                        PublicationTarget::CurrentPackage
+                    },
+                })
+                .unwrap()
+        }
+
+        fn frontend(&self) -> PhaseOutputRef<FrontendOutput<SurfaceAst>> {
+            self.publish(self.output.clone(), "frontend", true, vec![])
+        }
+
+        fn input(&self, required_outputs: Vec<AnyPhaseOutputRef>) -> ProjectVerifiedArtifactInput {
+            let source = &self.output.source;
+            let reference = |class, family, digest| {
+                ArtifactHashRef::new(class, family, ArtifactSchemaVersion::new(1, 0), digest)
+            };
+            ProjectVerifiedArtifactInput {
+                snapshot: self.snapshot.id,
+                required_outputs,
+                module: ModuleSummaryIdentity {
+                    package_id: source.package_id.as_str().to_owned(),
+                    package_version: Some("1.2.3".to_owned()),
+                    lockfile_identity: Some("lock:fixture".to_owned()),
+                    module_path: source.module_path.as_str().to_owned(),
+                    language_edition: "2026".to_owned(),
+                },
+                source_file: "src/main.miz".to_owned(),
+                source_hash: source.source_hash,
+                verified_at: None,
+                exports: vec![VerifiedExport {
+                    origin_id: "Named".to_owned(),
+                    fully_qualified_name: "Fixture::Named".to_owned(),
+                    namespace_path: vec!["Fixture".to_owned()],
+                    visibility: ExportVisibility::Public,
+                    export_kind: "theorem".to_owned(),
+                    source_range: SourceRangeSummary {
+                        start_byte: 0,
+                        end_byte: source.source_text.len() as u64,
+                    },
+                    rendered_signature: "theorem Named: thesis".to_owned(),
+                    interface_fingerprint: reference(
+                        ArtifactHashClass::Interface,
+                        "mizar-ir/export",
+                        hash(20),
+                    ),
+                    proof_status: None,
+                    documentation_ref: None,
+                }],
+                statements: vec![],
+                expressions: vec![],
+                obligations: vec![],
+                proof_witnesses: vec![],
+                diagnostics: vec![],
+                provenance: BuildProvenance {
+                    captured_source: Some((
+                        source.source_id,
+                        source.origin.clone(),
+                        source.source_hash,
+                    )),
+                    toolchain: "mizar-2026.1".to_owned(),
+                    language_edition: "2026".to_owned(),
+                    lockfile_hash: reference(
+                        ArtifactHashClass::Artifact,
+                        "mizar-build/lockfile",
+                        hash(90),
+                    ),
+                    verifier_config_hash: reference(
+                        ArtifactHashClass::Interface,
+                        "mizar-proof/policy",
+                        hash(91),
+                    ),
+                    dependency_artifact_hashes: vec![],
+                    cache_key: None,
+                },
+            }
+        }
+
+        fn project(
+            &self,
+            frontend: &PhaseOutputRef<FrontendOutput<SurfaceAst>>,
+            required: Vec<AnyPhaseOutputRef>,
+        ) -> CommentedArtifactDraft {
+            ArtifactProjectionService::new(Arc::clone(&self.publisher))
+                .project_commented_module(
+                    self.input(required),
+                    &self.snapshots,
+                    frontend,
+                    &self.metadata,
+                    &vec![None; self.metadata.boundaries().len()],
+                )
+                .unwrap()
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            fs::remove_dir_all(&self.root).unwrap();
+        }
+    }
+
+    fn field<'a>(json: &'a CanonicalJson, name: &str) -> &'a CanonicalJson {
+        let CanonicalJson::Object(fields) = json else {
+            panic!("expected object")
+        };
+        &fields[name]
+    }
+    fn rows(json: &CanonicalJson) -> &[CanonicalJson] {
+        let CanonicalJson::Array(rows) = json else {
+            panic!("expected array")
+        };
+        rows
+    }
+
+    fn foreign_source_id(original: mizar_session::SourceId) -> mizar_session::SourceId {
+        let ids = InMemorySessionIdAllocator::new();
+        let first = ids.next_source_id(snapshot(199)).unwrap();
+        let foreign = if first == original {
+            ids.next_source_id(snapshot(199)).unwrap()
+        } else {
+            first
+        };
+        assert_ne!(foreign, original);
+        foreign
+    }
+
+    #[test]
+    fn q1_comment_disk_draft_preserves_identity_and_explicit_targets() {
+        let f = Fixture::new(TEXT, None);
+        let frontend = f.frontend();
+        let middle = f.publish("resolved", "resolved", false, vec![frontend.erase()]);
+        let verified = f.publish("verified", "verified", false, vec![middle.erase()]);
+        let mut targets = vec![None; f.metadata.boundaries().len()];
+        let index = f
+            .metadata
+            .boundaries()
+            .iter()
+            .position(|b| b.kind() == SyntaxKind::TheoremItem)
+            .unwrap();
+        targets[index] = Some(("Named".to_owned(), "Fixture::Named".to_owned()));
+        let input = f.input(vec![verified.erase(), frontend.erase()]);
+        let expected_module = input.module.clone();
+        let expected_provenance = input.provenance.clone();
+        let draft = ArtifactProjectionService::new(Arc::clone(&f.publisher))
+            .project_commented_module(input, &f.snapshots, &frontend, &f.metadata, &targets)
+            .unwrap();
+        assert_eq!(draft.snapshot, f.snapshot.id);
+        assert_eq!(draft.required_outputs.len(), 2);
+        assert!(draft.required_outputs.contains(&frontend.output()));
+        assert!(draft.required_outputs.contains(&verified.output()));
+        assert_eq!(draft.artifact.artifact.module, expected_module);
+        assert_eq!(draft.artifact.artifact.provenance, expected_provenance);
+        assert_eq!(draft.artifact.artifact.source_file, "src/main.miz");
+        assert_eq!(
+            draft.artifact.artifact.source_hash,
+            f.output.source.source_hash
+        );
+        assert!(!draft.external_dependency_gaps.is_empty());
+        let landmarks = rows(field(&draft.artifact.comments, "landmarks"));
+        assert_eq!(
+            rows(&landmarks[index])[4],
+            CanonicalJson::array([
+                CanonicalJson::string("Named"),
+                CanonicalJson::string("Fixture::Named")
+            ])
+        );
+        assert!(
+            landmarks
+                .iter()
+                .any(|row| rows(row)[4] == CanonicalJson::Null)
+        );
+        let json = commented_artifact_json(&draft.artifact).unwrap();
+        assert_eq!(
+            read_commented_artifact(
+                &json,
+                VerifiedArtifactReadOptions {
+                    artifact_path: None,
+                    expected_module: Some(&expected_module),
+                    expected_interface_hash: Some(draft.artifact.compute_interface_hash().unwrap()),
+                    expected_implementation_hash: Some(
+                        draft.artifact.compute_implementation_hash().unwrap()
+                    )
+                }
+            )
+            .unwrap(),
+            draft.artifact
+        );
+        assert_eq!(*f.publisher.storage().get(&frontend).unwrap(), f.output);
+    }
+
+    #[test]
+    fn q1_comment_open_buffer_frames_maps_wrappers_and_recovery_are_lossless() {
+        let text = concat!(
+            "\u{feff}::: Ω\r\n:::\r\n:: ordinary\r\n",
+            "theorem::= β =::T: thesis;\r\n",
+            "@[label(\"attached\")] public theorem Named: thesis;\r\n",
+            "@show_type(x);\r\n",
+            "definition algorithm broken() do return; end;\r\n"
+        );
+        let f = Fixture::new(text, Some(7));
+        let frontend = f.frontend();
+        let draft = f.project(&frontend, vec![frontend.erase()]);
+        let comments = &draft.artifact.comments;
+        assert_eq!(field(comments, "original"), &CanonicalJson::string(text));
+        assert_eq!(
+            field(comments, "loaded"),
+            &CanonicalJson::string(text.trim_start_matches('\u{feff}').replace("\r\n", "\n"))
+        );
+        assert_eq!(
+            field(comments, "lexical"),
+            &CanonicalJson::string(f.metadata.lexical_text())
+        );
+        let loading = rows(field(comments, "loading"));
+        assert_eq!(
+            loading[0],
+            CanonicalJson::array([
+                CanonicalJson::string("bom"),
+                CanonicalJson::Null,
+                CanonicalJson::array([CanonicalJson::integer(0), CanonicalJson::integer(3)])
+            ])
+        );
+        assert!(
+            loading
+                .iter()
+                .any(|row| rows(row)[0] == CanonicalJson::string("newline"))
+        );
+        let preprocess = rows(field(comments, "preprocess"));
+        assert!(
+            preprocess
+                .iter()
+                .any(|row| rows(row)[0] == CanonicalJson::string("synthetic"))
+        );
+        assert_eq!(preprocess.len(), f.metadata.preprocess_map().segments.len());
+        assert_eq!(loading.len(), f.metadata.loading_segments().len());
+        let loaded = f.metadata.loaded_text();
+        let anchor = loaded.find("::= β =::").unwrap();
+        let lexical = f.metadata.lexical_text().find("theorem T").unwrap() + "theorem".len();
+        assert!(preprocess.contains(&CanonicalJson::array([
+            CanonicalJson::string("synthetic"),
+            CanonicalJson::array([
+                CanonicalJson::integer(lexical as i64),
+                CanonicalJson::integer((lexical + 1) as i64)
+            ]),
+            CanonicalJson::array([
+                CanonicalJson::integer(anchor as i64),
+                CanonicalJson::integer((anchor + "::= β =::".len()) as i64)
+            ]),
+            CanonicalJson::Null,
+        ])));
+        assert_eq!(
+            rows(field(comments, "whitespace")).len(),
+            f.metadata.whitespace().len()
+        );
+        for (row, span) in rows(field(comments, "whitespace"))
+            .iter()
+            .zip(f.metadata.whitespace())
+        {
+            assert_eq!(
+                *row,
+                CanonicalJson::array([
+                    CanonicalJson::integer(span.start as i64),
+                    CanonicalJson::integer(span.end as i64),
+                ])
+            );
+        }
+        let comment_rows = rows(field(comments, "comments"));
+        assert_eq!(comment_rows.len(), 4);
+        for (row, raw) in
+            comment_rows
+                .iter()
+                .zip(["::: Ω\n", ":::\n", ":: ordinary\n", "::= β =::"])
+        {
+            assert_eq!(rows(row)[2], CanonicalJson::string(raw));
+        }
+        let landmarks = rows(field(comments, "landmarks"));
+        assert_eq!(landmarks.len(), f.metadata.boundaries().len());
+        for (row, boundary) in landmarks.iter().zip(f.metadata.boundaries()) {
+            let row = rows(row);
+            assert_eq!(
+                row[0],
+                CanonicalJson::string(format!("{:?}", boundary.kind()))
+            );
+            assert_eq!(
+                row[1],
+                CanonicalJson::array([
+                    CanonicalJson::integer(boundary.range().start as i64),
+                    CanonicalJson::integer(boundary.range().end as i64)
+                ])
+            );
+            assert_eq!(
+                row[2],
+                boundary
+                    .parent()
+                    .map_or(CanonicalJson::Null, |parent| CanonicalJson::integer(
+                        parent as i64
+                    ))
+            );
+            assert_eq!(row[3], CanonicalJson::bool(boundary.recovered()));
+        }
+        for kind in [
+            "VisibleItem",
+            "Annotation",
+            "StandaloneDiagnosticAnnotation",
+            "TheoremItem",
+            "DefinitionBlockItem",
+            "AlgorithmDefinition",
+        ] {
+            assert!(
+                landmarks
+                    .iter()
+                    .any(|row| rows(row)[0] == CanonicalJson::string(kind)),
+                "missing {kind}"
+            );
+        }
+        assert!(
+            landmarks
+                .iter()
+                .any(|row| rows(row)[2] != CanonicalJson::Null)
+        );
+        assert!(
+            landmarks
+                .iter()
+                .any(|row| rows(row)[3] == CanonicalJson::bool(true))
+        );
+        assert!(
+            landmarks
+                .iter()
+                .all(|row| rows(row)[4] == CanonicalJson::Null)
+        );
+        assert_eq!(
+            draft
+                .artifact
+                .artifact
+                .provenance
+                .captured_source
+                .as_ref()
+                .unwrap()
+                .1,
+            SourceOrigin::OpenBuffer { version: 7 }
+        );
+        assert!(
+            f.publisher
+                .validate_output(
+                    f.snapshot.id,
+                    &frontend.erase(),
+                    OutputAuthorization::CurrentPackage
+                )
+                .is_err()
+        );
+        write_commented_artifact(&draft.artifact).unwrap();
+    }
+
+    #[test]
+    fn q1_comment_availability_hashes_lexical_reuse_and_determinism() {
+        let empty = Fixture::new("", None);
+        let doc = Fixture::new(":::", None);
+        let a = Fixture::new(":: short\ntheorem Named: thesis;\n", None);
+        let b = Fixture::new(":: longer changed body\ntheorem Named: thesis;\n", None);
+        let project = |f: &Fixture| {
+            let frontend = f.frontend();
+            f.project(&frontend, vec![frontend.erase()]).artifact
+        };
+        let empty_artifact = project(&empty);
+        let doc_artifact = project(&doc);
+        assert_ne!(empty_artifact.comments, CanonicalJson::Null);
+        assert!(rows(field(&empty_artifact.comments, "comments")).is_empty());
+        assert_eq!(rows(field(&doc_artifact.comments, "comments")).len(), 1);
+        let mut unavailable = empty_artifact.clone();
+        unavailable.comments = CanonicalJson::Null;
+        assert_ne!(
+            unavailable.compute_implementation_hash().unwrap(),
+            empty_artifact.compute_implementation_hash().unwrap()
+        );
+        assert_ne!(
+            empty_artifact.compute_artifact_hash().unwrap(),
+            doc_artifact.compute_artifact_hash().unwrap()
+        );
+        assert_eq!(
+            a.output.preprocessed.lexical_hash,
+            b.output.preprocessed.lexical_hash
+        );
+        assert_eq!(a.output.cache_keys.tokens, b.output.cache_keys.tokens);
+        assert_eq!(a.output.cache_keys.ast, b.output.cache_keys.ast);
+        let aa = project(&a);
+        let bb = project(&b);
+        assert_eq!(
+            aa.compute_interface_hash().unwrap(),
+            bb.compute_interface_hash().unwrap()
+        );
+        assert_ne!(
+            aa.compute_implementation_hash().unwrap(),
+            bb.compute_implementation_hash().unwrap()
+        );
+        assert_ne!(
+            aa.compute_artifact_hash().unwrap(),
+            bb.compute_artifact_hash().unwrap()
+        );
+        let f = Fixture::new(TEXT, None);
+        let frontend = f.frontend();
+        let child = f.publish("verified", "verified", false, vec![frontend.erase()]);
+        let first = f.project(&frontend, vec![frontend.erase(), child.erase()]);
+        let second = f.project(&frontend, vec![child.erase(), frontend.erase()]);
+        assert_eq!(
+            write_commented_artifact(&first.artifact).unwrap(),
+            write_commented_artifact(&second.artifact).unwrap()
+        );
+        let repeat = Fixture::new(TEXT, None);
+        let repeat_frontend = repeat.frontend();
+        let repeated = repeat.project(&repeat_frontend, vec![repeat_frontend.erase()]);
+        assert_eq!(first.artifact.comments, repeated.artifact.comments);
+        assert_eq!(
+            first.artifact.compute_artifact_hash().unwrap(),
+            repeated.artifact.compute_artifact_hash().unwrap()
+        );
+    }
+
+    #[test]
+    fn q1_comment_refuses_payload_snapshot_identity_and_provenance_substitutions() {
+        let f = Fixture::new(TEXT, None);
+        let service = ArtifactProjectionService::new(Arc::clone(&f.publisher));
+        let targets = vec![None; f.metadata.boundaries().len()];
+        for variant in 0..6 {
+            let mut payload = f.output.clone();
+            match variant {
+                0 => payload.source.source_text = Arc::from("theorem Other: thesis;"),
+                1 => payload
+                    .preprocessed
+                    .source_map
+                    .preprocess_map
+                    .segments
+                    .clear(),
+                2 => payload.tokens.tokens[0].span.end += 1,
+                3 => payload.ast = None,
+                4 => payload.source.source_id = foreign_source_id(payload.source.source_id),
+                _ => {
+                    payload.source.line_map =
+                        mizar_session::LineMap::new(payload.source.source_id, "different\nframe");
+                }
+            }
+            let handle = f.publish(payload, &format!("substitution-{variant}"), true, vec![]);
+            assert!(
+                service
+                    .project_commented_module(
+                        f.input(vec![handle.erase()]),
+                        &f.snapshots,
+                        &handle,
+                        &f.metadata,
+                        &targets
+                    )
+                    .is_err(),
+                "payload substitution {variant}"
+            );
+        }
+        let frontend = f.frontend();
+        for variant in 0..13 {
+            let mut input = f.input(vec![frontend.erase()]);
+            match variant {
+                0 => input.module.package_id = "foreign".to_owned(),
+                1 => input.module.module_path = "other".to_owned(),
+                2 => input.source_file = "other/main.miz".to_owned(),
+                3 => input.module.language_edition = "2025".to_owned(),
+                4 => input.source_hash = hash(101),
+                5 => input.provenance.captured_source = None,
+                6 => {
+                    input.provenance.captured_source.as_mut().unwrap().0 =
+                        foreign_source_id(f.output.source.source_id)
+                }
+                7 => {
+                    input.provenance.captured_source.as_mut().unwrap().1 =
+                        SourceOrigin::OpenBuffer { version: 1 }
+                }
+                8 => input.provenance.captured_source.as_mut().unwrap().2 = hash(102),
+                9 => input.provenance.toolchain = "other-toolchain".to_owned(),
+                10 => input.provenance.language_edition = "2025".to_owned(),
+                11 => input.provenance.lockfile_hash.digest = hash(103),
+                _ => input.provenance.verifier_config_hash.digest = hash(104),
+            }
+            assert!(
+                service
+                    .project_commented_module(input, &f.snapshots, &frontend, &f.metadata, &targets)
+                    .is_err(),
+                "identity substitution {variant}"
+            );
+        }
+        assert!(
+            service
+                .project_commented_module(
+                    f.input(vec![frontend.erase()]),
+                    &SnapshotRegistry::new(),
+                    &frontend,
+                    &f.metadata,
+                    &targets
+                )
+                .is_err()
+        );
+        let before = f.output.clone();
+        // A detached public snapshot record cannot replace the registry's contents.
+        let mut detached = f.snapshots.get(f.snapshot.id).unwrap();
+        detached.source_versions[0].source_hash = hash(105);
+        assert_ne!(detached, f.snapshots.get(f.snapshot.id).unwrap());
+        f.project(&frontend, vec![frontend.erase()]);
+        assert_eq!(*f.publisher.storage().get(&frontend).unwrap(), before);
+        for variant in 0..8 {
+            let mut bad = Fixture::new(TEXT, Some(7));
+            let mut versions = bad.snapshot.source_versions.clone();
+            match variant {
+                0 => versions[0].source_id = foreign_source_id(versions[0].source_id),
+                1 => versions[0].package_id = PackageId::new("foreign"),
+                2 => versions[0].module_path = ModulePath::new("other"),
+                3 => {
+                    fs::write(bad.root.join("src/other.miz"), TEXT).unwrap();
+                    versions[0].normalized_path =
+                        normalize_path(&bad.root, &bad.root.join("src/other.miz")).unwrap()
+                }
+                4 => versions[0].source_hash = hash(106),
+                5 => versions[0].edition = Edition::new("2025"),
+                6 => versions[0].origin = SourceOrigin::Disk,
+                _ => versions[0].origin = SourceOrigin::OpenBuffer { version: 8 },
+            }
+            let (registered, _) = bad
+                .snapshots
+                .create_snapshot(
+                    InMemorySessionIdAllocator::new().next_request_id().unwrap(),
+                    SnapshotInput {
+                        workspace_root: bad.snapshot.workspace_root.clone(),
+                        source_versions: versions,
+                        dependency_artifacts: vec![],
+                        lockfile_hash: bad.snapshot.lockfile_hash,
+                        toolchain: bad.snapshot.toolchain.clone(),
+                        verifier_config_hash: bad.snapshot.verifier_config_hash,
+                    },
+                )
+                .unwrap();
+            bad.snapshot = registered;
+            bad.publisher.register_current_snapshot(bad.snapshot.id);
+            let handle = bad.frontend();
+            assert!(
+                ArtifactProjectionService::new(Arc::clone(&bad.publisher))
+                    .project_commented_module(
+                        bad.input(vec![handle.erase()]),
+                        &bad.snapshots,
+                        &handle,
+                        &bad.metadata,
+                        &vec![None; bad.metadata.boundaries().len()]
+                    )
+                    .is_err(),
+                "registered source substitution {variant}"
+            );
+        }
+    }
+
+    #[test]
+    fn q1_comment_refuses_missing_unpublished_unreadable_and_unrelated_outputs() {
+        let f = Fixture::new(TEXT, None);
+        let frontend = f.frontend();
+        let targets = vec![None; f.metadata.boundaries().len()];
+        let service = ArtifactProjectionService::new(Arc::clone(&f.publisher));
+        let before = f.publisher.storage().get(&frontend).unwrap();
+        for variant in 0..3 {
+            let phase = PipelinePhase::new(if variant == 0 { "Other" } else { "Frontend" });
+            let kind = OutputKind::new(if variant == 1 {
+                "Other"
+            } else {
+                "FrontendOutput"
+            });
+            let version = SchemaVersion::new(if variant == 2 { 2 } else { 1 });
+            let unit = WorkUnit::new(format!("frontend-tag-{variant}"));
+            f.publisher.allow_work_unit(AllowedWorkUnit::new(
+                phase.clone(),
+                kind.clone(),
+                unit.clone(),
+            ));
+            let handle = f
+                .publisher
+                .publish(PublishOutputInput {
+                    slot: f.publisher.allocate(
+                        f.snapshot.id,
+                        phase.clone(),
+                        unit.clone(),
+                        kind.clone(),
+                        version,
+                    ),
+                    snapshot: f.snapshot.id,
+                    phase,
+                    work_unit: unit,
+                    output_kind: kind,
+                    schema_version: version,
+                    payload: f.output.clone(),
+                    canonical_payload: Some(vec![variant]),
+                    storage_payload: Some(vec![variant]),
+                    decode: BlobDecoder::new(|_| Err(BlobDecodeError::new("resident fixture"))),
+                    parents: vec![],
+                    named_input_hashes: vec![],
+                    side_tables: IrSideTables::default(),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                })
+                .unwrap();
+            f.publisher
+                .validate_output(f.snapshot.id, handle.any(), OutputAuthorization::Published)
+                .unwrap();
+            assert_eq!(*f.publisher.storage().get(&handle).unwrap(), f.output);
+            assert!(matches!(
+                service.project_commented_module(
+                    f.input(vec![handle.erase()]),
+                    &f.snapshots,
+                    &handle,
+                    &f.metadata,
+                    &targets,
+                ),
+                Err(mizar_ir::projection::ProjectionError::CommentBinding { .. })
+            ));
+        }
+        let unrelated = f.publish("unrelated", "unrelated", false, vec![]);
+        let foreign = Fixture::new("::: foreign\n", None);
+        let foreign_output = foreign.frontend();
+        for required in [
+            vec![],
+            vec![unrelated.erase()],
+            vec![frontend.erase(), frontend.erase()],
+            vec![frontend.erase(), unrelated.erase()],
+            vec![frontend.erase(), foreign_output.erase()],
+        ] {
+            assert!(
+                service
+                    .project_commented_module(
+                        f.input(required),
+                        &f.snapshots,
+                        &frontend,
+                        &f.metadata,
+                        &targets
+                    )
+                    .is_err()
+            );
+        }
+        let unrooted = Arc::new(PhaseOutputPublisher::new(
+            Arc::clone(f.publisher.storage()),
+            Arc::clone(f.publisher.registry()),
+        ));
+        unrooted.register_current_snapshot(f.snapshot.id);
+        assert!(
+            ArtifactProjectionService::new(unrooted)
+                .project_commented_module(
+                    f.input(vec![frontend.erase()]),
+                    &f.snapshots,
+                    &frontend,
+                    &f.metadata,
+                    &targets
+                )
+                .is_err()
+        );
+        assert_eq!(*f.publisher.storage().get(&frontend).unwrap(), *before);
+        // Current publication and lineage records survive storage collection;
+        // those records alone must not grant readability.
+        f.publisher.storage().collect(CollectInput {
+            snapshot: f.snapshot.id,
+            protected_outputs: vec![],
+        });
+        assert!(
+            service
+                .project_commented_module(
+                    f.input(vec![frontend.erase()]),
+                    &f.snapshots,
+                    &frontend,
+                    &f.metadata,
+                    &targets
+                )
+                .is_err()
+        );
+        let obsolete = Fixture::new(TEXT, None);
+        let old = obsolete.frontend();
+        obsolete
+            .publisher
+            .mark_obsolete(obsolete.snapshot.id)
+            .unwrap();
+        assert!(
+            ArtifactProjectionService::new(Arc::clone(&obsolete.publisher))
+                .project_commented_module(
+                    obsolete.input(vec![old.erase()]),
+                    &obsolete.snapshots,
+                    &old,
+                    &obsolete.metadata,
+                    &vec![None; obsolete.metadata.boundaries().len()]
+                )
+                .is_err()
+        );
+        let mut corrupt = Fixture::new(TEXT, None);
+        corrupt.publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::with_policy(
+                mizar_ir::storage::StoragePolicy {
+                    blob_spill_threshold: 0,
+                },
+            )),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        corrupt
+            .publisher
+            .register_current_snapshot(corrupt.snapshot.id);
+        let unreadable = corrupt.frontend();
+        assert!(corrupt.publisher.storage().get(&unreadable).is_err());
+        assert!(
+            ArtifactProjectionService::new(Arc::clone(&corrupt.publisher))
+                .project_commented_module(
+                    corrupt.input(vec![unreadable.erase()]),
+                    &corrupt.snapshots,
+                    &unreadable,
+                    &corrupt.metadata,
+                    &vec![None; corrupt.metadata.boundaries().len()]
+                )
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn q1_comment_targets_codec_bounds_raw_leakage_and_legacy_compatibility() {
+        let f = Fixture::new(TEXT, None);
+        let frontend = f.frontend();
+        let service = ArtifactProjectionService::new(Arc::clone(&f.publisher));
+        let targets = vec![None; f.metadata.boundaries().len()];
+        for bad in [
+            vec![],
+            vec![None; targets.len() + 1],
+            vec![Some(("missing".to_owned(), "Fixture::Named".to_owned())); targets.len()],
+            vec![Some(("Named".to_owned(), "Other::Named".to_owned())); targets.len()],
+        ] {
+            assert!(
+                service
+                    .project_commented_module(
+                        f.input(vec![frontend.erase()]),
+                        &f.snapshots,
+                        &frontend,
+                        &f.metadata,
+                        &bad
+                    )
+                    .is_err()
+            );
+        }
+        let draft = f.project(&frontend, vec![frontend.erase()]);
+        assert!(
+            rows(field(&draft.artifact.comments, "landmarks"))
+                .iter()
+                .all(|row| rows(row)[4] == CanonicalJson::Null)
+        );
+        for key in ["loading", "preprocess", "whitespace", "landmarks"] {
+            let mut bad = draft.artifact.clone();
+            let CanonicalJson::Object(fields) = &mut bad.comments else {
+                panic!("available comments")
+            };
+            fields.insert(
+                key.to_owned(),
+                CanonicalJson::array([CanonicalJson::array([
+                    CanonicalJson::integer(-1),
+                    CanonicalJson::integer(i64::MAX),
+                ])]),
+            );
+            assert!(write_commented_artifact(&bad).is_err(), "invalid {key}");
+        }
+        let mut leaked = f.input(vec![frontend.erase()]);
+        leaked.exports[0].rendered_signature = "CoreIr { raw: true }".to_owned();
+        assert!(
+            service
+                .project_commented_module(leaked, &f.snapshots, &frontend, &f.metadata, &targets)
+                .is_err()
+        );
+        let legacy = service
+            .project_module(f.input(vec![frontend.erase()]))
+            .unwrap();
+        assert_eq!(legacy.artifact, draft.artifact.artifact);
+        assert_eq!(
+            legacy.external_dependency_gaps,
+            draft.external_dependency_gaps
+        );
+        assert_eq!(*f.publisher.storage().get(&frontend).unwrap(), f.output);
+    }
+}

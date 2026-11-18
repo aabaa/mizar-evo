@@ -589,7 +589,10 @@ dependencies = [
  "blake3",
  "mizar-artifact",
  "mizar-cache",
+ "mizar-frontend",
+ "mizar-lexer",
  "mizar-session",
+ "mizar-syntax",
 ]
 
 [[package]]

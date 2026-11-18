@@ -171,6 +171,8 @@ uses the genuine pipeline, with no public constructor from caller-built ASTs.
 This adds no verified target, lineage/currentness proof, Artifact encoding or Doc
 attachment. Existing preprocessing storage bytes and lexical reuse keys are unchanged.
 
+`CommentMetadata::matches_output` checks private canonical payload evidence against the actual Frontend output for the [IR handoff](../../mizar-ir/en/projection.md#commented-draft-handoff). It supplies no snapshot currentness or publication authority; unsupported canonical payloads refuse binding without a source reread.
+
 ### Import Stubs
 
 `ImportStub` is the mapped frontend counterpart of the `mizar-lexer`

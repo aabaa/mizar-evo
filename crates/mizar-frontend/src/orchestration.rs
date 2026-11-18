@@ -506,6 +506,8 @@ where
 /// Text ranges and comments use loaded-source bytes; map segments name their frames.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommentMetadata {
+    output_fingerprint: Option<mizar_session::Hash>,
+    captured_input: Option<SourceInput>,
     package_id: mizar_session::PackageId,
     module_path: mizar_session::ModulePath,
     normalized_path: NormalizedPath,
@@ -523,6 +525,20 @@ pub struct CommentMetadata {
 }
 
 impl CommentMetadata {
+    /// Checks the complete portable payload against this invocation's private evidence.
+    /// Unsupported canonical representations cannot establish a binding.
+    pub fn matches_output(&self, output: &FrontendOutput<mizar_syntax::SurfaceAst>) -> bool {
+        let bytes = match &self.captured_input {
+            Some(input) => output.canonical_open_buffer_bytes(input),
+            None => output.canonical_disk_bytes(),
+        };
+        self.output_fingerprint.is_some_and(|expected| {
+            bytes.is_some_and(|bytes| {
+                mizar_session::Hash::from_bytes(*blake3::hash(&bytes).as_bytes()) == expected
+            })
+        })
+    }
+
     /// Returns the captured package id.
     pub fn package_id(&self) -> &mizar_session::PackageId {
         &self.package_id
@@ -635,9 +651,11 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
             {
                 return None;
             }
-            match &source.origin {
+            let original_text: Arc<str> = Arc::from(captured_text);
+            let captured_input = match &source.origin {
                 SourceOrigin::Disk => {
                     source.canonical_disk_bytes()?;
+                    None
                 }
                 SourceOrigin::OpenBuffer { version } => {
                     let uri = match source.loading_map.as_ref().map(|map| &map.origin) {
@@ -645,7 +663,7 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                         None => String::new(),
                         _ => return None,
                     };
-                    source.canonical_open_buffer_bytes(&SourceInput {
+                    let input = SourceInput {
                         package_id: source.package_id.clone(),
                         module_path: source.module_path.clone(),
                         normalized_path: source.normalized_path.clone(),
@@ -654,12 +672,14 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                             uri,
                             expected_version: *version,
                             actual_version: *version,
-                            text: Arc::from(captured_text),
+                            text: original_text.clone(),
                         },
-                    })?;
+                    };
+                    source.canonical_open_buffer_bytes(&input)?;
+                    Some(input)
                 }
                 _ => return None,
-            }
+            };
             let preprocessed = mizar_lexer::preprocess_source_for_lexing(&loaded);
             if preprocessed.lexical_text != output.preprocessed.lexical_text.as_str()
                 || preprocessed.preprocess_map != output.preprocessed.source_map.preprocess_map
@@ -816,13 +836,19 @@ impl<L: SourceUnitLoader, P: LexicalSummaryProvider>
                 })
                 .collect();
             Some(CommentMetadata {
+                output_fingerprint: match &captured_input {
+                    Some(input) => output.canonical_open_buffer_bytes(input),
+                    None => output.canonical_disk_bytes(),
+                }
+                .map(|bytes| mizar_session::Hash::from_bytes(*blake3::hash(&bytes).as_bytes())),
+                captured_input,
                 package_id: source.package_id.clone(),
                 module_path: source.module_path.clone(),
                 normalized_path: source.normalized_path.clone(),
                 edition: source.edition.clone(),
                 origin: source.origin.clone(),
                 source_hash: source.source_hash,
-                original_text: Arc::from(captured_text),
+                original_text,
                 loaded_text: source.source_text.clone(),
                 lexical_text: output.preprocessed.lexical_text.text.clone(),
                 loading_segments: loading_segments.unwrap_or_else(|| {

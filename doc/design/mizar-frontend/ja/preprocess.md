@@ -112,6 +112,8 @@ pub fn preprocess(
 metadata は順序付きの生コメント・空白 trivia・構文候補・annotation 境界と、original/loaded/lexical テキスト、portable な loading/preprocess segment を保持する。範囲は各 frame の半開バイト区間であり、実行時 SourceId・診断パス・AST handle は含めない。既存 map の exact/composite/synthetic の区別、ソース順序、物理的空行を保持し、ソース再読込を不要にする。生成は genuine な pipeline 内で行い、呼出側が構築した AST を受ける公開 constructor は設けない。
 検証済み target・lineage/currentness 証明・Artifact encoding・Doc 付与は追加しない。既存 preprocessing storage のバイト形式と lexical reuse key は変わらない。
 
+`CommentMetadata::matches_output` は非公開の canonical payload evidence を実 Frontend output と照合する [IR handoff](../../mizar-ir/ja/projection.md#commented-draft-handoff) 用 API である。snapshot 現在性や publication 権限は供給しない。未対応の canonical payload は source 再読なしに binding を拒否する。
+
 ### インポートスタブ
 
 `ImportStub` は、`mizar-lexer` のインポート事前走査スタブを、フロントエンドが写像した対応物である。字句解析器の `RawModulePath` / `RawModuleAlias` の形を写すが、すべてのスパンはすでに session の `SourceRange` へ変換されている。生のドット区切りモジュールパス、相対 prefix（current の `.` と parent の `..` の区別）、分岐インポートの分割ソース被覆は、`path.spelling`、`path.relative`、`path.components`、`path.source_segments` に含まれる。これらは解決済みインポートではなく、アクティブ字句環境を要求し、語彙読み込みが失敗したときに良い診断を出すのに十分なだけの情報を持つ。パッケージ／モジュールの存在、可視性、エクスポート検査、再エクスポート意味論は、モジュール解決へ先送りする。`preprocess` は、回復可能な生トークンストリーム上の浅い生インポート事前走査から `import_stubs` を満たし、raw-scan recovery boundary をまたいでモジュールパステキストを連結せずに読める import を保持する。

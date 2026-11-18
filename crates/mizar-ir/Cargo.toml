@@ -16,4 +16,7 @@ workspace = true
 blake3 = "1.8.5"
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-cache = { path = "../mizar-cache" }
+mizar-frontend = { path = "../mizar-frontend" }
+mizar-lexer = { path = "../mizar-lexer" }
 mizar-session = { path = "../mizar-session" }
+mizar-syntax = { path = "../mizar-syntax" }

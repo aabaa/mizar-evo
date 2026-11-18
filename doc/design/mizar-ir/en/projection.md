@@ -60,6 +60,10 @@ driver-session, or publication-token APIs, and it must not depend on
 
 ## Draft Model
 
+### Commented Draft Handoff
+`project_commented_module` implements the [Q1 handoff](../../mizar-artifact/en/comment_projection.md#ownership-and-handoffs) and returns an unpublished `CommentedArtifactDraft` with one Artifact-owned envelope. It reads the actual sealed Frontend payload and registered Session snapshot, validates full source/version/provenance and required-output ancestry, and checks genuine metadata binding before lossless conversion and complete codec validation. Caller-created snapshot contents and unrelated current outputs cannot justify the draft.
+Explicit optional export target pairs preserve unresolved landmarks as null; IR neither infers attachment nor creates verified targets. Existing external gaps and OpenBuffer/InternalOnly limits remain. Driver capture/retention/emission, Artifact store/manifest selection and Doc validated-publication consumption are separate open integrations. Legacy projection methods retain their existing profiles and behavior.
+
 `VerifiedArtifactDraft` is an unpublished in-memory candidate owned by
 `mizar-ir` task 12. It contains a `mizar-artifact` `VerifiedArtifact` value and
 projection-local provenance sufficient to explain how the draft was produced.
