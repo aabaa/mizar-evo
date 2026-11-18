@@ -146,6 +146,103 @@ fn doc8_display_math_stays_in_its_container_and_preserves_recovery() {
 }
 
 #[test]
+fn doc8_duplicate_reference_definitions_remain_math_barriers() {
+    use mizar_diagnostics::failure_record::DiagnosticPrimaryLocation;
+
+    for (case, (markdown, expected, unmatched)) in [
+        ("[r]: /one\n\n[r]: /two \"title\n$$\nend\"\n", vec![], 0),
+        (
+            "[r]: /one\n\n[r]: /two \"title\n$$\nx\n$$\nend\"\n",
+            vec![],
+            0,
+        ),
+        (
+            "> [R]: /one\n>\n> [r]: /two \"title\n> $$\n> x\n> $$\n> end\"\n",
+            vec![],
+            0,
+        ),
+        (
+            "- [R]: /one\n\n  [r]: /two \"title\n  $$\n  x\n  $$\n  end\"\n",
+            vec![],
+            0,
+        ),
+        (
+            "[r]: /one\n\n[r]: /two \"title\n$$\nx\n$$\nend\"\n\n$$\ny\n$$\n\n$z$ [r]\n",
+            vec![(true, "y\n"), (false, "z")],
+            0,
+        ),
+        (
+            "[r]: /one\n\n$$\n\n[r]: /two \"title\n$$\nx\n$$\nend\"\n\n$$\n",
+            vec![],
+            2,
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (root, plan, source) = doc8_fixture(markdown);
+        let unbound = doc7_attach(&plan);
+        let attachments =
+            mizar_doc::comments::attach_comments(&plan, unbound.module, Some(&source)).unwrap();
+        let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+        let block = &parsed.blocks[0];
+        assert!(!block.fallback, "case {case}");
+        assert!(block.fields.is_empty(), "case {case}");
+        assert_eq!(block.text, markdown, "case {case}");
+        assert_eq!(
+            block
+                .math
+                .iter()
+                .map(|math| (
+                    math.display,
+                    math.content
+                        .iter()
+                        .map(|r| &block.text[r.clone()])
+                        .collect::<String>()
+                ))
+                .collect::<Vec<_>>(),
+            expected
+                .into_iter()
+                .map(|(display, text)| (display, text.to_owned()))
+                .collect::<Vec<_>>(),
+            "case {case}"
+        );
+        assert_eq!(doc8_codes(&parsed.warnings), vec!["W0409"; unmatched]);
+        assert_eq!(block.source_map.len(), markdown.lines().count());
+        for (line, (logical, loaded)) in block.source_map.iter().enumerate() {
+            assert_eq!(loaded.start, logical.start + 4 * (line + 1));
+            assert_eq!(loaded.end, logical.end + 4 * (line + 1));
+            assert_eq!(
+                &block.text[logical.clone()],
+                &source.text[loaded.start..loaded.end]
+            );
+        }
+        // Reference-only containers retain the pinned CommonMark envelope events.
+        match case {
+            0 | 1 => assert!(block.events.is_empty()),
+            2 => assert_eq!(format!("{:?}", block.events), "[(Start(BlockQuote(None)), 0..54), (End(BlockQuote(None)), 0..54)]"),
+            3 => assert_eq!(format!("{:?}", block.events), "[(Start(List(None)), 0..53), (Start(Item), 0..53), (End(Item), 0..53), (End(List(false)), 0..53)]"),
+            4 => {
+                // Compare the retained link event to an unambiguous first-definition baseline.
+                let (baseline_root, baseline_plan, _) = doc8_fixture("[r]: /one\n\n[r]\n");
+                let baseline_attachments = doc7_attach(&baseline_plan);
+                let baseline = mizar_doc::markdown::parse_comments(&baseline_attachments, &[]);
+                assert_eq!(block.events[9].0, baseline.blocks[0].events[1].0);
+                assert_eq!(block.events[9].1, 55..58);
+                std::fs::remove_dir_all(baseline_root).unwrap();
+            }
+            _ => {
+                for (warning, logical) in parsed.warnings.iter().zip([11, 46]) {
+                    let loaded = block.source_map.iter().find_map(|(q3, loaded)| q3.contains(&logical).then_some(loaded.start + logical - q3.start)).unwrap();
+                    assert!(matches!(warning.primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == mizar_session::SourceRange { source_id: source.source_id, start: loaded, end: loaded + 2 }));
+                }
+            }
+        }
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
 fn doc8_q3_maps_keep_unicode_newlines_container_gaps_and_marker_locations() {
     use mizar_diagnostics::failure_record::{
         DiagnosticDetailValue as V, DiagnosticPrimaryLocation,

@@ -224,16 +224,11 @@ fn inline_tag(tag: &Tag<'_>) -> bool {
 
 fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
     let parser = Parser::new_ext(&block.text, Options::empty());
-    let references: Vec<_> = parser
-        .reference_definitions()
-        .iter()
-        .map(|(_, def)| def.span.clone())
-        .collect();
     block.events = parser
         .into_offset_iter()
         .map(|(event, range)| (event.into_static(), range))
         .collect();
-    let mut protected = references;
+    let mut protected = Vec::new();
     let mut containers = Vec::new();
     let mut paragraph = None;
     let mut paragraphs = Vec::new();
@@ -308,7 +303,22 @@ fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
                 container_start(&block.text, range.start..body_end, &stack, &containers);
             let is_protected = protected
                 .iter()
-                .any(|span| span.start < range.end && range.start < span.end);
+                .any(|span| span.start < range.end && range.start < span.end)
+                // Reference definitions emit no events, including duplicates
+                // omitted from the parser's label map. Container envelopes do
+                // not make their suppressed source visible; blank lines do not
+                // interrupt display math.
+                || (!block.text.as_bytes()[content_start..body_end]
+                    .iter()
+                    .all(|&byte| w(byte))
+                    && !block.events.iter().any(|(event, span)| {
+                        !matches!(
+                            event,
+                            Event::Start(Tag::BlockQuote(_) | Tag::List(_) | Tag::Item)
+                                | Event::End(_)
+                        ) && span.start < range.end
+                            && range.start < span.end
+                    }));
             Line {
                 range,
                 content: content_start..body_end,
