@@ -1,6 +1,6 @@
 # Doc11 Math Model 定義提案
 Canonical language: English; [英語正本](../en/math.md)。
-状態: 非規範的提案。以下の Doc11 固有 Q1–Q12 はすべて UNSELECTED（未選択）であり、どちらの案も実装・規範的採用を許可しない。承認済み [Doc4 decisions](./doc_build.md#owner-q-decisions)、未選択の [Doc8 Q9–Q18](./commonmark.md#unselected-owner-q-decisions)、[Doc9 Q1–Q10](./links.md#unselected-owner-q-decisions) とは別の識別子であり、いずれも変更しない。
+状態: 非規範的提案。以下の Doc11 固有 Q1–Q12 はすべて UNSELECTED（未選択）であり、どちらの案も実装・規範的採用を許可しない。承認済み [Doc4 decisions](./doc_build.md#owner-q-decisions)、未選択の [Doc8 Q9–Q18](./commonmark.md#未選択の所有者-q-decisions)、[Doc9 Q1–Q10](./links.md#未選択の所有者-q-決定) とは別の識別子であり、いずれも変更しない。
 
 ## Authority And Fixed Boundary
 spec [21.3](../../../spec/ja/21.source_code_annotation_and_atp.md#213-latex-式の注釈)、[24.3](../../../spec/ja/24.documentation_generation.md#243-数式のレンダリング)、[24.4](../../../spec/ja/24.documentation_generation.md#244-html出力) が注釈優先・既定変換・番号・client-side KaTeX を定める。architecture13 [Step3](../../architecture/en/13.documentation_and_extraction.md#step-3-resolve-links-and-render-math)、[決定性](../../architecture/en/13.documentation_and_extraction.md#outputs-are-deterministic)、internal05 [artifact inputs](../../internal/en/05.documentation_extraction.md#artifact-inputs) が consumer の所有境界を定める。この定義は限定承認済み [Doc4 inputs](./doc_build.md#index-inputs-and-later-completion) に依存し、Doc8 parsing/採用には依存しない。

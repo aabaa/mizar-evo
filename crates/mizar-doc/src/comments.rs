@@ -267,9 +267,10 @@ fn item_target<'a>(
         if candidate[4] != CanonicalJson::Null && candidate[4] != row[4] {
             return Err(402);
         }
-        if matches!(string(&candidate[0]), "Annotation" | "LibraryAnnotation")
-            || (annotation_end.is_some() && string(&candidate[0]) == "VisibilityMarker")
-        {
+        if matches!(
+            string(&candidate[0]),
+            "Annotation" | "LibraryAnnotation" | "VisibilityMarker"
+        ) {
             let annotation = range(&candidate[1]);
             if let Some(end) = annotation_end
                 && !annotation_gap(loaded, end, annotation.start)
