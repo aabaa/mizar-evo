@@ -1559,6 +1559,25 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             matches!(version.origin, SourceOrigin::OpenBuffer { .. })
                 .then(|| staging.1.to_path_buf()),
         );
+        #[cfg(test)]
+        snapshot_test_support::AFTER_LEGACY_ROOT_CREATION.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook();
+            }
+        });
+        let root_lock = lock_artifact_writes().map_err(|error| error.to_string())?;
+        reserve_native_artifact_path(
+            &std::fs::canonicalize(staging.1).map_err(|error| error.to_string())?,
+            &path,
+            "native theorem witness parent must stay below artifact root",
+        )
+        .map_err(|error| {
+            if error.kind() == std::io::ErrorKind::AlreadyExists {
+                "native theorem witness requires a fresh witness path".to_owned()
+            } else {
+                error.to_string()
+            }
+        })?;
         let domain = artifact_hash_domain(
             reference.witness_artifact_hash.schema_family.clone(),
             reference.witness_artifact_hash.schema_version,
@@ -1580,6 +1599,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         .map_err(|error| error.to_string())?;
         mizar_proof::witness_store::read_source_theorem_witness_file(&read, &reference)?;
         let staged = witness_draft.stage_source_theorem_file(&read, &reference)?;
+        drop(root_lock);
         let accepted = if let Some(sealed) = &sealed {
             sealed.4.clone().with_source_theorem_witness(&staged)?
         } else {
@@ -1814,6 +1834,12 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.to_string()),
         }
+        #[cfg(test)]
+        snapshot_test_support::AFTER_LEGACY_MAIN_ABSENCE.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook();
+            }
+        });
         let value = if staging.3 {
             builtin_verified_artifact_json(&draft.artifact)
         } else {
@@ -1837,6 +1863,20 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     OutputAuthorization::Published,
                 )
                 .map_err(|error| error.to_string())?;
+        }
+        // The early absence check does not exclude a concurrent Q1 writer.
+        // Reserve only after validation, before the store can replace the main.
+        let root = std::fs::canonicalize(staging.2).map_err(|error| error.to_string())?;
+        match reserve_native_artifact_path(
+            &root,
+            &path,
+            "native theorem artifact main parent must stay below artifact root",
+        ) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                return Err("native theorem artifact main requires a fresh main path".to_owned());
+            }
+            Err(error) => return Err(error.to_string()),
         }
         let written = write_published_artifact(staging.2, &path, &value, &domain, &excluded)
             .map_err(|error| error.to_string())?;
@@ -2275,6 +2315,53 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         )))
     }
 }
+pub(crate) const COMMENT_ARTIFACT_RESERVATION: &str = ".driver-q1-reservation";
+
+// A shared lock also fences cleanup of ancestor roots; never unlink its stable file.
+pub(crate) fn lock_artifact_writes() -> std::io::Result<std::fs::File> {
+    let lock = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(std::env::temp_dir().join("mizar-driver-artifact-writes.lock"))?;
+    lock.lock()?;
+    Ok(lock)
+}
+
+pub(crate) fn reserve_native_artifact_path(
+    root: &std::path::Path,
+    path: &mizar_artifact::store::PublishedArtifactPath,
+    parent_error: &str,
+) -> std::io::Result<()> {
+    let relative = std::path::Path::new(path.as_str());
+    let mut parent = root.to_path_buf();
+    for component in relative
+        .parent()
+        .expect("validated relative path")
+        .components()
+    {
+        parent.push(component);
+        match std::fs::create_dir(&parent) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+        parent = parent.canonicalize()?;
+        if !parent.starts_with(root) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                parent_error,
+            ));
+        }
+    }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(parent.join(relative.file_name().expect("validated main path")))?;
+    Ok(())
+}
+
 // Resolve the parent only: following the final entry could delete an external symlink target.
 pub(crate) fn remove_native_artifact_staging(root: &std::path::Path, boundary: &std::path::Path) {
     let Some(name) = root.file_name() else { return };
@@ -2289,10 +2376,29 @@ pub(crate) fn remove_native_artifact_staging(root: &std::path::Path, boundary: &
         return;
     }
     let root = parent.join(name);
+    let Ok(_root_lock) = lock_artifact_writes() else {
+        return;
+    };
     let Ok(metadata) = std::fs::symlink_metadata(&root) else {
         return;
     };
     if metadata.is_dir() && !metadata.file_type().is_symlink() {
+        let mut directories = vec![root.clone()];
+        while let Some(directory) = directories.pop() {
+            let Ok(entries) = std::fs::read_dir(directory) else {
+                return;
+            };
+            for entry in entries {
+                let Ok(entry) = entry else { return };
+                if entry.file_name() == COMMENT_ARTIFACT_RESERVATION {
+                    return;
+                }
+                let Ok(kind) = entry.file_type() else { return };
+                if kind.is_dir() {
+                    directories.push(entry.path());
+                }
+            }
+        }
         let _ = std::fs::remove_dir_all(root);
     } else {
         let _ = std::fs::remove_file(root);
@@ -2351,6 +2457,12 @@ mod native_artifact_staging_cleanup_tests {
 
         assert!(!owned.exists());
         assert_eq!(fs::read(sibling).unwrap(), b"keep");
+        let nested = owned.join("nested");
+        fs::create_dir_all(&nested).unwrap();
+        let marker = nested.join(super::COMMENT_ARTIFACT_RESERVATION);
+        fs::write(&marker, b"reserved").unwrap();
+        drop(super::NativeArtifactStagingCleanup(Some(owned)));
+        assert_eq!(fs::read(marker).unwrap(), b"reserved");
         fs::remove_dir_all(boundary).unwrap();
     }
 
@@ -2773,6 +2885,13 @@ mod snapshot_test_support {
 
     static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
+    std::thread_local! {
+        pub(super) static AFTER_LEGACY_MAIN_ABSENCE: std::cell::RefCell<Option<Box<dyn FnOnce()>>>
+            = const { std::cell::RefCell::new(None) };
+        pub(super) static AFTER_LEGACY_ROOT_CREATION: std::cell::RefCell<Option<Box<dyn FnOnce()>>>
+            = const { std::cell::RefCell::new(None) };
+    }
+
     pub(super) struct Fixture {
         pub(super) root: PathBuf,
         pub(super) ids: InMemorySessionIdAllocator,
@@ -3060,6 +3179,408 @@ mod snapshot_payload_tests {
     use super::snapshot_test_support::*;
     use crate::driver::CompilerDriver;
     use std::{collections::BTreeSet, fs, sync::Arc};
+
+    #[test]
+    fn mixed_legacy_and_commented_writers_preserve_the_winning_publication() {
+        use std::{cell::RefCell, rc::Rc};
+
+        use mizar_artifact::manifest::{ManifestFileReadOptions, read_manifest_file};
+        use mizar_atp::problem::*;
+        use mizar_ir::{
+            dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+            identity::OutputKind,
+            projection::ProjectVerifiedArtifactInput,
+        };
+        use mizar_proof::policy::VerifierPolicy;
+        use mizar_vc::{
+            discharge::{ComputationLimit, DischargePolicy},
+            vc_ir::{PolicyKey, VcSet},
+        };
+
+        use super::super::*;
+
+        for (legacy_open, obsolete_legacy, after_root_creation, witness_collision) in [
+            (false, false, false, false),
+            (true, false, false, false),
+            (true, true, false, false),
+            (true, true, true, false),
+            (true, false, true, true),
+        ] {
+            let fixture = Rc::new(Fixture::new());
+            let (session, input, publisher) = fixture.prepare_with_open_buffers(
+                1,
+                if legacy_open {
+                    &[("main", 7), ("leaf", 7)]
+                } else {
+                    &[]
+                },
+            );
+            let submission = CompilerDriver::new(registry(false))
+                .with_output_publisher(publisher.clone())
+                .submit_captured(
+                    session,
+                    &fixture.ids,
+                    &fixture.snapshots,
+                    input,
+                    Default::default(),
+                )
+                .unwrap();
+            let source = submission
+                .session
+                .captured()
+                .native_sources()
+                .unwrap()
+                .iter()
+                .find(|(_, source, _)| source.module_path.as_str() == "main")
+                .unwrap();
+            assert_eq!(
+                matches!(source.1.origin, SourceOrigin::OpenBuffer { .. }),
+                legacy_open
+            );
+            let inputs = crate::registry::SourceLoadInputs {
+                snapshot: submission.session.captured().snapshot(),
+                captured: Some(submission.session.captured()),
+                build_plan: submission.build_plan.as_ref().unwrap(),
+                module_index: submission.module_index.as_ref().unwrap(),
+                allocator: &fixture.ids,
+            };
+            let outputs = submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .filter(|output| output.work_unit().as_str() == "\"alpha\":\"main\"")
+                .collect::<Vec<_>>();
+            let output = |kind| {
+                (*outputs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new(kind))
+                    .unwrap())
+                .clone()
+            };
+            let q1_fixture = Rc::new(Fixture {
+                root: fixture.root.clone(),
+                ids: mizar_session::InMemorySessionIdAllocator::new(),
+                snapshots: mizar_session::SnapshotRegistry::new(),
+            });
+            let (mut retained, q1_input, q1_publisher) = q1_fixture.prepare(1);
+            let q1_submission = CompilerDriver::new(registry(false))
+                .with_output_publisher(q1_publisher.clone())
+                .submit_captured(
+                    retained.clone(),
+                    &q1_fixture.ids,
+                    &q1_fixture.snapshots,
+                    q1_input,
+                    Default::default(),
+                )
+                .unwrap();
+            let q1_source = q1_submission
+                .session
+                .captured()
+                .native_sources()
+                .unwrap()
+                .iter()
+                .find(|(_, source, _)| source.module_path.as_str() == "main")
+                .unwrap();
+            let q1_outputs = q1_submission
+                .scheduler_run
+                .as_ref()
+                .unwrap()
+                .phase_results
+                .values()
+                .flatten()
+                .flat_map(|result| &result.output_refs)
+                .filter(|output| output.work_unit().as_str() == "\"alpha\":\"main\"")
+                .collect::<Vec<_>>();
+            let q1_output = |kind| {
+                (*q1_outputs
+                    .iter()
+                    .find(|output| output.output_kind() == &OutputKind::new(kind))
+                    .unwrap())
+                .clone()
+            };
+            let frontend_ref = q1_output("FrontendOutput");
+            let frontend = q1_publisher
+                .storage()
+                .typed_handle::<FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>>(
+                    &frontend_ref,
+                    frontend_ref.output_kind(),
+                )
+                .unwrap();
+            let q1_inputs = crate::registry::SourceLoadInputs {
+                snapshot: q1_submission.session.captured().snapshot(),
+                captured: Some(q1_submission.session.captured()),
+                build_plan: q1_submission.build_plan.as_ref().unwrap(),
+                module_index: q1_submission.module_index.as_ref().unwrap(),
+                allocator: &q1_fixture.ids,
+            };
+            let (_, metadata) = Frontend::new(
+                FrontendSourceLoader::new(q1_source.0.clone()),
+                q1_inputs.dependency_lexical_provider(&[]),
+                MizarParserSeam,
+            )
+            .run_loaded_with_comment_metadata(
+                q1_publisher
+                    .storage()
+                    .get(&frontend)
+                    .unwrap()
+                    .source
+                    .clone(),
+                &q1_source.1.text,
+            )
+            .unwrap();
+            let role_names = [
+                "SourceTheoremModuleSummary",
+                "SourceTheoremCore",
+                "SourceTheoremVC",
+                "SourceTheoremCandidateCheck",
+                "SourceTheoremDischarge",
+                "SourceTheoremCandidateWitnessFile",
+            ];
+            let roles = role_names.map(output);
+            let q1_roles = role_names.map(q1_output);
+            let required = q1_roles
+                .iter()
+                .cloned()
+                .chain([frontend_ref])
+                .collect::<Vec<_>>();
+            let phase = PhaseInput::new(
+                mizar_build::task_graph::WorkUnit::Module {
+                    module: mizar_build::module_index::ModuleId::new(
+                        source.1.package_id.clone(),
+                        source.1.module_path.clone(),
+                    ),
+                },
+                PhaseDispatchInputBundle::new(
+                    inputs.snapshot.id,
+                    super::super::source_input_hash(
+                        inputs
+                            .snapshot
+                            .source_versions
+                            .iter()
+                            .find(|version| version.source_id == source.1.source_id)
+                            .unwrap(),
+                    ),
+                    vec![],
+                    roles
+                        .iter()
+                        .map(|output| {
+                            SealedParentOutputHandle::from_published_output(
+                                &publisher,
+                                inputs.snapshot.id,
+                                output.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+            );
+            let vcs = publisher
+                .storage()
+                .get(
+                    &publisher
+                        .storage()
+                        .typed_handle::<VcSet>(&roles[2], roles[2].output_kind())
+                        .unwrap(),
+                )
+                .unwrap();
+            let profile = LogicProfile::try_new(
+                "snapshot-native",
+                LogicFragment::Fof,
+                EqualitySupport::Supported,
+                QuantifierPolicy::FirstOrder,
+                SoftTypeStrategy::ScopedGuardPredicates,
+                NativePropertySupport::Supported,
+                [ConcreteFormat::Tptp].into_iter().collect(),
+            )
+            .unwrap();
+            let policy = DischargePolicy {
+                computation_limit: ComputationLimit {
+                    policy: PolicyKey::new("snapshot-reflexivity"),
+                    max_steps: 64,
+                },
+            };
+            let verifier = VerifierPolicy::default();
+            let q1_phase = PhaseInput::new(
+                phase.work_unit.clone(),
+                PhaseDispatchInputBundle::new(
+                    q1_inputs.snapshot.id,
+                    super::super::source_input_hash(
+                        q1_inputs
+                            .snapshot
+                            .source_versions
+                            .iter()
+                            .find(|version| version.source_id == q1_source.1.source_id)
+                            .unwrap(),
+                    ),
+                    vec![],
+                    q1_roles
+                        .iter()
+                        .map(|output| {
+                            SealedParentOutputHandle::from_published_output(
+                                &q1_publisher,
+                                q1_inputs.snapshot.id,
+                                output.clone(),
+                            )
+                            .unwrap()
+                        })
+                        .collect(),
+                )
+                .unwrap(),
+            );
+            let q1_vcs = q1_publisher
+                .storage()
+                .get(
+                    &q1_publisher
+                        .storage()
+                        .typed_handle::<VcSet>(&q1_roles[2], q1_roles[2].output_kind())
+                        .unwrap(),
+                )
+                .unwrap();
+            let q1_staging = fixture.root.join("alpha/artifacts/q1-staging");
+            let (q1_draft, _) = q1_inputs
+                .project_native_theorem_artifact_draft(
+                    &q1_phase,
+                    &q1_publisher,
+                    q1_vcs.vcs()[0].id,
+                    (profile.clone(), ConcreteFormat::Tptp),
+                    (&policy, &verifier),
+                    ("proof-witnesses/q1.json", &q1_staging),
+                )
+                .unwrap()
+                .unwrap();
+            let root = fixture.root.join("alpha/artifacts/mixed");
+            let legacy_witness = if witness_collision {
+                "proof-witnesses/shared.mizir.json"
+            } else {
+                "proof-witnesses/shared.json"
+            };
+            let q1_main = if witness_collision {
+                legacy_witness
+            } else {
+                "shared.mizir.json"
+            };
+            let source_id = q1_source.1.source_id;
+            let legacy_snapshot = inputs.snapshot.id;
+            let saved = Rc::new(RefCell::new(None));
+            let hook = if after_root_creation {
+                &AFTER_LEGACY_ROOT_CREATION
+            } else {
+                &AFTER_LEGACY_MAIN_ABSENCE
+            };
+            hook.set(Some(Box::new({
+                let fixture = Rc::clone(&q1_fixture);
+                let legacy_publisher = Arc::clone(&publisher);
+                let publisher = Arc::clone(&q1_publisher);
+                let saved = Rc::clone(&saved);
+                let root = root.clone();
+                move || {
+                    let artifact = &q1_draft.artifact;
+                    let metadata = metadata.unwrap();
+                    let mut provenance = artifact.provenance.clone();
+                    provenance.lockfile_hash.digest = retained.captured().snapshot().lockfile_hash;
+                    provenance.verifier_config_hash.digest =
+                        retained.captured().snapshot().verifier_config_hash;
+                    retained
+                        .capture_commented_module(
+                            &publisher,
+                            &fixture.snapshots,
+                            ProjectVerifiedArtifactInput {
+                                snapshot: retained.captured().snapshot().id,
+                                required_outputs: required,
+                                module: artifact.module.clone(),
+                                source_file: artifact.source_file.clone(),
+                                source_hash: artifact.source_hash,
+                                verified_at: artifact.verified_at.clone(),
+                                exports: artifact.exports.clone(),
+                                statements: artifact.statements.clone(),
+                                expressions: artifact.expressions.clone(),
+                                obligations: artifact.obligations.clone(),
+                                proof_witnesses: artifact.proof_witnesses.clone(),
+                                diagnostics: artifact.diagnostics.clone(),
+                                provenance,
+                            },
+                            &frontend,
+                            &metadata,
+                            &vec![None; metadata.boundaries().len()],
+                        )
+                        .unwrap();
+                    fs::create_dir_all(root.join("proof-witnesses")).unwrap();
+                    fs::copy(
+                        q1_staging.join("proof-witnesses/q1.json"),
+                        root.join("proof-witnesses/q1.json"),
+                    )
+                    .unwrap();
+                    let commit = retained
+                        .emit_commented_module(
+                            &publisher,
+                            &fixture.snapshots,
+                            source_id,
+                            &root,
+                            q1_main,
+                        )
+                        .unwrap()
+                        .unwrap();
+                    *saved.borrow_mut() = Some((
+                        commit,
+                        fs::read(root.join(q1_main)).unwrap(),
+                        fs::read(root.join("artifact-manifest.json")).unwrap(),
+                    ));
+                    if obsolete_legacy {
+                        legacy_publisher.mark_obsolete(legacy_snapshot).unwrap();
+                        publisher
+                            .validate_current_snapshot(retained.captured().snapshot().id)
+                            .unwrap();
+                    }
+                }
+            })));
+            let refusal = inputs
+                .commit_native_theorem_artifact_manifest(
+                    &phase,
+                    &publisher,
+                    vcs.vcs()[0].id,
+                    (profile, ConcreteFormat::Tptp),
+                    (&policy, &verifier),
+                    (legacy_witness, "shared.mizir.json", &root),
+                )
+                .unwrap_err();
+            assert!(
+                refusal.contains(if obsolete_legacy {
+                    "obsolete"
+                } else if witness_collision {
+                    "fresh witness path"
+                } else {
+                    "fresh main path"
+                }),
+                "{refusal}",
+            );
+            let saved = saved.borrow();
+            let (commit, main, manifest) = saved.as_ref().expect("Q1 won during legacy staging");
+            assert_eq!(fs::read(root.join(q1_main)).unwrap(), *main);
+            assert_eq!(
+                fs::read(root.join("artifact-manifest.json")).unwrap(),
+                *manifest
+            );
+            assert_eq!(
+                read_manifest_file(
+                    &root,
+                    ManifestFileReadOptions {
+                        validate_references: true,
+                        validate_witness_files: true,
+                        expected_manifest_hash: Some(commit.write().artifact_hash),
+                        ..ManifestFileReadOptions::default()
+                    },
+                )
+                .unwrap()
+                .manifest,
+                *commit.manifest(),
+            );
+        }
+    }
 
     fn publish(
         fixture: &Fixture,

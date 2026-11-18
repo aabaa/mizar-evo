@@ -134,7 +134,10 @@ pub use candidate::{
 };
 mod artifact;
 
-pub(crate) use artifact::remove_native_artifact_staging;
+pub(crate) use artifact::{
+    COMMENT_ARTIFACT_RESERVATION, lock_artifact_writes, remove_native_artifact_staging,
+    reserve_native_artifact_path,
+};
 pub use artifact::{PublishedSourceMetadata, SnapshotPublication};
 pub(crate) use artifact::{
     SourceTheoremArtifactCommitService, SourceTheoremReflexivityArtifactCommitService,

@@ -635,29 +635,23 @@ impl BuildSession {
         validate()?;
         // Reserve the main before the replacing store writer can touch it. Other
         // Driver emissions must refuse this path, even if our transaction fails.
-        let relative = std::path::Path::new(path.as_str());
-        let mut parent = root.clone();
-        for component in relative
-            .parent()
-            .expect("validated relative path")
-            .components()
-        {
-            parent.push(component);
-            match std::fs::create_dir(&parent) {
-                Ok(()) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => return Err(error.to_string()),
-            }
-            parent = std::fs::canonicalize(&parent).map_err(|error| error.to_string())?;
-            if !parent.starts_with(&root) {
-                return Err("comment artifact main parent must stay below artifact root".into());
-            }
+        let _root_lock =
+            crate::frontend_adapter::lock_artifact_writes().map_err(|error| error.to_string())?;
+        validate()?;
+        // Legacy cleanup must retain this root even after a failed Q1 emission.
+        match std::fs::File::create_new(
+            root.join(crate::frontend_adapter::COMMENT_ARTIFACT_RESERVATION),
+        ) {
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error.to_string()),
         }
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(parent.join(relative.file_name().expect("validated main path")))
-            .map_err(|error| error.to_string())?;
+        crate::frontend_adapter::reserve_native_artifact_path(
+            &root,
+            &path,
+            "comment artifact main parent must stay below artifact root",
+        )
+        .map_err(|error| error.to_string())?;
         let written = write_published_artifact(&root, &path, &value, &domain, &excluded)
             .map_err(|error| error.to_string())?;
         validate()?;

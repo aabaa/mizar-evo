@@ -1900,10 +1900,7 @@ mod q1_comments {
             )
             .unwrap(),
         );
-    }
-
-    #[test]
-    fn q1_emission_validating_reads_reject_corruption_without_mutating_retention() {
+        // Fresh reads must also reject corruption without changing retention.
         let mut f = Fixture::new(TEXT, None);
         let frontend = f.frontend(0);
         f.capture(0, &frontend);
