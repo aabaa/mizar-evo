@@ -45,6 +45,7 @@ fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
         if member == "crates/mizar-diagnostics"
             || member == "crates/mizar-driver"
             || member == "crates/mizar-lsp"
+            || member == "crates/mizar-doc"
         {
             continue;
         }
@@ -52,6 +53,11 @@ fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
         let manifest_path = root.join(&member).join("Cargo.toml");
         let manifest = read_to_string(&manifest_path);
         for (section, lines) in dependency_sections(&manifest) {
+            if member == "crates/mizar-test"
+                && (section == "dev-dependencies" || section.starts_with("dev-dependencies."))
+            {
+                continue;
+            }
             if dependency_section_names_mizar_diagnostics(&section) {
                 reverse_dependencies.push(format!(
                     "{} [{section}]: dependency table",
@@ -69,7 +75,7 @@ fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
 
     assert!(
         reverse_dependencies.is_empty(),
-        "mizar-driver and mizar-lsp are the only registered diagnostics consumers; \
+        "mizar-driver, mizar-lsp, mizar-doc and mizar-test dev-dependencies are registered; \
          unexpected mizar-diagnostics reverse dependencies:\n{}",
         reverse_dependencies.join("\n")
     );

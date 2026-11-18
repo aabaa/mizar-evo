@@ -131,7 +131,6 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
    - Deps: 5, 6. Spec: `comments.md`.
 
 8. **Markdown parsing.** [ ]
-   - [CommonMark/tag-field definition proposal](../../task_contracts/en/DOC8-COMMONMARK-TAGS-DEFINITION.md) precedes parsing; new owner choices remain unselected.
    - After Doc7 and completed tag-validation/CommonMark definitions, parse Markdown with graceful degradation and
      presentation diagnostics.
    - Tests: subset fixtures; malformed Markdown degrades without aborting

@@ -1,6 +1,6 @@
 # Doc8 CommonMark・Tag-Field 定義提案
 正本は英語: [English companion](../en/commonmark.md)。
-状態: 非規範の提案。Q9–Q18 はすべて未選択であり、どちらの列も実装を許可せず spec24.1 を変更しない。[Q1–Q8 の承認①](./comments.md#owner-q-decisions) は維持し、その②は除外する。
+状態: 過去の提案。2026-11-18 17:50 JST に Q9–Q18 のすべて①が承認され、[spec24.1/3](../../../spec/ja/24.documentation_generation.md) と [spec22 診断](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) に採用済み。以下の未選択・候補表記と②は履歴であり現在の gate ではない。parser 実装・適合性は別作業、Q1–Q8 は引き続き有効。
 
 ## 権威と固定入力
 spec [2.9.2](../../../spec/en/02.lexical_structure.md#292-annotations)、[24.1–3](../../../spec/en/24.documentation_generation.md)、[comments 所有文書](./comments.md#markdown-と構造化タグ) に従う。Doc7 は対応付け済みの別々の source 順 block、raw line/map、完全な検証済み target provenance を供給する。Q3 は `:::` と直後の ASCII space 最大1個のみ除き、全体 trim/deindent や source の再正規化を許さない。

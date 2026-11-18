@@ -381,34 +381,130 @@ fn documentation_locations_round_trip_complete_provenance_and_ordered_secondarie
         *lockfile_identity = Some(String::new());
     }
     let provenance = input.primary_location.clone();
-    for location in [provenance.clone(), optional.primary_location, primary] {
-        let mut input = input.clone();
-        input.primary_location = location.clone();
-        input.secondary_spans = vec![other.clone(), secondary.clone(), other.clone()];
-        let expected_debug = location == provenance;
-        let draft =
-            DiagnosticDraft::new(input).expect("Documentation permits real spans and provenance");
-        assert_eq!(draft.primary_location(), &location);
-        assert_eq!(draft.phase().as_str(), "documentation");
-        assert_eq!(draft.category().as_str(), "documentation_warning");
-        let record = DiagnosticRecord::from_draft(
-            draft.clone(),
-            DiagnosticHandle::new(snapshot, DiagnosticId::new(0)),
-            DiagnosticFreshness::Current {
-                source_snapshot: snapshot,
-            },
-            vec![],
-        )
-        .unwrap();
-        assert_eq!(record.primary_location(), &location);
-        assert_eq!(
-            record.secondary_spans(),
-            &[other.clone(), secondary.clone(), other.clone()]
-        );
-        assert_eq!(record.secondary_spans(), draft.secondary_spans());
-        if expected_debug {
-            assert!(draft.debug_snapshot().contains(&debug_location));
-            assert!(record.debug_snapshot().contains(&debug_location));
+    use DiagnosticDetailValue::{List, String as Text};
+    for (code, subreason, raw) in [
+        (
+            "W0405",
+            "name",
+            vec![Text("@param".into()), Text(" ".into()), List(vec![])],
+        ),
+        (
+            "W0406",
+            "returns",
+            vec![Text("@returns".into()), Text("\t".into()), List(vec![])],
+        ),
+        (
+            "W0407",
+            "param",
+            vec![
+                Text("@param".into()),
+                Text(" x body ".into()),
+                List(vec![Text("@param".into()), Text("x".into())]),
+            ],
+        ),
+        (
+            "W0408",
+            "parameter_absent",
+            vec![Text("@param".into()), Text(" x body ".into()), List(vec![])],
+        ),
+        ("W0409", "inline", vec![]),
+        ("W0410", "display", vec![]),
+        ("W0411", "mapping_failed", vec![]),
+    ] {
+        for location in [
+            provenance.clone(),
+            optional.primary_location.clone(),
+            primary.clone(),
+        ] {
+            let mut input = input.clone();
+            input.code = DiagnosticCode::from_str(code).unwrap();
+            let reason = DiagnosticRegistry::builtin()
+                .lookup(input.code)
+                .unwrap()
+                .semantic_name;
+            input.stable_detail_key = reason.into();
+            input.details = DiagnosticDetails::from_entries([
+                (
+                    "documentation.occurrence",
+                    List(vec![
+                        Text("ab".repeat(32)),
+                        List(vec![
+                            Text("pkg".into()),
+                            match &location {
+                                DiagnosticPrimaryLocation::Documentation {
+                                    package_version,
+                                    ..
+                                } => List(package_version.iter().cloned().map(Text).collect()),
+                                _ => List(vec![Text(String::new())]),
+                            },
+                            match &location {
+                                DiagnosticPrimaryLocation::Documentation {
+                                    lockfile_identity,
+                                    ..
+                                } => List(lockfile_identity.iter().cloned().map(Text).collect()),
+                                _ => List(vec![]),
+                            },
+                            Text("src/doc.miz".into()),
+                            Text("2026".into()),
+                        ]),
+                        List(vec![
+                            Text("item".into()),
+                            Text("origin-1".into()),
+                            Text("pkg.T".into()),
+                        ]),
+                        Text("12".into()),
+                        Text(reason.into()),
+                        List(vec![Text("12".into()), Text("19".into())]),
+                    ]),
+                ),
+                ("documentation.raw", List(raw.clone())),
+                ("documentation.subreason", Text(subreason.into())),
+            ])
+            .unwrap();
+            if code == "W0411" {
+                input
+                    .details
+                    .insert("documentation.conversion_stage", Text("source_map".into()))
+                    .unwrap();
+                input
+                    .details
+                    .insert("documentation.retained_conditions", List(vec![]))
+                    .unwrap();
+            }
+            let details = input.details.clone();
+            input.primary_location = location.clone();
+            input.secondary_spans = vec![other.clone(), secondary.clone(), other.clone()];
+            let expected_debug = location == provenance;
+            let draft = DiagnosticDraft::new(input)
+                .expect("Documentation permits real spans and provenance");
+            assert_eq!(draft.primary_location(), &location);
+            assert_eq!(draft.phase().as_str(), "documentation");
+            assert_eq!(draft.category().as_str(), "documentation_warning");
+            let record = DiagnosticRecord::from_draft(
+                draft.clone(),
+                DiagnosticHandle::new(snapshot, DiagnosticId::new(0)),
+                DiagnosticFreshness::Current {
+                    source_snapshot: snapshot,
+                },
+                vec![],
+            )
+            .unwrap();
+            assert_eq!(record.primary_location(), &location);
+            assert_eq!(
+                record.secondary_spans(),
+                &[other.clone(), secondary.clone(), other.clone()]
+            );
+            assert_eq!(record.secondary_spans(), draft.secondary_spans());
+            assert_eq!(draft.details(), &details);
+            assert_eq!(record.details(), &details);
+            for detail in [reason, subreason, "documentation.occurrence"] {
+                assert!(draft.debug_snapshot().contains(detail));
+                assert!(record.debug_snapshot().contains(detail));
+            }
+            if expected_debug {
+                assert!(draft.debug_snapshot().contains(&debug_location));
+                assert!(record.debug_snapshot().contains(&debug_location));
+            }
         }
     }
 }
@@ -449,19 +545,25 @@ fn documentation_validation_refuses_incomplete_identity_and_metadata_mismatches(
         )
         .unwrap(),
     );
-    for location in [input.primary_location.clone(), span.clone()] {
-        for (phase, category) in [
-            (PipelinePhase::Parser, FailureCategory::DocumentationWarning),
-            (PipelinePhase::Documentation, FailureCategory::ParseError),
-        ] {
-            let mut invalid = input.clone();
-            invalid.primary_location = location.clone();
-            invalid.phase = phase;
-            invalid.category = category;
-            assert!(matches!(
-                DiagnosticDraft::new(invalid),
-                Err(DiagnosticRecordError::DocumentationMetadataMismatch { .. })
-            ));
+    for code in [
+        "W0400", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410", "W0411",
+    ] {
+        let mut input = input.clone();
+        input.code = DiagnosticCode::from_str(code).unwrap();
+        for location in [input.primary_location.clone(), span.clone()] {
+            for (phase, category) in [
+                (PipelinePhase::Parser, FailureCategory::DocumentationWarning),
+                (PipelinePhase::Documentation, FailureCategory::ParseError),
+            ] {
+                let mut invalid = input.clone();
+                invalid.primary_location = location.clone();
+                invalid.phase = phase;
+                invalid.category = category;
+                assert!(matches!(
+                    DiagnosticDraft::new(invalid),
+                    Err(DiagnosticRecordError::DocumentationMetadataMismatch { .. })
+                ));
+            }
         }
     }
     for (code, phase, category) in [

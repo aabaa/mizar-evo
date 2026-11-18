@@ -23,7 +23,8 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0352", "E0353", "E0401", "E0410", "E0411", "E0420", "E0421", "E0422", "E0423", "E0424",
     "E0425", "E0426", "E0430", "E0600", "E0601", "E0602", "E0603", "W0001", "W0002", "W0003",
     "W0010", "W0101", "W0102", "W0103", "W0201", "W0202", "W0210", "W0301", "W0302", "W0303",
-    "W0304", "W0305", "W0400", "W0401", "W0402", "W0403", "W0404",
+    "W0304", "W0305", "W0400", "W0401", "W0402", "W0403", "W0404", "W0405", "W0406", "W0407",
+    "W0408", "W0409", "W0410", "W0411",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -135,7 +136,7 @@ fn documentation_descriptors_lock_the_five_attachment_meanings() {
     let documentation = registry
         .descriptors()
         .iter()
-        .filter(|row| row.phase_family == PhaseFamily::Documentation)
+        .filter(|row| row.semantic_name.starts_with("documentation.attachment."))
         .collect::<Vec<_>>();
     assert_eq!(documentation.len(), expected.len());
     for (index, (suffix, summary)) in expected.into_iter().enumerate() {
@@ -166,7 +167,7 @@ fn documentation_descriptors_lock_the_five_attachment_meanings() {
         let code = DiagnosticCode::from_parts(DiagnosticSeverity::Warning, number).unwrap();
         assert_eq!(code.phase_family(), Some(PhaseFamily::Documentation));
         assert_eq!(code.default_severity(), Some(DiagnosticSeverity::Warning));
-        assert_eq!(registry.lookup(code).is_some(), number <= 404);
+        assert_eq!(registry.lookup(code).is_some(), number <= 411);
     }
     for text in ["W0500", "W0700"] {
         assert_eq!(DiagnosticCode::from_str(text).unwrap().phase_family(), None);
@@ -179,6 +180,62 @@ fn documentation_descriptors_lock_the_five_attachment_meanings() {
         DiagnosticCode::from_str("W0399").unwrap().phase_family(),
         Some(PhaseFamily::CompatibilityWarning)
     );
+}
+
+#[test]
+fn documentation_markdown_tag_descriptors_lock_approved_meanings() {
+    let registry = DiagnosticRegistry::builtin();
+    let expected = [
+        (
+            "documentation.tag.missing_slot",
+            "A known tag lacks its required name, reference or version slot: `@param`, `@see`, `@since`, `@deprecated` respectively.",
+        ),
+        (
+            "documentation.tag.missing_body",
+            "A required explanatory body is empty for `@returns`, `@requires`, `@ensures`, or after `@deprecated version`.",
+        ),
+        (
+            "documentation.tag.duplicate",
+            "A later known-tag occurrence violates the approved same-target raw duplicate rule: same `@param` name, repeated singleton (`@returns`, `@since`, `@deprecated`), or identical raw tag/payload for repeatable `@requires`, `@ensures`, `@see`.",
+        ),
+        (
+            "documentation.tag.metadata_mismatch",
+            "Available authoritative metadata establishes that a named parameter is absent from a complete list, or that `@returns` targets an item with no return value.",
+        ),
+        (
+            "documentation.markdown.unmatched_math_delimiter",
+            "An eligible math opener has no valid matching closer under the approved protected-boundary rules; preserve its literal spelling/CommonMark parse.",
+        ),
+        (
+            "documentation.markdown.empty_display_math",
+            "A paired display-math candidate has only W in its interior; preserve its full literal spelling without a math node.",
+        ),
+        (
+            "documentation.markdown.conversion_failure",
+            "A real inability to derive or map the Markdown/tag presentation view requires raw fallback for the affected block.",
+        ),
+    ];
+    for (index, (name, summary)) in expected.into_iter().enumerate() {
+        let code =
+            DiagnosticCode::from_parts(DiagnosticSeverity::Warning, 405 + index as u16).unwrap();
+        let row = registry
+            .lookup(code)
+            .expect("allocated Markdown/tag warning");
+        assert_eq!(row.semantic_name, name);
+        assert_eq!(row.meaning_key, name);
+        assert_eq!(row.summary, summary);
+        assert_eq!(row.phase_family, PhaseFamily::Documentation);
+        assert_eq!(row.default_severity, DiagnosticSeverity::Warning);
+        assert_eq!(row.status, DiagnosticStatus::Active);
+        assert_eq!(row.retired_since, None);
+        assert!(row.aliases.is_empty());
+        assert!(row.replacement_codes.is_empty());
+        assert_eq!(row.since, "spec-22-documentation-markdown-tags-v1");
+        assert_eq!(
+            row.doc_url,
+            "doc/spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings"
+        );
+    }
 }
 
 #[test]

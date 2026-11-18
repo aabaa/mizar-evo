@@ -1,6 +1,6 @@
 # Doc8 Markdown/Tag 表示診断の定義提案
 英語版を正本とする: [English](../en/documentation_markdown_tags.md)。
-状態: 非規範の定義提案。以下の MT-Q1–MT-Q7 はすべて未選択。この文書はコードを割当・予約・発行しない。採用と実装には別途の権限が必要。
+状態: 過去の提案。2026-11-18 の ledger owner 承認は MT-Q1–MT-Q7 のすべて①を選択し、[spec22 §22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) と [record detail 規約](./failure_record.md#markdowntag-occurrence-details) に採用済み。以下の未選択・候補表記と②は履歴であり現在の gate ではない。parser 実装の完了は主張しない。
 
 ## 固定入力と所有権
 Documentation 診断所有者が spec [22.1.1–2](../../../spec/en/22.error_handling_and_diagnostics.md#2211-error-code-system-e-series)、[22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings)、[24.1–3](../../../spec/en/24.documentation_generation.md) に基づきこの範囲を定義する。[comments Q1–Q8①](../../mizar-doc/ja/comments.md#owner-q-decisions)、[tag validation](../../mizar-doc/ja/comments.md#タグ検証の残余定義) と完全なソース・publication・target provenance を維持する。[Diagnostics plan](./00.crate_plan.md) が前提定義を、[Doc plan](../../mizar-doc/ja/00.crate_plan.md) が後続解析を所有する。
@@ -21,7 +21,7 @@ entry 206 が伝える owner 承認 2026-11-18 17:50 JST は entry 202 の [Doc8
 | `documentation.markdown.conversion_failure` | Markdown/tag 表示 view の導出または mapping が実際にできず、対象 block の raw fallback が必要。 |
 
 重複範囲は同じ full-provenance target に付く別々の source 順 block を含む。出現を併合・上書きしない。未知・類似 tag、未記載 parameter、不在・部分的 parameter membership metadata、利用不能 return metadata、未解決 `@see` ref はこの警告を作らない。部分 metadata では不在を確定できず、必須 slot・重複検査は引き続き適用する。prose を formal formula と比較せず、signature、version 文法、ref 妥当性を推測しない。
-Descriptor 方針: family `Documentation`、既定 severity `Warning`、phase `Documentation`、category `DocumentationWarning` は継承制約であり新たな選択ではない。将来の各 descriptor には未割当の個別 numeric code、選択した semantic name、不変 meaning key、表の summary、MT-Q7 provenance metadata が必要。初期 lifecycle 候補は active、aliases・retirement marker・replacement codes は空。実際の有効化は採用時のみ。[Registry metadata](./registry.md#descriptor-metadata)、[allocation](./registry.md#allocation-rules)、[retirement](./registry.md#retirement-rules)、compatibility に従う。改名時は永久 meaning key と alias を維持し、message は identity ではない。W0400–W0404 は attachment 専用で、他の slot も予約しない。
+Descriptor 方針: family `Documentation`、既定 severity `Warning`、phase `Documentation`、category `DocumentationWarning` は継承制約であり新たな選択ではない。将来の各 descriptor には未割当の個別 numeric code、選択した semantic name、不変 meaning key、表の summary、MT-Q7 provenance metadata が必要。初期 lifecycle 候補は active、aliases・retirement marker・replacement codes は空。実際の有効化は採用時のみ。[Registry metadata](./registry.md#descriptor-metadata)、[allocation](./registry.md#割り当て規則)、[retirement](./registry.md#retirement-rules)、compatibility に従う。改名時は永久 meaning key と alias を維持し、message は identity ではない。W0400–W0404 は attachment 専用で、他の slot も予約しない。
 
 ## 位置・発行・profile
 各候補は検証済み publication、完全な module identity、利用可能な verified target、block ordinal、元の raw text/maps を保持する。実在の source-bound mapped range のみを使う。非連続の container/Q3 map から架空の連続 range を作らず、MT-Q3 に primary/related-range の選択を公開する。利用可能な source-bound primary がなければ、MT-Q3 は既存の [Documentation provenance location](./failure_record.md#documentation-primary-locations) の再利用を提案する。現在の規範適用は attachment 警告であり、後続採用で適用範囲を明示拡張する必要がある。path、label、artifact offset は SourceId や loaded-source binding ではない。span/EOF、行列、candidate identity、新しい location variant を捏造しない。

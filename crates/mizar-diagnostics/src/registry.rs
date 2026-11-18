@@ -74,7 +74,7 @@ pub enum PhaseFamily {
     AlgorithmWarning,
     /// Compatibility and packaging warnings.
     CompatibilityWarning,
-    /// Documentation attachment warnings.
+    /// Documentation attachment and Markdown/tag warnings.
     Documentation,
     /// Informational display diagnostics.
     Info,

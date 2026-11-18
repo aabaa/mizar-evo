@@ -1,6 +1,6 @@
 # mizar-doc コメント定義
 正本は英語: [English companion](../en/comments.md)。
-状態: Q1–Q8 の①は所有者承認済み。Q1 transport と共有 attachment 診断は利用可能。CommonMark/tag-field 定義は Doc8 の前提として残る。
+状態: Q1–Q8 の①は所有者承認済み。Q1 transport と共有 attachment 診断は利用可能。Doc8 定義・診断は spec24 と spec22.6.9 に採用済みで、構文解析実装は別作業。
 
 ## 権威と責務
 spec [2.9/2.10](../../../spec/en/02.lexical_structure.md#29-comments-and-annotations) と [24.1](../../../spec/en/24.documentation_generation.md#241-documentation-comments-syntax) がコメント構文・対応付け・CommonMark・タグを所有する。architecture [02](../../architecture/en/02.source_and_frontend.md#comments-and-doc-comments-are-source-metadata) は構文上の候補を保持し、architecture [13](../../architecture/en/13.documentation_and_extraction.md#step-2-attach-doc-comments) と internal [05](../../internal/en/05.documentation_extraction.md#documentation-inputs) は検証済み identity とソース隣接性の両方を要求する。本定義はこの consumer 境界の詳細化であり、言語意味論を変更しない。
@@ -35,7 +35,7 @@ module-leading 適格性は import または source item より前の file prefi
 ## Markdown と構造化タグ
 Markdown 本文の導出でも raw block と各行の map を保持する。承認 Q3 に従い各行の `:::` と続く ASCII space 最大1個を除き、残りと逆 map を保持する。全体 trim/deindent、Unicode/tab/改行の再正規化は CommonMark の字下げ・code・診断位置を変え得るため行わない。
 必要な surface は独自縮小言語ではなく CommonMark であり、段落・見出し・強調・list・fenced/indented code・block quote・標準 link を利用できる。空の `:::` 行で段落を区切れる。Doc8 は parser/version と拡張間の扱いを固定し、spec24.1 を黙って縮小しない。観測可能な曖昧さは owner の明確化へ戻す。
-[Doc8 CommonMark/tag-field 提案](./commonmark.md) は候補定義と未選択 Q9–Q18 を記録する。新意味論の採用や実装 gate の開放ではない。
+[spec24.1/3](../../../spec/ja/24.documentation_generation.md) が採用済み Q9–Q18①の parser/field/math 定義を所有し、[commonmark](./commonmark.md) は提案履歴を保持する。Doc8 実装は固定 example と相互作用 case の適合性を示す必要がある。
 Mizar inline code と code block の内容は後続 highlighting 用に保つ。正確な label/FQN の code 参照、明示的 `[text](ref)`、`@see` は Doc9/10 へ渡し、式は code のままにする。inline `$…$` と単独行の display `$$…$$` math は [24.3](../../../spec/en/24.documentation_generation.md#243-mathematical-formula-rendering) に従い range とともに Doc11/12 へ渡す。comments は link/anchor/UsedBy を解決せず、数式・code example・verifier annotation を描画/評価しない。HTML 出力方針は Doc13–15 の責務である。
 タグは Markdown 段落の最初の token の場合だけ認識し、名前・raw 引数/本文・range を保つ。spec24.1 の7種は `@param name`（parameter ごとに1個）、`@returns`（戻り値、`result`）、`@requires`/`@ensures`（説明の補足）、`@see ref`、`@since version`、`@deprecated version`（続く非推奨説明）である。この意味を保ち、formal contract の追加・検証変更・code 評価・新 version 文法の強制を行わない。
 未知タグは spec2.9.2 に従い verbatim で通し、未知の statement annotation にしない。承認 Q4 は不正/重複/利用可能 metadata と不一致の既知 tag に text を保持する既定表示 warning を出すが、下記残余規則を適用し 承認 Q7/Q8 を適用する。text の黙示破棄・tag 上書き・不在 parameter metadata の推測をしない。Markdown 解析結果は派生 view であり、新 serialized schema や意味 AST の代替ではない。
@@ -47,7 +47,7 @@ parameter 名の比較は同じ検証済み target の利用可能な authoritat
 malformed・duplicate・確定 metadata mismatch は該当 tag の保存 range で既定表示 warning とし、全 raw argument/body と map 済み range を保持する。
 
 ## 診断と決定性
-[internal05](../../internal/en/05.documentation_extraction.md#diagnostics) の Documentation 診断 family と既存の順序/profile 規則を使う。利用可能な range を保ち、不在 source の range を捏造しない。source 不在は既定 warning、コメント欠落は optional lint である。不正な Markdown は warning と劣化表示にし、既定の文書 build を中断しない。承認 Q4 は未結合/曖昧 block と不正 tag に text を保持する既定表示 warning を出すが、上記定義と承認 Q5–Q8 に従う。
+[internal05](../../internal/en/05.documentation_extraction.md#diagnostics) の Documentation 診断 family と既存の順序/profile 規則を使う。利用可能な range を保ち、不在 source の range を捏造しない。source 不在は既定 warning、コメント欠落は optional lint である。[spec22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) に従い CommonMark literal/recovery は警告せず、適格 math 失敗は literal を保持し、実 conversion/map 失敗は警告して対象 raw block を縮退し既定文書 build を中断しない。[record owner](../../mizar-diagnostics/ja/failure_record.md#markdowntag-occurrence-details) が位置・詳細・失敗 block の発行規約を所有する。承認 Q4 は未結合/曖昧 block と不正 tag に text を保持する既定表示 warning を出すが、上記定義と承認 Q5–Q8 に従う。
 integrity/staleness/schema error は下位 reader の error のままで、表示 warning と区別する。profile は文書 warning をその文書 build の error に昇格できるが、証明の有効性・公開された検証入力・抽出方針は変えない。前処理診断の意味/range を保持し、Doc 診断採用によって失敗した read を入力成功にしない。
 同じ検証済み publication・binding 済みコメント入力・option に対し、source block/line/tag 順と semantic import 順を保持する。完全な publication/module/item identity と map 済み source 位置で、worker/入力列挙順に依存しない attachment/診断を行う。storage 順を参照優先順位にしない。劣化出力でも問題 text/range を保ち、文書再生成で source/artifact を変更しない。
 
@@ -76,4 +76,4 @@ integrity/staleness/schema error は下位 reader の error のままで、表�
 正しく結合済みの optional LoadedSource は identity/path/hash/text 確認後に実 primary span を供給し、それ以外は共有 Documentation provenance location を使う。source/snapshot 結合は caller の責務であり、attachment は currentness 権限を追加しない。結果の documentation-failure query は保持した warning 昇格 profile を適用し、proof metadata は変更しない。未対応・不在の対応付け情報は診断して未結合に保つ。
 
 ## 引き渡し境界
-Doc7 は実装済み Q1 route と共有 Documentation 診断を承認 Q5/Q6 の下で利用し、[task7](./todo.md#ドキュメントの-strand) が attachment 実装を所有する。Doc8 はさらに Doc7 と承認 Q7/Q8 に基づく CommonMark/tag-field 定義を必要とする。広範な Doc4/5、link/UsedBy、描画、抽出、公開、crate/Steps6–8 の完了は未達のままとする。
+Doc7 は実装済み Q1 route と共有 Documentation 診断を承認 Q5/Q6 の下で利用し、[task7](./todo.md#ドキュメントの-strand) が attachment 実装を所有する。Doc8 は採用済み spec24.1/3 と spec22.6.9 の下で Doc7 上に構文解析を実装できるが、ここでは parser 完了を主張しない。広範な Doc4/5、link/UsedBy、描画、抽出、公開、crate/Steps6–8 の完了は未達のままとする。

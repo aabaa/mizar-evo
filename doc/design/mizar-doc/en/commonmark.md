@@ -1,6 +1,6 @@
 # Doc8 CommonMark And Tag-Field Definition Proposal
 Canonical language: English; [Japanese companion](../ja/commonmark.md).
-Status: non-normative proposal. Q9–Q18 are all UNSELECTED; neither column authorizes implementation or modifies spec24.1. Approved [Q1–Q8 option ①](./comments.md#owner-q-decisions) remains in force; its option-2 alternatives are excluded.
+Status: historical proposal; owner approved Q9–Q18 ALL ① on 2026-11-18 17:50 JST, now adopted in [spec24.1/3](../../../spec/en/24.documentation_generation.md) with [spec22 diagnostics](../../../spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings). Unselected/candidate wording and ② below are historical, not live gates. Parser implementation/conformance remains separate; Q1–Q8 stay binding.
 
 ## Authority And Fixed Inputs
 Spec [2.9.2](../../../spec/en/02.lexical_structure.md#292-annotations), [24.1–3](../../../spec/en/24.documentation_generation.md) and the [comments owner](./comments.md#markdown-and-structured-tags) govern this proposal. Doc7 supplies separately attached, source-ordered blocks, raw lines/maps and full verified target provenance. Q3 removes `:::` and at most one following ASCII space; no global trim/deindent or second source normalization is permitted.

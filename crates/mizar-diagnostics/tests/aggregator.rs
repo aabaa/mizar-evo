@@ -275,10 +275,10 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
     };
     let make_input = |primary_location, message: String| DiagnosticDraftInput {
         source_snapshot: snapshot,
-        code: DiagnosticCode::from_str("W0400").unwrap(),
+        code: DiagnosticCode::from_str("W0405").unwrap(),
         phase: PipelinePhase::Documentation,
         category: FailureCategory::DocumentationWarning,
-        stable_detail_key: "documentation.attachment.orphan".into(),
+        stable_detail_key: "documentation.tag.missing_slot".into(),
         message,
         primary_location,
         secondary_spans: vec![],
@@ -322,7 +322,7 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
     for difference in 0..3 {
         let mut input = make_input(location.clone(), format!("difference{difference}"));
         match difference {
-            0 => input.code = DiagnosticCode::from_str("W0401").unwrap(),
+            0 => input.code = DiagnosticCode::from_str("W0406").unwrap(),
             1 => input.stable_detail_key = "documentation.other_reason".into(),
             _ => {
                 input.details = DiagnosticDetails::from_entries([(
@@ -389,7 +389,7 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
     let stale_snapshot = snapshot_id(41);
-    let mut stale_input = make_input(location, "stale".into());
+    let mut stale_input = make_input(location.clone(), "stale".into());
     stale_input.source_snapshot = stale_snapshot;
     let stale_batch = batch(
         stale_snapshot,
@@ -400,6 +400,178 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
     let current = BuildDiagnosticIndex::from_batches(snapshot, vec![stale_batch]).unwrap();
     assert!(current.records().is_empty());
     assert_eq!(current.obsolete_drafts().len(), 1);
+
+    // Supply Markdown/tag conventions at the shared-record seam, without a parser.
+    use DiagnosticDetailValue::{List, String as Text};
+    let strings = |values: &[&str]| List(values.iter().map(|s| Text((*s).into())).collect());
+    let reason = "documentation.tag.missing_slot";
+    let occurrence = List(vec![
+        Text("ab".repeat(32)),
+        List(vec![
+            Text("pkg".into()),
+            List(vec![]),
+            List(vec![]),
+            Text("src/doc.miz".into()),
+            Text("2026".into()),
+        ]),
+        strings(&["item", "origin-1", "pkg.T"]),
+        Text("2".into()),
+        Text(reason.into()),
+        strings(&["1", "7"]),
+    ]);
+    let raw = List(vec![Text("@param".into()), Text(" ".into()), List(vec![])]);
+    let occurrence_input = |location, occurrence, message: &str| {
+        let mut input = make_input(location, message.into());
+        input.details = DiagnosticDetails::from_entries([
+            ("documentation.occurrence", occurrence),
+            ("documentation.raw", raw.clone()),
+            ("documentation.subreason", Text("name".into())),
+        ])
+        .unwrap();
+        input
+    };
+    let publish = |drafts| {
+        BuildDiagnosticIndex::from_batches(
+            snapshot,
+            vec![batch(
+                snapshot,
+                PipelinePhase::Documentation,
+                "doc8",
+                drafts,
+            )],
+        )
+        .unwrap()
+    };
+    let span = DiagnosticPrimaryLocation::Span(
+        DiagnosticSpan::primary(
+            SourceRange {
+                source_id: source_id(snapshot),
+                start: 0,
+                end: 1,
+            },
+            None,
+        )
+        .unwrap(),
+    );
+    for primary in [location.clone(), span] {
+        let mut drafts = vec![];
+        for field in 0..7 {
+            let List(mut fields) = occurrence.clone() else {
+                unreachable!()
+            };
+            match field {
+                0 => {}
+                1 => fields[2] = strings(&["item", "origin-2", "pkg.T"]),
+                2 => fields[3] = Text(u64::MAX.to_string()),
+                3 => fields[4] = Text("documentation.tag.missing_body".into()),
+                4 => fields[5] = strings(&["2", "7"]),
+                5 => fields[5] = strings(&["1", "8"]),
+                _ => fields[2] = strings(&["item", "origin-1", "pkg.Other"]),
+            }
+            let mut input = occurrence_input(primary.clone(), List(fields), "alpha");
+            if field == 2
+                && let DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } =
+                    &mut input.primary_location
+            {
+                *block_ordinal = u64::MAX;
+            }
+            if field == 3 {
+                input.code = DiagnosticCode::from_str("W0406").unwrap();
+                input.stable_detail_key = "documentation.tag.missing_body".into();
+                input
+                    .details
+                    .insert("documentation.subreason", Text("returns".into()))
+                    .unwrap();
+                input
+                    .details
+                    .insert(
+                        "documentation.raw",
+                        List(vec![
+                            Text("@returns".into()),
+                            Text(" ".into()),
+                            List(vec![]),
+                        ]),
+                    )
+                    .unwrap();
+            }
+            drafts.push(DiagnosticDraft::new(input).unwrap());
+        }
+        drafts.push(
+            DiagnosticDraft::new(occurrence_input(primary, occurrence.clone(), "zeta")).unwrap(),
+        );
+        let forward = publish(drafts.clone());
+        drafts.reverse();
+        let reversed = publish(drafts);
+        assert_eq!(
+            forward.len(),
+            7,
+            "coincident locations retain full occurrence identity"
+        );
+        assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
+        assert!(forward.records().iter().all(|r| r.message() == "alpha"));
+    }
+    let condition = List(vec![occurrence.clone(), raw.clone(), Text("name".into())]);
+    let List(mut later) = occurrence.clone() else {
+        unreachable!()
+    };
+    later[4] = Text("documentation.markdown.unmatched_math_delimiter".into());
+    later[5] = strings(&["12", "13"]);
+    let retained = List(vec![
+        condition.clone(),
+        condition,
+        List(vec![List(later), List(vec![]), Text("inline".into())]),
+    ]);
+    let mut failed = occurrence_input(location.clone(), occurrence.clone(), "raw fallback");
+    failed.code = DiagnosticCode::from_str("W0411").unwrap();
+    failed.stable_detail_key = "documentation.markdown.conversion_failure".into();
+    let List(mut conversion) = occurrence.clone() else {
+        unreachable!()
+    };
+    conversion[4] = Text(failed.stable_detail_key.clone());
+    conversion[5] = List(vec![]);
+    failed.details = DiagnosticDetails::from_entries([
+        ("documentation.occurrence", List(conversion)),
+        ("documentation.raw", List(vec![])),
+        ("documentation.subreason", Text("mapping_failed".into())),
+        ("documentation.conversion_stage", Text("source_map".into())),
+        ("documentation.retained_conditions", retained.clone()),
+    ])
+    .unwrap();
+    let expected = failed.details.clone();
+    let mut other_location = location;
+    if let DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } = &mut other_location {
+        *block_ordinal = 3;
+    }
+    let List(mut other_occurrence) = occurrence else {
+        unreachable!()
+    };
+    other_occurrence[3] = Text("3".into());
+    let other = occurrence_input(other_location, List(other_occurrence), "unaffected block");
+    let index = publish(vec![
+        DiagnosticDraft::new(failed).unwrap(),
+        DiagnosticDraft::new(other).unwrap(),
+    ]);
+    assert_eq!(index.len(), 2);
+    let failure = index
+        .records()
+        .iter()
+        .find(|r| r.code().to_string() == "W0411")
+        .unwrap();
+    assert_eq!(failure.details(), &expected);
+    assert_eq!(
+        index
+            .records()
+            .iter()
+            .filter(|r| r.code().to_string() == "W0405")
+            .count(),
+        1
+    );
+    assert!(
+        index
+            .records()
+            .iter()
+            .any(|r| r.message() == "unaffected block")
+    );
 }
 
 #[test]

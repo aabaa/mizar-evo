@@ -3833,19 +3833,60 @@ fn doc7_replay_availability_private_option_and_warning_promotion_preserve_inputs
         .iter()
         .map(|p| std::fs::read(root.join(p)).unwrap())
         .collect::<Vec<_>>();
-    let initial = doc7_attach(&plan);
+    let mut initial = doc7_attach(&plan);
     assert_eq!(doc7_codes(&initial), ["W0400"]);
     assert!(!initial.documentation_failed());
     let blocks = format!("{:?}", initial.blocks);
     let warnings = initial.warnings.clone();
     assert_eq!(blocks, format!("{:?}", doc7_attach(&plan).blocks));
     assert_eq!(initial.warnings, doc7_attach(&plan).warnings);
+    // New Markdown/tag drafts are supplied at the consumer seam; attachment still emits W0400 only.
+    use mizar_diagnostics::{
+        failure_record::{DiagnosticDraft, DiagnosticDraftInput},
+        registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
+    };
+    let template = &warnings[0];
+    let supplied = (405..=411)
+        .map(|number| {
+            let code = DiagnosticCode::from_parts(DiagnosticSeverity::Warning, number).unwrap();
+            let descriptor = DiagnosticRegistry::builtin().lookup(code).unwrap();
+            DiagnosticDraft::new(DiagnosticDraftInput {
+                source_snapshot: template.source_snapshot(),
+                code,
+                phase: template.phase(),
+                category: template.category(),
+                stable_detail_key: descriptor.semantic_name.into(),
+                message: "supplied Doc8 warning".into(),
+                primary_location: template.primary_location().clone(),
+                secondary_spans: template.secondary_spans().to_vec(),
+                notes: template.notes().to_vec(),
+                details: template.details().clone(),
+                fixes: vec![],
+                explanation: None,
+            })
+            .unwrap()
+        })
+        .collect::<Vec<_>>();
+    initial.warnings = supplied.clone();
+    assert!(!initial.documentation_failed());
     drop(initial);
     plan.profile.include_private_docs = true;
     assert_eq!(blocks, format!("{:?}", doc7_attach(&plan).blocks));
     assert_eq!(warnings, doc7_attach(&plan).warnings);
     plan.profile.fail_on_doc_warnings = true;
     assert!(doc7_attach(&plan).documentation_failed());
+    let mut promoted = doc7_attach(&plan);
+    promoted.warnings = supplied.clone();
+    assert!(promoted.documentation_failed());
+    assert_eq!(promoted.warnings, supplied);
+    assert_eq!(blocks, format!("{:?}", promoted.blocks));
+    for warning in &promoted.warnings {
+        let descriptor = DiagnosticRegistry::builtin()
+            .lookup(warning.code())
+            .unwrap();
+        assert_eq!(descriptor.default_severity, DiagnosticSeverity::Warning);
+    }
+    drop(promoted);
     assert_eq!(plan.index, saved.index);
     assert_eq!(
         before,

@@ -1,6 +1,6 @@
 # Doc8 Markdown/Tag Presentation Diagnostics Definition Proposal
 Canonical language: English; [Japanese companion](../ja/documentation_markdown_tags.md).
-Status: non-normative definition proposal; MT-Q1–MT-Q7 below are ALL UNSELECTED. No code is allocated, reserved or emitted by this document; adoption and implementation require separate authorization.
+Status: historical proposal; owner approved MT-Q1–MT-Q7 ALL ① on 2026-11-18 (ledger approval), adopted in [spec22 §22.6.9](../../../spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) and the [record detail convention](./failure_record.md#markdowntag-occurrence-details). Unselected/candidate wording and ② below are historical, not live gates; no parser implementation is claimed.
 
 ## Fixed Inputs And Ownership
 The Documentation diagnostic owner defines this surface under spec [22.1.1–2](../../../spec/en/22.error_handling_and_diagnostics.md#2211-error-code-system-e-series), [22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) and [24.1–3](../../../spec/en/24.documentation_generation.md). Preserve [comments Q1–Q8①](../../mizar-doc/en/comments.md#owner-q-decisions), [tag validation](../../mizar-doc/en/comments.md#residual-tag-validation) and full source/publication/target provenance. [Diagnostics plan](./00.crate_plan.md) owns the prerequisite; [Doc plan](../../mizar-doc/en/00.crate_plan.md) owns subsequent parsing.

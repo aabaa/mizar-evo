@@ -52,7 +52,7 @@ pub enum PipelinePhase {
     Compatibility,
     /// Build/session infrastructure diagnostics.
     Build,
-    /// Documentation attachment diagnostics.
+    /// Documentation attachment and Markdown/tag diagnostics.
     Documentation,
     /// Developer-only internal diagnostics.
     Internal,
@@ -113,7 +113,7 @@ pub enum FailureCategory {
     LogicFailure,
     /// Compatibility or packaging warning.
     CompatibilityWarning,
-    /// Documentation attachment warning.
+    /// Documentation attachment or Markdown/tag warning.
     DocumentationWarning,
     /// Informational display diagnostic after `I` codes are allocated.
     Informational,

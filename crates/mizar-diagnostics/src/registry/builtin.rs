@@ -10,6 +10,9 @@ const FRONTEND_SINCE: &str = "spec-22-frontend-v1";
 const DOCUMENTATION_SINCE: &str = "spec-22-documentation-v1";
 const DOCUMENTATION_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings";
+const MARKDOWN_TAGS_SINCE: &str = "spec-22-documentation-markdown-tags-v1";
+const MARKDOWN_TAGS_DOC_URL: &str =
+    "doc/spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings";
 const INITIAL_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference";
 
@@ -855,5 +858,68 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "Required documentation association coordinates are absent or cannot be related to the verified target.",
         DOCUMENTATION_SINCE,
         DOCUMENTATION_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        405,
+        "documentation.tag.missing_slot",
+        Documentation,
+        "A known tag lacks its required name, reference or version slot: `@param`, `@see`, `@since`, `@deprecated` respectively.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        406,
+        "documentation.tag.missing_body",
+        Documentation,
+        "A required explanatory body is empty for `@returns`, `@requires`, `@ensures`, or after `@deprecated version`.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        407,
+        "documentation.tag.duplicate",
+        Documentation,
+        "A later known-tag occurrence violates the approved same-target raw duplicate rule: same `@param` name, repeated singleton (`@returns`, `@since`, `@deprecated`), or identical raw tag/payload for repeatable `@requires`, `@ensures`, `@see`.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        408,
+        "documentation.tag.metadata_mismatch",
+        Documentation,
+        "Available authoritative metadata establishes that a named parameter is absent from a complete list, or that `@returns` targets an item with no return value.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        409,
+        "documentation.markdown.unmatched_math_delimiter",
+        Documentation,
+        "An eligible math opener has no valid matching closer under the approved protected-boundary rules; preserve its literal spelling/CommonMark parse.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        410,
+        "documentation.markdown.empty_display_math",
+        Documentation,
+        "A paired display-math candidate has only W in its interior; preserve its full literal spelling without a math node.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        411,
+        "documentation.markdown.conversion_failure",
+        Documentation,
+        "A real inability to derive or map the Markdown/tag presentation view requires raw fallback for the affected block.",
+        MARKDOWN_TAGS_SINCE,
+        MARKDOWN_TAGS_DOC_URL
     ),
 ];

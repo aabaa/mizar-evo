@@ -217,11 +217,11 @@ fn documentation_draft_to_cli_renders_provenance_without_primary_source_lookup()
     let snapshot = snapshot_id(40);
     let input = DiagnosticDraftInput {
         source_snapshot: snapshot,
-        code: DiagnosticCode::from_str("W0404").unwrap(),
+        code: DiagnosticCode::from_str("W0411").unwrap(),
         phase: PipelinePhase::Documentation,
         category: FailureCategory::DocumentationWarning,
-        stable_detail_key: "documentation.attachment.unresolved_coordinates".into(),
-        message: "association coordinates unavailable".into(),
+        stable_detail_key: "documentation.markdown.conversion_failure".into(),
+        message: "source map conversion failed".into(),
         primary_location: DiagnosticPrimaryLocation::Documentation {
             publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
             package_id: "pkg".into(),
@@ -248,7 +248,7 @@ fn documentation_draft_to_cli_renders_provenance_without_primary_source_lookup()
     };
     let index = publish(input.clone());
     let expected = format!(
-        "warning[W0404]: association coordinates unavailable (documentation.attachment.unresolved_coordinates)\n  --> documentation publication={} package=\"pkg\" version=Some(\"\") lockfile=None module=\"src/doc.miz\" edition=\"2026\" block=12",
+        "warning[W0411]: source map conversion failed (documentation.markdown.conversion_failure)\n  --> documentation publication={} package=\"pkg\" version=Some(\"\") lockfile=None module=\"src/doc.miz\" edition=\"2026\" block=12",
         "ab".repeat(32)
     );
     let rendered = render_diagnostics(DiagnosticRenderInput::new(
