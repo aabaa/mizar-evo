@@ -91,7 +91,7 @@ For the initial registry, unless a row explicitly overrides it:
 
 ## Documentation attachment allocation
 
-[Spec22 §22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) owns attachment W0400–W0404; [§22.6.9](../../../spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) owns Markdown/tag W0405–W0411 names, meanings and summaries. Both use `Documentation`, `Warning`, `meaning_key = semantic_name`, active lifecycle and empty aliases/retirement/replacements. Attachment metadata remains `since = spec-22-documentation-v1` with the §22.6.8 URL; Markdown/tag uses `since = spec-22-documentation-markdown-tags-v1` with the §22.6.9 URL. W0415–W0499 remain unallocated. Profile promotion changes no descriptor identity. Both use [record locations/details](./failure_record.md#documentation-primary-locations); parser/producer implementation and Extraction allocation remain separate.
+[Spec22 §22.6.8](../../../spec/en/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) owns attachment W0400–W0404; [§22.6.9](../../../spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) owns Markdown/tag W0405–W0411 names, meanings and summaries. Both use `Documentation`, `Warning`, `meaning_key = semantic_name`, active lifecycle and empty aliases/retirement/replacements. Attachment metadata remains `since = spec-22-documentation-v1` with the §22.6.8 URL; Markdown/tag uses `since = spec-22-documentation-markdown-tags-v1` with the §22.6.9 URL. W0416–W0499 remain unallocated. Profile promotion changes no descriptor identity. Both use [record locations/details](./failure_record.md#documentation-primary-locations); parser/producer implementation and Extraction allocation remain separate.
 
 [Link allocation §22.6.10](../../../spec/en/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) adds W0412–W0414 with `since = DOC10-SHARED-DIAGNOSTICS` and canonical spec24.2 `doc_url`; the [shared contract](./documentation_links.md) owns exact details and presentation rules.
 
@@ -299,3 +299,5 @@ Adoption consumes source-aware owning-stage records; descriptors alone activate 
 Report source declarations/use, missing guarded conditions/mode/C, candidate/residual position and first unavailable rule or incomplete stage.
 Tests cover source declaration/use anchors, ghost runtime flows, Binder/C and valuation formation, candidate/residual positions and runtime/import/inspection limit stages; distinguish unproved/false, fail/incomplete, legal guarded valid_at and return retained after rejected import.
 Existing syntax/runtime/verification codes retain their specified roles; no inferred/new IDs or unauthorized expectation changes.
+
+[URL output allocation](./documentation_urls.md) adds W0415 with its exact descriptor; remaining render diagnostics stay gated.

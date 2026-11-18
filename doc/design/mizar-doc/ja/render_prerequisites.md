@@ -1,6 +1,6 @@
 # Doc13 Render 前提条件の補完提案
 正規言語: 英語。[英語正本](../en/render_prerequisites.md)。
-状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate 引渡しと限定 G4 opaque client を除き非規範的である。schema 登録や page renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
+状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate 引渡しと限定 G4 opaque client と URL 方針診断の前提を除き非規範的である。schema 登録や page renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
 
 ## 採用済み G1 identity binding
 Artifact の `project_frontend_identity` は元 source に束縛された不変の identity product を捕捉し、Driver は `PublishedSourceMetadata::identity()` に保持する。source/snapshot lineage は Driver が所有する。producer は native `src/<components>.miz` の成分を Session の既存 module identifier 検証規則と厳密な canonical module identity に照合する。FQN や任意の artifact 文字列から成分を作らない。非 ASCII native identifier を含む不正・非 lossless path は拒否する。
@@ -19,7 +19,7 @@ caller は生成 version root に束縛された完全な補助 page/section nam
 採用対象は限定的な G3 coordinate 前提条件だけである。reference 遭遇順/classification は Doc8/9、source-view/行 routing は Q3、劣化 summary は Q4/MT に残し、採用済み block-local recovery を保持する。Doc13 全体の整合採用、rendering、後続 gate は別途必要である。
 
 ## Adopted G4 Opaque Client Prerequisite
-Doc11 Q6/Q7/Q12 と Doc13 Q6/Q11 の opaque 部分だけを [math runtime](./math.md) と [render transport](./render.md#adopted-opaque-math-transport) として採用する。実 Doc8 payload/順序/provenance、独立した accessible client failure、固定 local asset/設定に限定する。共有 build diagnostic の割当/発行は diagnostics が保持する。Q12 descriptor/location/precedence/profile、完全 template、残る math 依存、G5、整合 Doc13、schema/publication、Doc23/24、全 credit は未解決のままとする。
+Doc11 Q6/Q7/Q12 と Doc13 Q6/Q11 の opaque 部分だけを [math runtime](./math.md) と [render transport](./render.md#adopted-opaque-math-transport) として採用する。実 Doc8 payload/順序/provenance、独立した accessible client failure、固定 local asset/設定に限定する。共有 build diagnostic の割当/発行は diagnostics が保持する。残る Q12 診断と検出・発行 witness、完全 template、残る math 依存、G5、整合 Doc13、schema/publication、Doc23/24、全 credit は未解決のままとする。
 
 ## Identity と allocation の引渡し
 [Doc4](./doc_build.md#index-inputs-and-later-completion) の認証済み publication と完全 export inventory を、[Doc10 前提条件](./link_prerequisites.md) の producer/validation 義務に従って消費する。export visibility は Public と Reexported を含み、完全 identity ごとに一件を保持して、異なる identity の重複 FQN を統合しない。各 projection は検証済みの元 module/export と publication への束縛を保持しなければならない。
@@ -49,5 +49,8 @@ used_by は producer が分類した選択済み theorem ごとに一 record と
 1. 限定的な [G1 identity 引渡し](#採用済み-g1-identity-binding) は、完全 export に対する kind/version 互換性と認証済み lossless module 成分を採用する。必要な Doc13 ① render/wire interface の整合採用は別途行い、採用済み Doc8/9 と Q3 href を保持する。この前提条件だけでは Doc13 は ready にならない。
 2. Doc10 import/closure/direct-by 入力と render page/id/alias/section allocation を供給・認証する。complete-empty、incomplete、refusal state、反復/自己/cross-package citation、予約名/file-directory/case 衝突、label 不在、非 ASCII href を実証する。lower-reader integrity/schema/currentness failure は error のまま。
 3. 限定的な [source-coordinate 引渡し](#採用済み-g3-source-coordinates) は認証済みの元 byte segment を供給する。元順序の reference 遭遇/classification は Doc8/9 の作業に残し、source-view/行 routing は別途定義する。map 欠落時は synthetic offset なしで provenance を保持し、source 欠落は既存 unavailable/warning 動作を保つ。採用済み block-local recovery を変えず Q4/MT 劣化 summary を解決する。
-4. diagnostic owner と別途 Q12 render 診断、location、overlap/precedence、profile を定義・採用する。共有 link 診断提案は HTML/URL-policy warning を割り当てない。各所有者の下で Doc11/math transport/error/asset 依存を解消し、HTML template/属性順と pinned asset manifest を完成する。warning promotion は documentation だけに影響し、proof/extraction acceptance には影響しない。
+4. diagnostic owner と別途 Q12 render 診断、location、overlap/precedence、profile を定義・採用する。共有 link 診断は render warning を割り当てず、下記の限定 URL 前提が rejected-URL 一種類のみを割り当てる。各所有者の下で Doc11/math transport/error/asset 依存を解消し、HTML template/属性順と pinned asset manifest を完成する。warning promotion は documentation だけに影響し、proof/extraction acceptance には影響しない。
 5. その後に限り、採用済み interface と完全入力に対して Doc14/15 実装を dispatch し、上記 wire shape と canonical byte の positive/refusal/incompatibility witness を備える。Doc23 atomic publication、Doc24 executable determinism、optional DocIndex schema/compatibility は個別 gate のままで、この補完では一つも解消しない。
+
+## 採用済み G4 URL 方針診断の前提
+限定 [Q5 出力方針](./render.md#採用済み-htmlurl-出力方針) と [共有 URL 診断](../../mizar-diagnostics/ja/documentation_urls.md) を採用する。実装は明示 draft に対する registry support のみ。検出・発行と overlap/refusal witness、残る Q12/source/readiness 診断、template/attribute order/style/search manifest、symbolic math、他の G4/G5 は gate 内に残る。

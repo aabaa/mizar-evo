@@ -93,7 +93,7 @@ projection である。これらは registry identity ではない。
 
 ## Documentation attachment allocation
 
-[spec22 §22.6.8](../../../spec/ja/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) は添付 W0400–W0404、[§22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) は Markdown/tag W0405–W0411 の name・meaning・summary を所有する。両者は `Documentation`、`Warning`、`meaning_key = semantic_name`、active と空の alias/retirement/replacement を使う。添付は `since = spec-22-documentation-v1` と §22.6.8 URL、Markdown/tag は `since = spec-22-documentation-markdown-tags-v1` と §22.6.9 URL。W0415–W0499 は未割当。profile 昇格は descriptor identity を変えない。両者は [record 位置と詳細](./failure_record.md#documentation-primary-locations) を使い、parser/producer 実装と Extraction 割当は別作業。
+[spec22 §22.6.8](../../../spec/ja/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) は添付 W0400–W0404、[§22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) は Markdown/tag W0405–W0411 の name・meaning・summary を所有する。両者は `Documentation`、`Warning`、`meaning_key = semantic_name`、active と空の alias/retirement/replacement を使う。添付は `since = spec-22-documentation-v1` と §22.6.8 URL、Markdown/tag は `since = spec-22-documentation-markdown-tags-v1` と §22.6.9 URL。W0416–W0499 は未割当。profile 昇格は descriptor identity を変えない。両者は [record 位置と詳細](./failure_record.md#documentation-primary-locations) を使い、parser/producer 実装と Extraction 割当は別作業。
 
 [Link 割当 §22.6.10](../../../spec/ja/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) は W0412–W0414、`since = DOC10-SHARED-DIAGNOSTICS`、正本 spec24.2 `doc_url` を追加する。[共有契約](./documentation_links.md) が詳細と表示規則を所有する。
 
@@ -297,3 +297,5 @@ E0220–E0224 は仕様22.7の名前と英語正本のsummaryを用い、`meanin
 宣言/使用、欠落する局所条件/モード/C、候補/残存位置、最初の未適用 rule または未完了段階を報告する。
 テストは source 宣言/使用位置、ghost の runtime 流入、Binder/C と valuation 形成、candidate/残留位置、runtime/import/inspection の limit stage を検査する。未証明/偽、fail/未完、guard 付き valid_at、import 拒否後の返却保持を区別する。
 既存の syntax/runtime/verification コードの役割を保ち、推測/新規 ID と未許可の期待値変更を行わない。
+
+[URL 出力診断](./documentation_urls.md) が厳密な descriptor の W0415 を追加する。残る render 診断は gate 内。
