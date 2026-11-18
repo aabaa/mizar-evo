@@ -1,6 +1,6 @@
 # Artifact ソースコメント投影
 正本は英語: [English companion](../en/comment_projection.md)。
-状態: 承認された emission 時投影の定義、structural codec、Artifact store/manifest 対応と明示的 Driver emission。Doc consumption は未完了。本データ契約は Artifact が所有し、[VerifiedArtifact](../en/verified_artifact.md#ownership) が schema/version/hash の権限を保持する。
+状態: 承認された emission 時投影の定義、structural codec、Artifact store/manifest 対応、明示的 Driver emission と限定された Doc validated-publication consumption。本データ契約は Artifact が所有し、[VerifiedArtifact](../en/verified_artifact.md#ownership) が schema/version/hash の権限を保持する。
 
 ## 所有と引き渡し
 所有者が選択した [Doc6 Q1](../../mizar-doc/en/comments.md#owner-q-decisions) は、emission 時に source 由来 comment/map を公開 artifact へ投影する。source 再読はコメント transport/fallback ではない。snippet/source link 用の optional な binding 済み source loading は既存 owner に残る。
@@ -8,7 +8,7 @@
 2. **IR projection:** [ArtifactProjectionService](../../mizar-ir/en/projection.md#ownership) は producer record、その sealed/readable な current-snapshot output lineage、対応する検証済み item record を消費する。source/module/lineage 一致を確認し、安定データのみを Artifact 所有の形へ変換して unpublished draft に入れる。source 再解析や検証済み target の捏造はしない。
 3. **Driver orchestration:** [captured-source binding](../../mizar-driver/en/frontend_adapter.md#native-captured-sources) は producer → IR → emission を通じ実 source/map を保持する。一致する snapshot/package/source と検証済み output を供給し、既存 ArtifactCommit/store/manifest 検証と atomic publication 境界を用いる。再読・代替 SourceId・公開後 sidecar で不足コメントを補わない。OpenBuffer/InternalOnly draft に package publication 資格を与えない。
 4. **Artifact reader と Doc:** validating reader は検証した enclosing artifact とともにのみ投影を供給する。Doc の[公開入力 plan](../../mizar-doc/en/doc_build.md#full-build-and-index-inputs) が選択 publication/current request に結合し、[comments](../../mizar-doc/ja/comments.md) が後で block 化・attachment・Markdown 導出を行う。Artifact/IR は Doc attachment・tag parsing・link 解決・描画を行わない。
-Frontend は genuine metadata、IR は検証済み unpublished comment draft、Artifact は store/manifest 対応の structural codec、Driver は[明示的な native-session 捕捉・保持](../../mizar-driver/ja/request.md#commented-draft-capture-and-retention)と[emission](../../mizar-driver/ja/request.md#commented-artifact-emission)を供給する。Doc7 がこの経路を使うには Doc validated-publication consumption が引き続き必要である。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
+Frontend は genuine metadata、IR は検証済み unpublished comment draft、Artifact は store/manifest 対応の structural codec、Driver は[明示的な native-session 捕捉・保持](../../mizar-driver/ja/request.md#commented-draft-capture-and-retention)と[emission](../../mizar-driver/ja/request.md#commented-artifact-emission)を供給する。Doc は current-request-bound plan 内に[validated-publication consumption](../../mizar-doc/ja/artifact_reader.md#validated-comment-inputs) を供給し、Doc7 attachment は別の責務に残る。既存の空 documentation side table と `documentation_ref` はこの実装ではない。
 
 ## Availability と Identity
 Unavailable は profile/producer が完全な comment 投影を供給しなかった状態。Available は captured source 全体の収集が完了した状態であり、doc 行ゼロは available-empty、空の `:::` 本文は存在する行である。対応 profile は availability を明示し、legacy profile の欠落は empty ではなく unavailable とする。部分収集/不正 payload を available とせず、検証失敗後に unavailable へ格下げしない。
@@ -35,4 +35,4 @@ envelope interface hash は envelope framing で export/dependency projection �
 `COMMENTED_ARTIFACT_SCHEMA_FAMILY`、`COMMENTED_ARTIFACT_SCHEMA_VERSION`、`artifact_hash_excluded_paths()` は汎用 atomic store caller に既存 framing を公開する。検証付き codec が canonical JSON を供給し、[manifest profile selector](../en/manifest.md#declared-enclosing-profiles) が選択 envelope を検証する。emission currentness は Driver、selected-publication/current-request binding と consumption は Doc が所有する。
 
 ## 残る Gate
-Q1 の transport 所有、data invariant、structural codec は利用可能だが、統合 handoff は未完了とする。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。
+Q1 の transport 所有、data invariant、structural codec と限定された統合 handoff は利用可能である。Doc7 は Q1 の実装前提に加え Q2 module-leading-trivia/複数 block と attachment 診断定義を待つ。Doc8 はさらに Doc7・tag-validation・CommonMark 定義を待つ。新しい観測可能な意味選択は実装前に owner Q-decision へ戻す。Artifact17・広範な Doc4/5・Doc7/8・Steps6–8 の完了は主張しない。
