@@ -1,6 +1,6 @@
 //! CommonMark and raw extension views over verified documentation attachments.
 
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
 
 use mizar_artifact::store::CanonicalJson;
 use mizar_diagnostics::{
@@ -11,7 +11,7 @@ use mizar_diagnostics::{
     registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
 };
 use mizar_session::{SourceRange, TextRange};
-use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{Event, LinkType, Options, Parser, Tag, TagEnd};
 
 use crate::comments::{CommentAttachments, CommentBlock, CommentTarget};
 
@@ -61,12 +61,41 @@ pub struct MarkdownBlock {
     pub source_map: Vec<(Range<usize>, TextRange)>,
     /// Unmodified pinned CommonMark events with Q3 source offsets.
     pub events: Vec<(Event<'static>, Range<usize>)>,
+    /// Genuine destination event indices and exact authored destination ranges.
+    pub destinations: Vec<(usize, Range<usize>)>,
     /// Known fields in logical paragraph order.
     pub fields: Vec<TagField>,
     /// Accepted math in logical source order.
     pub math: Vec<MathRange>,
     /// A conversion failure requires retaining the original raw block.
     pub fallback: bool,
+}
+
+impl MarkdownBlock {
+    /// Exact CommonMark destination, including the implicit email autolink scheme.
+    pub fn interpreted_destination(&self, ordinal: usize) -> Option<Cow<'_, str>> {
+        let (index, _) = self.destinations.get(ordinal)?;
+        let Event::Start(
+            Tag::Link {
+                link_type,
+                dest_url,
+                ..
+            }
+            | Tag::Image {
+                link_type,
+                dest_url,
+                ..
+            },
+        ) = &self.events.get(*index)?.0
+        else {
+            return None;
+        };
+        Some(if *link_type == LinkType::Email {
+            Cow::Owned(format!("mailto:{dest_url}"))
+        } else {
+            Cow::Borrowed(dest_url.as_ref())
+        })
+    }
 }
 
 /// Parsing results preserve unavailable/empty input and the original attachments.
@@ -212,6 +241,7 @@ pub fn parse_comments<'a, 'input>(
                 .push(conversion_draft(attachments, ordinal, raw, &conditions));
             block.fields.clear();
             block.math.clear();
+            block.destinations.clear();
             conditions.clear();
         }
         conditions.sort_by_key(|condition| {
@@ -314,11 +344,23 @@ fn inline_tag(tag: &Tag<'_>) -> bool {
 }
 
 fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
-    let parser = Parser::new_ext(&block.text, Options::empty());
+    let mut parser = Parser::new_ext(&block.text, Options::empty()).into_offset_iter();
     block.events = parser
-        .into_offset_iter()
+        .by_ref()
         .map(|(event, range)| (event.into_static(), range))
         .collect();
+    let definitions: Vec<_> = block
+        .events
+        .iter()
+        .map(|(event, _)| match event {
+            Event::Start(Tag::Link { id, .. } | Tag::Image { id, .. }) => parser
+                .reference_definitions()
+                .get(id)
+                .map(|definition| definition.span.clone()),
+            _ => None,
+        })
+        .collect();
+    drop(parser);
     let mut protected = Vec::new();
     let mut containers = Vec::new();
     let mut paragraph = None;
@@ -474,6 +516,90 @@ fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
     block
         .math
         .sort_by_key(|math| (math.range.start, math.range.end));
+    for (index, (event, range)) in block.events.iter().enumerate() {
+        let Event::Start(Tag::Link { link_type, .. } | Tag::Image { link_type, .. }) = event else {
+            continue;
+        };
+        if block.math.iter().any(|math| {
+            math.display && math.range.start < range.end && range.start < math.range.end
+        }) {
+            continue;
+        }
+        let destination = match link_type {
+            LinkType::Autolink | LinkType::Email => Some(range.start + 1..range.end - 1),
+            LinkType::Inline => {
+                let mut depth = 1;
+                let mut label_end = range.start + 1;
+                for (event, inner) in &block.events[index + 1..] {
+                    match event {
+                        Event::Start(_) => depth += 1,
+                        Event::End(_) => depth -= 1,
+                        _ => {}
+                    }
+                    if depth == 0 {
+                        break;
+                    }
+                    label_end = label_end.max(inner.end);
+                }
+                (label_end..range.end.saturating_sub(1))
+                    .find(|&position| {
+                        block.text.as_bytes()[position..].starts_with(b"](")
+                            && !escaped(&block.text, position)
+                    })
+                    .map(|position| destination_range(&block.text, position + 2, range.end, &lines))
+            }
+            LinkType::Reference | LinkType::Collapsed | LinkType::Shortcut => {
+                definitions[index].as_ref().and_then(|definition| {
+                    (definition.start..definition.end.saturating_sub(1))
+                        .find(|&position| {
+                            block.text.as_bytes()[position..].starts_with(b"]:")
+                                && !escaped(&block.text, position)
+                        })
+                        .map(|position| {
+                            destination_range(&block.text, position + 2, definition.end, &lines)
+                        })
+                })
+            }
+            _ => None,
+        };
+        if let Some(destination) = destination {
+            block.destinations.push((index, destination));
+        } else {
+            block.fallback = true;
+        }
+    }
+}
+
+fn destination_range(text: &str, mut start: usize, end: usize, lines: &[Line]) -> Range<usize> {
+    let bytes = text.as_bytes();
+    while start < end && w(bytes[start]) {
+        start += 1;
+        if let Some(line) = lines.iter().find(|line| line.range.start == start) {
+            start = line.content.start;
+        }
+    }
+    let angle = bytes.get(start) == Some(&b'<');
+    start += usize::from(angle);
+    let mut cursor = start;
+    let mut depth = 0;
+    while cursor < end {
+        match bytes[cursor] {
+            b'\\' if cursor + 1 < end && bytes[cursor + 1].is_ascii_punctuation() => cursor += 2,
+            b'>' if angle => break,
+            b'(' if !angle => {
+                depth += 1;
+                cursor += 1;
+            }
+            b')' if !angle && depth == 0 => break,
+            b')' if !angle => {
+                depth -= 1;
+                cursor += 1;
+            }
+            byte if !angle && byte <= 0x20 => break,
+            _ => cursor += 1,
+        }
+    }
+    start..cursor
 }
 
 fn trim_w(text: &str, mut range: Range<usize>) -> Range<usize> {
@@ -993,7 +1119,7 @@ fn optional_value(text: Option<&str>) -> Value {
     Value::List(text.into_iter().map(value).collect())
 }
 
-fn occurrence(
+pub(crate) fn occurrence(
     attachments: &CommentAttachments<'_>,
     ordinal: usize,
     raw: &CommentBlock<'_>,

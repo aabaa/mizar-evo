@@ -8328,6 +8328,667 @@ mod doc10_authenticated {
                 ));
             }
 
+            mod url_output {
+                use super::*;
+                use mizar_doc::render::url_fragments;
+
+                fn fixture(
+                    text: &str,
+                    check: impl FnOnce(
+                        &Publication,
+                        &mut [DocBuildPlan],
+                        &AuthenticatedDocImports,
+                        &ValidatedDocAllocations,
+                    ),
+                ) {
+                    let mut app = publication(&[("exact.FQN", "Exact")]);
+                    document(&mut app, text);
+                    let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                    let imports = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let allocations = validate(&app, &imports, table(&app)).unwrap();
+                    check(&app, &mut plans, &imports, &allocations);
+                }
+
+                fn external(parsed: &ParsedComments<'_, '_>) -> Vec<Vec<DocReferenceClassification>> {
+                    parsed
+                        .blocks
+                        .iter()
+                        .map(|block| vec![DocReferenceClassification::External; block.destinations.len()])
+                        .collect()
+                }
+
+                fn output(
+                    parsed: &ParsedComments<'_, '_>,
+                    imports: &AuthenticatedDocImports,
+                    allocations: &ValidatedDocAllocations,
+                    classifications: &[Vec<DocReferenceClassification>],
+                ) -> Result<(Vec<String>, ResolvedDocLinks), DocBuildError> {
+                    let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                    url_fragments(
+                        parsed,
+                        imports,
+                        &direct_by,
+                        allocations,
+                        VERSION,
+                        classifications,
+                    )
+                }
+
+                fn rejected(result: &ResolvedDocLinks) -> Vec<&DiagnosticDraft> {
+                    result
+                        .warnings
+                        .iter()
+                        .filter(|warning| warning.code().to_string() == "W0415")
+                        .collect()
+                }
+
+                #[test]
+                fn doc13_url_predicate_exact_values_and_escaped_html() {
+                    let accepted = [
+                        "HTTPS://host",
+                        "mailto:a@b",
+                        "../a",
+                        "#x",
+                        "//host/a",
+                        "",
+                        "javascript%3Aalert(1)",
+                        "a/b:c",
+                        "a?b:c",
+                        "a#b:c",
+                        " HTTPS://host ",
+                        "a&amp;b",
+                        "https://host/&quot;x",
+                        "a\u{85}b",
+                        "a\u{9f}b",
+                    ];
+                    let denied = [
+                        "javascript:alert(1)",
+                        "data:x",
+                        "1http:x",
+                        ":x",
+                        " javaScript:x ",
+                        "a\\b",
+                        "a&#92;b",
+                        "a&#9;b",
+                        "a&#10;b",
+                        "a&#13;b",
+                        "a\u{1}b",
+                        "a\u{7f}b",
+                        "jav&#x61;script:x",
+                    ];
+                    let text = accepted
+                        .iter()
+                        .chain(&denied)
+                        .enumerate()
+                        .map(|(i, destination)| format!("::: [label{i}](<{destination}>)\n"))
+                        .chain(std::iter::once("::: <img src=x>\n".into()))
+                        .collect::<String>();
+                    fixture(&text, |_, plans, imports, allocations| {
+                        let attached = doc7_attach(&plans[0]);
+                        let parsed = parse_comments(&attached, &[]);
+                        assert_eq!(
+                            parsed.blocks[0].destinations.len(),
+                            accepted.len() + denied.len()
+                        );
+                        let (fragments, result) =
+                            output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                        let warnings = rejected(&result);
+                        assert_eq!(warnings.len(), denied.len());
+                        for (ordinal, (warning, raw)) in warnings.iter().zip(denied).enumerate() {
+                            let V::List(details) = &warning.details().entries()["documentation.render.url"]
+                            else {
+                                panic!("url detail")
+                            };
+                            assert_eq!(details[0], V::String("link".into()));
+                            assert_eq!(
+                                details[1],
+                                V::String((accepted.len() + ordinal).to_string())
+                            );
+                            assert_eq!(details[2], V::String(raw.into()));
+                        }
+                        let html = fragments.concat();
+                        for href in [
+                            "HTTPS://host",
+                            "javascript%3Aalert(1)",
+                            "a/b:c",
+                            "a?b:c",
+                            "a#b:c",
+                            " HTTPS://host ",
+                            "a&amp;b",
+                            "https://host/&quot;x",
+                            "a\u{85}b",
+                            "a\u{9f}b",
+                        ] {
+                            assert!(html.contains(&format!("href=\"{href}\"")), "{html}");
+                        }
+                        assert!(html.contains("&lt;img src=x&gt;"), "{html}");
+                        assert!(!html.contains("<img src=x>"));
+                        for ordinal in accepted.len()..accepted.len() + denied.len() {
+                            assert!(html.contains(&format!("label{ordinal}")));
+                        }
+                    });
+                }
+
+                #[test]
+                fn doc13_url_genuine_destinations_spelling_ordinals_and_full_subjects() {
+                    fixture(
+                        "::: [inline](jav&#x61;script:x) ![image](data:x) <https://host> <a@b.test> [empty]() [ref][r] [again][r]\n::: ` [code](data:x) `\n:::\n::: $$\n::: [math](data:x)\n::: $$\n:::\n::: [r]: javascript:ref\n",
+                        |app, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            let block = &parsed.blocks[0];
+                            let raw = block
+                                .destinations
+                                .iter()
+                                .map(|(_, range)| &block.text[range.clone()])
+                                .collect::<Vec<_>>();
+                            assert_eq!(
+                                raw,
+                                [
+                                    "jav&#x61;script:x",
+                                    "data:x",
+                                    "https://host",
+                                    "a@b.test",
+                                    "",
+                                    "javascript:ref",
+                                    "javascript:ref"
+                                ]
+                            );
+                            assert_eq!(block.destinations[5].1, block.destinations[6].1);
+                            assert_eq!(
+                                block.interpreted_destination(3).as_deref(),
+                                Some("mailto:a@b.test")
+                            );
+                            assert!(
+                                block
+                                    .destinations
+                                    .windows(2)
+                                    .all(|pair| pair[0].0 < pair[1].0)
+                            );
+                            let (fragments, result) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert!(fragments.concat().contains("href=\"mailto:a@b.test\""));
+                            assert_eq!(result.references.len(), 7);
+                            assert_eq!(
+                                result.references[0].occurrence.interpreted.as_deref(),
+                                Some("javascript:x")
+                            );
+                            assert_eq!(
+                                result.references[3].occurrence.interpreted.as_deref(),
+                                Some("mailto:a@b.test")
+                            );
+                            let warnings = rejected(&result);
+                            assert_eq!(warnings.len(), 4);
+                            for (warning, (ordinal, kind, interpreted)) in warnings.iter().zip([
+                                (0, "link", "javascript:x"),
+                                (1, "image", "data:x"),
+                                (5, "link", "javascript:ref"),
+                                (6, "link", "javascript:ref"),
+                            ]) {
+                                assert_eq!(
+                                    warning.details().entries()["documentation.render.url"],
+                                    V::List(vec![
+                                        V::String(kind.into()),
+                                        V::String(ordinal.to_string()),
+                                        V::String(raw[ordinal].into()),
+                                        V::String(interpreted.into())
+                                    ])
+                                );
+                                let V::List(subject) =
+                                    &warning.details().entries()["documentation.occurrence"]
+                                else {
+                                    panic!("occurrence")
+                                };
+                                assert_eq!(subject[0], V::String(app.hash.to_lower_hex()));
+                                let module = &app.summaries[0].module;
+                                assert_eq!(
+                                    subject[1],
+                                    V::List(vec![
+                                        V::String(module.package_id.clone()),
+                                        V::List(
+                                            module
+                                                .package_version
+                                                .iter()
+                                                .cloned()
+                                                .map(V::String)
+                                                .collect()
+                                        ),
+                                        V::List(
+                                            module
+                                                .lockfile_identity
+                                                .iter()
+                                                .cloned()
+                                                .map(V::String)
+                                                .collect()
+                                        ),
+                                        V::String(module.module_path.clone()),
+                                        V::String(module.language_edition.clone())
+                                    ])
+                                );
+                                assert_eq!(subject[2], V::List(vec![V::String("module".into())]));
+                                assert_eq!(subject[3], V::String("0".into()));
+                                assert_eq!(
+                                    subject[4],
+                                    V::String("documentation.render.rejected_url".into())
+                                );
+                                let range = &block.destinations[ordinal].1;
+                                assert_eq!(
+                                    subject[5],
+                                    V::List(vec![
+                                        V::String(range.start.to_string()),
+                                        V::String(range.end.to_string())
+                                    ])
+                                );
+                            }
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_mapped_segments_never_bridge_and_unmapped_keeps_block() {
+                    fixture(
+                        "::: [visible](javascript:bad)\n",
+                        |app, plans, imports, allocations| {
+                            let source = &app.frontend[0].source;
+                            let loaded = mizar_session::LoadedSource {
+                                source_id: source.source_id,
+                                package_id: source.package_id.clone(),
+                                module_path: source.module_path.clone(),
+                                normalized_path: source.normalized_path.clone(),
+                                text: source.source_text.clone(),
+                                source_hash: source.source_hash,
+                                edition: source.edition.clone(),
+                                origin: source.origin.clone(),
+                                line_map: source.line_map.clone(),
+                                loading_map: source.loading_map.clone(),
+                                generated_anchor: source.generated_anchor.clone(),
+                            };
+                            let attached =
+                                attach_comments(&plans[0], &app.summaries[0].module, Some(&loaded))
+                                    .unwrap();
+                            let mut parsed = parse_comments(&attached, &[]);
+                            let (_, range) = parsed.blocks[0].destinations[0].clone();
+                            let start = loaded.text.find("javascript:bad").unwrap();
+                            let expected = |a, b| mizar_session::SourceRange {
+                                source_id: loaded.source_id,
+                                start: start + a,
+                                end: start + b,
+                            };
+                            let (_, result) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert!(
+                                matches!(rejected(&result)[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, range.len()))
+                            );
+                            let map = parsed.blocks[0].source_map.clone();
+                            let mapped_start = map
+                                .iter()
+                                .find(|(logical, _)| {
+                                    logical.start <= range.start && range.end <= logical.end
+                                })
+                                .map(|(logical, mapped)| mapped.start + range.start - logical.start)
+                                .unwrap();
+                            parsed.blocks[0].source_map = vec![(
+                                range.clone(),
+                                mizar_session::TextRange::new(
+                                    mapped_start + 1,
+                                    mapped_start + range.len() + 1,
+                                ),
+                            )];
+                            assert!(matches!(
+                                output(&parsed, imports, allocations, &external(&parsed)),
+                                Err(DocBuildError::Binding(_))
+                            ));
+                            parsed.blocks[0].source_map = vec![
+                                (
+                                    range.start..range.start + 4,
+                                    mizar_session::TextRange::new(mapped_start, mapped_start + 4),
+                                ),
+                                (
+                                    range.start + 6..range.end,
+                                    mizar_session::TextRange::new(
+                                        mapped_start + 6,
+                                        mapped_start + range.len(),
+                                    ),
+                                ),
+                            ];
+                            let (_, result) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            let warning = rejected(&result)[0];
+                            assert!(
+                                matches!(warning.primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, 4))
+                            );
+                            assert_eq!(
+                                warning
+                                    .secondary_spans()
+                                    .iter()
+                                    .map(|span| span.range())
+                                    .collect::<Vec<_>>(),
+                                [expected(6, range.len())]
+                            );
+                            parsed.blocks[0].source_map.truncate(1);
+                            let (_, partial) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert!(
+                                matches!(rejected(&partial)[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, 4))
+                            );
+                            parsed.blocks[0].source_map.clear();
+                            let (_, unmapped) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert!(matches!(
+                                rejected(&unmapped)[0].primary_location(),
+                                DiagnosticPrimaryLocation::Documentation {
+                                    block_ordinal: 0,
+                                    ..
+                                }
+                            ));
+                            assert!(rejected(&unmapped)[0].secondary_spans().is_empty());
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_classification_remains_authoritative_for_shared_references() {
+                    fixture(
+                        "::: [label](Exact) [fqn](exact.FQN) [section](sec) [ordinary](javascript:x) [unknown](data:x) [first][r] [second][r]\n:::\n::: [r]: javascript:shared\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            let classes = vec![vec![
+                                DocReferenceClassification::Label,
+                                DocReferenceClassification::Fqn,
+                                DocReferenceClassification::Section,
+                                DocReferenceClassification::Ordinary,
+                                DocReferenceClassification::Unavailable,
+                                DocReferenceClassification::External,
+                                DocReferenceClassification::Ordinary,
+                            ]];
+                            let (fragments, result) =
+                                output(&parsed, imports, allocations, &classes).unwrap();
+                            assert!(matches!(
+                                result.references[0].outcome,
+                                DocLinkOutcome::Linked { .. }
+                            ));
+                            assert!(matches!(
+                                result.references[1].outcome,
+                                DocLinkOutcome::Linked { .. }
+                            ));
+                            assert!(matches!(
+                                result.references[2].outcome,
+                                DocLinkOutcome::Incomplete | DocLinkOutcome::Unresolved
+                            ));
+                            assert_eq!(result.references[3].outcome, DocLinkOutcome::Excluded);
+                            assert_eq!(result.references[4].outcome, DocLinkOutcome::Unresolved);
+                            assert_eq!(result.references[6].outcome, DocLinkOutcome::Excluded);
+                            let warnings = rejected(&result);
+                            assert_eq!(warnings.len(), 1);
+                            let V::List(url) = &warnings[0].details().entries()["documentation.render.url"]
+                            else {
+                                panic!("url")
+                            };
+                            assert_eq!(url[1], V::String("5".into()));
+                            assert_eq!(reference_warnings(&result).len(), 2);
+                            assert!(!fragments.concat().contains("href=\"javascript:"));
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_failed_views_shape_and_lower_binding_refuse_locally() {
+                    fixture(
+                        "::: [failed](data:x)\n\n::: [neighbor](javascript:x)\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            assert_eq!(parsed.blocks.len(), 2);
+                            let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                            assert!(matches!(
+                                url_fragments(
+                                    &parsed,
+                                    imports,
+                                    &direct_by,
+                                    allocations,
+                                    "wrong-version",
+                                    &external(&parsed)
+                                ),
+                                Err(DocBuildError::Binding(_))
+                            ));
+                            let mut tampered = parse_comments(&attached, &[]);
+                            let label = tampered.blocks[0].text.find("failed").unwrap();
+                            tampered.blocks[0].destinations[0].1 = label..label + "failed".len();
+                            assert!(matches!(
+                                output(&tampered, imports, allocations, &external(&tampered)),
+                                Err(DocBuildError::Binding(_))
+                            ));
+                            let mut tampered = parse_comments(&attached, &[]);
+                            let first_event = tampered.blocks[0].destinations[0].0;
+                            let neighbor_event = parsed.blocks[1].destinations[0].0;
+                            tampered.blocks[0].events[first_event].0 =
+                                parsed.blocks[1].events[neighbor_event].0.clone();
+                            assert!(matches!(
+                                output(&tampered, imports, allocations, &external(&tampered)),
+                                Err(DocBuildError::Binding(_))
+                            ));
+                            assert!(output(&parsed, imports, allocations, &[]).is_err());
+                            let mut classes = external(&parsed);
+                            classes[0].clear();
+                            assert!(output(&parsed, imports, allocations, &classes).is_err());
+                            let invalid = mizar_artifact::store::CanonicalJson::Null;
+                            let mut failed = doc7_attach(&plans[0]);
+                            failed.blocks[0].lines[0] = &invalid;
+                            let failed = parse_comments(&failed, &[]);
+                            assert!(failed.blocks[0].fallback);
+                            assert!(!failed.warnings.is_empty());
+                            let (_, result) = output(&failed, imports, allocations, &classes).unwrap();
+                            assert!(result.warnings.starts_with(&failed.warnings));
+                            assert_eq!(rejected(&result).len(), 1);
+                            assert!(matches!(
+                                rejected(&result)[0].primary_location(),
+                                DiagnosticPrimaryLocation::Documentation {
+                                    block_ordinal: 1,
+                                    ..
+                                }
+                            ));
+                            let mut changed = plans[0].clone();
+                            changed
+                                .index
+                                .modules
+                                .values_mut()
+                                .next()
+                                .unwrap()
+                                .comment_projection = mizar_artifact::store::CanonicalJson::Null;
+                            let unavailable = doc7_attach(&changed);
+                            let unavailable = parse_comments(&unavailable, &[]);
+                            assert!(!unavailable.available());
+                            assert!(output(&unavailable, imports, allocations, &[]).is_err());
+                        },
+                    );
+                    fixture(
+                        ":: ordinary ::: marker\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            assert!(parsed.available());
+                            assert!(parsed.blocks.is_empty());
+                            assert!(
+                                output(&parsed, imports, allocations, &[])
+                                    .unwrap()
+                                    .0
+                                    .is_empty()
+                            );
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_safe_output_sink_cli_profile_and_input_preservation() {
+                    use mizar_diagnostics::{
+                        aggregator::BuildDiagnosticIndex,
+                        failure_record::PipelinePhase,
+                        render::{
+                            DiagnosticRenderInput, DiagnosticSourceContext, RenderOptions,
+                            render_diagnostics,
+                        },
+                        sink::{DiagnosticProducerScope, DiagnosticSink},
+                    };
+                    struct Portable;
+                    impl DiagnosticSourceContext for Portable {
+                        fn path_for(&self, _: mizar_session::SourceId) -> Option<&str> {
+                            None
+                        }
+                        fn source_key_for(&self, _: mizar_session::SourceId) -> String {
+                            "portable".into()
+                        }
+                        fn line_text(&self, _: mizar_session::SourceId, _: u32) -> Option<&str> {
+                            None
+                        }
+                        fn line_column(
+                            &self,
+                            _: mizar_session::SourceRange,
+                        ) -> Option<mizar_session::LineColumnRange> {
+                            None
+                        }
+                    }
+                    let mut app = publication(&[("m.é%#", "Exact")]);
+                    document(
+                        &mut app,
+                        "::: [text `code` <i>html</i>](javascript:x) ![alternative](data:x) [safe](https://host/?a&amp;b) ![alt <i>& \"quoted\"](https://host/img?a&amp;b&quot;x)\n",
+                    );
+                    let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                    let saved = plans[0].clone();
+                    let paths = std::iter::once("artifact-manifest.json".to_owned())
+                        .chain(
+                            app.manifest
+                                .modules
+                                .iter()
+                                .flat_map(|entry| {
+                                    [
+                                        Some(entry.artifact_file.clone()),
+                                        entry.module_summary_file.clone(),
+                                        Some(entry.source_file.clone()),
+                                    ]
+                                })
+                                .flatten(),
+                        )
+                        .chain(app.manifest.modules.iter().flat_map(|entry| {
+                            entry
+                                .proof_witnesses
+                                .iter()
+                                .map(|witness| witness.witness_path.clone())
+                        }))
+                        .collect::<Vec<_>>();
+                    let bytes = paths
+                        .iter()
+                        .map(|path| std::fs::read(app.root.join(path)).unwrap())
+                        .collect::<Vec<_>>();
+                    let imports = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let allocations = validate(&app, &imports, table(&app)).unwrap();
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    let (fragments, result) =
+                        output(&parsed, &imports, &allocations, &external(&parsed)).unwrap();
+                    let html = fragments.concat();
+                    assert!(html.contains("text code &lt;i&gt;html&lt;/i&gt;"), "{html}");
+                    assert!(html.contains("alternative"));
+                    assert!(html.contains("href=\"https://host/?a&amp;b\""));
+                    assert!(html.contains("<img src=\"https://host/img?a&amp;b&quot;x\" alt=\"alt &lt;i&gt;&amp; &quot;quoted&quot;\">"), "{html}");
+                    assert!(!html.contains("href=\"javascript:") && !html.contains("src=\"data:"));
+                    assert!(!result.documentation_failed());
+                    let drafts = result.warnings.clone();
+                    let snapshot = plans[0].snapshot;
+                    let batch = |drafts: Vec<DiagnosticDraft>| {
+                        let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                            PipelinePhase::Documentation,
+                            snapshot,
+                            "url-output",
+                        ));
+                        for draft in drafts {
+                            sink.emit(draft).unwrap();
+                        }
+                        sink.into_batch()
+                    };
+                    let index = BuildDiagnosticIndex::from_batches(
+                        snapshot,
+                        vec![batch(drafts.iter().chain(&drafts).cloned().collect())],
+                    )
+                    .unwrap();
+                    let replay = BuildDiagnosticIndex::from_batches(
+                        snapshot,
+                        vec![batch(drafts.iter().rev().cloned().collect())],
+                    )
+                    .unwrap();
+                    assert_eq!(index.records(), replay.records());
+                    assert_eq!(index.len(), drafts.len());
+                    let cli = render_diagnostics(DiagnosticRenderInput::new(
+                        index.records(),
+                        &Portable,
+                        RenderOptions::plain(),
+                    ));
+                    assert_eq!(cli.matches("warning[W0415]").count(), 2);
+                    assert!(cli.contains("Documentation URL is rejected by output policy"));
+                    assert!(cli.contains("documentation.render.rejected_url"));
+                    assert!(cli.contains(&format!("publication={}", app.hash.to_lower_hex())));
+                    for draft in &drafts {
+                        assert!(
+                            index
+                                .records()
+                                .iter()
+                                .any(|record| record.code() == draft.code()
+                                    && record.details() == draft.details())
+                        );
+                    }
+                    let stale = BuildDiagnosticIndex::from_batches(
+                        crate::runner::shared::snapshot_id(255_255),
+                        vec![batch(drafts.clone())],
+                    )
+                    .unwrap();
+                    assert!(stale.is_empty());
+                    assert_eq!(stale.obsolete_drafts().len(), drafts.len());
+                    drop(parsed);
+                    drop(attached);
+                    plans[0].profile.fail_on_doc_warnings = true;
+                    let promoted = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    let (_, result) = output(&parsed, &promoted, &allocations, &external(&parsed)).unwrap();
+                    assert!(result.documentation_failed());
+                    assert_eq!(result.warnings, drafts);
+                    assert_eq!(plans[0].index, saved.index);
+                    assert_eq!(
+                        plans[0].profile.fail_on_extraction_warnings,
+                        saved.profile.fail_on_extraction_warnings
+                    );
+                    assert_eq!(
+                        bytes,
+                        paths
+                            .iter()
+                            .map(|path| std::fs::read(app.root.join(path)).unwrap())
+                            .collect::<Vec<_>>()
+                    );
+                    assert!(!app.root.join("out").exists());
+                }
+            }
+
             #[test]
             fn doc10_resolver_publication_to_cli_profile_preserves_all_inputs() {
                 use mizar_diagnostics::{
