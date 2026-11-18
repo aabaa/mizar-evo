@@ -313,12 +313,34 @@ pub struct AuthenticatedDocImports {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthenticatedDocIdentities {
     identities: Vec<mizar_artifact::verified_artifact::PublishedIdentityProjection>,
+    inventory_publications: Vec<Hash>,
 }
 
 impl AuthenticatedDocIdentities {
     /// Full module order; each producer retains complete FQN/origin export order.
     pub fn identities(&self) -> &[mizar_artifact::verified_artifact::PublishedIdentityProjection] {
         &self.identities
+    }
+
+    pub(crate) fn matches_inputs(&self, inputs: &AuthenticatedDocImports) -> bool {
+        self.inventory_publications == inputs.inventory_publications()
+            && self.identities.len() == inputs.modules.len()
+            && self.identities.iter().all(|identity| {
+                let artifact = identity.artifact();
+                inputs
+                    .exports(&artifact.module, identity.publication_hash())
+                    .is_some_and(|exports| {
+                        exports.len() == artifact.exports.len()
+                            && exports.iter().all(|export| {
+                                exports.iter().filter(|other| *other == export).count()
+                                    == artifact
+                                        .exports
+                                        .iter()
+                                        .filter(|other| *other == export)
+                                        .count()
+                            })
+                    })
+            })
     }
 }
 
@@ -418,6 +440,7 @@ pub fn authenticate_doc_identities<A: SessionIdAllocator>(
     }
     Ok(AuthenticatedDocIdentities {
         identities: identities.into_values().collect(),
+        inventory_publications: inputs.inventory_publications(),
     })
 }
 

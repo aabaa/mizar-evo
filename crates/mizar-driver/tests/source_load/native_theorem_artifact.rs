@@ -5357,6 +5357,66 @@ fn genuine_native_selected_roots_revalidate_original_publication() {
                 (path, bytes)
             })
             .collect::<Vec<_>>();
+        // G2 consumes genuine native G1 products without changing publication inputs.
+        let allocation_root = fixture.root.join("native-doc-output");
+        let auxiliary = mizar_doc::allocations::DocAllocationTable {
+            output_root: allocation_root.join(format!("v{}", plans[0].index.package_version)),
+            coverage: DocImportCoverage::Complete,
+            pages: vec![],
+            sections: None,
+        };
+        let inputs_before = inputs.clone();
+        let identities_before = authenticated.clone();
+        let allocate = |table| {
+            mizar_doc::allocations::allocate_doc_destinations(
+                &inputs,
+                &authenticated,
+                &allocation_root,
+                "native-allocation-spec",
+                table,
+            )
+        };
+        let destinations = allocate(auxiliary.clone()).unwrap();
+        assert_eq!(destinations, allocate(auxiliary.clone()).unwrap());
+        for identity in authenticated.identities() {
+            let artifact = identity.artifact();
+            let path = format!("{}/index.html", artifact.module.module_path);
+            assert_eq!(
+                destinations
+                    .allocations()
+                    .module_page(&artifact.module, identity.publication_hash()),
+                Some(path.as_str())
+            );
+            for export in &artifact.exports {
+                let module_entry = destinations
+                    .allocations()
+                    .item(&artifact.module, identity.publication_hash(), export)
+                    .unwrap();
+                let dedicated = destinations
+                    .dedicated_item(&artifact.module, identity.publication_hash(), export)
+                    .unwrap();
+                assert_eq!(module_entry.0, path);
+                assert_eq!(module_entry.1, export.fully_qualified_name);
+                assert_eq!(dedicated.1, export.fully_qualified_name);
+                assert_ne!(module_entry.0, dedicated.0);
+            }
+        }
+        let mut conflicting = auxiliary;
+        conflicting
+            .pages
+            .push(mizar_doc::allocations::DocPageAllocation {
+                path: "cross-references.json".into(),
+                module: None,
+                items: vec![],
+                section_ids: vec![],
+            });
+        assert!(allocate(conflicting).is_err());
+        assert_eq!(inputs, inputs_before);
+        assert_eq!(authenticated, identities_before);
+        for (path, bytes) in &saved {
+            assert_eq!(&fs::read(path).unwrap(), bytes);
+        }
+        assert!(!allocation_root.exists());
         let refuse_downstream = || {
             assert!(
                 authenticate_doc_imports(

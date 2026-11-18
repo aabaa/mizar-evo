@@ -8385,5 +8385,507 @@ mod doc10_authenticated {
                 authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied).is_err()
             );
         }
+        mod destinations {
+            use super::*;
+            use mizar_doc::allocations::*;
+
+            const SPEC: &str = "allocation-spec";
+
+            fn fixture(paths: [&[&str]; 2]) -> Publication {
+                let mut app = publication("destination-allocation", paths);
+                for (index, (artifact, summary)) in
+                    app.artifacts.iter_mut().zip(&mut app.summaries).enumerate()
+                {
+                    artifact.exports[0].fully_qualified_name = format!("exact.Item{index}");
+                    summary.exported_labels.clear();
+                    summary.exported_labels.push(
+                        mizar_artifact::module_summary::ExportedLabelSummary {
+                            origin_id: format!("label-{index}"),
+                            label: format!("Item{index}"),
+                            owner_fully_qualified_name: artifact.exports[0]
+                                .fully_qualified_name
+                                .clone(),
+                            visibility: "public".into(),
+                            source_range: artifact.exports[0].source_range,
+                            target_kind: "theorem".into(),
+                        },
+                    );
+                    summary.refresh_interface_hash().unwrap();
+                }
+                app
+            }
+
+            fn authenticated(
+                app: &mut Publication,
+            ) -> (AuthenticatedDocImports, AuthenticatedDocIdentities) {
+                for summary in &mut app.summaries {
+                    summary.refresh_interface_hash().unwrap();
+                }
+                let (registry, workspace, plans, views) = context(&mut [&mut *app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(app, &views[0]),
+                )
+                .unwrap();
+                let products = products(app);
+                let identities = authenticate_doc_identities(
+                    &registry,
+                    &workspace,
+                    &imports,
+                    &[],
+                    &products.iter().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                (imports, identities)
+            }
+
+            fn auxiliary(app: &Publication) -> DocAllocationTable {
+                DocAllocationTable {
+                    output_root: app.root.join("site").join(format!(
+                        "v{}",
+                        app.manifest.package.package_version.as_ref().unwrap()
+                    )),
+                    coverage: DocImportCoverage::Complete,
+                    pages: vec![],
+                    sections: None,
+                }
+            }
+
+            fn allocate(
+                app: &Publication,
+                inputs: &AuthenticatedDocImports,
+                identities: &AuthenticatedDocIdentities,
+                table: DocAllocationTable,
+            ) -> Result<DocDestinationAllocations, DocBuildError> {
+                allocate_doc_destinations(inputs, identities, &app.root.join("site"), SPEC, table)
+            }
+
+            fn page(path: &str) -> DocPageAllocation {
+                DocPageAllocation {
+                    path: path.into(),
+                    module: None,
+                    items: vec![],
+                    section_ids: vec![],
+                }
+            }
+
+            #[test]
+            fn doc13_destination_q1_spelling_preserves_exact_stored_components() {
+                for (label, encoded) in [
+                    ("Simple_2-3.4", "Simple_2-3.4"),
+                    ("é%#~", "~c3~a9~25~23~7e"),
+                    (".", "~2e"),
+                    ("..", "~2e~2e"),
+                    ("last.", "last~2e"),
+                ] {
+                    let mut app = fixture([&["one"], &["nested", "leaf"]]);
+                    let version = "2.3.4+stored".to_string();
+                    app.manifest.package.package_version = Some(version.clone());
+                    for (artifact, summary) in app.artifacts.iter_mut().zip(&mut app.summaries) {
+                        artifact.module.package_version = Some(version.clone());
+                        summary.module = artifact.module.clone();
+                    }
+                    app.summaries[0].exported_labels[0].label = label.into();
+                    let (inputs, identities) = authenticated(&mut app);
+                    let mut table = auxiliary(&app);
+                    let version_encoded = "2.3.4~2bstored";
+                    table.output_root = app.root.join("site").join(format!("v{version_encoded}"));
+                    let result = allocate(&app, &inputs, &identities, table.clone()).unwrap();
+                    assert_eq!(result.allocations().output_root(), table.output_root);
+                    assert_eq!(
+                        result
+                            .allocations()
+                            .module_page(&app.artifacts[0].module, app.hash),
+                        Some("one/index.html")
+                    );
+                    assert_eq!(
+                        result
+                            .allocations()
+                            .module_page(&app.artifacts[1].module, app.hash),
+                        Some("nested/leaf.html")
+                    );
+                    let dedicated = result
+                        .dedicated_item(
+                            &app.artifacts[0].module,
+                            app.hash,
+                            &app.artifacts[0].exports[0],
+                        )
+                        .unwrap();
+                    assert_eq!(dedicated.0, format!("one/items/{encoded}.html"));
+                    assert_eq!(dedicated.1, "exact.Item0");
+                    assert_eq!(
+                        encode_doc_href(dedicated.0, Some(dedicated.1)),
+                        format!("one/items/{encoded}.html#exact.Item0")
+                    );
+                }
+                let mut app = fixture([&["one"], &["two"]]);
+                app.summaries[0].exported_labels[0].label.clear();
+                assert!(module_summary_json(&app.summaries[0]).is_err());
+            }
+
+            #[test]
+            fn doc13_destination_exact_complete_inventory_and_auxiliary_binding() {
+                let mut app = fixture([&["one"], &["two"]]);
+                app.artifacts[1].exports.clear();
+                app.summaries[1].exported_labels.clear();
+                let (inputs, identities) = authenticated(&mut app);
+                let table = auxiliary(&app);
+                let result = allocate(&app, &inputs, &identities, table.clone()).unwrap();
+                assert_eq!(
+                    result
+                        .allocations()
+                        .module_page(&app.artifacts[1].module, app.hash),
+                    Some("two/index.html")
+                );
+                for coverage in [
+                    DocImportCoverage::Incomplete,
+                    DocImportCoverage::Unavailable,
+                ] {
+                    let mut invalid = table.clone();
+                    invalid.coverage = coverage;
+                    assert!(allocate(&app, &inputs, &identities, invalid).is_err());
+                }
+                let mut wrong_root = table.clone();
+                wrong_root.output_root.push("wrong");
+                assert!(allocate(&app, &inputs, &identities, wrong_root).is_err());
+                for mutation in 0..5 {
+                    let mut other = fixture([&["one"], &["two"]]);
+                    match mutation {
+                        0 => {
+                            other.manifest.package.package_id.push_str("-foreign");
+                            for (artifact, summary) in
+                                other.artifacts.iter_mut().zip(&mut other.summaries)
+                            {
+                                artifact.module.package_id =
+                                    other.manifest.package.package_id.clone();
+                                summary.module = artifact.module.clone();
+                            }
+                        }
+                        1 => other.artifacts[0].exports.clear(),
+                        2 => other.artifacts[0].exports[0]
+                            .origin_id
+                            .push_str("-different"),
+                        3 => other.artifacts[0].exports[0]
+                            .rendered_signature
+                            .push_str(" changed"),
+                        _ => {
+                            other.artifacts.pop();
+                            other.summaries.pop();
+                            other.manifest.modules.pop();
+                        }
+                    }
+                    other.summaries[0].module = other.artifacts[0].module.clone();
+                    let (_, mismatched) = authenticated(&mut other);
+                    assert!(
+                        allocate(&app, &inputs, &mismatched, table.clone()).is_err(),
+                        "inventory mutation {mutation}"
+                    );
+                }
+                for coverage in [
+                    DocImportCoverage::Complete,
+                    DocImportCoverage::Incomplete,
+                    DocImportCoverage::Unavailable,
+                ] {
+                    let mut supplied = table.clone();
+                    supplied.pages.push(page("spec.html"));
+                    supplied.pages[0].section_ids.push("section-id".into());
+                    supplied.sections = Some(DocSectionIndex {
+                        version: SPEC.into(),
+                        coverage,
+                        sections: vec![DocSectionAllocation {
+                            id: "§1".into(),
+                            path: "spec.html".into(),
+                            fragment: "section-id".into(),
+                        }],
+                    });
+                    let result = allocate(&app, &inputs, &identities, supplied.clone()).unwrap();
+                    assert_eq!(result.allocations().section_coverage(), coverage);
+                    supplied
+                        .sections
+                        .as_mut()
+                        .unwrap()
+                        .version
+                        .push_str("-foreign");
+                    assert!(allocate(&app, &inputs, &identities, supplied).is_err());
+                }
+            }
+
+            #[test]
+            fn doc13_destination_paired_bindings_and_whole_product_refusals() {
+                use mizar_doc::{comments::attach_comments, links::*, markdown::parse_comments};
+                let mut app = fixture([&["one"], &["two"]]);
+                let text = "::: Item0\n";
+                std::fs::write(app.root.join(&app.artifacts[0].source_file), text).unwrap();
+                app.artifacts[0].source_hash = mizar_session::hash_text(text);
+                app.summaries[0].source_hash = app.artifacts[0].source_hash;
+                app.summaries[0].refresh_interface_hash().unwrap();
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let mut request = plans[0].request.clone();
+                request.output_dir = auxiliary(&app).output_root;
+                let plans = build_doc_plans(
+                    &registry,
+                    plans[0].build_request,
+                    plans[0].snapshot,
+                    &workspace,
+                    &DocBuildRequest {
+                        profile: plans[0].profile.clone(),
+                        publications: vec![request],
+                    },
+                )
+                .unwrap();
+                let inputs = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let products = products(&app);
+                let identities = authenticate_doc_identities(
+                    &registry,
+                    &workspace,
+                    &inputs,
+                    &[],
+                    &products.iter().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                let result = allocate(&app, &inputs, &identities, auxiliary(&app)).unwrap();
+                let reversed = products.iter().rev().collect::<Vec<_>>();
+                let reordered =
+                    authenticate_doc_identities(&registry, &workspace, &inputs, &[], &reversed)
+                        .unwrap();
+                assert_eq!(
+                    result,
+                    allocate(&app, &inputs, &reordered, auxiliary(&app)).unwrap()
+                );
+                let attachments = attach_comments(
+                    &plans[0],
+                    &app.artifacts[0].module,
+                    None,
+                )
+                .unwrap();
+                let parsed = parse_comments(&attachments, &[]);
+                let start = parsed.blocks[0].text.find("Item0").unwrap();
+                let occurrence = ClassifiedDocOccurrence {
+                    block: 0,
+                    range: start..start + 5,
+                    destination_ranges: std::iter::once(start..start + 5).collect(),
+                    form: DocReferenceForm::Explicit,
+                    interpreted: Some("Item0".into()),
+                    classification: DocReferenceClassification::Label,
+                };
+                let direct_by = authenticate_doc_direct_by(&inputs, &[]).unwrap();
+                let resolved = resolve_doc_links(
+                    &parsed,
+                    &inputs,
+                    &direct_by,
+                    result.allocations(),
+                    SPEC,
+                    &[occurrence],
+                )
+                .unwrap();
+                assert!(
+                    matches!(&resolved.references[0].outcome, DocLinkOutcome::Linked { href } if href == "one/index.html#exact.Item0")
+                );
+                for (index, artifact) in app.artifacts.iter().enumerate() {
+                    let label = format!("Item{index}");
+                    let fqn = format!("exact.Item{index}");
+                    let module_path = format!("{}/index.html", artifact.module.module_path);
+                    let dedicated_path =
+                        format!("{}/items/{label}.html", artifact.module.module_path);
+                    assert_eq!(
+                        result
+                            .allocations()
+                            .item(&artifact.module, app.hash, &artifact.exports[0]),
+                        Some((module_path.as_str(), fqn.as_str(), Some(label.as_str())))
+                    );
+                    assert_eq!(
+                        result.dedicated_item(&artifact.module, app.hash, &artifact.exports[0]),
+                        Some((dedicated_path.as_str(), fqn.as_str(), Some(label.as_str())))
+                    );
+                }
+                for mutation in 0..3 {
+                    let mut app = fixture([&["one"], &["two"]]);
+                    match mutation {
+                        0 => app.summaries[0].exported_labels.clear(),
+                        1 => {
+                            let mut ambiguous = app.summaries[0].exported_labels[0].clone();
+                            ambiguous.origin_id.push_str("-other");
+                            ambiguous.label.push_str("-other");
+                            app.summaries[0].exported_labels.push(ambiguous);
+                        }
+                        2 => {
+                            let mut duplicate = app.artifacts[0].exports[0].clone();
+                            duplicate.origin_id.push_str("-other");
+                            let mut label = app.summaries[0].exported_labels[0].clone();
+                            label.origin_id.push_str("-other");
+                            label.label.push_str("Other");
+                            label.owner_fully_qualified_name =
+                                duplicate.fully_qualified_name.clone();
+                            app.artifacts[0].exports.push(duplicate);
+                            app.summaries[0].exported_labels.push(label);
+                        }
+                        _ => unreachable!(),
+                    }
+                    let (inputs, identities) = authenticated(&mut app);
+                    assert!(
+                        allocate(&app, &inputs, &identities, auxiliary(&app)).is_err(),
+                        "binding mutation {mutation}"
+                    );
+                }
+                let mut duplicate_origin = app.artifacts[0].clone();
+                let mut other_export = duplicate_origin.exports[0].clone();
+                other_export.fully_qualified_name.push_str("Other");
+                duplicate_origin.exports.push(other_export);
+                assert!(
+                    mizar_artifact::verified_artifact::verified_artifact_json(&duplicate_origin)
+                        .is_err()
+                );
+                // A full id is never exposed as an optional alias on either paired page.
+                let mut app = fixture([&["one"], &["two"]]);
+                app.summaries[0].exported_labels[0].label = "exact.Item0".into();
+                let (inputs, identities) = authenticated(&mut app);
+                let result = allocate(&app, &inputs, &identities, auxiliary(&app)).unwrap();
+                assert_eq!(
+                    result
+                        .allocations()
+                        .item(
+                            &app.artifacts[0].module,
+                            app.hash,
+                            &app.artifacts[0].exports[0]
+                        )
+                        .unwrap()
+                        .2,
+                    None
+                );
+                assert_eq!(
+                    result
+                        .dedicated_item(
+                            &app.artifacts[0].module,
+                            app.hash,
+                            &app.artifacts[0].exports[0]
+                        )
+                        .unwrap()
+                        .2,
+                    None
+                );
+            }
+
+            #[test]
+            fn doc13_destination_reserved_slots_and_directory_conflicts() {
+                let mut app = fixture([&["one"], &["nested", "leaf"]]);
+                let (inputs, identities) = authenticated(&mut app);
+                for path in [
+                    "index.html",
+                    "search.json",
+                    "cross-references.json",
+                    "assets",
+                    "assets/site.css",
+                    "one/index.html",
+                    "one/items/Item0.html",
+                    "one",
+                    "nested",
+                    "nested/leaf.html/child.html",
+                    "search.json/child.html",
+                ] {
+                    let mut table = auxiliary(&app);
+                    table.pages.push(page(path));
+                    assert!(
+                        allocate(&app, &inputs, &identities, table).is_err(),
+                        "path {path}"
+                    );
+                }
+                for paths in [
+                    ["extra.html", "extra.html"],
+                    ["extra", "extra/child.html"],
+                    ["extra/child.html", "extra"],
+                ] {
+                    let mut table = auxiliary(&app);
+                    table.pages.extend(paths.map(page));
+                    assert!(
+                        allocate(&app, &inputs, &identities, table).is_err(),
+                        "paths {paths:?}"
+                    );
+                }
+                let mut impersonation = auxiliary(&app);
+                let mut forged = page("unused.html");
+                forged.module = Some((app.artifacts[0].module.clone(), app.hash));
+                impersonation.pages.push(forged);
+                assert!(allocate(&app, &inputs, &identities, impersonation).is_err());
+                let mut unbound_item = auxiliary(&app);
+                let mut item_page = page("unbound.html");
+                item_page.items.push(DocItemAllocation {
+                    export: app.artifacts[0].exports[0].clone(),
+                    label: None,
+                    alias: None,
+                });
+                unbound_item.pages.push(item_page);
+                assert!(allocate(&app, &inputs, &identities, unbound_item).is_err());
+                for paths in [
+                    [&["algebra"][..], &["algebra", "index"][..]],
+                    [&["assets"][..], &["two"][..]],
+                ] {
+                    let mut app = fixture(paths);
+                    let (inputs, identities) = authenticated(&mut app);
+                    assert!(
+                        allocate(&app, &inputs, &identities, auxiliary(&app)).is_err(),
+                        "modules {paths:?}"
+                    );
+                }
+            }
+
+            #[test]
+            fn doc13_destination_ascii_namespace_and_deterministic_permutations() {
+                for paths in [
+                    [&["Foo", "a"][..], &["foo", "b"][..]],
+                    [&["Foo"][..], &["foo"][..]],
+                ] {
+                    let mut app = fixture(paths);
+                    let (inputs, identities) = authenticated(&mut app);
+                    assert!(allocate(&app, &inputs, &identities, auxiliary(&app)).is_err());
+                }
+                let mut app = fixture([&["one"], &["two"]]);
+                let (inputs, identities) = authenticated(&mut app);
+                for paths in [
+                    ["ONE/index.html", "other.html"],
+                    ["one/ITEMS/Other.html", "other.html"],
+                    ["Foo/a.html", "foo/b.html"],
+                    ["Foo.html", "foo.HTML"],
+                    ["Foo", "foo/a.html"],
+                    ["ASSETS/x.css", "other.html"],
+                    ["INDEX.HTML", "other.html"],
+                ] {
+                    let mut table = auxiliary(&app);
+                    table.pages.extend(paths.map(page));
+                    assert!(
+                        allocate(&app, &inputs, &identities, table).is_err(),
+                        "paths {paths:?}"
+                    );
+                }
+                let mut table = auxiliary(&app);
+                table.pages.extend(["É/a.html", "é/b.html"].map(page));
+                let forward = allocate(&app, &inputs, &identities, table.clone()).unwrap();
+                table.pages.reverse();
+                assert_eq!(
+                    forward,
+                    allocate(&app, &inputs, &identities, table).unwrap()
+                );
+                let mut app = fixture([&["one"], &["two"]]);
+                let mut duplicate = app.artifacts[0].exports[0].clone();
+                duplicate.origin_id.push_str("-other");
+                duplicate.fully_qualified_name.push_str("Other");
+                let mut label = app.summaries[0].exported_labels[0].clone();
+                label.origin_id.push_str("-other");
+                label.owner_fully_qualified_name = duplicate.fully_qualified_name.clone();
+                app.artifacts[0].exports.push(duplicate);
+                app.summaries[0].exported_labels.push(label);
+                let (inputs, identities) = authenticated(&mut app);
+                assert!(allocate(&app, &inputs, &identities, auxiliary(&app)).is_err());
+            }
+        }
     }
 }

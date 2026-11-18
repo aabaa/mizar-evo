@@ -1,7 +1,7 @@
 //! Validated logical destinations, independent of link lookup and href encoding.
 
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
@@ -11,7 +11,9 @@ use mizar_artifact::{
 };
 use mizar_session::Hash;
 
-use crate::doc_build::{AuthenticatedDocImports, DocBuildError, DocImportCoverage};
+use crate::doc_build::{
+    AuthenticatedDocIdentities, AuthenticatedDocImports, DocBuildError, DocImportCoverage,
+};
 
 /// An exact exported item and its supplied authoritative label and optional alias.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -215,6 +217,252 @@ impl ValidatedDocAllocations {
     fn page_ready(&self, path: &str) -> bool {
         self.table.coverage == DocImportCoverage::Complete && !self.blocked_pages.contains(path)
     }
+}
+
+/// Complete generated module-entry and dedicated-item destinations for exact identities.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocDestinationAllocations {
+    allocations: ValidatedDocAllocations,
+    dedicated_paths: BTreeMap<(String, String), String>,
+}
+
+impl DocDestinationAllocations {
+    /// Existing Doc9 references retain their module-page destinations.
+    pub fn allocations(&self) -> &ValidatedDocAllocations {
+        &self.allocations
+    }
+
+    /// Returns the paired dedicated page, exact full FQN and shared safe alias.
+    pub fn dedicated_item(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        export: &VerifiedExport,
+    ) -> Option<(&str, &str, Option<&str>)> {
+        let (module_path, fqn, alias) = self.allocations.item(module, publication, export)?;
+        let path = self
+            .dedicated_paths
+            .get(&(module_path.to_owned(), fqn.to_owned()))?;
+        Some((path, fqn, alias))
+    }
+}
+
+/// Allocates the complete declared Q1/Q2 namespace without emitting files.
+pub fn allocate_doc_destinations(
+    inputs: &AuthenticatedDocImports,
+    identities: &AuthenticatedDocIdentities,
+    doc_dir: &Path,
+    specification_version: &str,
+    mut auxiliary: DocAllocationTable,
+) -> Result<DocDestinationAllocations, DocBuildError> {
+    if !identities.matches_inputs(inputs) {
+        return Err(DocBuildError::Binding(
+            "destination identity inventory mismatch",
+        ));
+    }
+    let version = inputs
+        .publications()
+        .first()
+        .and_then(|publication| publication.manifest.package.package_version.as_deref())
+        .ok_or(DocBuildError::Binding(
+            "destination package version is required",
+        ))?;
+    let output_root = doc_dir.join(format!("v{}", encode_doc_component(version)?));
+    if auxiliary.output_root != output_root
+        || auxiliary.coverage != DocImportCoverage::Complete
+        || auxiliary
+            .pages
+            .iter()
+            .any(|page| page.module.is_some() || !page.items.is_empty())
+    {
+        return Err(DocBuildError::Binding(
+            "incomplete or mismatched auxiliary namespace",
+        ));
+    }
+    let mut dedicated_paths = BTreeMap::new();
+    for identity in identities.identities() {
+        let artifact = identity.artifact();
+        let components = identity
+            .module_components()
+            .iter()
+            .map(|component| encode_doc_component(component))
+            .collect::<Result<Vec<_>, _>>()?;
+        if components.is_empty() {
+            return Err(DocBuildError::Binding("empty destination module path"));
+        }
+        let module_path = if components.len() == 1 {
+            format!("{}/index.html", components[0])
+        } else {
+            format!("{}.html", components.join("/"))
+        };
+        let summary = inputs.summary(&artifact.module, identity.publication_hash());
+        let mut full_ids = BTreeSet::new();
+        let mut origins = BTreeSet::new();
+        let mut items = Vec::new();
+        for export in &artifact.exports {
+            if !full_ids.insert(&export.fully_qualified_name) || !origins.insert(&export.origin_id)
+            {
+                return Err(DocBuildError::Binding(
+                    "duplicate destination export identity",
+                ));
+            }
+            let labels = summary
+                .into_iter()
+                .flat_map(|summary| &summary.exported_labels)
+                .filter(|label| label.owner_fully_qualified_name == export.fully_qualified_name)
+                .collect::<Vec<_>>();
+            let [label] = labels.as_slice() else {
+                return Err(DocBuildError::Binding(
+                    "missing or ambiguous destination label",
+                ));
+            };
+            let path = format!(
+                "{}/items/{}.html",
+                components.join("/"),
+                encode_doc_component(&label.label)?
+            );
+            dedicated_paths.insert(
+                (module_path.clone(), export.fully_qualified_name.clone()),
+                path.clone(),
+            );
+            auxiliary.pages.push(DocPageAllocation {
+                path,
+                module: None,
+                items: Vec::new(),
+                section_ids: vec![export.fully_qualified_name.clone()],
+            });
+            items.push(DocItemAllocation {
+                export: export.clone(),
+                label: Some((*label).clone()),
+                alias: Some(label.label.clone()),
+            });
+        }
+        items.sort_by(|left, right| {
+            left.export
+                .fully_qualified_name
+                .cmp(&right.export.fully_qualified_name)
+                .then_with(|| left.export.origin_id.cmp(&right.export.origin_id))
+        });
+        auxiliary.pages.push(DocPageAllocation {
+            path: module_path,
+            module: Some((artifact.module.clone(), identity.publication_hash())),
+            items,
+            section_ids: Vec::new(),
+        });
+    }
+    // Every prefix has one exact spelling and one file/directory role.
+    let mut namespace = BTreeMap::new();
+    for (path, file) in [
+        ("index.html", true),
+        ("search.json", true),
+        ("cross-references.json", true),
+        ("assets", false),
+    ]
+    .into_iter()
+    .chain(
+        auxiliary
+            .pages
+            .iter()
+            .map(|page| (page.path.as_str(), true)),
+    ) {
+        if file
+            && path
+                .split('/')
+                .next()
+                .is_some_and(|part| part.eq_ignore_ascii_case("assets"))
+        {
+            return Err(DocBuildError::Binding(
+                "reserved documentation assets namespace",
+            ));
+        }
+        let mut prefix = String::new();
+        let mut parts = path.split('/').peekable();
+        while let Some(part) = parts.next() {
+            if !prefix.is_empty() {
+                prefix.push('/');
+            }
+            prefix.push_str(part);
+            let is_file = file && parts.peek().is_none();
+            let key = prefix.to_ascii_lowercase();
+            if let Some((spelling, was_file)) = namespace.get(&key) {
+                if spelling != &prefix || *was_file || is_file {
+                    return Err(DocBuildError::Binding("documentation namespace collision"));
+                }
+            } else {
+                namespace.insert(key, (prefix.clone(), is_file));
+            }
+        }
+    }
+    for page in &mut auxiliary.pages {
+        page.section_ids.sort();
+    }
+    auxiliary
+        .pages
+        .sort_by(|left, right| left.path.cmp(&right.path));
+    if let Some(index) = &mut auxiliary.sections {
+        index.sections.sort_by(|left, right| {
+            (&left.id, &left.path, &left.fragment).cmp(&(&right.id, &right.path, &right.fragment))
+        });
+    }
+    let mut allocations =
+        validate_doc_allocations(inputs, &output_root, specification_version, auxiliary)?;
+    if !allocations.blocked_pages.is_empty() {
+        return Err(DocBuildError::Binding("blocked destination full id"));
+    }
+    for identity in identities.identities() {
+        let artifact = identity.artifact();
+        if allocations
+            .module_page(&artifact.module, identity.publication_hash())
+            .is_none()
+        {
+            return Err(DocBuildError::Binding(
+                "missing generated module destination",
+            ));
+        }
+        for export in &artifact.exports {
+            let (module_path, fqn, alias) = allocations
+                .item(&artifact.module, identity.publication_hash(), export)
+                .ok_or(DocBuildError::Binding("missing generated item destination"))?;
+            let path = &dedicated_paths[&(module_path.to_owned(), fqn.to_owned())];
+            if let Some(alias) = alias.map(str::to_owned) {
+                let page = allocations
+                    .table
+                    .pages
+                    .iter_mut()
+                    .find(|page| &page.path == path)
+                    .ok_or(DocBuildError::Binding(
+                        "missing generated dedicated destination",
+                    ))?;
+                page.section_ids.push(alias);
+                page.section_ids.sort();
+            }
+        }
+    }
+    Ok(DocDestinationAllocations {
+        allocations,
+        dedicated_paths,
+    })
+}
+
+fn encode_doc_component(component: &str) -> Result<String, DocBuildError> {
+    if component.is_empty() {
+        return Err(DocBuildError::Binding("empty destination component"));
+    }
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::new();
+    for (index, byte) in component.bytes().enumerate() {
+        if byte.is_ascii_alphanumeric()
+            || matches!(byte, b'_' | b'-')
+            || byte == b'.' && !matches!(component, "." | "..") && index + 1 != component.len()
+        {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push('~');
+            encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+            encoded.push(char::from(HEX[usize::from(byte & 15)]));
+        }
+    }
+    Ok(encoded)
 }
 
 /// Validates the whole supplied namespace without choosing paths or repairing ids.

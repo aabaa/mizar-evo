@@ -1,12 +1,17 @@
 # Doc13 Render 前提条件の補完提案
 正規言語: 英語。[英語正本](../en/render_prerequisites.md)。
-状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity 引渡しを除き非規範的である。schema 登録や renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
+状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity と G2 destination 引渡しを除き非規範的である。schema 登録や renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
 
 ## 採用済み G1 identity binding
 Artifact の `project_frontend_identity` は元 source に束縛された不変の identity product を捕捉し、Driver は `PublishedSourceMetadata::identity()` に保持する。source/snapshot lineage は Driver が所有する。producer は native `src/<components>.miz` の成分を Session の既存 module identifier 検証規則と厳密な canonical module identity に照合する。FQN や任意の artifact 文字列から成分を作らない。非 ASCII native identifier を含む不正・非 lossless path は拒否する。
 互換性 binding は verified-artifact `1.2` と `resolver-symbol-kind-v1` で、語彙は `predicate`, `functor`, `mode`, `attribute`, `structure`, `selector`, `registration`, `theorem`, `lemma`, `algorithm`, `scheme`, `template`, `synonym`, `antonym`, `redefinition`, `builtin`。未知 spelling や版はこの product を拒否する。汎用 Artifact reader の opaque kind 方針は維持する。保存済み Public/Reexported export を保持するが、Driver の意味的 export 生成を拡張しない。
-`authenticate_doc_identities` は選択した current plan と明示的な有限 publication inventory を再検証し、module ごとに完全な product 一つと元 artifact/publication/source との厳密な binding を要求する。不変結果は module Ord と FQN/origin export 順を保持し、complete-empty module、重複 FQN、version、reexport、optional lock identity、厳密な表示文字列を失わない。欠落・重複・外部・stale・不一致 product は全体を拒否する。内部 owner 引渡しであり、提案 tuple/JSON/rendering や Doc13 全体の整合採用ではない。G2–G5 と既存の残項目は gate されたまま。
+`authenticate_doc_identities` は選択した current plan と明示的な有限 publication inventory を再検証し、module ごとに完全な product 一つと元 artifact/publication/source との厳密な binding を要求する。不変結果は module Ord と FQN/origin export 順を保持し、complete-empty module、重複 FQN、version、reexport、optional lock identity、厳密な表示文字列を失わない。欠落・重複・外部・stale・不一致 product は全体を拒否する。内部 owner 引渡しであり、提案 tuple/JSON/rendering や Doc13 全体の整合採用ではない。他の G2 義務と G3–G5 は gate されたまま。
 Native Driver の lock/config commitment は owner-framed 表現を用いる。Doc4 の [認証済み native 経路](./doc_build.md#package-planning) は真正な Driver capture/publication 証拠を Doc10/G1 の再検証まで保持する。通常の raw 経路では従来どおり拒否する。真正な元 publication は明示的な dependency inventory でも利用できる。
+
+## 採用済み G2 destination allocation
+`allocate_doc_destinations` は認証済み G1 identity と Doc10 入力を消費し、module/publication/export の完全かつ厳密な coverage を要求する。Q1 version/module/専用 item path を生成して不変の対の引渡しを返す。`allocations()` は Doc9 module-page destination を保持し、`dedicated_item` は同じ厳密 export の専用 page、FQN fragment、検証済み optional alias を供給する。label 欠落・曖昧性や full id 衝突は product 全体を拒否する。
+caller は生成 version root に束縛された完全な補助 page/section namespace を宣言する。生成・補助 path を予約 `index.html`、`search.json`、`cross-references.json`、`assets/` subtree と合わせ、暗黙 directory と ASCII 大小文字の spelling 衝突も検査する。勝者選択や suffix で衝突を修復しない。section coverage は既存 Doc10 validator の下で独立に保持し、従来の supplied-table interface の policy は維持する。
+採用対象は限定的な G2 allocation 前提条件だけである。file を出力せず、renderer、wire/schema、source routing、後続 gate、publication の readiness を供給しない。
 
 ## Identity と allocation の引渡し
 [Doc4](./doc_build.md#index-inputs-and-later-completion) の認証済み publication と完全 export inventory を、[Doc10 前提条件](./link_prerequisites.md) の producer/validation 義務に従って消費する。export visibility は Public と Reexported を含み、完全 identity ごとに一件を保持して、異なる identity の重複 FQN を統合しない。各 projection は検証済みの元 module/export と publication への束縛を保持しなければならない。
