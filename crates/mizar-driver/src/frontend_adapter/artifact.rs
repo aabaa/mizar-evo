@@ -2093,6 +2093,25 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         let summary_path = PublishedArtifactPath::new(format!("{}.summary.json", staging.1))
             .map_err(|error| error.to_string())?;
+        #[cfg(test)]
+        snapshot_test_support::AFTER_LEGACY_SUMMARY_FRESHNESS.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook();
+            }
+        });
+        let root_lock = lock_artifact_writes().map_err(|error| error.to_string())?;
+        reserve_native_artifact_path(
+            &root,
+            &summary_path,
+            "native theorem summary parent must stay below artifact root",
+        )
+        .map_err(|error| {
+            if error.kind() == std::io::ErrorKind::AlreadyExists {
+                "native theorem summary requires a fresh summary path".to_owned()
+            } else {
+                error.to_string()
+            }
+        })?;
         let summary_write = write_published_artifact(
             &root,
             &summary_path,
@@ -2101,6 +2120,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             &[],
         )
         .map_err(|error| error.to_string())?;
+        drop(root_lock);
         let entry = ModuleArtifactEntry {
             module: artifact.module.clone(),
             source_file: artifact.source_file.clone(),
@@ -2379,6 +2399,13 @@ pub(crate) fn remove_native_artifact_staging(root: &std::path::Path, boundary: &
     let Ok(_root_lock) = lock_artifact_writes() else {
         return;
     };
+    // A nested legacy staging root may contain a main or witness owned by Q1 above it.
+    for ancestor in root.ancestors().skip(1) {
+        match std::fs::symlink_metadata(ancestor.join(COMMENT_ARTIFACT_RESERVATION)) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            _ => return,
+        }
+    }
     let Ok(metadata) = std::fs::symlink_metadata(&root) else {
         return;
     };
@@ -2890,6 +2917,8 @@ mod snapshot_test_support {
             = const { std::cell::RefCell::new(None) };
         pub(super) static AFTER_LEGACY_ROOT_CREATION: std::cell::RefCell<Option<Box<dyn FnOnce()>>>
             = const { std::cell::RefCell::new(None) };
+        pub(super) static AFTER_LEGACY_SUMMARY_FRESHNESS: std::cell::RefCell<Option<Box<dyn FnOnce()>>>
+            = const { std::cell::RefCell::new(None) };
     }
 
     pub(super) struct Fixture {
@@ -3199,12 +3228,21 @@ mod snapshot_payload_tests {
 
         use super::super::*;
 
-        for (legacy_open, obsolete_legacy, after_root_creation, witness_collision) in [
-            (false, false, false, false),
-            (true, false, false, false),
-            (true, true, false, false),
-            (true, true, true, false),
-            (true, false, true, true),
+        for (
+            legacy_open,
+            obsolete_legacy,
+            after_root_creation,
+            witness_collision,
+            nested_root,
+            summary_collision,
+        ) in [
+            (false, false, false, false, false, false),
+            (true, false, false, false, false, false),
+            (true, true, false, false, false, false),
+            (true, true, true, false, false, false),
+            (true, false, true, true, false, false),
+            (true, false, false, false, true, false),
+            (true, true, false, false, false, true),
         ] {
             let fixture = Rc::new(Fixture::new());
             let (session, input, publisher) = fixture.prepare_with_open_buffers(
@@ -3442,6 +3480,11 @@ mod snapshot_payload_tests {
                 )
                 .unwrap();
             let q1_staging = fixture.root.join("alpha/artifacts/q1-staging");
+            let q1_witness = if summary_collision {
+                "proof-witnesses/L.mizir.json.summary.json"
+            } else {
+                "proof-witnesses/q1.json"
+            };
             let (q1_draft, _) = q1_inputs
                 .project_native_theorem_artifact_draft(
                     &q1_phase,
@@ -3449,17 +3492,32 @@ mod snapshot_payload_tests {
                     q1_vcs.vcs()[0].id,
                     (profile.clone(), ConcreteFormat::Tptp),
                     (&policy, &verifier),
-                    ("proof-witnesses/q1.json", &q1_staging),
+                    (q1_witness, &q1_staging),
                 )
                 .unwrap()
                 .unwrap();
             let root = fixture.root.join("alpha/artifacts/mixed");
+            let legacy_root = if nested_root {
+                fs::create_dir(&root).unwrap();
+                root.join("nested")
+            } else {
+                root.clone()
+            };
             let legacy_witness = if witness_collision {
                 "proof-witnesses/shared.mizir.json"
             } else {
                 "proof-witnesses/shared.json"
             };
-            let q1_main = if witness_collision {
+            let legacy_main = if summary_collision {
+                "proof-witnesses/L.mizir.json"
+            } else {
+                "shared.mizir.json"
+            };
+            let q1_main = if nested_root {
+                "nested/shared.mizir.json"
+            } else if summary_collision {
+                "q1.mizir.json"
+            } else if witness_collision {
                 legacy_witness
             } else {
                 "shared.mizir.json"
@@ -3467,7 +3525,9 @@ mod snapshot_payload_tests {
             let source_id = q1_source.1.source_id;
             let legacy_snapshot = inputs.snapshot.id;
             let saved = Rc::new(RefCell::new(None));
-            let hook = if after_root_creation {
+            let hook = if summary_collision {
+                &AFTER_LEGACY_SUMMARY_FRESHNESS
+            } else if after_root_creation {
                 &AFTER_LEGACY_ROOT_CREATION
             } else {
                 &AFTER_LEGACY_MAIN_ABSENCE
@@ -3510,11 +3570,7 @@ mod snapshot_payload_tests {
                         )
                         .unwrap();
                     fs::create_dir_all(root.join("proof-witnesses")).unwrap();
-                    fs::copy(
-                        q1_staging.join("proof-witnesses/q1.json"),
-                        root.join("proof-witnesses/q1.json"),
-                    )
-                    .unwrap();
+                    fs::copy(q1_staging.join(q1_witness), root.join(q1_witness)).unwrap();
                     let commit = retained
                         .emit_commented_module(
                             &publisher,
@@ -3529,6 +3585,7 @@ mod snapshot_payload_tests {
                         commit,
                         fs::read(root.join(q1_main)).unwrap(),
                         fs::read(root.join("artifact-manifest.json")).unwrap(),
+                        fs::read(root.join(q1_witness)).unwrap(),
                     ));
                     if obsolete_legacy {
                         legacy_publisher.mark_obsolete(legacy_snapshot).unwrap();
@@ -3545,22 +3602,14 @@ mod snapshot_payload_tests {
                     vcs.vcs()[0].id,
                     (profile, ConcreteFormat::Tptp),
                     (&policy, &verifier),
-                    (legacy_witness, "shared.mizir.json", &root),
+                    (legacy_witness, legacy_main, &legacy_root),
                 )
                 .unwrap_err();
-            assert!(
-                refusal.contains(if obsolete_legacy {
-                    "obsolete"
-                } else if witness_collision {
-                    "fresh witness path"
-                } else {
-                    "fresh main path"
-                }),
-                "{refusal}",
-            );
             let saved = saved.borrow();
-            let (commit, main, manifest) = saved.as_ref().expect("Q1 won during legacy staging");
+            let (commit, main, manifest, witness) =
+                saved.as_ref().expect("Q1 won during legacy staging");
             assert_eq!(fs::read(root.join(q1_main)).unwrap(), *main);
+            assert_eq!(fs::read(root.join(q1_witness)).unwrap(), *witness);
             assert_eq!(
                 fs::read(root.join("artifact-manifest.json")).unwrap(),
                 *manifest
@@ -3578,6 +3627,18 @@ mod snapshot_payload_tests {
                 .unwrap()
                 .manifest,
                 *commit.manifest(),
+            );
+            assert!(
+                refusal.contains(if summary_collision {
+                    "fresh summary path"
+                } else if obsolete_legacy {
+                    "obsolete"
+                } else if witness_collision {
+                    "fresh witness path"
+                } else {
+                    "fresh main path"
+                }),
+                "{refusal}",
             );
         }
     }
