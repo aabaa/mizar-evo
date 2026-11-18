@@ -167,6 +167,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
     - Deps: 8, 11. Spec: `math.md`.
 
 13. **Spec: `render.md`.** [ ]
+    - [Render definition proposal](../../task_contracts/en/DOC13-RENDER-DEFINITION.md); new owner choices remain unselected.
     - Write the rendering spec (English and Japanese, no code): static
       HTML site layout, search index format, and deterministic output
       rules.

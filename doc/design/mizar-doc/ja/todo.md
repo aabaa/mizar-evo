@@ -164,6 +164,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
     - 依存: 8、11。仕様: `math.md`。
 
 13. **仕様: `render.md`。** [ ]
+    - [Render 定義提案](../../task_contracts/ja/DOC13-RENDER-DEFINITION.md)。新しい所有者判断は未選択のまま。
     - レンダリングの仕様を執筆する（英語と日本語、コードなし）: 静的
       HTML サイトのレイアウト、検索索引フォーマット、決定的出力規則。
     - 依存: 4。仕様: アーキテクチャ 13「Step 4」、
