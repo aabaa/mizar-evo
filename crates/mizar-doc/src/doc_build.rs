@@ -298,6 +298,7 @@ pub enum DocImportCoverage {
 /// Publication-authenticated inputs for later documentation link consumers.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthenticatedDocImports {
+    selected_plan: DocBuildPlan,
     publications: Vec<PublishedManifestRead>,
     // Reuse the validating readers' native indexes without another public row type.
     #[allow(clippy::type_complexity)]
@@ -308,6 +309,24 @@ pub struct AuthenticatedDocImports {
 }
 
 impl AuthenticatedDocImports {
+    pub(crate) fn matches_plan(&self, plan: &DocBuildPlan) -> bool {
+        self.selected_plan == *plan
+    }
+
+    pub(crate) fn inventory(&self) -> impl Iterator<Item = (&ModuleSummaryIdentity, Hash)> {
+        self.modules.iter().map(|(module, row)| (module, row.0))
+    }
+
+    pub(crate) fn inventory_publications(&self) -> Vec<Hash> {
+        let mut publications = self
+            .publications
+            .iter()
+            .map(|publication| publication.artifact_hash)
+            .collect::<Vec<_>>();
+        publications.sort_by_key(|hash| hash.to_lower_hex());
+        publications
+    }
+
     /// Returns the validated selected publication, followed by the supplied inventory.
     pub fn publications(&self) -> &[PublishedManifestRead] {
         &self.publications
@@ -416,11 +435,17 @@ impl AuthenticatedDocImports {
 /// Artifact projections authenticated against one finite publication inventory.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthenticatedDocDirectBy {
+    inventory_publications: Vec<Hash>,
     producers: Vec<mizar_artifact::direct_by::DirectByProjection>,
     coverage: BTreeMap<ModuleSummaryIdentity, (Hash, DocImportCoverage)>,
 }
 
 impl AuthenticatedDocDirectBy {
+    pub(crate) fn matches_inputs(&self, inputs: &AuthenticatedDocImports) -> bool {
+        authenticate_doc_direct_by(inputs, &self.producers.iter().collect::<Vec<_>>())
+            .is_ok_and(|rebound| rebound == *self)
+    }
+
     /// Returns original producer occurrences and examined body/proof scopes.
     pub fn producers(&self) -> &[mizar_artifact::direct_by::DirectByProjection] {
         &self.producers
@@ -481,6 +506,7 @@ pub fn authenticate_doc_direct_by(
         Ok(true)
     };
     let mut result = AuthenticatedDocDirectBy {
+        inventory_publications: inputs.inventory_publications(),
         producers: Vec::new(),
         coverage: inputs
             .modules
@@ -601,6 +627,7 @@ pub fn authenticate_doc_imports<A: SessionIdAllocator>(
         ));
     }
     let mut result = AuthenticatedDocImports {
+        selected_plan: root.clone(),
         publications: Vec::new(),
         modules: BTreeMap::new(),
         producers: BTreeMap::new(),

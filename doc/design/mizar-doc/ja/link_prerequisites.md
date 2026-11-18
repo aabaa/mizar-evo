@@ -1,6 +1,6 @@
 # Doc10 採用済み Producer と Allocation 前提 interface
 正本は英語: [English companion](../en/link_prerequisites.md)。
-状態: 前提 interface は採用済みで、[gate-1 import/closure input](#authenticated-ordered-imports-handoff) を別途供給する。[gate-2 direct-by input](#authenticated-direct-by-handoff) も別途供給する。[gate-3 検証済み allocation](#validated-allocation-handoff) も別途供給する。resolver 統合は引き続き gate で保留する。[Spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) は Doc9 と Doc13 href interface を固定しており、この採用はそれらを再検討しない。[共有 link 診断](../../mizar-diagnostics/ja/documentation_links.md) は gate 4 として別途採用・割当済みで、lookup/発行統合は gate 5 に残る。
+状態: 前提 interface は採用済みで、[gate-1 import/closure input](#authenticated-ordered-imports-handoff) を別途供給する。[gate-2 direct-by input](#authenticated-direct-by-handoff) も別途供給する。[gate-3 検証済み allocation](#validated-allocation-handoff) も別途供給する。[resolver handoff](#resolver-handoff) がこれらの product を統合する。[Spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) は Doc9 と Doc13 href interface を固定しており、この採用はそれらを再検討しない。[共有 link 診断](../../mizar-diagnostics/ja/documentation_links.md) は gate 4 として別途採用・割当済みで、gate 5 の [resolver handoff](#resolver-handoff) が lookup/発行を統合する。
 
 ## Authenticated Import And Dependency Inputs
 producer の責任は、解決済み import 選択を保持する Session/Artifact publication 境界に置く。Doc consumer は package/version を選択せず、import を再構築しない。producer は各 source module の完全識別と publication hash、結合済み module/publication 識別からなる意味上の順序の import vector、明示的な coverage（利用不可、不完全、完全（完全な空を含む））を供給する。格納順の sort と dependency interface hash ではその vector を確立できない。[Doc4 入力](../en/doc_build.md#index-inputs-and-later-completion) は変更しない。
@@ -35,13 +35,17 @@ render allocation 所有者は、選択 output root と完全 module/publication
 `validate_doc_allocations` は明示的な `DocAllocationTable` を `AuthenticatedDocImports`、選択出力 root、仕様 version に照合する。不変の `ValidatedDocAllocations` は安全な論理 module/item/section destination だけを公開する。完全な table は宣言された page 集合全体の衝突検査を確立し、部分的/利用不可の table は destination を公開しない。allocation coverage は import/citation coverage と独立する。
 module/publication と正確な export/label 行を認証済み inventory に結合する。label 不在はその item anchor だけを、異なる target の full id 重複はその page を保留する。任意 alias は権威ある短い label と等しく、label/full/section/alias の衝突または page の label inventory 不完全で抑制する。論理 path 検証は脱出と file/directory 衝突を拒否し、filesystem の case 方針や directory 綴りは選択しない。
 `DocSectionIndex` は version、論理 id、存在する割当 page/section fragment を明示的に結合する。section coverage は unavailable/incomplete/complete（完全な空を含む）を保持し、不在 lookup に module fallback はない。table が destination/fragment の存在を宣言し、この API は render や出力 filesystem の検査を行わない。
-`encode_doc_href` は採用済み byte 規則で論理 path/fragment を別途 encode し、格納された正確な id を保持する。encoder 呼出しは allocation を検証しない。共有診断は別途供給済みで、resolver 統合は引き続き gate で保留する。
+`encode_doc_href` は採用済み byte 規則で論理 path/fragment を別途 encode し、格納された正確な id を保持する。encoder 呼出しは allocation を検証しない。共有診断は別途供給済みで、[resolver handoff](#resolver-handoff) が検証済み destination を消費する。
+
+## Resolver Handoff
+`resolve_doc_links` は parsed comments に結合した parser-neutral な `ClassifiedDocOccurrence` を受け取り `ResolvedDocLinks` を返し、認識/復号は Doc8 の責任とする。form、raw/interpreted の正確な綴り、論理位置、付随 subject と mapped segment を保持する。未分類 destination は明示的な unresolved handoff とし、式・外部 URL・欠落 slot・失敗 view から参照を推測しない。
+lookup/診断発行の前に全 product を同じ認証済み有限 inventory と選択 plan に結合する。完全識別・route・coverage を保持し、完全で一意の label/FQN lookup だけを検証済み allocation/href encoding に進める。direct-by 逆引きは元 occurrence と sort/dedup 済み citing 表示を別に保持し、closure/citation coverage を独立に維持する。detail/location/order は共有診断が所有し、consumer が precedence/suppression を適用する。HTML・直列化・source discovery・出力公開は導入しない。
 
 ## Ordered Readiness Gates And Decisions
 上記の前提 interface 定義は採用済みである。残る前提条件群を順に解決する。interface 採用だけでは producer、認証、coverage、allocation、診断、実装の gate のどれも充足しない:
 1. [認証済み import/closure handoff](#authenticated-ordered-imports-handoff) は明示的な coverage と拒否検証付きの順序付き import と有限 dependency index を供給する。この input gate だけを充足し、後続 gate は充足しない。
 2. [認証済み direct-by handoff](#authenticated-direct-by-handoff) は Artifact 所有の射影と有限 scope/endpoint 検証を供給し、反復/自己/package 間 occurrence と unavailable/incomplete/complete-empty coverage を evidence fallback なしで保持する。この producer gate だけを充足する。
 3. [検証済み allocation handoff](#validated-allocation-handoff) は page/full-anchor/alias/section 検証と採用済み href encoder を供給する。allocation gate だけを充足し、後続 gate はすべて開いたままとする。
-4. 採用済み [共有診断](../../mizar-diagnostics/ja/documentation_links.md) は正確な割当 descriptor、block/scope 位置、aggregation/CLI support、明示 draft の occurrence/完全性 witness と既存 Doc 品質失敗 profile を供給する。gate 4 だけを解消し、resolver lookup/発行と suppression 統合は未完了とする。
-5. 別途 dispatch された Doc10 readiness/implementation unit だけが、これらの認証済み入力と採用済み診断を統合できる。Doc13 render、schema/publication 作業、coverage/owner/milestone credit はこの定義の範囲外である。
+4. 採用済み [共有診断](../../mizar-diagnostics/ja/documentation_links.md) は正確な割当 descriptor、block/scope 位置、aggregation/CLI support、明示 draft の occurrence/完全性 witness と既存 Doc 品質失敗 profile を供給する。gate 4 だけを解消し、[resolver handoff](#resolver-handoff) が lookup/発行と suppression 統合を所有する。
+5. [resolver handoff](#resolver-handoff) は gate 1–4 を lookup、direct-by 逆引きと採用済み診断の発行/suppression に統合し、gate 5 だけを解消する。Doc13 render、schema/publication、coverage/owner/milestone credit とすべての後続 gate は未完了のままとする。
 採用済みの内部/来歴の決定: publication-bound producer の配置、明示的 coverage inventory、citation occurrence ordinal、validation handoff は完成済み提案から維持した。新たな言語仕様の選択は不要であり、ここに未選択のものは残さない。数値診断と採用 metadata は共有所有者で割当済みで、schema は割り当てない。Doc9 の過去の ② 代替は無効のままとする。

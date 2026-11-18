@@ -1,6 +1,6 @@
 # Doc9/Doc10 共有 Link 診断
 正本は英語: [English companion](../en/documentation_links.md)。
-状態: [spec22 割当](../../../spec/ja/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) と [spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) に基づく採用済み共有診断契約。共有 registry/location/aggregation/CLI support は gate 4 を供給し、resolver 発行と後続 gate は未完了。[Doc 前提入力](../../mizar-doc/ja/link_prerequisites.md) が producer と destination allocation を所有する。
+状態: [spec22 割当](../../../spec/ja/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) と [spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) に基づく採用済み共有診断契約。共有 registry/location/aggregation/CLI support は gate 4 を供給し、[Doc10 resolver handoff](../../mizar-doc/ja/link_prerequisites.md#resolver-handoff) が gate-5 発行を供給し、後続 gate は未完了のままとする。[Doc 前提入力](../../mizar-doc/ja/link_prerequisites.md) が producer と destination allocation を所有する。
 
 ## Exact Meanings And Descriptors
 各行は family `Documentation`、default severity `Warning`、phase `Documentation`、category `DocumentationWarning` を持ち、semantic name は永久 meaning key と等しい。初期 lifecycle は active となり、alias、retirement marker、replacement は空とする。summary は以下の colon 前の英語 text。[registry metadata/compatibility](../en/registry.md#descriptor-metadata) に従い、既存の attachment と Markdown/tag の意味は変えない。
@@ -29,4 +29,4 @@ reference subject ごとに警告を一つ出し、必要な入力がなけれ�
 
 ## Adoption Witnesses And Screened Decisions
 共有 support は完全な探索失敗/曖昧性、不在/部分 coverage と完全空 coverage、現 module の独立性、誤 binding の下位拒否、scope だけの citation data 不在、重複/同位置/非連続/provenance-only occurrence、複数 cause/route、freshness、profile 昇格の witness を用意する。gate 順序は前提条件所有者が保持し、resolver 発行 witness は別途統合の責務とする。
-自律的に選定したもの: 三つの意味/descriptor、detail 語彙、provenance 適用/拡張、scope 警告粒度、優先順位、順序拡張。これらは言語 semantics を変えずに固定済み表示意図を実現する。言語仕様 Q は導入せず、registry metadata は上記のとおり割当済みで、resolver 統合は別作業に残す。
+自律的に選定したもの: 三つの意味/descriptor、detail 語彙、provenance 適用/拡張、scope 警告粒度、優先順位、順序拡張。これらは言語 semantics を変えずに固定済み表示意図を実現する。言語仕様 Q は導入せず、registry metadata は上記のとおり割当済みで、resolver 統合は [Doc10 handoff](../../mizar-doc/ja/link_prerequisites.md#resolver-handoff) が所有する。

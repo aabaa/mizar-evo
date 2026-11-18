@@ -78,9 +78,84 @@ pub struct ValidatedDocAllocations {
     table: DocAllocationTable,
     blocked_pages: BTreeSet<String>,
     section_coverage: DocImportCoverage,
+    specification_version: String,
+    inventory: Vec<(ModuleSummaryIdentity, Hash)>,
+    inventory_publications: Vec<Hash>,
 }
 
 impl ValidatedDocAllocations {
+    pub(crate) fn matches_inputs(
+        &self,
+        inputs: &AuthenticatedDocImports,
+        specification_version: &str,
+    ) -> bool {
+        self.specification_version == specification_version
+            && self.inventory_publications == inputs.inventory_publications()
+            && self.inventory
+                == inputs
+                    .inventory()
+                    .map(|(module, hash)| (module.clone(), hash))
+                    .collect::<Vec<_>>()
+            && validate_doc_allocations(
+                inputs,
+                self.output_root(),
+                specification_version,
+                self.table.clone(),
+            )
+            .is_ok_and(|rebound| rebound == *self)
+    }
+
+    pub(crate) fn page_causes(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        export: Option<&VerifiedExport>,
+    ) -> Vec<&'static str> {
+        let mut causes = Vec::new();
+        let page = self.table.pages.iter().find(|page| {
+            page.module
+                .as_ref()
+                .is_some_and(|(identity, hash)| identity == module && *hash == publication)
+        });
+        if self.table.coverage != DocImportCoverage::Complete || page.is_none() {
+            causes.push("page_unavailable");
+        }
+        if let Some(page) = page {
+            if self.blocked_pages.contains(&page.path) {
+                causes.push("anchor_collision");
+            }
+            if let Some(export) = export
+                && !page
+                    .items
+                    .iter()
+                    .any(|item| &item.export == export && item.label.is_some())
+            {
+                causes.push("label_unavailable");
+            }
+        }
+        causes
+    }
+
+    pub(crate) fn section_causes(&self) -> Vec<&'static str> {
+        let mut causes = match self.section_coverage {
+            DocImportCoverage::Complete => Vec::new(),
+            DocImportCoverage::Unavailable => vec!["sections_unavailable"],
+            _ => vec!["sections_partial"],
+        };
+        if self.table.coverage != DocImportCoverage::Complete {
+            causes.push("page_unavailable");
+        }
+        if self.table.sections.as_ref().is_some_and(|index| {
+            index
+                .sections
+                .iter()
+                .any(|section| self.blocked_pages.contains(&section.path))
+        }) {
+            causes.push("anchor_collision");
+        }
+        causes
+    }
+
     /// Returns the exact selected output root.
     pub fn output_root(&self) -> &Path {
         &self.table.output_root
@@ -306,6 +381,12 @@ pub fn validate_doc_allocations(
         table,
         blocked_pages,
         section_coverage,
+        specification_version: specification_version.to_owned(),
+        inventory: inputs
+            .inventory()
+            .map(|(module, hash)| (module.clone(), hash))
+            .collect(),
+        inventory_publications: inputs.inventory_publications(),
     })
 }
 

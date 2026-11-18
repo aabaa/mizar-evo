@@ -4623,7 +4623,77 @@ mod doc10_authenticated {
 
         fn publish(&mut self) {
             use mizar_artifact::module_summary::MODULE_SUMMARY_SCHEMA_FAMILY;
-            doc_export_index_publish(&self.root, &mut self.manifest, &mut self.artifacts);
+            use mizar_artifact::{
+                comment_projection::*,
+                verified_artifact::{VERIFIED_ARTIFACT_SCHEMA_FAMILY, verified_artifact_json},
+            };
+            for (entry, artifact) in self.manifest.modules.iter_mut().zip(&mut self.artifacts) {
+                entry.module = artifact.module.clone();
+                entry.source_file = artifact.source_file.clone();
+                entry.source_hash = artifact.source_hash;
+                let text = std::fs::read_to_string(self.root.join(&artifact.source_file)).unwrap();
+                let frontend = self.frontend.iter().find(|frontend| {
+                    frontend.source.module_path.as_str() == artifact.module.module_path
+                        && frontend.source.source_hash == artifact.source_hash
+                });
+                let commented = text.contains(":::") && frontend.is_some();
+                if commented {
+                    let source = &frontend.unwrap().source;
+                    artifact.schema_version = mizar_artifact::store::SchemaVersion::new(1, 2);
+                    artifact.provenance.captured_source =
+                        Some((source.source_id, source.origin.clone(), source.source_hash));
+                }
+                artifact.refresh_hashes().unwrap();
+                let (json, family, version, excluded, interface, implementation) = if commented {
+                    let value = CommentedArtifact {
+                        artifact: artifact.clone(),
+                        comments: doc7_projection(&text, vec![]),
+                    };
+                    (
+                        commented_artifact_json(&value).unwrap(),
+                        COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+                        COMMENTED_ARTIFACT_SCHEMA_VERSION,
+                        artifact_hash_excluded_paths(),
+                        value.compute_interface_hash().unwrap(),
+                        value.compute_implementation_hash().unwrap(),
+                    )
+                } else {
+                    (
+                        if artifact.schema_version
+                            == mizar_artifact::store::SchemaVersion::new(2, 0)
+                        {
+                            mizar_artifact::verified_artifact::builtin_verified_artifact_json(
+                                artifact,
+                            )
+                            .unwrap()
+                        } else {
+                            verified_artifact_json(artifact).unwrap()
+                        },
+                        VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+                        artifact.schema_version,
+                        mizar_artifact::verified_artifact::artifact_hash_excluded_paths(),
+                        artifact.interface_hash,
+                        artifact.implementation_hash,
+                    )
+                };
+                let write = write_published_artifact(
+                    &self.root,
+                    &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+                    &json,
+                    &artifact_hash_domain(family, version),
+                    &excluded,
+                )
+                .unwrap();
+                for (reference, digest) in [
+                    (&mut entry.artifact_hash, write.artifact_hash),
+                    (&mut entry.interface_hash, interface),
+                    (&mut entry.implementation_hash, implementation),
+                ] {
+                    reference.schema_family = family.into();
+                    reference.schema_version = version;
+                    reference.digest = digest;
+                }
+            }
             for (entry, summary) in self.manifest.modules.iter_mut().zip(&self.summaries) {
                 let path = PublishedArtifactPath::new(format!(
                     "summaries/{}.json",
@@ -5457,8 +5527,9 @@ mod doc10_authenticated {
             let export = &mut artifact.exports[0];
             export.export_kind = "theorem".into();
             export.fully_qualified_name = format!("{package}::module_{index}::T");
-            export.source_range.start_byte = texts[index].find("theorem").unwrap() as u64;
-            export.source_range.end_byte = texts[index].len() as u64;
+            let lexical = mizar_lexer::preprocess_source_for_lexing(texts[index]).lexical_text;
+            export.source_range.start_byte = lexical.find("theorem").unwrap() as u64;
+            export.source_range.end_byte = lexical.len() as u64;
         }
         publication.publish();
         publication
@@ -6426,6 +6497,1532 @@ mod doc10_authenticated {
                 validate(&app, &imports, supplied),
                 Err(DocBuildError::Binding(_))
             ));
+        }
+
+        mod resolver {
+            use super::*;
+            use mizar_diagnostics::failure_record::{
+                DiagnosticDetailValue as V, DiagnosticDraft, DiagnosticPrimaryLocation,
+            };
+            use mizar_doc::{
+                comments::attach_comments,
+                links::*,
+                markdown::{ParsedComments, parse_comments},
+            };
+
+            fn document(app: &mut Publication, text: &str) {
+                std::fs::write(app.root.join(&app.artifacts[0].source_file), text).unwrap();
+                let hash = mizar_session::hash_text(text);
+                app.artifacts[0].source_hash = hash;
+                app.summaries[0].source_hash = hash;
+                app.manifest.modules[0].source_hash = hash;
+                app.publish();
+            }
+
+            fn occurrence(text: &str, raw: &str, interpreted: &str) -> ClassifiedDocOccurrence {
+                let start = text.find(raw).unwrap();
+                ClassifiedDocOccurrence {
+                    block: 0,
+                    range: start..start + raw.len(),
+                    destination_ranges: std::iter::once(start..start + raw.len()).collect(),
+                    form: DocReferenceForm::Explicit,
+                    interpreted: Some(interpreted.into()),
+                    classification: DocReferenceClassification::Label,
+                }
+            }
+
+            fn resolve(
+                parsed: &ParsedComments<'_, '_>,
+                imports: &AuthenticatedDocImports,
+                allocations: &ValidatedDocAllocations,
+                occurrences: &[ClassifiedDocOccurrence],
+            ) -> ResolvedDocLinks {
+                let citations = authenticate_doc_direct_by(imports, &[]).unwrap();
+                resolve_doc_links(
+                    parsed,
+                    imports,
+                    &citations,
+                    allocations,
+                    VERSION,
+                    occurrences,
+                )
+                .unwrap()
+            }
+
+            fn reference_warnings(result: &ResolvedDocLinks) -> Vec<&DiagnosticDraft> {
+                result
+                    .warnings
+                    .iter()
+                    .filter(|warning| {
+                        matches!(
+                            warning.details().entries().get("documentation.link.subject"),
+                            Some(V::List(subject)) if subject[3] == V::String("reference".into())
+                        )
+                    })
+                    .collect()
+            }
+
+            fn reasons(warning: &DiagnosticDraft) -> Vec<&str> {
+                let V::List(causes) = &warning.details().entries()["documentation.link.causes"]
+                else {
+                    panic!("causes must be a list")
+                };
+                causes
+                    .iter()
+                    .map(|cause| {
+                        let V::List(pair) = cause else {
+                            panic!("cause pair")
+                        };
+                        let V::String(reason) = &pair[0] else {
+                            panic!("reason")
+                        };
+                        reason.as_str()
+                    })
+                    .collect()
+            }
+
+            #[test]
+            fn doc10_resolver_lookup_exactness_coverage_routes_and_finite_identity() {
+                let mut app =
+                    publication(&[("dep.module_0.Same", "Exact"), ("local.Other", "Exact")]);
+                document(
+                    &mut app,
+                    "import dep.module_0 as D, dep.module_1 as E, dep.module_0 as D;\n::: Exact exact dep.module_0.Same Foreign Only\n",
+                );
+                let mut dep = publication(&[
+                    ("dep.module_0.Same", "Foreign"),
+                    ("dep.module_0.Only", "Only"),
+                ]);
+                dep.summaries[1].exported_labels[0].label = "Foreign".into();
+                dep.manifest.package.package_id = "dep".into();
+                dep.manifest.package.package_version = Some("2.0.0".into());
+                for (artifact, summary) in dep.artifacts.iter_mut().zip(&mut dep.summaries) {
+                    artifact.module.package_id = "dep".into();
+                    artifact.module.package_version = Some("2.0.0".into());
+                    summary.module = artifact.module.clone();
+                    if artifact.module.module_path == "module_1" {
+                        artifact.exports[0].fully_qualified_name = "dep.module_1.Other".into();
+                        summary.exported_labels[0].owner_fully_qualified_name =
+                            "dep.module_1.Other".into();
+                    }
+                    for export in &mut artifact.exports {
+                        export.export_kind = "theorem".into();
+                    }
+                    summary.exported_symbols = artifact
+                        .exports
+                        .iter()
+                        .map(
+                            |export| mizar_artifact::module_summary::ExportedSymbolSummary {
+                                origin_id: export.origin_id.clone(),
+                                fully_qualified_name: export.fully_qualified_name.clone(),
+                                namespace_path: vec![],
+                                visibility: "public".into(),
+                                declaration_kind: export.export_kind.clone(),
+                                source_range: export.source_range,
+                                rendered_signature: export.rendered_signature.clone(),
+                                interface_fingerprint: export.interface_fingerprint.digest,
+                                proof_status: None,
+                            },
+                        )
+                        .collect();
+                    summary.refresh_interface_hash().unwrap();
+                }
+                dep.publish();
+                let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+                let all = inputs(&app, &views[0])
+                    .into_iter()
+                    .chain(inputs(&dep, &views[1]))
+                    .collect::<Vec<_>>();
+                let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
+                let complete =
+                    authenticate_doc_imports(&registry, &workspace, &plans[0], &inventory, &all)
+                        .unwrap();
+                let partial = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let missing =
+                    authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &[]).unwrap();
+                assert_eq!(
+                    complete.coverage(&app.summaries[0].module, app.hash),
+                    DocImportCoverage::Complete
+                );
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let text = &parsed.blocks[0].text;
+                for (imports, expected) in [
+                    (&complete, DocLinkOutcome::Unresolved),
+                    (&partial, DocLinkOutcome::Incomplete),
+                    (&missing, DocLinkOutcome::Incomplete),
+                ] {
+                    let allocations = validate(&app, imports, table(&app)).unwrap();
+                    let result = resolve(
+                        &parsed,
+                        imports,
+                        &allocations,
+                        &[
+                            occurrence(text, "Exact", "Exact"),
+                            occurrence(text, "exact", "exact"),
+                        ],
+                    );
+                    assert!(matches!(
+                        result.references[0].outcome,
+                        DocLinkOutcome::Ambiguous
+                    ));
+                    assert_eq!(result.references[0].candidates.len(), 2);
+                    assert_eq!(result.references[1].outcome, expected);
+                }
+                let mut supplied = table(&app);
+                let mut dependency_pages = table(&dep).pages;
+                for page in &mut dependency_pages {
+                    page.path = format!("dep/{}", page.path);
+                }
+                supplied.pages.extend(dependency_pages);
+                let allocations = validate(&app, &complete, supplied).unwrap();
+                let mut fqn = occurrence(text, "dep.module_0.Same", "dep.module_0.Same");
+                fqn.classification = DocReferenceClassification::Fqn;
+                let result = resolve(
+                    &parsed,
+                    &complete,
+                    &allocations,
+                    &[
+                        occurrence(text, "Only", "Only"),
+                        occurrence(text, "Foreign", "Foreign"),
+                        fqn.clone(),
+                    ],
+                );
+                assert!(matches!(
+                    result.references[0].outcome,
+                    DocLinkOutcome::Linked { .. }
+                ));
+                assert_eq!(result.references[0].candidates.len(), 1);
+                assert_eq!(
+                    result.references[0]
+                        .routes
+                        .iter()
+                        .map(|route| route.position)
+                        .collect::<Vec<_>>(),
+                    [Some(0), Some(2)]
+                );
+                assert!(matches!(
+                    result.references[1].outcome,
+                    DocLinkOutcome::Ambiguous
+                ));
+                assert_eq!(result.references[1].candidates.len(), 2);
+                assert_eq!(
+                    result.references[1]
+                        .routes
+                        .iter()
+                        .map(|route| route.position)
+                        .collect::<Vec<_>>(),
+                    [Some(0), Some(1), Some(2)]
+                );
+                let encoded_module = |index: usize| {
+                    let module = &dep.artifacts[index].module;
+                    V::List(vec![
+                        V::String("dep".into()),
+                        V::List(vec![V::String("2.0.0".into())]),
+                        V::List(
+                            module
+                                .lockfile_identity
+                                .iter()
+                                .cloned()
+                                .map(V::String)
+                                .collect(),
+                        ),
+                        V::String(format!("module_{index}")),
+                        V::String(module.language_edition.clone()),
+                    ])
+                };
+                let encoded_candidate = |index: usize| {
+                    V::List(vec![
+                        V::String(dep.hash.to_lower_hex()),
+                        encoded_module(index),
+                        V::String(dep.artifacts[index].exports[0].origin_id.clone()),
+                        V::String(dep.artifacts[index].exports[0].fully_qualified_name.clone()),
+                    ])
+                };
+                let warning = reference_warnings(&result)[0];
+                assert_eq!(
+                    warning.details().entries()["documentation.link.candidates"],
+                    V::List(vec![encoded_candidate(0), encoded_candidate(1)])
+                );
+                assert_eq!(
+                    warning.details().entries()["documentation.link.routes"],
+                    V::List(
+                        [0usize, 1, 0]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(position, index)| V::List(vec![
+                                encoded_candidate(index),
+                                V::String("import".into()),
+                                V::List(vec![V::String(position.to_string())]),
+                                V::List(vec![
+                                    V::String(dep.hash.to_lower_hex()),
+                                    encoded_module(index)
+                                ])
+                            ]))
+                            .collect()
+                    )
+                );
+                assert!(matches!(
+                    result.references[2].outcome,
+                    DocLinkOutcome::Ambiguous
+                ));
+                assert_eq!(
+                    result.references[2].candidates[0]
+                        .module
+                        .package_version
+                        .as_deref(),
+                    Some("1.0.0-test")
+                );
+                assert_eq!(
+                    result.references[2].candidates[1]
+                        .module
+                        .package_version
+                        .as_deref(),
+                    Some("2.0.0")
+                );
+                assert_eq!(
+                    result.references[2].candidates[1].publication_hash,
+                    dep.hash
+                );
+                let allocations = validate(&app, &partial, table(&app)).unwrap();
+                let finite = resolve(&parsed, &partial, &allocations, &[fqn]);
+                assert_eq!(finite.references[0].outcome, DocLinkOutcome::Incomplete);
+                assert_eq!(finite.references[0].candidates.len(), 1);
+                let missing_summary = &mut dep.manifest.modules[1];
+                missing_summary.module_summary_file = None;
+                missing_summary.module_summary_hash = None;
+                missing_summary.module_summary_interface_hash = None;
+                dep.hash = write_manifest_file(&dep.root, &dep.manifest)
+                    .unwrap()
+                    .artifact_hash;
+                let known = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[(&dep.manifest.package, dep.hash, &dep.root)],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let allocations = validate(&app, &known, table(&app)).unwrap();
+                let partial = resolve(
+                    &parsed,
+                    &known,
+                    &allocations,
+                    &[occurrence(text, "Foreign", "Foreign")],
+                );
+                assert_eq!(partial.references[0].outcome, DocLinkOutcome::Incomplete);
+                assert_eq!(partial.references[0].candidates.len(), 1);
+                assert_eq!(partial.references[0].routes.len(), 2);
+                // A complete empty import vector proves absence; an unavailable vector does not.
+                let mut empty = publication(&[("unique.Local", "Local")]);
+                document(&mut empty, "::: Local Missing\n");
+                let (registry, workspace, plans, views) = context(&mut [&mut empty]);
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                for producers in [inputs(&empty, &views[0]), vec![]] {
+                    let imports =
+                        authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &producers)
+                            .unwrap();
+                    let allocations = validate(&empty, &imports, table(&empty)).unwrap();
+                    let result = resolve(
+                        &parsed,
+                        &imports,
+                        &allocations,
+                        &[
+                            occurrence(&parsed.blocks[0].text, "Local", "Local"),
+                            occurrence(&parsed.blocks[0].text, "Missing", "Missing"),
+                        ],
+                    );
+                    assert!(matches!(
+                        result.references[0].outcome,
+                        DocLinkOutcome::Linked { .. }
+                    ));
+                    assert_eq!(
+                        result.references[1].outcome,
+                        if producers.is_empty() {
+                            DocLinkOutcome::Incomplete
+                        } else {
+                            DocLinkOutcome::Unresolved
+                        }
+                    );
+                }
+            }
+
+            #[test]
+            fn doc10_resolver_occurrences_preserve_spelling_maps_identity_and_exclusions() {
+                let mut app = publication(&[("local.FQN", "Exact")]);
+                document(
+                    &mut app,
+                    "::: [visible](Ex&#97;ct) `Exact` `x + y` https://example.test Unknown\n::: Un\n::: known Unknown\n:::\n::: @see Exact\n:::\n::: @see\n",
+                );
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let allocations = validate(&app, &imports, table(&app)).unwrap();
+                let source = &app.frontend[0].source;
+                let loaded = mizar_session::LoadedSource {
+                    source_id: source.source_id,
+                    package_id: source.package_id.clone(),
+                    module_path: source.module_path.clone(),
+                    normalized_path: source.normalized_path.clone(),
+                    text: source.source_text.clone(),
+                    source_hash: source.source_hash,
+                    edition: source.edition.clone(),
+                    origin: source.origin.clone(),
+                    line_map: source.line_map.clone(),
+                    loading_map: source.loading_map.clone(),
+                    generated_anchor: source.generated_anchor.clone(),
+                };
+                let attached =
+                    attach_comments(&plans[0], &app.summaries[0].module, Some(&loaded)).unwrap();
+                let mut parsed = parse_comments(&attached, &[]);
+                let text = &parsed.blocks[0].text;
+                let explicit = occurrence(text, "Ex&#97;ct", "Exact");
+                let mut code = occurrence(text, "`Exact`", "Exact");
+                code.form = DocReferenceForm::Code;
+                code.destination_ranges =
+                    std::iter::once(code.range.start + 1..code.range.end - 1).collect();
+                let mut expression = occurrence(text, "x + y", "x + y");
+                expression.form = DocReferenceForm::Code;
+                expression.classification = DocReferenceClassification::Ordinary;
+                let mut external = occurrence(text, "https://example.test", "https://example.test");
+                external.classification = DocReferenceClassification::External;
+                let see_start = text.find("@see Exact").unwrap() + 5;
+                let mut see = occurrence(text, "Exact", "Exact");
+                see.range = see_start..see_start + 5;
+                see.destination_ranges = vec![see.range.clone()];
+                see.form = DocReferenceForm::See;
+                let mut missing_slot = see.clone();
+                missing_slot.range = text.len() - 1..text.len() - 1;
+                missing_slot.destination_ranges.clear();
+                missing_slot.interpreted = None;
+                missing_slot.classification = DocReferenceClassification::Unavailable;
+                let mut unknown = occurrence(text, "Unknown", "Unknown");
+                unknown.destination_ranges = vec![
+                    unknown.range.start..unknown.range.start + 2,
+                    unknown.range.start + 4..unknown.range.end,
+                ];
+                let mut coincident = unknown.clone();
+                coincident.form = DocReferenceForm::Code;
+                let occurrences = [
+                    explicit.clone(),
+                    code,
+                    expression,
+                    external,
+                    see,
+                    missing_slot,
+                    unknown.clone(),
+                    coincident,
+                ];
+                let result = resolve(&parsed, &imports, &allocations, &occurrences);
+                assert!(
+                    result.references[..2].iter().all(|reference| matches!(
+                        reference.outcome,
+                        DocLinkOutcome::Linked { .. }
+                    ))
+                );
+                assert_eq!(result.references[0].occurrence, explicit);
+                assert!(matches!(
+                    result.references[2].outcome,
+                    DocLinkOutcome::Excluded
+                ));
+                assert_eq!(
+                    result.references[3].outcome,
+                    DocLinkOutcome::Linked {
+                        href: "https://example.test".into()
+                    }
+                );
+                assert!(matches!(
+                    result.references[4].outcome,
+                    DocLinkOutcome::Linked { .. }
+                ));
+                assert!(matches!(
+                    result.references[5].outcome,
+                    DocLinkOutcome::Excluded
+                ));
+                let warnings = reference_warnings(&result);
+                assert_eq!(warnings.len(), 2);
+                let unknown_start = loaded.text.find("Unknown").unwrap();
+                assert!(matches!(
+                    warnings[0].primary_location(),
+                    DiagnosticPrimaryLocation::Span(span)
+                        if span.range() == mizar_session::SourceRange {
+                            source_id: loaded.source_id,
+                            start: unknown_start,
+                            end: unknown_start + 2,
+                        }
+                ));
+                assert_eq!(
+                    warnings[0]
+                        .secondary_spans()
+                        .iter()
+                        .map(|span| span.range())
+                        .collect::<Vec<_>>(),
+                    [mizar_session::SourceRange {
+                        source_id: loaded.source_id,
+                        start: unknown_start + 4,
+                        end: unknown_start + "Unknown".len(),
+                    }]
+                );
+                assert_eq!(
+                    warnings[0].primary_location(),
+                    warnings[1].primary_location()
+                );
+                assert_ne!(warnings[0].details(), warnings[1].details());
+                let mut gap = occurrence(text, "Un\nknown Unknown", "Unknown");
+                gap.destination_ranges = vec![
+                    gap.range.start..gap.range.start + "Un\nknown".len(),
+                    gap.range.end - "Unknown".len()..gap.range.end,
+                ];
+                let result = resolve(&parsed, &imports, &allocations, std::slice::from_ref(&gap));
+                let warning = reference_warnings(&result)[0];
+                let later_unknown_start =
+                    loaded.text.find("known Unknown").unwrap() + "known ".len();
+                assert!(matches!(
+                    warning.primary_location(),
+                    DiagnosticPrimaryLocation::Span(span)
+                        if span.range() == mizar_session::SourceRange {
+                            source_id: loaded.source_id,
+                            start: later_unknown_start,
+                            end: later_unknown_start + "Unknown".len(),
+                        }
+                ));
+                let gap_start = loaded.text.find("Un\n").unwrap();
+                let continuation_start =
+                    loaded.text.find("::: known Unknown\n").unwrap() + "::: ".len();
+                let gap_spans = [
+                    mizar_session::SourceRange {
+                        source_id: loaded.source_id,
+                        start: gap_start,
+                        end: gap_start + "Un\n".len(),
+                    },
+                    mizar_session::SourceRange {
+                        source_id: loaded.source_id,
+                        start: continuation_start,
+                        end: continuation_start + "known".len(),
+                    },
+                ];
+                assert_eq!(
+                    warning
+                        .secondary_spans()
+                        .iter()
+                        .map(|span| span.range())
+                        .collect::<Vec<_>>(),
+                    gap_spans
+                );
+                gap.destination_ranges.pop();
+                let result = resolve(&parsed, &imports, &allocations, &[gap]);
+                let warning = reference_warnings(&result)[0];
+                assert!(matches!(
+                    warning.primary_location(),
+                    DiagnosticPrimaryLocation::Documentation {
+                        block_ordinal: 0,
+                        ..
+                    }
+                ));
+                assert_eq!(
+                    warning
+                        .secondary_spans()
+                        .iter()
+                        .map(|span| span.range())
+                        .collect::<Vec<_>>(),
+                    gap_spans
+                );
+                parsed.blocks[0].source_map.clear();
+                let unmapped = resolve(
+                    &parsed,
+                    &imports,
+                    &allocations,
+                    std::slice::from_ref(&unknown),
+                );
+                assert!(matches!(
+                    reference_warnings(&unmapped)[0].primary_location(),
+                    DiagnosticPrimaryLocation::Documentation {
+                        block_ordinal: 0,
+                        ..
+                    }
+                ));
+                parsed.blocks[0].fallback = true;
+                assert!(
+                    reference_warnings(&resolve(&parsed, &imports, &allocations, &[unknown]))
+                        .is_empty()
+                );
+            }
+
+            #[test]
+            fn doc10_resolver_destinations_sections_and_ambiguity_precedence() {
+                let mut app = publication(&[("m.é%#", "Exact"), ("other.FQN", "Exact")]);
+                document(&mut app, "::: m.é%# Exact §20.5.1 §absent\n");
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let text = &parsed.blocks[0].text;
+                let mut fqn = occurrence(text, "m.é%#", "m.é%#");
+                fqn.classification = DocReferenceClassification::Fqn;
+                let mut section = occurrence(text, "§20.5.1", "§20.5.1");
+                section.classification = DocReferenceClassification::Section;
+                let mut absent = occurrence(text, "§absent", "§absent");
+                absent.classification = DocReferenceClassification::Section;
+                let mut original = table(&app);
+                original.pages[0].path = "p/é%#.html".into();
+                original.pages[0].items[0].alias = Some("Exact".into());
+                original.pages[0].section_ids.push("sec-20-5-1".into());
+                original.sections = Some(DocSectionIndex {
+                    version: VERSION.into(),
+                    coverage: DocImportCoverage::Complete,
+                    sections: vec![DocSectionAllocation {
+                        id: "§20.5.1".into(),
+                        path: original.pages[0].path.clone(),
+                        fragment: "sec-20-5-1".into(),
+                    }],
+                });
+                let valid = validate(&app, &imports, original.clone()).unwrap();
+                let result = resolve(
+                    &parsed,
+                    &imports,
+                    &valid,
+                    &[fqn.clone(), section.clone(), absent.clone()],
+                );
+                assert_eq!(
+                    result.references[0].outcome,
+                    DocLinkOutcome::Linked {
+                        href: "p/%C3%A9%25%23.html#m.%C3%A9%25%23".into()
+                    }
+                );
+                assert_eq!(
+                    result.references[1].outcome,
+                    DocLinkOutcome::Linked {
+                        href: "p/%C3%A9%25%23.html#sec-20-5-1".into()
+                    }
+                );
+                assert_eq!(reasons(reference_warnings(&result)[0]), ["section_absent"]);
+                assert!(item(&valid, &app, 0).unwrap().2.is_none());
+                for mutation in 0..3 {
+                    let mut supplied = original.clone();
+                    let reason = match mutation {
+                        0 => {
+                            supplied.pages.remove(0);
+                            supplied.sections = None;
+                            "page_unavailable"
+                        }
+                        1 => {
+                            supplied.pages[0].items[0].label = None;
+                            "label_unavailable"
+                        }
+                        _ => {
+                            supplied.pages[0].section_ids.push("m.é%#".into());
+                            "anchor_collision"
+                        }
+                    };
+                    let valid = validate(&app, &imports, supplied).unwrap();
+                    let result = resolve(
+                        &parsed,
+                        &imports,
+                        &valid,
+                        &[fqn.clone(), occurrence(text, "Exact", "Exact")],
+                    );
+                    assert_eq!(result.references[0].outcome, DocLinkOutcome::Incomplete);
+                    assert!(reasons(reference_warnings(&result)[0]).contains(&reason));
+                    assert_eq!(result.references[1].outcome, DocLinkOutcome::Ambiguous);
+                }
+                let mut colliding = original.clone();
+                colliding.pages.push(colliding.pages[0].clone());
+                assert!(matches!(
+                    validate(&app, &imports, colliding),
+                    Err(DocBuildError::Binding(_))
+                ));
+                let mut combined = original.clone();
+                combined.coverage = DocImportCoverage::Incomplete;
+                combined.pages[0].items[0].label = None;
+                combined.pages[0].section_ids.push("m.é%#".into());
+                let combined = validate(&app, &imports, combined).unwrap();
+                let result = resolve(&parsed, &imports, &combined, std::slice::from_ref(&fqn));
+                let module = &app.summaries[0].module;
+                let affected = V::List(vec![
+                    V::String(app.hash.to_lower_hex()),
+                    V::List(vec![
+                        V::String(module.package_id.clone()),
+                        V::List(
+                            module
+                                .package_version
+                                .iter()
+                                .cloned()
+                                .map(V::String)
+                                .collect(),
+                        ),
+                        V::List(
+                            module
+                                .lockfile_identity
+                                .iter()
+                                .cloned()
+                                .map(V::String)
+                                .collect(),
+                        ),
+                        V::String(module.module_path.clone()),
+                        V::String(module.language_edition.clone()),
+                    ]),
+                    V::List(vec![
+                        V::String("item".into()),
+                        V::String(app.artifacts[0].exports[0].origin_id.clone()),
+                        V::String("m.é%#".into()),
+                    ]),
+                ]);
+                assert_eq!(
+                    reference_warnings(&result)[0].details().entries()["documentation.link.causes"],
+                    V::List(
+                        ["anchor_collision", "label_unavailable", "page_unavailable"]
+                            .into_iter()
+                            .map(|reason| V::List(vec![V::String(reason.into()), affected.clone()]))
+                            .collect()
+                    )
+                );
+                for coverage in [
+                    None,
+                    Some(DocImportCoverage::Incomplete),
+                    Some(DocImportCoverage::Complete),
+                ] {
+                    let mut supplied = original.clone();
+                    match coverage {
+                        None => supplied.sections = None,
+                        Some(state) => {
+                            let sections = supplied.sections.as_mut().unwrap();
+                            sections.coverage = state;
+                            sections.sections.clear();
+                        }
+                    }
+                    let valid = validate(&app, &imports, supplied).unwrap();
+                    let result = resolve(&parsed, &imports, &valid, std::slice::from_ref(&section));
+                    assert_eq!(
+                        result.references[0].outcome,
+                        if coverage == Some(DocImportCoverage::Complete) {
+                            DocLinkOutcome::Unresolved
+                        } else {
+                            DocLinkOutcome::Incomplete
+                        }
+                    );
+                }
+                let citations = authenticate_doc_direct_by(&imports, &[]).unwrap();
+                assert!(matches!(
+                    resolve_doc_links(
+                        &parsed,
+                        &imports,
+                        &citations,
+                        &valid,
+                        "wrong-version",
+                        &[section]
+                    ),
+                    Err(DocBuildError::Binding(_))
+                ));
+            }
+
+            #[test]
+            fn doc10_resolver_used_by_direct_order_occurrences_and_independent_coverage() {
+                let mut app = theorem_publication(
+                    "app",
+                    [
+                        "::: T\nimport dep.module_0 as D; theorem T: thesis by T, T, D;",
+                        "theorem T: thesis by T;",
+                    ],
+                );
+                let mut dep =
+                    theorem_publication("dep", ["theorem T: thesis by U;", "theorem T: thesis;"]);
+                let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+                let all = inputs(&app, &views[0])
+                    .into_iter()
+                    .chain(inputs(&dep, &views[1]))
+                    .collect::<Vec<_>>();
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[(&dep.manifest.package, dep.hash, &dep.root)],
+                    &all,
+                )
+                .unwrap();
+                let own = DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)));
+                let projections = [
+                    citation_projection(
+                        &app,
+                        0,
+                        vec![
+                            own.clone(),
+                            own.clone(),
+                            DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0))),
+                        ],
+                    ),
+                    citation_projection(&app, 1, vec![own.clone()]),
+                    citation_projection(&dep, 0, vec![own]),
+                    citation_projection(&dep, 1, vec![]),
+                ];
+                let allocations = validate(&app, &imports, table(&app)).unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let complete =
+                    authenticate_doc_direct_by(&imports, &projections.iter().collect::<Vec<_>>())
+                        .unwrap();
+                let result =
+                    resolve_doc_links(&parsed, &imports, &complete, &allocations, VERSION, &[])
+                        .unwrap();
+                let used = result
+                    .used_by
+                    .iter()
+                    .find(|used| used.target.export == app.artifacts[0].exports[0])
+                    .unwrap();
+                assert!(used.available);
+                assert_eq!(used.closure_coverage, DocImportCoverage::Complete);
+                assert_eq!(used.citation_coverage, DocImportCoverage::Complete);
+                assert_eq!(
+                    used.citing
+                        .iter()
+                        .map(|target| (
+                            target.module.package_id.as_str(),
+                            target.module.module_path.as_str()
+                        ))
+                        .collect::<Vec<_>>(),
+                    [
+                        ("app", "module_0"),
+                        ("app", "module_1"),
+                        ("dep", "module_0")
+                    ]
+                );
+                assert_eq!(used.occurrences.len(), 4);
+                assert_eq!(
+                    used.occurrences
+                        .iter()
+                        .filter(|edge| edge.citing == projections[0].occurrences()[0].citing)
+                        .count(),
+                    2
+                );
+                assert_eq!(
+                    complete.producers()[0].occurrences(),
+                    projections[0].occurrences()
+                );
+                let reversed = authenticate_doc_direct_by(
+                    &imports,
+                    &projections.iter().rev().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                assert_eq!(
+                    result.used_by,
+                    resolve_doc_links(&parsed, &imports, &reversed, &allocations, VERSION, &[])
+                        .unwrap()
+                        .used_by
+                );
+                for producers in [vec![], vec![&projections[0]]] {
+                    let citations = authenticate_doc_direct_by(&imports, &producers).unwrap();
+                    let result = resolve_doc_links(
+                        &parsed,
+                        &imports,
+                        &citations,
+                        &allocations,
+                        VERSION,
+                        &[],
+                    )
+                    .unwrap();
+                    let used = &result.used_by[0];
+                    assert!(!used.available);
+                    assert_eq!(used.closure_coverage, DocImportCoverage::Complete);
+                    assert_ne!(used.citation_coverage, DocImportCoverage::Complete);
+                    assert!(result.warnings.iter().any(|warning| {
+                        reasons(warning)
+                            .iter()
+                            .any(|reason| reason.starts_with("citations_"))
+                    }));
+                }
+                let unmapped = citation_projection(
+                    &app,
+                    0,
+                    vec![
+                        DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0))),
+                        DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0))),
+                        DirectByTarget::Unmapped,
+                    ],
+                );
+                let citations = authenticate_doc_direct_by(
+                    &imports,
+                    &[&unmapped, &projections[1], &projections[2], &projections[3]],
+                )
+                .unwrap();
+                let result =
+                    resolve_doc_links(&parsed, &imports, &citations, &allocations, VERSION, &[])
+                        .unwrap();
+                assert!(!result.used_by[0].available);
+                assert_eq!(result.used_by[0].occurrences.len(), 4);
+                let warning = result
+                    .warnings
+                    .iter()
+                    .find(|warning| reasons(warning).contains(&"citation_endpoint_unmapped"))
+                    .unwrap();
+                assert_eq!(
+                    reasons(warning),
+                    ["citation_endpoint_unmapped", "citations_partial"]
+                );
+                let V::List(coverage) =
+                    &warning.details().entries()["documentation.link.citation_coverage"]
+                else {
+                    panic!("coverage")
+                };
+                assert_eq!(coverage[0], V::String("complete".into()));
+                assert_eq!(coverage[2], V::String("incomplete".into()));
+                let V::List(examined) = &coverage[3] else {
+                    panic!("examined")
+                };
+                assert_eq!(examined.len(), 4);
+                assert!(matches!(
+                    warning.primary_location(),
+                    DiagnosticPrimaryLocation::DocumentationScope { .. }
+                ));
+                let missing_imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[(&dep.manifest.package, dep.hash, &dep.root)],
+                    &[],
+                )
+                .unwrap();
+                let citations = authenticate_doc_direct_by(
+                    &missing_imports,
+                    &projections.iter().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                let allocations = validate(&app, &missing_imports, table(&app)).unwrap();
+                let result = resolve_doc_links(
+                    &parsed,
+                    &missing_imports,
+                    &citations,
+                    &allocations,
+                    VERSION,
+                    &[],
+                )
+                .unwrap();
+                assert_eq!(
+                    result.used_by[0].closure_coverage,
+                    DocImportCoverage::Unavailable
+                );
+                assert_eq!(
+                    result.used_by[0].citation_coverage,
+                    DocImportCoverage::Complete
+                );
+                assert!(!result.used_by[0].available);
+                let mut empty = theorem_publication(
+                    "empty",
+                    [
+                        "::: @see T\n::: [T](T)\ntheorem T: thesis;",
+                        "theorem T: thesis;",
+                    ],
+                );
+                let (registry, workspace, plans, views) = context(&mut [&mut empty]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&empty, &views[0]),
+                )
+                .unwrap();
+                let projections = [
+                    citation_projection(&empty, 0, vec![]),
+                    citation_projection(&empty, 1, vec![]),
+                ];
+                let citations =
+                    authenticate_doc_direct_by(&imports, &[&projections[0], &projections[1]])
+                        .unwrap();
+                let allocations = validate(&empty, &imports, table(&empty)).unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let result =
+                    resolve_doc_links(&parsed, &imports, &citations, &allocations, VERSION, &[])
+                        .unwrap();
+                assert!(result.used_by.iter().all(|used| used.available
+                    && used.citing.is_empty()
+                    && used.occurrences.is_empty()));
+                assert!(!empty.artifacts[0].proof_witnesses.is_empty());
+
+                let source = "theorem T: thesis proof thus thesis by T; thus thesis by T; end; theorem U: thesis by T;";
+                let mut app = theorem_publication("app", [source, "theorem T: thesis;"]);
+                let lexical = mizar_lexer::preprocess_source_for_lexing(source).lexical_text;
+                let second_start = lexical.find("theorem U").unwrap() as u64;
+                let mut second = app.artifacts[0].exports[0].clone();
+                second.origin_id.push_str("-second");
+                second.fully_qualified_name = "app::module_0::U".into();
+                second.source_range.start_byte = second_start;
+                app.artifacts[0].exports[0].source_range.end_byte = second_start;
+                app.artifacts[0].exports.push(second);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let frontend = &app.frontend[0];
+                let mut captured = app.artifacts[0].clone();
+                captured.provenance.captured_source = Some((
+                    frontend.source.source_id,
+                    frontend.source.origin.clone(),
+                    frontend.source.source_hash,
+                ));
+                let projected = project_frontend_direct_by(
+                    frontend,
+                    &captured,
+                    app.hash,
+                    |id| {
+                        let start = frontend.ast.as_ref()?.node(id)?.range.start as u64;
+                        captured
+                            .exports
+                            .iter()
+                            .find(|export| export.source_range.start_byte == start)
+                            .cloned()
+                    },
+                    |_, _| DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0))),
+                )
+                .unwrap();
+                assert_eq!(
+                    projected
+                        .occurrences()
+                        .iter()
+                        .map(|edge| (
+                            edge.citing
+                                .as_ref()
+                                .unwrap()
+                                .export
+                                .fully_qualified_name
+                                .as_str(),
+                            edge.by_ordinal,
+                        ))
+                        .collect::<Vec<_>>(),
+                    [
+                        ("app::module_0::T", 0),
+                        ("app::module_0::T", 1),
+                        ("app::module_0::U", 0),
+                    ]
+                );
+                let other = citation_projection(&app, 1, vec![]);
+                let allocations = validate(&app, &imports, table(&app)).unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                for producers in [vec![&projected, &other], vec![&other, &projected]] {
+                    let citations = authenticate_doc_direct_by(&imports, &producers).unwrap();
+                    let result = resolve_doc_links(
+                        &parsed,
+                        &imports,
+                        &citations,
+                        &allocations,
+                        VERSION,
+                        &[],
+                    )
+                    .unwrap();
+                    let used = result
+                        .used_by
+                        .iter()
+                        .find(|used| used.target.export == app.artifacts[0].exports[0])
+                        .unwrap();
+                    assert!(used.available);
+                    assert_eq!(used.occurrences, projected.occurrences());
+                }
+            }
+
+            #[test]
+            fn doc10_resolver_diagnostics_exact_details_and_product_refusal() {
+                let mut app = publication(&[("one.FQN", "Exact"), ("two.FQN", "Exact")]);
+                for export in &mut app.artifacts[0].exports {
+                    export.export_kind = "theorem".into();
+                }
+                for label in &mut app.summaries[0].exported_labels {
+                    label.target_kind = "theorem".into();
+                }
+                document(&mut app, "::: Missing Exact Unknown\n");
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let allocations = validate(&app, &imports, table(&app)).unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let text = &parsed.blocks[0].text;
+                let mut unknown = occurrence(text, "Unknown", "Unknown");
+                unknown.classification = DocReferenceClassification::Unavailable;
+                unknown.interpreted = None;
+                let result = resolve(
+                    &parsed,
+                    &imports,
+                    &allocations,
+                    &[
+                        occurrence(text, "Missing", "Missing"),
+                        occurrence(text, "Exact", "Exact"),
+                        unknown,
+                    ],
+                );
+                let warnings = reference_warnings(&result);
+                assert_eq!(
+                    warnings
+                        .iter()
+                        .map(|warning| warning.code().to_string())
+                        .collect::<Vec<_>>(),
+                    ["W0412", "W0413", "W0412"]
+                );
+                for (warning, reason) in warnings.iter().zip([
+                    "target_absent",
+                    "multiple_targets",
+                    "classification_unavailable",
+                ]) {
+                    assert_eq!(reasons(warning), [reason]);
+                    assert_eq!(
+                        warning
+                            .details()
+                            .entries()
+                            .keys()
+                            .map(String::as_str)
+                            .collect::<Vec<_>>(),
+                        [
+                            "documentation.link.candidates",
+                            "documentation.link.causes",
+                            "documentation.link.citation_coverage",
+                            "documentation.link.reference",
+                            "documentation.link.routes",
+                            "documentation.link.section_version",
+                            "documentation.link.subject"
+                        ]
+                    );
+                    assert!(matches!(
+                        warning.primary_location(),
+                        DiagnosticPrimaryLocation::Documentation {
+                            block_ordinal: 0,
+                            ..
+                        }
+                    ));
+                    let descriptor = mizar_diagnostics::registry::DiagnosticRegistry::builtin()
+                        .lookup(warning.code())
+                        .unwrap();
+                    assert_eq!(
+                        descriptor.default_severity,
+                        mizar_diagnostics::registry::DiagnosticSeverity::Warning
+                    );
+                    assert_eq!(descriptor.semantic_name, warning.stable_detail_key());
+                }
+                let V::List(subject) =
+                    &warnings[0].details().entries()["documentation.link.subject"]
+                else {
+                    panic!("subject")
+                };
+                assert_eq!(subject[0], V::String(app.hash.to_lower_hex()));
+                assert_eq!(subject[3], V::String("reference".into()));
+                assert_eq!(
+                    subject[4],
+                    V::List(vec![
+                        V::String("0".into()),
+                        V::String("0".into()),
+                        V::String("7".into()),
+                        V::String("explicit".into())
+                    ])
+                );
+                assert_eq!(
+                    warnings[0].details().entries()["documentation.link.reference"],
+                    V::List(vec![
+                        V::String("Missing".into()),
+                        V::List(vec![V::String("Missing".into())])
+                    ])
+                );
+                let missing =
+                    authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &[]).unwrap();
+                let mut unavailable = table(&app);
+                unavailable.coverage = DocImportCoverage::Incomplete;
+                let unavailable = validate(&app, &missing, unavailable).unwrap();
+                let result = resolve(
+                    &parsed,
+                    &missing,
+                    &unavailable,
+                    &[occurrence(text, "Missing", "Missing")],
+                );
+                assert_eq!(reference_warnings(&result)[0].code().to_string(), "W0414");
+                assert_eq!(
+                    reasons(reference_warnings(&result)[0]),
+                    ["imports_unavailable"]
+                );
+                let modules = app
+                    .summaries
+                    .iter()
+                    .map(|summary| {
+                        let module = &summary.module;
+                        V::List(vec![
+                            V::String(module.package_id.clone()),
+                            V::List(
+                                module
+                                    .package_version
+                                    .iter()
+                                    .cloned()
+                                    .map(V::String)
+                                    .collect(),
+                            ),
+                            V::List(
+                                module
+                                    .lockfile_identity
+                                    .iter()
+                                    .cloned()
+                                    .map(V::String)
+                                    .collect(),
+                            ),
+                            V::String(module.module_path.clone()),
+                            V::String(module.language_edition.clone()),
+                        ])
+                    })
+                    .collect::<Vec<_>>();
+                let module_target = V::List(vec![V::String("module".into())]);
+                let expected_subjects = [
+                    ("module_page", module_target.clone()),
+                    ("section_index", module_target.clone()),
+                ]
+                .into_iter()
+                .chain(app.artifacts[0].exports.iter().map(|export| {
+                    (
+                        "used_by",
+                        V::List(vec![
+                            V::String("item".into()),
+                            V::String(export.origin_id.clone()),
+                            V::String(export.fully_qualified_name.clone()),
+                        ]),
+                    )
+                }))
+                .map(|(scope, target)| {
+                    V::List(vec![
+                        V::String(app.hash.to_lower_hex()),
+                        modules[0].clone(),
+                        target,
+                        V::String(scope.into()),
+                        V::List(vec![]),
+                    ])
+                })
+                .collect::<Vec<_>>();
+                let scope_warnings = result
+                    .warnings
+                    .iter()
+                    .filter(|warning| {
+                        matches!(
+                            warning.primary_location(),
+                            DiagnosticPrimaryLocation::DocumentationScope { .. }
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    scope_warnings
+                        .iter()
+                        .map(
+                            |warning| warning.details().entries()["documentation.link.subject"]
+                                .clone()
+                        )
+                        .collect::<Vec<_>>(),
+                    expected_subjects
+                );
+                let module = &app.summaries[0].module;
+                let location = DiagnosticPrimaryLocation::DocumentationScope {
+                    publication_hash: app.hash,
+                    package_id: module.package_id.clone(),
+                    package_version: module.package_version.clone(),
+                    lockfile_identity: module.lockfile_identity.clone(),
+                    module_path: module.module_path.clone(),
+                    language_edition: module.language_edition.clone(),
+                };
+                for (index, warning) in scope_warnings.iter().enumerate() {
+                    assert_eq!(warning.primary_location(), &location);
+                    assert_eq!(warning.code().to_string(), "W0414");
+                    for key in ["reference", "candidates", "routes"] {
+                        assert_eq!(
+                            warning.details().entries()[&format!("documentation.link.{key}")],
+                            V::List(vec![])
+                        );
+                    }
+                    assert_eq!(
+                        warning.details().entries()["documentation.link.section_version"],
+                        V::List(if index == 1 {
+                            vec![V::String(VERSION.into())]
+                        } else {
+                            vec![]
+                        })
+                    );
+                    let affected = V::List(vec![
+                        V::String(app.hash.to_lower_hex()),
+                        modules[0].clone(),
+                        module_target.clone(),
+                    ]);
+                    let causes = match index {
+                        0 => vec![V::List(vec![
+                            V::String("page_unavailable".into()),
+                            affected,
+                        ])],
+                        1 => vec![
+                            V::List(vec![V::String("page_unavailable".into()), V::List(vec![])]),
+                            V::List(vec![
+                                V::String("sections_unavailable".into()),
+                                V::List(vec![]),
+                            ]),
+                        ],
+                        _ => modules
+                            .iter()
+                            .map(|module| {
+                                V::List(vec![
+                                    V::String("citations_unavailable".into()),
+                                    V::List(vec![
+                                        V::String(app.hash.to_lower_hex()),
+                                        module.clone(),
+                                        module_target.clone(),
+                                    ]),
+                                ])
+                            })
+                            .chain(std::iter::once(V::List(vec![
+                                V::String("closure_unavailable".into()),
+                                V::List(vec![]),
+                            ])))
+                            .collect(),
+                    };
+                    assert_eq!(
+                        warning.details().entries()["documentation.link.causes"],
+                        V::List(causes)
+                    );
+                    assert_eq!(
+                        warning.details().entries()["documentation.link.citation_coverage"],
+                        V::List(if index < 2 {
+                            vec![]
+                        } else {
+                            vec![
+                                V::String("unavailable".into()),
+                                V::List(
+                                    modules
+                                        .iter()
+                                        .map(|module| {
+                                            V::List(vec![
+                                                V::String(app.hash.to_lower_hex()),
+                                                module.clone(),
+                                            ])
+                                        })
+                                        .collect(),
+                                ),
+                                V::String("unavailable".into()),
+                                V::List(vec![]),
+                            ]
+                        })
+                    );
+                }
+                let citations = authenticate_doc_direct_by(&imports, &[]).unwrap();
+                let mut changed = plans[0].clone();
+                changed
+                    .index
+                    .modules
+                    .get_mut(&app.summaries[0].module)
+                    .unwrap()
+                    .comment_projection = mizar_artifact::store::CanonicalJson::Null;
+                let changed_attachments = doc7_attach(&changed);
+                let changed_parsed = parse_comments(&changed_attachments, &[]);
+                assert!(matches!(
+                    resolve_doc_links(
+                        &changed_parsed,
+                        &imports,
+                        &citations,
+                        &allocations,
+                        VERSION,
+                        &[]
+                    ),
+                    Err(DocBuildError::Binding(_))
+                ));
+                let mut mismatched = doc7_attach(&plans[0]);
+                mismatched.module = &app.summaries[1].module;
+                let mismatched_parsed = parse_comments(&mismatched, &[]);
+                assert!(matches!(
+                    resolve_doc_links(
+                        &mismatched_parsed,
+                        &imports,
+                        &citations,
+                        &allocations,
+                        VERSION,
+                        &[]
+                    ),
+                    Err(DocBuildError::Binding(_))
+                ));
+                let foreign = publication(&[("different.FQN", "Other")]);
+                let mut foreign = foreign;
+                let foreign_imports = authenticated(&mut foreign);
+                let foreign_citations = authenticate_doc_direct_by(&foreign_imports, &[]).unwrap();
+                assert!(matches!(
+                    resolve_doc_links(
+                        &parsed,
+                        &imports,
+                        &foreign_citations,
+                        &allocations,
+                        VERSION,
+                        &[]
+                    ),
+                    Err(DocBuildError::Binding(_))
+                ));
+            }
+
+            #[test]
+            fn doc10_resolver_publication_to_cli_profile_preserves_all_inputs() {
+                use mizar_diagnostics::{
+                    aggregator::BuildDiagnosticIndex,
+                    failure_record::PipelinePhase,
+                    render::{
+                        DiagnosticRenderInput, DiagnosticSourceContext, RenderOptions,
+                        render_diagnostics,
+                    },
+                    sink::{DiagnosticProducerScope, DiagnosticSink},
+                };
+                struct Portable;
+                impl DiagnosticSourceContext for Portable {
+                    fn path_for(&self, _: mizar_session::SourceId) -> Option<&str> {
+                        None
+                    }
+                    fn source_key_for(&self, _: mizar_session::SourceId) -> String {
+                        "portable".into()
+                    }
+                    fn line_text(&self, _: mizar_session::SourceId, _: u32) -> Option<&str> {
+                        None
+                    }
+                    fn line_column(
+                        &self,
+                        _: mizar_session::SourceRange,
+                    ) -> Option<mizar_session::LineColumnRange> {
+                        None
+                    }
+                }
+                let mut app = publication(&[("m.é%#", "Exact")]);
+                document(&mut app, "::: Exact Missing\n");
+                let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                let saved = plans[0].clone();
+                let paths = std::iter::once("artifact-manifest.json".to_owned())
+                    .chain(
+                        app.manifest
+                            .modules
+                            .iter()
+                            .flat_map(|entry| {
+                                [
+                                    Some(entry.artifact_file.clone()),
+                                    entry.module_summary_file.clone(),
+                                    Some(entry.source_file.clone()),
+                                ]
+                            })
+                            .flatten(),
+                    )
+                    .chain(app.manifest.modules.iter().flat_map(|entry| {
+                        entry
+                            .proof_witnesses
+                            .iter()
+                            .map(|witness| witness.witness_path.clone())
+                    }))
+                    .collect::<Vec<_>>();
+                let bytes = paths
+                    .iter()
+                    .map(|path| std::fs::read(app.root.join(path)).unwrap())
+                    .collect::<Vec<_>>();
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let mut supplied = table(&app);
+                supplied.pages[0].path = "p/é%#.html".into();
+                let allocations = validate(&app, &imports, supplied).unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                assert!(parsed.warnings.is_empty());
+                let occurrences = [
+                    occurrence(&parsed.blocks[0].text, "Exact", "Exact"),
+                    occurrence(&parsed.blocks[0].text, "Missing", "Missing"),
+                ];
+                let result = resolve(&parsed, &imports, &allocations, &occurrences);
+                assert_eq!(
+                    result.references[0].outcome,
+                    DocLinkOutcome::Linked {
+                        href: "p/%C3%A9%25%23.html#m.%C3%A9%25%23".into()
+                    }
+                );
+                assert!(!result.documentation_failed());
+                let drafts = result.warnings.clone();
+                let snapshot = drafts[0].source_snapshot();
+                let aggregate = |drafts: Vec<DiagnosticDraft>| {
+                    let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                        PipelinePhase::Documentation,
+                        snapshot,
+                        "doc10-resolver",
+                    ));
+                    for draft in drafts {
+                        sink.emit(draft).unwrap();
+                    }
+                    BuildDiagnosticIndex::from_batches(snapshot, vec![sink.into_batch()]).unwrap()
+                };
+                let index = aggregate(drafts.iter().chain(&drafts).cloned().collect());
+                let replay = aggregate(drafts.iter().rev().cloned().collect());
+                assert_eq!(index.records(), replay.records());
+                assert_eq!(index.len(), drafts.len());
+                let output = render_diagnostics(DiagnosticRenderInput::new(
+                    index.records(),
+                    &Portable,
+                    RenderOptions::plain(),
+                ));
+                assert!(output.contains("warning[W0412]"), "{output}");
+                assert!(output.contains("warning[W0414]"), "{output}");
+                assert!(output.contains("  --> documentation "), "{output}");
+                assert!(output.contains("scope=\"section_index\""), "{output}");
+                drop(parsed);
+                drop(attached);
+                plans[0].profile.fail_on_doc_warnings = true;
+                plans[0].profile.include_private_docs = true;
+                let promoted_imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let attached = doc7_attach(&plans[0]);
+                let parsed = parse_comments(&attached, &[]);
+                let result = resolve(&parsed, &promoted_imports, &allocations, &occurrences);
+                assert!(result.documentation_failed());
+                assert_eq!(result.warnings, drafts);
+                assert_eq!(plans[0].index, saved.index);
+                assert_eq!(
+                    plans[0].profile.fail_on_extraction_warnings,
+                    saved.profile.fail_on_extraction_warnings
+                );
+                assert_eq!(
+                    bytes,
+                    paths
+                        .iter()
+                        .map(|path| std::fs::read(app.root.join(path)).unwrap())
+                        .collect::<Vec<_>>()
+                );
+                assert!(!app.root.join("out").exists());
+            }
         }
     }
 }

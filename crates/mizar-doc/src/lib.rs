@@ -4,4 +4,5 @@ pub mod allocations;
 pub mod artifact_reader;
 pub mod comments;
 pub mod doc_build;
+pub mod links;
 pub mod markdown;
