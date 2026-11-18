@@ -406,6 +406,16 @@ pub fn authenticate_doc_identities<A: SessionIdAllocator>(
             "incomplete identity producer inventory",
         ));
     }
+    if !snapshot_binding_is_current(
+        registry,
+        inputs.selected_plan.snapshot,
+        inputs.selected_plan.build_request,
+        inputs.selected_plan.native_publication.as_deref(),
+    ) {
+        return Err(DocBuildError::Binding(
+            "snapshot became stale during identity authentication",
+        ));
+    }
     Ok(AuthenticatedDocIdentities {
         identities: identities.into_values().collect(),
     })
@@ -957,7 +967,12 @@ pub fn authenticate_doc_imports<A: SessionIdAllocator>(
             },
         );
     }
-    if !registry.is_current_for_request(root.snapshot, root.build_request) {
+    if !snapshot_binding_is_current(
+        registry,
+        root.snapshot,
+        root.build_request,
+        root.native_publication.as_deref(),
+    ) {
         return Err(DocBuildError::Binding(
             "snapshot became stale during import authentication",
         ));
@@ -1004,6 +1019,18 @@ pub fn build_native_doc_plans<A: SessionIdAllocator>(
         request,
         Some(publication),
     )
+}
+
+fn snapshot_binding_is_current<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    snapshot: BuildSnapshotId,
+    request: BuildRequestId,
+    native_publication: Option<&mizar_driver::events::SnapshotPublication>,
+) -> bool {
+    registry.is_current_for_request(snapshot, request)
+        && native_publication.is_none_or(|publication| {
+            registry.get(snapshot).as_ref() == Some(publication.captured().snapshot())
+        })
 }
 
 fn build_doc_plans_inner<A: SessionIdAllocator>(
@@ -1204,7 +1231,12 @@ fn build_doc_plans_inner<A: SessionIdAllocator>(
             "duplicate selected package publication",
         ));
     }
-    if !registry.is_current_for_request(snapshot_id, build_request) {
+    if !snapshot_binding_is_current(
+        registry,
+        snapshot_id,
+        build_request,
+        native_publication.as_deref(),
+    ) {
         return Err(DocBuildError::Binding(
             "snapshot became stale during planning",
         ));

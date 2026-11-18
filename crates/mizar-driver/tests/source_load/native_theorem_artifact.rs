@@ -5543,6 +5543,136 @@ fn genuine_native_selected_roots_revalidate_original_publication() {
             toolchain: snapshot.toolchain.clone(),
             verifier_config_hash: snapshot.verifier_config_hash,
         };
+        #[cfg(unix)]
+        {
+            use std::{
+                fs::OpenOptions,
+                io::Write,
+                process::Command,
+                sync::atomic::{AtomicBool, Ordering},
+                thread,
+            };
+
+            let delayed = request
+                .publications
+                .iter()
+                .find(|selected| selected.artifact_root != plans[0].request.artifact_root)
+                .unwrap();
+            let delayed_manifest = delayed.artifact_root.join("artifact-manifest.json");
+            let bytes = fs::read(&delayed_manifest).unwrap();
+            let mut replacement = original_input.clone();
+            // G1 already checks the selected root's captured source; replacing
+            // another source isolates its complete-snapshot exit check.
+            replacement
+                .source_versions
+                .iter_mut()
+                .find(|source| {
+                    source.module_path.as_str()
+                        != plans[0].manifest.manifest.modules[0].module.module_path
+                })
+                .unwrap()
+                .origin = SourceOrigin::OpenBuffer { version: 9 };
+            for exit in ["Doc4", "Doc10", "G1"] {
+                for replace in [false, true] {
+                    fs::remove_file(&delayed_manifest).unwrap();
+                    assert!(
+                        Command::new("mkfifo")
+                            .arg(&delayed_manifest)
+                            .status()
+                            .unwrap()
+                            .success()
+                    );
+                    // Doc10's inventory read follows nested Doc4. G1 first
+                    // completes Doc10's export and summary reads, then rereads
+                    // this inventory manifest itself on the third read.
+                    let target_read = if exit == "G1" { 3 } else { 1 };
+                    let finished = AtomicBool::new(false);
+                    let outcome = thread::scope(|scope| {
+                        let writer = scope.spawn(|| {
+                            for read in 1..=target_read {
+                                if finished.load(Ordering::Acquire) {
+                                    return false;
+                                }
+                                let mut fifo = OpenOptions::new()
+                                    .write(true)
+                                    .open(&delayed_manifest)
+                                    .unwrap();
+                                if finished.load(Ordering::Acquire) {
+                                    return false;
+                                }
+                                // A fresh inode separates consecutive readers;
+                                // one reader cannot consume two manifest copies.
+                                fs::remove_file(&delayed_manifest).unwrap();
+                                if read == target_read {
+                                    fs::write(&delayed_manifest, &bytes).unwrap();
+                                    if replace {
+                                        let (replaced, _) = snapshots
+                                            .create_snapshot(
+                                                submission.session.request().id,
+                                                replacement.clone(),
+                                            )
+                                            .unwrap();
+                                        assert_eq!(replaced.id, snapshot.id);
+                                    }
+                                } else {
+                                    assert!(
+                                        Command::new("mkfifo")
+                                            .arg(&delayed_manifest)
+                                            .status()
+                                            .unwrap()
+                                            .success()
+                                    );
+                                }
+                                fifo.write_all(&bytes).unwrap();
+                            }
+                            true
+                        });
+                        let outcome = match exit {
+                            "Doc4" => build(&snapshots, &request).map(|_| ()),
+                            "Doc10" => authenticate_doc_imports(
+                                &snapshots,
+                                &snapshot.workspace_root,
+                                &plans[0],
+                                &inventory,
+                                &imports,
+                            )
+                            .map(|_| ()),
+                            _ => authenticate_doc_identities(
+                                &snapshots,
+                                &snapshot.workspace_root,
+                                &inputs,
+                                &inventory,
+                                &identities,
+                            )
+                            .map(|_| ()),
+                        };
+                        // An early refusal must fail the assertion, not strand
+                        // the writer waiting for a manifest read that was skipped.
+                        finished.store(true, Ordering::Release);
+                        let unblock = OpenOptions::new()
+                            .read(true)
+                            .write(true)
+                            .open(&delayed_manifest)
+                            .unwrap();
+                        assert!(writer.join().unwrap(), "{exit}: target read was skipped");
+                        drop(unblock);
+                        outcome
+                    });
+                    if replace {
+                        assert!(
+                            matches!(outcome, Err(DocBuildError::Binding(_))),
+                            "{exit}: {outcome:?}"
+                        );
+                    } else {
+                        assert!(outcome.is_ok(), "{exit}: {outcome:?}");
+                    }
+                    snapshots
+                        .create_snapshot(submission.session.request().id, original_input.clone())
+                        .unwrap();
+                    assert_eq!(fs::read(&delayed_manifest).unwrap(), bytes);
+                }
+            }
+        }
         let foreign_request = ids.next_request_id().unwrap();
         snapshots
             .create_snapshot(foreign_request, original_input.clone())
