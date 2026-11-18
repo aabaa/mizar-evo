@@ -141,7 +141,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
      Extraction Share Symbol Identity」。
 
 10. **相互参照の解決。** [ ]
-    - 認証済みの完全な順序付き import/dependency と direct-by citation producer、検証済み page/anchor/section 割当、正確な共有診断を要する（[links readiness](../en/links.md#adoption-and-review-witnesses)）。
+    - 未採用の [producer/allocation 前提条件](./link_prerequisites.md) と [正確な共有診断](../../mizar-diagnostics/ja/documentation_links.md) を要し、定義だけでは readiness を与えない。
     - artifact のシンボル識別に対してドキュメントリンクを解決し、
       決定的な未解決リンク診断を出す。
     - テスト: パッケージ内・パッケージ間リンクのフィクスチャ。未解決
