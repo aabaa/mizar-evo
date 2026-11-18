@@ -516,6 +516,238 @@ impl BuildSession {
         Ok(Some(&retained.0))
     }
 
+    /// Publishes the exact retained envelope through the store and manifest transaction.
+    pub fn emit_commented_module<A: SessionIdAllocator>(
+        &self,
+        publisher: &PhaseOutputPublisher,
+        snapshots: &SnapshotRegistry<A>,
+        source: SourceId,
+        artifact_root: &std::path::Path,
+        main_path: &str,
+    ) -> Result<Option<mizar_artifact::manifest::ManifestCommit>, String> {
+        use mizar_artifact::{
+            comment_projection::{
+                COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION,
+                artifact_hash_excluded_paths, commented_artifact_json, read_commented_artifact,
+            },
+            manifest::{
+                ArtifactManifest, ManifestCommitOptions, ManifestFileReadOptions,
+                ManifestProofWitnessEntry, ManifestProvenance, ManifestTransaction,
+                ModuleArtifactEntry, PackageIdentity, current_schema_version, read_manifest_file,
+            },
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+            store::{
+                PublishedArtifactPath, PublishedArtifactReadOptions, artifact_hash_domain,
+                read_published_artifact, write_published_artifact,
+            },
+            verified_artifact::VerifiedArtifactReadOptions,
+        };
+        let Some(draft) = self.commented_module(publisher, snapshots, source)? else {
+            return Ok(None);
+        };
+        let retained = &self.commented_modules[&source];
+        let validate = || -> Result<(), String> {
+            self.commented_module(publisher, snapshots, source)?
+                .ok_or("comment draft is no longer retained")?;
+            for handle in &retained.1 {
+                publisher
+                    .validate_output(draft.snapshot, handle, OutputAuthorization::CurrentPackage)
+                    .map_err(|error| error.to_string())?;
+            }
+            Ok(())
+        };
+        validate()?;
+        let (loader, _, _) = self
+            .captured
+            .native_sources()
+            .and_then(|sources| {
+                sources
+                    .iter()
+                    .find(|(_, loaded, _)| loaded.source_id == source)
+            })
+            .ok_or("comment draft requires its captured source loader")?;
+        let package_root =
+            std::fs::canonicalize(loader.package_root()).map_err(|error| error.to_string())?;
+        let root = std::fs::canonicalize(artifact_root).map_err(|error| error.to_string())?;
+        let relative = root
+            .strip_prefix(&package_root)
+            .map_err(|_| "comment artifact root must be below package root")?;
+        if relative.as_os_str().is_empty() {
+            return Err("comment artifact root must be below package root".into());
+        }
+        let label = relative
+            .components()
+            .map(|component| match component {
+                std::path::Component::Normal(value) => {
+                    value.to_str().ok_or("comment artifact root is not UTF-8")
+                }
+                _ => Err("comment artifact root has an invalid component"),
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .join("/");
+        let label = PublishedArtifactPath::new(label).map_err(|error| error.to_string())?;
+        let path = PublishedArtifactPath::new(main_path).map_err(|error| error.to_string())?;
+        if !path.as_str().ends_with(".mizir.json") {
+            return Err("comment artifact requires a .mizir.json main path".into());
+        }
+        let envelope = &draft.artifact;
+        let artifact = &envelope.artifact;
+        let value = commented_artifact_json(envelope).map_err(|error| error.to_string())?;
+        let interface_hash = envelope
+            .compute_interface_hash()
+            .map_err(|error| error.to_string())?;
+        let implementation_hash = envelope
+            .compute_implementation_hash()
+            .map_err(|error| error.to_string())?;
+        let guard = draft
+            .snapshot
+            .to_published_schema_string()
+            .map_err(|error| error.to_string())?;
+        let freshness =
+            |candidate: Option<&str>| candidate == Some(guard.as_str()) && validate().is_ok();
+        let seed = ArtifactManifest {
+            schema_version: current_schema_version(),
+            package: PackageIdentity {
+                package_id: artifact.module.package_id.clone(),
+                package_version: artifact.module.package_version.clone(),
+                lockfile_identity: artifact.module.lockfile_identity.clone(),
+            },
+            artifact_root: label.as_str().to_owned(),
+            lockfile_hash: artifact.provenance.lockfile_hash.clone(),
+            toolchain: artifact.provenance.toolchain.clone(),
+            language_edition: artifact.provenance.language_edition.clone(),
+            verifier_config_hash: artifact.provenance.verifier_config_hash.clone(),
+            modules: Vec::new(),
+            development_artifacts: Vec::new(),
+            provenance: ManifestProvenance {
+                generated_by: concat!("mizar-driver/", env!("CARGO_PKG_VERSION")).to_owned(),
+                manifest_policy: "commented-module".to_owned(),
+                transaction_format: "mizar-artifact/manifest-transaction-v1".to_owned(),
+            },
+        };
+        let mut transaction = ManifestTransaction::begin(&root, seed, Some(guard.clone()))
+            .map_err(|error| error.to_string())?;
+        let domain = artifact_hash_domain(
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        );
+        let excluded = artifact_hash_excluded_paths();
+        validate()?;
+        // Reserve the main before the replacing store writer can touch it. Other
+        // Driver emissions must refuse this path, even if our transaction fails.
+        let relative = std::path::Path::new(path.as_str());
+        let mut parent = root.clone();
+        for component in relative
+            .parent()
+            .expect("validated relative path")
+            .components()
+        {
+            parent.push(component);
+            match std::fs::create_dir(&parent) {
+                Ok(()) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(error.to_string()),
+            }
+            parent = std::fs::canonicalize(&parent).map_err(|error| error.to_string())?;
+            if !parent.starts_with(&root) {
+                return Err("comment artifact main parent must stay below artifact root".into());
+            }
+        }
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(parent.join(relative.file_name().expect("validated main path")))
+            .map_err(|error| error.to_string())?;
+        let written = write_published_artifact(&root, &path, &value, &domain, &excluded)
+            .map_err(|error| error.to_string())?;
+        validate()?;
+        let read = read_published_artifact(
+            &root,
+            &path,
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &excluded,
+                expected_artifact_hash: Some(written.artifact_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        let decoded = read_commented_artifact(
+            &read.value,
+            VerifiedArtifactReadOptions {
+                artifact_path: Some(path.as_str()),
+                expected_module: Some(&artifact.module),
+                expected_interface_hash: Some(interface_hash),
+                expected_implementation_hash: Some(implementation_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if decoded != *envelope {
+            return Err("comment artifact readback mismatch".into());
+        }
+        validate()?;
+        let hash_ref = |class, hash| {
+            ArtifactHashRef::new(
+                class,
+                COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+                COMMENTED_ARTIFACT_SCHEMA_VERSION,
+                hash,
+            )
+        };
+        transaction
+            .stage_module(ModuleArtifactEntry {
+                module: artifact.module.clone(),
+                source_file: artifact.source_file.clone(),
+                source_hash: artifact.source_hash,
+                artifact_file: written.path.as_str().to_owned(),
+                artifact_hash: hash_ref(ArtifactHashClass::Artifact, written.artifact_hash),
+                interface_hash: hash_ref(ArtifactHashClass::Interface, interface_hash),
+                implementation_hash: hash_ref(
+                    ArtifactHashClass::Implementation,
+                    implementation_hash,
+                ),
+                module_summary_file: None,
+                module_summary_hash: None,
+                module_summary_interface_hash: None,
+                registration_summary_file: None,
+                registration_summary_hash: None,
+                registration_interface_hash: None,
+                proof_witnesses: artifact
+                    .proof_witnesses
+                    .iter()
+                    .map(|witness| ManifestProofWitnessEntry {
+                        obligation_id: witness.obligation_id.clone(),
+                        obligation_fingerprint: witness.obligation_fingerprint.clone(),
+                        witness_path: witness.witness_path.clone(),
+                        witness_artifact_hash: witness.witness_artifact_hash.clone(),
+                    })
+                    .collect(),
+                diagnostics_hash: None,
+            })
+            .map_err(|error| error.to_string())?;
+        let commit = transaction
+            .commit(ManifestCommitOptions {
+                freshness_check: Some(&freshness),
+            })
+            .map_err(|error| error.to_string())?;
+        validate()?;
+        let read = read_manifest_file(
+            &root,
+            ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                validate_development_artifacts: true,
+                expected_manifest_hash: Some(commit.write().artifact_hash),
+            },
+        )
+        .map_err(|error| error.to_string())?;
+        if read.manifest != *commit.manifest() || read.artifact_hash != commit.write().artifact_hash
+        {
+            return Err("comment artifact manifest readback mismatch".into());
+        }
+        validate()?;
+        Ok(Some(commit))
+    }
+
     /// Retains genuine additional Disk failures without changing the original capture.
     pub fn capture_source_load_failures(
         &mut self,

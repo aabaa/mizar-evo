@@ -225,7 +225,11 @@ source-map, or lease ids are reusable.
 
 ## Commented draft capture and retention
 `BuildSession::capture_commented_module` binds genuine metadata and the sealed Frontend payload to protected native capture, invokes the [IR handoff](../../mizar-ir/en/projection.md#commented-draft-handoff) once, and retains its immutable unpublished draft with required handles across session clones. Failed capture leaves retention unchanged.
-`commented_module` borrows a retained draft only after Session/request and publisher currentness, publication-root, physical-handle and typed Frontend readability checks; cancelled sessions refuse reads. Missing entries remain distinct from available-empty comments. Session values retain drafts without pinning IR storage. No automatic acquisition, source reload/reconstruction, scheduler activation, emission, publication eligibility upgrade or Doc attachment is supplied here.
+`commented_module` borrows a retained draft only after Session/request and publisher currentness, publication-root, physical-handle and typed Frontend readability checks; cancelled sessions refuse reads. Missing entries remain distinct from available-empty comments. Session values retain drafts without pinning IR storage. No automatic acquisition, source reload/reconstruction, scheduler activation, publication eligibility upgrade or Doc attachment is supplied here.
+
+## Commented artifact emission
+`BuildSession::emit_commented_module` explicitly emits the retained envelope into an existing artifact root strictly below its captured loader's package root, atomically reserving a fresh `.mizir.json` path after safe parent checks so concurrent Driver emissions cannot overwrite it. It reuses retained-read checks and requires every original handle's CurrentPackage authorization before writing, during transaction freshness checks and after readback; OpenBuffer/InternalOnly refuses. These remain point checks, without a new currentness lease.
+The Artifact-owned commented codec/domain supplies complete readback and outer hashes. The existing manifest transaction receives derived package/source/provenance and witness references, validates referenced files and returns its actual commit. Precommit failures preserve the previous manifest and its main; late failures can leave orphan files or an already committed manifest. Retention stays unchanged. Doc validated-publication consumption remains open.
 
 ## Native source capture
 

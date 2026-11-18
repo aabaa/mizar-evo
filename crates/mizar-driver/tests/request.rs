@@ -519,10 +519,22 @@ impl Drop for SourcePathFixture {
 mod q1_comments {
     use super::*;
     use mizar_artifact::{
+        comment_projection::{
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION,
+            artifact_hash_excluded_paths, read_commented_artifact, write_commented_artifact,
+        },
+        manifest::{
+            ManifestCommit, ManifestCommitOptions, ManifestFileReadOptions, ManifestTransaction,
+            read_manifest_file, write_manifest_file,
+        },
         module_summary::ModuleSummaryIdentity,
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
-        store::{CanonicalJson, SchemaVersion as ArtifactSchemaVersion},
-        verified_artifact::BuildProvenance,
+        store::{
+            CanonicalJson, PublishedArtifactPath, PublishedArtifactReadOptions,
+            SchemaVersion as ArtifactSchemaVersion, artifact_hash_domain,
+            parse_canonical_json_bytes, read_published_artifact,
+        },
+        verified_artifact::{BuildProvenance, VerifiedArtifactReadOptions},
     };
     use mizar_driver::request::BuildSession;
     use mizar_frontend::{
@@ -817,6 +829,22 @@ mod q1_comments {
                 .unwrap();
         }
 
+        fn emission_root(&self) -> PathBuf {
+            let root = self.files.root().join("artifacts");
+            std::fs::create_dir_all(&root).unwrap();
+            root
+        }
+
+        fn emit(&self, root: &Path, main: &str) -> Result<Option<ManifestCommit>, String> {
+            self.session.emit_commented_module(
+                &self.publisher,
+                &self.snapshots,
+                self.outputs[0].source.source_id,
+                root,
+                main,
+            )
+        }
+
         fn retained(&self, index: usize) -> &CommentedArtifactDraft {
             self.session
                 .commented_module(
@@ -827,6 +855,18 @@ mod q1_comments {
                 .unwrap()
                 .unwrap()
         }
+    }
+
+    fn validated_manifest(root: &Path) -> mizar_artifact::manifest::PublishedManifestRead {
+        read_manifest_file(
+            root,
+            ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                ..ManifestFileReadOptions::default()
+            },
+        )
+        .unwrap()
     }
 
     fn field<'a>(json: &'a CanonicalJson, name: &str) -> &'a CanonicalJson {
@@ -843,7 +883,7 @@ mod q1_comments {
     }
 
     #[test]
-    fn q1_disk_capture_keeps_exact_ir_draft_after_file_removal_and_clone() {
+    fn q1_emission_disk_keeps_exact_draft_after_file_removal_and_clone() {
         let mut f = Fixture::new(TEXT, None);
         let frontend = f.frontend(0);
         let child = f.publish("verified", "verified", false, vec![frontend.erase()]);
@@ -923,6 +963,108 @@ mod q1_comments {
         assert_eq!(retained, &expected);
         assert_eq!(*f.publisher.storage().get(&frontend).unwrap(), f.outputs[0]);
         assert!(!retained.external_dependency_gaps.is_empty());
+        let root = f.emission_root();
+        let commit = cloned
+            .emit_commented_module(
+                &f.publisher,
+                &f.snapshots,
+                f.outputs[0].source.source_id,
+                &root,
+                "module.mizir.json",
+            )
+            .unwrap()
+            .unwrap();
+        let entry = &commit.manifest().modules[0];
+        assert_eq!(
+            std::fs::read(root.join(&entry.artifact_file)).unwrap(),
+            write_commented_artifact(&expected.artifact).unwrap()
+        );
+        let domain = artifact_hash_domain(
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        );
+        let stored = read_published_artifact(
+            &root,
+            &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+            PublishedArtifactReadOptions {
+                artifact_hash_domain: Some(&domain),
+                hash_excluded_paths: &artifact_hash_excluded_paths(),
+                expected_artifact_hash: Some(entry.artifact_hash.digest),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            read_commented_artifact(
+                &stored.value,
+                VerifiedArtifactReadOptions {
+                    expected_interface_hash: Some(entry.interface_hash.digest),
+                    expected_implementation_hash: Some(entry.implementation_hash.digest),
+                    ..VerifiedArtifactReadOptions::default()
+                }
+            )
+            .unwrap(),
+            expected.artifact
+        );
+        assert_eq!(
+            stored.artifact_hash,
+            Some(expected.artifact.compute_artifact_hash().unwrap())
+        );
+        for (reference, class) in [
+            (&entry.artifact_hash, ArtifactHashClass::Artifact),
+            (&entry.interface_hash, ArtifactHashClass::Interface),
+            (
+                &entry.implementation_hash,
+                ArtifactHashClass::Implementation,
+            ),
+        ] {
+            assert_eq!(reference.class, class);
+            assert_eq!(reference.schema_family, COMMENTED_ARTIFACT_SCHEMA_FAMILY);
+            assert_eq!(reference.schema_version, COMMENTED_ARTIFACT_SCHEMA_VERSION);
+        }
+        let nested = &expected.artifact.artifact;
+        assert_eq!(entry.module, nested.module);
+        assert_eq!(entry.source_file, nested.source_file);
+        assert_eq!(entry.source_hash, nested.source_hash);
+        assert_eq!(
+            commit.manifest().package.package_id,
+            nested.module.package_id
+        );
+        assert_eq!(
+            commit.manifest().package.package_version,
+            nested.module.package_version
+        );
+        assert_eq!(
+            commit.manifest().package.lockfile_identity,
+            nested.module.lockfile_identity
+        );
+        assert_eq!(commit.manifest().artifact_root, "artifacts");
+        assert_eq!(commit.manifest().toolchain, nested.provenance.toolchain);
+        assert_eq!(
+            commit.manifest().language_edition,
+            nested.provenance.language_edition
+        );
+        assert_eq!(
+            commit.manifest().lockfile_hash,
+            nested.provenance.lockfile_hash
+        );
+        assert_eq!(
+            commit.manifest().verifier_config_hash,
+            nested.provenance.verifier_config_hash
+        );
+        assert!(entry.proof_witnesses.is_empty());
+        assert!(
+            entry.module_summary_file.is_none()
+                && entry.module_summary_hash.is_none()
+                && entry.module_summary_interface_hash.is_none()
+        );
+        assert!(
+            entry.registration_summary_file.is_none()
+                && entry.registration_summary_hash.is_none()
+                && entry.registration_interface_hash.is_none()
+                && entry.diagnostics_hash.is_none()
+        );
+        assert_eq!(validated_manifest(&root).manifest, *commit.manifest());
+        assert_eq!(f.retained(0), &expected);
     }
 
     #[test]
@@ -1196,7 +1338,7 @@ mod q1_comments {
     }
 
     #[test]
-    fn q1_reads_refuse_obsolete_unpublished_unreadable_collected_and_cancelled() {
+    fn q1_emission_refuses_stale_unreadable_collected_and_cancelled() {
         for mode in [
             "obsolete",
             "session-obsolete",
@@ -1222,6 +1364,10 @@ mod q1_comments {
                 .unwrap();
             let source = f.outputs[0].source.source_id;
             let snapshot = f.session.captured().snapshot().id;
+            let root = f.emission_root();
+            f.emit(&root, "published.mizir.json").unwrap().unwrap();
+            let manifest_before = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+            let main_before = std::fs::read(root.join("published.mizir.json")).unwrap();
             match mode {
                 "obsolete" => f.publisher.mark_obsolete(snapshot).unwrap(),
                 "session-obsolete" => {
@@ -1298,6 +1444,27 @@ mod q1_comments {
                     .commented_module(publisher, &f.snapshots, source)
                     .is_err(),
                 "{mode}"
+            );
+            assert!(
+                f.session
+                    .emit_commented_module(
+                        publisher,
+                        &f.snapshots,
+                        source,
+                        &root,
+                        "refused.mizir.json",
+                    )
+                    .is_err(),
+                "{mode}"
+            );
+            assert!(!root.join("refused.mizir.json").exists(), "{mode}");
+            assert_eq!(
+                std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+                manifest_before
+            );
+            assert_eq!(
+                std::fs::read(root.join("published.mizir.json")).unwrap(),
+                main_before
             );
             let missing = InMemorySessionIdAllocator::new()
                 .next_source_id(snapshot)
@@ -1379,5 +1546,434 @@ mod q1_comments {
                 .compute_artifact_hash()
                 .unwrap()
         );
+    }
+    #[test]
+    fn q1_emission_empty_doc_determinism_and_comment_hashes() {
+        let mut empty = Fixture::new("", None);
+        let mut doc = Fixture::new(":::", None);
+        for f in [&mut empty, &mut doc] {
+            let frontend = f.frontend(0);
+            f.capture(0, &frontend);
+            let before = f.retained(0).clone();
+            let root = f.emission_root();
+            let first = f.emit(&root, "first.mizir.json").unwrap().unwrap();
+            f.capture(0, &frontend);
+            let second = f.emit(&root, "second.mizir.json").unwrap().unwrap();
+            assert_eq!(
+                std::fs::read(root.join("first.mizir.json")).unwrap(),
+                std::fs::read(root.join("second.mizir.json")).unwrap()
+            );
+            assert_eq!(
+                first.manifest().modules[0].artifact_hash,
+                second.manifest().modules[0].artifact_hash
+            );
+            assert_eq!(
+                first.manifest().modules[0].interface_hash,
+                second.manifest().modules[0].interface_hash
+            );
+            assert_eq!(
+                first.manifest().modules[0].implementation_hash,
+                second.manifest().modules[0].implementation_hash
+            );
+            assert_eq!(f.retained(0), &before);
+            assert_eq!(validated_manifest(&root).manifest, *second.manifest());
+        }
+        assert!(rows(field(&empty.retained(0).artifact.comments, "comments")).is_empty());
+        let doc_rows = rows(field(&doc.retained(0).artifact.comments, "comments"));
+        assert_eq!(doc_rows.len(), 1);
+        assert_ne!(
+            doc.retained(0).artifact.comments,
+            empty.retained(0).artifact.comments
+        );
+        let mut entries = vec![];
+        for text in [
+            ":: short\ntheorem Named: thesis;\n",
+            ":: longer body\ntheorem Named: thesis;\n",
+        ] {
+            let mut f = Fixture::new(text, None);
+            let frontend = f.frontend(0);
+            f.capture(0, &frontend);
+            entries.push(
+                f.emit(&f.emission_root(), "module.mizir.json")
+                    .unwrap()
+                    .unwrap()
+                    .manifest()
+                    .modules[0]
+                    .clone(),
+            );
+        }
+        assert_eq!(entries[0].interface_hash, entries[1].interface_hash);
+        assert_ne!(
+            entries[0].implementation_hash,
+            entries[1].implementation_hash
+        );
+        assert_ne!(entries[0].artifact_hash, entries[1].artifact_hash);
+    }
+
+    #[test]
+    fn q1_emission_missing_open_buffer_and_internal_only_write_nothing() {
+        let mut f = Fixture::new(TEXT, None);
+        let root = f.emission_root();
+        assert!(f.emit(&root, "missing.mizir.json").unwrap().is_none());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        let frontend = f.frontend(0);
+        f.open = true;
+        let internal = f.publish("verified", "internal", false, vec![frontend.erase()]);
+        f.open = false;
+        f.session
+            .capture_commented_module(
+                &f.publisher,
+                &f.snapshots,
+                f.input(0, vec![frontend.erase(), internal.erase()]),
+                &frontend,
+                &f.metadata[0],
+                &vec![None; f.metadata[0].boundaries().len()],
+            )
+            .unwrap();
+        f.publisher
+            .validate_output(
+                f.retained(0).snapshot,
+                frontend.any(),
+                OutputAuthorization::CurrentPackage,
+            )
+            .unwrap();
+        assert!(
+            f.publisher
+                .validate_output(
+                    f.retained(0).snapshot,
+                    internal.any(),
+                    OutputAuthorization::CurrentPackage
+                )
+                .is_err()
+        );
+        assert!(f.emit(&root, "internal.mizir.json").is_err());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        let mut open = Fixture::new(TEXT, Some(7));
+        let frontend = open.frontend(0);
+        open.capture(0, &frontend);
+        let root = open.emission_root();
+        let before = open.retained(0).clone();
+        assert!(open.emit(&root, "open.mizir.json").is_err());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        assert_eq!(open.retained(0), &before);
+    }
+
+    #[test]
+    fn q1_emission_invalid_paths_seed_base_and_witness_references_refuse() {
+        let mut f = Fixture::new(TEXT, None);
+        let frontend = f.frontend(0);
+        f.capture(0, &frontend);
+        let root = f.emission_root();
+        let outside = SourcePathFixture::new();
+        for bad_root in [
+            f.files.root().to_path_buf(),
+            f.files.root().join("missing"),
+            f.files.root().join("src/module0.miz"),
+            outside.root().to_path_buf(),
+        ] {
+            assert!(
+                f.emit(&bad_root, "module.mizir.json").is_err(),
+                "{}",
+                bad_root.display()
+            );
+        }
+        for main in [
+            "../escape.mizir.json",
+            "/absolute.mizir.json",
+            "bad.json",
+            "artifact-manifest.json",
+            "nested/../escape.mizir.json",
+            "bad\\path.mizir.json",
+        ] {
+            assert!(f.emit(&root, main).is_err(), "{main}");
+        }
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(outside.root(), root.join("escape")).unwrap();
+            assert!(f.emit(&root, "escape/module.mizir.json").is_err());
+            assert!(f.emit(&root.join("escape"), "module.mizir.json").is_err());
+        }
+        std::fs::write(root.join("existing.mizir.json"), b"untouched").unwrap();
+        assert!(f.emit(&root, "existing.mizir.json").is_err());
+        assert_eq!(
+            std::fs::read(root.join("existing.mizir.json")).unwrap(),
+            b"untouched"
+        );
+        assert!(!root.join("artifact-manifest.json").exists());
+        assert!(!outside.root().join("module.mizir.json").exists());
+        let commit = f.emit(&root, "published.mizir.json").unwrap().unwrap();
+        let before = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+        let main_before = std::fs::read(root.join("published.mizir.json")).unwrap();
+        let mut conflict = commit.manifest().clone();
+        conflict.package.package_version = Some("conflicting".into());
+        write_manifest_file(&root, &conflict).unwrap();
+        let conflicting_bytes = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+        assert!(f.emit(&root, "seed.mizir.json").is_err());
+        assert!(!root.join("seed.mizir.json").exists());
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            conflicting_bytes
+        );
+        std::fs::write(root.join("artifact-manifest.json"), &before).unwrap();
+        let mut stale = ManifestTransaction::begin(&root, commit.manifest().clone(), None).unwrap();
+        stale
+            .stage_module(commit.manifest().modules[0].clone())
+            .unwrap();
+        let mut intervening = commit.manifest().clone();
+        intervening.provenance.generated_by.push_str("-intervening");
+        write_manifest_file(&root, &intervening).unwrap();
+        let intervening_bytes = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+        assert!(matches!(
+            stale.commit(ManifestCommitOptions::default()),
+            Err(mizar_artifact::manifest::ManifestError::BaseManifestHashMismatch { .. })
+        ));
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            intervening_bytes
+        );
+        std::fs::write(root.join("artifact-manifest.json"), &before).unwrap();
+        let mut input = f.input(0, vec![frontend.erase()]);
+        let interface = |family| {
+            ArtifactHashRef::new(
+                ArtifactHashClass::Interface,
+                family,
+                ArtifactSchemaVersion::new(1, 0),
+                hash(30),
+            )
+        };
+        let policy = input.provenance.verifier_config_hash.clone();
+        input
+            .obligations
+            .push(mizar_artifact::verified_artifact::ObligationMetadata {
+                obligation_id: "obligation".into(),
+                obligation_anchor: None,
+                owner_origin_id: None,
+                source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                    start_byte: 0,
+                    end_byte: 1,
+                },
+                obligation_kind: "theorem_body".into(),
+                statement_summary: "thesis".into(),
+                obligation_fingerprint: interface("mizar-vc/obligation"),
+                vc_fingerprint: interface("mizar-vc/vc"),
+                local_context_fingerprint: interface("mizar-vc/local-context"),
+                dependency_slice_fingerprint: interface("mizar-vc/dependency-slice"),
+                verifier_policy_fingerprint: policy.clone(),
+                status: mizar_artifact::verified_artifact::ObligationStatus::Accepted,
+                accepted_witness_obligation_id: Some("obligation".into()),
+                deterministic_discharge_hash: None,
+                diagnostic_ref: None,
+            });
+        input
+            .proof_witnesses
+            .push(mizar_artifact::proof_witness::ProofWitnessRef {
+                schema_version: mizar_artifact::proof_witness::current_schema_version(),
+                obligation_id: "obligation".into(),
+                obligation_fingerprint: interface("mizar-vc/obligation"),
+                proof_status: mizar_artifact::proof_witness::ProofStatus::KernelVerified,
+                evidence_kind:
+                    mizar_artifact::proof_witness::EvidenceKind::FormulaSubstitutionKernelEvidence,
+                witness_path: "proof-witnesses/witness.json".into(),
+                witness_artifact_hash: ArtifactHashRef::new(
+                    ArtifactHashClass::Artifact,
+                    "mizar-kernel/formula-evidence-witness",
+                    ArtifactSchemaVersion::new(1, 0),
+                    hash(31),
+                ),
+                kernel_acceptance: mizar_artifact::proof_witness::KernelAcceptanceMetadata {
+                    kernel_profile_fingerprint: interface("mizar-kernel/profile"),
+                    verifier_policy_fingerprint: policy,
+                    checker_schema_version: ArtifactSchemaVersion::new(1, 0),
+                    evidence_schema_version: ArtifactSchemaVersion::new(1, 0),
+                    target_binding_hash: interface("mizar-vc/kernel-target-binding"),
+                    formula_evidence_hash: interface("mizar-kernel/formula-evidence"),
+                    substitution_evidence_hash: interface("mizar-kernel/substitution-evidence"),
+                    provenance_hash: interface("mizar-kernel/evidence-provenance"),
+                    formula_context_hash: None,
+                    accepted_result_hash: interface("mizar-kernel/accepted-result"),
+                },
+            });
+        f.session
+            .capture_commented_module(
+                &f.publisher,
+                &f.snapshots,
+                input,
+                &frontend,
+                &f.metadata[0],
+                &vec![None; f.metadata[0].boundaries().len()],
+            )
+            .unwrap();
+        let retained = f.retained(0).clone();
+        assert!(f.emit(&root, "orphan.mizir.json").is_err());
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            before
+        );
+        assert_eq!(
+            std::fs::read(root.join("published.mizir.json")).unwrap(),
+            main_before
+        );
+        assert_eq!(
+            validated_manifest(&root).manifest.modules[0].artifact_file,
+            "published.mizir.json"
+        );
+        std::fs::create_dir(root.join("proof-witnesses")).unwrap();
+        std::fs::write(
+            root.join("proof-witnesses/witness.json"),
+            b"external lower-owner witness fixture",
+        )
+        .unwrap();
+        let witness_commit = f.emit(&root, "witnessed.mizir.json").unwrap().unwrap();
+        let reference = &retained.artifact.artifact.proof_witnesses[0];
+        let published = &witness_commit.manifest().modules[0].proof_witnesses[0];
+        assert_eq!(published.obligation_id, reference.obligation_id);
+        assert_eq!(
+            published.obligation_fingerprint,
+            reference.obligation_fingerprint
+        );
+        assert_eq!(published.witness_path, reference.witness_path);
+        assert_eq!(
+            published.witness_artifact_hash,
+            reference.witness_artifact_hash
+        );
+        let mut tampered = witness_commit.manifest().clone();
+        tampered.modules[0].proof_witnesses[0]
+            .witness_artifact_hash
+            .digest = hash(99);
+        write_manifest_file(&root, &tampered).unwrap();
+        assert!(
+            read_manifest_file(
+                &root,
+                ManifestFileReadOptions {
+                    validate_references: true,
+                    validate_witness_files: true,
+                    ..ManifestFileReadOptions::default()
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(f.retained(0), &retained);
+
+        let mut concurrent = Fixture::sources(&[TEXT, "::: other\ntheorem Other: thesis;\n"], None);
+        for index in 0..2 {
+            let frontend = concurrent.frontend(index);
+            concurrent.capture(index, &frontend);
+        }
+        let root = concurrent.emission_root();
+        let barrier = std::sync::Barrier::new(2);
+        let outcomes = std::thread::scope(|scope| {
+            let writers = (0..2)
+                .map(|index| {
+                    let f = &concurrent;
+                    let root = &root;
+                    let barrier = &barrier;
+                    scope.spawn(move || {
+                        barrier.wait();
+                        f.session.emit_commented_module(
+                            &f.publisher,
+                            &f.snapshots,
+                            f.outputs[index].source.source_id,
+                            root,
+                            "shared.mizir.json",
+                        )
+                    })
+                })
+                .collect::<Vec<_>>();
+            writers
+                .into_iter()
+                .map(|writer| writer.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        assert_eq!(outcomes.iter().filter(|outcome| outcome.is_ok()).count(), 1);
+        let winner = outcomes.into_iter().find_map(Result::ok).unwrap().unwrap();
+        assert_eq!(validated_manifest(&root).manifest, *winner.manifest());
+        let entry = &winner.manifest().modules[0];
+        let index = concurrent
+            .outputs
+            .iter()
+            .position(|output| output.source.module_path.as_str() == entry.module.module_path)
+            .unwrap();
+        assert_eq!(
+            std::fs::read(root.join("shared.mizir.json")).unwrap(),
+            mizar_artifact::comment_projection::write_commented_artifact(
+                &concurrent.retained(index).artifact
+            )
+            .unwrap(),
+        );
+    }
+
+    #[test]
+    fn q1_emission_validating_reads_reject_corruption_without_mutating_retention() {
+        let mut f = Fixture::new(TEXT, None);
+        let frontend = f.frontend(0);
+        f.capture(0, &frontend);
+        let retained = f.retained(0).clone();
+        let root = f.emission_root();
+        let commit = f.emit(&root, "published.mizir.json").unwrap().unwrap();
+        let manifest_before = std::fs::read(root.join("artifact-manifest.json")).unwrap();
+        let main_before = std::fs::read(root.join("published.mizir.json")).unwrap();
+        for class in [
+            ArtifactHashClass::Artifact,
+            ArtifactHashClass::Interface,
+            ArtifactHashClass::Implementation,
+        ] {
+            let mut corrupted = commit.manifest().clone();
+            let entry = &mut corrupted.modules[0];
+            match class {
+                ArtifactHashClass::Artifact => entry.artifact_hash.digest = hash(90),
+                ArtifactHashClass::Interface => entry.interface_hash.digest = hash(90),
+                ArtifactHashClass::Implementation => entry.implementation_hash.digest = hash(90),
+                _ => unreachable!("only the three enclosing hash classes"),
+            }
+            write_manifest_file(&root, &corrupted).unwrap();
+            assert!(
+                read_manifest_file(
+                    &root,
+                    ManifestFileReadOptions {
+                        validate_references: true,
+                        ..ManifestFileReadOptions::default()
+                    }
+                )
+                .is_err()
+            );
+        }
+        std::fs::write(root.join("artifact-manifest.json"), &manifest_before).unwrap();
+        let mut envelope =
+            parse_canonical_json_bytes(&main_before, "published.mizir.json").unwrap();
+        let CanonicalJson::Object(fields) = &mut envelope else {
+            panic!("envelope object")
+        };
+        fields.insert("comments".into(), CanonicalJson::Null);
+        std::fs::write(
+            root.join("published.mizir.json"),
+            mizar_artifact::store::canonical_json_bytes(&envelope),
+        )
+        .unwrap();
+        assert!(
+            read_commented_artifact(&envelope, VerifiedArtifactReadOptions::default()).is_err()
+        );
+        assert!(
+            read_manifest_file(
+                &root,
+                ManifestFileReadOptions {
+                    validate_references: true,
+                    ..ManifestFileReadOptions::default()
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(f.retained(0), &retained);
+        std::fs::write(root.join("published.mizir.json"), &main_before).unwrap();
+        assert!(f.emit(&root, "published.mizir.json").is_err());
+        assert_eq!(
+            std::fs::read(root.join("artifact-manifest.json")).unwrap(),
+            manifest_before
+        );
+        assert_eq!(
+            std::fs::read(root.join("published.mizir.json")).unwrap(),
+            main_before
+        );
+        assert_eq!(f.retained(0), &retained);
+        assert_eq!(validated_manifest(&root).manifest, *commit.manifest());
     }
 }

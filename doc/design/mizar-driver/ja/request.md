@@ -218,7 +218,11 @@ request、source、source-map、lease id が再利用可能であることを意
 
 ## Commented draft capture and retention
 `BuildSession::capture_commented_module` は genuine metadata と sealed Frontend payload を protected native capture に結合し、[IR handoff](../../mizar-ir/ja/projection.md#commented-draft-handoff) を一度呼び、未公開の immutable draft と required handle を session clone 間で保持する。capture 失敗時は保持内容を変えない。
-`commented_module` は Session/request と publisher の currentness・publication root・physical handle・typed Frontend の readability を確認して draft を借用し、cancelled session は拒否する。未登録と available-empty は区別する。session value は IR storage を pin せず draft を保持する。自動取得・source 再読/再構成・scheduler 起動・emission・publication 資格の昇格・Doc attachment は供給しない。
+`commented_module` は Session/request と publisher の currentness・publication root・physical handle・typed Frontend の readability を確認して draft を借用し、cancelled session は拒否する。未登録と available-empty は区別する。session value は IR storage を pin せず draft を保持する。自動取得・source 再読/再構成・scheduler 起動・publication 資格の昇格・Doc attachment は供給しない。
+
+## Commented artifact emission
+`BuildSession::emit_commented_module` は captured loader の package root より厳密に下の既存 artifact root へ、安全な parent 検証後に未使用の `.mizir.json` path を atomic に予約し、同時 Driver emission による上書きを防いで保持 envelope を明示的に出力する。書込み前、transaction freshness check、readback 後に retained-read 検証と全 original handle の CurrentPackage 資格を確認し、OpenBuffer/InternalOnly は拒否する。これは point check であり、新たな currentness lease ではない。
+Artifact 所有の commented codec/domain で完全 readback と outer hash を得る。既存 manifest transaction に導出済み package/source/provenance と witness reference を渡し、参照ファイルを検証して実 commit を返す。precommit failure は既存 manifest/main を保持し、late failure では orphan file や commit 済み manifest が残り得る。保持 draft は変更しない。Doc validated-publication consumption は未完了。
 
 ## Native source capture
 
