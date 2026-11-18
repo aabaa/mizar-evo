@@ -8025,4 +8025,365 @@ mod doc10_authenticated {
             }
         }
     }
+
+    mod doc13 {
+        use super::*;
+        use mizar_artifact::verified_artifact::{
+            ExportVisibility, PublishedIdentityProjection, project_frontend_identity,
+        };
+
+        // Stored exports are structural fixtures. Genuine native publication is
+        // independently exercised by Driver's snapshot publication owner tests.
+        fn publication(package: &str, paths: [&[&str]; 2]) -> Publication {
+            let mut publication = Publication::new(package, [":::\n", ":::\n"]);
+            publication.artifacts[1] = publication.artifacts[0].clone();
+            publication.manifest.modules[1].proof_witnesses =
+                publication.manifest.modules[0].proof_witnesses.clone();
+            for (index, components) in paths.into_iter().enumerate() {
+                let artifact = &mut publication.artifacts[index];
+                artifact.module.module_path = components.join(".");
+                artifact.source_file = format!("src/{}.miz", components.join("/"));
+                artifact.exports[0].export_kind = "theorem".into();
+                publication.summaries[index].module = artifact.module.clone();
+                publication.summaries[index]
+                    .refresh_interface_hash()
+                    .unwrap();
+                let source = publication.root.join(&artifact.source_file);
+                std::fs::create_dir_all(source.parent().unwrap()).unwrap();
+                std::fs::write(source, ":::\n").unwrap();
+            }
+            publication.publish();
+            publication
+        }
+
+        fn products(publication: &Publication) -> Vec<PublishedIdentityProjection> {
+            publication
+                .frontend
+                .iter()
+                .zip(&publication.artifacts)
+                .map(|(frontend, artifact)| {
+                    project_frontend_identity(frontend, artifact, publication.hash).unwrap()
+                })
+                .collect()
+        }
+
+        #[test]
+        fn doc13_complete_exports_and_explicit_empty_products() {
+            let mut app = publication("identity-complete", [&["single"], &["nested", "leaf"]]);
+            let export = &mut app.artifacts[0].exports[0];
+            export.fully_qualified_name = "exact.é%#".into();
+
+            let mut reexport = export.clone();
+            reexport.origin_id.push_str("-reexport");
+            reexport.visibility = ExportVisibility::Reexported;
+            app.artifacts[0].exports.push(reexport);
+            app.artifacts[1].exports.clear();
+            let (registry, workspace, plans, views) = context(&mut [&mut app]);
+            let imports = authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[],
+                &inputs(&app, &views[0]),
+            )
+            .unwrap();
+            let products = products(&app);
+            let supplied = products.iter().collect::<Vec<_>>();
+            let result =
+                authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied).unwrap();
+            assert_eq!(result.identities().len(), 2);
+            for identity in result.identities() {
+                let original = app
+                    .artifacts
+                    .iter()
+                    .find(|artifact| artifact.module == identity.artifact().module)
+                    .unwrap();
+                assert_eq!(identity.artifact(), original);
+                assert_eq!(identity.publication_hash(), app.hash);
+                assert_eq!(
+                    identity.kind_vocabulary_version(),
+                    "resolver-symbol-kind-v1"
+                );
+            }
+            assert_eq!(
+                result.identities()[0].module_components(),
+                ["nested", "leaf"]
+            );
+            assert!(result.identities()[0].artifact().exports.is_empty());
+            assert_eq!(
+                result.identities()[1].artifact().exports[0].rendered_signature,
+                app.artifacts[0].exports[0].rendered_signature
+            );
+            assert!(authenticate_doc_identities(&registry, &workspace, &imports, &[], &[]).is_err());
+            assert!(
+                authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied[..1])
+                    .is_err()
+            );
+        }
+
+        #[test]
+        fn doc13_duplicate_names_versions_and_permutations_preserve_full_identity() {
+            let mut app = publication("identity-versions", [&["one"], &["two"]]);
+            let mut dep = publication("identity-other-package", [&["one"], &["two"]]);
+            let mut prior = publication("identity-other-package", [&["one"], &["two"]]);
+            dep.manifest.package.package_version = Some("2.0.0+stored".into());
+            for (artifact, summary) in dep.artifacts.iter_mut().zip(&mut dep.summaries) {
+                artifact.module.package_version = dep.manifest.package.package_version.clone();
+                summary.module = artifact.module.clone();
+                summary.refresh_interface_hash().unwrap();
+            }
+            for publication in [&mut app, &mut dep, &mut prior] {
+                let mut duplicate = publication.artifacts[0].exports[0].clone();
+                duplicate.origin_id = "other-origin".into();
+                duplicate.visibility = ExportVisibility::Reexported;
+                publication.artifacts[0].exports.push(duplicate);
+                publication.artifacts[0].exports.reverse();
+            }
+            let (_, _, _, prior_views) = context(&mut [&mut prior]);
+            let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+            let plan = plans
+                .iter()
+                .find(|plan| plan.request.package == app.manifest.package)
+                .unwrap();
+            let inventory = [
+                (&dep.manifest.package, dep.hash, dep.root.as_path()),
+                (&prior.manifest.package, prior.hash, prior.root.as_path()),
+            ];
+            let imports = authenticate_doc_imports(
+                &registry,
+                &workspace,
+                plan,
+                &inventory,
+                &inputs(&app, &views[0])
+                    .into_iter()
+                    .chain(inputs(&dep, &views[1]))
+                    .chain(inputs(&prior, &prior_views[0]))
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
+            let products = products(&app)
+                .into_iter()
+                .chain(products(&dep))
+                .chain(products(&prior))
+                .collect::<Vec<_>>();
+            let forward = products.iter().collect::<Vec<_>>();
+            let reverse = forward.iter().rev().copied().collect::<Vec<_>>();
+            let first =
+                authenticate_doc_identities(&registry, &workspace, &imports, &inventory, &forward)
+                    .unwrap();
+            let second =
+                authenticate_doc_identities(&registry, &workspace, &imports, &inventory, &reverse)
+                    .unwrap();
+            assert_eq!(first, second);
+            assert_eq!(first.identities().len(), 6);
+            assert_eq!(
+                first
+                    .identities()
+                    .iter()
+                    .map(|identity| identity.artifact().exports.len())
+                    .sum::<usize>(),
+                9
+            );
+            assert!(
+                first
+                    .identities()
+                    .windows(2)
+                    .all(|pair| pair[0].artifact().module < pair[1].artifact().module)
+            );
+            assert!(
+                first.identities().iter().all(|identity| identity
+                    .artifact()
+                    .module
+                    .lockfile_identity
+                    .is_none())
+            );
+            for identity in first.identities() {
+                assert_eq!(
+                    identity.publication_hash(),
+                    if identity.artifact().module.package_id == app.manifest.package.package_id {
+                        app.hash
+                    } else if identity.artifact().module.package_version
+                        == dep.manifest.package.package_version
+                    {
+                        dep.hash
+                    } else {
+                        prior.hash
+                    }
+                );
+                assert!(identity.artifact().exports.windows(2).all(|pair| (
+                    &pair[0].fully_qualified_name,
+                    &pair[0].origin_id
+                ) < (
+                    &pair[1].fully_qualified_name,
+                    &pair[1].origin_id
+                )));
+            }
+        }
+
+        #[test]
+        fn doc13_exact_vocabulary_version_and_native_path_refusals() {
+            let mut app = publication("identity-vocabulary", [&["one"], &["nested", "two"]]);
+            let (_, _, _, _) = context(&mut [&mut app]);
+            let frontend = &app.frontend[0];
+            let original = &app.artifacts[0];
+            let mut empty_display = original.clone();
+            empty_display.exports[0].rendered_signature.clear();
+            assert_eq!(
+                project_frontend_identity(frontend, &empty_display, app.hash)
+                    .unwrap()
+                    .artifact()
+                    .exports[0]
+                    .rendered_signature,
+                ""
+            );
+            assert!(mizar_artifact::verified_artifact::verified_artifact_json(&empty_display).is_err());
+            for kind in [
+                "predicate",
+                "functor",
+                "mode",
+                "attribute",
+                "structure",
+                "selector",
+                "registration",
+                "theorem",
+                "lemma",
+                "algorithm",
+                "scheme",
+                "template",
+                "synonym",
+                "antonym",
+                "redefinition",
+                "builtin",
+            ] {
+                let mut artifact = original.clone();
+                artifact.exports[0].export_kind = kind.into();
+                assert_eq!(
+                    project_frontend_identity(frontend, &artifact, app.hash)
+                        .unwrap()
+                        .artifact()
+                        .exports[0]
+                        .export_kind,
+                    kind
+                );
+            }
+            for kind in ["Theorem", "THEOREM", "unknown", ""] {
+                let mut artifact = original.clone();
+                artifact.exports[0].export_kind = kind.into();
+                assert!(project_frontend_identity(frontend, &artifact, app.hash).is_none());
+            }
+            for version in [(1, 0), (1, 1), (1, 3), (2, 0)] {
+                let mut artifact = original.clone();
+                artifact.schema_version =
+                    mizar_artifact::store::SchemaVersion::new(version.0, version.1);
+                assert!(project_frontend_identity(frontend, &artifact, app.hash).is_none());
+            }
+            for path in ["", "one..two", "one/else", "é", "One.é"] {
+                let mut changed = frontend.clone();
+                changed.source.module_path = ModulePath::new(path);
+                assert!(changed.source.module_path.components().is_none());
+                let mut artifact = original.clone();
+                artifact.module.module_path = path.into();
+                artifact.source_file = changed.source.normalized_path.as_str().into();
+                assert!(project_frontend_identity(&changed, &artifact, app.hash).is_none());
+            }
+            let mut changed = frontend.clone();
+            changed.source.module_path = ModulePath::new("valid.different");
+            let mut artifact = original.clone();
+            artifact.module.module_path = "valid.different".into();
+            assert!(project_frontend_identity(&changed, &artifact, app.hash).is_none());
+            for field in 0..5 {
+                let mut artifact = original.clone();
+                match field {
+                    0 => artifact.source_file = "src/foreign.miz".into(),
+                    1 => artifact.module.package_id = "foreign".into(),
+                    2 => artifact.source_hash = mizar_session::hash_text("foreign"),
+                    3 => artifact.module.package_version = None,
+                    _ => artifact.provenance.captured_source = None,
+                }
+                assert!(project_frontend_identity(frontend, &artifact, app.hash).is_none());
+            }
+        }
+
+        #[test]
+        fn doc13_authentication_refuses_forged_duplicate_stale_and_reader_failures() {
+            let mut app = publication("identity-refusals", [&["one"], &["two"]]);
+            app.artifacts[1].exports.clear();
+            let (registry, workspace, plans, views) = context(&mut [&mut app]);
+            let imports = authenticate_doc_imports(
+                &registry,
+                &workspace,
+                &plans[0],
+                &[],
+                &inputs(&app, &views[0]),
+            )
+            .unwrap();
+            let products = products(&app);
+            let mut supplied = products.iter().collect::<Vec<_>>();
+            supplied.push(&products[0]);
+            assert!(
+                authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied).is_err()
+            );
+            supplied.pop();
+            let mut foreign = publication("foreign-identity", [&["one"], &["two"]]);
+            let _ = context(&mut [&mut foreign]);
+            let foreign_products = self::products(&foreign);
+            assert!(
+                authenticate_doc_identities(
+                    &registry,
+                    &workspace,
+                    &imports,
+                    &[],
+                    &[&products[0], &products[1], &foreign_products[0]]
+                )
+                .is_err()
+            );
+            for field in 0..3 {
+                let mut artifact = app.artifacts[0].clone();
+                let hash = if field == 0 {
+                    mizar_session::hash_text("forged publication")
+                } else {
+                    app.hash
+                };
+                if field == 1 {
+                    artifact.exports[0].rendered_signature.push_str("forged");
+                }
+                if field == 2 {
+                    artifact.verified_at = Some("forged provenance".into());
+                }
+                let forged = project_frontend_identity(&app.frontend[0], &artifact, hash).unwrap();
+                assert!(
+                    authenticate_doc_identities(
+                        &registry,
+                        &workspace,
+                        &imports,
+                        &[],
+                        &[&forged, &products[1]]
+                    )
+                    .is_err()
+                );
+            }
+            let manifest_path = app.root.join("artifact-manifest.json");
+            let bytes = std::fs::read(&manifest_path).unwrap();
+            std::fs::write(&manifest_path, b"{}").unwrap();
+            assert!(
+                authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied).is_err()
+            );
+            std::fs::write(&manifest_path, &bytes).unwrap();
+            let snapshot = registry.get(plans[0].snapshot).unwrap();
+            let input = SnapshotInput {
+                workspace_root: snapshot.workspace_root,
+                source_versions: snapshot.source_versions,
+                dependency_artifacts: snapshot.dependency_artifacts,
+                lockfile_hash: snapshot.lockfile_hash,
+                toolchain: snapshot.toolchain,
+                verifier_config_hash: mizar_session::hash_text("new snapshot"),
+            };
+            registry
+                .create_snapshot(plans[0].build_request, input)
+                .unwrap();
+            assert!(
+                authenticate_doc_identities(&registry, &workspace, &imports, &[], &supplied).is_err()
+            );
+        }
+    }
 }

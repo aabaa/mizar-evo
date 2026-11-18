@@ -563,6 +563,7 @@ dependencies = [
  "mizar-checker",
  "mizar-core",
  "mizar-diagnostics",
+ "mizar-doc",
  "mizar-frontend",
  "mizar-ir",
  "mizar-kernel",

@@ -87,6 +87,110 @@ pub struct VerifiedExport {
     pub documentation_ref: Option<ArtifactHashRef>,
 }
 
+/// Immutable original-source identity capture; consumers authenticate its publication.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PublishedIdentityProjection {
+    artifact: VerifiedArtifact,
+    publication_hash: Hash,
+    module_components: Vec<String>,
+}
+
+impl PublishedIdentityProjection {
+    /// Exact stored identity and provenance, with exports in FQN/origin order.
+    pub fn artifact(&self) -> &VerifiedArtifact {
+        &self.artifact
+    }
+
+    pub fn publication_hash(&self) -> Hash {
+        self.publication_hash
+    }
+
+    pub fn module_components(&self) -> &[String] {
+        &self.module_components
+    }
+
+    /// Resolver `symbol_kind_key` vocabulary bound to verified-artifact 1.2.
+    pub fn kind_vocabulary_version(&self) -> &'static str {
+        "resolver-symbol-kind-v1"
+    }
+}
+
+/// Captures only the explicitly supported original producer identity vocabulary.
+/// Generic artifact readers continue to preserve opaque kind strings.
+pub fn project_frontend_identity(
+    frontend: &mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>,
+    artifact: &VerifiedArtifact,
+    publication_hash: Hash,
+) -> Option<PublishedIdentityProjection> {
+    let source = &frontend.source;
+    let captured = (source.source_id, source.origin.clone(), source.source_hash);
+    if artifact.schema_version != SchemaVersion::new(1, 2)
+        || artifact.module.package_version.is_none()
+        || artifact.exports.iter().any(|export| {
+            !matches!(
+                export.export_kind.as_str(),
+                "predicate"
+                    | "functor"
+                    | "mode"
+                    | "attribute"
+                    | "structure"
+                    | "selector"
+                    | "registration"
+                    | "theorem"
+                    | "lemma"
+                    | "algorithm"
+                    | "scheme"
+                    | "template"
+                    | "synonym"
+                    | "antonym"
+                    | "redefinition"
+                    | "builtin"
+            )
+        })
+        || artifact.provenance.captured_source.as_ref() != Some(&captured)
+        || artifact.source_hash != source.source_hash
+        || artifact.source_file != source.normalized_path.as_str()
+        || artifact.module.package_id != source.package_id.as_str()
+        || artifact.module.module_path != source.module_path.as_str()
+        || artifact.module.language_edition != source.edition.as_str()
+        || frontend.ast.as_ref()?.source_id != source.source_id
+        || frontend.preprocessed.source_id != source.source_id
+        || frontend.preprocessed.source_map.source_id != source.source_id
+        || source
+            .loading_map
+            .as_ref()
+            .is_some_and(|map| map.source_id != source.source_id)
+    {
+        return None;
+    }
+    let components = source
+        .normalized_path
+        .as_str()
+        .strip_prefix("src/")?
+        .strip_suffix(".miz")?
+        .split('/')
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    if !components
+        .iter()
+        .map(String::as_str)
+        .eq(source.module_path.components()?)
+    {
+        return None;
+    }
+    let mut artifact = artifact.clone();
+    artifact.exports.sort_by(|left, right| {
+        left.fully_qualified_name
+            .cmp(&right.fully_qualified_name)
+            .then_with(|| left.origin_id.cmp(&right.origin_id))
+    });
+    Some(PublishedIdentityProjection {
+        artifact,
+        publication_hash,
+        module_components: components,
+    })
+}
+
 /// Export visibility represented in a verified artifact.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

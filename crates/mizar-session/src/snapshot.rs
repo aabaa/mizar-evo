@@ -700,6 +700,11 @@ impl ModulePath {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Validated original components under the native module identifier grammar.
+    pub fn components(&self) -> Option<impl Iterator<Item = &str>> {
+        is_valid_module_path(&self.0).then(|| self.0.split('.'))
+    }
 }
 
 impl Edition {

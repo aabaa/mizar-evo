@@ -857,6 +857,8 @@ algorithm summary publisher は廃止。
 
 `PublishedSourceMetadata::direct_by()` は同じ境界で [Artifact 所有の元構文射影](../../mizar-artifact/ja/verified_artifact.md#in-memory-direct-by-projection) を保持する。意味的 binding は保持した AST に既存の bounded Resolver を用い、正確な compiler origin/export identity に結合する。未対応・未解決 mapping は incomplete のまま残す。完全空 witness には元の theorem 調査が必要であり、Doc の source 復元、evidence fallback、native acceptance 拡大は行わない。
 
+`PublishedSourceMetadata::identity()` は同じ認証済み frontend/snapshot/publication から [Artifact identity projection](../../mizar-artifact/ja/verified_artifact.md#in-memory-identity-projection) を保持する。欠落・非互換 product は unavailable のままで、Doc が完全な有限 inventory を別途検証する。限定的な Doc13 G1 だけを供給し、native semantic export や publication/acceptance 方針を拡張しない。
+
 [承認済み native payload profile](../../mizar-lsp/ja/native_payload_producers.md) は型付き export insertion 根拠からだけ E0041 payload を付けます。`native_export_semicolon_context` は正確な canonical handle/source association を検証し bounded canonical JSON を返し、`native_export_semicolon_command` は正確な canonical command を認証します。Host は実 capture 由来の record だけを供給し、shape validator は caller-owned record の admission や error-session の出力受入条件を変えません。
 
 ## Genuine reflexivity Kernel status service

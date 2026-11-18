@@ -31,3 +31,6 @@ mizar-session = { path = "../mizar-session" }
 mizar-vc = { path = "../mizar-vc" }
 salsa = "0.27.2"
 serde_json = "1"
+
+[dev-dependencies]
+mizar-doc = { path = "../mizar-doc" }

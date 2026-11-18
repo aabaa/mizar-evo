@@ -567,3 +567,6 @@ runtime export は先に実際の実行内容生成側を消費し、後の計�
 省略時の public 宣言を含め、計算可能な public entry は opt-in flag や契約だけの代替を用いず runtime 公開を要求する。private helper 名は内部に保つが、検証済み内部呼出しは実行できる。すべての推移的 package 境界呼出しは検証済み artifact の public な計算可能対象を要求し、依存ソースへの fallback は認めない。
 テストは実際の証拠に結ばれた既定 public、明示 public、検証済み推移 public entry と正当な内部 private helper を受理する。algorithm/署名/契約/実行内容、推移依存、完全な入力/文脈/C、VM/rule version、実効 replay の同一性を変異させる。欠落/古い/破損 artifact、弱い mode の cache 再利用、直接の private package 境界呼出し、必要な public export の欠落を拒否する。後続 kernel 証拠でも computed 依存を保持する。公開は atomic とし未検証候補を出さない。
 式 metadata だけでは実行内容にならず、serialization/loader の詳細は実際の生成側 contract まで保留する。
+
+## In-memory identity projection
+`project_frontend_identity` は [限定的な Doc13 G1 引渡し](../../mizar-doc/ja/render_prerequisites.md#採用済み-g1-identity-binding) に完全な元 artifact/publication/source identity と lossless native module 成分を保持する。明示的な語彙・版互換性で未対応 product を拒否し、汎用 reader、artifact storage、proof acceptance は変えない。構造的 capture には別途 Driver lineage と Doc publication/current-plan 認証が必要である。

@@ -392,6 +392,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     notation: collection.source_notation_view(&frontend),
                     imports: Some(imports),
                     direct_by,
+                    identity: mizar_artifact::verified_artifact::project_frontend_identity(
+                        &frontend,
+                        &artifact,
+                        manifest.artifact_hash,
+                    ),
                 })
             })());
             artifacts.push(artifact);
@@ -2679,6 +2684,7 @@ pub struct PublishedSourceMetadata {
     notation: Option<mizar_resolve::symbols::SourceNotationView>,
     imports: Option<mizar_resolve::imports::PublishedImportView>,
     direct_by: Option<mizar_artifact::direct_by::DirectByProjection>,
+    identity: Option<mizar_artifact::verified_artifact::PublishedIdentityProjection>,
 }
 
 impl PublishedSourceMetadata {
@@ -2693,6 +2699,11 @@ impl PublishedSourceMetadata {
     }
     pub fn direct_by(&self) -> Option<&mizar_artifact::direct_by::DirectByProjection> {
         self.direct_by.as_ref()
+    }
+    pub fn identity(
+        &self,
+    ) -> Option<&mizar_artifact::verified_artifact::PublishedIdentityProjection> {
+        self.identity.as_ref()
     }
 }
 
@@ -4335,6 +4346,192 @@ mod snapshot_payload_tests {
             })
             .collect::<BTreeSet<_>>();
         assert_eq!(manifest_modules, artifacts);
+
+        // Genuine source compilation supplies identity products before Doc consumes them.
+        use mizar_doc::doc_build::*;
+        let requests = publication
+            .manifests()
+            .iter()
+            .map(|read| DocPublicationRequest {
+                package: read.manifest.package.clone(),
+                artifact_root: fixture
+                    .root
+                    .join("alpha")
+                    .join(&read.manifest.artifact_root),
+                expected_manifest_hash: read.artifact_hash,
+                output_dir: fixture.root.join("identity-doc-output"),
+                source_bundle: None,
+                dependency_indexes: None,
+                import_order: Default::default(),
+            })
+            .collect::<Vec<_>>();
+        let snapshot = publication.captured().snapshot();
+        let mut doc_request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: vec![requests[0].clone()],
+        };
+        assert!(matches!(
+            build_doc_plans(
+                &fixture.snapshots,
+                submission.session.request().id,
+                snapshot.id,
+                &snapshot.workspace_root,
+                &doc_request
+            ),
+            Err(DocBuildError::Binding(
+                "package or manifest build provenance mismatch"
+            ))
+        ));
+
+        // Doc4's raw build hashes and native producer fingerprints remain distinct.
+        // Select an explicit empty test root; both native dependency publications
+        // and their captured sources remain byte-exact original producer outputs.
+        use mizar_artifact::{
+            manifest::write_manifest_file,
+            registration_summary::{ArtifactHashClass, ArtifactHashRef},
+        };
+        let root_path = fixture.root.join("identity-doc-root");
+        fs::create_dir_all(&root_path).unwrap();
+        let mut empty = publication.manifests()[0].manifest.clone();
+        empty.modules.clear();
+        empty.artifact_root = "identity-doc-root".into();
+        empty.lockfile_hash = ArtifactHashRef::new(
+            ArtifactHashClass::Artifact,
+            "mizar-build/parsed-lock-content/v1",
+            mizar_artifact::store::SchemaVersion::new(1, 0),
+            snapshot.lockfile_hash,
+        );
+        empty.verifier_config_hash = ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            "mizar-build/package-config-content/v1",
+            mizar_artifact::store::SchemaVersion::new(1, 0),
+            snapshot.verifier_config_hash,
+        );
+        empty.provenance.generated_by = "explicit-empty-doc-root-test-fixture".into();
+        let root_hash = write_manifest_file(&root_path, &empty)
+            .unwrap()
+            .artifact_hash;
+        let mut root_request = requests[0].clone();
+        root_request.artifact_root = root_path;
+        root_request.expected_manifest_hash = root_hash;
+        doc_request.publications = vec![root_request];
+        let plans = build_doc_plans(
+            &fixture.snapshots,
+            submission.session.request().id,
+            snapshot.id,
+            &snapshot.workspace_root,
+            &doc_request,
+        )
+        .unwrap();
+        let inventory = requests
+            .iter()
+            .map(|request| {
+                (
+                    &request.package,
+                    request.expected_manifest_hash,
+                    request.artifact_root.as_path(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let imports = publication
+            .source_metadata()
+            .iter()
+            .flatten()
+            .map(|metadata| {
+                let identity = metadata.identity().expect("genuine source identity");
+                (
+                    identity.artifact().module.clone(),
+                    identity.publication_hash(),
+                    metadata.imports().unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let root = &plans[0];
+        assert!(root.index.modules.is_empty());
+        let inputs = authenticate_doc_imports(
+            &fixture.snapshots,
+            &snapshot.workspace_root,
+            root,
+            &inventory,
+            &imports,
+        )
+        .unwrap();
+        let identities = publication
+            .source_metadata()
+            .iter()
+            .flatten()
+            .map(|metadata| metadata.identity().unwrap())
+            .collect::<Vec<_>>();
+        let saved = publication
+            .manifests()
+            .iter()
+            .zip(&requests)
+            .flat_map(|(read, request)| {
+                std::iter::once(request.artifact_root.join(read.path.as_str())).chain(
+                    read.manifest
+                        .modules
+                        .iter()
+                        .map(|entry| request.artifact_root.join(&entry.artifact_file)),
+                )
+            })
+            .map(|path| {
+                let bytes = fs::read(&path).unwrap();
+                (path, bytes)
+            })
+            .collect::<Vec<_>>();
+        let first = authenticate_doc_identities(
+            &fixture.snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &inventory,
+            &identities,
+        )
+        .unwrap();
+        assert_eq!(first.identities().len(), 2);
+        assert_eq!(inputs.closure_coverage(), DocImportCoverage::Complete);
+        assert_eq!(
+            first,
+            authenticate_doc_identities(
+                &fixture.snapshots,
+                &snapshot.workspace_root,
+                &inputs,
+                &inventory,
+                &identities.iter().rev().copied().collect::<Vec<_>>()
+            )
+            .unwrap()
+        );
+        assert!(
+            authenticate_doc_identities(
+                &fixture.snapshots,
+                &snapshot.workspace_root,
+                &inputs,
+                &inventory,
+                &identities[..1]
+            )
+            .is_err()
+        );
+        for identity in first.identities() {
+            assert_eq!(
+                identity.module_components(),
+                [identity.artifact().module.module_path.clone()]
+            );
+            assert!(
+                publication
+                    .artifacts()
+                    .iter()
+                    .any(|artifact| artifact.as_ref() == identity.artifact())
+            );
+        }
+        for (path, bytes) in saved {
+            assert_eq!(fs::read(path).unwrap(), bytes);
+        }
+        assert!(!fixture.root.join("identity-doc-output").exists());
     }
 
     #[test]

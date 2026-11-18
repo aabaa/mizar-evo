@@ -308,6 +308,108 @@ pub struct AuthenticatedDocImports {
     coverage: BTreeMap<ModuleSummaryIdentity, DocImportCoverage>,
 }
 
+/// Complete publication-authenticated identities for the declared finite inventory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthenticatedDocIdentities {
+    identities: Vec<mizar_artifact::verified_artifact::PublishedIdentityProjection>,
+}
+
+impl AuthenticatedDocIdentities {
+    /// Full module order; each producer retains complete FQN/origin export order.
+    pub fn identities(&self) -> &[mizar_artifact::verified_artifact::PublishedIdentityProjection] {
+        &self.identities
+    }
+}
+
+/// Revalidates current inputs and requires one exact identity producer per module.
+pub fn authenticate_doc_identities<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    workspace_root: &WorkspaceRoot,
+    inputs: &AuthenticatedDocImports,
+    inventory: &[(&PackageIdentity, Hash, &Path)],
+    producers: &[&mizar_artifact::verified_artifact::PublishedIdentityProjection],
+) -> Result<AuthenticatedDocIdentities, DocBuildError> {
+    let imports = inputs
+        .producers
+        .iter()
+        .map(|(module, view)| (module.clone(), inputs.modules[module].0, view))
+        .collect::<Vec<_>>();
+    let current = authenticate_doc_imports(
+        registry,
+        workspace_root,
+        &inputs.selected_plan,
+        inventory,
+        &imports,
+    )?;
+    if current != *inputs {
+        return Err(DocBuildError::Binding("identity inventory changed"));
+    }
+    let root = &inputs.selected_plan.request;
+    let mut artifacts = BTreeMap::new();
+    for (_, hash, path) in std::iter::once((
+        &root.package,
+        root.expected_manifest_hash,
+        root.artifact_root.as_path(),
+    ))
+    .chain(inventory.iter().copied())
+    {
+        let (manifest, stored) =
+            read_published_artifacts(path, hash).map_err(DocBuildError::Publication)?;
+        if !inputs.publications.contains(&manifest) {
+            return Err(DocBuildError::Binding("identity publication changed"));
+        }
+        for mut artifact in stored {
+            artifact.exports.sort_by(|left, right| {
+                left.fully_qualified_name
+                    .cmp(&right.fully_qualified_name)
+                    .then_with(|| left.origin_id.cmp(&right.origin_id))
+            });
+            artifacts.insert(artifact.module.clone(), artifact);
+        }
+    }
+    let mut identities = BTreeMap::new();
+    for producer in producers {
+        let artifact = producer.artifact();
+        let Some((publication, _, _)) = inputs.modules.get(&artifact.module) else {
+            return Err(DocBuildError::Binding(
+                "identity producer outside inventory",
+            ));
+        };
+        if producer.publication_hash() != *publication
+            || artifacts.get(&artifact.module) != Some(artifact)
+            || identities
+                .insert(artifact.module.clone(), (*producer).clone())
+                .is_some()
+        {
+            return Err(DocBuildError::Binding("identity producer binding mismatch"));
+        }
+        if *publication == inputs.selected_plan.request.expected_manifest_hash
+            && !registry
+                .get(inputs.selected_plan.snapshot)
+                .is_some_and(|snapshot| {
+                    snapshot.source_versions.iter().any(|source| {
+                        artifact.provenance.captured_source.as_ref()
+                            == Some(&(source.source_id, source.origin.clone(), source.source_hash))
+                            && source.package_id.as_str() == artifact.module.package_id
+                            && source.module_path.as_str() == artifact.module.module_path
+                            && source.edition.as_str() == artifact.module.language_edition
+                            && source.normalized_path.as_str() == artifact.source_file
+                    })
+                })
+        {
+            return Err(DocBuildError::Binding("identity source snapshot mismatch"));
+        }
+    }
+    if identities.len() != inputs.modules.len() {
+        return Err(DocBuildError::Binding(
+            "incomplete identity producer inventory",
+        ));
+    }
+    Ok(AuthenticatedDocIdentities {
+        identities: identities.into_values().collect(),
+    })
+}
+
 impl AuthenticatedDocImports {
     pub(crate) fn matches_plan(&self, plan: &DocBuildPlan) -> bool {
         self.selected_plan == *plan

@@ -1,6 +1,7 @@
 # Doc13 Render 定義提案
 正本は英語: [English companion](../en/render.md)。
-状態: [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) に採用済みの Q3 href interface ①を除き提案。相対 href の percent-UTF8 encoding と厳密な FQN DOM id だけを採用し、Q3 source routing と他の全 Doc13 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、renderer 実装や schema 登録は許可しない。
+状態: [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) に採用済みの Q3 href interface ①を除き提案。相対 href の percent-UTF8 encoding と厳密な FQN DOM id だけを採用し、Q3 source routing と残る Doc13 render/wire 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、renderer 実装や schema 登録は許可しない。
+別途 [限定的な G1 identity 引渡し](./render_prerequisites.md#採用済み-g1-identity-binding) を採用するが、render/wire interface の採用を意味しない。
 
 ## 権威と固定入力
 出力は spec [24.1–4](../../../spec/ja/24.documentation_generation.md)、architecture13 [Step4](../../architecture/ja/13.documentation_and_extraction.md#ステップ-4-静的サイトの出力)、[決定性](../../architecture/ja/13.documentation_and_extraction.md#出力は決定的である)、internal05 [index](../../internal/ja/05.documentation_extraction.md#ドキュメントインデックス)、[diagnostics](../../internal/ja/05.documentation_extraction.md#診断) に従う。本定義は承認済みの限定された [Doc4 入力](./doc_build.md#index-inputs-and-later-completion) に依存し、Markdown/link/math 実装完了には依存しない。
