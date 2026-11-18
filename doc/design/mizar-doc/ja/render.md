@@ -1,12 +1,17 @@
 # Doc13 Render 定義提案
 正本は英語: [English companion](../en/render.md)。
-状態: [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) に採用済みの Q3 href interface ①を除き提案。相対 href の percent-UTF8 encoding と厳密な FQN DOM id だけを採用し、Q3 source routing と残る Doc13 render/wire 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、renderer 実装や schema 登録は許可しない。
+状態: [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) に採用済みの限定 opaque Q6/Q11 transport と Q3 href interface ①を除き提案。相対 href の percent-UTF8 encoding と厳密な FQN DOM id だけを採用し、Q3 source routing と残る Doc13 render/wire 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、page renderer 実装や schema 登録は許可しない。opaque client の限定採用は以下に定める。
 別途 [限定的な G1 identity 引渡し](./render_prerequisites.md#採用済み-g1-identity-binding) を採用するが、render/wire interface の採用を意味しない。
+
+## Adopted Opaque Math Transport
+Doc11 Q6/Q7/Q12 と Doc13 Q6/Q11 の opaque-client 部分だけを採用する。[英語の所有定義](../en/render.md#adopted-opaque-math-transport)が正本。[runtime](./math.md) と連携する `render::opaque_math_fragments` は ParsedComments を借用し、Doc8 block/occurrence 順に fragment を出す。MathRange interior segment のみを順に連結し、target/publication、outer range、独立 map は同じ ordinal の元入力に保持する。unavailable/不正範囲は拒否し、available-empty は空のままとする。page renderer/provenance schema は作らない。
+inline span/display div の属性順は class、data-mizar-block、data-mizar-occurrence、data-mizar-display、data-mizar-tex。ordinal は unpadded decimal、payload は lowercase hex UTF-8 とし、entity/newline/NUL を正確に運ぶ。role=status と code 子要素を持つ pending fallback は HTML metacharacter を escape し、HTML が保存できない control を可視の `\u{hex}` とする。client fallback は元 payload の textContent を使い、payload から実行 source/innerHTML/URL を作らない。
+local asset handoff は assets/katex/ の固定 path と immutable bytes を供給し、完全な manifest/configuration 集合の欠落・余剰・改変を拒否する。client は自身の script URL を基準に nested page からも local 資産を検証し、redirect/foreign origin を拒否する。検証済み bytes の blob URL だけを実行/CSS/font に用い、失敗時は fallback を保つ。完全 template、staging/publication は未解決のまま。
 
 ## 権威と固定入力
 出力は spec [24.1–4](../../../spec/ja/24.documentation_generation.md)、architecture13 [Step4](../../architecture/ja/13.documentation_and_extraction.md#ステップ-4-静的サイトの出力)、[決定性](../../architecture/ja/13.documentation_and_extraction.md#出力は決定的である)、internal05 [index](../../internal/ja/05.documentation_extraction.md#ドキュメントインデックス)、[diagnostics](../../internal/ja/05.documentation_extraction.md#診断) に従う。本定義は承認済みの限定された [Doc4 入力](./doc_build.md#index-inputs-and-later-completion) に依存し、Markdown/link/math 実装完了には依存しない。
 固定された所有者入力は採用済み [Doc8 Q9–Q18](./commonmark.md) と [Doc9 Q1–Q10](./links.md)。歴史的な候補/未選択表記は判断を再開しない。解析、tag 保持、厳密な参照比較、identity-keyed allocation、完全 FQN anchor、衝突しない optional alias、direct-by completeness 境界を保持する。採用は producer readiness を確立しない。
-[Doc11 Q1–Q12](../en/math.md#unselected-owner-q-decisions) は未選択で、Doc11 候補、KaTeX 設定、数式 registry を前提にしない。[MT-Q1–Q7](../../mizar-diagnostics/ja/documentation_markdown_tags.md) は Doc8 とともに採用済みであり、歴史的表記は判断を再開しない。残る render 診断と実装依存は別途残る。
+[Doc11](../en/math.md#adopted-opaque-client-runtime) は opaque-client の Q6/Q7/Q12 部分のみ採用済みで、symbolic math と数式 registry は未選択。[MT-Q1–Q7](../../mizar-diagnostics/ja/documentation_markdown_tags.md) は Doc8 とともに採用済みであり、歴史的表記は判断を再開しない。残る render 診断と実装依存は別途残る。
 spec24.4 は manifest の `doc_dir`（既定 `docs/`）への静的出力、package 概要/module 一覧、module index と名前付き item 専用 page、`search.json`、local の `assets/katex/`、`assets/style.css`、`assets/search.js` を固定する。KaTeX は client-side で動き、server や build 時 LaTeX 構文検証を要しない。package version が与えられれば header と検索 data に表示し、標準の version 別 hosting は `docs/v2.3.1/` とする。
 module index は module comment、全 export の数学的 signature、最初の段落から得る一行 summary、完全な item への link を示す。item page は完全な signature/statement、HTML comment 全文、数学的な正式 requires/ensures、parameter/returns table、Used by、See also、artifact range に基づく source 行 link を含む。必須内容を架空の式、引用、label、source location で置換しない。
 
@@ -17,7 +22,7 @@ Q2 は出力前に予約 `index.html`、`search.json`、`assets/` を含む全�
 Q3 の採用済み href interface は割当 path から相対 href を作り、各 path 成分で ASCII 英数字と `-._~` 以外の UTF-8 byte を percent 符号化し、完全な論理 fragment も同様に符号化する。区切りだけを `/` として残す。DOM id は厳密な FQN を属性 escape して保持し、正規化や notation slug を使わない。採用済み Doc9 は version-bound な仕様配置を要求する。残る Q3 source-routing 候補には artifact range に束縛された packaged source text/map と明示設定の source 配置/行規約が必要で、local 絶対 path、推測行、consumer による source fetch は使わない。source 欠落は unavailable と示して既存方針で warn し、厳密な source-view routing は Q3 の採用前提として残す。
 Q4 は対象に別々に付いた block を source 順に見て、認識済み tag 段落を除く最初の通常 CommonMark 段落を summary とする。text/code は可視 text、link label/image alternative はその text、math は渡された不変 payload、soft/hard break は space、raw HTML token は literal spelling とし、ASCII whitespace を一 space に畳み端を除く。Unicode 正規化や切詰めはしない。利用可能 comment に対象段落がなければ `""`、既知の comment 不在は `null`。producer metadata unavailable はどちらでもない。承認済み Doc8 Q18 の conversion/map failure は代わりに当該 raw block を warning 付きで保持し、既定 build を継続する。劣化時の一行 summary/search 表現は Q4/MT の共同採用 gate として残し、最初の段落を捏造しない。item page は未知・不正・重複 tag を含む全 comment と全 tag occurrence を source 順に保持し、table と See also は view として置換・重複除去に使わない。正式 contract と説明 tag は区別する。
 Q5 は inline tag を含む raw CommonMark HTML を可視の escape text とし、解析構造として残して黙って除去・実行しない。source/summary/code/LaTeX text は出力 context ごとに escape し、Mizar highlighting は字句情報だけを使う。通常 URL は意味 lookup にせず URL 参照のままとする。出力候補は scheme を ASCII 大小文字非依存で確認し、相対・fragment・`http`・`https`・`mailto` を許す。他の scheme や control で偽装されたものは可視の unlinked text とし、presentation warning を提案する。生成中に remote image/asset を fetch しない。image destination も同じ gate を使う。この出力方針は承認済み Markdown 認識や MT failure 分類を変更しない。
-Q6 は分類済み opaque math occurrence と解決済み symbol 入力を将来の math owner に渡す。安全な DOM transport、厳密な KaTeX release/options/macros/fonts、math error markup、数式番号/参照、browser 再現性は Doc11 Q1–Q12 に依存する未解決の共同事項である。Doc11 の fallback や annotation 代入候補を選ばない。静的 asset は最終的に local、immutable、version-bound とする必要があり、本提案は runtime CDN、可変 asset download、数式間 state を許可しない。
+Q6 の opaque math transport/runtime は上記の限定採用に従う。symbolic 入力、数式番号/参照は未解決の共同依存であり、annotation 代入は選択しない。asset は local/immutable/version-bound とし、runtime CDN、可変 download、数式間 state を許可しない。
 
 ## 候補の検索と補助 index
 Q7 は UTF-8 JSON とし、top-level key 順を `format_version`（候補整数 `1`）、`package_version`（保存文字列）、`items`（配列）と提案する。各 item の key 順は `identity`、`fqn`、`kind`、`summary`、`signature`、`href`。`identity` は `[package_id, package_version, lock_identity, module_path, edition, origin_id, publication_hash]` の tuple で、所有者の canonical string を使い、null は lock identity 不在だけ、module_path は順序付き string 成分配列とする。厳密な所有者 encoding、kind spelling、format compatibility は採用前に列挙する必要がある。検索 wire format の提案であって Artifact/DocIndex schema 割当ではない。
@@ -32,7 +37,7 @@ Q8 は必須の producer 提供 page/search projection 欠落時、当該 packag
 Q12 は Documentation diagnostic を既存 stage/file/range 順と完全 target/publication、安定 occurrence の tie-breaker に従わせ、利用可能な mapped segment と生成 file 参照を保持する候補で、offset を捏造しない。厳密な render descriptor、location、overlap/failure precedence、profile 動作は diagnostic owner の定義/採用が必要。code は予約せず、W0400–W0404 は attachment 専用のまま。profile が失敗させられるのは documentation quality だけで、proof validity/extraction acceptance ではない。staging/atomic replacement と write-failure cleanup は Doc23 が所有し、reader に部分 page/index を見せない。本提案は公開実装や新しい transaction scope を許可しない。
 
 ## 未選択の所有者 Q-decision
-上記の Q3 href interface ①以外はすべて未選択。上記状態が歴史的な候補表記に優先し、Q3 source routing は未選択のまま。選択肢の組合せ変更には整合的提案の改訂が必要で、どちらも spec24 を緩和せず採用済み Doc8/Doc9 判断を再決定しない。
+上記の限定 opaque Q6/Q11 transport と Q3 href interface ①以外は未選択。上記状態が歴史的な候補表記に優先し、Q3 source routing は未選択のまま。選択肢の組合せ変更には整合的提案の改訂が必要で、どちらも spec24 を緩和せず採用済み Doc8/Doc9 判断を再決定しない。
 
 | 質問 / 対象 gate | ①（Q3 href interface のみ採用済み、他は未選択） | 未選択② |
 |---|---|---|

@@ -1,6 +1,15 @@
 # Doc11 Math Model 定義提案
 Canonical language: English; [英語正本](../en/math.md)。
-状態: 非規範的提案。以下の Doc11 固有 Q1–Q12 はすべて UNSELECTED（未選択）であり、どちらの案も実装・規範的採用を許可しない。承認済み [Doc4 decisions](./doc_build.md#owner-q-decisions)、未選択の [Doc8 Q9–Q18](./commonmark.md#未選択の所有者-q-decisions)、[Doc9 Q1–Q10](./links.md#未選択の所有者-q-決定) とは別の識別子であり、いずれも変更しない。
+状態: 非規範的提案。以下の Doc11 固有 Q1–Q12 は上記 Q6/Q7/Q12 の限定採用を除き UNSELECTED（未選択）であり、どちらの案も実装・規範的採用を許可しない。承認済み [Doc4 decisions](./doc_build.md#owner-q-decisions)、未選択の [Doc8 Q9–Q18](./commonmark.md#未選択の所有者-q-decisions)、[Doc9 Q1–Q10](./links.md#未選択の所有者-q-決定) とは別の識別子であり、いずれも変更しない。
+
+上記の未選択表記や以下の候補表記に対し、この限定採用状態を優先する。
+
+## 採用済み opaque client runtime
+Doc8 の実 inline/display occurrence に限り Doc11 Q6/Q7/Q12 の opaque-client 部分を採用する。[英語の所有定義](../en/math.md#adopted-opaque-client-runtime)が正本であり、symbolic formula、annotation、番号/参照、共有 build diagnostic は未選択のままとする。payload/provenance は [transport](./render.md#adopted-opaque-math-transport) で保存し、build 時 TeX 検証は行わない。
+上流 npm `katex@0.19.0` の同一配布から JS/CSS/参照全 font と MIT license を改変せず同梱する。manifest に上流 archive と各 asset の SHA-256 を記録し、設定/client も同じ集合に束縛する。欠落・改変・release 混在・設定不一致は実行前に拒否し、local subtree 以外を取得しない。
+固定設定は output `htmlAndMathml`、throwOnError true、trust false、strict ignore、maxExpand 1000、maxSize 10、globalGroup/leqno/fleqn/colorIsTextColor false、minRuleThickness 0、errorColor #cc0000。displayMode は Doc8 分類を使い、各呼出しに独立した空 macro 辞書と detached node を与える。UTF-8 payload 上限 65536 bytes は client でのみ適用し、超過は安全な fallback とする。
+各 occurrence を独立に処理し、失敗時は textContent に元 payload と可視の Mathematics unavailable status を残す。JS 不在時も pending literal が読める。隣の処理を継続し、build diagnostic は追加しない。
+同じ入力の fragment/asset bytes と terminal state/MathML を含む serialized DOM を、Linux x86_64、headless Chrome 151.0.7922.75、en-US、UTC、固定 asset/設定、font ready 後で比較する。pixel 等価や他 browser はこの主張に含めない。
 
 ## Authority And Fixed Boundary
 spec [21.3](../../../spec/ja/21.source_code_annotation_and_atp.md#213-latex-式の注釈)、[24.3](../../../spec/ja/24.documentation_generation.md#243-数式のレンダリング)、[24.4](../../../spec/ja/24.documentation_generation.md#244-html出力) が注釈優先・既定変換・番号・client-side KaTeX を定める。architecture13 [Step3](../../architecture/en/13.documentation_and_extraction.md#step-3-resolve-links-and-render-math)、[決定性](../../architecture/en/13.documentation_and_extraction.md#outputs-are-deterministic)、internal05 [artifact inputs](../../internal/en/05.documentation_extraction.md#artifact-inputs) が consumer の所有境界を定める。この定義は限定承認済み [Doc4 inputs](./doc_build.md#index-inputs-and-later-completion) に依存し、Doc8 parsing/採用には依存しない。
@@ -11,19 +20,19 @@ generator は build 中に LaTeX 構文を検証しない。不正 LaTeX は変�
 ## Candidate Inputs And Formula Strategy
 以下は owner review 用の Q1–Q12 の組合せ案①のみを記述する。Doc4 は完全な package/version/lock/module/edition identity、選択 publication hash、exports/origins、存在する保存 projection を保持する。reader の integrity/schema/binding refusal は維持する。raw signature・source range・proof evidence は構造化された描画可能な式、完全な annotation metadata、resolved symbol occurrence を保証しない。
 案①は symbol annotation・parameter/binder identity・resolved occurrence・signature/statement/形式契約の構造について、Artifact owner が定義する publication-bound presentation projection を要求する。既知の注釈不在と metadata 不明を区別し、dependency を含む参照 symbol を定義元 publication に結ぶ。missing・incomplete・available-empty・conflicting record は別状態に保つ。source 再解析・signature parsing・名前による overload 解決・架空の empty projection は許さない。artifact field/schema や producer 実装は提案せず、別途承認が必要である。
-parser-neutral comment handoff は raw LaTeX payload、inline/display 分類、source 順 occurrence identity、完全な attached-target provenance、mapped source segment を保つ。payload は認識済み delimiter token を除き、内部の綴り・空白・改行を保持し、ここでは TeX trim・entity decode・macro 展開をしない。raw/interpreted text を含む将来 parser の payload 取得方法は Doc8 の未選択契約に残す。認識済み empty payload は occurrence 不在と区別し、追加の Doc11 build-time 構文警告を出す根拠にしない。
+parser-neutral comment handoff は raw LaTeX payload、inline/display 分類、source 順 occurrence identity、完全な attached-target provenance、mapped source segment を保つ。payload は認識済み delimiter token を除き、内部の綴り・空白・改行を保持し、ここでは TeX trim・entity decode・macro 展開をしない。採用済み Doc8 の順序付き raw interior segment を用い、CommonMark interpreted text は payload にしない。認識済み empty payload は occurrence 不在と区別し、追加の Doc11 build-time 構文警告を出す根拠にしない。
 案①は保存 annotation を対応 resolved occurrence の opaque TeX fragment として挿入し、文字を変数 placeholder として走査せず、内部 symbol 名を再帰展開しない。これは literal insertion の具体的代替案であり、採用済み引数置換ではない。Factorial の `n!` と Gcd の `\gcd(a,b)` に対する実引数名変更・nested call・binder capture は Q2 の未解決事項である。spec の定理例は満たせなければならず、literal insertion が意図した利用を満たせないなら、template 構文を捏造したり例を変更したりせず owner 明確化を待つ。
 完全な unannotated 構造では、案①は producer の順序付き expression/binder child を走査し、spec24.3 の表どおりに算術・除算・冪・剰余・比較・所属・包含・全称/存在量化を適用する。TeX brace で operand grouping を保持し、必要箇所の数学的括弧で tree grouping を保つ。operand 順と binder identity を保持し、代数的簡約・変数名変更・論理正規化はしない。unannotated leaf の symbol 名は verbatim 等幅で表示し、TeX escape は可視の綴りの保存だけに使う。正確な grouping・identifier encoding は Q3/Q4 に残し、新しい演算子変換を暗黙採用しない。
 表外構造・未対応 projection variant・dependency notation 不明は readiness gap であり、架空の式や数学的誤りの証拠ではない。案①は存在する authoritative display text を escaped plain text として保ち、数式 rendering 不可を示し、presentation diagnostic を提案する。text もなければ statement を捏造せず不明を示す。明示的 empty annotation は empty payload として渡し、symbol 名へ黙って置換しない。incomplete annotation metadata は既知の注釈不在にしない。劣化方針と publication scope は Q5 が gate する。
 
 ## Candidate KaTeX And Numbering Handoff
 generator repertoire 案は表の TeX construct、grouping、括弧、名前・参照を保持する monospace/text escape に限る。著者の annotation/comment payload は制限しない文字列として渡し、実際の対応 command と未対応/不正 command の挙動は選択 KaTeX runtime が担い、第二の generator TeX parser は置かない。build-time KaTeX 実行・TeX compile・構文事前検証・command 拒否・修復を導入しない。
-案①は単一の immutable KaTeX release と対応 JS/CSS/font、明示的 option/macro manifest、asset digest を同梱する。Q6 は正確な release・repertoire・option value・resource limit・provenance の提案を採用前に要求し、ここでは pin/install しない。案①は trusted HTML/URL command と式間可変 macro state を無効化し、各 occurrence を隔離し、client rendering failure 時に元 payload を保持する escaped visible error marker を要求する。正確な KaTeX option・安全な DOM transport・fallback markup は Q6/Q7 の math/render owner 共同 gate であり、実装済み security や LaTeX 入力文法の縮小を意味しない。
+opaque client 実行は上記採用済み runtime に従う。残る generated formula/numbering 入力には独立の判断が必要である。
 案①は各 theorem-statement display occurrence に、同じ式の重複も含む page-local な安定 source/structure ordinal を付け、inline は counter を消費しない。comment display と非 theorem display は、この案では自動番号なしの display に保つ。chapter/section は page/publication に結び付く owner 指定 allocation から取得し、FQN 分解や例の定数から推測しない。allocation 不在は番号捏造ではなく numbering readiness を止める。Q8/Q9 に scope/allocation の代替案を残し、必須 theorem 番号と形式を保つ。
 案①は将来 parser の明示的 math-reference 分類からだけ番号参照を認識し、TeX substring を走査しない。publication-bound number-to-display registry から番号 target を得て、重複番号・missing target は first-match link にせず未解決に保つ。Q10 が分類・曖昧/劣化方針・参照 namespace を gate し、認識は Doc8、page/anchor allocation・href encoding は emission 前に Doc9/Doc13–15 が定義する。Doc9 page/anchor のどの案も採用しない。
 
 ## Unselected Owner Q-Decisions
-各行は UNSELECTED（未選択）であり、該当 Doc11/12 または後続 rendering を gate する。採用前に整合的な組合せと残る正確な定義が必要である。解決が言語仕様意図を変える場合は停止して明示的な仕様権限を求め、以下の案はその変更を許可しない。
+上記 Q6/Q7/Q12 の opaque-client 部分を除き、各行は UNSELECTED（未選択）であり、該当 Doc11/12 または後続 rendering を gate する。採用前に整合的な組合せと残る正確な定義が必要である。解決が言語仕様意図を変える場合は停止して明示的な仕様権限を求め、以下の案はその変更を許可しない。
 
 | Question / affected gate | Unselected ① | Unselected ② |
 |---|---|---|
@@ -43,4 +52,4 @@ generator repertoire 案は表の TeX construct、grouping、括弧、名前・�
 ## Determinism And Adoption
 案①は Doc4 full-identity/module/FQN 順と semantic child/source 順を別々に保つ。同じ bound input、lock/toolchain/schema context、option、engine asset、allocation registry なら worker/enumeration 順に依存せず math payload・番号・generated byte が一致し、重複も別の安定 occurrence として保持する。clock・network lookup・random id・ambient macro state は出力を供給しない。render-time failure は build diagnostic ではなく、asset/configuration 不在は deployment/readiness failure であって invalid-LaTeX 指摘ではない。
 presentation draft は既存 stage/file/range diagnostic 順に stable publication/target/occurrence tie と保持 mapped segment を使う。map 不在は利用可能な authoritative provenance を使い、架空の連続 span を作らない。internal05 [diagnostic owner](../../internal/en/05.documentation_extraction.md#diagnostics) が実装前に意味・位置・順・profile 挙動を定義し、W0400–W0404 は attachment warning に保つ。明示的 documentation profile だけが documentation warning を昇格でき、phase0–15 検証・proof status・extraction acceptance は変えない。
-Doc11 は提案に保つ。Doc12 には整合的 owner 採用、承認済み complete input producer、正確な formula/annotation・KaTeX 定義、番号/参照 interface、shared diagnostic が必要であり、独立の Doc8 依存も保つ。code・schema・diagnostic 割当て・規範的採用・Doc8/Doc9 決定・coverage/owner credit・Doc4/5/crate 全体の完了は主張しない。
+上記 opaque-client runtime 以外の Doc11 は提案に保つ。Doc12 には整合的 owner 採用、承認済み complete input producer、正確な formula/annotation・KaTeX 定義、番号/参照 interface、shared diagnostic が必要であり、独立の Doc8 依存も保つ。symbolic-math code・schema・diagnostic 割当て・整合的採用・Doc8/Doc9 決定・coverage/owner credit・Doc4/5/crate 全体の完了は主張しない。

@@ -1,6 +1,6 @@
 # Doc13 Render 前提条件の補完提案
 正規言語: 英語。[英語正本](../en/render_prerequisites.md)。
-状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate 引渡しを除き非規範的である。schema 登録や renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
+状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate 引渡しと限定 G4 opaque client を除き非規範的である。schema 登録や page renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
 
 ## 採用済み G1 identity binding
 Artifact の `project_frontend_identity` は元 source に束縛された不変の identity product を捕捉し、Driver は `PublishedSourceMetadata::identity()` に保持する。source/snapshot lineage は Driver が所有する。producer は native `src/<components>.miz` の成分を Session の既存 module identifier 検証規則と厳密な canonical module identity に照合する。FQN や任意の artifact 文字列から成分を作らない。非 ASCII native identifier を含む不正・非 lossless path は拒否する。
@@ -17,6 +17,9 @@ caller は生成 version root に束縛された完全な補助 page/section nam
 `authenticate_doc_sources` は選択した current plan と明示的な有限 publication inventory を再検証し、Artifact が検証した元 projection を保持する。source binding は完全 module identity、publication hash、厳密な packaged relative source path と補足的な Session `hash_text(original)` を使う。正規化 source hash だけでは元 byte 座標を識別できない。legacy/null projection は unavailable のままとし、矛盾する publication/path/source/frame や map binding は拒否する。
 不変 handoff は同じ projection に対して Q3→loaded→original と元 citation lexical→loaded→original の順序付き segment を合成する。map 交差処理は Session が所有し、Doc は consumer の境界と UTF-8 境界を検証する。独立に map できた segment は部分 coverage でも保持し、container、削除 comment、map 欠落の隙間を橋渡ししない。coverage は complete/incomplete/unavailable を区別する。Artifact occurrence span は loaded AST frame を保持し、`citation_ranges` は記述された lexical endpoint を復元して合成し、`lexical_ranges` は明示的な lexical segment を受け取る。citation ordinal、反復/自己 occurrence、endpoint/examination coverage は変更しない。
 採用対象は限定的な G3 coordinate 前提条件だけである。reference 遭遇順/classification は Doc8/9、source-view/行 routing は Q3、劣化 summary は Q4/MT に残し、採用済み block-local recovery を保持する。Doc13 全体の整合採用、rendering、後続 gate は別途必要である。
+
+## Adopted G4 Opaque Client Prerequisite
+Doc11 Q6/Q7/Q12 と Doc13 Q6/Q11 の opaque 部分だけを [math runtime](./math.md) と [render transport](./render.md#adopted-opaque-math-transport) として採用する。実 Doc8 payload/順序/provenance、独立した accessible client failure、固定 local asset/設定に限定する。共有 build diagnostic の割当/発行は diagnostics が保持する。Q12 descriptor/location/precedence/profile、完全 template、残る math 依存、G5、整合 Doc13、schema/publication、Doc23/24、全 credit は未解決のままとする。
 
 ## Identity と allocation の引渡し
 [Doc4](./doc_build.md#index-inputs-and-later-completion) の認証済み publication と完全 export inventory を、[Doc10 前提条件](./link_prerequisites.md) の producer/validation 義務に従って消費する。export visibility は Public と Reexported を含み、完全 identity ごとに一件を保持して、異なる identity の重複 FQN を統合しない。各 projection は検証済みの元 module/export と publication への束縛を保持しなければならない。
