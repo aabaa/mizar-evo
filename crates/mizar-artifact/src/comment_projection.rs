@@ -17,8 +17,22 @@ use crate::{
     },
 };
 
-const FAMILY: &str = "mizar-artifact/commented-verified-artifact";
-const VERSION: SchemaVersion = SchemaVersion::new(1, 0);
+/// Schema family selected by commented-envelope store and manifest references.
+pub const COMMENTED_ARTIFACT_SCHEMA_FAMILY: &str = "mizar-artifact/commented-verified-artifact";
+/// Exact supported commented-envelope version.
+pub const COMMENTED_ARTIFACT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::new(1, 0);
+
+/// Returns store-level exclusions for local metadata inside the envelope.
+pub fn artifact_hash_excluded_paths() -> Vec<FieldPath> {
+    [
+        &["artifact", "verified_at"][..],
+        &["artifact", "provenance", "cache_key"][..],
+        &["artifact", "provenance", "captured_source", "source_id"][..],
+    ]
+    .into_iter()
+    .map(|path| FieldPath::new(path.iter().copied()).expect("nonempty artifact path"))
+    .collect()
+}
 
 /// An artifact and optional comment projection, validated at the codec boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -70,7 +84,12 @@ pub fn read_commented_artifact(
 ) -> Result<CommentedArtifact, VerifiedArtifactError> {
     let fields = object(value, "$")?;
     let version = string(field(fields, "schema_version", "$")?, "$.schema_version")?;
-    let support = SchemaVersionSupport::new(FAMILY, 1, 0, MinorVersionPolicy::UpToSupported);
+    let support = SchemaVersionSupport::new(
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+        1,
+        0,
+        MinorVersionPolicy::UpToSupported,
+    );
     match options.artifact_path {
         Some(path) => support.check_at_path(Some(version), path),
         None => support.check(Some(version)),
@@ -148,7 +167,12 @@ impl CommentedArtifact {
         if let CanonicalJson::Object(fields) = &mut projection {
             fields.insert("schema_version".to_owned(), CanonicalJson::string("1.0"));
         }
-        Ok(CanonicalHashDomain::new(HashClass::Interface, FAMILY, VERSION).hash(&projection, &[]))
+        Ok(CanonicalHashDomain::new(
+            HashClass::Interface,
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        )
+        .hash(&projection, &[]))
     }
 
     /// Computes the stable artifact projection together with all comment metadata.
@@ -160,24 +184,24 @@ impl CommentedArtifact {
             ("comments", self.comments.clone()),
         ])
         .map_err(VerifiedArtifactError::CanonicalJson)?;
-        Ok(
-            CanonicalHashDomain::new(HashClass::Implementation, FAMILY, VERSION)
-                .hash(&projection, &[]),
+        Ok(CanonicalHashDomain::new(
+            HashClass::Implementation,
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
         )
+        .hash(&projection, &[]))
     }
 
     /// Computes the canonical envelope hash with the inherited local exclusions.
     pub fn compute_artifact_hash(&self) -> Result<Hash, VerifiedArtifactError> {
         let json = commented_artifact_json(self)?;
-        let excluded = [
-            &["artifact", "verified_at"][..],
-            &["artifact", "provenance", "cache_key"][..],
-            &["artifact", "provenance", "captured_source", "source_id"][..],
-        ]
-        .into_iter()
-        .map(|path| FieldPath::new(path.iter().copied()).expect("nonempty artifact path"))
-        .collect::<Vec<_>>();
-        Ok(CanonicalHashDomain::new(HashClass::Artifact, FAMILY, VERSION).hash(&json, &excluded))
+        let excluded = artifact_hash_excluded_paths();
+        Ok(CanonicalHashDomain::new(
+            HashClass::Artifact,
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        )
+        .hash(&json, &excluded))
     }
 
     fn validate(&self) -> Result<CanonicalJson, VerifiedArtifactError> {
@@ -515,7 +539,13 @@ impl CommentedArtifact {
 }
 
 fn hash_string(class: ArtifactHashClass, digest: Hash) -> String {
-    ArtifactHashRef::new(class, FAMILY, VERSION, digest).to_artifact_hash_string()
+    ArtifactHashRef::new(
+        class,
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+        COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        digest,
+    )
+    .to_artifact_hash_string()
 }
 
 fn invalid(path: &str, reason: &str) -> VerifiedArtifactError {

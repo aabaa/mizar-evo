@@ -1495,3 +1495,570 @@ fn commit_result_retains_actual_transaction_values() {
     assert_eq!(commit.write(), &expected_write);
     assert_eq!(commit.into_manifest(), seed);
 }
+
+fn q1_manifest_fixture(
+    text: &str,
+    available: bool,
+    with_witness: bool,
+) -> crate::comment_projection::CommentedArtifact {
+    let source_hash = mizar_session::hash_text(text);
+    let mut artifact = sample_verified_artifact(
+        identity("pkg", "articles/a", "2026"),
+        "articles/a.miz",
+        source_hash,
+        with_witness,
+    );
+    artifact.schema_version = SchemaVersion::new(1, 2);
+    artifact.exports[0].source_range = range(0, 0);
+    artifact.expressions[0].source_range = range(0, 0);
+    artifact.diagnostics[0].related[0].source_range = range(0, 0);
+    for obligation in &mut artifact.obligations {
+        obligation.source_range = range(0, 0);
+    }
+    artifact.provenance.captured_source = Some((
+        mizar_session::SourceId::from_nonportable_provenance_str(
+            "mizar-session-source-nonportable-v1:0000000000000001",
+        )
+        .unwrap(),
+        mizar_session::SourceOrigin::Disk,
+        source_hash,
+    ));
+    artifact.refresh_hashes().unwrap();
+    let whole = CanonicalJson::array([
+        CanonicalJson::integer(0),
+        CanonicalJson::integer(text.len() as i64),
+    ]);
+    let comments = if available {
+        CanonicalJson::object([
+            ("original", CanonicalJson::string(text)),
+            ("loaded", CanonicalJson::string(text)),
+            ("lexical", CanonicalJson::string("")),
+            (
+                "loading",
+                CanonicalJson::array([CanonicalJson::array([
+                    CanonicalJson::string("original"),
+                    whole.clone(),
+                    whole.clone(),
+                ])]),
+            ),
+            (
+                "preprocess",
+                CanonicalJson::array(if text.is_empty() {
+                    vec![]
+                } else {
+                    vec![CanonicalJson::array([
+                        CanonicalJson::string("removed"),
+                        CanonicalJson::Null,
+                        whole.clone(),
+                        CanonicalJson::string("documentation"),
+                    ])]
+                }),
+            ),
+            (
+                "comments",
+                CanonicalJson::array(if text.is_empty() {
+                    vec![]
+                } else {
+                    vec![CanonicalJson::array([
+                        CanonicalJson::string("documentation"),
+                        whole,
+                        CanonicalJson::string(text),
+                    ])]
+                }),
+            ),
+            ("whitespace", CanonicalJson::array([])),
+            ("landmarks", CanonicalJson::array([])),
+        ])
+        .unwrap()
+    } else {
+        CanonicalJson::Null
+    };
+    crate::comment_projection::CommentedArtifact { artifact, comments }
+}
+
+fn q1_manifest_publish(
+    root: &Path,
+    path: &str,
+    value: &crate::comment_projection::CommentedArtifact,
+) -> ModuleArtifactEntry {
+    use crate::comment_projection::{
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        artifact_hash_excluded_paths, commented_artifact_json,
+    };
+    let mut entry = publish_verified_artifact(root, path, &value.artifact);
+    let published = write_published_artifact(
+        root,
+        &PublishedArtifactPath::new(path).unwrap(),
+        &commented_artifact_json(value).unwrap(),
+        &artifact_hash_domain(
+            COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+            COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        ),
+        &artifact_hash_excluded_paths(),
+    )
+    .unwrap();
+    for (reference, digest) in [
+        (&mut entry.artifact_hash, published.artifact_hash),
+        (
+            &mut entry.interface_hash,
+            value.compute_interface_hash().unwrap(),
+        ),
+        (
+            &mut entry.implementation_hash,
+            value.compute_implementation_hash().unwrap(),
+        ),
+    ] {
+        reference.schema_family = COMMENTED_ARTIFACT_SCHEMA_FAMILY.to_owned();
+        reference.schema_version = COMMENTED_ARTIFACT_SCHEMA_VERSION;
+        reference.digest = digest;
+    }
+    entry
+}
+
+fn q1_manifest_validate(
+    root: &Path,
+    entry: ModuleArtifactEntry,
+) -> Result<PublishedManifestRead, ManifestError> {
+    let mut manifest = sample_manifest();
+    manifest.modules = vec![entry];
+    write_manifest_file(root, &manifest)?;
+    read_manifest_file(
+        root,
+        ManifestFileReadOptions {
+            validate_references: true,
+            ..ManifestFileReadOptions::default()
+        },
+    )
+}
+
+fn q1_manifest_set(value: &mut CanonicalJson, path: &[&str], replacement: CanonicalJson) {
+    let CanonicalJson::Object(fields) = value else {
+        panic!("object field")
+    };
+    if path.len() == 1 {
+        fields.insert(path[0].to_owned(), replacement);
+    } else {
+        q1_manifest_set(fields.get_mut(path[0]).unwrap(), &path[1..], replacement);
+    }
+}
+
+#[test]
+fn q1_manifest_complete_projection_round_trips_through_transaction() {
+    use crate::comment_projection::{
+        commented_artifact_json, read_commented_artifact, write_commented_artifact,
+    };
+    let root = TestArtifactRoot::new();
+    let value = q1_manifest_fixture("::: retained β", true, false);
+    let json = commented_artifact_json(&value).unwrap();
+    let decoded = read_commented_artifact(&json, VerifiedArtifactReadOptions::default()).unwrap();
+    assert_eq!(decoded, value);
+    let entry = q1_manifest_publish(root.path(), "artifacts/commented.json", &decoded);
+    assert_eq!(
+        entry.artifact_hash.digest,
+        value.compute_artifact_hash().unwrap()
+    );
+    assert_ne!(entry.interface_hash.digest, value.artifact.interface_hash);
+    assert_ne!(
+        entry.implementation_hash.digest,
+        value.artifact.implementation_hash
+    );
+    assert_eq!(
+        fs::read(root.path().join(&entry.artifact_file)).unwrap(),
+        write_commented_artifact(&value).unwrap()
+    );
+    let mut transaction = ManifestTransaction::begin(root.path(), sample_manifest(), None).unwrap();
+    transaction.stage_module(entry.clone()).unwrap();
+    transaction
+        .commit(ManifestCommitOptions::default())
+        .unwrap();
+    let read = read_manifest_file(
+        root.path(),
+        ManifestFileReadOptions {
+            validate_references: true,
+            ..ManifestFileReadOptions::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(read.manifest.schema_version, SchemaVersion::new(1, 0));
+    assert_eq!(read.manifest.modules, vec![entry]);
+    let retained = crate::store::parse_canonical_json_bytes(
+        &fs::read(root.path().join("artifacts/commented.json")).unwrap(),
+        "artifacts/commented.json",
+    )
+    .unwrap();
+    assert_eq!(
+        read_commented_artifact(&retained, VerifiedArtifactReadOptions::default())
+            .unwrap()
+            .comments,
+        value.comments
+    );
+}
+
+#[test]
+fn q1_manifest_availability_determinism_and_inherited_exclusions() {
+    use crate::comment_projection::{artifact_hash_excluded_paths, write_commented_artifact};
+    let root = TestArtifactRoot::new();
+    let unavailable = q1_manifest_fixture("", false, false);
+    let available = q1_manifest_fixture("", true, false);
+    assert_eq!(
+        unavailable.compute_interface_hash().unwrap(),
+        available.compute_interface_hash().unwrap()
+    );
+    assert_ne!(
+        unavailable.compute_implementation_hash().unwrap(),
+        available.compute_implementation_hash().unwrap()
+    );
+    assert_ne!(
+        unavailable.compute_artifact_hash().unwrap(),
+        available.compute_artifact_hash().unwrap()
+    );
+    for value in [&unavailable, &available] {
+        let first = q1_manifest_publish(root.path(), "artifacts/commented.json", value);
+        let bytes = fs::read(root.path().join(&first.artifact_file)).unwrap();
+        assert_eq!(bytes, write_commented_artifact(value).unwrap());
+        assert_eq!(
+            first,
+            q1_manifest_publish(root.path(), "artifacts/commented.json", value)
+        );
+        assert_eq!(
+            bytes,
+            fs::read(root.path().join(&first.artifact_file)).unwrap()
+        );
+        q1_manifest_validate(root.path(), first).unwrap();
+    }
+    let mut local = available.clone();
+    local.artifact.verified_at = Some("2026-11-18T00:00:00Z".to_owned());
+    local.artifact.provenance.cache_key = Some("another-local-cache".to_owned());
+    local
+        .artifact
+        .provenance
+        .captured_source
+        .as_mut()
+        .unwrap()
+        .0 = mizar_session::SourceId::from_nonportable_provenance_str(
+        "mizar-session-source-nonportable-v1:0000000000000002",
+    )
+    .unwrap();
+    assert_ne!(
+        write_commented_artifact(&local).unwrap(),
+        write_commented_artifact(&available).unwrap()
+    );
+    assert_eq!(
+        local.compute_interface_hash().unwrap(),
+        available.compute_interface_hash().unwrap()
+    );
+    assert_eq!(
+        local.compute_implementation_hash().unwrap(),
+        available.compute_implementation_hash().unwrap()
+    );
+    let original_entry = q1_manifest_publish(root.path(), "artifacts/commented.json", &available);
+    assert_eq!(
+        original_entry,
+        q1_manifest_publish(root.path(), "artifacts/commented.json", &local)
+    );
+    q1_manifest_validate(root.path(), original_entry).unwrap();
+    assert_eq!(
+        artifact_hash_excluded_paths(),
+        vec![
+            crate::store::FieldPath::new(["artifact", "verified_at"]).unwrap(),
+            crate::store::FieldPath::new(["artifact", "provenance", "cache_key"]).unwrap(),
+            crate::store::FieldPath::new([
+                "artifact",
+                "provenance",
+                "captured_source",
+                "source_id"
+            ])
+            .unwrap(),
+        ]
+    );
+    let legacy = sample_verified_artifact(
+        identity("pkg", "articles/a", "2026"),
+        "articles/a.miz",
+        hash(1),
+        false,
+    );
+    let legacy_entry = publish_verified_artifact(root.path(), "artifacts/legacy.json", &legacy);
+    q1_manifest_validate(root.path(), legacy_entry).unwrap();
+}
+
+#[test]
+fn q1_manifest_refuses_mixed_and_unknown_hash_domains() {
+    use crate::comment_projection::COMMENTED_ARTIFACT_SCHEMA_FAMILY;
+    let root = TestArtifactRoot::new();
+    let entry = q1_manifest_publish(
+        root.path(),
+        "artifacts/commented.json",
+        &q1_manifest_fixture("::: domains", true, false),
+    );
+    q1_manifest_validate(root.path(), entry.clone()).unwrap();
+    for case in 0..8 {
+        let mut bad = entry.clone();
+        match case {
+            0 => bad.interface_hash.schema_family = VERIFIED_ARTIFACT_SCHEMA_FAMILY.to_owned(),
+            1 => bad.implementation_hash.schema_family = VERIFIED_ARTIFACT_SCHEMA_FAMILY.to_owned(),
+            2 => bad.interface_hash.schema_version = SchemaVersion::new(1, 2),
+            3 => bad.implementation_hash.schema_version = SchemaVersion::new(1, 2),
+            4 => bad.artifact_hash.class = ArtifactHashClass::Implementation,
+            5 => bad.interface_hash.class = ArtifactHashClass::Artifact,
+            6 => bad.implementation_hash.class = ArtifactHashClass::Interface,
+            _ => bad.artifact_hash.schema_family = "unknown/artifact".to_owned(),
+        }
+        let json = manifest_json_with_modules(&sample_manifest(), [&bad]);
+        assert!(
+            read_artifact_manifest(&json, ArtifactManifestReadOptions::default()).is_err(),
+            "domain case {case}"
+        );
+    }
+    for version in [SchemaVersion::new(1, 1), SchemaVersion::new(2, 0)] {
+        let mut bad = entry.clone();
+        for reference in [
+            &mut bad.artifact_hash,
+            &mut bad.interface_hash,
+            &mut bad.implementation_hash,
+        ] {
+            assert_eq!(reference.schema_family, COMMENTED_ARTIFACT_SCHEMA_FAMILY);
+            reference.schema_version = version;
+        }
+        let json = manifest_json_with_modules(&sample_manifest(), [&bad]);
+        assert!(read_artifact_manifest(&json, ArtifactManifestReadOptions::default()).is_err());
+    }
+    q1_manifest_validate(root.path(), entry).unwrap();
+}
+
+#[test]
+fn q1_manifest_rehashed_malformed_payloads_never_fall_back() {
+    use crate::comment_projection::{
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        artifact_hash_excluded_paths, commented_artifact_json,
+    };
+    let root = TestArtifactRoot::new();
+    let value = q1_manifest_fixture("::: malformed", true, false);
+    let entry = q1_manifest_publish(root.path(), "artifacts/commented.json", &value);
+    for case in 0..6 {
+        let mut json = commented_artifact_json(&value).unwrap();
+        match case {
+            0 => q1_manifest_set(
+                &mut json,
+                &["comments", "loading"],
+                CanonicalJson::array([]),
+            ),
+            1 => q1_manifest_set(
+                &mut json,
+                &["artifact", "schema_version"],
+                CanonicalJson::string("1.1"),
+            ),
+            2 => q1_manifest_set(
+                &mut json,
+                &["artifact", "interface_hash"],
+                CanonicalJson::string("invalid"),
+            ),
+            3 => q1_manifest_set(&mut json, &["schema_version"], CanonicalJson::string("1.1")),
+            4 => q1_manifest_set(
+                &mut json,
+                &["comments"],
+                CanonicalJson::object([] as [(&str, CanonicalJson); 0]).unwrap(),
+            ),
+            _ => q1_manifest_set(
+                &mut json,
+                &["artifact", "provenance", "captured_source", "source_hash"],
+                CanonicalJson::string("invalid"),
+            ),
+        }
+        let write = write_published_artifact(
+            root.path(),
+            &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+            &json,
+            &artifact_hash_domain(
+                COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+                COMMENTED_ARTIFACT_SCHEMA_VERSION,
+            ),
+            &artifact_hash_excluded_paths(),
+        )
+        .unwrap();
+        let mut bad = entry.clone();
+        bad.artifact_hash.digest = write.artifact_hash;
+        assert!(
+            matches!(
+                q1_manifest_validate(root.path(), bad),
+                Err(ManifestError::VerifiedArtifact { .. })
+            ),
+            "payload case {case}"
+        );
+    }
+    let entry = q1_manifest_publish(root.path(), "artifacts/commented.json", &value);
+    for interface in [true, false] {
+        let mut bad = entry.clone();
+        if interface {
+            bad.interface_hash.digest = hash(88);
+        } else {
+            bad.implementation_hash.digest = hash(89);
+        }
+        let error = q1_manifest_validate(root.path(), bad).unwrap_err();
+        assert!(
+            matches!(error, ManifestError::VerifiedArtifact { error, .. }
+            if matches!(*error, crate::verified_artifact::VerifiedArtifactError::ExpectedInterfaceHashMismatch { .. }
+                | crate::verified_artifact::VerifiedArtifactError::ExpectedImplementationHashMismatch { .. }))
+        );
+    }
+    q1_manifest_validate(root.path(), entry).unwrap();
+}
+
+#[test]
+fn q1_manifest_inner_identity_witnesses_and_sidecars_are_validated() {
+    let root = TestArtifactRoot::new();
+    let value = q1_manifest_fixture("::: witnesses and summaries", true, true);
+    let mut entry = q1_manifest_publish(root.path(), "artifacts/commented.json", &value);
+    let module_summary = sample_module_summary(entry.module.clone(), entry.source_hash);
+    let registration_summary = sample_registration_summary(entry.module.clone(), entry.source_hash);
+    attach_module_summary(
+        &mut entry,
+        "summaries/module.json",
+        publish_module_summary(root.path(), "summaries/module.json", &module_summary),
+    );
+    attach_registration_summary(
+        &mut entry,
+        "summaries/registration.json",
+        publish_registration_summary(
+            root.path(),
+            "summaries/registration.json",
+            &registration_summary,
+        ),
+    );
+    q1_manifest_validate(root.path(), entry.clone()).unwrap();
+    for case in 0..8 {
+        let mut bad = entry.clone();
+        match case {
+            0 => bad.module.package_id = "another-package".to_owned(),
+            1 => bad.module.package_version = Some("2.0.0".to_owned()),
+            2 => bad.module.lockfile_identity = Some("another-lock".to_owned()),
+            3 => bad.module.module_path = "articles/other".to_owned(),
+            4 => bad.module.language_edition = "2027".to_owned(),
+            5 => bad.source_file = "different/a.miz".to_owned(),
+            6 => bad.source_hash = hash(87),
+            _ => bad.proof_witnesses.clear(),
+        }
+        let error = q1_manifest_validate(root.path(), bad).unwrap_err();
+        assert!(
+            match case {
+                0..=4 => matches!(error, ManifestError::VerifiedArtifact { error, .. }
+                    if matches!(*error, VerifiedArtifactError::ModuleIdentityMismatch { .. })),
+                5..=6 =>
+                    matches!(error, ManifestError::ReferencedArtifactMismatch { path, field, .. }
+                    if path == entry.artifact_file
+                        && field == if case == 5 { "source_file" } else { "source_hash" }),
+                _ => matches!(error, ManifestError::WitnessCoverageMismatch { .. }),
+            },
+            "binding case {case}"
+        );
+    }
+    for case in 0..4 {
+        let mut bad = entry.clone();
+        match case {
+            0 => bad.proof_witnesses[0].obligation_fingerprint.digest = hash(77),
+            1 => bad.proof_witnesses[0].witness_path = "proof-witnesses/wrong.json".to_owned(),
+            2 => bad.proof_witnesses[0].witness_artifact_hash.digest = hash(78),
+            _ => bad.proof_witnesses[0].obligation_id = "other-obligation".to_owned(),
+        }
+        assert!(matches!(
+            q1_manifest_validate(root.path(), bad),
+            Err(ManifestError::WitnessCoverageMismatch { .. })
+        ));
+    }
+    q1_manifest_validate(root.path(), entry.clone()).unwrap();
+    let options = ManifestFileReadOptions {
+        validate_references: true,
+        validate_witness_files: true,
+        ..ManifestFileReadOptions::default()
+    };
+    assert!(read_manifest_file(root.path(), options).is_err());
+    write_plain_file(
+        root.path(),
+        &entry.proof_witnesses[0].witness_path,
+        b"producer-owned witness",
+    );
+    read_manifest_file(root.path(), options).unwrap();
+    for registration in [false, true] {
+        let mut bad = entry.clone();
+        if registration {
+            bad.registration_interface_hash.as_mut().unwrap().digest = hash(79);
+        } else {
+            bad.module_summary_interface_hash.as_mut().unwrap().digest = hash(80);
+        }
+        assert!(q1_manifest_validate(root.path(), bad).is_err());
+    }
+    q1_manifest_validate(root.path(), entry).unwrap();
+}
+
+#[test]
+fn q1_manifest_comment_changes_and_failed_transactions_preserve_publication() {
+    let root = TestArtifactRoot::new();
+    let original = q1_manifest_fixture("::: before", true, false);
+    let changed = q1_manifest_fixture("::: after β", true, false);
+    let entry = q1_manifest_publish(root.path(), "artifacts/published.json", &original);
+    let replacement = q1_manifest_publish(root.path(), "artifacts/orphan.json", &changed);
+    assert_eq!(entry.interface_hash, replacement.interface_hash);
+    assert_ne!(entry.implementation_hash, replacement.implementation_hash);
+    assert_ne!(entry.artifact_hash, replacement.artifact_hash);
+    q1_manifest_validate(root.path(), entry.clone()).unwrap();
+    let before = fs::read(root.path().join(ARTIFACT_MANIFEST_PATH)).unwrap();
+    let mut stale = entry.clone();
+    stale.artifact_file = replacement.artifact_file.clone();
+    assert!(q1_manifest_validate(root.path(), stale).is_err());
+    q1_manifest_validate(root.path(), entry.clone()).unwrap();
+    let mut bad = replacement.clone();
+    bad.artifact_hash.digest = hash(81);
+    let mut transaction = ManifestTransaction::begin(root.path(), sample_manifest(), None).unwrap();
+    transaction.stage_module(bad).unwrap();
+    assert!(
+        transaction
+            .commit(ManifestCommitOptions::default())
+            .is_err()
+    );
+    assert_eq!(
+        fs::read(root.path().join(ARTIFACT_MANIFEST_PATH)).unwrap(),
+        before
+    );
+    let mut transaction =
+        ManifestTransaction::begin(root.path(), sample_manifest(), Some("old".to_owned())).unwrap();
+    transaction.stage_module(replacement.clone()).unwrap();
+    let freshness = |guard: Option<&str>| guard == Some("current");
+    assert!(matches!(
+        transaction.commit(ManifestCommitOptions {
+            freshness_check: Some(&freshness)
+        }),
+        Err(ManifestError::ObsoleteSnapshot { .. })
+    ));
+    assert_eq!(
+        fs::read(root.path().join(ARTIFACT_MANIFEST_PATH)).unwrap(),
+        before
+    );
+    let mut stale_base = ManifestTransaction::begin(root.path(), sample_manifest(), None).unwrap();
+    stale_base.stage_module(replacement.clone()).unwrap();
+    let mut intervening = sample_manifest();
+    intervening.modules = vec![entry.clone()];
+    intervening.development_artifacts =
+        vec![development_entry("trace", "dev/intervening.json", None)];
+    write_plain_file(root.path(), "dev/intervening.json", b"trace");
+    write_manifest_file(root.path(), &intervening).unwrap();
+    let intervening_bytes = fs::read(root.path().join(ARTIFACT_MANIFEST_PATH)).unwrap();
+    assert!(matches!(
+        stale_base.commit(ManifestCommitOptions::default()),
+        Err(ManifestError::BaseManifestHashMismatch { .. })
+    ));
+    assert_eq!(
+        fs::read(root.path().join(ARTIFACT_MANIFEST_PATH)).unwrap(),
+        intervening_bytes
+    );
+    let read = read_manifest_file(
+        root.path(),
+        ManifestFileReadOptions {
+            validate_references: true,
+            ..ManifestFileReadOptions::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(read.manifest.modules, vec![entry]);
+    assert!(root.path().join(&replacement.artifact_file).is_file());
+    fs::write(root.path().join(&replacement.artifact_file), b"tampered").unwrap();
+    assert!(q1_manifest_validate(root.path(), replacement).is_err());
+}

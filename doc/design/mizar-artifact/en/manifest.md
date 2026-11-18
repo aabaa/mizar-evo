@@ -146,12 +146,12 @@ module_artifact_entry = {
 root-relative paths. They must remain under the artifact root after
 normalization and must not be absolute.
 
-`artifact_file` points to the canonical `VerifiedArtifact` file for the module.
+`artifact_file` points to the canonical main artifact selected by the declared enclosing profile below.
 `artifact_hash` is the referenced file's store-level artifact hash: canonical
 JSON after the referenced schema's declared hash exclusions, framed with class
 `artifact`. It is not a raw filesystem-byte hash. `interface_hash` and
 `implementation_hash` must equal the top-level hashes inside the referenced
-`VerifiedArtifact`.
+main artifact envelope.
 
 Summary file fields are optional because task staging may publish the verified
 artifact before every sidecar summary is emitted. The three `module_summary_*`
@@ -165,6 +165,8 @@ the diagnostics embedded in `VerifiedArtifact`.
 ## Declared enclosing profiles
 
 Manifest schema/current APIs remain 1.0: witness entries carry the existing id/fingerprint/path/hash tuple and no status discriminator. Referenced main artifacts select the known normal enclosing reader profile or explicit 2.0 reader profile through their declared artifact-hash schema version; unknown majors/minors remain rejected. Keep the actual store-framed hash, expected module/interface/implementation hashes, source/version checks and exact witness coverage, plus optional file reachability. Use the existing shared enclosing reader directly; do not add another transaction, token or acceptance path. Supported normal enclosing artifacts and all original manifest/transaction behavior remain intact; a structurally valid explicit reference is not source acceptance, complete Proof identity or committed Proof publication authorization.
+
+Commented references select `mizar-artifact/commented-verified-artifact` version1.0 explicitly through `artifact_hash`; the interface/implementation references must use that same family/version and their existing classes. Other unknown families and unsupported commented versions are rejected without retry. The store uses the outer profile’s domain and [codec exclusions](./comment_projection.md#structural-codec-profile); reader expected hashes bind the outer envelope. Full module/source identity, witness coverage and sidecar checks use its validated normal1.2 inner artifact. The inner version and hashes are not compared with outer values. All existing transaction guards and atomic replacement apply; validation supplies no source authenticity, runtime currentness or new publication eligibility.
 
 ## Proof Witness Entries
 
@@ -252,9 +254,9 @@ Task 14 validates at least these domains:
 | `lockfile_hash` | `artifact` | producer-owned, valid grammar | Lockfile or lock projection hash. |
 | `verifier_config_hash` | `interface` | producer-owned, valid grammar | Verifier configuration fingerprint. |
 | `module_artifact_entry.source_hash` | `mizar-session/hash-text/v1` | none | Exact source text hash. |
-| `module_artifact_entry.artifact_hash` | `artifact` | `mizar-artifact/verified-artifact`, referenced artifact schema version | Published `VerifiedArtifact` store-level artifact hash. |
-| `module_artifact_entry.interface_hash` | `interface` | `mizar-artifact/verified-artifact`, referenced artifact schema version | Must match referenced artifact. |
-| `module_artifact_entry.implementation_hash` | `implementation` | `mizar-artifact/verified-artifact`, referenced artifact schema version | Must match referenced artifact. |
+| `module_artifact_entry.artifact_hash` | `artifact` | selected main family/version above | Published main-envelope store-level artifact hash. |
+| `module_artifact_entry.interface_hash` | `interface` | selected main family/version above | Must match referenced envelope. |
+| `module_artifact_entry.implementation_hash` | `implementation` | selected main family/version above | Must match referenced envelope. |
 | `module_summary_hash` | `artifact` | `mizar-artifact/module-summary`, referenced summary schema version | Optional `ModuleSummary` store-level artifact hash. |
 | `module_summary_interface_hash` | `interface` | `mizar-artifact/module-summary`, referenced summary schema version | Optional summary interface hash. |
 | `registration_summary_hash` | `artifact` | `mizar-artifact/registration-summary`, referenced summary schema version | Optional `RegistrationSummary` store-level artifact hash. |

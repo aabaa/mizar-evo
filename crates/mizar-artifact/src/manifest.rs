@@ -15,6 +15,10 @@ use std::{
 use mizar_session::Hash;
 
 use crate::{
+    comment_projection::{
+        self, COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION,
+        read_commented_artifact,
+    },
     module_summary::{
         MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryError, ModuleSummaryIdentity,
         ModuleSummaryReadOptions, SOURCE_HASH_CONSTRUCTION, read_module_summary,
@@ -1316,27 +1320,40 @@ fn validate_module_entry_shape(
     validate_identity(&entry.module, &field_path(path, "module"))?;
     validate_published_path_string(&entry.source_file, &field_path(path, "source_file"))?;
     validate_published_path_string(&entry.artifact_file, &field_path(path, "artifact_file"))?;
+    let family = if entry.artifact_hash.schema_family == COMMENTED_ARTIFACT_SCHEMA_FAMILY {
+        COMMENTED_ARTIFACT_SCHEMA_FAMILY
+    } else {
+        VERIFIED_ARTIFACT_SCHEMA_FAMILY
+    };
     validate_artifact_hash_ref(
         &entry.artifact_hash,
         &field_path(path, "artifact_hash"),
         ArtifactHashClass::Artifact,
-        Some(VERIFIED_ARTIFACT_SCHEMA_FAMILY),
+        Some(family),
         Some(entry.artifact_hash.schema_version),
     )?;
     validate_artifact_hash_ref(
         &entry.interface_hash,
         &field_path(path, "interface_hash"),
         ArtifactHashClass::Interface,
-        Some(VERIFIED_ARTIFACT_SCHEMA_FAMILY),
+        Some(family),
         Some(entry.artifact_hash.schema_version),
     )?;
     validate_artifact_hash_ref(
         &entry.implementation_hash,
         &field_path(path, "implementation_hash"),
         ArtifactHashClass::Implementation,
-        Some(VERIFIED_ARTIFACT_SCHEMA_FAMILY),
+        Some(family),
         Some(entry.artifact_hash.schema_version),
     )?;
+    if family == COMMENTED_ARTIFACT_SCHEMA_FAMILY
+        && entry.artifact_hash.schema_version != COMMENTED_ARTIFACT_SCHEMA_VERSION
+    {
+        return Err(ManifestError::InvalidHash {
+            path: field_path(path, "artifact_hash"),
+            reason: "unsupported commented artifact schema version".to_owned(),
+        });
+    }
     validate_optional_summary_group(
         path,
         "module_summary",
@@ -1616,11 +1633,16 @@ fn validate_module_references(
 ) -> Result<(), ManifestError> {
     let artifact_path =
         PublishedArtifactPath::new(&entry.artifact_file).map_err(ManifestError::StoreIo)?;
+    let commented = entry.artifact_hash.schema_family == COMMENTED_ARTIFACT_SCHEMA_FAMILY;
     let domain = artifact_hash_domain(
-        VERIFIED_ARTIFACT_SCHEMA_FAMILY,
+        &entry.artifact_hash.schema_family,
         entry.artifact_hash.schema_version,
     );
-    let excluded_paths = artifact_hash_excluded_paths();
+    let excluded_paths = if commented {
+        comment_projection::artifact_hash_excluded_paths()
+    } else {
+        artifact_hash_excluded_paths()
+    };
     let read = read_published_artifact(
         artifact_root,
         &artifact_path,
@@ -1631,25 +1653,30 @@ fn validate_module_references(
         },
     )
     .map_err(ManifestError::StoreIo)?;
-    let artifact = read_verified_artifact_for_version(
-        &read.value,
-        VerifiedArtifactReadOptions {
-            artifact_path: Some(artifact_path.as_str()),
-            expected_module: Some(&entry.module),
-            expected_interface_hash: Some(entry.interface_hash.digest),
-            expected_implementation_hash: Some(entry.implementation_hash.digest),
-        },
-        if entry.artifact_hash.schema_version == SchemaVersion::new(2, 0) {
-            SchemaVersion::new(2, 0)
-        } else {
-            crate::verified_artifact::current_schema_version()
-        },
-    )
+    let options = VerifiedArtifactReadOptions {
+        artifact_path: Some(artifact_path.as_str()),
+        expected_module: Some(&entry.module),
+        expected_interface_hash: Some(entry.interface_hash.digest),
+        expected_implementation_hash: Some(entry.implementation_hash.digest),
+    };
+    let artifact = if commented {
+        read_commented_artifact(&read.value, options).map(|envelope| envelope.artifact)
+    } else {
+        read_verified_artifact_for_version(
+            &read.value,
+            options,
+            if entry.artifact_hash.schema_version == SchemaVersion::new(2, 0) {
+                SchemaVersion::new(2, 0)
+            } else {
+                crate::verified_artifact::current_schema_version()
+            },
+        )
+    }
     .map_err(|error| ManifestError::VerifiedArtifact {
         path: entry.artifact_file.clone(),
         error: Box::new(error),
     })?;
-    if artifact.schema_version != entry.artifact_hash.schema_version {
+    if !commented && artifact.schema_version != entry.artifact_hash.schema_version {
         return Err(ManifestError::ReferencedArtifactMismatch {
             path: entry.artifact_file.clone(),
             field: "schema_version".to_owned(),

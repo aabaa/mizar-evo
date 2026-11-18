@@ -130,10 +130,10 @@ module_artifact_entry = {
 path は package artifact root-relative path である。normalization 後も artifact root の下に残らなければ
 ならず、absolute path であってはならない。
 
-`artifact_file` は module の canonical `VerifiedArtifact` file を指す。`artifact_hash` は published
+`artifact_file` は宣言 enclosing profile が選ぶ canonical main artifact file を指す。`artifact_hash` は published
 file の store-level artifact hash である。すなわち参照先 schema が宣言する hash exclusion 後の canonical
 JSON を class `artifact` で frame した hash であり、raw filesystem-byte hash ではない。`interface_hash` と
-`implementation_hash` は参照先 `VerifiedArtifact` 内の top-level hash と一致しなければならない。
+`implementation_hash` は参照先 main artifact envelope 内の top-level hash と一致しなければならない。
 
 summary file field は optional である。task staging により、すべての sidecar summary が emit される前に
 verified artifact が公開されることがあるためである。3 つの `module_summary_*` field はすべて
@@ -146,6 +146,8 @@ diagnostic-payload hash である。proof authority ではなく、`VerifiedArti
 ## Declared enclosing profiles
 
 manifest schema／通常 API は1.0を保ち、witness entry は既存 id/fingerprint/path/hash tuple のままで status discriminator を加えない。参照する main artifact は宣言 artifact-hash schema version により、既知の通常上位reader profileまたは明示2.0 reader profile を選び、未知 major/minor は拒否する。実 store-framed hash、expected module/interface/implementation hash、source/version 検査、正確な witness coverage と optional file reachability を保つ。共有する既存の上位 reader を直接使い、新 transaction／token／acceptance path は作らない。対応する通常上位artifactと既存 manifest／transaction 動作を保ち、構造的に有効な明示 reference から source 受理・完全 Proof identity・committed Proof publication 権限を導かない。
+
+commented reference は `artifact_hash` の `mizar-artifact/commented-verified-artifact` version1.0 で明示選択し、interface/implementation reference は同じ family/version と既存 class を使う。未知 family と未対応 commented version は retry せず拒否する。store は外側 profile の domain と [codec exclusion](../en/comment_projection.md#structural-codec-profile) を使い、reader expected hash は外側 envelope を束縛する。完全 module/source identity、witness coverage、sidecar 検査は検証済み normal1.2 inner artifact を使い、inner version/hash と outer 値は比較しない。既存 transaction guard と atomic replacement を維持し、source authenticity・runtime currentness・新 publication eligibility は与えない。
 
 ## Proof Witness Entries
 
@@ -224,9 +226,9 @@ task 14 は少なくとも次の domain を検証する。
 | `lockfile_hash` | `artifact` | producer-owned、valid grammar | lockfile または lock projection hash。 |
 | `verifier_config_hash` | `interface` | producer-owned、valid grammar | verifier configuration fingerprint。 |
 | `module_artifact_entry.source_hash` | `mizar-session/hash-text/v1` | なし | 厳密な source text hash。 |
-| `module_artifact_entry.artifact_hash` | `artifact` | `mizar-artifact/verified-artifact`、参照先 artifact schema version | published `VerifiedArtifact` store-level artifact hash。 |
-| `module_artifact_entry.interface_hash` | `interface` | `mizar-artifact/verified-artifact`、参照先 artifact schema version | 参照先 artifact と一致しなければならない。 |
-| `module_artifact_entry.implementation_hash` | `implementation` | `mizar-artifact/verified-artifact`、参照先 artifact schema version | 参照先 artifact と一致しなければならない。 |
+| `module_artifact_entry.artifact_hash` | `artifact` | 上記の selected main family/version | published main-envelope store-level artifact hash。 |
+| `module_artifact_entry.interface_hash` | `interface` | 上記の selected main family/version | 参照先 envelope と一致しなければならない。 |
+| `module_artifact_entry.implementation_hash` | `implementation` | 上記の selected main family/version | 参照先 envelope と一致しなければならない。 |
 | `module_summary_hash` | `artifact` | `mizar-artifact/module-summary`、参照先 summary schema version | optional `ModuleSummary` store-level artifact hash。 |
 | `module_summary_interface_hash` | `interface` | `mizar-artifact/module-summary`、参照先 summary schema version | optional summary interface hash。 |
 | `registration_summary_hash` | `artifact` | `mizar-artifact/registration-summary`、参照先 summary schema version | optional `RegistrationSummary` store-level artifact hash。 |
