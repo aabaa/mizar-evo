@@ -49,4 +49,5 @@ All choices remain UNSELECTED except the Q3 href interface ① identified above.
 | Q12 — render diagnostics | Obtain separate diagnostic-owner definitions/adoption under existing ordering/provenance/profile boundaries. | Require validated diagnostic drafts from upstream owners plus an explicit render-failure gate; define locations/precedence before adoption. |
 
 ## Adoption Boundary
+The proposal-only [prerequisite completion](./render_prerequisites.md) owns the concrete identity/allocation handoffs, search value encodings, cross-reference/UsedBy serialization and ordered readiness gates left open above; its definitions supersede those placeholders without adopting any new interface.
 Doc14/15 remain gated on coherent Doc13 adoption, required complete producers/destination and serialization definitions, adopted presentation diagnostics, Doc10/12 readiness and unresolved Doc11/MT dependencies. Doc23 publication and Doc24 executable determinism tests remain separate. Beyond the adopted Q3 href interface, this proposal creates no normative specification/test intent; it creates no code, schema/code allocation, coverage/owner credit or broader Doc4/5/crate completion.

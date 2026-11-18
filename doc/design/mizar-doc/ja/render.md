@@ -49,4 +49,5 @@ Q12 は Documentation diagnostic を既存 stage/file/range 順と完全 target/
 | Q12 — render diagnostic | 既存順序/provenance/profile 境界内で diagnostic owner の別定義/採用を求める。 | 上流 owner の検証済み diagnostic draft と明示 render-failure gate を要求し、location/precedence を採用前に定義する。 |
 
 ## 採用境界
+提案のみの[前提条件の補完](./render_prerequisites.md) が、上で未定義の具体的な identity/allocation 引渡し、検索値 encoding、cross-reference/UsedBy serialization、順序付き readiness gate を所有する。その定義は当該 placeholder に優先するが、新しい interface を採用しない。
 Doc14/15 は Doc13 の整合的採用、必須の完全 producer/destination と serialization 定義、presentation 診断採用、Doc10/12 readiness、未解決 Doc11/MT 依存に引き続き gate される。Doc23 公開と Doc24 実行可能な決定性 test は別課題。採用済み Q3 href interface 以外の規範的 spec/test 意図は生まない。本提案は code、schema/code 割当、coverage/owner credit、広範な Doc4/5/crate 完了を生まない。
