@@ -129,6 +129,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
    - 依存: 5、6。仕様: `comments.md`。
 
 8. **Markdown の構文解析。** [ ]
+   - [CommonMark/tag-field 定義提案](../../task_contracts/ja/DOC8-COMMONMARK-TAGS-DEFINITION.md) を解析に先行させ、新しい所有者選択は未選択に保つ。
    - Doc7 と tag-validation/CommonMark 定義の完成後、Markdown を緩やかな劣化と表示診断つきで
      構文解析する。
    - テスト: サブセットのフィクスチャ。不正な Markdown がビルドを中断
