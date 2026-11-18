@@ -23,7 +23,7 @@ internal 05 を精緻化する。
 | artifact_reader | `artifact_reader.md`（task 2） | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md`（task 4） | `src/doc_build.rs` | [~] |
 | comments | [comments.md](./comments.md)（選択は承認済み、残る定義あり） | `src/comments.rs` | [~] |
-| links | `links.md`（task 9） | `src/links.rs` | [ ] |
+| links | [links.md](./links.md)（未採用提案） | `src/links.rs` | [ ] |
 | math | `math.md`（task 11） | `src/math.rs` | [ ] |
 | render | `render.md`（task 13） | `src/render.rs` | [ ] |
 | extract_select | `extract_select.md`（task 16） | `src/extract_select.rs` | [ ] |

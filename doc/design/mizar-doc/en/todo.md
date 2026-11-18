@@ -23,7 +23,7 @@ crate refines architecture 13 and internal 05.
 | artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [~] |
 | comments | [comments.md](./comments.md) (approved choices; remaining definitions) | `src/comments.rs` | [~] |
-| links | `links.md` (task 9) | `src/links.rs` | [ ] |
+| links | [links.md](./links.md) (unadopted proposal) | `src/links.rs` | [ ] |
 | math | `math.md` (task 11) | `src/math.rs` | [ ] |
 | render | `render.md` (task 13) | `src/render.rs` | [ ] |
 | extract_select | `extract_select.md` (task 16) | `src/extract_select.rs` | [ ] |
