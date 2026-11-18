@@ -952,4 +952,13 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         DOCUMENTATION_LINKS_SINCE,
         DOCUMENTATION_LINKS_DOC_URL
     ),
+    builtin_descriptor!(
+        Warning,
+        415,
+        "documentation.render.rejected_url",
+        Documentation,
+        "Documentation URL is rejected by output policy",
+        "DOC13-G4-URL-POLICY-DIAGNOSTIC-PREREQUISITES",
+        "doc/design/mizar-doc/en/render.md#adopted-html-and-url-output-policy"
+    ),
 ];

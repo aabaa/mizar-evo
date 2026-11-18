@@ -546,6 +546,186 @@ fn link_reference_drafts_preserve_explicit_outcomes_routes_and_discontiguous_map
 }
 
 #[test]
+fn rejected_url_explicit_drafts_preserve_occurrences_locations_and_cli_warning() {
+    use DiagnosticDetailValue::{List, String as Text};
+    let snapshot = snapshot_id(44);
+    let source = source_id(snapshot);
+    let raw = "jav&#x61;script:one";
+    let interpreted = "javascript:one";
+    let source_text = "::: jav&#x61;script:one\n::: jav&#x61;\n::: gap\n::: script:one";
+    let range = |start, len| SourceRange {
+        source_id: source,
+        start,
+        end: start + len,
+    };
+    for kind in ["link", "image"] {
+        for segments in 0..=2 {
+            let mut input = link_input(snapshot, "reference");
+            input.code = DiagnosticCode::from_str("W0415").unwrap();
+            input.stable_detail_key = "documentation.render.rejected_url".into();
+            input.message = "Documentation URL is rejected by output policy".into();
+            if let DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } =
+                &mut input.primary_location
+            {
+                *block_ordinal = 12;
+            }
+            let occurrence = vec![
+                Text("ab".repeat(32)),
+                List(vec![
+                    Text("pkg".into()),
+                    List(vec![]),
+                    List(vec![]),
+                    Text("doc.miz".into()),
+                    Text("2026".into()),
+                ]),
+                List(vec![
+                    Text("item".into()),
+                    Text("origin-1".into()),
+                    Text("pkg.T".into()),
+                ]),
+                Text("12".into()),
+                Text(input.stable_detail_key.clone()),
+                List(vec![Text("3".into()), Text((3 + raw.len()).to_string())]),
+            ];
+            let url = vec![
+                Text(kind.into()),
+                Text("7".into()),
+                Text(raw.into()),
+                Text(interpreted.into()),
+            ];
+            input.details = DiagnosticDetails::from_entries([
+                ("documentation.occurrence", List(occurrence.clone())),
+                ("documentation.render.url", List(url.clone())),
+            ])
+            .unwrap();
+            if segments > 0 {
+                let primary = if segments == 1 {
+                    range(source_text.find(raw).unwrap(), raw.len())
+                } else {
+                    range(source_text.rfind("jav&#x61;").unwrap(), "jav&#x61;".len())
+                };
+                input.primary_location = DiagnosticPrimaryLocation::Span(
+                    DiagnosticSpan::primary(primary, None).unwrap(),
+                );
+                if segments == 2 {
+                    input.secondary_spans = vec![
+                        DiagnosticSpan::secondary(
+                            range(source_text.rfind("script:one").unwrap(), "script:one".len()),
+                            None,
+                        )
+                        .unwrap(),
+                    ];
+                }
+            }
+            let mut ordinal = input.clone();
+            let mut next_url = url;
+            next_url[1] = Text("8".into());
+            ordinal
+                .details
+                .insert("documentation.render.url", List(next_url))
+                .unwrap();
+            let mut offsets = input.clone();
+            let mut next_occurrence = occurrence.clone();
+            next_occurrence[5] = List(vec![Text("4".into()), Text((4 + raw.len()).to_string())]);
+            offsets
+                .details
+                .insert("documentation.occurrence", List(next_occurrence))
+                .unwrap();
+            let mut duplicate = input.clone();
+            duplicate.message = "another presentation of the same occurrence".into();
+            let mut copies = vec![input.clone(), ordinal, offsets, duplicate];
+            if segments == 1 {
+                for (part, member) in [
+                    (0, None),
+                    (1, Some(0)),
+                    (1, Some(1)),
+                    (1, Some(2)),
+                    (1, Some(3)),
+                    (1, Some(4)),
+                    (2, Some(1)),
+                    (2, Some(2)),
+                    (3, None),
+                ] {
+                    let mut distinct = input.clone();
+                    let mut identity = occurrence.clone();
+                    let replacement = match (part, member) {
+                        (0, _) => Text("cd".repeat(32)),
+                        (1, Some(1 | 2)) => List(vec![Text(String::new())]),
+                        (3, _) => Text("13".into()),
+                        _ => Text("other".into()),
+                    };
+                    if let Some(member) = member {
+                        let List(tuple) = &mut identity[part] else {
+                            unreachable!()
+                        };
+                        tuple[member] = replacement;
+                    } else {
+                        identity[part] = replacement;
+                    }
+                    distinct
+                        .details
+                        .insert("documentation.occurrence", List(identity))
+                        .unwrap();
+                    copies.push(distinct);
+                }
+            }
+            let index = link_index(snapshot, copies.clone());
+            assert_eq!(index.len(), if segments == 1 { 12 } else { 3 });
+            assert_eq!(
+                index.debug_snapshot(),
+                link_index(snapshot, copies.into_iter().rev().collect()).debug_snapshot()
+            );
+            let record = index
+                .records()
+                .iter()
+                .find(|record| record.details() == &input.details)
+                .unwrap();
+            assert_eq!(record.code(), input.code);
+            assert_eq!(
+                record.severity(),
+                mizar_diagnostics::registry::DiagnosticSeverity::Warning
+            );
+            assert_eq!(record.phase(), PipelinePhase::Documentation);
+            assert_eq!(record.category(), FailureCategory::DocumentationWarning);
+            assert_eq!(record.primary_location(), &input.primary_location);
+            assert_eq!(record.secondary_spans(), input.secondary_spans);
+            assert_eq!(
+                record.freshness(),
+                &DiagnosticFreshness::Current {
+                    source_snapshot: snapshot
+                }
+            );
+            let rendered = if segments == 0 {
+                render_diagnostics(DiagnosticRenderInput::new(
+                    std::slice::from_ref(record),
+                    &PanicSourceContext,
+                    RenderOptions::plain(),
+                ))
+            } else {
+                let context = TestSourceContext::new().with_source(
+                    source,
+                    "doc.miz",
+                    "url-source",
+                    source_text,
+                );
+                render_diagnostics(DiagnosticRenderInput::new(
+                    std::slice::from_ref(record),
+                    &context,
+                    RenderOptions::plain(),
+                ))
+            };
+            assert!(rendered.starts_with("warning[W0415]: Documentation URL is rejected by output policy (documentation.render.rejected_url)\n"));
+            if segments == 0 {
+                assert!(rendered.ends_with(&format!("  --> documentation publication={} package=\"pkg\" version=None lockfile=None module=\"doc.miz\" edition=\"2026\" block=12", "ab".repeat(32))));
+            }
+            let obsolete = link_index(snapshot_id(45), vec![input]);
+            assert!(obsolete.records().is_empty());
+            assert_eq!(obsolete.obsolete_drafts().len(), 1);
+        }
+    }
+}
+
+#[test]
 fn link_scope_coverage_location_validation_and_source_free_cli_are_independent() {
     use DiagnosticDetailValue::{List, String as Text};
     let snapshot = snapshot_id(43);

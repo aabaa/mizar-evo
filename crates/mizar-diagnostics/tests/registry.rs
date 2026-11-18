@@ -24,7 +24,7 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0425", "E0426", "E0430", "E0600", "E0601", "E0602", "E0603", "W0001", "W0002", "W0003",
     "W0010", "W0101", "W0102", "W0103", "W0201", "W0202", "W0210", "W0301", "W0302", "W0303",
     "W0304", "W0305", "W0400", "W0401", "W0402", "W0403", "W0404", "W0405", "W0406", "W0407",
-    "W0408", "W0409", "W0410", "W0411", "W0412", "W0413", "W0414",
+    "W0408", "W0409", "W0410", "W0411", "W0412", "W0413", "W0414", "W0415",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -167,7 +167,7 @@ fn documentation_descriptors_lock_the_five_attachment_meanings() {
         let code = DiagnosticCode::from_parts(DiagnosticSeverity::Warning, number).unwrap();
         assert_eq!(code.phase_family(), Some(PhaseFamily::Documentation));
         assert_eq!(code.default_severity(), Some(DiagnosticSeverity::Warning));
-        assert_eq!(registry.lookup(code).is_some(), number <= 414);
+        assert_eq!(registry.lookup(code).is_some(), number <= 415);
     }
     for text in ["W0500", "W0700"] {
         assert_eq!(DiagnosticCode::from_str(text).unwrap().phase_family(), None);
@@ -285,6 +285,31 @@ fn documentation_link_descriptors_lock_adopted_meanings() {
             "doc/spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks"
         );
     }
+}
+
+#[test]
+fn documentation_url_descriptor_locks_adopted_meaning() {
+    let registry = DiagnosticRegistry::builtin();
+    let code = DiagnosticCode::from_str("W0415").unwrap();
+    let row = registry.lookup(code).unwrap();
+    assert_eq!(row.code, code);
+    assert_eq!(row.meaning_key, "documentation.render.rejected_url");
+    assert_eq!(row.semantic_name, row.meaning_key);
+    assert_eq!(
+        row.summary,
+        "Documentation URL is rejected by output policy"
+    );
+    assert_eq!(row.phase_family, PhaseFamily::Documentation);
+    assert_eq!(row.default_severity, DiagnosticSeverity::Warning);
+    assert_eq!(row.status, DiagnosticStatus::Active);
+    assert!(row.aliases.is_empty());
+    assert_eq!(row.retired_since, None);
+    assert!(row.replacement_codes.is_empty());
+    assert_eq!(row.since, "DOC13-G4-URL-POLICY-DIAGNOSTIC-PREREQUISITES");
+    assert_eq!(
+        row.doc_url,
+        "doc/design/mizar-doc/en/render.md#adopted-html-and-url-output-policy"
+    );
 }
 
 #[test]
