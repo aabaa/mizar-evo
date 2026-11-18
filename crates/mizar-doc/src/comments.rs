@@ -267,7 +267,9 @@ fn item_target<'a>(
         if candidate[4] != CanonicalJson::Null && candidate[4] != row[4] {
             return Err(402);
         }
-        if matches!(string(&candidate[0]), "Annotation" | "LibraryAnnotation") {
+        if matches!(string(&candidate[0]), "Annotation" | "LibraryAnnotation")
+            || (annotation_end.is_some() && string(&candidate[0]) == "VisibilityMarker")
+        {
             let annotation = range(&candidate[1]);
             if let Some(end) = annotation_end
                 && !annotation_gap(loaded, end, annotation.start)
@@ -378,7 +380,7 @@ fn item_target<'a>(
         ExportVisibility::Reexported => "reexported",
         _ => return Err(401),
     };
-    if labels.is_empty()
+    if (labels.is_empty() && expected != "algorithm")
         || labels.iter().any(|label| {
             label.target_kind != expected
                 || label.label.is_empty()

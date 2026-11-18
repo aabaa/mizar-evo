@@ -3414,28 +3414,41 @@ fn doc7_module_prefix_keeps_separated_raw_blocks_module_only() {
 #[test]
 fn doc7_exact_named_targets_use_original_export_and_labels_with_attached_annotation() {
     use mizar_doc::comments::CommentTarget;
-    for (kind, syntax, body) in [
-        ("functor", "FunctorDefinition", "func f -> object equals x;"),
+    for (kind, syntax, source_body, labels) in [
+        (
+            "functor",
+            "FunctorDefinition",
+            "func f -> object equals x;",
+            true,
+        ),
         (
             "redefinition",
             "FunctorRedefinition",
             "redefine func f -> object equals x;",
+            true,
         ),
-        ("theorem", "TheoremItem", "theorem T: true;"),
-        ("lemma", "LemmaItem", "lemma T: true;"),
+        ("theorem", "TheoremItem", "theorem T: true;", true),
+        ("theorem", "TheoremItem", "public\ntheorem T: true;", true),
+        ("lemma", "LemmaItem", "lemma T: true;", true),
         (
             "registration",
             "ExistentialRegistration",
             "cluster inhabited for set;",
+            true,
         ),
-        ("algorithm", "AlgorithmDefinition", "algorithm A;"),
+        ("algorithm", "AlgorithmDefinition", "algorithm A;", true),
+        ("algorithm", "AlgorithmDefinition", "algorithm A;", false),
     ] {
-        let text = format!("import X;\n::: item\n@proof_hint(\"trivial\")\n{body}\n");
+        let body = source_body.strip_prefix("public\n").unwrap_or(source_body);
+        let text = format!("import X;\n::: item\n@proof_hint(\"trivial\")\n{source_body}\n");
         let (root, plan, _) = doc7_fixture(
             "doc7",
             &text,
             Some((kind, syntax, body)),
-            |artifact, _, landmarks| {
+            |artifact, summary, landmarks| {
+                if !labels {
+                    summary.exported_labels.clear();
+                }
                 let start = text.find('@').unwrap();
                 let item_start = text.find(body).unwrap();
                 let item_end = item_start + body.len();
@@ -3448,7 +3461,29 @@ fn doc7_exact_named_targets_use_original_export_and_labels_with_attached_annotat
                     None,
                 ));
                 let mut item = item;
-                if matches!(syntax, "TheoremItem" | "LemmaItem") {
+                if source_body.starts_with("public") {
+                    // parse_visible_item retains these three direct children.
+                    landmarks.push(doc7_landmark("VisibleItem", start, item_end, None, None));
+                    landmarks.push(doc7_landmark(
+                        "Annotation",
+                        start,
+                        start + "@proof_hint(\"trivial\")".len(),
+                        Some(1),
+                        None,
+                    ));
+                    let marker = text.find("public").unwrap();
+                    landmarks.push(doc7_landmark(
+                        "VisibilityMarker",
+                        marker,
+                        marker + "public".len(),
+                        Some(1),
+                        None,
+                    ));
+                    if let mizar_artifact::store::CanonicalJson::Array(row) = &mut item {
+                        row[2] = mizar_artifact::store::CanonicalJson::integer(1);
+                    }
+                    landmarks.push(item);
+                } else if matches!(syntax, "TheoremItem" | "LemmaItem") {
                     // parser/module.rs::parse_theorem_item owns leading Annotation
                     // children; its covering_token_range begins at the annotation.
                     if let mizar_artifact::store::CanonicalJson::Array(row) = &mut item {
@@ -3486,7 +3521,11 @@ fn doc7_exact_named_targets_use_original_export_and_labels_with_attached_annotat
             },
         );
         let result = doc7_attach(&plan);
-        assert!(result.warnings.is_empty(), "{kind}: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "{source_body}, labels={labels}: {:?}",
+            result.warnings
+        );
         assert_eq!(result.blocks.len(), 1);
         let Some(CommentTarget::Item(export)) = result.blocks[0].target else {
             panic!("{kind} did not attach")
@@ -3510,6 +3549,10 @@ fn doc7_interruptions_never_skip_to_later_target_and_retain_orphan_text() {
         "@standalone\n",
         "@proof_hint(\"trivial\")\n\n",
         "@proof_hint(\"trivial\")\n:: interruption\n",
+        "@proof_hint(\"trivial\")\n\npublic\n",
+        "@proof_hint(\"trivial\")\n:: interruption\npublic\n",
+        "@proof_hint(\"trivial\")\npublic\n\n",
+        "@proof_hint(\"trivial\")\npublic\n:: interruption\n",
         "",
     ] {
         let trailing = interruption.is_empty();
@@ -3535,12 +3578,18 @@ fn doc7_interruptions_never_skip_to_later_target_and_retain_orphan_text() {
                 if interruption.starts_with("@proof_hint") {
                     let start = text.find(interruption).unwrap();
                     let end = text.find(body).unwrap() + body.len();
+                    let visible = interruption.contains("public");
                     // Same direct-child shape emitted by parse_theorem_item.
                     let Some(mizar_artifact::store::CanonicalJson::Array(row)) = &mut target else {
                         unreachable!()
                     };
-                    row[1] = doc7_range(start, end);
-                    landmarks.push(target.take().unwrap());
+                    if visible {
+                        row[2] = mizar_artifact::store::CanonicalJson::integer(1);
+                        landmarks.push(doc7_landmark("VisibleItem", start, end, None, None));
+                    } else {
+                        row[1] = doc7_range(start, end);
+                        landmarks.push(target.take().unwrap());
+                    }
                     landmarks.push(doc7_landmark(
                         "Annotation",
                         start,
@@ -3548,6 +3597,16 @@ fn doc7_interruptions_never_skip_to_later_target_and_retain_orphan_text() {
                         Some(1),
                         None,
                     ));
+                    if visible {
+                        let marker = text.find("public").unwrap();
+                        landmarks.push(doc7_landmark(
+                            "VisibilityMarker",
+                            marker,
+                            marker + "public".len(),
+                            Some(1),
+                            None,
+                        ));
+                    }
                 } else if !trailing && !interruption.starts_with(['\n', ':']) {
                     let start = text.find(interruption).unwrap();
                     let kind = if interruption.starts_with('@') {
