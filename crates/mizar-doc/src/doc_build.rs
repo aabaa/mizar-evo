@@ -731,6 +731,533 @@ pub fn authenticate_doc_direct_by(
     Ok(result)
 }
 
+/// Immutable original-coordinate inputs bound to a revalidated finite inventory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthenticatedDocSources {
+    selected_plan: DocBuildPlan,
+    modules: BTreeMap<ModuleSummaryIdentity, (Hash, String, CanonicalJson)>,
+    direct_by: AuthenticatedDocDirectBy,
+}
+
+impl AuthenticatedDocSources {
+    /// Exact packaged path and supplementary original-byte digest; null stays unavailable.
+    pub fn source_binding(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+    ) -> Option<(&str, Option<Hash>)> {
+        let (_, path, projection) = self
+            .modules
+            .get(module)
+            .filter(|row| row.0 == publication)?;
+        Some((
+            path.as_str(),
+            (projection != &CanonicalJson::Null)
+                .then(|| mizar_session::hash_text(projection_text(projection, "original"))),
+        ))
+    }
+
+    /// Returns a digest only for the exact module, publication and packaged path.
+    pub fn original_digest(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        source_file: &str,
+    ) -> Option<Hash> {
+        self.source_binding(module, publication)
+            .filter(|(path, _)| *path == source_file)?
+            .1
+    }
+
+    /// Maps requested loaded segments in order, preserving normalization boundaries.
+    pub fn loaded_ranges(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        source_file: &str,
+        original_digest: Hash,
+        ranges: &[mizar_session::TextRange],
+    ) -> Result<(Vec<mizar_session::TextRange>, DocImportCoverage), DocBuildError> {
+        let (_, _, projection) = self
+            .modules
+            .get(module)
+            .filter(|row| row.0 == publication && row.1 == source_file)
+            .ok_or(DocBuildError::Binding("source coordinate binding mismatch"))?;
+        if projection == &CanonicalJson::Null {
+            return Ok((Vec::new(), DocImportCoverage::Unavailable));
+        }
+        if mizar_session::hash_text(projection_text(projection, "original")) != original_digest {
+            return Err(DocBuildError::Binding("original source digest mismatch"));
+        }
+        let loaded = projection_text(projection, "loaded");
+        let segments = projection_loading(projection);
+        let mut result = Vec::new();
+        let mut complete = true;
+        for range in ranges {
+            validate_coordinate_range(loaded, *range)?;
+            let (mapped, covered) =
+                mizar_session::LoadingMapSegment::original_ranges_for_loaded(&segments, *range);
+            complete &= covered;
+            result.extend(mapped.into_iter().map(|part| part.original));
+        }
+        Ok((
+            result,
+            if complete {
+                DocImportCoverage::Complete
+            } else {
+                DocImportCoverage::Incomplete
+            },
+        ))
+    }
+
+    /// Composes Artifact occurrence ranges, whose original AST frame is loaded source.
+    /// Exact authored endpoints first recover lexical ranges through the same map.
+    pub fn citation_ranges(
+        &self,
+        producer: &mizar_artifact::direct_by::DirectByProjection,
+        ranges: &[mizar_session::SourceRange],
+    ) -> Result<(Vec<mizar_session::TextRange>, DocImportCoverage), DocBuildError> {
+        use mizar_session::{PreprocessMap, PreprocessSegment, SourceRange, TextRange};
+        let source_id = producer.captured_source().0;
+        if !self.direct_by.producers.contains(producer)
+            || ranges
+                .iter()
+                .any(|range| range.source_id != source_id || range.start > range.end)
+        {
+            return Err(DocBuildError::Binding("citation coordinate frame mismatch"));
+        }
+        let projection = &self.modules[producer.module()].2;
+        if projection == &CanonicalJson::Null {
+            return Ok((Vec::new(), DocImportCoverage::Unavailable));
+        }
+        let map = PreprocessMap::new(
+            source_id,
+            projection_text(projection, "lexical"),
+            producer
+                .lexical_source_map()
+                .preprocess_map
+                .segments
+                .iter()
+                .filter_map(|segment| {
+                    let mizar_lexer::SourcePreprocessMapSegment::Original { lexical, source } =
+                        segment
+                    else {
+                        return None;
+                    };
+                    Some(PreprocessSegment::Original {
+                        lexical: TextRange {
+                            start: lexical.start,
+                            end: lexical.end,
+                        },
+                        source: SourceRange {
+                            source_id,
+                            start: source.start,
+                            end: source.end,
+                        },
+                    })
+                })
+                .collect(),
+        );
+        let mut lexical = Vec::new();
+        let mut complete = true;
+        for range in ranges {
+            validate_coordinate_range(
+                projection_text(projection, "loaded"),
+                TextRange {
+                    start: range.start,
+                    end: range.end,
+                },
+            )?;
+            if let Some(range) = map.lexical_range_for_source(*range) {
+                lexical.push(SourceRange {
+                    source_id,
+                    start: range.start,
+                    end: range.end,
+                });
+            } else {
+                complete = false;
+            }
+        }
+        let (mapped, coverage) = self.lexical_ranges(producer, &lexical)?;
+        let coverage = if complete {
+            coverage
+        } else if mapped.is_empty() {
+            DocImportCoverage::Unavailable
+        } else {
+            DocImportCoverage::Incomplete
+        };
+        Ok((mapped, coverage))
+    }
+
+    /// Composes explicitly lexical segments from the retained citation producer.
+    /// Citation occurrence order and endpoint/examination coverage remain independent.
+    pub fn lexical_ranges(
+        &self,
+        producer: &mizar_artifact::direct_by::DirectByProjection,
+        ranges: &[mizar_session::SourceRange],
+    ) -> Result<(Vec<mizar_session::TextRange>, DocImportCoverage), DocBuildError> {
+        if !self.direct_by.producers.contains(producer) {
+            return Err(DocBuildError::Binding(
+                "unbound coordinate citation producer",
+            ));
+        }
+        let source_id = producer.captured_source().0;
+        if ranges.iter().any(|range| {
+            range.source_id != source_id
+                || range.start > range.end
+                || range.end > producer.lexical_source_map().lexical_len()
+        }) {
+            return Err(DocBuildError::Binding("lexical coordinate frame mismatch"));
+        }
+        let (_, source_file, projection) = &self.modules[producer.module()];
+        if projection == &CanonicalJson::Null {
+            return Ok((Vec::new(), DocImportCoverage::Unavailable));
+        }
+        let lexical = projection_text(projection, "lexical");
+        let map = mizar_session::PreprocessMap::new(
+            source_id,
+            lexical,
+            producer
+                .lexical_source_map()
+                .preprocess_map
+                .segments
+                .iter()
+                .filter_map(|segment| {
+                    let mizar_lexer::SourcePreprocessMapSegment::Original { lexical, source } =
+                        segment
+                    else {
+                        return None;
+                    };
+                    Some(mizar_session::PreprocessSegment::Original {
+                        lexical: mizar_session::TextRange {
+                            start: lexical.start,
+                            end: lexical.end,
+                        },
+                        source: mizar_session::SourceRange {
+                            source_id,
+                            start: source.start,
+                            end: source.end,
+                        },
+                    })
+                })
+                .collect(),
+        );
+        let mut loaded = Vec::new();
+        let mut complete = true;
+        for range in ranges {
+            let range = mizar_session::TextRange {
+                start: range.start,
+                end: range.end,
+            };
+            validate_coordinate_range(lexical, range)?;
+            let (pieces, covered) = map
+                .source_ranges_for_lexical(source_id, range)
+                .map_err(|_| DocBuildError::Binding("invalid lexical coordinate map"))?;
+            complete &= covered;
+            loaded.extend(pieces.into_iter().map(|piece| mizar_session::TextRange {
+                start: piece.start,
+                end: piece.end,
+            }));
+        }
+        let (mapped, coverage) = self.loaded_ranges(
+            producer.module(),
+            producer.publication_hash(),
+            source_file,
+            mizar_session::hash_text(projection_text(projection, "original")),
+            &loaded,
+        )?;
+        Ok((
+            mapped,
+            if complete {
+                coverage
+            } else {
+                DocImportCoverage::Incomplete
+            },
+        ))
+    }
+
+    pub(crate) fn matches_comments(
+        &self,
+        attachments: &crate::comments::CommentAttachments<'_>,
+    ) -> bool {
+        self.selected_plan == *attachments.plan
+            && self.selected_plan.index.modules.get(attachments.module) == Some(attachments.input)
+    }
+}
+
+/// Revalidates the current selected plan, declared inventory and exact source envelopes.
+pub fn authenticate_doc_sources<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    workspace_root: &WorkspaceRoot,
+    inputs: &AuthenticatedDocImports,
+    inventory: &[(&PackageIdentity, Hash, &Path)],
+    direct_by: &AuthenticatedDocDirectBy,
+) -> Result<AuthenticatedDocSources, DocBuildError> {
+    let imports = inputs
+        .producers
+        .iter()
+        .map(|(module, view)| (module.clone(), inputs.modules[module].0, view))
+        .collect::<Vec<_>>();
+    if authenticate_doc_imports(
+        registry,
+        workspace_root,
+        &inputs.selected_plan,
+        inventory,
+        &imports,
+    )? != *inputs
+        || !direct_by.matches_inputs(inputs)
+    {
+        return Err(DocBuildError::Binding(
+            "source coordinate inventory changed",
+        ));
+    }
+    let root = &inputs.selected_plan.request;
+    let mut modules = BTreeMap::new();
+    for (_, hash, path) in std::iter::once((
+        &root.package,
+        root.expected_manifest_hash,
+        root.artifact_root.as_path(),
+    ))
+    .chain(inventory.iter().copied())
+    {
+        let (manifest, artifacts) =
+            crate::artifact_reader::read_published_artifacts_with_comments(path, hash)
+                .map_err(DocBuildError::Publication)?;
+        if !inputs.publications.contains(&manifest) {
+            return Err(DocBuildError::Binding(
+                "source coordinate publication changed",
+            ));
+        }
+        for (entry, (artifact, comments)) in manifest.manifest.modules.iter().zip(artifacts) {
+            if artifact.source_file != entry.source_file
+                || artifact.source_hash != entry.source_hash
+                || (comments != CanonicalJson::Null
+                    && hash == root.expected_manifest_hash
+                    && !registry
+                        .get(inputs.selected_plan.snapshot)
+                        .is_some_and(|snapshot| {
+                            snapshot.source_versions.iter().any(|source| {
+                                artifact.provenance.captured_source.as_ref()
+                                    == Some(&(
+                                        source.source_id,
+                                        source.origin.clone(),
+                                        source.source_hash,
+                                    ))
+                                    && source.normalized_path.as_str() == entry.source_file
+                                    && source.package_id.as_str() == entry.module.package_id
+                                    && source.module_path.as_str() == entry.module.module_path
+                                    && source.edition.as_str() == entry.module.language_edition
+                            })
+                        }))
+            {
+                return Err(DocBuildError::Binding(
+                    "source coordinate artifact binding mismatch",
+                ));
+            }
+            for producer in direct_by
+                .producers
+                .iter()
+                .filter(|producer| producer.module() == &entry.module)
+            {
+                if artifact.provenance.captured_source.as_ref() != Some(producer.captured_source())
+                {
+                    return Err(DocBuildError::Binding(
+                        "citation source provenance mismatch",
+                    ));
+                }
+                if let Some(native) = &inputs.selected_plan.native_publication {
+                    let retained = native
+                        .source_metadata()
+                        .iter()
+                        .flatten()
+                        .filter_map(|metadata| metadata.direct_by())
+                        .find(|view| view.module() == producer.module());
+                    if hash == root.expected_manifest_hash && retained != Some(producer) {
+                        return Err(DocBuildError::Binding(
+                            "native coordinate citation producer changed",
+                        ));
+                    }
+                }
+                if comments != CanonicalJson::Null {
+                    let loaded = projection_text(&comments, "loaded");
+                    let loading = projection_loading(&comments);
+                    let identity = matches!(loading.as_slice(), [mizar_session::LoadingMapSegment::Original { loaded, original }] if loaded == original);
+                    if producer.loading_map().map_or(!identity, |map| {
+                        map.source_id != producer.captured_source().0
+                            || !matches!(
+                                (&producer.captured_source().1, &map.origin),
+                                (mizar_session::SourceOrigin::Disk, mizar_session::LoadingOrigin::DiskBytes { normalized_path })
+                                    if normalized_path.as_str() == entry.source_file
+                            ) && !matches!(
+                                (&producer.captured_source().1, &map.origin),
+                                (mizar_session::SourceOrigin::OpenBuffer { version }, mizar_session::LoadingOrigin::OpenBufferText { version: mapped, .. })
+                                    if version == mapped
+                            ) && !matches!(
+                                (&producer.captured_source().1, &map.origin),
+                                (mizar_session::SourceOrigin::Generated { .. }, mizar_session::LoadingOrigin::Generated)
+                            )
+                            || map.loaded_len() != loaded.len()
+                            || map.loaded_text_hash() != mizar_session::hash_text(loaded)
+                            || map.segments != loading
+                    }) || producer.lexical_source_map().source_id != producer.captured_source().0
+                        || producer.lexical_source_map().lexical_len()
+                            != projection_text(&comments, "lexical").len()
+                        || !projection_preprocess_matches(
+                            &comments,
+                            &producer.lexical_source_map().preprocess_map,
+                        )
+                    {
+                        return Err(DocBuildError::Binding(
+                            "citation source maps disagree with publication",
+                        ));
+                    }
+                }
+            }
+            modules.insert(
+                entry.module.clone(),
+                (hash, entry.source_file.clone(), comments),
+            );
+        }
+    }
+    if !snapshot_binding_is_current(
+        registry,
+        inputs.selected_plan.snapshot,
+        inputs.selected_plan.build_request,
+        inputs.selected_plan.native_publication.as_deref(),
+    ) {
+        return Err(DocBuildError::Binding(
+            "snapshot became stale during source authentication",
+        ));
+    }
+    Ok(AuthenticatedDocSources {
+        selected_plan: inputs.selected_plan.clone(),
+        modules,
+        direct_by: direct_by.clone(),
+    })
+}
+
+fn projection_text<'a>(projection: &'a CanonicalJson, key: &str) -> &'a str {
+    let CanonicalJson::Object(fields) = projection else {
+        unreachable!("validated source projection")
+    };
+    let CanonicalJson::String(text) = &fields[key] else {
+        unreachable!("validated source text")
+    };
+    text
+}
+
+fn projection_loading(projection: &CanonicalJson) -> Vec<mizar_session::LoadingMapSegment> {
+    use mizar_session::LoadingMapSegment;
+    let CanonicalJson::Object(fields) = projection else {
+        unreachable!("validated source projection")
+    };
+    let CanonicalJson::Array(rows) = &fields["loading"] else {
+        unreachable!("validated loading map")
+    };
+    rows.iter()
+        .map(|row| {
+            let CanonicalJson::Array(row) = row else {
+                unreachable!("validated loading row")
+            };
+            let original = projection_range(&row[2]);
+            match &row[0] {
+                CanonicalJson::String(kind) if kind == "bom" => {
+                    LoadingMapSegment::RemovedLeadingBom { original }
+                }
+                CanonicalJson::String(kind) if kind == "newline" => {
+                    LoadingMapSegment::NormalizedNewline {
+                        loaded: projection_range(&row[1]),
+                        original,
+                    }
+                }
+                _ => LoadingMapSegment::Original {
+                    loaded: projection_range(&row[1]),
+                    original,
+                },
+            }
+        })
+        .collect()
+}
+
+fn projection_range(value: &CanonicalJson) -> mizar_session::TextRange {
+    let CanonicalJson::Array(row) = value else {
+        unreachable!("validated source range")
+    };
+    let offset = |value: &CanonicalJson| {
+        let CanonicalJson::Integer(offset) = value else {
+            unreachable!("validated source offset")
+        };
+        *offset as usize
+    };
+    mizar_session::TextRange {
+        start: offset(&row[0]),
+        end: offset(&row[1]),
+    }
+}
+
+fn projection_preprocess_matches(
+    projection: &CanonicalJson,
+    map: &mizar_lexer::SourcePreprocessMap,
+) -> bool {
+    use mizar_lexer::{CommentKind, SourcePreprocessMapSegment};
+    let CanonicalJson::Object(fields) = projection else {
+        unreachable!("validated source projection")
+    };
+    let CanonicalJson::Array(rows) = &fields["preprocess"] else {
+        unreachable!("validated preprocess map")
+    };
+    rows.len() == map.segments.len()
+        && rows.iter().zip(&map.segments).all(|(row, segment)| {
+            let CanonicalJson::Array(row) = row else {
+                unreachable!("validated preprocess row")
+            };
+            let (kind, lexical, source, comment) = match segment {
+                SourcePreprocessMapSegment::Original { lexical, source } => {
+                    ("original", Some(lexical), source, None)
+                }
+                SourcePreprocessMapSegment::SyntheticWhitespace { lexical, anchor } => {
+                    ("synthetic", Some(lexical), anchor, None)
+                }
+                SourcePreprocessMapSegment::RemovedComment { source, kind } => (
+                    "removed",
+                    None,
+                    source,
+                    Some(match kind {
+                        CommentKind::SingleLine => "single_line",
+                        CommentKind::MultiLine => "multi_line",
+                        CommentKind::Documentation => "documentation",
+                        _ => return false,
+                    }),
+                ),
+                _ => return false,
+            };
+            row[0] == CanonicalJson::string(kind)
+                && (row[1] != CanonicalJson::Null).then(|| projection_range(&row[1]))
+                    == lexical.map(|range| mizar_session::TextRange {
+                        start: range.start,
+                        end: range.end,
+                    })
+                && projection_range(&row[2])
+                    == mizar_session::TextRange {
+                        start: source.start,
+                        end: source.end,
+                    }
+                && row[3] == comment.map_or(CanonicalJson::Null, CanonicalJson::string)
+        })
+}
+
+pub(crate) fn validate_coordinate_range(
+    text: &str,
+    range: mizar_session::TextRange,
+) -> Result<(), DocBuildError> {
+    if text.get(range.start..range.end).is_none() {
+        return Err(DocBuildError::Binding(
+            "source coordinate bounds or UTF-8 boundary mismatch",
+        ));
+    }
+    Ok(())
+}
+
 /// Authenticates genuine producer imports against an explicit finite publication inventory.
 ///
 /// Inventory paths are artifact roots, independent of raw Doc4 dependency-index paths.

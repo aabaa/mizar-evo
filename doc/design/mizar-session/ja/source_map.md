@@ -342,12 +342,16 @@ LSP 変換は、プロトコルの UTF-16 位置規則を `mizar-lsp` ブリッ�
 
 ### 読み込み済みから元入力への対応付け
 
+`LoadingMapSegment::original_ranges_for_loaded` は検証済みの順序付き loading segment と独立に交差し、隙間を囲まず mapped piece と coverage を返す。caller は frame の範囲と UTF-8 境界を検証する。正規化 newline piece の degraded kind は完全な byte coverage と独立に保持する。
+
 1. `SourceId` に対応する保持済み `LoadingMap` を用いる。
 2. 保持されたサービスにその `SourceId` の `LoadingMap` が無い場合、`SourceMapError::MissingLoadingMapSegment` を返す。恒等変換が必要な呼び出し側は `LoadingMap::identity` を保持する必要があります。
 3. 読み込み範囲が正規化セグメントをまたぐ場合、元バイト範囲を包む縮退した `LoadedToOriginalRange` を返す。保持された `SourceMapService` は、これを縮退した `MappedSourceRange` として公開し、その `primary` は読み込み済みソース範囲のまま、`original_input` が元入力のバイト範囲を記録します。
 4. オープンバッファでは、エディタテキストのバイトオフセットを返す。最終的な UTF-16 変換は LSP ブリッジが行う。
 
 ### 字句からソースへの対応付け
+
+`PreprocessMap::source_ranges_for_lexical` は記述された Original piece だけを segment 順と coverage flag で返す。削除 comment や synthetic anchor から記述された bridge span を作らず、source identity や lexical 範囲の誤りは拒否する。`lexical_range_for_source` は検証済みの記述された piece からだけ lexical endpoint を復元し、欠落や隙間の endpoint には範囲を返さない。loaded の包含 span を連続する記述範囲に変えない。
 
 1. 字句範囲と交差する前処理セグメントをすべて見つける。
 2. 範囲が 1 つの連続した読み込みソース範囲に対応付けられる場合、診断がソース読み込み入力の座標を必要とするときは、その範囲を loaded-to-original 対応付けを通して対応付ける。

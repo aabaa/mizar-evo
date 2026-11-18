@@ -92,6 +92,97 @@ impl ParsedComments<'_, '_> {
     }
 }
 
+/// Composes authored Q3 segments through the authenticated loaded/original frame.
+pub fn original_ranges(
+    sources: &crate::doc_build::AuthenticatedDocSources,
+    parsed: &ParsedComments<'_, '_>,
+    block_ordinal: usize,
+    ranges: &[Range<usize>],
+) -> Result<(Vec<TextRange>, crate::doc_build::DocImportCoverage), crate::doc_build::DocBuildError>
+{
+    use crate::doc_build::{DocBuildError, DocImportCoverage, validate_coordinate_range};
+    let refuse = || DocBuildError::Binding("Q3 source coordinate binding mismatch");
+    let attachments = parsed.attachments;
+    if !sources.matches_comments(attachments) {
+        return Err(refuse());
+    }
+    if !attachments.available() {
+        return Ok((Vec::new(), DocImportCoverage::Unavailable));
+    }
+    let canonical = crate::comments::attach_comments(attachments.plan, attachments.module, None)
+        .ok_or_else(refuse)?;
+    let raw = canonical.blocks.get(block_ordinal).ok_or_else(refuse)?;
+    let expected = extract(raw);
+    let block = parsed.blocks.get(block_ordinal).ok_or_else(refuse)?;
+    if expected.fallback || block.text != expected.text {
+        return Err(refuse());
+    }
+    let mut cursor = 0;
+    for (logical, source) in &block.source_map {
+        validate_coordinate_range(
+            &block.text,
+            TextRange {
+                start: logical.start,
+                end: logical.end,
+            },
+        )?;
+        if logical.start < cursor
+            || logical.start == logical.end
+            || !expected.source_map.iter().any(|(span, original)| {
+                span.start <= logical.start
+                    && logical.end <= span.end
+                    && source.start == original.start + logical.start - span.start
+                    && source.end == original.start + logical.end - span.start
+            })
+        {
+            return Err(refuse());
+        }
+        cursor = logical.end;
+    }
+    let mut loaded = Vec::new();
+    let mut complete = true;
+    for range in ranges {
+        validate_coordinate_range(
+            &block.text,
+            TextRange {
+                start: range.start,
+                end: range.end,
+            },
+        )?;
+        let mut covered = 0;
+        for (logical, source) in &block.source_map {
+            let start = logical.start.max(range.start);
+            let end = logical.end.min(range.end);
+            if start < end {
+                loaded.push(TextRange {
+                    start: source.start + start - logical.start,
+                    end: source.start + end - logical.start,
+                });
+                covered += end - start;
+            }
+        }
+        complete &= covered == range.end - range.start;
+    }
+    let module = attachments.module;
+    let publication = attachments.plan.manifest.artifact_hash;
+    let source_file = &attachments.input.artifact.source_file;
+    let digest = sources
+        .original_digest(module, publication, source_file)
+        .ok_or_else(refuse)?;
+    let (mapped, coverage) =
+        sources.loaded_ranges(module, publication, source_file, digest, &loaded)?;
+    Ok((
+        mapped,
+        if complete {
+            coverage
+        } else if block.source_map.is_empty() {
+            DocImportCoverage::Unavailable
+        } else {
+            DocImportCoverage::Incomplete
+        },
+    ))
+}
+
 /// Derives presentation views without rereading source or inferring item signatures.
 pub fn parse_comments<'a, 'input>(
     attachments: &'a CommentAttachments<'input>,

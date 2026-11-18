@@ -883,6 +883,130 @@ mod q1_comments {
     }
 
     #[test]
+    fn doc13_coordinates_genuine_commented_publication_preserves_native_bytes() {
+        use mizar_artifact::direct_by::{DirectByTarget, project_frontend_direct_by};
+        use mizar_doc::doc_build::*;
+        use mizar_session::TextRange;
+
+        let original = "\u{feff}::: café\r\ntheorem Named: thesis by Named, Named;\r\n";
+        let mut f = Fixture::new(original, None);
+        let frontend = f.frontend(0);
+        f.capture(0, &frontend);
+        let root = f.emission_root();
+        let commit = f.emit(&root, "native.mizir.json").unwrap().unwrap();
+        let publication = validated_manifest(&root);
+        let artifact = &f.retained(0).artifact.artifact;
+        let snapshot = f.session.captured().snapshot();
+        let request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: vec![DocPublicationRequest {
+                package: commit.manifest().package.clone(),
+                artifact_root: root.clone(),
+                expected_manifest_hash: publication.artifact_hash,
+                output_dir: f.files.root().join("doc-output"),
+                source_bundle: None,
+                dependency_indexes: None,
+                import_order: Default::default(),
+            }],
+        };
+        let plans = build_doc_plans(
+            &f.snapshots,
+            f.session.request().id,
+            snapshot.id,
+            &snapshot.workspace_root,
+            &request,
+        )
+        .unwrap();
+        let inputs =
+            authenticate_doc_imports(&f.snapshots, &snapshot.workspace_root, &plans[0], &[], &[])
+                .unwrap();
+        let producer = project_frontend_direct_by(
+            &f.outputs[0],
+            artifact,
+            publication.artifact_hash,
+            |_| None,
+            |_, _| DirectByTarget::Unmapped,
+        )
+        .unwrap();
+        let direct_by = authenticate_doc_direct_by(&inputs, &[&producer]).unwrap();
+        let before = [
+            root.join("artifact-manifest.json"),
+            root.join("native.mizir.json"),
+            f.files.root().join("src/module0.miz"),
+        ]
+        .map(|path| {
+            let bytes = std::fs::read(&path).unwrap();
+            (path, bytes)
+        });
+        let retained = f.retained(0).clone();
+        let sources = authenticate_doc_sources(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &[],
+            &direct_by,
+        )
+        .unwrap();
+        assert_eq!(
+            sources.source_binding(&artifact.module, publication.artifact_hash),
+            Some(("src/module0.miz", Some(mizar_session::hash_text(original))))
+        );
+        assert_eq!(
+            sources.original_digest(
+                &artifact.module,
+                publication.artifact_hash,
+                "src/module0.miz"
+            ),
+            Some(mizar_session::hash_text(original))
+        );
+        let attachments =
+            mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
+        let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+        let start = parsed.blocks[0].text.find("café").unwrap();
+        let expected = original.find("café").unwrap();
+        assert_eq!(
+            mizar_doc::markdown::original_ranges(
+                &sources,
+                &parsed,
+                0,
+                std::slice::from_ref(&(start..start + "café".len()))
+            )
+            .unwrap(),
+            (
+                vec![TextRange::new(expected, expected + "café".len())],
+                DocImportCoverage::Complete
+            )
+        );
+        let expected_targets = original
+            .match_indices("Named")
+            .skip(1)
+            .map(|(start, _)| TextRange::new(start, start + "Named".len()))
+            .collect::<Vec<_>>();
+        assert_eq!(producer.occurrences().len(), 2);
+        for (ordinal, edge) in producer.occurrences().iter().enumerate() {
+            assert_eq!((edge.by_ordinal, edge.target_ordinal), (0, ordinal));
+            assert_eq!(
+                sources
+                    .citation_ranges(&producer, &[edge.target_range])
+                    .unwrap(),
+                (vec![expected_targets[ordinal]], DocImportCoverage::Complete)
+            );
+        }
+        assert_eq!(direct_by.citation_coverage(), DocImportCoverage::Incomplete);
+        assert_eq!(f.retained(0), &retained);
+        for (path, bytes) in before {
+            assert_eq!(std::fs::read(path).unwrap(), bytes);
+        }
+        assert!(!request.publications[0].output_dir.exists());
+    }
+
+    #[test]
     fn q1_emission_disk_keeps_exact_draft_after_file_removal_and_clone() {
         let mut f = Fixture::new(TEXT, None);
         let frontend = f.frontend(0);

@@ -4,7 +4,7 @@ Canonical language: English; [Japanese companion](../ja/DOC13-SOURCE-COORDINATE-
 ## Status And Ownership
 Frozen bounded prerequisite, full tier: new authenticated source-coordinate consumer/binding boundary. Freeze and implementation count as one changed task.
 Purpose: discharge only the coordinate remainder of [G3](../../mizar-doc/en/render_prerequisites.md#ordered-readiness-gates).
-Primary owner: [mizar-doc plan](../../mizar-doc/en/00.crate_plan.md); Session owns map mechanics, Artifact original projection integrity, Driver/IR genuine publication lineage. Future Doc13 consumers use the handoff.
+Primary owner: [mizar-doc plan](../../mizar-doc/en/00.crate_plan.md); [Session](../../mizar-session/en/00.crate_plan.md) owns map mechanics, Artifact original projection integrity, Driver/IR genuine publication lineage. Future Doc13 consumers use the handoff.
 Dependencies: existing [native plan authentication](../../mizar-doc/en/doc_build.md#package-planning), [comment projection](../../mizar-artifact/en/comment_projection.md#text-coordinates-and-adjacency), [Q3 maps](../../mizar-doc/en/comments.md#markdown-and-structured-tags), [Session maps](../../mizar-session/en/source_map.md), and [direct-by producer](../../mizar-doc/en/link_prerequisites.md#artifact-owned-direct-by-producer).
 
 ## Authority And Gaps
@@ -21,7 +21,7 @@ Internal immutable API shape, names, validation order and refusal text are auton
 Forbidden: coherent Doc13 adoption, rendering/wire formats, G4–G5, schemas/publication changes, Doc23/24, credit/audit/trace changes, AGENTS/protocol edits. Reference encounter-order/classification stays Doc8/9; source-view/line routing stays Q3; degraded summaries stay Q4/MT with adopted block-local recovery.
 
 ## Artifacts And Review
-Write set: this pair, paired Doc plan links and render prerequisite boundary; existing Doc `doc_build.rs`/`markdown.rs`, narrowly necessary Artifact/Session/Driver/IR source handoffs and their paired owner documents; existing Doc/Driver/Session/Artifact test files. No unrelated owner changes.
+Write set: this pair, paired owner plan links and render prerequisite boundary; existing Doc `doc_build.rs`/`markdown.rs`, narrowly necessary Artifact/Session/Driver/IR source handoffs and their paired owner documents; existing Doc/Driver/Session/Artifact test files. No unrelated owner changes.
 Reviews: independent specification before freeze; test sufficiency, implementation precision, volume/scope, final source/EN-JA consistency and scoped quality assessment. Repeat specification only for changed contract.
 
 ## Acceptance Matrix

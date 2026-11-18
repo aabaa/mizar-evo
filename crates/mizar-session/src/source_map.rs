@@ -583,6 +583,43 @@ impl LoadingMap {
 }
 
 impl LoadingMapSegment {
+    /// Maps covered pieces independently; missing segments never acquire a bridge.
+    /// The caller supplies validated, ordered, nonoverlapping normalization segments
+    /// and an ordered range within their loaded frame.
+    pub fn original_ranges_for_loaded(
+        segments: &[Self],
+        loaded: TextRange,
+    ) -> (Vec<LoadedToOriginalRange>, bool) {
+        let mut result = Vec::new();
+        let mut covered = 0;
+        for segment in segments {
+            let (source, original, kind) = match segment {
+                Self::Original { loaded, original } => {
+                    (*loaded, *original, LoadedToOriginalRangeKind::Exact)
+                }
+                Self::NormalizedNewline { loaded, original } => {
+                    (*loaded, *original, LoadedToOriginalRangeKind::Degraded)
+                }
+                Self::RemovedLeadingBom { .. } => continue,
+            };
+            let part = TextRange {
+                start: loaded.start.max(source.start),
+                end: loaded.end.min(source.end),
+            };
+            if part.start < part.end {
+                result.push(LoadedToOriginalRange {
+                    original: map_loaded_subrange_to_original(source, original, part, kind),
+                    kind,
+                });
+                covered += part.end - part.start;
+            }
+        }
+        (
+            result,
+            loaded.end.checked_sub(loaded.start) == Some(covered),
+        )
+    }
+
     fn original_offset_for_loaded_inside(&self, offset: usize) -> Option<usize> {
         match self {
             Self::Original { loaded, original }
@@ -611,6 +648,81 @@ impl LoadingMapSegment {
 }
 
 impl PreprocessMap {
+    /// Recovers lexical endpoints only from authored original segments.
+    /// The input may enclose removed comments; endpoints inside those gaps refuse.
+    pub fn lexical_range_for_source(&self, range: SourceRange) -> Option<TextRange> {
+        self.validate_source_range(range).ok()?;
+        if range.start > range.end {
+            return None;
+        }
+        let (mut start, mut end) = (None, None);
+        for segment in &self.segments {
+            let PreprocessSegment::Original { lexical, source } = segment else {
+                continue;
+            };
+            self.validate_source_range(*source).ok()?;
+            if source.end.checked_sub(source.start) != lexical.end.checked_sub(lexical.start)
+                || source.start > source.end
+                || lexical.end > self.lexical_text_len
+            {
+                return None;
+            }
+            if source.start <= range.start && range.start <= source.end {
+                start = Some(lexical.start + range.start - source.start);
+            }
+            if source.start <= range.end && range.end <= source.end {
+                end = Some(lexical.start + range.end - source.start);
+            }
+        }
+        let result = TextRange {
+            start: start?,
+            end: end?,
+        };
+        (result.start <= result.end).then_some(result)
+    }
+
+    /// Returns authored pieces without enclosing removed comments or synthetic text.
+    pub fn source_ranges_for_lexical(
+        &self,
+        source_id: SourceId,
+        lexical: TextRange,
+    ) -> Result<(Vec<SourceRange>, bool), SourceMapError> {
+        self.validate_source_id(source_id)?;
+        if lexical.start > lexical.end {
+            return Err(SourceMapError::ReversedRange);
+        }
+        if lexical.end > self.lexical_text_len {
+            return Err(SourceMapError::RangeOutsideLexicalText {
+                source_id,
+                range: lexical,
+                lexical_len: self.lexical_text_len,
+            });
+        }
+        let mut result = Vec::new();
+        let mut covered = 0;
+        for segment in &self.segments {
+            let PreprocessSegment::Original {
+                lexical: span,
+                source,
+            } = segment
+            else {
+                continue;
+            };
+            self.validate_source_range(*source)?;
+            let start = lexical.start.max(span.start);
+            let end = lexical.end.min(span.end);
+            if start < end {
+                result.push(SourceRange {
+                    source_id,
+                    start: source.start + start - span.start,
+                    end: source.start + end - span.start,
+                });
+                covered += end - start;
+            }
+        }
+        Ok((result, covered == lexical.end - lexical.start))
+    }
+
     pub fn new(source_id: SourceId, lexical_text: &str, segments: Vec<PreprocessSegment>) -> Self {
         Self {
             source_id,

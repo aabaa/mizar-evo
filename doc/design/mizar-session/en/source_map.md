@@ -342,12 +342,16 @@ LSP conversion must apply the protocol's UTF-16 position rules in the `mizar-lsp
 
 ### Loaded-to-Original Mapping
 
+`LoadingMapSegment::original_ranges_for_loaded` intersects validated ordered loading segments independently and returns mapped pieces plus coverage, without enclosing gaps. Callers validate frame bounds and UTF-8 boundaries; normalized-newline pieces retain their degraded kind independently of complete byte coverage.
+
 1. Use the retained `LoadingMap` for the `SourceId`.
 2. If the retained service has no `LoadingMap` for that `SourceId`, return `SourceMapError::MissingLoadingMapSegment`. Callers that need identity conversion should retain a `LoadingMap::identity`.
 3. If a loaded range crosses a normalized segment, return a degraded `LoadedToOriginalRange` over the enclosing original byte range. The retained `SourceMapService` exposes this as a degraded `MappedSourceRange` whose `primary` remains the loaded source range and whose `original_input` records the original input byte range.
 4. For open buffers, return editor-text byte offsets; the LSP bridge performs the final UTF-16 conversion.
 
 ### Lexical-to-Source Mapping
+
+`PreprocessMap::source_ranges_for_lexical` returns only authored Original pieces in segment order and a coverage flag. Removed comments and synthetic anchors never supply authored bridge spans; source identity and lexical range errors remain refusals. `lexical_range_for_source` recovers lexical endpoints only from validated authored pieces, returning no range for missing/gap endpoints; it does not turn a loaded enclosing span into continuous authored coverage.
 
 1. Find all preprocess segments intersecting the lexical range.
 2. If the range maps to one contiguous loaded source range, map that range through loaded-to-original mapping when diagnostics need source-loading input coordinates.

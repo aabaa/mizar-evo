@@ -71,7 +71,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_section_names(&manifest);
-    let expected_sections = vec!["dependencies".to_owned()];
+    let expected_sections = vec!["dependencies".to_owned(), "dev-dependencies".to_owned()];
     let dependencies = section(&manifest, "dependencies");
     let actual = dependency_names(&dependencies);
     let expected = BTreeSet::from([
@@ -99,7 +99,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
     assert_eq!(
         dependency_sections,
         expected_sections,
-        "{} must keep the exact production dependency table; \
+        "{} must keep the exact production and development dependency tables; \
          build/target-specific dependency tables remain outside scope",
         manifest_path.display()
     );
@@ -110,6 +110,13 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
          named by the crate plan",
         manifest_path.display()
     );
+    let development = section(&manifest, "dev-dependencies");
+    assert_eq!(
+        dependency_names(&development),
+        BTreeSet::from(["mizar-doc".to_owned()]),
+        "only the native publication consumer belongs in Driver integration tests"
+    );
+    assert_dependency_path(&development, &manifest_path, "mizar-doc", "../mizar-doc");
     assert_dependency_path(
         &dependencies,
         &manifest_path,
@@ -450,17 +457,28 @@ fn phase_owner_crates_do_not_depend_on_driver_or_salsa() {
             continue;
         }
         let manifest = read_to_string(&manifest_path);
-        let dependency_names = dependency_section_names(&manifest)
-            .into_iter()
-            .flat_map(|section_name| dependency_names(&section(&manifest, &section_name)))
-            .collect::<BTreeSet<_>>();
-        for forbidden in ["mizar-driver", "salsa"] {
-            if dependency_names.contains(forbidden) {
-                violations.push(format!(
-                    "{} depends on {forbidden}",
-                    manifest_path.display()
-                ));
+        for section_name in dependency_section_names(&manifest) {
+            let names = dependency_names(&section(&manifest, &section_name));
+            for forbidden in ["mizar-driver", "salsa"] {
+                // Doc retains immutable native publication evidence, without scheduling.
+                let native_evidence = crate_name == "mizar-doc"
+                    && section_name == "dependencies"
+                    && forbidden == "mizar-driver";
+                if names.contains(forbidden) && !native_evidence {
+                    violations.push(format!(
+                        "{} [{section_name}] depends on {forbidden}",
+                        manifest_path.display()
+                    ));
+                }
             }
+        }
+        if crate_name == "mizar-doc" {
+            assert_dependency_path(
+                &section(&manifest, "dependencies"),
+                &manifest_path,
+                "mizar-driver",
+                "../mizar-driver",
+            );
         }
     }
 

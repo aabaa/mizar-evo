@@ -8887,5 +8887,472 @@ mod doc10_authenticated {
                 assert!(allocate(&app, &inputs, &identities, auxiliary(&app)).is_err());
             }
         }
+
+        mod coordinates {
+            use super::*;
+            use mizar_session::{SourceRange, TextRange};
+
+            fn publication(package: &str, texts: [&str; 2]) -> Publication {
+                let mut app = Publication::new(package, texts);
+                for (index, text) in texts.into_iter().enumerate() {
+                    let (loaded, _) = mizar_session::normalize_source_text(text);
+                    let lexical = mizar_lexer::preprocess_source_for_lexing(&loaded).lexical_text;
+                    let artifact = &mut app.artifacts[index];
+                    for witness in &mut artifact.proof_witnesses {
+                        witness.schema_version = mizar_artifact::proof_witness::current_schema_version();
+                        witness.proof_status = mizar_artifact::proof_witness::ProofStatus::KernelVerified;
+                    }
+                    artifact.source_hash = mizar_session::hash_text(&loaded);
+                    artifact.exports[0].export_kind = "theorem".into();
+                    artifact.exports[0].source_range.start_byte = lexical.find("theorem").unwrap() as u64;
+                    artifact.exports[0].source_range.end_byte = lexical.len() as u64;
+                    app.summaries[index].source_hash = artifact.source_hash;
+                    app.summaries[index].refresh_interface_hash().unwrap();
+                }
+                app.publish();
+                app
+            }
+
+            fn span(text: &str, needle: &str) -> TextRange {
+                let start = text.find(needle).unwrap();
+                TextRange::new(start, start + needle.len())
+            }
+
+            #[test]
+            fn doc13_coordinates_normalized_hashes_retain_original_utf8_offsets() {
+                let originals = [
+                    "::: café\ntheorem T: thesis;\n",
+                    "\u{feff}::: café\r\ntheorem T: thesis;\r\n",
+                ];
+                let mut app = publication("coordinate-normalization", originals);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let direct_by = authenticate_doc_direct_by(&imports, &[]).unwrap();
+                let sources =
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).unwrap();
+                assert_eq!(app.artifacts[0].source_hash, app.artifacts[1].source_hash);
+                let digests = app
+                    .artifacts
+                    .iter()
+                    .map(|artifact| {
+                        sources
+                            .original_digest(&artifact.module, app.hash, &artifact.source_file)
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>();
+                assert_ne!(digests[0], digests[1]);
+                for (index, original) in originals.into_iter().enumerate() {
+                    let artifact = &app.artifacts[index];
+                    assert_eq!(digests[index], mizar_session::hash_text(original));
+                    let (loaded, _) = mizar_session::normalize_source_text(original);
+                    let (mapped, coverage) = sources
+                        .loaded_ranges(
+                            &artifact.module,
+                            app.hash,
+                            &artifact.source_file,
+                            digests[index],
+                            &[span(&loaded, "café"), span(&loaded, "theorem")],
+                        )
+                        .unwrap();
+                    assert_eq!(coverage, DocImportCoverage::Complete);
+                    assert_eq!(mapped, [span(original, "café"), span(original, "theorem")]);
+                    assert_eq!(&original[mapped[0].start..mapped[0].end], "café");
+                }
+            }
+
+            #[test]
+            fn doc13_coordinates_q3_containers_and_removed_comments_never_bridge() {
+                let original = "::: > @requires α\n::: > β\ntheorem T: thesis by :: removed gap\n T;\n";
+                let mut app = publication("coordinate-gaps", [original, "theorem U: thesis;"]);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let projection = citation_projection(&app, 0, vec![DirectByTarget::Unmapped]);
+                let direct_by = authenticate_doc_direct_by(&imports, &[&projection]).unwrap();
+                let sources =
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).unwrap();
+                let attachments = doc7_attach(&plans[0]);
+                let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+                let block = &parsed.blocks[0];
+                let requested = [span(&block.text, "β"), span(&block.text, "α")].map(|r| r.start..r.end);
+                let (mapped, coverage) =
+                    mizar_doc::markdown::original_ranges(&sources, &parsed, 0, &requested).unwrap();
+                assert_eq!(coverage, DocImportCoverage::Complete);
+                assert_eq!(mapped, [span(original, "β"), span(original, "α")]);
+                let lexical = &app.frontend[0].preprocessed.lexical_text.text;
+                let start = lexical.find("by").unwrap();
+                let end = lexical.rfind("T;").unwrap() + 1;
+                let (mapped, coverage) = sources
+                    .lexical_ranges(
+                        &projection,
+                        &[SourceRange {
+                            source_id: projection.captured_source().0,
+                            start,
+                            end,
+                        }],
+                    )
+                    .unwrap();
+                // Session source_map: synthetic whitespace has no authored original span.
+                assert_eq!(coverage, DocImportCoverage::Incomplete);
+                assert!(mapped.len() >= 2);
+                assert_eq!(mapped.first().unwrap().start, original.find("by").unwrap());
+                assert_eq!(
+                    mapped.last().unwrap().end,
+                    original.rfind("T;").unwrap() + 1
+                );
+                for range in &mapped {
+                    assert!(!original[range.start..range.end].contains("removed gap"));
+                }
+                assert!(mapped.windows(2).any(|pair| pair[0].end < pair[1].start));
+                let source_id = projection.captured_source().0;
+                let missing = span(original, "removed gap");
+                let missing = SourceRange {
+                    source_id,
+                    start: missing.start,
+                    end: missing.end,
+                };
+                let target = projection.occurrences()[0].target_range;
+                let (known, coverage) = sources
+                    .citation_ranges(&projection, &[missing, target])
+                    .unwrap();
+                assert_eq!(coverage, DocImportCoverage::Incomplete);
+                assert_eq!(
+                    known,
+                    [TextRange::new(
+                        original.rfind("T;").unwrap(),
+                        original.rfind("T;").unwrap() + 1
+                    )]
+                );
+                assert_eq!(
+                    sources.citation_ranges(&projection, &[missing]).unwrap(),
+                    (vec![], DocImportCoverage::Unavailable)
+                );
+            }
+
+            #[test]
+            fn doc13_coordinates_repeated_self_ordinals_are_independent_of_endpoint_coverage() {
+                let original =
+                    "::: cited\ntheorem T: thesis proof thus thesis by T, T; thus thesis by T; end;";
+                let mut app = publication("coordinate-ordinals", [original, "theorem U: thesis;"]);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let own = DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)));
+                let projection =
+                    citation_projection(&app, 0, vec![own.clone(), own, DirectByTarget::Unmapped]);
+                let direct_by = authenticate_doc_direct_by(&imports, &[&projection]).unwrap();
+                assert_eq!(direct_by.citation_coverage(), DocImportCoverage::Incomplete);
+                let sources =
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).unwrap();
+                let before = direct_by.clone();
+                let mut mapped = Vec::new();
+                for edge in projection.occurrences() {
+                    let (ranges, coverage) = sources
+                        .citation_ranges(&projection, &[edge.target_range])
+                        .unwrap();
+                    assert_eq!(coverage, DocImportCoverage::Complete);
+                    assert_eq!(ranges.len(), 1);
+                    assert_eq!(&original[ranges[0].start..ranges[0].end], "T");
+                    mapped.push(ranges[0]);
+                }
+                assert_eq!(
+                    projection
+                        .occurrences()
+                        .iter()
+                        .map(|edge| (edge.by_ordinal, edge.target_ordinal))
+                        .collect::<Vec<_>>(),
+                    [(0, 0), (0, 1), (1, 0)]
+                );
+                assert!(mapped.windows(2).all(|pair| pair[0].end < pair[1].start));
+                assert_eq!(direct_by, before);
+                assert_eq!(imports.closure_coverage(), DocImportCoverage::Complete);
+            }
+
+            #[test]
+            fn doc13_coordinates_partial_missing_and_available_empty_stay_distinct() {
+                let mut app = publication(
+                    "coordinate-coverage",
+                    ["::: α\n::: β\ntheorem T: thesis;", "theorem U: thesis;"],
+                );
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let direct_by = authenticate_doc_direct_by(&imports, &[]).unwrap();
+                let sources =
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).unwrap();
+                let attachments = doc7_attach(&plans[0]);
+                let mut parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+                let ranges = ["α", "β"].map(|needle| {
+                    let r = span(&parsed.blocks[0].text, needle);
+                    r.start..r.end
+                });
+                let removed = parsed.blocks[0].source_map.pop().unwrap();
+                assert!(removed.0.start <= ranges[1].start && removed.0.end >= ranges[1].end);
+                let (mapped, coverage) =
+                    mizar_doc::markdown::original_ranges(&sources, &parsed, 0, &ranges).unwrap();
+                assert_eq!(coverage, DocImportCoverage::Incomplete);
+                assert_eq!(mapped, [span("::: α\n::: β\ntheorem T: thesis;", "α")]);
+                parsed.blocks[0].source_map.clear();
+                assert_eq!(
+                    mizar_doc::markdown::original_ranges(&sources, &parsed, 0, &ranges).unwrap(),
+                    (vec![], DocImportCoverage::Unavailable)
+                );
+                let artifact = &app.artifacts[0];
+                let digest = sources
+                    .original_digest(&artifact.module, app.hash, &artifact.source_file)
+                    .unwrap();
+                assert_eq!(
+                    sources
+                        .loaded_ranges(
+                            &artifact.module,
+                            app.hash,
+                            &artifact.source_file,
+                            digest,
+                            &[]
+                        )
+                        .unwrap(),
+                    (vec![], DocImportCoverage::Complete)
+                );
+                let legacy = &app.artifacts[1];
+                assert_eq!(
+                    sources.source_binding(&legacy.module, app.hash),
+                    Some((legacy.source_file.as_str(), None))
+                );
+                assert_eq!(
+                    sources
+                        .loaded_ranges(
+                            &legacy.module,
+                            app.hash,
+                            &legacy.source_file,
+                            mizar_session::hash_text("theorem U: thesis;"),
+                            &[]
+                        )
+                        .unwrap(),
+                    (vec![], DocImportCoverage::Unavailable)
+                );
+            }
+
+            #[test]
+            fn doc13_coordinates_refuse_foreign_frames_tampering_and_invalid_boundaries() {
+                let original = "::: café\ntheorem T: thesis by T;";
+                let mut app = publication("coordinate-refusals", [original, "theorem U: thesis;"]);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let imports = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    &plans[0],
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let projection = citation_projection(&app, 0, vec![DirectByTarget::Unmapped]);
+                let direct_by = authenticate_doc_direct_by(&imports, &[&projection]).unwrap();
+                let sources =
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).unwrap();
+                let artifact = &app.artifacts[0];
+                let digest = mizar_session::hash_text(original);
+                let good = span(original, "café");
+                for (module, publication, path, original_digest, range) in [
+                    (
+                        artifact.module.clone(),
+                        mizar_session::hash_text("foreign publication"),
+                        artifact.source_file.clone(),
+                        digest,
+                        good,
+                    ),
+                    (
+                        {
+                            let mut m = artifact.module.clone();
+                            m.package_version = Some("9.9.9".into());
+                            m
+                        },
+                        app.hash,
+                        artifact.source_file.clone(),
+                        digest,
+                        good,
+                    ),
+                    (
+                        artifact.module.clone(),
+                        app.hash,
+                        "src/foreign.miz".into(),
+                        digest,
+                        good,
+                    ),
+                    (
+                        artifact.module.clone(),
+                        app.hash,
+                        artifact.source_file.clone(),
+                        mizar_session::hash_text("foreign original"),
+                        good,
+                    ),
+                    (
+                        artifact.module.clone(),
+                        app.hash,
+                        artifact.source_file.clone(),
+                        digest,
+                        TextRange::new(good.start, original.len() + 1),
+                    ),
+                    (
+                        artifact.module.clone(),
+                        app.hash,
+                        artifact.source_file.clone(),
+                        digest,
+                        TextRange::new(good.end - 1, good.end),
+                    ),
+                ] {
+                    assert!(
+                        sources
+                            .loaded_ranges(&module, publication, &path, original_digest, &[range])
+                            .is_err()
+                    );
+                }
+                let original_frontend = app.frontend[0].clone();
+                for case in 0..3 {
+                    app.frontend[0] = original_frontend.clone();
+                    if case < 2 {
+                        let source = &app.frontend[0].source;
+                        let mut map = mizar_session::LoadingMap::identity(
+                            source.source_id,
+                            &source.source_text,
+                            mizar_session::LoadingOrigin::DiskBytes {
+                                normalized_path: source.normalized_path.clone(),
+                            },
+                        );
+                        if case == 0 {
+                            map.segments.clear();
+                        } else {
+                            map.origin = mizar_session::LoadingOrigin::Generated;
+                        }
+                        app.frontend[0].source.loading_map = Some(map);
+                    } else {
+                        app.frontend[0]
+                            .preprocessed
+                            .source_map
+                            .preprocess_map
+                            .segments
+                            .clear();
+                    }
+                    let conflicting = citation_projection(&app, 0, vec![DirectByTarget::Unmapped]);
+                    let conflicting = authenticate_doc_direct_by(&imports, &[&conflicting]).unwrap();
+                    assert!(
+                        authenticate_doc_sources(&registry, &workspace, &imports, &[], &conflicting)
+                            .is_err()
+                    );
+                }
+                app.frontend[0] = original_frontend;
+                let foreign_source = app.frontend[1].source.source_id;
+                let edge = projection.occurrences()[0].target_range;
+                assert!(
+                    sources
+                        .lexical_ranges(
+                            &projection,
+                            &[SourceRange {
+                                source_id: foreign_source,
+                                start: edge.start,
+                                end: edge.end
+                            }]
+                        )
+                        .is_err()
+                );
+                assert!(
+                    sources
+                        .lexical_ranges(
+                            &projection,
+                            &[SourceRange {
+                                source_id: edge.source_id,
+                                start: edge.start,
+                                end: usize::MAX
+                            }]
+                        )
+                        .is_err()
+                );
+                let attachments = doc7_attach(&plans[0]);
+                let mut parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+                let r = span(&parsed.blocks[0].text, "café");
+                parsed.blocks[0].source_map[0].1.start += 1;
+                assert!(
+                    mizar_doc::markdown::original_ranges(&sources, &parsed, 0, std::slice::from_ref(&(r.start..r.end))).is_err()
+                );
+                let mut tampered = plans[0].clone();
+                tampered
+                    .index
+                    .modules
+                    .values_mut()
+                    .next()
+                    .unwrap()
+                    .comment_projection = mizar_artifact::store::CanonicalJson::Null;
+                assert!(
+                    authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &tampered,
+                        &[],
+                        &inputs(&app, &views[0])
+                    )
+                    .is_err()
+                );
+                let artifact_path = app
+                    .root
+                    .join(&plans[0].manifest.manifest.modules[0].artifact_file);
+                let bytes = std::fs::read(&artifact_path).unwrap();
+                std::fs::write(&artifact_path, b"invalid artifact").unwrap();
+                assert!(matches!(
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by),
+                    Err(DocBuildError::Publication(_))
+                ));
+                std::fs::write(artifact_path, bytes).unwrap();
+                assert!(
+                    authenticate_doc_sources(
+                        &SnapshotRegistry::new(),
+                        &workspace,
+                        &imports,
+                        &[],
+                        &direct_by
+                    )
+                    .is_err()
+                );
+                let snapshot = registry.get(plans[0].snapshot).unwrap();
+                let mut replacement = SnapshotInput {
+                    workspace_root: snapshot.workspace_root,
+                    source_versions: snapshot.source_versions,
+                    dependency_artifacts: snapshot.dependency_artifacts,
+                    lockfile_hash: snapshot.lockfile_hash,
+                    toolchain: snapshot.toolchain,
+                    verifier_config_hash: snapshot.verifier_config_hash,
+                };
+                replacement.verifier_config_hash = mizar_session::hash_text("superseded coordinates");
+                registry
+                    .create_snapshot(plans[0].build_request, replacement)
+                    .unwrap();
+                assert!(
+                    authenticate_doc_sources(&registry, &workspace, &imports, &[], &direct_by).is_err()
+                );
+            }
+        }
     }
 }
