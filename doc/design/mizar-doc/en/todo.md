@@ -154,6 +154,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
     - Deps: 8, 9. Spec: `links.md`.
 
 11. **Spec: `math.md`.** [ ]
+    - [Math-model definition proposal](../../task_contracts/en/DOC11-MATH-DEFINITION.md); new owner choices remain unselected.
     - Write the math-rendering spec (English and Japanese, no code): LaTeX
       subset, formula rendering strategy, and determinism rules.
     - Deps: 4. Spec: architecture 13 "Step 3".

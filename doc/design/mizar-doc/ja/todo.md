@@ -152,6 +152,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
     - 依存: 8、9。仕様: `links.md`。
 
 11. **仕様: `math.md`。** [ ]
+    - [Math model 定義提案](../../task_contracts/ja/DOC11-MATH-DEFINITION.md); 新しい owner 選択は未選択のまま。
     - 数式レンダリングの仕様を執筆する（英語と日本語、コードなし）:
       LaTeX サブセット、式レンダリング戦略、決定性規則。
     - 依存: 4。仕様: アーキテクチャ 13「Step 3」。
