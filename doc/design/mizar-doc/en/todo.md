@@ -139,6 +139,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
    - Deps: 7. Spec: `comments.md`.
 
 9. **Spec: `links.md`.** [ ]
+   - [Link-model definition proposal](../../task_contracts/en/DOC9-LINKS-DEFINITION.md); new owner choices remain unselected.
    - Write the cross-reference spec (English and Japanese, no code): link
      syntax, resolution against exported symbol identity (shared with
      extraction), and unresolved-link policy.

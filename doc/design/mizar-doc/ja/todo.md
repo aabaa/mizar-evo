@@ -137,6 +137,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
    - 依存: 7。仕様: `comments.md`。
 
 9. **仕様: `links.md`。** [ ]
+   - [Link-model 定義提案](../../task_contracts/ja/DOC9-LINKS-DEFINITION.md)。新しい所有者選択は未選択に保つ。
    - 相互参照の仕様を執筆する（英語と日本語、コードなし）: リンク構文、
      export 済みシンボル識別（抽出と共有）に対する解決、未解決リンクの
      ポリシー。
