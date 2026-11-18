@@ -281,7 +281,7 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
     let block_range = attachments.blocks[0].source_range.unwrap();
     attachments.blocks[0].lines[0] = &faulty_row;
     let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
-    assert_eq!(doc8_codes(&parsed.warnings), ["W0411", "W0406"]);
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0411", "W0406", "W0407"]);
     assert!(parsed.blocks[0].fallback);
     assert_eq!(
         parsed.blocks[0].text,
@@ -291,6 +291,17 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
     assert!(parsed.blocks[0].math.is_empty());
     assert!(!parsed.blocks[1].fallback);
     assert_eq!(parsed.blocks[1].fields.len(), 1);
+    let duplicate = &parsed.warnings[2];
+    assert_eq!(duplicate.stable_detail_key(), "documentation.tag.duplicate");
+    let V::List(occurrence) = &duplicate.details().entries()["documentation.occurrence"] else {
+        panic!("duplicate occurrence")
+    };
+    assert_eq!(occurrence[3], V::String("1".into()));
+    let marker_start = source.text.rfind("@returns").unwrap();
+    assert!(
+        matches!(duplicate.primary_location(), DiagnosticPrimaryLocation::Span(span)
+        if span.range() == mizar_session::SourceRange { source_id: source.source_id, start: marker_start, end: marker_start + "@returns".len() })
+    );
     assert_eq!(
         parsed.attachments.input.comment_projection,
         saved_projection

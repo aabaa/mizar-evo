@@ -106,7 +106,6 @@ pub fn parse_comments<'a, 'input>(
     for (ordinal, raw) in attachments.blocks.iter().enumerate() {
         let mut block = extract(raw);
         let mut conditions = Vec::new();
-        let seen_before = seen.len();
         if !block.fallback {
             derive(&mut block, &mut conditions);
             let target_metadata = metadata.iter().find(|item| {
@@ -117,7 +116,6 @@ pub fn parse_comments<'a, 'input>(
         }
         if block.fallback || !valid_maps(&block, attachments) {
             block.fallback = true;
-            seen.truncate(seen_before);
             result
                 .warnings
                 .push(conversion_draft(attachments, ordinal, raw, &conditions));
