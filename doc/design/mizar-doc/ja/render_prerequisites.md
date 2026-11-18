@@ -53,4 +53,4 @@ used_by は producer が分類した選択済み theorem ごとに一 record と
 5. その後に限り、採用済み interface と完全入力に対して Doc14/15 実装を dispatch し、上記 wire shape と canonical byte の positive/refusal/incompatibility witness を備える。Doc23 atomic publication、Doc24 executable determinism、optional DocIndex schema/compatibility は個別 gate のままで、この補完では一つも解消しない。
 
 ## 採用済み G4 URL 方針診断の前提
-限定 [Q5 出力方針](./render.md#採用済み-htmlurl-出力方針) と [共有 URL 診断](../../mizar-diagnostics/ja/documentation_urls.md) を採用する。実装は明示 draft に対する registry support のみ。検出・発行と overlap/refusal witness、残る Q12/source/readiness 診断、template/attribute order/style/search manifest、symbolic math、他の G4/G5 は gate 内に残る。
+限定 [Q5 出力方針](./render.md#採用済み-htmlurl-出力方針) と [共有 URL 診断](../../mizar-diagnostics/ja/documentation_urls.md) を採用する。実 Doc8 destination、供給 Doc10 分類との binding、限定 safe output と W0415 検出・発行を採用する。全体 rendering と残る Q12/source/readiness 診断、template/attribute order/style/search manifest、symbolic math、他の G4/G5 は gate 内に残る。
