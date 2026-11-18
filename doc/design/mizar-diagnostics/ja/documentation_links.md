@@ -1,15 +1,15 @@
-# Doc9/Doc10 共有 Link 診断提案
+# Doc9/Doc10 共有 Link 診断
 正本は英語: [English companion](../en/documentation_links.md)。
-状態: dispatch screening 規則に従って選定した非規範的な診断/来歴設計。registry 有効化、code/schema 割当、実装は行わない。[Spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) が警告/劣化 semantics を固定し、[Doc 前提入力](../../mizar-doc/ja/link_prerequisites.md) が producer と allocation を所有する。
+状態: [spec22 割当](../../../spec/ja/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) と [spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) に基づく採用済み共有診断契約。共有 registry/location/aggregation/CLI support は gate 4 を供給し、resolver 発行と後続 gate は未完了。[Doc 前提入力](../../mizar-doc/ja/link_prerequisites.md) が producer と destination allocation を所有する。
 
 ## Exact Meanings And Descriptors
-各行は family `Documentation`、default severity `Warning`、phase `Documentation`、category `DocumentationWarning` を提案し、semantic name は永久 meaning key と等しい。初期 lifecycle は採用時のみ active となり、alias、retirement marker、replacement は空とする。summary は以下の colon 前の英語 text。[registry metadata/compatibility](../en/registry.md#descriptor-metadata) に従い、既存の attachment と Markdown/tag の意味は変えない。
+各行は family `Documentation`、default severity `Warning`、phase `Documentation`、category `DocumentationWarning` を持ち、semantic name は永久 meaning key と等しい。初期 lifecycle は active となり、alias、retirement marker、replacement は空とする。summary は以下の colon 前の英語 text。[registry metadata/compatibility](../en/registry.md#descriptor-metadata) に従い、既存の attachment と Markdown/tag の意味は変えない。
 | Semantic name / meaning key | Summary: 正確な条件 |
 |---|---|
 | `documentation.link.unresolved` | Documentation reference is unresolved: 適格な occurrence について、必要な完全探索後に target がない、結合済みの完全 section index に一致 section がない、または spec24.2 に従う解釈済み destination 分類が利用不可/未対応である。 |
 | `documentation.link.ambiguous` | Documentation reference is ambiguous: 適用される完全探索で重複経路をまとめた後も複数の異なる完全 target 識別が得られる。現 module の複数 hit は import がなくても確定的である。 |
 | `documentation.link.incomplete_input` | Documentation link inputs are incomplete: 必要な import/closure/citation/allocation/section-index coverage が利用不可または不完全であり、影響する reference、module-page、section-index、UsedBy の完全性主張を妨げる。 |
-数値 code、`since` 採用 revision、規範的 `doc_url`: 別途整合的に採用/割当するまで UNSELECTED。数値 slot は予約せず、名前と summary は選定した提案上の選択であり、所有者 Q ではない。
+code は行順に W0412、W0413、W0414。`since = DOC10-SHARED-DIAGNOSTICS`、`doc_url` は正本 spec24.2。schema は割り当てない。
 
 ## Structured Identity And Details
 既存の [String/List detail 値](../en/failure_record.md#markdowntag-occurrence-details) と `stable_detail_key = semantic_name` を使う。各 draft は正確に以下の detail key を持ち、不在値は空 List とし、推測した zero/空の識別 String は使わない。識別 encoding はその所有者の小文字 publication hash、完全 module tuple、optional-version/lock List、canonical な先行零なし十進 u64 String を再利用する。
@@ -20,13 +20,13 @@
 `documentation.link.citation_coverage` は UsedBy subject 以外では空で、UsedBy subject では `[closure_state, closure, coverage_state, examined]` とする。state は `unavailable|incomplete|complete`、closure は完全 module 識別/publication 順に並べた `[publication, module]` 対の認証済み有限 inventory。examined は candidate 順に並べた producer の `[publication, module, origin_id, fqn, parts]` 定理 entry の List とし、parts は実際に調べた `body|proof` 部分をその順で重複なく列挙する。coverage 不在は unavailable state と空 examined List を保持し、完全な空とはしない。closure 不在は独自の unavailable state を保持する。これらは明示的 scope 射影であり、推測 hash、source 再構築、shared wire schema ではない。
 
 ## Locations, Precedence, Deduplication And Ordering
-reference では source に結合した mapped destination segment のうち最初の完全かつ連続したものを選ぶ（inline code は label 内容、@see は ref slot）。残る mapped segment は論理遭遇順の secondary span として保持し、隙間を結ばない。使える primary がなければ真の block ordinal とともに [Documentation block provenance primary](../en/failure_record.md#documentation-primary-locations) を再利用する。採用時はこれらの descriptor への適用拡張を明示する必要があり、raw path、artifact offset、label は source を結合しない。
-input-level warning は block を捏造しない。認証済み publication と完全 module 識別を含み block ordinal を持たない module-scope Documentation provenance primary を提案し、検証済み item subject は detail に残す。SourceId/span/EOF、line/column、underline、excerpt は持たない。CLI は `  --> documentation ` の後で publication/module を示し、`scope`、scope 値、存在すれば検証済み item 識別を付加する。この location 拡張には別途採用/support が必要であり、既存の実装済み variant ではない。
+reference では source に結合した mapped destination segment のうち最初の完全かつ連続したものを選ぶ（inline code は label 内容、@see は ref slot）。残る mapped segment は論理遭遇順の secondary span として保持し、隙間を結ばない。使える primary がなければ真の block ordinal とともに [Documentation block provenance primary](../en/failure_record.md#documentation-primary-locations) を再利用する。これらの descriptor にも適用し、raw path、artifact offset、label は source を結合しない。
+input-level warning は block を捏造しない。認証済み publication と完全 module 識別を含み block ordinal を持たない module-scope Documentation provenance primary を使い、検証済み item subject は detail に残す。SourceId/span/EOF、line/column、underline、excerpt は持たない。CLI は `  --> documentation ` の後で publication/module を示し、`scope`、scope 値、存在すれば検証済み item 識別を付加する。`DiagnosticPrimaryLocation::DocumentationScope` がこの位置を供給する。
 同じ Documentation source key で module の scope/block location をまとめ、scope primary を block primary より前に置き、block は引き続き数値順とする。scope 重複除去識別には異なる location kind と完全 publication/module 識別を含める。それ以外の既存 [重複除去](../en/aggregator.md#deduplication-identity)、[canonical comparator](../en/aggregator.md#ordering-and-handles)、表示 tie-breaker、stale-snapshot 規則は変えない。mapped の同順位は既存 code/detail 順に従い、traversal sort や将来の数値 code 順の推測を導入しない。
 reference subject ごとに警告を一つ出し、必要な入力がなければ不完全、曖昧、未解決の順で選ぶ。確定的な現 module の結果は未使用 import 入力に依存しない。allocation は一意 target が確立した後にだけ必要であり、曖昧な candidate の destination 不在で完全探索の曖昧性を上書きしない。完全に成功した reference、外部 URL、通常の式/code span、抑制した optional alias には警告を出さない。@see slot 不在と Doc8 failed-view block は Doc8 の警告だけに属し、その fallback text から適格 reference を捏造しない。下位 reader の integrity/schema/binding/currentness 拒否は error を保ち、依存する表示 draft を抑制する。
 影響する module-page、section-index、定理 UsedBy subject ごとに全 cause を持つ input-level 完全性警告を一つ出す。reference 警告は scope 警告と別に保つが、同じ subject/cause 集合の重複報告はまとめる。worker や route が複数でも一つの警告を増やさず、異なる論理 occurrence は mapped location が同位置でも detail を通じて区別を保つ。citation occurrence detail は producer graph に残し、UsedBy 警告は影響 target と coverage を示し、引用元 occurrence を捏造しない。
 未解決/曖昧 reference は安全な非リンク text を保ち、不完全 output は空の完全出力にせず、利用不可と見える形にする。これらは既定の表示警告のままであり、割当後に既存 suppression/profile 規則を適用する。profile 昇格は documentation quality だけを失敗させ、code/default severity、証明妥当性、公開済み verification 入力、extraction acceptance を保つ。fix、新しい suppression 構文、shared wire schema、renderer 診断は提案しない。
 
 ## Adoption Witnesses And Screened Decisions
-別途診断採用/support を要求し、完全な探索失敗/曖昧性、不在/部分 coverage と完全空 coverage、現 module の独立性、誤 binding の下位拒否、scope だけの citation data 不在、重複/同位置/非連続/provenance-only occurrence、複数 cause/route、freshness、profile 昇格の witness を用意する。gate 順序は前提条件提案が所有し、ここから実行テストや readiness credit は生じない。
-自律的に選定したもの: 三つの意味/descriptor、detail 語彙、provenance 適用/拡張、scope 警告粒度、優先順位、順序拡張。これらは言語 semantics を変えずに固定済み表示意図を実現する。言語仕様 Q は導入せず、明示的に未選択の割当/採用 metadata だけを別作業に残す。
+共有 support は完全な探索失敗/曖昧性、不在/部分 coverage と完全空 coverage、現 module の独立性、誤 binding の下位拒否、scope だけの citation data 不在、重複/同位置/非連続/provenance-only occurrence、複数 cause/route、freshness、profile 昇格の witness を用意する。gate 順序は前提条件所有者が保持し、resolver 発行 witness は別途統合の責務とする。
+自律的に選定したもの: 三つの意味/descriptor、detail 語彙、provenance 適用/拡張、scope 警告粒度、優先順位、順序拡張。これらは言語 semantics を変えずに固定済み表示意図を実現する。言語仕様 Q は導入せず、registry metadata は上記のとおり割当済みで、resolver 統合は別作業に残す。

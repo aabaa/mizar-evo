@@ -93,7 +93,9 @@ projection である。これらは registry identity ではない。
 
 ## Documentation attachment allocation
 
-[spec22 §22.6.8](../../../spec/ja/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) は添付 W0400–W0404、[§22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) は Markdown/tag W0405–W0411 の name・meaning・summary を所有する。両者は `Documentation`、`Warning`、`meaning_key = semantic_name`、active と空の alias/retirement/replacement を使う。添付は `since = spec-22-documentation-v1` と §22.6.8 URL、Markdown/tag は `since = spec-22-documentation-markdown-tags-v1` と §22.6.9 URL。W0412–W0499 は未割当。profile 昇格は descriptor identity を変えない。両者は [record 位置と詳細](./failure_record.md#documentation-primary-locations) を使い、parser/producer 実装と Extraction 割当は別作業。
+[spec22 §22.6.8](../../../spec/ja/22.error_handling_and_diagnostics.md#2268-documentation-attachment-warnings) は添付 W0400–W0404、[§22.6.9](../../../spec/ja/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings) は Markdown/tag W0405–W0411 の name・meaning・summary を所有する。両者は `Documentation`、`Warning`、`meaning_key = semantic_name`、active と空の alias/retirement/replacement を使う。添付は `since = spec-22-documentation-v1` と §22.6.8 URL、Markdown/tag は `since = spec-22-documentation-markdown-tags-v1` と §22.6.9 URL。W0415–W0499 は未割当。profile 昇格は descriptor identity を変えない。両者は [record 位置と詳細](./failure_record.md#documentation-primary-locations) を使い、parser/producer 実装と Extraction 割当は別作業。
+
+[Link 割当 §22.6.10](../../../spec/ja/22.error_handling_and_diagnostics.md#22610-documentation-link-warnings) は W0412–W0414、`since = DOC10-SHARED-DIAGNOSTICS`、正本 spec24.2 `doc_url` を追加する。[共有契約](./documentation_links.md) が詳細と表示規則を所有する。
 
 ## Deferred Code-Space Gaps
 

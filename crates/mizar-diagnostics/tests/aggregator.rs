@@ -287,7 +287,15 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
         fixes: vec![],
         explanation: None,
     };
-    let mut drafts = Vec::new();
+    let scope = DiagnosticPrimaryLocation::DocumentationScope {
+        publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+        package_id: "pkg".into(),
+        package_version: None,
+        lockfile_identity: None,
+        module_path: "src/doc.miz".into(),
+        language_edition: "2026".into(),
+    };
+    let mut drafts = vec![DiagnosticDraft::new(make_input(scope.clone(), "scope".into())).unwrap()];
     for ordinal in [0, 2, 12, u64::MAX] {
         let mut primary = location.clone();
         if let DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } = &mut primary {
@@ -295,8 +303,12 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
         }
         drafts.push(DiagnosticDraft::new(make_input(primary, format!("block{ordinal}"))).unwrap());
     }
-    for field in 0..6 {
-        let mut primary = location.clone();
+    for field in 0..12 {
+        let mut primary = if field < 6 {
+            location.clone()
+        } else {
+            scope.clone()
+        };
         if let DiagnosticPrimaryLocation::Documentation {
             publication_hash,
             package_id,
@@ -305,9 +317,17 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
             module_path,
             language_edition,
             ..
+        }
+        | DiagnosticPrimaryLocation::DocumentationScope {
+            publication_hash,
+            package_id,
+            package_version,
+            lockfile_identity,
+            module_path,
+            language_edition,
         } = &mut primary
         {
-            match field {
+            match field % 6 {
                 0 => *publication_hash = Hash::from_bytes([0xcd; Hash::BYTE_LEN]),
                 1 => *package_id = "other".into(),
                 2 => *package_version = Some(String::new()),
@@ -368,7 +388,7 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
     )
     .unwrap();
     assert_eq!(forward.debug_snapshot(), reversed.debug_snapshot());
-    assert_eq!(forward.len(), 13);
+    assert_eq!(forward.len(), 20);
     assert_eq!(forward.by_source().len(), 7);
     let key = format!(
         "documentation:{}:\"pkg\":None:None:\"src/doc.miz\":\"2026\"",
@@ -388,6 +408,12 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
             .unwrap()
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    let scope_position = forward
+        .records()
+        .iter()
+        .position(|record| record.message() == "scope")
+        .unwrap();
+    assert!(scope_position < positions[0]);
     let stale_snapshot = snapshot_id(41);
     let mut stale_input = make_input(location.clone(), "stale".into());
     stale_input.source_snapshot = stale_snapshot;
@@ -395,11 +421,14 @@ fn documentation_aggregation_preserves_identity_numeric_order_and_freshness() {
         stale_snapshot,
         PipelinePhase::Documentation,
         "documentation-stale",
-        vec![DiagnosticDraft::new(stale_input).unwrap()],
+        vec![DiagnosticDraft::new(stale_input.clone()).unwrap(), {
+            stale_input.primary_location = scope;
+            DiagnosticDraft::new(stale_input).unwrap()
+        }],
     );
     let current = BuildDiagnosticIndex::from_batches(snapshot, vec![stale_batch]).unwrap();
     assert!(current.records().is_empty());
-    assert_eq!(current.obsolete_drafts().len(), 1);
+    assert_eq!(current.obsolete_drafts().len(), 2);
 
     // Supply Markdown/tag conventions at the shared-record seam, without a parser.
     use DiagnosticDetailValue::{List, String as Text};

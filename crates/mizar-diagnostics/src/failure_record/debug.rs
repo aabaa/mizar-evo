@@ -195,6 +195,17 @@ fn render_primary_location(location: &DiagnosticPrimaryLocation) -> String {
             "documentation(publication={},package={package_id:?},version={package_version:?},lockfile={lockfile_identity:?},module={module_path:?},edition={language_edition:?},block={block_ordinal})",
             publication_hash.to_lower_hex()
         ),
+        DiagnosticPrimaryLocation::DocumentationScope {
+            publication_hash,
+            package_id,
+            package_version,
+            lockfile_identity,
+            module_path,
+            language_edition,
+        } => format!(
+            "documentation_scope(publication={},package={package_id:?},version={package_version:?},lockfile={lockfile_identity:?},module={module_path:?},edition={language_edition:?})",
+            publication_hash.to_lower_hex()
+        ),
     }
 }
 

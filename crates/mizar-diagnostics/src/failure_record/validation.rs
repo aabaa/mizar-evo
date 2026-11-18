@@ -89,7 +89,11 @@ pub(super) fn validate_primary_location(
                 });
             }
         }
-        (_, DiagnosticPrimaryLocation::Documentation { .. }) if !is_documentation_code => {
+        (
+            _,
+            DiagnosticPrimaryLocation::Documentation { .. }
+            | DiagnosticPrimaryLocation::DocumentationScope { .. },
+        ) if !is_documentation_code => {
             return Err(
                 DiagnosticRecordError::NonDocumentationCodeUsesDocumentationLocation { code },
             );
@@ -97,6 +101,12 @@ pub(super) fn validate_primary_location(
         (
             _,
             DiagnosticPrimaryLocation::Documentation {
+                package_id,
+                module_path,
+                language_edition,
+                ..
+            }
+            | DiagnosticPrimaryLocation::DocumentationScope {
                 package_id,
                 module_path,
                 language_edition,

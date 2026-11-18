@@ -182,3 +182,5 @@ conversion boundary を変えてはならない。
 ## Documentation locations
 
 非範囲主位置の行は `  --> documentation publication={hash} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?} block={ordinal}`。hash は小文字16進数、identity の文字列・Option は Rust debug escape を用いる。この主位置の source context を参照せず、座標・下線・抜粋を捏造しない。実在する副スパンと他の payload は既存の表示を維持する。
+
+`DocumentationScope` は同じ来歴 prefix を `block` なしで使い、[採用済み subject 詳細](./documentation_links.md#structured-identity-and-details) から `scope={scope:?}` と、検証済み item subject があれば `item_origin={origin_id:?} item_fqn={fqn:?}` を付記する。この主位置は source context を参照せず、rendering に profile/suppression policy を追加しない。

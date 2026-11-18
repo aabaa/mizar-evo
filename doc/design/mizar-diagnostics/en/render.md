@@ -187,3 +187,5 @@ A source-loading primary location renders `  --> {normalized_path}` without cons
 ## Documentation locations
 
 The non-range primary line is `  --> documentation publication={hash} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?} block={ordinal}`. Hash is lowercase hexadecimal and identity strings/options use Rust debug escaping. Rendering consults no source context for this primary and fabricates no coordinates, underline or excerpt; real secondary spans and other payloads retain their existing rendering.
+
+`DocumentationScope` uses the same provenance prefix without `block`, appending `scope={scope:?}` and, for a verified item subject, `item_origin={origin_id:?} item_fqn={fqn:?}` from [adopted subject details](./documentation_links.md#structured-identity-and-details). This primary never consults source context; no profile or suppression policy is added to rendering.

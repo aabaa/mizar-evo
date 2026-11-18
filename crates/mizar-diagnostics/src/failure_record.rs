@@ -52,7 +52,7 @@ pub enum PipelinePhase {
     Compatibility,
     /// Build/session infrastructure diagnostics.
     Build,
-    /// Documentation attachment and Markdown/tag diagnostics.
+    /// Documentation attachment, Markdown/tag and link diagnostics.
     Documentation,
     /// Developer-only internal diagnostics.
     Internal,
@@ -113,7 +113,7 @@ pub enum FailureCategory {
     LogicFailure,
     /// Compatibility or packaging warning.
     CompatibilityWarning,
-    /// Documentation attachment or Markdown/tag warning.
+    /// Documentation attachment, Markdown/tag or link warning.
     DocumentationWarning,
     /// Informational display diagnostic after `I` codes are allocated.
     Informational,
@@ -517,6 +517,21 @@ pub enum DiagnosticPrimaryLocation {
         language_edition: String,
         /// Zero-based block ordinal in preserved module source order.
         block_ordinal: u64,
+    },
+    /// Documentation scope provenance without a block or source-bound range.
+    DocumentationScope {
+        /// Authenticated publication identity supplied by the producer.
+        publication_hash: Hash,
+        /// Package identity owning the module.
+        package_id: String,
+        /// Exact optional package version.
+        package_version: Option<String>,
+        /// Exact optional lockfile identity.
+        lockfile_identity: Option<String>,
+        /// Canonical module path.
+        module_path: String,
+        /// Module language edition.
+        language_edition: String,
     },
 }
 

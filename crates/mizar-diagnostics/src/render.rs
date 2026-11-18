@@ -4,8 +4,8 @@ use mizar_session::{LineColumnRange, SourceId, SourceRange};
 
 use crate::{
     failure_record::{
-        DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticSpan, DiagnosticSpanRole,
-        SpanFreshness, ZeroWidthSpanIntent,
+        DiagnosticDetailValue, DiagnosticPrimaryLocation, DiagnosticRecord, DiagnosticSpan,
+        DiagnosticSpanRole, SpanFreshness, ZeroWidthSpanIntent,
     },
     registry::DiagnosticSeverity,
 };
@@ -149,6 +149,27 @@ fn render_record(
             "  --> documentation publication={} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?} block={block_ordinal}",
             publication_hash.to_lower_hex()
         )),
+        DiagnosticPrimaryLocation::DocumentationScope {
+            publication_hash, package_id, package_version, lockfile_identity,
+            module_path, language_edition,
+        } => {
+            let mut location = format!(
+                "  --> documentation publication={} package={package_id:?} version={package_version:?} lockfile={lockfile_identity:?} module={module_path:?} edition={language_edition:?}",
+                publication_hash.to_lower_hex()
+            );
+            if let Some(DiagnosticDetailValue::List(subject)) =
+                record.details().entries().get("documentation.link.subject")
+                && let [_, _, DiagnosticDetailValue::List(target), DiagnosticDetailValue::String(scope), _] = subject.as_slice()
+            {
+                location.push_str(&format!(" scope={scope:?}"));
+                if let [DiagnosticDetailValue::String(kind), DiagnosticDetailValue::String(origin_id), DiagnosticDetailValue::String(fqn)] = target.as_slice()
+                    && kind == "item"
+                {
+                    location.push_str(&format!(" item_origin={origin_id:?} item_fqn={fqn:?}"));
+                }
+            }
+            lines.push(location);
+        }
     }
 
     for span in record.secondary_spans() {

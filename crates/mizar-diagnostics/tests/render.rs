@@ -283,6 +283,417 @@ fn documentation_draft_to_cli_renders_provenance_without_primary_source_lookup()
     );
 }
 
+fn link_input(snapshot: BuildSnapshotId, scope: &str) -> DiagnosticDraftInput {
+    use DiagnosticDetailValue::{List, String as Text};
+    let empty = List(vec![]);
+    let module = List(vec![
+        Text("pkg".into()),
+        empty.clone(),
+        empty.clone(),
+        Text("doc.miz".into()),
+        Text("2026".into()),
+    ]);
+    let target = match scope {
+        "module_page" => List(vec![Text("module".into())]),
+        "section_index" => empty.clone(),
+        _ => List(vec![
+            Text("item".into()),
+            Text("origin-1".into()),
+            Text("pkg.T".into()),
+        ]),
+    };
+    let occurrence = if scope == "reference" {
+        List(vec![
+            Text("0".into()),
+            Text("3".into()),
+            Text("8".into()),
+            Text("code".into()),
+        ])
+    } else {
+        empty.clone()
+    };
+    let subject = List(vec![
+        Text("ab".repeat(32)),
+        module,
+        target,
+        Text(scope.into()),
+        occurrence,
+    ]);
+    let primary_location = if scope == "reference" {
+        DiagnosticPrimaryLocation::Documentation {
+            publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+            package_id: "pkg".into(),
+            package_version: None,
+            lockfile_identity: None,
+            module_path: "doc.miz".into(),
+            language_edition: "2026".into(),
+            block_ordinal: 0,
+        }
+    } else {
+        DiagnosticPrimaryLocation::DocumentationScope {
+            publication_hash: Hash::from_bytes([0xab; Hash::BYTE_LEN]),
+            package_id: "pkg".into(),
+            package_version: None,
+            lockfile_identity: None,
+            module_path: "doc.miz".into(),
+            language_edition: "2026".into(),
+        }
+    };
+    DiagnosticDraftInput {
+        source_snapshot: snapshot,
+        code: DiagnosticCode::from_str("W0414").unwrap(),
+        phase: PipelinePhase::Documentation,
+        category: FailureCategory::DocumentationWarning,
+        stable_detail_key: "documentation.link.incomplete_input".into(),
+        message: "link input".into(),
+        primary_location,
+        secondary_spans: vec![],
+        notes: vec![],
+        fixes: vec![],
+        explanation: None,
+        details: DiagnosticDetails::from_entries([
+            ("documentation.link.subject", subject),
+            ("documentation.link.reference", empty.clone()),
+            ("documentation.link.section_version", empty.clone()),
+            ("documentation.link.candidates", empty.clone()),
+            (
+                "documentation.link.causes",
+                List(vec![List(vec![
+                    Text("page_unavailable".into()),
+                    empty.clone(),
+                ])]),
+            ),
+            ("documentation.link.routes", empty.clone()),
+            ("documentation.link.citation_coverage", empty),
+        ])
+        .unwrap(),
+    }
+}
+
+fn link_index(
+    snapshot: BuildSnapshotId,
+    inputs: Vec<DiagnosticDraftInput>,
+) -> BuildDiagnosticIndex {
+    let batches = inputs
+        .into_iter()
+        .map(|input| {
+            let mut sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                PipelinePhase::Documentation,
+                input.source_snapshot,
+                "shared-links",
+            ));
+            sink.emit(DiagnosticDraft::new(input).unwrap()).unwrap();
+            sink.into_batch()
+        })
+        .collect();
+    BuildDiagnosticIndex::from_batches(snapshot, batches).unwrap()
+}
+
+#[test]
+fn link_reference_drafts_preserve_explicit_outcomes_routes_and_discontiguous_mapping() {
+    use DiagnosticDetailValue::{List, String as Text};
+    let snapshot = snapshot_id(42);
+    let source = source_id(snapshot);
+    let source_text = "::: Λ&\n::: gap\n::: tail\n::: last";
+    let range = |marker: &str| {
+        let start = source_text.find(marker).unwrap();
+        SourceRange {
+            source_id: source,
+            start,
+            end: start + marker.len(),
+        }
+    };
+    let base = link_input(snapshot, "reference");
+    let List(subject) = base.details.entries()["documentation.link.subject"].clone() else {
+        unreachable!()
+    };
+    let candidate = List(vec![
+        subject[0].clone(),
+        subject[1].clone(),
+        Text("origin-1".into()),
+        Text("pkg.T".into()),
+    ]);
+    let other = List(vec![
+        Text("cd".repeat(32)),
+        subject[1].clone(),
+        Text("origin-2".into()),
+        Text("pkg.T".into()),
+    ]);
+    let endpoint = List(vec![subject[0].clone(), subject[1].clone()]);
+    for (code, reason, form) in [
+        ("W0412", "target_absent", "code"),
+        ("W0412", "section_absent", "explicit"),
+        ("W0412", "classification_unavailable", "see"),
+        ("W0413", "multiple_targets", "explicit"),
+        ("W0414", "imports_partial", "code"),
+        ("W0414", "imports_unavailable", "see"),
+    ] {
+        for mapped in [false, true] {
+            let mut input = base.clone();
+            input.code = DiagnosticCode::from_str(code).unwrap();
+            input.stable_detail_key = match code {
+                "W0412" => "documentation.link.unresolved",
+                "W0413" => "documentation.link.ambiguous",
+                _ => "documentation.link.incomplete_input",
+            }
+            .into();
+            let mut subject = subject.clone();
+            subject[4] = List(vec![
+                Text("0".into()),
+                Text("3".into()),
+                Text("8".into()),
+                Text(form.into()),
+            ]);
+            let reference = List(vec![
+                Text(" Λ&amp; ".into()),
+                List(if reason == "classification_unavailable" {
+                    vec![]
+                } else {
+                    vec![Text(" Λ& ".into())]
+                }),
+            ]);
+            let candidates = if code == "W0412" {
+                vec![]
+            } else if code == "W0413" {
+                vec![candidate.clone(), other.clone()]
+            } else {
+                vec![candidate.clone()]
+            };
+            let route = |kind: &str, position| {
+                List(vec![
+                    candidate.clone(),
+                    Text(kind.into()),
+                    position,
+                    endpoint.clone(),
+                ])
+            };
+            let routes = if candidates.is_empty() {
+                vec![]
+            } else {
+                let mut routes = vec![
+                    route("import", List(vec![Text("2".into())])),
+                    route("import", List(vec![Text("12".into())])),
+                    route("closure", List(vec![])),
+                ];
+                if code == "W0413" {
+                    routes.insert(0, route("current", List(vec![])));
+                }
+                routes
+            };
+            let causes = List(vec![List(vec![Text(reason.into()), List(vec![])])]);
+            input.details = DiagnosticDetails::from_entries([
+                ("documentation.link.subject", List(subject)),
+                ("documentation.link.reference", reference),
+                (
+                    "documentation.link.section_version",
+                    List(vec![Text("2026-draft.1".into())]),
+                ),
+                ("documentation.link.candidates", List(candidates)),
+                ("documentation.link.causes", causes),
+                ("documentation.link.routes", List(routes)),
+                ("documentation.link.citation_coverage", List(vec![])),
+            ])
+            .unwrap();
+            if mapped {
+                input.primary_location = DiagnosticPrimaryLocation::Span(
+                    DiagnosticSpan::primary(range("Λ&"), None).unwrap(),
+                );
+                input.secondary_spans = vec![
+                    DiagnosticSpan::secondary(range("tail"), None).unwrap(),
+                    DiagnosticSpan::secondary(range("last"), None).unwrap(),
+                ];
+            }
+            let mut distinct = input.clone();
+            let List(mut shifted) =
+                distinct.details.entries()["documentation.link.subject"].clone()
+            else {
+                unreachable!()
+            };
+            shifted[4] = List(vec![
+                Text("0".into()),
+                Text("4".into()),
+                Text("9".into()),
+                Text(form.into()),
+            ]);
+            distinct
+                .details
+                .insert("documentation.link.subject", List(shifted))
+                .unwrap();
+            let copies = vec![input.clone(), distinct, input.clone()];
+            let index = link_index(snapshot, copies.clone());
+            assert_eq!(index.len(), 2);
+            assert_eq!(
+                index.debug_snapshot(),
+                link_index(snapshot, copies.into_iter().rev().collect()).debug_snapshot()
+            );
+            let record = index
+                .records()
+                .iter()
+                .find(|r| r.details() == &input.details)
+                .unwrap();
+            assert_eq!(
+                record.severity(),
+                mizar_diagnostics::registry::DiagnosticSeverity::Warning
+            );
+            assert_eq!(record.details(), &input.details);
+            assert_eq!(record.primary_location(), &input.primary_location);
+            assert_eq!(record.secondary_spans(), input.secondary_spans);
+            for key in input.details.entries().keys() {
+                assert!(record.debug_snapshot().contains(key));
+            }
+        }
+    }
+}
+
+#[test]
+fn link_scope_coverage_location_validation_and_source_free_cli_are_independent() {
+    use DiagnosticDetailValue::{List, String as Text};
+    let snapshot = snapshot_id(43);
+    for scope in ["module_page", "section_index", "used_by"] {
+        let mut input = link_input(snapshot, scope);
+        let List(subject) = input.details.entries()["documentation.link.subject"].clone() else {
+            unreachable!()
+        };
+        let affected = List(subject[..3].to_vec());
+        let states: &[(&str, &str)] = match scope {
+            "module_page" => &[("unavailable", "complete")],
+            "section_index" => &[("complete", "unavailable"), ("complete", "incomplete")],
+            _ => &[
+                ("unavailable", "complete"),
+                ("incomplete", "unavailable"),
+                ("complete", "incomplete"),
+                ("complete", "complete"),
+            ],
+        };
+        for &(closure, coverage) in states {
+            let reasons: Vec<&str> = match scope {
+                "module_page" => vec![
+                    "anchor_collision",
+                    "label_unavailable",
+                    "page_collision",
+                    "page_unavailable",
+                ],
+                "section_index" => vec![if coverage == "incomplete" {
+                    "sections_partial"
+                } else {
+                    "sections_unavailable"
+                }],
+                _ => [
+                    Some("page_unavailable"),
+                    (coverage == "incomplete").then_some("citation_endpoint_unmapped"),
+                    match closure {
+                        "unavailable" => Some("closure_unavailable"),
+                        "incomplete" => Some("closure_partial"),
+                        _ => None,
+                    },
+                    match coverage {
+                        "unavailable" => Some("citations_unavailable"),
+                        "incomplete" => Some("citations_partial"),
+                        _ => None,
+                    },
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
+            };
+            let mut reasons = reasons;
+            reasons.sort();
+            input
+                .details
+                .insert(
+                    "documentation.link.causes",
+                    List(
+                        reasons
+                            .iter()
+                            .map(|reason| List(vec![Text((*reason).into()), affected.clone()]))
+                            .collect(),
+                    ),
+                )
+                .unwrap();
+            if scope == "used_by" {
+                let inventory = if closure == "incomplete" || coverage == "incomplete" {
+                    vec![List(subject[..2].to_vec())]
+                } else {
+                    vec![]
+                };
+                let examined = if coverage == "incomplete" {
+                    vec![List(vec![
+                        subject[0].clone(),
+                        subject[1].clone(),
+                        Text("origin-1".into()),
+                        Text("pkg.T".into()),
+                        List(vec![Text("body".into()), Text("proof".into())]),
+                    ])]
+                } else {
+                    vec![]
+                };
+                input
+                    .details
+                    .insert(
+                        "documentation.link.citation_coverage",
+                        List(vec![
+                            Text(closure.into()),
+                            List(inventory),
+                            Text(coverage.into()),
+                            List(examined),
+                        ]),
+                    )
+                    .unwrap();
+            }
+            let index = link_index(snapshot, vec![input.clone(), input.clone()]);
+            assert_eq!(index.len(), 1);
+            assert_eq!(index.records()[0].details(), &input.details);
+            assert!(
+                index.records()[0]
+                    .debug_snapshot()
+                    .contains("documentation_scope(")
+            );
+            let rendered = render_diagnostics(DiagnosticRenderInput::new(
+                index.records(),
+                &PanicSourceContext,
+                RenderOptions::plain(),
+            ));
+            let suffix = if scope == "used_by" {
+                " item_origin=\"origin-1\" item_fqn=\"pkg.T\""
+            } else {
+                ""
+            };
+            assert_eq!(
+                rendered,
+                format!(
+                    "warning[W0414]: link input (documentation.link.incomplete_input)\n  --> documentation publication={} package=\"pkg\" version=None lockfile=None module=\"doc.miz\" edition=\"2026\" scope={scope:?}{suffix}",
+                    "ab".repeat(32)
+                )
+            );
+        }
+    }
+    let input = link_input(snapshot, "module_page");
+    for field in 0..6 {
+        let mut invalid = input.clone();
+        if let DiagnosticPrimaryLocation::DocumentationScope {
+            package_id,
+            module_path,
+            language_edition,
+            ..
+        } = &mut invalid.primary_location
+        {
+            match field {
+                0 => *package_id = " ".into(),
+                1 => *module_path = String::new(),
+                2 => *language_edition = "\t".into(),
+                3 => invalid.phase = PipelinePhase::Parser,
+                4 => invalid.category = FailureCategory::ParseError,
+                _ => {
+                    invalid.code = DiagnosticCode::from_str("E0001").unwrap();
+                    invalid.phase = PipelinePhase::Parser;
+                    invalid.category = FailureCategory::ParseError;
+                }
+            }
+        }
+        assert!(DiagnosticDraft::new(invalid).is_err());
+    }
+}
+
 #[test]
 fn fix_rendering_projects_edit_and_command_metadata_without_application_payloads() {
     let snapshot = snapshot_id(7);

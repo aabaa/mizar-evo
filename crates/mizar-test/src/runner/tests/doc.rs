@@ -3860,27 +3860,90 @@ fn doc7_replay_availability_private_option_and_warning_promotion_preserve_inputs
     let warnings = initial.warnings.clone();
     assert_eq!(blocks, format!("{:?}", doc7_attach(&plan).blocks));
     assert_eq!(initial.warnings, doc7_attach(&plan).warnings);
-    // New Markdown/tag drafts are supplied at the consumer seam; attachment still emits W0400 only.
+    // Shared drafts are supplied at the consumer seam; attachment still emits W0400 only.
     use mizar_diagnostics::{
         failure_record::{DiagnosticDraft, DiagnosticDraftInput},
         registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
     };
     let template = &warnings[0];
     let supplied = (405..=411)
+        .chain([414])
         .map(|number| {
             let code = DiagnosticCode::from_parts(DiagnosticSeverity::Warning, number).unwrap();
             let descriptor = DiagnosticRegistry::builtin().lookup(code).unwrap();
+            let (primary_location, details) = if number == 414 {
+                use mizar_diagnostics::failure_record::{
+                    DiagnosticDetailValue::{List, String as Text},
+                    DiagnosticDetails, DiagnosticPrimaryLocation,
+                };
+                let DiagnosticPrimaryLocation::Documentation {
+                    publication_hash,
+                    package_id,
+                    package_version,
+                    lockfile_identity,
+                    module_path,
+                    language_edition,
+                    ..
+                } = template.primary_location()
+                else {
+                    panic!("unmapped attachment fixture retains provenance")
+                };
+                let module = List(vec![
+                    Text(package_id.clone()),
+                    List(package_version.iter().cloned().map(Text).collect()),
+                    List(lockfile_identity.iter().cloned().map(Text).collect()),
+                    Text(module_path.clone()),
+                    Text(language_edition.clone()),
+                ]);
+                let subject = List(vec![
+                    Text(publication_hash.to_lower_hex()),
+                    module,
+                    List(vec![Text("module".into())]),
+                    Text("module_page".into()),
+                    List(vec![]),
+                ]);
+                let location = DiagnosticPrimaryLocation::DocumentationScope {
+                    publication_hash: *publication_hash,
+                    package_id: package_id.clone(),
+                    package_version: package_version.clone(),
+                    lockfile_identity: lockfile_identity.clone(),
+                    module_path: module_path.clone(),
+                    language_edition: language_edition.clone(),
+                };
+                let details = DiagnosticDetails::from_entries([
+                    ("documentation.link.subject", subject),
+                    ("documentation.link.reference", List(vec![])),
+                    ("documentation.link.section_version", List(vec![])),
+                    ("documentation.link.candidates", List(vec![])),
+                    (
+                        "documentation.link.causes",
+                        List(vec![List(vec![
+                            Text("page_unavailable".into()),
+                            List(vec![]),
+                        ])]),
+                    ),
+                    ("documentation.link.routes", List(vec![])),
+                    ("documentation.link.citation_coverage", List(vec![])),
+                ])
+                .unwrap();
+                (location, details)
+            } else {
+                (
+                    template.primary_location().clone(),
+                    template.details().clone(),
+                )
+            };
             DiagnosticDraft::new(DiagnosticDraftInput {
                 source_snapshot: template.source_snapshot(),
                 code,
                 phase: template.phase(),
                 category: template.category(),
                 stable_detail_key: descriptor.semantic_name.into(),
-                message: "supplied Doc8 warning".into(),
-                primary_location: template.primary_location().clone(),
+                message: "supplied documentation warning".into(),
+                primary_location,
                 secondary_spans: template.secondary_spans().to_vec(),
                 notes: template.notes().to_vec(),
-                details: template.details().clone(),
+                details,
                 fixes: vec![],
                 explanation: None,
             })
@@ -3899,6 +3962,10 @@ fn doc7_replay_availability_private_option_and_warning_promotion_preserve_inputs
     promoted.warnings = supplied.clone();
     assert!(promoted.documentation_failed());
     assert_eq!(promoted.warnings, supplied);
+    assert_eq!(
+        plan.profile.fail_on_extraction_warnings,
+        saved.profile.fail_on_extraction_warnings
+    );
     assert_eq!(blocks, format!("{:?}", promoted.blocks));
     for warning in &promoted.warnings {
         let descriptor = DiagnosticRegistry::builtin()

@@ -546,7 +546,8 @@ fn documentation_validation_refuses_incomplete_identity_and_metadata_mismatches(
         .unwrap(),
     );
     for code in [
-        "W0400", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410", "W0411",
+        "W0400", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410", "W0411", "W0412", "W0413",
+        "W0414",
     ] {
         let mut input = input.clone();
         input.code = DiagnosticCode::from_str(code).unwrap();

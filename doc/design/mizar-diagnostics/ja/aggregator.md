@@ -203,3 +203,5 @@ Task 18 は `DiagnosticAggregationError` を downstream forward compatibility �
 
 Documentation の source key は `documentation:{publication_hash}:{package_id:?}:{package_version:?}:{lockfile_identity:?}:{module_path:?}:{language_edition:?}`。publication hash は小文字16進数、identity の文字列・Option は Rust debug escape を用いる。block ordinal を除外し、`by_source` は同じ publication/module のブロックをまとめる。重複排除は位置 variant・完全な key・block ordinal を含み、順序は u64 を切り詰めず ordinal を数値比較する。既存の stale 抑止、code/detail/payload 規則を維持し、新しい公開 lookup API は導入しない。
 Markdown/tag コードは [occurrence detail 規約](./failure_record.md#markdowntag-occurrence-details) を使い comparator は変えない。同位置の target/block/reason/logical offset の区別は message・副位置順ではなく details に置く。数値 block 順は provenance 主位置が保証し、mapped 同位置は既存 code/detail 順に従い tag 走査による再ソートをしない。
+
+`DocumentationScope` は同じ module source key を共有し、dedup 位置種別を区別する。scope は block zero より前、block ordinal は完全な u64 数値順で並ぶ。[Link subject/details](./documentation_links.md) が既存 comparator を通じ論理 reference と入力 subject を区別する。

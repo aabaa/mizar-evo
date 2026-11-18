@@ -13,6 +13,9 @@ const DOCUMENTATION_DOC_URL: &str =
 const MARKDOWN_TAGS_SINCE: &str = "spec-22-documentation-markdown-tags-v1";
 const MARKDOWN_TAGS_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#2269-documentation-markdown-and-tag-warnings";
+const DOCUMENTATION_LINKS_SINCE: &str = "DOC10-SHARED-DIAGNOSTICS";
+const DOCUMENTATION_LINKS_DOC_URL: &str =
+    "doc/spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks";
 const INITIAL_DOC_URL: &str =
     "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference";
 
@@ -921,5 +924,32 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "A real inability to derive or map the Markdown/tag presentation view requires raw fallback for the affected block.",
         MARKDOWN_TAGS_SINCE,
         MARKDOWN_TAGS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        412,
+        "documentation.link.unresolved",
+        Documentation,
+        "Documentation reference is unresolved",
+        DOCUMENTATION_LINKS_SINCE,
+        DOCUMENTATION_LINKS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        413,
+        "documentation.link.ambiguous",
+        Documentation,
+        "Documentation reference is ambiguous",
+        DOCUMENTATION_LINKS_SINCE,
+        DOCUMENTATION_LINKS_DOC_URL
+    ),
+    builtin_descriptor!(
+        Warning,
+        414,
+        "documentation.link.incomplete_input",
+        Documentation,
+        "Documentation link inputs are incomplete",
+        DOCUMENTATION_LINKS_SINCE,
+        DOCUMENTATION_LINKS_DOC_URL
     ),
 ];

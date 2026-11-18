@@ -73,6 +73,14 @@ impl DiagnosticSourceKey {
                 module_path,
                 language_edition,
                 ..
+            }
+            | DiagnosticPrimaryLocation::DocumentationScope {
+                publication_hash,
+                package_id,
+                package_version,
+                lockfile_identity,
+                module_path,
+                language_edition,
             } => Self(format!(
                 "documentation:{}:{package_id:?}:{package_version:?}:{lockfile_identity:?}:{module_path:?}:{language_edition:?}",
                 publication_hash.to_lower_hex()
@@ -436,15 +444,16 @@ impl AggregationSortKey {
                     range.end as u128,
                 )
             }
-            DiagnosticPrimaryLocation::SourceLoad { .. } => (
+            DiagnosticPrimaryLocation::SourceLoad { .. }
+            | DiagnosticPrimaryLocation::DocumentationScope { .. } => (
                 DiagnosticSourceKey::from_primary_location(draft.primary_location()),
                 0,
                 0,
             ),
             DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } => (
                 DiagnosticSourceKey::from_primary_location(draft.primary_location()),
-                u128::from(*block_ordinal),
-                u128::from(*block_ordinal),
+                u128::from(*block_ordinal) + 1,
+                u128::from(*block_ordinal) + 1,
             ),
         };
         Self {
@@ -521,6 +530,9 @@ enum PrimaryLocationIdentityKey {
         source: DiagnosticSourceKey,
         block_ordinal: u64,
     },
+    DocumentationScope {
+        source: DiagnosticSourceKey,
+    },
 }
 
 impl PrimaryLocationIdentityKey {
@@ -534,6 +546,9 @@ impl PrimaryLocationIdentityKey {
             DiagnosticPrimaryLocation::Documentation { block_ordinal, .. } => Self::Documentation {
                 source: DiagnosticSourceKey::from_primary_location(location),
                 block_ordinal: *block_ordinal,
+            },
+            DiagnosticPrimaryLocation::DocumentationScope { .. } => Self::DocumentationScope {
+                source: DiagnosticSourceKey::from_primary_location(location),
             },
         }
     }
