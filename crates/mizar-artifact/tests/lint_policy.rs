@@ -17,7 +17,7 @@ fn artifact_manifest_opts_into_workspace_lints() {
 }
 
 #[test]
-fn artifact_manifest_depends_only_on_mizar_session() {
+fn artifact_manifest_dependencies_match_projection_boundary() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_sections(&manifest);
@@ -26,11 +26,15 @@ fn artifact_manifest_depends_only_on_mizar_session() {
         dependency_sections,
         [(
             "dependencies".to_string(),
-            vec!["mizar-session = { path = \"../mizar-session\" }"],
+            vec![
+                "mizar-session = { path = \"../mizar-session\" }",
+                "mizar-frontend = { path = \"../mizar-frontend\" }",
+                "mizar-syntax = { path = \"../mizar-syntax\" }",
+            ],
         )],
-        "{} must keep mizar-session as its only dependency across normal, dev, \
-         build, and target-specific dependency sections until a task-scoped \
-         spec expands the crate boundary",
+        "{} must keep the exact Session/Frontend/Syntax dependency boundary \
+         specified by the Artifact-owned direct-by projection across normal, \
+         dev, build and target-specific dependency sections",
         manifest_path.display()
     );
 }
@@ -340,6 +344,12 @@ fn public_enum_policy() -> &'static [PublicEnumPolicy] {
             name: "StoreIoOperation",
             en_doc: "doc/design/mizar-artifact/en/store.md",
             ja_doc: "doc/design/mizar-artifact/ja/store.md",
+        },
+        PublicEnumPolicy {
+            source: "src/direct_by.rs",
+            name: "DirectByTarget",
+            en_doc: "doc/design/mizar-artifact/en/verified_artifact.md",
+            ja_doc: "doc/design/mizar-artifact/ja/verified_artifact.md",
         },
         PublicEnumPolicy {
             source: "src/verified_artifact.rs",

@@ -855,6 +855,8 @@ algorithm summary publisher は廃止。
 
 既存 native theorem manifest transaction は真正な source ModuleSummary を既存 codec/hash と optional manifest reference で公開する。Native acceptance profile は変更しない。整合 publication は summary を manifest-first で読み、同じ run の sealed Frontend output を source/snapshot/work-unit 検証の下で取得する。各 artifact に `PublishedSourceMetadata` として対応 summary、optional immutable notation/import view、元の captured source/dependency association を保持する。欠落 product は unavailable、完全な空 view は明示する。不変 publication 全体の保持後は OpenBuffer stage を破棄できる。置換/stale read は既存 snapshot lifecycle に従って元の集合を保持し、同じ build id でも復活を認めない。
 
+`PublishedSourceMetadata::direct_by()` は同じ境界で [Artifact 所有の元構文射影](../../mizar-artifact/ja/verified_artifact.md#in-memory-direct-by-projection) を保持する。意味的 binding は保持した AST に既存の bounded Resolver を用い、正確な compiler origin/export identity に結合する。未対応・未解決 mapping は incomplete のまま残す。完全空 witness には元の theorem 調査が必要であり、Doc の source 復元、evidence fallback、native acceptance 拡大は行わない。
+
 [承認済み native payload profile](../../mizar-lsp/ja/native_payload_producers.md) は型付き export insertion 根拠からだけ E0041 payload を付けます。`native_export_semicolon_context` は正確な canonical handle/source association を検証し bounded canonical JSON を返し、`native_export_semicolon_command` は正確な canonical command を認証します。Host は実 capture 由来の record だけを供給し、shape validator は caller-owned record の admission や error-session の出力受入条件を変えません。
 
 ## Genuine reflexivity Kernel status service

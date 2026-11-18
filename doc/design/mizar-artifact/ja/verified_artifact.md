@@ -43,6 +43,13 @@ task 11 の初期 version である。task 11 reader は `1.0..=1.0` の範囲�
 malformed、異なる major、新しすぎる minor version を拒否する。
 
 
+## In-Memory Direct-By Projection
+この producer の crate 依存境界は Session、Frontend、Syntax に限定して拡張し、意味的 endpoint mapping は Driver/Resolver に残す。
+`direct_by::project_frontend_direct_by` は保持した元の `FrontendOutput<SurfaceAst>` 構文と compiler 供給の owner/target binding から不変の `DirectByProjection` を作る。captured source/module/hash/path の来歴を enclosing artifact と照合する。callback の意味的 binding は構造上の構築では認証せず、Driver が真正な publication 時 capture を所有し、Doc が選択 publication と完全 export identity を有限 inventory に対して別途検証する。
+`DirectByEndpoint` は完全 module/publication と `VerifiedExport` identity を再利用する。`DirectByExamination` は調査済みの theorem body/proof range と完全性、`DirectByOccurrence` は引用元 owner、by/target ordinal、元の来歴を保持し、反復・自己・未対応 occurrence も残す。`DirectByTarget` は対応済み theorem、肯定的に解決済みの非 theorem、unmapped を区別する。未対応/recovered/unbound な構文から完全空を確立せず、reexport を別の local body として調べない。
+[spec16.5.2](../../../spec/en/16.theorems_and_proofs.md#1652-grouped-citation-module_pathth1-th2) の grouped item は個別 target ordinal/range を保ち、未対応 bulk reference は unmapped occurrence として残す。
+これは [spec24.2](../../../spec/en/24.documentation_generation.md#242-cross-referencing-and-hyperlinks) に基づくメモリ内 compilation handoff であり、artifact field、codec/schema revision、proof acceptance 入力ではない。意味的 producer の欠落は unavailable/incomplete のままで、export や accepted evidence から citation を再構築しない。既存 serializer、hash、publication profile は変更しない。
+
 ## Statement-bearing normal profile
 通常current_schema_version()は1.2、既定readerはmajor1/minor0..2を許容する。2026-11-15 owner判断（後述）が通常1.1 freezeを更新する。既存通常1.0と明示Builtin2.0は従来JSON field/bytes/hash/下位witness規則/拒否順を完全保持し、メモリstatementsは空のみ、非空は黙って捨てず拒否する。通常1.1/1.2は必須statements（generic構造データでは空も可）を持ち、通常Ref2/KernelVerifiedだけでBuiltinRef3は不可。Builtin2.0は従来major2/minor0、Ref2/Ref3許容とstatements無しのまま。新major/minor推測・version/status付替え・通常失敗後fallbackは無い。期待通常versionのminorを上限にし、expected1.0は1.1不可、既定expected1.2は1.0..1.2可、明示expected1.1は1.0..1.1可。versionをfield前に検証し、legacy unknownfield優先と旧共通field読込順を保ち、その後に新statement読込、全体検証/期待module/hashの順にする。
 公開StatementMetadata一種類をVerifiedArtifact.statements:Vec、IR入力/組立、通常serialize/validate-reader/validator/implementation hash、実Driver構築で共有する。正確なrowは `{ "item": string, "source_range": source_range, "elaborated": string, "reserve_binders": [string, ...], "resolved_symbols": { string: string, ... } }`。itemは実owner FQN、rangeは実formulaでheader/全itemでは無い。既存非空文字列/range検証、重複item・重複/空reserve名・空map key/value・未知field/typeを拒否する。別itemの同rangeは禁止せず、新FQN parserを発明しない。reserve順は意味を持ち得るため保持し、mapはBTreeMap、rowはitem順。proof/status/receipt専用fieldは無い。
@@ -531,6 +538,7 @@ unknown serialized enum value を引き続き拒否する。
 
 | Enum | 前方互換性の判断 |
 |---|---|
+| `DirectByTarget` | non-exhaustive。未知の compiler 分類は incomplete とし、serialized enum は割り当てない。 |
 | `ExportVisibility` | export visibility category を拡張できるよう non-exhaustive。 |
 | `ExportProofStatus` | importer-visible export proof state を拡張できるよう non-exhaustive。 |
 | `ObligationStatus` | 現在の witness rule を弱めず obligation status category を拡張できるよう non-exhaustive。 |

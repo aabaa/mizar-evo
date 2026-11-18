@@ -283,11 +283,11 @@ impl Error for DocBuildError {
     }
 }
 
-/// Authentication coverage for one source's imports or the finite closure.
+/// Authentication coverage for a finite documentation input scope.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DocImportCoverage {
-    /// No genuine producer view establishes this source's import scope.
+    /// No genuine producer view establishes the queried scope.
     Unavailable,
     /// Known inputs remain usable, but some required coverage is missing.
     Incomplete,
@@ -411,6 +411,162 @@ impl AuthenticatedDocImports {
             DocImportCoverage::Incomplete
         }
     }
+}
+
+/// Artifact projections authenticated against one finite publication inventory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthenticatedDocDirectBy {
+    producers: Vec<mizar_artifact::direct_by::DirectByProjection>,
+    coverage: BTreeMap<ModuleSummaryIdentity, (Hash, DocImportCoverage)>,
+}
+
+impl AuthenticatedDocDirectBy {
+    /// Returns original producer occurrences and examined body/proof scopes.
+    pub fn producers(&self) -> &[mizar_artifact::direct_by::DirectByProjection] {
+        &self.producers
+    }
+
+    /// Returns citation examination coverage for exactly this module/publication.
+    pub fn coverage(&self, module: &ModuleSummaryIdentity, publication: Hash) -> DocImportCoverage {
+        self.coverage
+            .get(module)
+            .filter(|row| row.0 == publication)
+            .map_or(DocImportCoverage::Unavailable, |row| row.1)
+    }
+
+    /// Returns examination coverage of the supplied scope, independently of import coverage.
+    pub fn citation_coverage(&self) -> DocImportCoverage {
+        if self
+            .coverage
+            .values()
+            .all(|row| row.1 == DocImportCoverage::Unavailable)
+        {
+            DocImportCoverage::Unavailable
+        } else if self
+            .coverage
+            .values()
+            .all(|row| row.1 == DocImportCoverage::Complete)
+        {
+            DocImportCoverage::Complete
+        } else {
+            DocImportCoverage::Incomplete
+        }
+    }
+}
+
+/// Binds original Artifact-owned citations to already authenticated finite inputs.
+///
+/// The caller supplies a current gate-1 handoff; this function neither reads source
+/// nor discovers publications. Missing cited modules retain incomplete occurrences.
+pub fn authenticate_doc_direct_by(
+    inputs: &AuthenticatedDocImports,
+    producers: &[&mizar_artifact::direct_by::DirectByProjection],
+) -> Result<AuthenticatedDocDirectBy, DocBuildError> {
+    use mizar_artifact::{
+        direct_by::{DirectByEndpoint, DirectByTarget},
+        verified_artifact::ExportVisibility,
+    };
+    let bound = |endpoint: &DirectByEndpoint| -> Result<bool, DocBuildError> {
+        let Some((hash, exports, _)) = inputs.modules.get(&endpoint.module) else {
+            return Ok(false);
+        };
+        if endpoint.publication_hash != *hash
+            || endpoint.export.export_kind != "theorem"
+            || !exports.contains(&endpoint.export)
+        {
+            return Err(DocBuildError::Binding(
+                "direct-by endpoint binding mismatch",
+            ));
+        }
+        Ok(true)
+    };
+    let mut result = AuthenticatedDocDirectBy {
+        producers: Vec::new(),
+        coverage: inputs
+            .modules
+            .iter()
+            .map(|(module, (hash, _, _))| (module.clone(), (*hash, DocImportCoverage::Unavailable)))
+            .collect(),
+    };
+    for view in producers {
+        let Some((hash, exports, _)) = inputs.modules.get(view.module()) else {
+            return Err(DocBuildError::Binding("direct-by source outside inventory"));
+        };
+        let entry = inputs
+            .publications
+            .iter()
+            .flat_map(|publication| &publication.manifest.modules)
+            .find(|entry| &entry.module == view.module())
+            .ok_or(DocBuildError::Binding("direct-by source missing"))?;
+        if view.publication_hash() != *hash
+            || view.source_hash() != entry.source_hash
+            || inputs
+                .producer(view.module(), *hash)
+                .is_some_and(|producer| producer.source_id() != view.captured_source().0)
+            || result
+                .producers
+                .iter()
+                .any(|prior| prior.module() == view.module())
+        {
+            return Err(DocBuildError::Binding("direct-by source binding mismatch"));
+        }
+        let mut complete = view.complete();
+        let mut examined = Vec::new();
+        for examination in view.examinations() {
+            complete &= examination.complete;
+            let Some(owner) = &examination.owner else {
+                complete = false;
+                continue;
+            };
+            if owner.module != *view.module()
+                || owner.publication_hash != *hash
+                || !bound(owner)?
+                || examined.contains(&&owner.export)
+            {
+                return Err(DocBuildError::Binding(
+                    "direct-by examination binding mismatch",
+                ));
+            }
+            examined.push(&owner.export);
+        }
+        complete &= exports
+            .iter()
+            .filter(|export| {
+                export.export_kind == "theorem" && export.visibility == ExportVisibility::Public
+            })
+            .all(|export| examined.contains(&export));
+        for occurrence in view.occurrences() {
+            if let Some(owner) = &occurrence.citing {
+                if owner.module != *view.module()
+                    || owner.publication_hash != *hash
+                    || !bound(owner)?
+                    || !examined.contains(&&owner.export)
+                {
+                    return Err(DocBuildError::Binding("direct-by citing endpoint mismatch"));
+                }
+            } else {
+                complete = false;
+            }
+            match &occurrence.target {
+                DirectByTarget::Theorem(endpoint) => complete &= bound(endpoint)?,
+                DirectByTarget::NonTheorem => {}
+                _ => complete = false,
+            }
+        }
+        result.coverage.insert(
+            view.module().clone(),
+            (
+                *hash,
+                if complete {
+                    DocImportCoverage::Complete
+                } else {
+                    DocImportCoverage::Incomplete
+                },
+            ),
+        );
+        result.producers.push((*view).clone());
+    }
+    Ok(result)
 }
 
 /// Authenticates genuine producer imports against an explicit finite publication inventory.

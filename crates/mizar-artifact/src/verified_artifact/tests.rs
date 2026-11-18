@@ -26,6 +26,254 @@ use crate::{
     },
 };
 
+fn direct_by_fixture(
+    text: &str,
+) -> (
+    mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>,
+    VerifiedArtifact,
+) {
+    use mizar_frontend::{
+        lexical_env::{
+            FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+            ResolvedImports,
+        },
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnit},
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, LineMap, ModulePath, PackageId, hash_text, normalize_path,
+    };
+    struct EmptyImports;
+    impl LexicalSummaryProvider for EmptyImports {
+        fn resolve_imports(
+            &self,
+            _: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+            Ok(ResolvedImports {
+                imports: vec![],
+                summaries: vec![],
+                diagnostics: vec![],
+            })
+        }
+    }
+    let mut artifact = captured_artifact(SourceOrigin::Disk);
+    let source_id = artifact.provenance.captured_source.as_ref().unwrap().0;
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let root = std::env::temp_dir().join(format!(
+        "mizar-direct-by-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    let path = root.join("src/main.miz");
+    std::fs::write(&path, text).unwrap();
+    let source = SourceUnit {
+        source_id,
+        package_id: PackageId::new(&artifact.module.package_id),
+        module_path: ModulePath::new(&artifact.module.module_path),
+        normalized_path: normalize_path(&root, &path).unwrap(),
+        edition: Edition::new(&artifact.module.language_edition),
+        file_path: path,
+        source_text: text.into(),
+        source_hash: hash_text(text),
+        line_map: LineMap::new(source_id, text),
+        loading_map: None,
+        origin: SourceOrigin::Disk,
+        generated_anchor: None,
+    };
+    artifact.source_hash = source.source_hash;
+    artifact.source_file = source.normalized_path.as_str().to_owned();
+    artifact.provenance.captured_source =
+        Some((source_id, source.origin.clone(), source.source_hash));
+    let frontend = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(root.clone())),
+        EmptyImports,
+        MizarParserSeam,
+    )
+    .run_loaded(source)
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(
+        frontend.diagnostics.is_empty(),
+        "{:?}",
+        frontend.diagnostics
+    );
+    (frontend, artifact)
+}
+
+#[test]
+fn direct_by_original_occurrences_preserve_repeated_self_cross_package_and_provenance() {
+    use crate::direct_by::{DirectByEndpoint, DirectByTarget, project_frontend_direct_by};
+    let (frontend, artifact) = direct_by_fixture(
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X by T, T; thus X = X by Foreign; end;",
+    );
+    let own = DirectByEndpoint {
+        module: artifact.module.clone(),
+        publication_hash: hash(50),
+        export: artifact.exports[0].clone(),
+    };
+    let mut foreign = own.clone();
+    foreign.module.package_id = "another-package".to_owned();
+    foreign.publication_hash = hash(51);
+    let mut target = 0;
+    let projection = project_frontend_direct_by(
+        &frontend,
+        &artifact,
+        hash(50),
+        |_| Some(own.export.clone()),
+        |_, _| {
+            target += 1;
+            DirectByTarget::Theorem(Box::new(if target < 3 {
+                own.clone()
+            } else {
+                foreign.clone()
+            }))
+        },
+    )
+    .unwrap();
+    assert!(projection.complete());
+    assert_eq!(projection.examinations().len(), 1);
+    assert!(projection.examinations()[0].proof_range.is_some());
+    assert_eq!(projection.occurrences().len(), 3);
+    assert_eq!(
+        projection
+            .occurrences()
+            .iter()
+            .map(|row| (row.by_ordinal, row.target_ordinal))
+            .collect::<Vec<_>>(),
+        [(0, 0), (0, 1), (1, 0)]
+    );
+    for (index, row) in projection.occurrences().iter().enumerate() {
+        assert_eq!(row.citing.as_ref(), Some(&own));
+        assert_eq!(
+            row.target,
+            DirectByTarget::Theorem(Box::new(if index < 2 {
+                own.clone()
+            } else {
+                foreign.clone()
+            }))
+        );
+        assert_eq!(row.by_range.source_id, frontend.source.source_id);
+        assert!(
+            row.by_range.start <= row.target_range.start
+                && row.target_range.end <= row.by_range.end
+        );
+    }
+    assert!(
+        projection.occurrences()[0].target_range.end
+            < projection.occurrences()[1].target_range.start
+    );
+    assert_eq!(
+        projection.lexical_source_map(),
+        &frontend.preprocessed.source_map
+    );
+    assert_eq!(
+        projection.loading_map(),
+        frontend.source.loading_map.as_ref()
+    );
+}
+
+#[test]
+fn direct_by_complete_empty_examination_is_explicit_and_not_evidence_or_comments() {
+    use crate::direct_by::{DirectByTarget, project_frontend_direct_by};
+    let (frontend, artifact) = direct_by_fixture(
+        "::: @see Other\ntheorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+    );
+    let captured = project_frontend_direct_by(
+        &frontend,
+        &artifact,
+        hash(50),
+        |_| Some(artifact.exports[0].clone()),
+        |_, _| panic!("no syntactic by target"),
+    )
+    .unwrap();
+    assert!(captured.complete());
+    assert!(captured.occurrences().is_empty());
+    assert_eq!(captured.examinations().len(), 1);
+    assert!(captured.examinations()[0].complete);
+    let missing_owner = project_frontend_direct_by(
+        &frontend,
+        &artifact,
+        hash(50),
+        |_| None,
+        |_, _| DirectByTarget::Unmapped,
+    )
+    .unwrap();
+    assert!(!missing_owner.complete());
+    assert!(!missing_owner.examinations()[0].complete);
+    assert!(missing_owner.examinations()[0].owner.is_none());
+}
+
+#[test]
+fn direct_by_unmapped_and_unsupported_targets_retain_occurrences() {
+    use crate::direct_by::{DirectByTarget, project_frontend_direct_by};
+    for (targets, expected) in [
+        ("T, Missing", vec!["T", "Missing"]),
+        ("Other.T", vec!["Other.T"]),
+        ("Other.{T, U}", vec!["T", "U"]),
+        ("T, Other.{T, T}, Missing", vec!["T", "T", "T", "Missing"]),
+        ("Other.*", vec!["Other.*"]),
+    ] {
+        let text = format!(
+            "theorem T: for X being set holds X = X proof let X be set; thus X = X by {targets}; end;"
+        );
+        let (frontend, artifact) = direct_by_fixture(&text);
+        let projection = project_frontend_direct_by(
+            &frontend,
+            &artifact,
+            hash(50),
+            |_| Some(artifact.exports[0].clone()),
+            |_, _| DirectByTarget::Unmapped,
+        )
+        .unwrap();
+        assert!(!projection.complete());
+        assert!(!projection.examinations()[0].complete);
+        assert_eq!(projection.occurrences().len(), expected.len(), "{targets}");
+        for (ordinal, (row, spelling)) in projection.occurrences().iter().zip(expected).enumerate()
+        {
+            assert_eq!((row.by_ordinal, row.target_ordinal), (0, ordinal));
+            assert_eq!(
+                &text[row.target_range.start..row.target_range.end],
+                spelling
+            );
+        }
+        assert!(
+            projection
+                .occurrences()
+                .iter()
+                .all(|row| row.target == DirectByTarget::Unmapped)
+        );
+    }
+}
+
+#[test]
+fn direct_by_wrong_original_source_or_module_binding_refuses_capture() {
+    use crate::direct_by::{DirectByTarget, project_frontend_direct_by};
+    let (frontend, artifact) = direct_by_fixture("theorem T: for X being set holds X = X;");
+    for mutation in 0..6 {
+        let mut wrong = artifact.clone();
+        match mutation {
+            0 => wrong.source_hash = hash(99),
+            1 => wrong.module.package_id.push_str("-foreign"),
+            2 => wrong.module.module_path.push_str(".foreign"),
+            3 => wrong.source_file.push_str(".foreign"),
+            4 => wrong.module.language_edition.push_str("-foreign"),
+            _ => wrong.provenance.captured_source = None,
+        }
+        assert!(
+            project_frontend_direct_by(
+                &frontend,
+                &wrong,
+                hash(50),
+                |_| Some(artifact.exports[0].clone()),
+                |_, _| DirectByTarget::Unmapped
+            )
+            .is_none()
+        );
+    }
+}
+
 #[test]
 fn verified_artifact_round_trips_through_canonical_json() {
     let artifact = sample_artifact();

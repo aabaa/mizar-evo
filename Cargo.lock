@@ -473,7 +473,9 @@ dependencies = [
 name = "mizar-artifact"
 version = "0.1.0"
 dependencies = [
+ "mizar-frontend",
  "mizar-session",
+ "mizar-syntax",
 ]
 
 [[package]]

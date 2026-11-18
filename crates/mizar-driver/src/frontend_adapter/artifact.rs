@@ -298,10 +298,100 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 if imports.compose_summary(declarations)? != summary {
                     return None;
                 }
+                // Run the existing bounded compiler mapper on retained original
+                // syntax. Missing/unsupported bindings remain explicit occurrences.
+                let compiler =
+                    mizar_resolve::symbols::source_theorem_module_original_inputs(ast, &module)
+                        .ok()
+                        .flatten();
+                let labels = compiler.as_ref().and_then(|(arena, env)| {
+                    mizar_resolve::labels::source_theorem_label_reference_candidates(
+                        ast, arena, env,
+                    )
+                    .ok()
+                    .flatten()
+                });
+                let bound_export = |symbol: &mizar_resolve::env::SymbolEntry| {
+                    let mizar_session::SourceAnchor::Range(range) = symbol.origin().anchor() else {
+                        return None;
+                    };
+                    if symbol.origin().is_recovered()
+                        || symbol.origin().source_id() != source.source_id
+                        || symbol.origin().module_id() != &module
+                        || symbol.origin().import_edge().is_some()
+                        || symbol.visibility() != mizar_resolve::env::Visibility::Public
+                        || symbol.export_status() != mizar_resolve::env::ExportStatus::Exported
+                    {
+                        return None;
+                    }
+                    unique(artifact.exports.iter().filter(|export| {
+                        export.origin_id == symbol.symbol().fqn().as_str()
+                            && export.fully_qualified_name == symbol.symbol().fqn().as_str()
+                            && export.source_range.start_byte == range.start as u64
+                            && export.source_range.end_byte == range.end as u64
+                            && export.export_kind == "theorem"
+                            && export.visibility
+                                == mizar_artifact::verified_artifact::ExportVisibility::Public
+                    }))
+                    .cloned()
+                };
+                let direct_by = mizar_artifact::direct_by::project_frontend_direct_by(
+                    &frontend,
+                    &artifact,
+                    manifest.artifact_hash,
+                    |node| {
+                        let range = ast.node_view(node)?.range();
+                        let (_, env) = compiler.as_ref()?;
+                        let symbol = unique(env.symbols().iter().filter(|symbol| {
+                            symbol.origin().anchor() == &mizar_session::SourceAnchor::Range(range)
+                                && matches!(
+                                    symbol.kind(),
+                                    mizar_resolve::env::SymbolKind::Theorem
+                                        | mizar_resolve::env::SymbolKind::Lemma
+                                )
+                        }))?;
+                        bound_export(symbol)
+                    },
+                    |_, node| {
+                        use mizar_artifact::direct_by::{DirectByEndpoint, DirectByTarget};
+                        use mizar_resolve::resolved_ast::{LabelKind, LabelResolution};
+                        let mapped = (|| {
+                            let (arena, env) = compiler.as_ref()?;
+                            let mapped = arena.resolved_node_for(node)?;
+                            let labels = labels.as_ref()?;
+                            let reference = unique(
+                                labels
+                                    .table()
+                                    .iter()
+                                    .map(|(_, entry)| entry)
+                                    .filter(|entry| entry.site().node() == mapped),
+                            )?;
+                            let LabelResolution::Resolved(label) = reference.resolution() else {
+                                return None;
+                            };
+                            match label.kind() {
+                                LabelKind::ProofStep => Some(DirectByTarget::NonTheorem),
+                                LabelKind::Theorem => {
+                                    let symbol = unique(env.symbols().iter().filter(|symbol| {
+                                        symbol.symbol().fqn().as_str() == label.origin().as_str()
+                                    }))?;
+                                    Some(DirectByTarget::Theorem(Box::new(DirectByEndpoint {
+                                        module: artifact.module.clone(),
+                                        publication_hash: manifest.artifact_hash,
+                                        export: bound_export(symbol)?,
+                                    })))
+                                }
+                                _ => None,
+                            }
+                        })();
+                        mapped.unwrap_or(DirectByTarget::Unmapped)
+                    },
+                );
                 Some(PublishedSourceMetadata {
                     summary,
                     notation: collection.source_notation_view(&frontend),
                     imports: Some(imports),
+                    direct_by,
                 })
             })());
             artifacts.push(artifact);
@@ -2588,6 +2678,7 @@ pub struct PublishedSourceMetadata {
     summary: mizar_artifact::module_summary::ModuleSummary,
     notation: Option<mizar_resolve::symbols::SourceNotationView>,
     imports: Option<mizar_resolve::imports::PublishedImportView>,
+    direct_by: Option<mizar_artifact::direct_by::DirectByProjection>,
 }
 
 impl PublishedSourceMetadata {
@@ -2599,6 +2690,9 @@ impl PublishedSourceMetadata {
     }
     pub fn imports(&self) -> Option<&mizar_resolve::imports::PublishedImportView> {
         self.imports.as_ref()
+    }
+    pub fn direct_by(&self) -> Option<&mizar_artifact::direct_by::DirectByProjection> {
+        self.direct_by.as_ref()
     }
 }
 
@@ -4380,6 +4474,17 @@ mod snapshot_publication_tests {
                 .expect("genuine source metadata is available");
             assert_eq!(metadata.summary().module, artifact.module);
             assert_eq!(metadata.summary().source_hash, artifact.source_hash);
+            let citations = metadata
+                .direct_by()
+                .expect("original publication syntax capture");
+            assert_eq!(citations.module(), &artifact.module);
+            assert_eq!(citations.publication_hash(), manifest.artifact_hash);
+            assert_eq!(citations.source_hash(), artifact.source_hash);
+            assert!(citations.complete());
+            assert_eq!(citations.examinations().len(), 1);
+            assert!(citations.examinations()[0].proof_range.is_some());
+            assert!(citations.examinations()[0].complete);
+            assert!(citations.occurrences().is_empty());
             let notation = metadata.notation().expect("complete-empty local notation");
             assert!(notation.declarations().is_empty());
             assert!(notation.operator_events().is_empty());

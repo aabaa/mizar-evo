@@ -24,5 +24,8 @@ pub mod verified_artifact;
 /// Portable source-comment envelopes and structural validation.
 pub mod comment_projection;
 
+/// In-memory original-syntax direct citation projection; no serialized schema.
+pub mod direct_by;
+
 /// Published package manifest schema and transaction manager.
 pub mod manifest;

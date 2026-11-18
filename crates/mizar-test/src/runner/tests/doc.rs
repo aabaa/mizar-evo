@@ -4484,6 +4484,9 @@ fn doc8_tight_paragraphs_preserve_raw_trailing_whitespace_duplicate_keys() {
 mod doc10_authenticated {
     use super::*;
     use mizar_artifact::{
+        direct_by::{
+            DirectByEndpoint, DirectByProjection, DirectByTarget, project_frontend_direct_by,
+        },
         manifest::{ArtifactManifest, PackageIdentity, write_manifest_file},
         module_summary::{ModuleSummary, ModuleSummaryIdentity, module_summary_json},
         registration_summary::{ArtifactHashClass, ArtifactHashRef},
@@ -4518,6 +4521,7 @@ mod doc10_authenticated {
         artifacts: Vec<VerifiedArtifact>,
         summaries: Vec<ModuleSummary>,
         hash: Hash,
+        frontend: Vec<mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>>,
     }
 
     impl Publication {
@@ -4544,6 +4548,7 @@ mod doc10_authenticated {
                 artifacts,
                 summaries,
                 hash,
+                frontend: Vec::new(),
             };
             publication.publish();
             publication
@@ -4724,13 +4729,18 @@ mod doc10_authenticated {
         publications: &[&Publication],
         snapshot: mizar_session::BuildSnapshotId,
         ids: &InMemorySessionIdAllocator,
-    ) -> (Vec<Option<PublishedImportView>>, Vec<SourceVersion>) {
+    ) -> (
+        Vec<Option<PublishedImportView>>,
+        Vec<SourceVersion>,
+        Vec<mizar_frontend::orchestration::FrontendOutput<mizar_syntax::SurfaceAst>>,
+    ) {
         let summaries = publications
             .iter()
             .flat_map(|publication| publication.summaries.clone())
             .collect::<Vec<_>>();
         let mut views = Vec::new();
         let mut versions = Vec::new();
+        let mut frontends = Vec::new();
         for artifact in &publication.artifacts {
             let index = producer_index(publications);
             let source = ModuleId::new(
@@ -4790,8 +4800,9 @@ mod doc10_authenticated {
                     },
                 ),
             );
+            frontends.push(output);
         }
-        (views, versions)
+        (views, versions, frontends)
     }
 
     fn context(
@@ -4818,7 +4829,7 @@ mod doc10_authenticated {
         let mut views = vec![Vec::new(); publications.len()];
         // Dependencies are supplied after their consumers, then published before use.
         for index in (0..publications.len()).rev() {
-            let (produced, versions) = produce(
+            let (produced, versions, frontends) = produce(
                 publications[index],
                 &publications.iter().map(|p| &**p).collect::<Vec<_>>(),
                 initial.id,
@@ -4826,6 +4837,7 @@ mod doc10_authenticated {
             );
             input.source_versions.extend(versions);
             let publication = &mut publications[index];
+            publication.frontend = frontends;
             for (summary, view) in publication.summaries.iter_mut().zip(&produced) {
                 if let Some(view) = view {
                     *summary = view.compose_summary(summary.clone()).unwrap();
@@ -5253,9 +5265,12 @@ mod doc10_authenticated {
             .unwrap();
         let producers = inputs(&app, &views[0]);
         let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
-        let path = dep
-            .root
-            .join(dep.manifest.modules[1].module_summary_file.as_ref().unwrap());
+        let path = dep.root.join(
+            dep.manifest.modules[1]
+                .module_summary_file
+                .as_ref()
+                .unwrap(),
+        );
         let bytes = std::fs::read(&path).unwrap();
         std::fs::write(&path, b"{}").unwrap();
         let lower = read_published_module_summary_index(&dep.root, dep.hash).unwrap_err();
@@ -5367,5 +5382,386 @@ mod doc10_authenticated {
         );
         assert!(!app.root.join("out").exists());
         assert!(!app.root.join("unavailable-doc4-index").exists());
+    }
+
+    fn theorem_publication(package: &str, texts: [&str; 2]) -> Publication {
+        let mut publication = Publication::new(package, texts);
+        for (index, artifact) in publication.artifacts.iter_mut().enumerate() {
+            let export = &mut artifact.exports[0];
+            export.export_kind = "theorem".into();
+            export.fully_qualified_name = format!("{package}::module_{index}::T");
+            export.source_range.start_byte = texts[index].find("theorem").unwrap() as u64;
+            export.source_range.end_byte = texts[index].len() as u64;
+        }
+        publication.publish();
+        publication
+    }
+
+    fn theorem_endpoint(publication: &Publication, index: usize) -> DirectByEndpoint {
+        DirectByEndpoint {
+            module: publication.artifacts[index].module.clone(),
+            publication_hash: publication.hash,
+            export: publication.artifacts[index].exports[0].clone(),
+        }
+    }
+
+    fn citation_projection(
+        publication: &Publication,
+        index: usize,
+        targets: Vec<DirectByTarget>,
+    ) -> DirectByProjection {
+        // These are explicit original-compilation bindings, supplied in syntax encounter order.
+        let mut targets = targets.into_iter();
+        // This structural producer fixture does not republish or authenticate
+        // captured metadata on the legacy on-disk artifact profiles.
+        let mut captured = publication.artifacts[index].clone();
+        let source = &publication.frontend[index].source;
+        captured.provenance.captured_source =
+            Some((source.source_id, source.origin.clone(), source.source_hash));
+        let projection = project_frontend_direct_by(
+            &publication.frontend[index],
+            &captured,
+            publication.hash,
+            |_| Some(publication.artifacts[index].exports[0].clone()),
+            |_, _| targets.next().expect("original target binding"),
+        )
+        .unwrap();
+        assert!(targets.next().is_none());
+        projection
+    }
+
+    #[test]
+    fn doc10_direct_by_repeated_self_and_cross_package_occurrences_remain_original() {
+        let mut app = theorem_publication(
+            "app",
+            [
+                "import dep.module_0 as D; theorem T: thesis proof thus thesis by T, T; thus thesis by D; end;",
+                "theorem T: thesis;",
+            ],
+        );
+        let mut dep = theorem_publication("dep", ["theorem T: thesis by U;", "theorem T: thesis;"]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+        let producers = inputs(&app, &views[0])
+            .into_iter()
+            .chain(inputs(&dep, &views[1]))
+            .collect::<Vec<_>>();
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[(&dep.manifest.package, dep.hash, &dep.root)],
+            &producers,
+        )
+        .unwrap();
+        let own = DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)));
+        let external = DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0)));
+        let projections = [
+            citation_projection(&app, 0, vec![own.clone(), own, external.clone()]),
+            citation_projection(&app, 1, vec![]),
+            citation_projection(
+                &dep,
+                0,
+                vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 1)))],
+            ),
+            citation_projection(&dep, 1, vec![]),
+        ];
+        for sources in [
+            projections.iter().collect::<Vec<_>>(),
+            projections.iter().rev().collect(),
+        ] {
+            let result = authenticate_doc_direct_by(&imports, &sources).unwrap();
+            assert_eq!(result.citation_coverage(), DocImportCoverage::Complete);
+            assert_eq!(result.producers().len(), 4);
+            for projected in result.producers() {
+                let original = projections
+                    .iter()
+                    .find(|view| view.module() == projected.module())
+                    .unwrap();
+                assert_eq!(projected.occurrences(), original.occurrences());
+            }
+        }
+        let source = &projections[0];
+        let occurrences = source.occurrences();
+        assert_eq!(
+            occurrences
+                .iter()
+                .map(|edge| (edge.by_ordinal, edge.target_ordinal))
+                .collect::<Vec<_>>(),
+            [(0, 0), (0, 1), (1, 0)]
+        );
+        assert_eq!(occurrences[0].target, occurrences[1].target);
+        assert_eq!(occurrences[2].target, external);
+        // app::module_0 -> dep::module_0 -> dep::module_1 stays two direct edges.
+        assert!(occurrences.iter().all(
+            |edge| edge.target != DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 1)))
+        ));
+        assert_ne!(occurrences[0].target_range, occurrences[1].target_range);
+        assert_ne!(occurrences[0].by_range, occurrences[2].by_range);
+        assert!(source.examinations()[0].proof_range.is_some());
+        assert_eq!(source.captured_source().0, app.frontend[0].source.source_id);
+        assert_eq!(source.source_hash(), app.artifacts[0].source_hash);
+    }
+
+    #[test]
+    fn doc10_direct_by_complete_empty_requires_every_original_theorem_examination() {
+        let mut app = theorem_publication("empty", ["theorem T: thesis;"; 2]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&app, &views[0]),
+        )
+        .unwrap();
+        let projections = [
+            citation_projection(&app, 0, vec![]),
+            citation_projection(&app, 1, vec![]),
+        ];
+        let complete =
+            authenticate_doc_direct_by(&imports, &[&projections[0], &projections[1]]).unwrap();
+        assert_eq!(complete.citation_coverage(), DocImportCoverage::Complete);
+        assert!(
+            complete
+                .producers()
+                .iter()
+                .all(|view| view.occurrences().is_empty() && view.examinations().len() == 1)
+        );
+        assert_eq!(
+            authenticate_doc_direct_by(&imports, &[])
+                .unwrap()
+                .citation_coverage(),
+            DocImportCoverage::Unavailable
+        );
+        let partial = authenticate_doc_direct_by(&imports, &[&projections[0]]).unwrap();
+        assert_eq!(partial.citation_coverage(), DocImportCoverage::Incomplete);
+        assert_eq!(
+            partial.coverage(&app.summaries[1].module, app.hash),
+            DocImportCoverage::Unavailable
+        );
+        let mut captured = app.artifacts[0].clone();
+        captured.provenance.captured_source = Some(projections[0].captured_source().clone());
+        let unexamined = project_frontend_direct_by(
+            &app.frontend[0],
+            &captured,
+            app.hash,
+            |_| None,
+            |_, _| panic!("empty theorem has no by targets"),
+        )
+        .unwrap();
+        let partial =
+            authenticate_doc_direct_by(&imports, &[&unexamined, &projections[1]]).unwrap();
+        assert_eq!(
+            partial.coverage(&app.summaries[0].module, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        assert_eq!(imports.closure_coverage(), DocImportCoverage::Complete);
+        // Equal content cannot replace an available authenticated source identity.
+        let mut foreign = app.frontend[1].clone();
+        foreign.source.module_path = app.frontend[0].source.module_path.clone();
+        foreign.source.normalized_path = app.frontend[0].source.normalized_path.clone();
+        foreign.source.file_path = app.frontend[0].source.file_path.clone();
+        captured.provenance.captured_source = Some(projections[1].captured_source().clone());
+        let foreign = project_frontend_direct_by(
+            &foreign,
+            &captured,
+            app.hash,
+            |_| Some(app.artifacts[0].exports[0].clone()),
+            |_, _| panic!("no by targets"),
+        )
+        .unwrap();
+        assert_eq!(foreign.source_hash(), projections[0].source_hash());
+        assert_ne!(
+            foreign.captured_source().0,
+            projections[0].captured_source().0
+        );
+        assert!(matches!(
+            authenticate_doc_direct_by(&imports, &[&foreign]),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_direct_by_missing_package_and_unmapped_endpoint_keep_known_occurrences() {
+        let mut app = theorem_publication(
+            "app",
+            [
+                "import dep.module_0 as D; theorem T: thesis by D;",
+                "theorem T: thesis;",
+            ],
+        );
+        let mut dep = theorem_publication("dep", ["theorem T: thesis;"; 2]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&app, &views[0]),
+        )
+        .unwrap();
+        let known = citation_projection(
+            &app,
+            0,
+            vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0)))],
+        );
+        let empty = citation_projection(&app, 1, vec![]);
+        let result = authenticate_doc_direct_by(&imports, &[&known, &empty]).unwrap();
+        assert_eq!(result.citation_coverage(), DocImportCoverage::Incomplete);
+        assert_eq!(result.producers()[0].occurrences(), known.occurrences());
+        let unmapped = citation_projection(&app, 0, vec![DirectByTarget::Unmapped]);
+        let result = authenticate_doc_direct_by(&imports, &[&unmapped, &empty]).unwrap();
+        assert_eq!(
+            result.coverage(&app.summaries[0].module, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        assert_eq!(result.producers()[0].occurrences().len(), 1);
+        assert_eq!(
+            result.producers()[0].occurrences()[0].target,
+            DirectByTarget::Unmapped
+        );
+    }
+
+    #[test]
+    fn doc10_direct_by_scope_rejects_duplicate_foreign_and_non_theorem_bindings() {
+        let mut app =
+            theorem_publication("scope", ["theorem T: thesis by T;", "theorem T: thesis;"]);
+        let mut omitted = app.artifacts[1].exports[0].clone();
+        omitted.origin_id.push_str("-unexamined");
+        app.artifacts[1].exports.push(omitted);
+        app.publish();
+        let mut foreign = theorem_publication("foreign", ["theorem T: thesis;"; 2]);
+        let (registry, workspace, plans, views) = context(&mut [&mut app, &mut foreign]);
+        let root = plans
+            .iter()
+            .find(|plan| plan.request.package == app.manifest.package)
+            .unwrap();
+        let imports =
+            authenticate_doc_imports(&registry, &workspace, root, &[], &inputs(&app, &views[0]))
+                .unwrap();
+        let source = citation_projection(
+            &app,
+            0,
+            vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)))],
+        );
+        let empty = citation_projection(&app, 1, vec![]);
+        let partial = authenticate_doc_direct_by(&imports, &[&source, &empty]).unwrap();
+        assert_eq!(
+            partial.coverage(&app.summaries[1].module, app.hash),
+            DocImportCoverage::Incomplete
+        );
+        let outside = citation_projection(&foreign, 0, vec![]);
+        for producers in [&[&source, &source][..], &[&source, &outside][..]] {
+            assert!(matches!(
+                authenticate_doc_direct_by(&imports, producers),
+                Err(DocBuildError::Binding(_))
+            ));
+        }
+        for mutation in 0..3 {
+            let mut endpoint = theorem_endpoint(&app, 0);
+            match mutation {
+                0 => endpoint.export.origin_id.push_str("-forged"),
+                1 => endpoint.export.export_kind = "definition".into(),
+                _ => endpoint.publication_hash = mizar_session::hash_text("wrong publication"),
+            }
+            let invalid =
+                citation_projection(&app, 0, vec![DirectByTarget::Theorem(Box::new(endpoint))]);
+            assert!(matches!(
+                authenticate_doc_direct_by(&imports, &[&invalid]),
+                Err(DocBuildError::Binding(_))
+            ));
+        }
+        // Two original theorem items cannot share one examination/occurrence owner.
+        let mut duplicate = theorem_publication(
+            "duplicate-scope",
+            [
+                "theorem A: thesis by A; theorem B: thesis by B;",
+                "theorem T: thesis;",
+            ],
+        );
+        let (registry, workspace, plans, views) = context(&mut [&mut duplicate]);
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&duplicate, &views[0]),
+        )
+        .unwrap();
+        let invalid = citation_projection(&duplicate, 0, vec![DirectByTarget::Unmapped; 2]);
+        assert_eq!(invalid.examinations().len(), 2);
+        assert_eq!(
+            invalid.occurrences()[0].by_ordinal,
+            invalid.occurrences()[1].by_ordinal
+        );
+        assert!(matches!(
+            authenticate_doc_direct_by(&imports, &[&invalid]),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_direct_by_stale_publication_cannot_reuse_original_projection() {
+        let mut app = theorem_publication("stale", ["theorem T: thesis;"; 2]);
+        let (_, _, _, _) = context(&mut [&mut app]);
+        let old = citation_projection(&app, 0, vec![]);
+        app.artifacts[0].exports[0].origin_id.push_str("-changed");
+        app.publish();
+        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&app, &views[0]),
+        )
+        .unwrap();
+        assert_ne!(old.publication_hash(), app.hash);
+        assert!(matches!(
+            authenticate_doc_direct_by(&imports, &[&old]),
+            Err(DocBuildError::Binding(_))
+        ));
+    }
+
+    #[test]
+    fn doc10_direct_by_does_not_synthesize_edges_from_evidence_or_doc_links() {
+        let mut app = theorem_publication(
+            "docs",
+            [
+                "::: @see T\n::: [T](T)\ntheorem T: thesis;",
+                "theorem T: thesis;",
+            ],
+        );
+        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+        let before = plans[0].clone();
+        let bytes = std::fs::read(app.root.join("artifact-manifest.json")).unwrap();
+        assert!(!app.artifacts[0].proof_witnesses.is_empty());
+        let imports = authenticate_doc_imports(
+            &registry,
+            &workspace,
+            &plans[0],
+            &[],
+            &inputs(&app, &views[0]),
+        )
+        .unwrap();
+        let projections = [
+            citation_projection(&app, 0, vec![]),
+            citation_projection(&app, 1, vec![]),
+        ];
+        let result =
+            authenticate_doc_direct_by(&imports, &[&projections[0], &projections[1]]).unwrap();
+        assert_eq!(result.citation_coverage(), DocImportCoverage::Complete);
+        assert!(
+            result
+                .producers()
+                .iter()
+                .all(|view| view.occurrences().is_empty())
+        );
+        assert_eq!(plans[0], before);
+        assert_eq!(
+            std::fs::read(app.root.join("artifact-manifest.json")).unwrap(),
+            bytes
+        );
+        assert!(!app.root.join("out").exists());
     }
 }
