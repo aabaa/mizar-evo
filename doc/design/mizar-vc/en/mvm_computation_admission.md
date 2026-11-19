@@ -74,6 +74,7 @@ depend on later R7 records.
 
 **First possible implementation freeze:** R6-A local source-edge
 inventory and R6-B classification once authentic producers exist,
-under VC58. R6-C requires R3 exports; R6-D requires genuine Proof
-acceptance. This design authorizes no R6 implementation or change
-to existing `.miz` expectations, traces or coverage.
+under VC58. Imported/full-closure R6-C requires R3 exports; authentic
+local R6-A/B/C Open-goal preparation may precede imported closure.
+R6-D requires genuine Proof acceptance. This design authorizes no R6
+implementation or change to existing `.miz` expectations, traces or coverage.

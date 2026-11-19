@@ -1,6 +1,6 @@
 # Task MVM-R5-EXTENDED-EXECUTION-DESIGN: Control, failure and resource cases
 
-Canonical English; [Japanese pointer](../ja/MVM-R5-EXTENDED-EXECUTION-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R5-EXTENDED-EXECUTION-DESIGN.md).
 Status: design draft; independent review and documentation checks pending.
 Documentation-only; no R5 implementation readiness or semantic coverage.
 Sole owner: [mizar-vc plan](../../mizar-vc/en/00.crate_plan.md).

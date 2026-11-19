@@ -1,6 +1,6 @@
 # Task MVM-R8-CORPUS-DESIGN: Stage-gated MVM integration corpus
 
-Canonical English; [Japanese pointer](../ja/MVM-R8-CORPUS-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R8-CORPUS-DESIGN.md).
 Status: design draft; independent review and documentation lint pending.
 **Documentation only**; no corpus activation, passing runtime test or
 coverage credit. Sole owner: [mizar-test](../../mizar-test/en/00.crate_plan.md).

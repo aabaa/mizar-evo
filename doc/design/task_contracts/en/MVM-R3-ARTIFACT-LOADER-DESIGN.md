@@ -1,6 +1,6 @@
 # Task MVM-R3-ARTIFACT-LOADER-DESIGN: Verified runtime export and loader boundary
 
-Canonical English; [Japanese pointer](../ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md).
 Status: design draft; independent review and documentation checks pending.
 **Documentation only**; not an executable-format freeze or R3 implementation.
 Sole owner: [mizar-artifact](../../mizar-artifact/en/00.crate_plan.md).

@@ -1,6 +1,6 @@
 # Task MVM-R4-EXECUTOR-DESIGN: Minimal authenticated execution boundary
 
-Canonical English; [Japanese pointer](../ja/MVM-R4-EXECUTOR-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R4-EXECUTOR-DESIGN.md).
 Status: design drafted; independent review and documentation lint pending.
 **Documentation only**; no runtime implementation or acceptance credit.
 Sole owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).

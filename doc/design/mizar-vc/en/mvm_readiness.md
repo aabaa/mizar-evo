@@ -1,9 +1,8 @@
 # MVM R1 — Authentic First-Slice Readiness Inventory
 
 > Documentation-only inventory for MVM-READINESS-MAP;
-> Japanese [pointer](../ja/mvm_readiness.md). Checked against the committed
-> repository on 2026-11-19. This inventory does **not** certify an executable
-> MVM, an accepted algorithm, or completed Chapter-20 runtime coverage.
+> Japanese [pointer](../ja/mvm_readiness.md). This inventory does **not** certify
+> an executable MVM, an accepted algorithm, or completed Chapter-20 runtime coverage.
 
 ## Authority and selection
 
@@ -147,7 +146,7 @@ new crate, public status, Kernel rule or duplicate `RuntimeIr`.
    rebaseline the two existing `active_proof_verification` sidecars to
    claim MVM runtime acceptance.
 
-## Open questions and next dispatch
+## Open questions
 
 - **Q1 (owner decision, blocking R2):** Is the current reflected
   `AST-TYPE`/`AST-LOWER` acceptance required for an ordinary ground-value
@@ -163,16 +162,3 @@ new crate, public status, Kernel rule or duplicate `RuntimeIr`.
   the separately planned extraction `RuntimeIr`, or use a distinct
   authenticated executable format? No implementation choice or new crate is
   authorized by this inventory.
-
-**Next legitimate dispatch:** independent R1–R8 design reviews and
-a Core-owned R2 **definition-side** freeze after Q1 and genuine accepted
-body proof inputs are resolved. Typed ground-call design may be reviewed
-independently; neither caller nor R4 is prerequisite for R3 export design.
-R2 implementation, Artifact export and MVM execution remain blocked. The separately Test-owned R8 parser
-test-first contract may advance if it has an independent ready source
-oracle, without claiming runtime implementation.
-
-**R1 completion status:** source inventory and DAG documented; independent
-specification/boundary/test-sufficiency/volume reviews and repository
-`lint_policy`/links/fragment checks are still required before marking the
-R1 task complete. No coverage or runtime credit is claimed.

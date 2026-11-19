@@ -78,9 +78,7 @@ stage, but may not pretend later phases were reached.
   and proof/witness/manifest publication order, including failure on
   stale/corrupt inputs.
 
-**Next legitimate dispatch:** after independent design review, prioritize
-low-stage **test-first designs** only when the relevant frozen owner
-contract and spec-derived oracle exist. R8-E–H activation awaits R4–R7
+R8-E–H activation awaits R4–R7
 real producers and required stage runner. No change to existing
 `.miz`, expectations, `spec_trace.toml`, acceptance status,
 proof policy or compiler behavior follows from this design.

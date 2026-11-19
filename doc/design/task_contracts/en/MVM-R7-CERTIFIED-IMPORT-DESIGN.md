@@ -1,6 +1,6 @@
 # Task MVM-R7-CERTIFIED-IMPORT-DESIGN: Certified import and replay
 
-Canonical English; [Japanese pointer](../ja/MVM-R7-CERTIFIED-IMPORT-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R7-CERTIFIED-IMPORT-DESIGN.md).
 Status: design draft, independent review and documentation lint pending.
 **Documentation only**; no computed or kernel-verified proof acceptance.
 Sole design owner: [mizar-proof](../../mizar-proof/en/00.crate_plan.md).

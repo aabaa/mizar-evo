@@ -1,6 +1,6 @@
 # Task MVM-R6-ADMISSION-DESIGN: Full-closure computation admission
 
-Canonical English; [Japanese pointer](../ja/MVM-R6-ADMISSION-DESIGN.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-R6-ADMISSION-DESIGN.md).
 Status: design draft; independent reviews and documentation lint pending.
 Documentation-only; **no computation acceptance or runtime implementation**.
 Sole design owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).

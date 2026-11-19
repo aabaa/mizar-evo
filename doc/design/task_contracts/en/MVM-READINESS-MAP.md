@@ -1,6 +1,6 @@
 # Task MVM-READINESS-MAP: Authentic MVM first-slice readiness inventory
 
-Canonical English; [Japanese pointer](../ja/MVM-READINESS-MAP.md).
+Canonical language: English; [Japanese pointer](../ja/MVM-READINESS-MAP.md).
 Status: documentation inventory drafted; independent reviews and lint
 pending. Sole owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).
 Inventory: [mvm_readiness.md](../../mizar-vc/en/mvm_readiness.md).

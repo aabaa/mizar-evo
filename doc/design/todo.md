@@ -193,7 +193,7 @@ token, unpublished draft, or mock payload is not an accepted proof.
 4. If all M1 slices are blocked, choose a ready, independent Step 6/7
    producer or real-service-equivalence prerequisite; then one genuinely
    ready R1-R8 **documentation-review/decision-gate** task from the
-   [MVM dependency table](#mvm-implementation-dependency-gates), without
+   [MVM dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes), without
    redispatching drafted inventories; next choose Step 8 source-input,
    editor lifecycle, snapshot or native-diagnostic transport work using
    existing outputs; next other dependency-ready tasks. MVM preparation
@@ -1047,45 +1047,11 @@ test-oracle rules.
 | **MVM-R7 [~ design]** — certified computation and replay | [Proof-owned design contract](./task_contracts/en/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) and [EN/JA owner design](./mizar-proof/en/mvm_computation_import.md) drafted. R7-A E5/independent premises; B T1–T8 complete candidate translation; C whole residual inspection; D computed/replayed kernel trust and strict policy; E exact Artifact/Cache provenance. [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) retains Proof implementation ownership; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains later publication. | **Docs-only; independent review/lint pending.** Real R4/R5 normal return, R6 accepted closure, AST-TYPE/LOWER/CONTRACT/formation, [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) and genuine replay proof basis are prerequisites. No raw return/partial ensures/unchecked residual, weaker cache hit or strict-policy computed taint may become accepted proof. |
 | **MVM-R8 [~ design]** — stage-specific end-to-end corpus | [Test-owned design contract](./task_contracts/en/MVM-R8-CORPUS-DESIGN.md) and [EN/JA test matrix](./mizar-test/en/mvm_corpus_matrix.md) drafted. R8-A source/type, B Core/CFG/VC, C accepted body, D Artifact loader, E MVM execution/failure, F closure admission, G conversion/replay/cache, H true source-to-artifact integration. [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) retains test ownership. | **Docs-only; independent review/lint pending.** Existing 7 stage IDs and `expected_phase` list have no MVM-specific runtime phase; its admission requires separate harness review. Future parser-only test-first work requires a frozen owner and real oracle. R8-E–H activation waits for R2–R7 producers; no rebaseline, fake positive fixture or coverage credit. |
 
-#### MVM Implementation Dependency Gates
-
-These are **producer gates**, not a mandate to run R1–R8 implementations
-sequentially. Design review can proceed without executable inputs;
-implementation and coverage are blocked until their own gates are met.
-
-| Gate and owner | Required genuine input and first allowed work | Unlocks / current status |
-|---|---|---|
-| **G0 — ordinary/reflected distinction** (Spec/Checker/Core owners) | Review the contextual argument and AST-TYPE/AST-LOWER dependency for *ordinary ground* inputs. No implicit exemption. | R2 ordinary-only contract decision; **open**. |
-| **G1 — verified definition** (Resolver/Checker/Core/VC/Proof) | Authenticated declaration, checked body/CFG, E1/E2 and E4 **only where the applicable promotion/terminating guarantee requires it**, genuine accepted status and source/dependency identity. Existing `idalgo` VC is Open. | R2 definition-side export eligibility; **blocked**. |
-| **G2 — authenticated invocation** (Resolver/Checker) | Independently resolved typed concrete caller and ordered actual values/context; can be prepared alongside G1. | R4 call binding; **blocked**. Not needed for R3 publication. |
-| **G3 — reusable executable and loader** (Artifact/Build/Driver) | R2 definition-side G1 + versioned semantics-preserving export, transitive dependencies, current manifest and validating reader; format and same-package staging decisions remain open. | R3 executable handoff, R4 loader; **blocked**. R7 computation records are not inputs. |
-| **G4 — actual MVM execution** (VC) | G1 + G2 + G3 + computability/requirements and frozen minimal VM charging/report semantics. | R4 actual E5 normal return, then feature-gated R5-A–F; **blocked**. R5-F broad tests follow R4 but minimal accounting cannot wait. |
-| **G5 — local uniqueness VC preparation** (Resolver/Core/VC58) | Genuine local source-call edges, value/Pick/set classification and ensures. No runtime result required to generate **Open** VCs. | R6-A/B/C can be independently frozen when ready, potentially before G4; source inputs **incomplete**. |
-| **G6 — complete closure admission** (VC/Proof) | G5 + G3 for imports/private-helper closure; accepted uniqueness proofs or authentic exemptions; bind actual executed calls/dependencies before discharge. | R6-D, independent of E1/replay; **blocked**. R4 may execute internally before this but cannot discharge a theorem. |
-| **G7 — certified import/replay** (Proof → Artifact/Cache) | G4 normal report + G6 admission + independently justified requires/Adm/InputOK, formation/contract evidence, complete T1–T8 conversion and strict/replay policy. | R7 Proof status, then computation-record publication and cache reuse; **blocked**. Cannot feed G3 back. |
-| **G8 — staged corpus** (Test) | Real stage-specific source producer, oracle and runner for each R8-A–H family. Existing stage/expected_phase vocabulary has no MVM-specific phase. | Test-first low-stage design is separable now; actual runtime/Proof acceptance tests **blocked** until G4–G7 and a reviewed runner boundary. |
-
-```text
-Definition: source -> checked Core/CFG -> accepted E1/E2/(E4 if needed)
-                                      -> G3 R3 executable export/loader
-Invocation: resolved typed ground call ---------------------------+
-                                                                  |
-                                                G3 loader + call -> G4 R4/R5
-Local call graph/typed Pick/set/ensures -> G5 VC58 Open goals      |
-                         G3 validated imports -> G6 Proof closure admission
-G4 actual E5 normal return + G6 accepted closure
-                         -> G7 R7 import/replay -> computation provenance
-G8 test designs can start independently; activation follows each producer
-```
-
-**Priority and unresolved decisions:** First finish independent design
-reviews/documentation checks and resolve G0; in parallel inventory the
-genuine G1 definition/evidence and G2 invocation producers. A separate
-Artifact/Build/Driver decision must freeze G3 format and same-package
-publication order; a VC decision must freeze G4 charging/report rules.
-R6-A/B/C source-owned goal production need not wait for the MVM.
-Proof's G6/G7 acceptance, R7 replay/strict provenance and Test's
-runtime phase must not be inferred from earlier data or enabled by this table.
+MVM implementation sequencing follows the
+[R1 dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes):
+definition-side export precedes execution; source-owned local R6-A/B/C
+preparation may proceed independently; runtime and proof stages await their
+own producers.
 
 **Milestone separation:** (A) R1-R3 readiness/design/export prerequisites;
 (B) R4-R5 actual execution of supported verified algorithms; (C) R6-R7
