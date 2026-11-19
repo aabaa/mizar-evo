@@ -858,6 +858,10 @@ pub fn summary_text(
             .enumerate()
             .any(|(ordinal, (block, raw))| {
                 if block.fallback {
+                    // A warning cannot authenticate caller-writable recovery state.
+                    if !parse_comments(attachments, &[]).blocks[ordinal].fallback {
+                        return true;
+                    }
                     let expected = occurrence(attachments, ordinal, raw, 411, None);
                     !parsed.warnings.iter().any(|warning| {
                         warning.code().to_string() == "W0411"

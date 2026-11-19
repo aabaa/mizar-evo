@@ -11352,6 +11352,8 @@ mod doc10_authenticated {
                     ("", "null", 3),
                     (":::\n", "\"\"", 0),
                     ("::: <script>raw & failed</script>\n", "\"\"", 2),
+                    ("::: Alpha\n", "\"Alpha\"", 0),
+                    ("::: Alpha\n", "\"\"", 1),
                     (
                         "::: <script>raw & failed</script>\n\n::: **kept** / λ\n",
                         "\"kept / λ\"",
@@ -11454,15 +11456,17 @@ mod doc10_authenticated {
                         .blocks
                         .get(1)
                         .map_or(J::Null, |block| block.lines[0].clone());
-                    if matches!(recovery, 1 | 2) {
+                    if matches!(recovery, 1 | 2) || body.contains("Alpha") {
                         let J::Array(fields) = &mut faulty else {
                             panic!("row")
                         };
                         let J::String(raw) = &fields[2] else {
                             panic!("raw")
                         };
-                        fields[1] = doc7_range(1, if recovery == 1 { 1 + raw.len() } else { 1 });
-                        attached.blocks[1].lines[0] = &faulty;
+                        fields[1] = doc7_range(1, if recovery == 2 { 1 } else { 1 + raw.len() });
+                        if matches!(recovery, 1 | 2) {
+                            attached.blocks[1].lines[0] = &faulty;
+                        }
                     }
                     let parsed = parse_comments(&attached, &[]);
                     let other = attach_comments(&plans[0], &app.artifacts[1].module, None).unwrap();
@@ -11492,11 +11496,7 @@ mod doc10_authenticated {
                     assert_eq!(shared.len(), 1);
                     assert_eq!(
                         shared[0].1.as_deref(),
-                        match expected {
-                            "null" => None,
-                            "\"\"" => Some(""),
-                            _ => Some("kept / λ"),
-                        }
+                        (expected != "null").then(|| expected.trim_matches('"'))
                     );
                     let result = canonical_search_json(
                         &registry,
@@ -11512,7 +11512,7 @@ mod doc10_authenticated {
                         result.contains(&format!("\"summary\":{expected},")),
                         "{result}"
                     );
-                    if body.contains("raw") {
+                    if matches!(recovery, 1 | 2) {
                         assert!(parsed.blocks.iter().any(|b| b.fallback));
                         assert!(doc8_codes(&parsed.warnings).contains(&"W0411".into()));
                     }
@@ -11524,6 +11524,64 @@ mod doc10_authenticated {
                         ),
                         (&before.0, before.1, &before.2)
                     );
+                    if recovery == 0 && body.contains("Alpha") {
+                        let mut failed_attached =
+                            attach_comments(&plans[0], &app.artifacts[0].module, None).unwrap();
+                        failed_attached.blocks[1].lines[0] = &faulty;
+                        let failed = parse_comments(&failed_attached, &[]);
+                        assert!(failed.blocks[1].fallback);
+                        let warning = failed
+                            .warnings
+                            .iter()
+                            .find(|warning| warning.code().to_string() == "W0411")
+                            .unwrap();
+                        let compose = |candidate: &_| {
+                            canonical_search_json(
+                                &registry,
+                                &workspace,
+                                &[],
+                                &imports,
+                                &identities,
+                                &[candidate, &other],
+                                (&destinations, SPEC),
+                            )
+                        };
+                        for mutation in 0..3 {
+                            let mut candidate = parse_comments(&attached, &[]);
+                            candidate.warnings.push(warning.clone());
+                            match mutation {
+                                0 => {}
+                                1 => candidate.blocks[1].fallback = true,
+                                _ => {
+                                    candidate.blocks[1] =
+                                        parse_comments(&failed_attached, &[]).blocks.remove(1);
+                                }
+                            }
+                            let before =
+                                format!("{attached:?}{candidate:?}{failed_attached:?}{failed:?}");
+                            if mutation == 0 {
+                                assert_eq!(
+                                    search_summaries(&candidate).unwrap()[0].1.as_deref(),
+                                    Some("Alpha")
+                                );
+                                assert!(
+                                    compose(&candidate)
+                                        .unwrap()
+                                        .contains("\"summary\":\"Alpha\",")
+                                );
+                            } else {
+                                assert!(compose(&candidate).is_err(), "mutation {mutation}");
+                                assert!(
+                                    search_summaries(&candidate).is_err(),
+                                    "mutation {mutation}"
+                                );
+                            }
+                            assert_eq!(
+                                format!("{attached:?}{candidate:?}{failed_attached:?}{failed:?}"),
+                                before
+                            );
+                        }
+                    }
                     let mut unavailable = parse_comments(&attached, &[]);
                     unavailable.blocks.clear();
                     assert!(

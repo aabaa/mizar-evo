@@ -188,6 +188,21 @@ fn doc13_summary_skips_whole_failed_views_in_attachment_order() {
         );
         assert!(!parsed.documentation_failed());
         assert_eq!(before, format!("{parsed:?}"));
+        if failed == [0] {
+            let valid = attach_comments(&plan, attachments.module, Some(&source)).unwrap();
+            for transplant in [false, true] {
+                let mut candidate = parse_comments(&valid, &[]);
+                candidate.warnings.extend(parsed.warnings.clone());
+                if transplant {
+                    candidate.blocks[0] = parse_comments(&attachments, &[]).blocks.remove(0);
+                } else {
+                    candidate.blocks[0].fallback = true;
+                }
+                let before = format!("{candidate:?}{parsed:?}");
+                assert!(summary_text(&candidate, CommentTarget::Module).is_err());
+                assert_eq!(before, format!("{candidate:?}{parsed:?}"));
+            }
+        }
         std::fs::remove_dir_all(root).unwrap();
     }
 }
