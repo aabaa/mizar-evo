@@ -1037,6 +1037,20 @@ mod q1_comments {
         let attachments =
             mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
         let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+        assert_eq!(
+            mizar_doc::render::summary_text(&parsed, mizar_doc::comments::CommentTarget::Module)
+                .unwrap(),
+            Some("café".into())
+        );
+        let search = mizar_doc::render::search_summaries(&parsed).unwrap();
+        let module = mizar_doc::render::module_summary_fragments(&parsed).unwrap();
+        assert_eq!(search.len(), attachments.input.exports.len());
+        assert_eq!(module.len(), search.len());
+        for ((item, summary), (listed, html)) in search.iter().zip(&module) {
+            assert!(std::ptr::eq(*item, *listed));
+            assert_eq!(summary, &None);
+            assert_eq!(html, "<p class=\"mizar-summary\"></p>\n");
+        }
         let start = parsed.blocks[0].text.find("café").unwrap();
         let expected = original.find("café").unwrap();
         assert_eq!(

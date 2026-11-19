@@ -69,9 +69,131 @@ pub struct MarkdownBlock {
     pub math: Vec<MathRange>,
     /// A conversion failure requires retaining the original raw block.
     pub fallback: bool,
+    paragraphs: Vec<Paragraph>,
 }
 
 impl MarkdownBlock {
+    pub(crate) fn summary_view_complete(
+        &self,
+        raw: &CommentBlock<'_>,
+        attachments: &CommentAttachments<'_>,
+    ) -> bool {
+        let mut original = extract(raw);
+        if original.fallback {
+            return false;
+        }
+        derive(&mut original, &mut Vec::new());
+        let original = &original;
+        !original.fallback
+            && valid_maps(self, attachments)
+            && self.text == original.text
+            && self.source_map == original.source_map
+            && self.events == original.events
+            && self.destinations == original.destinations
+            && self.fallback == original.fallback
+            && self.paragraphs == original.paragraphs
+            && self
+                .fields
+                .iter()
+                .map(|field| (&field.marker, &field.slot, &field.body, &field.payload))
+                .eq(original
+                    .fields
+                    .iter()
+                    .map(|field| (&field.marker, &field.slot, &field.body, &field.payload)))
+            && self
+                .math
+                .iter()
+                .map(|math| (&math.range, &math.content, math.display))
+                .eq(original
+                    .math
+                    .iter()
+                    .map(|math| (&math.range, &math.content, math.display)))
+    }
+
+    pub(crate) fn first_summary(&self) -> Result<Option<String>, crate::doc_build::DocBuildError> {
+        let refuse = || crate::doc_build::DocBuildError::Binding("summary text view mismatch");
+        let Some(paragraph) = self.paragraphs.iter().find(|paragraph| {
+            // Removing a display block can leave only its line terminator.
+            paragraph
+                .segments
+                .iter()
+                .any(|range| self.text[range.clone()].bytes().any(|byte| !w(byte)))
+                && !self.fields.iter().any(|field| {
+                    paragraph.range.start <= field.marker.start
+                        && field.marker.end <= paragraph.range.end
+                })
+        }) else {
+            return Ok(None);
+        };
+        let math: Vec<_> = self
+            .math
+            .iter()
+            .filter(|math| {
+                !math.display
+                    && paragraph.range.start <= math.range.start
+                    && math.range.end <= paragraph.range.end
+            })
+            .collect();
+        let mut pieces = Vec::new();
+        for math in &math {
+            let mut payload = String::new();
+            for segment in &math.content {
+                payload.push_str(self.text.get(segment.clone()).ok_or_else(refuse)?);
+            }
+            pieces.push((math.range.start, payload));
+        }
+        for (event, range) in &self.events {
+            let text = match event {
+                Event::Text(text)
+                | Event::Code(text)
+                | Event::Html(text)
+                | Event::InlineHtml(text) => text.as_ref(),
+                Event::SoftBreak | Event::HardBreak => " ",
+                _ => continue,
+            };
+            let start = range.start.max(paragraph.range.start);
+            let end = range.end.min(paragraph.range.end);
+            if start >= end {
+                continue;
+            }
+            let mut cursor = start;
+            for span in math
+                .iter()
+                .map(|math| &math.range)
+                .chain(std::iter::once(&(end..end)))
+            {
+                if span.end <= cursor || end <= span.start && span.start != end {
+                    continue;
+                }
+                let stop = end.min(span.start);
+                if cursor < stop {
+                    let visible = if cursor == range.start && stop == range.end {
+                        text
+                    } else if self.text.get(range.clone()) == Some(text) {
+                        self.text.get(cursor..stop).ok_or_else(refuse)?
+                    } else if matches!(event, Event::SoftBreak | Event::HardBreak) {
+                        " "
+                    } else {
+                        return Err(refuse());
+                    };
+                    pieces.push((cursor, visible.to_owned()));
+                }
+                cursor = cursor.max(span.end);
+                if cursor >= end {
+                    break;
+                }
+            }
+        }
+        pieces.sort_by_key(|(start, _)| *start);
+        let text: String = pieces.into_iter().map(|(_, text)| text).collect();
+        Ok(Some(
+            text.split(['\t', '\n', '\u{b}', '\u{c}', '\r', ' '])
+                .filter(|piece| !piece.is_empty())
+                .collect::<Vec<_>>()
+                .join(" "),
+        ))
+    }
+
     /// Exact CommonMark destination, including the implicit email autolink scheme.
     pub fn interpreted_destination(&self, ordinal: usize) -> Option<Cow<'_, str>> {
         let (index, _) = self.destinations.get(ordinal)?;
@@ -242,6 +364,7 @@ pub fn parse_comments<'a, 'input>(
             block.fields.clear();
             block.math.clear();
             block.destinations.clear();
+            block.paragraphs.clear();
             conditions.clear();
         }
         conditions.sort_by_key(|condition| {
@@ -310,7 +433,7 @@ fn number(value: &CanonicalJson) -> Option<usize> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct Paragraph {
     range: Range<usize>,
     segments: Vec<Range<usize>>,
@@ -568,6 +691,7 @@ fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
             block.fallback = true;
         }
     }
+    block.paragraphs = paragraphs;
 }
 
 fn destination_range(text: &str, mut start: usize, end: usize, lines: &[Line]) -> Range<usize> {
@@ -1010,7 +1134,7 @@ fn inline_math(block: &mut MarkdownBlock, paragraph: &Paragraph, conditions: &mu
     }
 }
 
-fn same_target(left: CommentTarget<'_>, right: CommentTarget<'_>) -> bool {
+pub(crate) fn same_target(left: CommentTarget<'_>, right: CommentTarget<'_>) -> bool {
     match (left, right) {
         (CommentTarget::Module, CommentTarget::Module) => true,
         (CommentTarget::Item(left), CommentTarget::Item(right)) => std::ptr::eq(left, right),

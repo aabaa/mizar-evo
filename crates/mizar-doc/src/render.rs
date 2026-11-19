@@ -19,6 +19,7 @@ use crate::{
         DocAllocationTable, DocDestinationAllocations, DocPageAllocation, ValidatedDocAllocations,
         allocate_doc_destinations, encode_doc_href,
     },
+    comments::{CommentTarget, attach_comments},
     doc_build::{
         AuthenticatedDocDirectBy, AuthenticatedDocIdentities, AuthenticatedDocImports,
         AuthenticatedDocSources, DocBuildError, DocImportCoverage, validate_coordinate_range,
@@ -27,8 +28,115 @@ use crate::{
         ClassifiedDocOccurrence, DocReferenceClassification, DocReferenceForm, ResolvedDocLinks,
         resolve_doc_links,
     },
-    markdown::{ParsedComments, occurrence, parse_comments},
+    markdown::{ParsedComments, occurrence, parse_comments, same_target},
 };
+
+/// Projects the first eligible successful paragraph for this exact attached target.
+/// Known absence is `None`; available comments without a paragraph are empty text.
+pub fn summary_text(
+    parsed: &ParsedComments<'_, '_>,
+    target: CommentTarget<'_>,
+) -> Result<Option<String>, DocBuildError> {
+    let refuse = || DocBuildError::Binding("documentation summary binding mismatch");
+    let attachments = parsed.attachments;
+    if !parsed.available()
+        || !attachments
+            .plan
+            .index
+            .modules
+            .get(attachments.module)
+            .is_some_and(|input| std::ptr::eq(input, attachments.input))
+        || matches!(target, CommentTarget::Item(export) if !attachments.input.exports.iter().any(|item| std::ptr::eq(item, export)))
+    {
+        return Err(refuse());
+    }
+    let original =
+        attach_comments(attachments.plan, attachments.module, None).ok_or_else(refuse)?;
+    if parsed.blocks.len() != attachments.blocks.len()
+        || original.blocks.len() != attachments.blocks.len()
+        || attachments
+            .blocks
+            .iter()
+            .zip(&original.blocks)
+            .enumerate()
+            .any(|(ordinal, (raw, original))| {
+                raw.range != original.range
+                    || (!parsed.blocks[ordinal].fallback && raw.lines != original.lines)
+                    || match (raw.target, original.target) {
+                        (Some(left), Some(right)) => !same_target(left, right),
+                        (None, None) => false,
+                        _ => true,
+                    }
+            })
+        || parsed
+            .blocks
+            .iter()
+            .zip(&attachments.blocks)
+            .enumerate()
+            .any(|(ordinal, (block, raw))| {
+                if block.fallback {
+                    let expected = occurrence(attachments, ordinal, raw, 411, None);
+                    !parsed.warnings.iter().any(|warning| {
+                        warning.code().to_string() == "W0411"
+                            && warning.details().entries().get("documentation.occurrence")
+                                == Some(&expected)
+                    })
+                } else {
+                    !block.summary_view_complete(raw, attachments)
+                }
+            })
+    {
+        return Err(refuse());
+    }
+    let mut attached = false;
+    for (raw, block) in attachments.blocks.iter().zip(&parsed.blocks) {
+        if !raw
+            .target
+            .is_some_and(|candidate| same_target(candidate, target))
+        {
+            continue;
+        }
+        attached = true;
+        if !block.fallback
+            && let Some(text) = block.first_summary()?
+        {
+            return Ok(Some(text));
+        }
+    }
+    Ok(attached.then(String::new))
+}
+
+/// Returns every original export in stored order with the shared plain summary.
+pub fn search_summaries<'a>(
+    parsed: &ParsedComments<'_, 'a>,
+) -> Result<Vec<(&'a VerifiedExport, Option<String>)>, DocBuildError> {
+    let exports = &parsed.attachments.input.exports;
+    if exports.is_empty() {
+        summary_text(parsed, CommentTarget::Module)?;
+    }
+    exports
+        .iter()
+        .map(|export| Ok((export, summary_text(parsed, CommentTarget::Item(export))?)))
+        .collect()
+}
+
+/// Escapes the same shared summaries once into isolated module listing fragments.
+pub fn module_summary_fragments<'a>(
+    parsed: &ParsedComments<'_, 'a>,
+) -> Result<Vec<(&'a VerifiedExport, String)>, DocBuildError> {
+    Ok(search_summaries(parsed)?
+        .into_iter()
+        .map(|(export, text)| {
+            (
+                export,
+                format!(
+                    "<p class=\"mizar-summary\">{}</p>\n",
+                    escape(text.as_deref().unwrap_or_default(), false)
+                ),
+            )
+        })
+        .collect())
+}
 
 /// Isolated source views retaining one authenticated source and allocation handoff.
 #[derive(Debug)]

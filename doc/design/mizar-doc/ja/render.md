@@ -25,7 +25,7 @@ Q5 は下記の[採用済み出力方針](#採用済み-htmlurl-出力方針)に
 Q6 の opaque math transport/runtime は上記の限定採用に従う。symbolic 入力、数式番号/参照は未解決の共同依存であり、annotation 代入は選択しない。asset は local/immutable/version-bound とし、runtime CDN、可変 download、数式間 state を許可しない。
 
 ## Joint Q4/MT Summary Definition
-限定 consumer 定義として、採用済み [Doc8 recovery](./commonmark.md) と [MT precedence](../../../spec/ja/22.error_handling_and_diagnostics.md) の下で Q4 の劣化 module/search text 投影を定める。parser、producer API、serialized status field、実行 witness、完全 renderer は定義しない。この投影についてのみ、以下が Q4 の歴史的な提案選択肢に優先する。
+限定 consumer 定義として、採用済み [Doc8 recovery](./commonmark.md) と [MT precedence](../../../spec/ja/22.error_handling_and_diagnostics.md) の下で Q4 の劣化 module/search text 投影を定める。下記の独立した実行 projection を採用するが、parser、serialized status field、完全 renderer は定義しない。この投影についてのみ、以下が Q4 の歴史的な提案選択肢に優先する。
 
 ### Selection And Recovery
 同じ完全 provenance の target/publication と完全な source 順 attachment list に入力を結び付ける。Doc8 view と map が完了した各 block の通常 CommonMark 段落を、container 内の構造的段落も含め source 順に走査する。Doc8 の認識に従い、必須 field 欠落・重複を含む既知 tag 段落を除く。未知・類似 tag は通常 text のまま。heading、code/HTML block、reference definition、display math を段落に変えない。これらの block 全体で最初の対象段落を flatten 前に選び、結果が空でも後の非空段落を探さない。
@@ -43,7 +43,8 @@ comment の既知不在は search では null、module summary の可視 text �
 | failed, failed | `""`。両 raw block と既存 warning を保持 |
 
 ### Module And Search Boundary
-module listing と search record は exported/reexported 完全 identity ごとに同じ選択済み plain string を使い、全 export と既存 index 順を保持する。search null は既知不在だけとし、recovery による record 省略、新たな Q8 refusal、raw text/error label の summary 挿入はしない。全文 comment と全 tag occurrence は別の source 順 content として保持し、summary で置換・重複除去しない。warning promotion は既存 profile の documentation のみで proof/extraction acceptance を変えない。実行可能 summary/search producer、template witness、残る math/owner fragment、Q12 定義は供給せず、Doc13/G4 全体、G5/Doc14–15、schema/publication、Doc23/24、credit は gate 内に保つ。
+module listing と search record は exported/reexported 完全 identity ごとに同じ選択済み plain string を使い、全 export と既存 index 順を保持する。search null は既知不在だけとし、recovery による record 省略、新たな Q8 refusal、raw text/error label の summary 挿入はしない。全文 comment と全 tag occurrence は別の source 順 content として保持し、summary で置換・重複除去しない。warning promotion は既存 profile の documentation のみで proof/extraction acceptance を変えない。完全 template/search serialization、残る math/owner fragment、Q12 定義、Doc13/G4 全体、G5/Doc14–15、schema/publication、Doc23/24、credit は gate 内に保つ。
+独立した Render `summary_text` selector は `ParsedComments` と bound target を借用する。`search_summaries` は元の export 参照と optional plain string を入力順で保持し、`module_summary_fragments` は同じ文字列を一度 escape して `<p class="mizar-summary">{text}</p>` と末尾 LF を生成する。既知不在は空の可視 text。unavailable/incomplete view-state と foreign target binding は既存 binding refusal 境界を保ち、recovered block は available 入力のままとする。
 
 ## 候補の検索と補助 index
 Q7 は UTF-8 JSON とし、top-level key 順を `format_version`（候補整数 `1`）、`package_version`（保存文字列）、`items`（配列）と提案する。各 item の key 順は `identity`、`fqn`、`kind`、`summary`、`signature`、`href`。`identity` は `[package_id, package_version, lock_identity, module_path, edition, origin_id, publication_hash]` の tuple で、所有者の canonical string を使い、null は lock identity 不在だけ、module_path は順序付き string 成分配列とする。厳密な所有者 encoding、kind spelling、format compatibility は採用前に列挙する必要がある。検索 wire format の提案であって Artifact/DocIndex schema 割当ではない。

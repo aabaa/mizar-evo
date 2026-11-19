@@ -1,5 +1,304 @@
 use super::*;
 
+#[test]
+fn doc13_summary_selects_source_ordered_ordinary_structural_paragraphs() {
+    use mizar_doc::{comments::CommentTarget, markdown::parse_comments, render::summary_text};
+    for (markdown, expected) in [
+        ("@returns\n\n@returns duplicate\n\nFirst\n\nSecond", "First"),
+        ("- @param\n- tight first\n- tight second", "tight first"),
+        ("- @since\n\n- loose first\n\n- loose second", "loose first"),
+        ("> @see\n>\n> quoted first\n\nOutside", "quoted first"),
+        (
+            "# heading\n\n    indented\n\n```\nfenced\n```\n\n<div>\nhtml block\n</div>\n\n[definition]: /url\n\n$$display$$\n\nEligible",
+            "Eligible",
+        ),
+        ("@unknown untouched", "@unknown untouched"),
+        ("\\@param escaped", "@param escaped"),
+        ("&#64;param entity", "@param entity"),
+        ("`@param` code", "@param code"),
+        ("*@param* emphasis", "@param emphasis"),
+        ("[@param](/url) link", "@param link"),
+        ("@PARAM uppercase", "@PARAM uppercase"),
+        ("@param, punctuation", "@param, punctuation"),
+        ("@param\u{a0}unicode", "@param\u{a0}unicode"),
+    ] {
+        let (root, plan, _) = doc8_fixture(markdown);
+        let attachments = doc7_attach(&plan);
+        let parsed = parse_comments(&attachments, &[]);
+        assert_eq!(
+            summary_text(&parsed, CommentTarget::Module)
+                .unwrap()
+                .as_deref(),
+            Some(expected),
+            "{markdown:?}"
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    let (root, plan, _) = doc7_fixture(
+        "summary_blocks",
+        "::: @returns\n\n::: First\n\n::: Second\n",
+        None,
+        |_, _, _| {},
+    );
+    let attachments = doc7_attach(&plan);
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(parsed.blocks.len(), 3);
+    assert_eq!(
+        summary_text(&parsed, CommentTarget::Module)
+            .unwrap()
+            .as_deref(),
+        Some("First")
+    );
+    let mut attachments = doc7_attach(&plan);
+    attachments.blocks[1].lines = attachments.blocks[2].lines.clone();
+    let parsed = parse_comments(&attachments, &[]);
+    assert!(summary_text(&parsed, CommentTarget::Module).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc13_summary_distinguishes_absent_empty_and_unavailable_views() {
+    use mizar_doc::{
+        comments::{CommentTarget, attach_comments},
+        markdown::parse_comments,
+        render::{module_summary_fragments, search_summaries, summary_text},
+    };
+    for (markdown, expected) in [
+        ("", None),
+        ("\n", Some("")),
+        ("@param\n\n@returns", Some("")),
+        ("# heading\n\n```\ncode\n```\n\n$$x$$", Some("")),
+        ("[](/url)\n\nLater text", Some("")),
+    ] {
+        let (root, plan, _) = doc8_fixture(markdown);
+        let attachments = doc7_attach(&plan);
+        let parsed = parse_comments(&attachments, &[]);
+        assert_eq!(
+            summary_text(&parsed, CommentTarget::Module)
+                .unwrap()
+                .as_deref(),
+            expected,
+            "{markdown:?}"
+        );
+        if markdown.is_empty() {
+            assert!(
+                search_summaries(&parsed)
+                    .unwrap()
+                    .iter()
+                    .all(|(_, text)| text.is_none())
+            );
+            assert!(
+                module_summary_fragments(&parsed)
+                    .unwrap()
+                    .iter()
+                    .all(|(_, html)| html == "<p class=\"mizar-summary\"></p>\n")
+            );
+        }
+        let foreign = attachments.input.exports[0].clone();
+        assert!(summary_text(&parsed, CommentTarget::Item(&foreign)).is_err());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    let (root, plan, _) = doc8_fixture("Available");
+    let attachments = doc7_attach(&plan);
+    let mut parsed = parse_comments(&attachments, &[]);
+    parsed.blocks[0].fallback = true;
+    assert!(summary_text(&parsed, CommentTarget::Module).is_err());
+    let mut parsed = parse_comments(&attachments, &[]);
+    parsed.blocks[0].events.clear();
+    assert!(summary_text(&parsed, CommentTarget::Module).is_err());
+    assert!(search_summaries(&parsed).is_err());
+    assert!(module_summary_fragments(&parsed).is_err());
+    let mut parsed = parse_comments(&attachments, &[]);
+    parsed.blocks.clear();
+    assert!(summary_text(&parsed, CommentTarget::Module).is_err());
+    assert!(search_summaries(&parsed).is_err());
+    assert!(module_summary_fragments(&parsed).is_err());
+    let absent = plan
+        .index
+        .modules
+        .keys()
+        .find(|m| m.module_path == "module_1")
+        .unwrap();
+    let unavailable = attach_comments(&plan, absent, None).unwrap();
+    let parsed = parse_comments(&unavailable, &[]);
+    assert!(summary_text(&parsed, CommentTarget::Module).is_err());
+    assert!(search_summaries(&parsed).is_err());
+    assert!(module_summary_fragments(&parsed).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn doc13_summary_skips_whole_failed_views_in_attachment_order() {
+    use mizar_artifact::store::CanonicalJson as J;
+    use mizar_doc::{
+        comments::{CommentTarget, attach_comments},
+        markdown::parse_comments,
+        render::summary_text,
+    };
+    for (source_text, failed, expected) in [
+        ("::: Failed\n\n::: Alpha\n\n::: Beta\n", vec![0], "Alpha"),
+        ("::: Alpha\n\n::: Failed\n\n::: Beta\n", vec![1], "Alpha"),
+        (
+            "::: Failed one\n\n::: @returns\n\n::: Failed two\n\n::: Beta\n",
+            vec![0, 2],
+            "Beta",
+        ),
+        ("::: Failed one\n\n::: Failed two\n", vec![0, 1], ""),
+    ] {
+        let (root, plan, source) =
+            doc7_fixture("summary_failure_order", source_text, None, |_, _, _| {});
+        let mut attachments =
+            attach_comments(&plan, doc7_attach(&plan).module, Some(&source)).unwrap();
+        let mut faulty_rows = failed
+            .iter()
+            .map(|&i| attachments.blocks[i].lines[0].clone())
+            .collect::<Vec<_>>();
+        for row in &mut faulty_rows {
+            let J::Array(fields) = row else {
+                panic!("documentation row")
+            };
+            let J::String(raw) = &fields[2] else {
+                panic!("raw spelling")
+            };
+            fields[1] = doc7_range(1, 1 + raw.len());
+        }
+        for (&i, row) in failed.iter().zip(&faulty_rows) {
+            attachments.blocks[i].lines[0] = row;
+        }
+        let parsed = parse_comments(&attachments, &[]);
+        assert_eq!(
+            parsed.blocks.iter().filter(|b| b.fallback).count(),
+            failed.len()
+        );
+        assert_eq!(
+            parsed
+                .warnings
+                .iter()
+                .filter(|w| w.code().to_string() == "W0411")
+                .count(),
+            failed.len()
+        );
+        let before = format!("{parsed:?}");
+        assert_eq!(
+            summary_text(&parsed, CommentTarget::Module)
+                .unwrap()
+                .as_deref(),
+            Some(expected),
+            "{source_text:?}"
+        );
+        assert!(!parsed.documentation_failed());
+        assert_eq!(before, format!("{parsed:?}"));
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn doc13_summary_flattens_exact_plain_text_without_normalizing_or_truncating() {
+    use mizar_doc::{comments::CommentTarget, markdown::parse_comments, render::summary_text};
+    let long = "é e\u{301} λ\u{a0}文".repeat(2048);
+    for (markdown, expected) in [
+        ("**Bold** `x &amp; <y>` [link *label*](/dest) ![image **alt**](/img) &amp; <i a=\"&amp;\">raw</i>".to_owned(), "Bold x &amp; <y> link label image alt & <i a=\"&amp;\">raw</i>".to_owned()),
+        (r"$*opaque* &amp; \alpha \<script\>$".into(), r"*opaque* &amp; \alpha \<script\>".into()),
+        ("a\t  b\nc  \nd\\\ne\u{b}\u{c}f".into(), "a b c d e f".into()),
+        (format!("{long}\n\nIgnored"), long),
+    ] {
+        let (root, plan, _) = doc8_fixture(&markdown);
+        let attachments = doc7_attach(&plan);
+        let parsed = parse_comments(&attachments, &[]);
+        assert_eq!(summary_text(&parsed, CommentTarget::Module).unwrap(), Some(expected), "{markdown:?}");
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn doc13_summary_module_search_preserve_published_export_order_and_identities() {
+    use mizar_artifact::verified_artifact::ExportVisibility;
+    use mizar_doc::{
+        comments::{CommentTarget, attach_comments},
+        markdown::parse_comments,
+        render::{module_summary_fragments, search_summaries, summary_text},
+    };
+    let text = "::: Module prose\nimport X;\n::: @returns\n:::\n::: A &amp; `&amp;` <i>item</i>\ntheorem T: true;\n";
+    let (root, mut plan, source) = doc7_fixture(
+        "summary_exports",
+        text,
+        Some(("theorem", "TheoremItem", "theorem T: true;")),
+        |artifact, _, landmarks| {
+            let mut undocumented = artifact.exports[0].clone();
+            undocumented.origin_id.push_str("-undocumented");
+            let mut reexport = undocumented.clone();
+            reexport.origin_id.push_str("-reexport");
+            reexport.visibility = ExportVisibility::Reexported;
+            artifact.exports.extend([undocumented, reexport]);
+            let start = text.find("import").unwrap();
+            landmarks.insert(0, doc7_landmark("ImportItem", start, start + 9, None, None));
+        },
+    );
+    for promote in [false, true] {
+        plan.profile.fail_on_doc_warnings = promote;
+        let attachments = attach_comments(&plan, doc7_attach(&plan).module, Some(&source)).unwrap();
+        let parsed = parse_comments(&attachments, &[]);
+        assert_eq!(doc8_codes(&parsed.warnings), ["W0406"]);
+        assert_eq!(parsed.documentation_failed(), promote);
+        let before = format!("{parsed:?}");
+        let search = search_summaries(&parsed).unwrap();
+        let module = module_summary_fragments(&parsed).unwrap();
+        assert_eq!(search.len(), 3);
+        assert_eq!(module.len(), search.len());
+        for (index, ((search_export, summary), (module_export, html))) in
+            search.iter().zip(&module).enumerate()
+        {
+            let original = &attachments.input.exports[index];
+            assert!(std::ptr::eq(*search_export, original));
+            assert!(std::ptr::eq(*module_export, original));
+            assert_eq!(
+                summary_text(&parsed, CommentTarget::Item(original)).unwrap(),
+                *summary
+            );
+            if std::ptr::eq(original, &attachments.input.exports[0]) {
+                assert_eq!(summary.as_deref(), Some("A & &amp; <i>item</i>"));
+                assert_eq!(
+                    html,
+                    "<p class=\"mizar-summary\">A &amp; &amp;amp; &lt;i&gt;item&lt;/i&gt;</p>\n"
+                );
+            } else {
+                assert_eq!(summary, &None);
+                assert_eq!(html, "<p class=\"mizar-summary\"></p>\n");
+            }
+        }
+        assert_eq!(
+            summary_text(&parsed, CommentTarget::Module)
+                .unwrap()
+                .as_deref(),
+            Some("Module prose")
+        );
+        assert_eq!(before, format!("{parsed:?}"));
+    }
+    // The same genuine item publication remains present in both consumers when
+    // its only view fails, while the undocumented identities remain absent.
+    let mut attachments =
+        attach_comments(&plan, doc7_attach(&plan).module, Some(&source)).unwrap();
+    let mut faulty_row = attachments.blocks[1].lines[0].clone();
+    let mizar_artifact::store::CanonicalJson::Array(fields) = &mut faulty_row else {
+        panic!("documentation row")
+    };
+    let mizar_artifact::store::CanonicalJson::String(raw) = &fields[2] else {
+        panic!("raw spelling")
+    };
+    fields[1] = doc7_range(1, 1 + raw.len());
+    attachments.blocks[1].lines[0] = &faulty_row;
+    let parsed = parse_comments(&attachments, &[]);
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0411"]);
+    let search = search_summaries(&parsed).unwrap();
+    let module = module_summary_fragments(&parsed).unwrap();
+    assert_eq!(search.len(), attachments.input.exports.len());
+    assert_eq!(module.len(), search.len());
+    assert_eq!(search[0].1.as_deref(), Some(""));
+    assert_eq!(module[0].1, "<p class=\"mizar-summary\"></p>\n");
+    assert!(search[1..].iter().all(|(_, text)| text.is_none()));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 // Spec24.3: raw delimiter eligibility and protected boundaries are independent
 // of whether CommonMark emits decoded/coalesced text events.
 #[test]
@@ -350,8 +649,9 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
         DiagnosticDetailValue as V, DiagnosticPrimaryLocation,
     };
     use mizar_doc::comments::attach_comments;
-    let text = "::: @deprecated\n:::\n::: @returns\n:::\n::: $orphan\n\n::: @returns\n";
-    let (root, plan, source) = doc7_fixture("doc8_map_failure", text, None, |_, _, _| {});
+    let text = "::: @deprecated\n:::\n::: @returns\n:::\n::: $orphan\n\n::: @returns\n\n::: Selected & text\n";
+    let (root, mut plan, source) = doc7_fixture("doc8_map_failure", text, None, |_, _, _| {});
+    plan.profile.fail_on_doc_warnings = true;
     let module = plan
         .index
         .modules
@@ -373,7 +673,7 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
     fields[1] = doc7_range(1, 1 + raw.len());
     let mut attachments = attach_comments(&plan, module, Some(&source)).unwrap();
     assert!(attachments.warnings.is_empty());
-    assert_eq!(attachments.blocks.len(), 2);
+    assert_eq!(attachments.blocks.len(), 3);
     let saved_projection = attachments.input.comment_projection.clone();
     let block_range = attachments.blocks[0].source_range.unwrap();
     attachments.blocks[0].lines[0] = &faulty_row;
@@ -461,6 +761,14 @@ fn doc8_actual_map_failure_retains_conditions_and_other_blocks() {
         );
         assert_eq!(tuple[2], V::String(subreason.into()));
     }
+    let retained = format!("{parsed:?}");
+    assert_eq!(
+        mizar_doc::render::summary_text(&parsed, mizar_doc::comments::CommentTarget::Module)
+            .unwrap(),
+        Some("Selected & text".into())
+    );
+    assert!(parsed.documentation_failed());
+    assert_eq!(retained, format!("{parsed:?}"));
     std::fs::remove_dir_all(root).unwrap();
 }
 
