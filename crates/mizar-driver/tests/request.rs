@@ -1042,6 +1042,32 @@ mod q1_comments {
                 .unwrap(),
             Some("café".into())
         );
+        let comment_allocations = mizar_doc::allocations::validate_doc_allocations(
+            &inputs,
+            doc_dir,
+            "source-view-spec",
+            mizar_doc::allocations::DocAllocationTable {
+                output_root: doc_dir.clone(),
+                coverage: DocImportCoverage::Unavailable,
+                pages: vec![],
+                sections: None,
+            },
+        )
+        .unwrap();
+        let (fragments, links) = mizar_doc::render::comment_fragments(
+            &parsed,
+            mizar_doc::comments::CommentTarget::Module,
+            &inputs,
+            &direct_by,
+            &comment_allocations,
+            "source-view-spec",
+            &[vec![]],
+        )
+        .unwrap();
+        assert_eq!(fragments.complete.as_deref(), Some("<p>café</p>\n"));
+        assert!(fragments.parameters.is_empty());
+        assert!(fragments.see.is_empty());
+        assert!(links.references.is_empty());
         let search = mizar_doc::render::search_summaries(&parsed).unwrap();
         let module = mizar_doc::render::module_summary_fragments(&parsed).unwrap();
         assert_eq!(search.len(), attachments.input.exports.len());

@@ -69,7 +69,7 @@ pub struct MarkdownBlock {
     pub math: Vec<MathRange>,
     /// A conversion failure requires retaining the original raw block.
     pub fallback: bool,
-    paragraphs: Vec<Paragraph>,
+    pub(crate) paragraphs: Vec<Paragraph>,
 }
 
 impl MarkdownBlock {
@@ -434,9 +434,9 @@ fn number(value: &CanonicalJson) -> Option<usize> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct Paragraph {
+pub(crate) struct Paragraph {
     range: Range<usize>,
-    segments: Vec<Range<usize>>,
+    pub(crate) segments: Vec<Range<usize>>,
 }
 
 #[derive(Debug)]

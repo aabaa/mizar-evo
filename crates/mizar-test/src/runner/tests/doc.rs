@@ -8395,6 +8395,519 @@ mod doc10_authenticated {
                         .collect()
                 }
 
+                mod flow_output {
+                    use super::*;
+                    use mizar_doc::{
+                        comments::CommentTarget,
+                        render::{DocCommentFragments, comment_fragments, opaque_math_fragments},
+                    };
+
+                    fn flow(
+                        parsed: &ParsedComments<'_, '_>,
+                        imports: &AuthenticatedDocImports,
+                        allocations: &ValidatedDocAllocations,
+                        classes: &[Vec<DocReferenceClassification>],
+                    ) -> Result<(DocCommentFragments, ResolvedDocLinks), DocBuildError>
+                    {
+                        let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                        comment_fragments(
+                            parsed,
+                            CommentTarget::Module,
+                            imports,
+                            &direct_by,
+                            allocations,
+                            VERSION,
+                            classes,
+                        )
+                    }
+
+                    fn unchanged_links(
+                        parsed: &ParsedComments<'_, '_>,
+                        imports: &AuthenticatedDocImports,
+                        allocations: &ValidatedDocAllocations,
+                        links: &ResolvedDocLinks,
+                    ) {
+                        let occurrences = links.references.iter().map(|reference| reference.occurrence.clone()).collect::<Vec<_>>();
+                        let lower = resolve(parsed, imports, allocations, &occurrences);
+                        assert_eq!(links.references, lower.references);
+                        assert_eq!(links.used_by, lower.used_by);
+                        assert_eq!(links.warnings, lower.warnings);
+                    }
+
+                    #[test]
+                    fn doc13_flow_preserves_complete_content_order_and_raw_recovery() {
+                        fixture(
+                            "::: # Heading\n:::\n::: > quoted **bold** and *emphasis*\n:::\n::: - first\n::: - second\n:::\n::: @requires required\n:::\n::: @ensures ensured\n:::\n::: @since v1\n:::\n::: @deprecated v2 old\n:::\n::: @unknown opaque\n:::\n::: @param, malformed\n:::\n::: @requires required\n\n::: <script>failed & raw</script>\n\n::: Last neighbor\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let before = format!("{parsed:?}");
+                                let (result, links) =
+                                    flow(&parsed, imports, allocations, &[vec![], vec![], vec![]])
+                                        .unwrap();
+                                let html = result.complete.unwrap();
+                                let mut cursor = 0;
+                                for content in [
+                                    "<h1>Heading</h1>",
+                                    "<blockquote>",
+                                    "<strong>bold</strong>",
+                                    "<em>emphasis</em>",
+                                    "<ul>",
+                                    "<li>first</li>",
+                                    "<li>second</li>",
+                                    "@requires required",
+                                    "@ensures ensured",
+                                    "@since v1",
+                                    "@deprecated v2 old",
+                                    "@unknown opaque",
+                                    "@param, malformed",
+                                    "@requires required",
+                                    "&lt;script&gt;failed &amp; raw&lt;/script&gt;",
+                                    "Last neighbor",
+                                ] {
+                                    cursor += html[cursor..]
+                                        .find(content)
+                                        .unwrap_or_else(|| panic!("missing {content}: {html}"))
+                                        + content.len();
+                                }
+                                unchanged_links(&parsed, imports, allocations, &links);
+                                assert_eq!(format!("{parsed:?}"), before);
+                                let mut attached = doc7_attach(&plans[0]);
+                                let mut faulty = attached.blocks[1].lines[0].clone();
+                                let mizar_artifact::store::CanonicalJson::Array(fields) =
+                                    &mut faulty
+                                else {
+                                    panic!("row")
+                                };
+                                let mizar_artifact::store::CanonicalJson::String(raw) = &fields[2]
+                                else {
+                                    panic!("raw")
+                                };
+                                fields[1] = doc7_range(1, 1 + raw.len());
+                                attached.blocks[1].lines[0] = &faulty;
+                                let parsed = parse_comments(&attached, &[]);
+                                assert!(parsed.blocks[1].fallback);
+                                let before = format!("{parsed:?}");
+                                let (result, links) =
+                                    flow(&parsed, imports, allocations, &[vec![], vec![], vec![]])
+                                        .unwrap();
+                                let html = result.complete.unwrap();
+                                assert!(
+                                    html.find("Heading").unwrap()
+                                        < html.find("failed &amp; raw").unwrap()
+                                );
+                                assert!(
+                                    html.find("failed &amp; raw").unwrap()
+                                        < html.find("Last neighbor").unwrap()
+                                );
+                                assert!(!html.contains("<script>"));
+                                unchanged_links(&parsed, imports, allocations, &links);
+                                assert_eq!(format!("{parsed:?}"), before);
+                            },
+                        );
+                    }
+
+                    #[test]
+                    fn doc13_flow_tag_views_keep_all_occurrences_and_exact_slots() {
+                        fixture(
+                            "::: @param **raw** first *body*\n::: continuation\n:::\n::: @returns **result**\n:::\n::: @param **raw**\n:::\n::: @param\n:::\n::: @returns\n:::\n::: @see Exact first *see*\n:::\n::: @see Exact first *see*\n:::\n::: @see\n:::\n::: @see [raw](https://slot) *body*\n:::\n::: @param `x y` body\n\n::: @returns last\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let (result, links) = flow(
+                                    &parsed,
+                                    imports,
+                                    allocations,
+                                    &[vec![DocReferenceClassification::Label, DocReferenceClassification::Label, DocReferenceClassification::Ordinary], vec![]],
+                                )
+                                .unwrap();
+                                assert_eq!(
+                                    result
+                                        .parameters
+                                        .iter()
+                                        .map(|(label, _)| label.as_str())
+                                        .collect::<Vec<_>>(),
+                                    ["**raw**", "Returns", "**raw**", "", "Returns", "`x", "Returns"]
+                                );
+                                assert!(
+                                    result.parameters[0]
+                                        .1
+                                        .contains("first <em>body</em>\ncontinuation")
+                                );
+                                assert!(result.parameters[1].1.contains("<strong>result</strong>"));
+                                for index in [2, 3, 4] {
+                                    assert!(
+                                        result.parameters[index].1.is_empty(),
+                                        "{:?}",
+                                        result.parameters
+                                    );
+                                }
+                                assert!(result.parameters[5].1.contains("<code>y</code> body"), "{:?}", result.parameters[5]);
+                                assert!(result.parameters[6].1.contains("last"));
+                                assert_eq!(result.see.len(), 4);
+                                assert_eq!(result.see[0], result.see[1]);
+                                assert!(
+                                    result.see[0].contains(">Exact</a> first <em>see</em>"),
+                                    "{:?}",
+                                    result.see
+                                );
+                                assert!(!result.see[0].contains("<p>"));
+                                assert!(result.see[2].is_empty());
+                                assert_eq!(result.see[3], "[raw](https://slot) <em>body</em>");
+                                let html = result.complete.unwrap();
+                                assert_eq!(html.matches("@param").count(), 4);
+                                assert_eq!(html.matches("@returns").count(), 3);
+                                assert_eq!(html.matches("@see").count(), 4);
+                                unchanged_links(&parsed, imports, allocations, &links);
+                                assert!(
+                                    links
+                                        .warnings
+                                        .iter()
+                                        .any(|warning| warning.code().to_string() == "W0405")
+                                );
+                            },
+                        );
+                        for text in [
+                            "::: > @param `x\n::: > y` body\n",
+                            "::: - @param `x\n:::   y` body\n",
+                        ] {
+                            fixture(text, |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let (result, _) = flow(&parsed, imports, allocations, &[vec![]]).unwrap();
+                                assert_eq!(result.parameters[0].0, "`x");
+                                assert!(result.parameters[0].1.contains("<code>y</code> body"), "{:?}", result.parameters);
+                                assert!(result.complete.unwrap().contains("<code>x y</code> body"));
+                            });
+                        }
+                    }
+
+                    #[test]
+                    fn doc13_flow_supplied_reference_outcomes_and_promotion_are_unchanged() {
+                        use DocReferenceClassification::{Label, Ordinary, Section};
+                        let mut app = publication(&[
+                            ("exact.FQN", "Exact"),
+                            ("one.FQN", "Twin"),
+                            ("two.FQN", "Twin"),
+                        ]);
+                        document(
+                            &mut app,
+                            "::: `Exact` [missing](Missing) `expression` [ambiguous](Twin) [section](unknown)\n:::\n::: @see Exact *body*\n",
+                        );
+                        let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                        let imports = authenticate_doc_imports(
+                            &registry,
+                            &workspace,
+                            &plans[0],
+                            &[],
+                            &inputs(&app, &views[0]),
+                        )
+                        .unwrap();
+                        let allocations = validate(&app, &imports, table(&app)).unwrap();
+                        let classes = [vec![Label, Label, Ordinary, Label, Section, Label]];
+                        let attached = doc7_attach(&plans[0]);
+                        let parsed = parse_comments(&attached, &[]);
+                        let (result, links) =
+                            flow(&parsed, &imports, &allocations, &classes).unwrap();
+                        let href = match &links.references[0].outcome {
+                            DocLinkOutcome::Linked { href } => href,
+                            other => panic!("{other:?}"),
+                        };
+                        assert_eq!(href, "pages/module-0.html#exact.FQN");
+                        let html = result.complete.unwrap();
+                        assert!(html.contains(&format!("href=\"{href}\"")), "{html}");
+                        assert!(
+                            result.see[0]
+                                .contains(&format!("href=\"{href}\">Exact</a> <em>body</em>"))
+                        );
+                        assert_eq!(links.references[1].outcome, DocLinkOutcome::Unresolved);
+                        assert_eq!(links.references[2].outcome, DocLinkOutcome::Excluded);
+                        assert_eq!(links.references[3].outcome, DocLinkOutcome::Ambiguous);
+                        assert_eq!(links.references[4].outcome, DocLinkOutcome::Incomplete);
+                        assert_eq!(links.references[5].outcome, links.references[0].outcome);
+                        assert!(html.contains("<code>expression</code>"));
+                        assert!(html.contains("missing"), "{html}");
+                        assert!(html.contains("ambiguous"), "{html}");
+                        assert!(html.contains("<span class=\"mizar-unavailable\">section (unavailable)</span>"), "{html}");
+                        assert!(
+                            !html.contains("href=\"Missing\"")
+                                && !html.contains("href=\"Twin\"")
+                                && !html.contains("href=\"unknown\"")
+                        );
+                        unchanged_links(&parsed, &imports, &allocations, &links);
+                        assert!(!links.documentation_failed());
+                        assert!(flow(&parsed, &imports, &allocations, &[]).is_err());
+                        assert!(
+                            flow(&parsed, &imports, &allocations, &[classes[0][..5].to_vec()])
+                                .is_err()
+                        );
+                        drop(parsed);
+                        drop(attached);
+                        plans[0].profile.fail_on_doc_warnings = true;
+                        let imports = authenticate_doc_imports(
+                            &registry,
+                            &workspace,
+                            &plans[0],
+                            &[],
+                            &inputs(&app, &views[0]),
+                        )
+                        .unwrap();
+                        let attached = doc7_attach(&plans[0]);
+                        let parsed = parse_comments(&attached, &[]);
+                        let (_, promoted) =
+                            flow(&parsed, &imports, &allocations, &classes).unwrap();
+                        assert_eq!(promoted.warnings, links.warnings);
+                        assert_eq!(promoted.references, links.references);
+                        assert!(promoted.documentation_failed());
+                    }
+
+                    #[test]
+                    fn doc13_flow_url_html_policy_escapes_once_without_label_replay() {
+                        fixture(
+                            "::: `ordinary`\n:::\n::: @see Exact body\n:::\n::: [reference][r] [safe `code` *unique*](https://host/?a&amp;b) [bad **denied**](javascript:x) ![image](data:x) <i title=\"x\">raw &amp; text</i>\n:::\n::: [r]: https://reference/?a&amp;b\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let classes = [vec![
+                                    DocReferenceClassification::Ordinary,
+                                    DocReferenceClassification::Label,
+                                    DocReferenceClassification::External,
+                                    DocReferenceClassification::External,
+                                    DocReferenceClassification::External,
+                                    DocReferenceClassification::External,
+                                ]];
+                                let (result, links) =
+                                    flow(&parsed, imports, allocations, &classes).unwrap();
+                                let html = result.complete.unwrap();
+                                assert!(
+                                    html.contains(
+                                        "<a href=\"https://host/?a&amp;b\">safe <code>code</code> <em>unique</em></a>"
+                                    ),
+                                    "{html}"
+                                );
+                                assert!(html.contains("bad <strong>denied</strong>"), "{html}");
+                                assert!(
+                                    html.contains(
+                                        "&lt;i title=&quot;x&quot;&gt;raw &amp; text&lt;/i&gt;"
+                                    ),
+                                    "{html}"
+                                );
+                                assert!(html.contains(
+                                    "<a href=\"https://reference/?a&amp;b\">reference</a>"
+                                ));
+                                for label in ["unique", "denied", "image"] {
+                                    assert_eq!(html.matches(label).count(), 1, "{html}");
+                                }
+                                assert!(
+                                    !html.contains("<i ")
+                                        && !html.contains("href=\"javascript:")
+                                        && !html.contains("src=\"data:")
+                                        && !html.contains("&amp;amp;")
+                                );
+                                let (_, lower) =
+                                    output(&parsed, imports, allocations, &external(&parsed))
+                                        .unwrap();
+                                assert_eq!(links.warnings, lower.warnings);
+                                assert_eq!(rejected(&links).len(), 2);
+                                for (warning, ordinal) in rejected(&links).into_iter().zip([2, 3]) {
+                                    let V::List(details) =
+                                        &warning.details().entries()["documentation.render.url"]
+                                    else {
+                                        panic!("URL details")
+                                    };
+                                    assert_eq!(details[1], V::String(ordinal.to_string()));
+                                }
+                            },
+                        );
+                    }
+
+                    #[test]
+                    fn doc13_flow_math_preserves_opaque_bytes_and_valid_placement() {
+                        fixture(
+                            "::: before [$α &amp; x$](https://host) after\n:::\n::: @param x body $β$\n:::\n::: > $$\n::: > γ &amp; <y>\n::: > $$\n:::\n::: @returns $δ$\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let opaque = opaque_math_fragments(&parsed).unwrap();
+                                assert_eq!(opaque.len(), 4);
+                                let (result, _) =
+                                    flow(&parsed, imports, allocations, &external(&parsed))
+                                        .unwrap();
+                                let html = result.complete.unwrap();
+                                let mut cursor = 0;
+                                for math in &opaque {
+                                    cursor += html[cursor..]
+                                        .find(math)
+                                        .unwrap_or_else(|| panic!("missing {math}: {html}"))
+                                        + math.len();
+                                }
+                                assert!(html.contains(&format!(
+                                    "<a href=\"https://host\">{}</a>",
+                                    opaque[0]
+                                )));
+                                assert!(result.parameters[0].1.contains(&opaque[1]));
+                                assert!(result.parameters[1].1.contains(&opaque[3]));
+                                let display = html.find(&opaque[2]).unwrap();
+                                let preceding = &html[..display];
+                                assert!(
+                                    preceding.rfind("<p>").is_none_or(|open| preceding
+                                        .rfind("</p>")
+                                        .is_some_and(|close| close > open)),
+                                    "{html}"
+                                );
+                                assert!(
+                                    preceding.rfind("<a ").is_none_or(|open| preceding
+                                        .rfind("</a>")
+                                        .is_some_and(|close| close > open)),
+                                    "{html}"
+                                );
+                                assert!(opaque[2].contains("data-mizar-block=\"0\" data-mizar-occurrence=\"2\" data-mizar-display=\"true\""));
+                                assert!(opaque[2].contains("<span role=\"status\">Mathematics pending</span><code>γ &amp;amp; &lt;y&gt;\n</code></div>\n"));
+                            },
+                        );
+                        for (destination, classification, linked, warnings) in [
+                            ("https://host/img", DocReferenceClassification::External, true, 0),
+                            ("javascript:x", DocReferenceClassification::External, false, 1),
+                            ("https://host/img", DocReferenceClassification::Ordinary, false, 0),
+                        ] {
+                            fixture(&format!("::: before ![label $ι$]({destination}) after $κ$\n"), |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let opaque = opaque_math_fragments(&parsed).unwrap();
+                                assert_eq!(opaque.len(), 2);
+                                assert!(parsed.blocks[0].math.iter().all(|math| !math.display));
+                                let (result, links) = flow(&parsed, imports, allocations, &[vec![classification]]).unwrap();
+                                let html = result.complete.unwrap();
+                                if linked {
+                                    assert!(html.contains(&format!("<img src=\"https://host/img\" alt=\"label $ι$\">{} after {}", opaque[0], opaque[1])), "{html}");
+                                } else {
+                                    assert!(html.contains(&format!("label {} after {}", opaque[0], opaque[1])), "{html}");
+                                    assert!(!html.contains("<img") && !html.contains("src="));
+                                }
+                                for fragment in &opaque { assert_eq!(html.matches(fragment).count(), 1, "{html}"); }
+                                assert_eq!(rejected(&links).len(), warnings);
+                            });
+                        }
+                        for source in [
+                            "::: - *before\n:::   $$x$$\n:::   after*\n",
+                            "::: - [**before\n:::   $$x$$\n:::   after**](https://host)\n",
+                        ] {
+                            fixture(source, |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                assert_eq!(parsed.blocks[0].math.len(), 1);
+                                assert!(parsed.blocks[0].math[0].display);
+                                let opaque = opaque_math_fragments(&parsed).unwrap();
+                                let (result, _) = flow(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                                let html = result.complete.unwrap();
+                                let display = html.find(&opaque[0]).unwrap();
+                                let preceding = &html[..display];
+                                for tag in ["p", "a", "em", "strong"] {
+                                    assert!(preceding.rfind(&format!("<{tag}")).is_none_or(|open| preceding.rfind(&format!("</{tag}>")).is_some_and(|close| close > open)), "{tag}: {html}");
+                                }
+                                assert_eq!(html.matches(&opaque[0]).count(), 1);
+                                assert!(html.contains("<li>") && html.contains("before") && html.contains("after"));
+                            });
+                        }
+                    }
+
+                    #[test]
+                    fn doc13_flow_absence_empty_and_tampered_bindings_remain_distinct() {
+                        for (text, expected) in [("::: available\n", None), ("::: \n", Some(""))] {
+                            fixture(text, |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let classes = vec![vec![]; parsed.blocks.len()];
+                                let target = if expected.is_none() { CommentTarget::Item(&attached.input.exports[0]) } else { CommentTarget::Module };
+                                let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                                let (result, _) = comment_fragments(&parsed, target, imports, &direct_by, allocations, VERSION, &classes).unwrap();
+                                assert_eq!(result.complete.as_deref(), expected);
+                            });
+                        }
+                        fixture(
+                            "::: @param x $math$ [link](https://host)\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let before = format!("{parsed:?}");
+                                let plan_before = plans[0].clone();
+                                let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                                let foreign = attached.input.exports[0].clone();
+                                assert!(
+                                    comment_fragments(
+                                        &parsed,
+                                        CommentTarget::Item(&foreign),
+                                        imports,
+                                        &direct_by,
+                                        allocations,
+                                        VERSION,
+                                        &external(&parsed)
+                                    )
+                                    .is_err()
+                                );
+                                assert!(
+                                    comment_fragments(
+                                        &parsed,
+                                        CommentTarget::Module,
+                                        imports,
+                                        &direct_by,
+                                        allocations,
+                                        "wrong",
+                                        &external(&parsed)
+                                    )
+                                    .is_err()
+                                );
+                                let mut other = publication(&[("foreign.FQN", "Other")]);
+                                let foreign_imports = authenticated(&mut other);
+                                assert!(
+                                    flow(
+                                        &parsed,
+                                        &foreign_imports,
+                                        allocations,
+                                        &external(&parsed)
+                                    )
+                                    .is_err()
+                                );
+                                for change in 0..6 {
+                                    let mut tampered = parse_comments(&attached, &[]);
+                                    match change {
+                                        0 => tampered.blocks[0].text.push('!'),
+                                        1 => tampered.blocks[0].fields[0].slot = Some(0..1),
+                                        2 => tampered.blocks[0].math[0].content.clear(),
+                                        3 => tampered.blocks[0].events.clear(),
+                                        4 => tampered.blocks[0].destinations[0].1 = 0..1,
+                                        _ => tampered.blocks[0].source_map.clear(),
+                                    }
+                                    assert!(
+                                        flow(&tampered, imports, allocations, &external(&parsed))
+                                            .is_err(),
+                                        "change {change}"
+                                    );
+                                }
+                                assert_eq!(format!("{parsed:?}"), before);
+                                assert_eq!(plans[0], plan_before);
+                                let lower =
+                                    output(&parsed, imports, allocations, &external(&parsed))
+                                        .unwrap();
+                                unchanged_links(&parsed, imports, allocations, &lower.1);
+                                let mut unavailable = plans[0].clone();
+                                unavailable
+                                    .index
+                                    .modules
+                                    .get_mut(attached.module)
+                                    .unwrap()
+                                    .comment_projection =
+                                    mizar_artifact::store::CanonicalJson::Null;
+                                let unavailable = doc7_attach(&unavailable);
+                                let unavailable = parse_comments(&unavailable, &[]);
+                                assert!(!unavailable.available());
+                                assert!(flow(&unavailable, imports, allocations, &[]).is_err());
+                                assert!(output(&unavailable, imports, allocations, &[]).is_err());
+                            },
+                        );
+                    }
+                }
+
                 #[test]
                 fn doc13_url_predicate_exact_values_and_escaped_html() {
                     let accepted = [
