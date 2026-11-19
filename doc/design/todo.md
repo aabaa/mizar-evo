@@ -1027,11 +1027,10 @@ and [algorithm definitional](#algorithm-definitional-semantics-specification-ame
 sections remain the **only implementation-contract owners**. This table
 decomposes their MVM critical path into narrower dependency/dispatch gates;
 it does not redefine the language, add a second global ordering authority,
-or make blocked implementations ready. R1, R2 correspondence design and
-R3 Artifact/loader design are registered as **documentation-only** work;
-R2/R3 implementations and R4-R8 are not dispatchable from this table.
-Implementation slices require their existing producer prerequisites and
-a separately frozen owner contract.
+or make blocked implementations ready. R1 and R2-R4 designs are registered
+as **documentation-only** work; R2-R4 implementations and R5-R8 are not
+dispatchable from this table. Implementation slices require their real
+producer prerequisites and a separately frozen owner contract.
 All steps remain subject to the real-producer, independent-review and
 test-oracle rules.
 
@@ -1040,7 +1039,7 @@ test-oracle rules.
 | **MVM-R1 [~]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`; [source-backed inventory](./mizar-vc/en/mvm_readiness.md) drafted. The minimal `idalgo` source profile is an **Open VC**, not an executed or accepted algorithm. | **Independent review and repository lint pending.** Resolve documented Q1–Q3 under existing authorities before any R2 implementation contract; runtime R2–R8 remain gated. Do not redispatch the completed inventory work or start a second lane. |
 | **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for authentic ordinary input, body/CFG, E1/E2/E4 evidence and R3 handoff; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; independent review/lint pending.** R1 review and the proposed ordinary/reflected boundary (Q1), genuine typed call and accepted whole-body proofs (Q2) must be settled before an R2 implementation freeze. Open VC is not verified. R3/R4 remain blocked. |
 | **MVM-R3 [~ design]** — runtime export and validating loader | [Artifact design contract](./task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md) and [EN/JA owner design](./mizar-artifact/en/mvm_runtime_export.md) drafted; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains implementation ownership, Build/Driver are loader consumers. | **Docs-only; independent review/lint pending.** R2 authenticated accepted-body/call producer and R3 format/loader, same-package staging and correspondence decisions remain required before any export. Runtime export precedes MVM; later R7 computation-record publication must not block it. No unverified code or dependency-source fallback. |
-| **MVM-R4** — minimal actual evaluator | [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md), VC-owned execution. Implement the smallest authenticated call-by-value normal-return path for a real supported ground/direct call, preserving actual local state, exact input and validated artifact identity. | Requires R2+R3, typed computability and applicable accepted source/body prerequisites. A private executor prototype, request or unverified test fixture provides **no** runtime/proof credit. Do not create a new `mizar-mvm` crate without a separately reviewed ownership decision. |
+| **MVM-R4 [~ design]** — minimal actual evaluator | [VC-owned design contract](./task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) and [EN/JA design](./mizar-vc/en/mvm_executor.md) drafted; [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) still owns implementation. Defines the narrow actual ground/direct normal-return path, validation, failure/budget classes and R6/R7 boundary. | **Docs-only; independent review/lint pending.** R2 accepted body/call, R3 validated executable/loader, typed ground input and VM accounting/report decisions are prerequisites. No R4 implementation, trusted status, E5 credit or new `mizar-mvm` crate is authorized. |
 | **MVM-R5** — control flow, failure and resource bounds | Same [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) owner, extended by concrete supported source cases: local assignment, control flow/calls, `fail`, noncomputable operations, ghost isolation, `steps`/`timeout`/`nest`, and transitive artifact refusal. | After R4 per actual Core/CFG producer. Split by genuine semantic/implementation boundaries, bundle identical-shape cases per protocol. Failures and exhaustion produce no return fact, contract evidence or inferred non-return. |
 | **MVM-R6** — full-closure deterministic admission | [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md) with [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md) and Proof owners. Authenticate complete direct/transitive calls, private helpers, applicable uniqueness proofs or specified exemptions. | Needed **before computation-based proof discharge**, not a substitute for actual execution. Imported closure requires R3 validated exports; pending/Open obligations never grant admission. |
 | **MVM-R7** — certified computation and replay | [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) (Proof) and later [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) provenance (Artifact). Consume real MVM normal-return reports, independently justify `requires`, `Adm`/`InputOK`, apply directed T1-T8 conversion and residual inspection, then handle `computed` versus replayed `kernel_verified` policy and cache identity. | Needs R4/R5 supported execution, R6 admission, [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) and complete accepted formation/proof prerequisites. Never upgrade a result by hashing or successful evaluation alone. |
@@ -1055,13 +1054,14 @@ of a narrower stage never implies completion of a later stage or the
 not an exemption from the currently recorded AST/Proof dependencies.
 
 **Muse rule:** keep the existing single dispatch queue and M1 priority.
-R1-R3 **documentation reviews** may run sequentially under their paired
-contracts. Do not dispatch R2/R3 **implementations** or R4-R8 from this table:
-first verify actual producer dependencies and freeze a narrowly scoped
-implementation contract under the owning crate. Missing accepted proofs,
-reflection-formation authority, executable format or validating loader are
-blockers, not reasons to fabricate inputs. No active Step 6/7 work is
-preempted, and no parallel worktree or second orchestrator is implied.
+R1-R4 **documentation reviews** may run sequentially under their paired
+contracts. Do not dispatch R2-R4 **implementations** or R5-R8 from this
+table: first verify actual producer dependencies and freeze a narrowly
+scoped implementation contract under the owning crate. Missing accepted
+proofs, reflection-formation authority, executable format, validated loader
+or VM semantics are blockers, not reasons to fabricate inputs. No active
+Step 6/7 work is preempted, and no parallel worktree or second orchestrator
+is implied.
 
 ### Distribution and playground [ ]
 
