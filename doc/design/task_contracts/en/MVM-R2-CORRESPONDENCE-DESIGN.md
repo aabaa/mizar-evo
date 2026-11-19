@@ -1,7 +1,7 @@
 # Task MVM-R2-CORRESPONDENCE-DESIGN: Verified algorithm/body/call binding
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R2-CORRESPONDENCE-DESIGN.md).
-Status: design drafted, independent review pending; **documentation only**,
+Status: design boundary recorded; **documentation only**,
 not a freeze of any executable producer. Tier: full documentation gates.
 Sole owner: [mizar-core](../../mizar-core/en/00.crate_plan.md).
 Design: [Core owner document](../../mizar-core/en/mvm_correspondence.md).
