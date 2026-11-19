@@ -165,7 +165,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
 
 13. **Spec: `render.md`.** [ ]
     - [Render definition proposal](../../task_contracts/en/DOC13-RENDER-DEFINITION.md); new owner choices remain unselected.
-    - [Prerequisite completion proposal](../../task_contracts/en/DOC13-PREREQUISITES-DEFINITION.md); definitions do not establish adoption or implementation readiness.
+    - [Prerequisite completion definitions](../../task_contracts/en/DOC13-PREREQUISITES-DEFINITION.md) have [bounded interface adoption](../../task_contracts/en/DOC13-PREREQUISITE-INTERFACE-ADOPTION.md); complete producers and coherent Doc13 readiness remain gated.
     - Write the rendering spec (English and Japanese, no code): static
       HTML site layout, search index format, and deterministic output
       rules.
