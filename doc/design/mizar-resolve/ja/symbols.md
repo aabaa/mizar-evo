@@ -571,7 +571,7 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 `source_algorithm_call_inventory` は arena/environment 全体の対応を再照合し、各 algorithm shell を実 `SymbolEntry` に結び付け、opaque signature を保持する。不変の inventory row は元の宣言、包含 definition block、直接の header 領域、body、入れ子 application/callee/順序付き引数ノードを参照し、range は source arena に残る。header application と body call を区別し、呼出しのない宣言も保持する。対応不正、recovery、構造 provenance 不正では全体を拒否し、生ソースの currentness は caller が担う。
 
-この inventory と signature index は source body-call/definiens graph ではない。call-target resolution、definition-block recursion scope、完全な recursive group と checked consumer は未実装のまま残す。Resolver は typed overload winner を選ばず、syntax inventory に type/cycle/termination/promotion acceptance を与えない。
+`source_algorithm_call_candidates` はこの inventory を変えず、元の各 application から source の実 `SymbolEntry` を借用する順序付き候補への map を保守的な body profile に従って返す。同一 block の algorithm は自己・後続 peer を候補とし、通常の宣言には完了を要求する。binder のない return/expression/if/while 構文内の単一 token 非修飾 body callee のみを対象とし、名前付き prefix functor は実宣言パターンの先頭を使う。parameter/reservation 名、header、修飾/bracket call は空リストを保持し、body または包含 context が未対応ならその body の全候補を保留する。候補は typed winner、dependency graph/group の完全性、consumer admission、type/cycle/termination/promotion acceptance を確立しない。
 
 ## Source registration owner payloads
 

@@ -162,6 +162,8 @@ semantic lookup は次の tier を順に考慮する。
 5. imported facade module を通じて可視になる re-exported public symbol。
 6. active edition で有効な builtin prelude symbol。
 
+通常の completed-item visibility を source 境界として維持する。[限定 algorithm body-call 候補 producer](symbols.md#planned-algorithm-call-dependencies) は、許可した body profile 内だけに definition-block 自己・相互再帰 scope (§20.8) を追加し、通常 lookup や typed/proof acceptance は変更しない。
+
 通常の current-module declaration は、その declaration item が完了した後にのみ可視になる。
 仕様上、指定された algorithm recursion scope の外では、後続 declaration への forward reference は許されない。imported summary は
 base lexical environment を seed するが、semantic lookup は参照を確定する前に
@@ -516,10 +518,6 @@ R-026 public-enum registrations は次の通り:
 テストは定理・証明の同名束縛、別由来の同名仮引数、不正なスコープと由来を区別し、一貫した改名を維持する。
 通常の callable 参照も、同じ宣言同一性・スコープ・順序検査の下で直接の `DefinitionParameter` qualified segment、通常定義・定理量化・proof let の重複のない comma 区切り2束縛、unary な非 template 関手パターン引数、plain binary functor/predicate/notation pattern の両端 loci を受理する。基底型の解釈と field selector の型検査は checker が所有し、従来 template・registration profile は変更しない。
 型仮引数は厳密な `type extends <TypeExpression>` 宣言末尾も持てる。型位置と selector 基底の参照は実際の宣言トークンへ解決し、上界の解決と object・element の区別は checker が所有する。
-
-## Planned Algorithm Recursion Scope
-
-通常の completed-item visibility は現在の source boundary のまま。計画中の algorithm body-call resolver は仕様の definition-block self/mutual recursion scope (§20.8) を扱うが、通常の forward reference を許可せず、scope candidate に typed/proof acceptance を与えない。
 
 ## Source Theorem Builtin Type Reference Candidates
 `source_theorem_builtin_type_reference_candidates(&SurfaceAst, &SurfaceResolvedArena, &SymbolEnv) -> Result<Option<NameReferenceResolution>, String>` は継承 theorem source profile 内の保存済み intrinsic type 参照 batch 全体だけを取得する未公開前提であり、完全な通常名 NameRefTable/ResolvedAst producer ではない。

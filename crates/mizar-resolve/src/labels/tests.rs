@@ -10919,3 +10919,303 @@ fn algorithm_call_inventory_refuses_stale_augmented_and_recovered_inputs_atomica
     }
     assert_eq!((ast, env, arena), before);
 }
+
+#[test]
+fn algorithm_call_candidates_preserve_original_call_free_inventory() {
+    for text in [
+        "",
+        "theorem Unrelated: 0 = 0;",
+        "definition let n be object; algorithm quiet(n) -> object do return n; end; algorithm still(n) -> object do return n; end; end;",
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let original = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+        let (rows, candidates) =
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+        assert!(candidates.is_empty());
+        assert_eq!(rows.len(), original.len());
+        for (row, previous) in rows.iter().zip(&original) {
+            assert!(std::ptr::eq(row.owner(), previous.owner()));
+            assert!(std::ptr::eq(
+                row.owner().signature().unwrap(),
+                previous.owner().signature().unwrap()
+            ));
+            assert_eq!(row.declaration(), previous.declaration());
+            assert_eq!(row.definition_block(), previous.definition_block());
+            assert_eq!(row.body(), previous.body());
+            assert_eq!(row.header(), previous.header());
+            assert!(row.calls().is_empty());
+        }
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn algorithm_call_candidates_keep_recursive_sites_and_binder_free_control_flow() {
+    let text = "definition let n,m be object; algorithm alpha(n,m) -> object do if beta(n,n) = n do return n; end; if alpha(n,n) = n do return beta(alpha(n,n),n); else while beta(n,m) = n do return alpha(n,m); end; end; return n; end; algorithm beta(n,m) -> object do return alpha(n,m); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let original = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    let (rows, candidates) =
+        crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0].calls().len(), 6);
+    assert_eq!(rows[1].calls().len(), 1);
+    assert_eq!(candidates.len(), 7);
+    let alpha = rows[0].owner();
+    let beta = rows[1].owner();
+    for (row, previous) in rows.iter().zip(&original) {
+        assert!(std::ptr::eq(row.owner(), previous.owner()));
+        assert_eq!(row.header(), previous.header());
+        assert_eq!(row.body(), previous.body());
+        assert_eq!(row.declaration(), previous.declaration());
+        assert_eq!(row.definition_block(), previous.definition_block());
+        for (call, old) in row.calls().iter().zip(previous.calls()) {
+            assert_eq!(call.application(), old.application());
+            assert_eq!(call.callee(), old.callee());
+            assert_eq!(call.arguments(), old.arguments());
+            assert_eq!(call.region(), old.region());
+        }
+    }
+    for (row, ordinal, application, owner, occurrence) in [
+        (0, 0, "beta(n,n)", beta, 0),
+        (0, 1, "alpha(n,n)", alpha, 0),
+        (0, 2, "beta(alpha(n,n),n)", beta, 0),
+        (0, 3, "alpha(n,n)", alpha, 1),
+        (0, 4, "beta(n,m)", beta, 0),
+        (0, 5, "alpha(n,m)", alpha, 1),
+        (1, 0, "alpha(n,m)", alpha, 2),
+    ] {
+        let start = text.match_indices(application).nth(occurrence).unwrap().0;
+        let call = &rows[row].calls()[ordinal];
+        assert_eq!(
+            call.application(),
+            algorithm_inventory_node_at(&ast, start, application, SurfaceNodeKind::ApplicationTerm)
+        );
+        assert_eq!(call.region(), rows[row].body());
+        let selected = &candidates[&call.application()];
+        assert_eq!(selected.len(), 1);
+        assert!(std::ptr::eq(selected[0], owner));
+    }
+    let first = text.find("beta(n,n)").unwrap();
+    assert_algorithm_inventory_call(
+        &ast,
+        &rows[0].calls()[0],
+        first,
+        "beta(n,n)",
+        "beta",
+        &[(first + 5, "n"), (first + 7, "n")],
+    );
+    assert_ne!(
+        rows[0].calls()[0].arguments()[0],
+        rows[0].calls()[0].arguments()[1]
+    );
+    assert_ne!(
+        rows[0].calls()[1].application(),
+        rows[0].calls()[3].application()
+    );
+}
+
+#[test]
+fn algorithm_call_candidates_withhold_genuine_header_regions() {
+    let text = "definition let n be object; mode FamilyDef: Family of n is object; algorithm shape(n) -> object do return n; end; algorithm allowed(n) -> object do return n; end; algorithm promised(n) -> object do return n; end; algorithm measure(n) -> object do return n; end; algorithm bodycall(n) -> object do return n; end; algorithm contract(n) -> Family[shape(n)] requires allowed(n) = n ensures result = promised(n) decreasing measure(n) do return bodycall(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let (rows, candidates) =
+        crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    let row = rows.last().unwrap();
+    assert_eq!(row.owner().primary_spelling(), "contract");
+    assert_eq!(row.calls().len(), 5);
+    assert_eq!(candidates.len(), 5);
+    for (call, application) in row.calls().iter().zip([
+        "shape(n)",
+        "allowed(n)",
+        "promised(n)",
+        "measure(n)",
+        "bodycall(n)",
+    ]) {
+        let start = text.rfind(application).unwrap();
+        assert_eq!(
+            call.application(),
+            algorithm_inventory_node_at(&ast, start, application, SurfaceNodeKind::ApplicationTerm)
+        );
+        if application == "bodycall(n)" {
+            assert_eq!(call.region(), row.body());
+            assert_eq!(candidates[&call.application()].len(), 1);
+            assert!(std::ptr::eq(
+                candidates[&call.application()][0],
+                rows[4].owner()
+            ));
+        } else {
+            assert!(row.header().contains(&call.region()));
+            assert!(candidates[&call.application()].is_empty());
+        }
+    }
+}
+
+#[test]
+fn algorithm_call_candidates_keep_completed_overloads_in_source_order() {
+    let text = "theorem Earlier: 0 = 0; definition let n be object; func Unary: sharedfn(n) -> object equals n; end; definition let n,m be set; func Binary: sharedfn(n,m) -> set equals n; end; definition let n be object; algorithm caller(n) -> object do if sharedfn(n) = n do return Earlier(n); end; return future(n); end; end; definition let n be object; algorithm future(n) -> object do return n; end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let before = (ast.clone(), env.clone(), arena.clone());
+    let (rows, candidates) =
+        crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(candidates.len(), 3);
+    let expected = ["func Unary:", "func Binary:"].map(|declaration| {
+        env.symbols()
+            .iter()
+            .find(|entry| {
+                source_range_from_anchor(entry.origin().anchor())
+                    .unwrap()
+                    .start
+                    == text.find(declaration).unwrap()
+            })
+            .unwrap()
+    });
+    let shared = &candidates[&rows[0].calls()[0].application()];
+    assert_eq!(shared.len(), 2);
+    for (actual, expected) in shared.iter().zip(expected) {
+        assert!(std::ptr::eq(*actual, expected));
+    }
+    let theorem = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "Earlier")
+        .unwrap();
+    assert_eq!(theorem.kind(), SymbolKind::Theorem);
+    let earlier = &candidates[&rows[0].calls()[1].application()];
+    assert_eq!(earlier.len(), 1);
+    assert!(std::ptr::eq(earlier[0], theorem));
+    assert!(candidates[&rows[0].calls()[2].application()].is_empty());
+    assert_eq!((ast, env, arena), before);
+}
+
+#[test]
+fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
+    for (tail, shadowed) in [
+        (
+            "definition let n be object; algorithm caller(n) -> object do return target(n); end; end;",
+            false,
+        ),
+        (
+            "definition let n be object; algorithm caller(target) -> object do return target(n); end; end;",
+            true,
+        ),
+        (
+            "definition let target,n be object; algorithm caller(n) -> object do return target(n); end; end;",
+            true,
+        ),
+        (
+            "reserve target for object; definition let n be object; algorithm caller(n) -> object do return target(n); end; end;",
+            true,
+        ),
+        (
+            "definition let n be object; algorithm caller(n) -> object do if target(n) = n do return n; end; var local := n; return target(n); end; end;",
+            true,
+        ),
+    ] {
+        let text = format!(
+            "definition let n be object; algorithm target(n) -> object do return n; end; end; {tail}"
+        );
+        let (_, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let (rows, candidates) =
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+        assert_eq!(rows.len(), 2);
+        assert!(!rows[1].calls().is_empty());
+        assert_eq!(candidates.len(), rows[1].calls().len());
+        if shadowed {
+            assert!(candidates.values().all(Vec::is_empty), "{tail}");
+        } else {
+            let entries = &candidates[&rows[1].calls()[0].application()];
+            assert_eq!(entries.len(), 1);
+            assert!(std::ptr::eq(entries[0], rows[0].owner()));
+        }
+    }
+    let text = "definition let n be object; func Target: target(n) -> object equals ignored(n); synonym alias(n) for ignored(n); algorithm caller(n) -> object do return Ns.target([n,n],unknown(n),target(n)); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let (rows, candidates) =
+        crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].calls().len(), 4);
+    assert_eq!(candidates.len(), 4);
+    for call in &rows[0].calls()[..3] {
+        assert!(candidates[&call.application()].is_empty());
+    }
+    let target = env
+        .symbols()
+        .iter()
+        .find(|entry| {
+            source_range_from_anchor(entry.origin().anchor())
+                .is_some_and(|range| range.start == text.find("func Target:").unwrap())
+        })
+        .unwrap();
+    let supported = &candidates[&rows[0].calls()[3].application()];
+    assert_eq!(supported.len(), 1);
+    assert!(std::ptr::eq(supported[0], target));
+    let ignored = algorithm_inventory_node_at(
+        &ast,
+        text.find("ignored(n)").unwrap(),
+        "ignored(n)",
+        SurfaceNodeKind::ApplicationTerm,
+    );
+    assert!(!candidates.contains_key(&ignored));
+    let synonym_target = algorithm_inventory_node_at(
+        &ast,
+        text.rfind("ignored(n)").unwrap(),
+        "ignored(n)",
+        SurfaceNodeKind::NotationPattern,
+    );
+    assert!(!candidates.contains_key(&synonym_target));
+}
+
+#[test]
+fn algorithm_call_candidates_refuse_unauthenticated_inputs_atomically() {
+    let text = "definition let n be object; algorithm first(n) -> object do return second(n); end; algorithm second(n) -> object do return first(n); end; end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let (_, genuine) = crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(genuine.len(), 2);
+    assert!(genuine.values().all(|entries| entries.len() == 1));
+    let (_, _, _, stale, _) = parsed_private_theorem_fixture(
+        &text.replace("algorithm second(n)", "algorithm changed(n)"),
+    );
+    let (_, _, _, augmented, _) =
+        parsed_private_theorem_fixture(&format!("{text} theorem Added: 0 = 0;"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    for (source, symbols) in [(&arena, &stale), (&arena, &augmented), (&foreign, &env)] {
+        let before = (source.clone(), symbols.clone());
+        assert!(crate::symbols::source_algorithm_call_candidates(source, symbols).is_err());
+        assert_eq!((source.clone(), symbols.clone()), before);
+    }
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::new();
+    let recovered_start = text.rfind("first(n)").unwrap();
+    for node in ast.node_views() {
+        let children = node
+            .children()
+            .iter()
+            .map(|id| rebuilt[id.index()])
+            .collect::<Vec<_>>();
+        let next = match node.kind() {
+            SurfaceNodeKind::Token(token) if node.range().start == recovered_start => {
+                builder.add_recovered_token(token.kind, token.text.clone(), node.range())
+            }
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), node.range())
+            }
+            kind => builder.add_node(kind.clone(), node.range(), children),
+        };
+        rebuilt.push(next);
+    }
+    let recovered = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+    let shells = crate::declarations::DeclarationShellCollector::new(&recovered, &module).collect();
+    let collected =
+        crate::symbols::SignatureProjectionExtractor::new(&recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(&recovered, &module).unwrap();
+    for symbols in [&env, collected.env()] {
+        let before = (recovered_arena.clone(), symbols.clone());
+        assert!(
+            crate::symbols::source_algorithm_call_candidates(&recovered_arena, symbols).is_err()
+        );
+        assert_eq!((recovered_arena.clone(), symbols.clone()), before);
+    }
+}

@@ -429,6 +429,238 @@ pub fn source_algorithm_call_inventory<'a>(
     Ok(inventory)
 }
 
+/// Returns authenticated inventory and conservative body-call scope candidates.
+/// Empty rows include unsupported syntax and never establish a selected target.
+// Rationale: preserve the existing inventory and borrowed entries without a wrapper.
+#[allow(clippy::type_complexity)]
+pub fn source_algorithm_call_candidates<'a>(
+    source: &SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+) -> Result<
+    (
+        Vec<SourceAlgorithmInventory<'a>>,
+        BTreeMap<SurfaceNodeId, Vec<&'a SymbolEntry>>,
+    ),
+    String,
+> {
+    let inventory = source_algorithm_call_inventory(source, symbols)?;
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = || "invalid source algorithm call candidates".to_owned();
+    let subtree = |root| {
+        let mut pending = vec![root];
+        let mut nodes = Vec::new();
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).ok_or_else(invalid)?;
+            pending.extend(node.children().iter().rev().copied());
+            nodes.push(node);
+        }
+        Ok::<_, String>(nodes)
+    };
+    let identifiers = |root| {
+        Ok::<_, String>(
+            subtree(root)?
+                .into_iter()
+                .filter_map(|node| node.as_token())
+                .filter_map(|token| {
+                    matches!(
+                        token.kind,
+                        SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+                    )
+                    .then_some(token.text.as_ref())
+                })
+                .collect::<BTreeSet<_>>(),
+        )
+    };
+    let mut reserved = BTreeSet::new();
+    for node in ast
+        .node_views()
+        .filter(|node| matches!(node.kind(), SurfaceNodeKind::ReserveItem))
+    {
+        reserved.extend(identifiers(node.id())?);
+    }
+    let mut declarations = Vec::new();
+    for entry in symbols.symbols().iter() {
+        let SourceAnchor::Range(range) = entry.origin().anchor() else {
+            return Err(invalid());
+        };
+        if range.source_id != ast.source_id {
+            return Err(invalid());
+        }
+        let spelling = if entry.kind() == SymbolKind::Functor {
+            let Some(pattern) = ast
+                .node_views()
+                .find(|node| node.range() == *range)
+                .and_then(|node| first_child_matching(node, is_functor_pattern))
+            else {
+                continue;
+            };
+            let parts = pattern.children();
+            let [head, open, .., close] = parts else {
+                continue;
+            };
+            let Some(head) = ast.node_view(*head).and_then(SurfaceNodeView::as_token) else {
+                continue;
+            };
+            if !matches!(
+                head.kind,
+                SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+            ) || !ast
+                .node_view(*open)
+                .and_then(SurfaceNodeView::as_token)
+                .is_some_and(|t| {
+                    t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == "("
+                })
+                || !ast
+                    .node_view(*close)
+                    .and_then(SurfaceNodeView::as_token)
+                    .is_some_and(|t| {
+                        t.kind == SurfaceTokenKind::ReservedSymbol && t.text.as_ref() == ")"
+                    })
+            {
+                continue;
+            }
+            head.text.as_ref()
+        } else {
+            entry.primary_spelling()
+        };
+        declarations.push((*range, entry, spelling));
+    }
+    declarations.sort_by_key(|(range, _, _)| (range.start, range.end));
+    let mut candidates = BTreeMap::new();
+    for owner in &inventory {
+        for call in &owner.calls {
+            candidates.insert(call.application, Vec::new());
+        }
+        let mut excluded = reserved.clone();
+        for node in subtree(owner.declaration)? {
+            if matches!(node.kind(), SurfaceNodeKind::AlgorithmParameters) {
+                excluded.extend(identifiers(node.id())?);
+            }
+        }
+        let mut supported = true;
+        let mut context = owner.definition_block;
+        while let Some(parent) = ast
+            .node_views()
+            .find(|node| node.children().contains(&context))
+        {
+            supported &= matches!(
+                parent.kind(),
+                SurfaceNodeKind::Root
+                    | SurfaceNodeKind::CompilationUnit
+                    | SurfaceNodeKind::ItemList
+                    | SurfaceNodeKind::VisibleItem
+            );
+            context = parent.id();
+        }
+        let block = ast.node_view(owner.definition_block).ok_or_else(invalid)?;
+        let mut pending = block.children().to_vec();
+        while let Some(id) = pending.pop() {
+            let node = ast.node_view(id).ok_or_else(invalid)?;
+            match node.kind() {
+                SurfaceNodeKind::DefinitionParameter => excluded.extend(identifiers(id)?),
+                SurfaceNodeKind::VisibleItem => pending.extend(node.children()),
+                SurfaceNodeKind::Token(_)
+                | SurfaceNodeKind::AlgorithmDefinition
+                | SurfaceNodeKind::FunctorDefinition
+                | SurfaceNodeKind::PredicateDefinition
+                | SurfaceNodeKind::ModeDefinition
+                | SurfaceNodeKind::AttributeDefinition
+                | SurfaceNodeKind::StructureDefinition
+                | SurfaceNodeKind::NotationAlias
+                | SurfaceNodeKind::OperatorDeclaration
+                | SurfaceNodeKind::CorrectnessCondition => {}
+                _ => supported = false,
+            }
+        }
+        for node in subtree(owner.body)? {
+            supported &= matches!(
+                node.kind(),
+                SurfaceNodeKind::Token(_)
+                    | SurfaceNodeKind::AlgorithmBody
+                    | SurfaceNodeKind::AlgorithmStatementList
+                    | SurfaceNodeKind::ReturnStatement
+                    | SurfaceNodeKind::IfStatement
+                    | SurfaceNodeKind::WhileStatement
+                    | SurfaceNodeKind::LoopInvariantClause
+                    | SurfaceNodeKind::LoopDecreasingClause
+                    | SurfaceNodeKind::TermExpression
+                    | SurfaceNodeKind::TermReference
+                    | SurfaceNodeKind::NumeralTerm
+                    | SurfaceNodeKind::ParenthesizedTerm
+                    | SurfaceNodeKind::ApplicationTerm
+                    | SurfaceNodeKind::SetEnumeration
+                    | SurfaceNodeKind::InfixExpression(_)
+                    | SurfaceNodeKind::PrefixExpression(_)
+                    | SurfaceNodeKind::PostfixExpression(_)
+                    | SurfaceNodeKind::FormulaExpression
+                    | SurfaceNodeKind::BuiltinPredicateApplication
+                    | SurfaceNodeKind::PredicateApplication
+                    | SurfaceNodeKind::PredicateSegment
+                    | SurfaceNodeKind::PredicateHead
+                    | SurfaceNodeKind::PrefixFormula(_)
+                    | SurfaceNodeKind::BinaryFormula(_)
+                    | SurfaceNodeKind::ParenthesizedFormula
+                    | SurfaceNodeKind::FormulaConstant(_)
+                    | SurfaceNodeKind::IsAssertion
+                    | SurfaceNodeKind::AttributeTestChain
+                    | SurfaceNodeKind::TypeExpression
+                    | SurfaceNodeKind::TypeHead
+                    | SurfaceNodeKind::TypeArguments
+                    | SurfaceNodeKind::AttributeChain
+                    | SurfaceNodeKind::AttributeRef
+                    | SurfaceNodeKind::QualifiedSymbol
+                    | SurfaceNodeKind::NamespacePath
+                    | SurfaceNodeKind::ModulePath
+                    | SurfaceNodeKind::PathSegment
+                    | SurfaceNodeKind::RelativePrefix
+            );
+        }
+        if !supported {
+            continue;
+        }
+        for call in owner.calls.iter().filter(|call| call.region == owner.body) {
+            let callee = ast.node_view(call.callee).ok_or_else(invalid)?;
+            if !matches!(callee.kind(), SurfaceNodeKind::TermReference) {
+                continue;
+            }
+            let callee_nodes = subtree(call.callee)?;
+            let mut tokens = callee_nodes.iter().filter_map(|node| node.as_token());
+            let Some(token) = tokens.next() else {
+                continue;
+            };
+            if tokens.next().is_some() {
+                continue;
+            }
+            if !matches!(
+                token.kind,
+                SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
+            ) || excluded.contains(token.text.as_ref())
+            {
+                continue;
+            }
+            let position = ast
+                .node_view(call.application)
+                .ok_or_else(invalid)?
+                .range()
+                .start;
+            let matching = declarations
+                .iter()
+                .filter(|(range, entry, spelling)| {
+                    *spelling == token.text.as_ref()
+                        && (range.end <= position
+                            || inventory.iter().any(|peer| {
+                                peer.definition_block == owner.definition_block
+                                    && peer.owner.symbol() == entry.symbol()
+                            }))
+                })
+                .map(|(_, entry, _)| *entry)
+                .collect();
+            candidates.insert(call.application, matching);
+        }
+    }
+    Ok((inventory, candidates))
+}
+
 /// Derives named owner content from the validated structural source arena.
 pub fn source_registration_owner_payloads_from_arena(
     source: &SurfaceResolvedArena,

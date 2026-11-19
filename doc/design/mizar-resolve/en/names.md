@@ -170,7 +170,7 @@ Semantic lookup considers these tiers in order:
 5. re-exported public symbols made visible through imported facade modules;
 6. builtin prelude symbols enabled by the active edition.
 
-Ordinary completed-item visibility remains the current source boundary. The planned algorithm body-call resolver must support the specification's definition-block self/mutual recursion scope (§20.8), without making ordinary forward references legal or granting typed/proof acceptance to scope candidates.
+Ordinary completed-item visibility remains the current source boundary. The bounded [algorithm body-call candidate producer](symbols.md#planned-algorithm-call-dependencies) adds definition-block self/mutual scope (§20.8) only within its admitted body profile, without changing ordinary lookup or granting typed/proof acceptance.
 
 Ordinary current-module declarations become visible only after the declaration item is
 complete. Outside the specified algorithm recursion scope, forward references to later declarations are not permitted by the
