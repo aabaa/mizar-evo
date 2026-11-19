@@ -376,4 +376,8 @@ cargo test -p mizar-checker
   bounded 経路を越える一般 witness publication は deferred とし、[再評価](phase15_emission_reevaluation.md) を参照する。
   resolution-trace certificate 用の placeholder field を追加してはならない。
 
+## MVM R3 設計
+
+- [~] [MVM-R3-ARTIFACT-LOADER-DESIGN](../../task_contracts/ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md) — [実行 Artifact / loader 設計](./mvm_runtime_export.md)草案。独立レビュー・lint 未実施。R3 実装はブロック中。
+
 - [ ] [AST-ARTIFACT](../../task_contracts/ja/AST-ARTIFACT.md).
