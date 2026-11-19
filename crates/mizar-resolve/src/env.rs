@@ -1939,6 +1939,8 @@ pub enum DeclarationDependencyKind {
     ReExport,
     /// Signature mention dependency edge.
     SignatureMention,
+    /// Selected source definiens occurrence dependency edge.
+    DefiniensMention,
     /// Synonym target dependency edge.
     SynonymTarget,
     /// Antonym target dependency edge.

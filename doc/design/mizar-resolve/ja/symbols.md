@@ -573,6 +573,10 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 `source_algorithm_call_candidates` はこの inventory を変えず、代入、justification、認証済み修飾/bracket/template head を含む header/body scope で source の実 `SymbolEntry` を借用する順序付き候補を返す。body の再帰 scope は同一 block の自己・後続 algorithm を候補とし、header と通常宣言には完了を要求する。未対応構文および存在しない import/builtin identity は未解決のままとする。候補は typed winner、dependency graph/group の完全性、consumer admission、type/cycle/termination/promotion acceptance を確立しない。
 
+`source_definiens_dependencies` は caller が選択した実ソース参照と再定義/synonym の元 target を受け取り、`DefiniensMention` 辺を持つ独立した `DeclarationDependencyIndex` を返す。arena/environment、元の use node/range、local endpoint の対応を検証する。選択の正しさと生ソースの currentness は caller が担い、singleton を含む scope 候補から依存先を自動選択しない。
+
+辺は実 func equals/means、pred/attr means、mode-is 展開と条件分岐の値・guard を対象とする。再定義は元の論理記号を、synonym の使用は algorithm を含む元の呼出しを保持する。反復出現は各 anchor を保ち、生成された `it` 置換や定義式 head は辺を増やさない。選択の欠落は完全性を保証せず、不正な対応は全体を拒否する。外部 identity carrier、完全な group、consumer、cycle/termination acceptance は引き続き延期する。
+
 ## Source registration owner payloads
 
 `source_registration_owner_payloads(ast: &SurfaceAst, source: &SurfaceResolvedArena, symbols: &SymbolEnv) -> Result<BTreeMap<SymbolId, Vec<u8>>, String>` は実 SymbolId を map key に保ち、名前付き owner の bytes を生成する。AST/arena/module の完全対応を先に検証し、既存の環境全体の再照合を行い、その error を保つ。同じ AST から既存 shell/projection を再収集し、caller 文字列、range だけの対応、debug text を owner 内容に代用しない。

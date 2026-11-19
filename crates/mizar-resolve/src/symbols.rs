@@ -22,7 +22,7 @@ use crate::names::{
 use crate::recovery::suppress_dependent_diagnostic_for_recovered_shell;
 use crate::resolved_ast::{
     FullyQualifiedName, LocalSymbolId, ModuleId, ResolvedNodeId, SemanticOrigin,
-    SurfaceResolvedArena, SymbolId,
+    SurfaceResolvedArena, SymbolId, SymbolRef,
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind, SurfaceNodeView, SurfaceTokenKind};
@@ -196,6 +196,221 @@ pub fn validated_source_symbol_ast(
         return Err(invalid());
     }
     Ok(ast)
+}
+
+/// Produces dependencies for explicitly selected original-source definiens uses.
+///
+/// Selection keys are `TermReference`, `PredicateHead`, `AttributeRef` or `TypeHead`
+/// nodes, and references retain their exact node ranges. Original-target keys are
+/// redefinition or synonym declaration nodes; their references retain those
+/// declaration ranges. Selection correctness and physical source currentness
+/// remain caller-owned. Missing selections establish no completeness claim.
+pub fn source_definiens_dependencies(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    selected: &BTreeMap<SurfaceNodeId, SymbolRef>,
+    originals: &BTreeMap<SurfaceNodeId, SymbolRef>,
+) -> Result<crate::env::DeclarationDependencyIndex, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = || "invalid source definiens dependency association".to_owned();
+    let mut parents = BTreeMap::new();
+    for node in ast.node_views() {
+        let range = node.range();
+        if range.source_id != ast.source_id || range.start > range.end {
+            return Err(invalid());
+        }
+        let mut previous_end = range.start;
+        for child in node.child_views() {
+            if !source_range_contains(range, child.range()) {
+                return Err(invalid());
+            }
+            // Root tokens overlay the structural tree.
+            if matches!(node.kind(), SurfaceNodeKind::Root)
+                && matches!(child.kind(), SurfaceNodeKind::Token(_))
+            {
+                continue;
+            }
+            if child.range().start < previous_end || parents.insert(child.id(), node.id()).is_some()
+            {
+                return Err(invalid());
+            }
+            previous_end = child.range().end;
+        }
+    }
+    if ast.root().is_none_or(|root| {
+        parents.contains_key(&root) || parents.len().checked_add(1) != Some(ast.nodes().len())
+    }) {
+        return Err(invalid());
+    }
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let mut declarations = BTreeMap::new();
+    let mut symbol_nodes = BTreeMap::new();
+    for shell in shells.declarations() {
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.origin() == &origin);
+        if let Some(entry) = entries.next() {
+            if entries.next().is_some()
+                || symbol_nodes
+                    .insert(entry.symbol(), shell.node_id())
+                    .is_some()
+            {
+                return Err(invalid());
+            }
+            declarations.insert(shell.node_id(), (shell, entry));
+        }
+    }
+    let canonical = |start: &SymbolId| -> Result<SymbolId, String> {
+        let mut current = start.clone();
+        let mut seen = BTreeSet::new();
+        let mut required = Vec::new();
+        loop {
+            if !seen.insert(current.clone()) {
+                return Err(invalid());
+            }
+            let id = symbol_nodes.get(&current).ok_or_else(invalid)?;
+            let (shell, entry) = declarations.get(id).ok_or_else(invalid)?;
+            match entry.kind() {
+                SymbolKind::Redefinition | SymbolKind::Synonym => {
+                    if entry.kind() == SymbolKind::Redefinition {
+                        required.push(match shell.kind() {
+                            DeclarationShellKind::FunctorRedefinition => SymbolKind::Functor,
+                            DeclarationShellKind::PredicateRedefinition => SymbolKind::Predicate,
+                            DeclarationShellKind::AttributeRedefinition => SymbolKind::Attribute,
+                            _ => return Err(invalid()),
+                        });
+                    } else if shell.kind() != DeclarationShellKind::NotationAlias {
+                        return Err(invalid());
+                    }
+                    let reference = originals.get(id).ok_or_else(invalid)?;
+                    let target_id = symbol_nodes.get(reference.symbol()).ok_or_else(invalid)?;
+                    let (target, _) = declarations.get(target_id).ok_or_else(invalid)?;
+                    if reference.import().is_some()
+                        || reference.range() != shell.range()
+                        || target.range().end > shell.range().start
+                    {
+                        return Err(invalid());
+                    }
+                    current = reference.symbol().clone();
+                }
+                SymbolKind::Functor
+                | SymbolKind::Predicate
+                | SymbolKind::Attribute
+                | SymbolKind::Mode
+                | SymbolKind::Structure
+                | SymbolKind::Algorithm => {
+                    if required.iter().any(|kind| *kind != entry.kind()) {
+                        return Err(invalid());
+                    }
+                    return Ok(current);
+                }
+                _ => return Err(invalid()),
+            }
+        }
+    };
+    // Supplied associations are checked even when they produce no occurrence edges.
+    for id in originals.keys() {
+        let (_, entry) = declarations.get(id).ok_or_else(invalid)?;
+        if !matches!(entry.kind(), SymbolKind::Redefinition | SymbolKind::Synonym) {
+            return Err(invalid());
+        }
+        canonical(entry.symbol())?;
+    }
+    let mut occurrences = BTreeMap::new();
+    for (&id, &(shell, owner)) in &declarations {
+        if !matches!(
+            shell.kind(),
+            DeclarationShellKind::FunctorDefinition
+                | DeclarationShellKind::PredicateDefinition
+                | DeclarationShellKind::AttributeDefinition
+                | DeclarationShellKind::ModeDefinition
+                | DeclarationShellKind::FunctorRedefinition
+                | DeclarationShellKind::PredicateRedefinition
+                | DeclarationShellKind::AttributeRedefinition
+        ) {
+            continue;
+        }
+        let declaration = ast.node_view(id).ok_or_else(invalid)?;
+        let mut after_is = false;
+        for child in declaration.child_views() {
+            if child.as_token().is_some_and(|token| {
+                token.kind == SurfaceTokenKind::ReservedWord && token.text.as_ref() == "is"
+            }) {
+                after_is = true;
+            }
+            if !matches!(
+                child.kind(),
+                SurfaceNodeKind::TermDefiniens | SurfaceNodeKind::FormulaDefiniens
+            ) && !(shell.kind() == DeclarationShellKind::ModeDefinition
+                && after_is
+                && matches!(child.kind(), SurfaceNodeKind::TypeExpression))
+            {
+                continue;
+            }
+            let mut pending = vec![child.id()];
+            while let Some(id) = pending.pop() {
+                let node = ast.node_view(id).ok_or_else(invalid)?;
+                if matches!(
+                    node.kind(),
+                    SurfaceNodeKind::ProofBlock
+                        | SurfaceNodeKind::CorrectnessCondition
+                        | SurfaceNodeKind::CoherenceCondition
+                ) {
+                    continue;
+                }
+                if matches!(
+                    node.kind(),
+                    SurfaceNodeKind::TermReference
+                        | SurfaceNodeKind::PredicateHead
+                        | SurfaceNodeKind::AttributeRef
+                        | SurfaceNodeKind::TypeHead
+                ) && occurrences.insert(id, owner).is_some()
+                {
+                    return Err(invalid());
+                }
+                pending.extend(node.children().iter().rev().copied());
+            }
+        }
+    }
+    let mut dependencies = crate::env::DeclarationDependencyIndex::new();
+    for (&id, reference) in selected {
+        let owner = occurrences.get(&id).ok_or_else(invalid)?;
+        let node = ast.node_view(id).ok_or_else(invalid)?;
+        if reference.import().is_some() || reference.range() != node.range() {
+            return Err(invalid());
+        }
+        let target = canonical(reference.symbol())?;
+        let entry = symbols.symbols().get(&target).ok_or_else(invalid)?;
+        let valid_kind = match node.kind() {
+            SurfaceNodeKind::TermReference => {
+                matches!(entry.kind(), SymbolKind::Functor | SymbolKind::Algorithm)
+            }
+            SurfaceNodeKind::PredicateHead => entry.kind() == SymbolKind::Predicate,
+            SurfaceNodeKind::AttributeRef => entry.kind() == SymbolKind::Attribute,
+            SurfaceNodeKind::TypeHead => {
+                matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure)
+            }
+            _ => false,
+        };
+        if !valid_kind {
+            return Err(invalid());
+        }
+        dependencies.insert(
+            crate::env::DependencyEndpoint::Symbol(canonical(owner.symbol())?),
+            crate::env::DependencyEndpoint::Symbol(target),
+            crate::env::DeclarationDependencyKind::DefiniensMention,
+            SourceAnchor::Range(node.range()),
+            owner.contribution(),
+        );
+    }
+    Ok(dependencies)
 }
 
 /// Original declaration nodes and call sites, retaining the owner's opaque signature.

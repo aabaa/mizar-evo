@@ -11792,3 +11792,659 @@ fn algorithm_call_candidates_refuse_unauthenticated_inputs_atomically() {
         assert_eq!((recovered_arena.clone(), symbols.clone()), before);
     }
 }
+
+fn definiens_symbol_at<'a>(env: &'a SymbolEnv, text: &str, declaration: &str) -> &'a SymbolEntry {
+    let start = text.find(declaration).unwrap();
+    let matches = env
+        .symbols()
+        .iter()
+        .filter(|entry| {
+            source_range_from_anchor(entry.origin().anchor())
+                .is_some_and(|range| range.start == start)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(matches.len(), 1, "{declaration}");
+    matches[0]
+}
+
+fn definiens_selections(
+    ast: &SurfaceAst,
+    sites: &[(usize, &str, SurfaceNodeKind, &SymbolEntry)],
+) -> BTreeMap<SurfaceNodeId, crate::resolved_ast::SymbolRef> {
+    sites
+        .iter()
+        .map(|(start, spelling, kind, symbol)| {
+            let id = algorithm_inventory_node_at(ast, *start, spelling, kind.clone());
+            (
+                id,
+                crate::resolved_ast::SymbolRef::new(
+                    symbol.symbol().clone(),
+                    ast.node_view(id).unwrap().range(),
+                ),
+            )
+        })
+        .collect()
+}
+
+fn assert_definiens_edges(
+    dependencies: &crate::env::DeclarationDependencyIndex,
+    expected: &[(
+        &SymbolEntry,
+        &SymbolEntry,
+        SourceContributionId,
+        SourceRange,
+    )],
+) {
+    assert_eq!(dependencies.len(), expected.len());
+    for (owner, target, contribution, range) in expected {
+        assert_eq!(
+            dependencies
+                .iter()
+                .filter(|edge| {
+                    edge.source() == &crate::env::DependencyEndpoint::Symbol(owner.symbol().clone())
+                        && edge.target()
+                            == &crate::env::DependencyEndpoint::Symbol(target.symbol().clone())
+                        && edge.contribution() == *contribution
+                        && edge.anchor() == &SourceAnchor::Range(*range)
+                        && edge.kind() == crate::env::DeclarationDependencyKind::DefiniensMention
+                })
+                .count(),
+            1,
+            "{range:?}"
+        );
+    }
+}
+
+#[test]
+fn source_definiens_dependencies_empty_and_unselected_preserve_source_inventory() {
+    for text in [
+        "",
+        "theorem Plain: 0 = 0;",
+        "definition let n be object; func Quiet: quiet(n) -> object equals n; algorithm still(n) -> object do return n; end; end;",
+        "definition let n be object; func Target: target(n) -> object equals n; func Caller: caller(n) -> object equals target(n); algorithm run(n) -> object do return target(n); end; end;",
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let inventory = format!(
+            "{:?}",
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap()
+        );
+        let dependencies = crate::symbols::source_definiens_dependencies(
+            &arena,
+            &env,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        assert!(dependencies.is_empty());
+        assert_eq!(
+            format!(
+                "{:?}",
+                crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap()
+            ),
+            inventory
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn source_definiens_dependencies_cover_all_bodies_and_conditional_branches() {
+    let text = "definition let n be object; func Target: target(n) -> object equals n; pred Guard: guard n means thesis; attr Marked: n is marked means thesis; mode Radix: Radix is object; func Cases: choose(n) -> object equals target(n) if (guard n), target(n) if (guard n) otherwise target(n); func Means: meansfun(n) -> object means guard target(n) if (guard n), guard n if (guard n) otherwise guard n; pred Pred: predicate n means guard n if (guard n), guard n if (guard n) otherwise guard n; attr Attr: n is decorated means guard n if (guard n), guard n if (guard n) otherwise guard n; mode Expanded: Expanded is marked Radix; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let target = definiens_symbol_at(&env, text, "func Target:");
+    let guard = definiens_symbol_at(&env, text, "pred Guard:");
+    let marked = definiens_symbol_at(&env, text, "attr Marked:");
+    let radix = definiens_symbol_at(&env, text, "mode Radix:");
+    let mut selections = BTreeMap::new();
+    let mut expected = Vec::new();
+    for (declaration, body, sites) in [
+        (
+            "func Cases:",
+            "equals",
+            vec![
+                ("target", SurfaceNodeKind::TermReference, target),
+                ("guard", SurfaceNodeKind::PredicateHead, guard),
+            ],
+        ),
+        (
+            "func Means:",
+            "means",
+            vec![
+                ("target", SurfaceNodeKind::TermReference, target),
+                ("guard", SurfaceNodeKind::PredicateHead, guard),
+            ],
+        ),
+        (
+            "pred Pred:",
+            "means",
+            vec![("guard", SurfaceNodeKind::PredicateHead, guard)],
+        ),
+        (
+            "attr Attr:",
+            "means",
+            vec![("guard", SurfaceNodeKind::PredicateHead, guard)],
+        ),
+        (
+            "mode Expanded:",
+            "is",
+            vec![
+                ("marked", SurfaceNodeKind::AttributeRef, marked),
+                ("Radix", SurfaceNodeKind::TypeHead, radix),
+            ],
+        ),
+    ] {
+        let owner = definiens_symbol_at(&env, text, declaration);
+        let declaration_start = text.find(declaration).unwrap();
+        let body_start =
+            declaration_start + text[declaration_start..].find(body).unwrap() + body.len();
+        let body_end = body_start + text[body_start..].find(';').unwrap();
+        for (spelling, kind, selected) in sites {
+            for (offset, _) in text[body_start..body_end].match_indices(spelling) {
+                let site = definiens_selections(
+                    &ast,
+                    &[(body_start + offset, spelling, kind.clone(), selected)],
+                );
+                let reference = site.values().next().unwrap();
+                expected.push((owner, selected, owner.contribution(), reference.range()));
+                selections.extend(site);
+            }
+        }
+    }
+    assert_eq!(expected.len(), 23);
+    let dependencies =
+        crate::symbols::source_definiens_dependencies(&arena, &env, &selections, &BTreeMap::new())
+            .unwrap();
+    assert_definiens_edges(&dependencies, &expected);
+    assert!(
+        crate::symbols::source_algorithm_call_inventory(&arena, &env)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn source_definiens_dependencies_preserve_nested_repeated_self_and_algorithm_anchors() {
+    let text = "definition let n be object; func Target: target(n) -> object equals n; algorithm run(n) -> object do return n; end; func Caller: caller(n) -> object equals target(target(n)) if target(n) = n otherwise run(caller(n)); end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let target = definiens_symbol_at(&env, text, "func Target:");
+    let algorithm = definiens_symbol_at(&env, text, "algorithm run");
+    let caller = definiens_symbol_at(&env, text, "func Caller:");
+    let start = text.find("equals target").unwrap() + "equals ".len();
+    let mut selections = BTreeMap::new();
+    let mut expected = Vec::new();
+    for (spelling, selected) in [("target", target), ("run", algorithm), ("caller", caller)] {
+        for (offset, _) in text[start..].match_indices(spelling) {
+            let site = definiens_selections(
+                &ast,
+                &[(
+                    start + offset,
+                    spelling,
+                    SurfaceNodeKind::TermReference,
+                    selected,
+                )],
+            );
+            expected.push((
+                caller,
+                selected,
+                caller.contribution(),
+                site.values().next().unwrap().range(),
+            ));
+            selections.extend(site);
+        }
+    }
+    let dependencies =
+        crate::symbols::source_definiens_dependencies(&arena, &env, &selections, &BTreeMap::new())
+            .unwrap();
+    assert_definiens_edges(&dependencies, &expected);
+    assert_eq!(dependencies.len(), 5);
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].calls().is_empty());
+}
+
+#[test]
+fn source_definiens_dependencies_use_original_redefinitions_and_algorithm_synonym_chains() {
+    let text = "definition let n be object; func Target: target(n) -> object equals n; pred Guard: guard n means thesis; func BaseF: f(n) -> object equals n; pred BaseP: p n means thesis; attr BaseA: n is marked means thesis; algorithm run(n) -> object do return n; end; redefine func RF: f(n) -> object equals target(n); coherence by Proof; redefine pred RP: p n means guard n; coherence by Proof; redefine attr RA: n is marked means guard n; coherence by Proof; synonym alias(n) for run(n); synonym chain(n) for alias(n); func Caller: caller(n) -> object equals chain(n); end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let target = definiens_symbol_at(&env, text, "func Target:");
+    let guard = definiens_symbol_at(&env, text, "pred Guard:");
+    let algorithm = definiens_symbol_at(&env, text, "algorithm run");
+    let mut originals = BTreeMap::new();
+    for (relation, kind, original) in [
+        (
+            "redefine func RF:",
+            SurfaceNodeKind::FunctorRedefinition,
+            "func BaseF:",
+        ),
+        (
+            "redefine pred RP:",
+            SurfaceNodeKind::PredicateRedefinition,
+            "pred BaseP:",
+        ),
+        (
+            "redefine attr RA:",
+            SurfaceNodeKind::AttributeRedefinition,
+            "attr BaseA:",
+        ),
+        (
+            "synonym alias",
+            SurfaceNodeKind::NotationAlias,
+            "algorithm run",
+        ),
+        (
+            "synonym chain",
+            SurfaceNodeKind::NotationAlias,
+            "synonym alias",
+        ),
+    ] {
+        let node = ast
+            .node_views()
+            .find(|node| node.kind() == &kind && node.range().start == text.find(relation).unwrap())
+            .unwrap();
+        originals.insert(
+            node.id(),
+            crate::resolved_ast::SymbolRef::new(
+                definiens_symbol_at(&env, text, original).symbol().clone(),
+                node.range(),
+            ),
+        );
+    }
+    assert!(
+        crate::symbols::source_definiens_dependencies(&arena, &env, &BTreeMap::new(), &originals)
+            .unwrap()
+            .is_empty()
+    );
+    let mut selections = BTreeMap::new();
+    let mut expected = Vec::new();
+    for (relation, original, spelling, kind, selected, canonical_target) in [
+        (
+            "redefine func RF:",
+            "func BaseF:",
+            "target",
+            SurfaceNodeKind::TermReference,
+            target,
+            target,
+        ),
+        (
+            "redefine pred RP:",
+            "pred BaseP:",
+            "guard",
+            SurfaceNodeKind::PredicateHead,
+            guard,
+            guard,
+        ),
+        (
+            "redefine attr RA:",
+            "attr BaseA:",
+            "guard",
+            SurfaceNodeKind::PredicateHead,
+            guard,
+            guard,
+        ),
+        (
+            "func Caller:",
+            "func Caller:",
+            "chain",
+            SurfaceNodeKind::TermReference,
+            definiens_symbol_at(&env, text, "synonym chain"),
+            algorithm,
+        ),
+    ] {
+        let relation_start = text.find(relation).unwrap();
+        let body_start = relation_start
+            + text[relation_start..]
+                .find(
+                    if relation.starts_with("func") || relation.starts_with("redefine func") {
+                        "equals"
+                    } else {
+                        "means"
+                    },
+                )
+                .unwrap();
+        let start = body_start + text[body_start..].find(spelling).unwrap();
+        let site = definiens_selections(&ast, &[(start, spelling, kind, selected)]);
+        expected.push((
+            definiens_symbol_at(&env, text, original),
+            canonical_target,
+            definiens_symbol_at(&env, text, relation).contribution(),
+            site.values().next().unwrap().range(),
+        ));
+        selections.extend(site);
+    }
+    let dependencies =
+        crate::symbols::source_definiens_dependencies(&arena, &env, &selections, &originals)
+            .unwrap();
+    assert_definiens_edges(&dependencies, &expected);
+    for relation in originals.keys() {
+        let mut missing = originals.clone();
+        missing.remove(relation);
+        assert!(
+            crate::symbols::source_definiens_dependencies(&arena, &env, &selections, &missing)
+                .is_err()
+        );
+    }
+}
+
+#[test]
+fn source_definiens_dependencies_respect_overload_selection_and_exclude_non_body_sites() {
+    let text = "definition let n,m be object; mode Family: Family of n is object; func First: target(n) -> object equals n; func Second: target(n,m) -> object equals n; func Caller: caller(n) -> Family of target(n) means it = target(n); coherence proof thus target(n) = n; end; algorithm run(n) -> object do return target(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let first = definiens_symbol_at(&env, text, "func First:");
+    let second = definiens_symbol_at(&env, text, "func Second:");
+    let caller = definiens_symbol_at(&env, text, "func Caller:");
+    let (_, candidates) = crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(candidates.len(), 1);
+    assert_eq!(candidates.values().next().unwrap().len(), 2);
+    assert!(
+        candidates
+            .values()
+            .next()
+            .unwrap()
+            .iter()
+            .any(|entry| std::ptr::eq(*entry, first))
+    );
+    assert!(
+        candidates
+            .values()
+            .next()
+            .unwrap()
+            .iter()
+            .any(|entry| std::ptr::eq(*entry, second))
+    );
+    let body = text.find("means it = target").unwrap() + "means it = ".len();
+    for selected in [first, second] {
+        let selections = definiens_selections(
+            &ast,
+            &[(body, "target", SurfaceNodeKind::TermReference, selected)],
+        );
+        let dependencies = crate::symbols::source_definiens_dependencies(
+            &arena,
+            &env,
+            &selections,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        assert_definiens_edges(
+            &dependencies,
+            &[(
+                caller,
+                selected,
+                caller.contribution(),
+                selections.values().next().unwrap().range(),
+            )],
+        );
+        for (start, spelling, kind) in [
+            (
+                text.find("Family of target").unwrap() + "Family of ".len(),
+                "target",
+                SurfaceNodeKind::TermReference,
+            ),
+            (
+                text.find("thus target").unwrap() + "thus ".len(),
+                "target",
+                SurfaceNodeKind::TermReference,
+            ),
+            (
+                text.find("means it").unwrap() + "means ".len(),
+                "it",
+                SurfaceNodeKind::ItTerm,
+            ),
+        ] {
+            let mut invalid = selections.clone();
+            invalid.extend(definiens_selections(
+                &ast,
+                &[(start, spelling, kind, selected)],
+            ));
+            assert!(
+                crate::symbols::source_definiens_dependencies(
+                    &arena,
+                    &env,
+                    &invalid,
+                    &BTreeMap::new()
+                )
+                .is_err()
+            );
+        }
+    }
+    let (_, unchanged) = crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(candidates, unchanged);
+}
+
+#[test]
+fn source_definiens_dependencies_refuse_invalid_inputs_and_relation_associations_atomically() {
+    use crate::resolved_ast::{ImportResolution, ResolvedImport, ResolvedImports, SymbolRef};
+    let text = "definition let n be object; func Target: target(n) -> object equals n; pred Guard: guard n means thesis; func Caller: caller(n) -> object equals target(n); end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let target = definiens_symbol_at(&env, text, "func Target:");
+    let guard = definiens_symbol_at(&env, text, "pred Guard:");
+    let start = text.rfind("target(n)").unwrap();
+    let selected = definiens_selections(
+        &ast,
+        &[(start, "target", SurfaceNodeKind::TermReference, target)],
+    );
+    let (&site, reference) = selected.first_key_value().unwrap();
+    assert_eq!(
+        crate::symbols::source_definiens_dependencies(&arena, &env, &selected, &BTreeMap::new())
+            .unwrap()
+            .len(),
+        1
+    );
+    let (_, _, _, stale, _) =
+        parsed_private_theorem_fixture(&text.replace("func Target:", "func Changed:"));
+    let (larger, _, _, augmented, _) =
+        parsed_private_theorem_fixture(&format!("{text} theorem Added: 0 = 0;"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    for (source, symbols) in [(&arena, &stale), (&arena, &augmented), (&foreign, &env)] {
+        let before = (source.clone(), symbols.clone(), selected.clone());
+        assert!(
+            crate::symbols::source_definiens_dependencies(
+                source,
+                symbols,
+                &selected,
+                &BTreeMap::new()
+            )
+            .is_err()
+        );
+        assert_eq!((source.clone(), symbols.clone(), selected.clone()), before);
+    }
+    let mut imports = ResolvedImports::new();
+    let import = imports.push_import(ResolvedImport::new(
+        arena.resolved_node_for(ast.root().unwrap()).unwrap(),
+        reference.range(),
+        "external",
+        None,
+        ImportResolution::Resolved(module_id("pkg", "external")),
+        target.origin().clone(),
+    ));
+    let unknown = SymbolId::new(
+        module_id("pkg", "foreign"),
+        LocalSymbolId::new("missing"),
+        FullyQualifiedName::new("foreign.missing"),
+    );
+    let mut bad_range = reference.range();
+    bad_range.end += 1;
+    let mut foreign_range = reference.range();
+    foreign_range.source_id = distinct_source_ids().1;
+    for (node, invalid_reference) in [
+        (ast.root().unwrap(), reference.clone()),
+        (larger.root().unwrap(), reference.clone()),
+        (site, SymbolRef::new(unknown, reference.range())),
+        (
+            site,
+            SymbolRef::new(guard.symbol().clone(), reference.range()),
+        ),
+        (site, SymbolRef::new(target.symbol().clone(), bad_range)),
+        (site, SymbolRef::new(target.symbol().clone(), foreign_range)),
+        (site, reference.clone().with_import(import)),
+    ] {
+        let mut invalid = selected.clone();
+        invalid.insert(node, invalid_reference);
+        let before = (arena.clone(), env.clone(), invalid.clone());
+        assert!(
+            crate::symbols::source_definiens_dependencies(&arena, &env, &invalid, &BTreeMap::new())
+                .is_err()
+        );
+        assert_eq!((arena.clone(), env.clone(), invalid), before);
+    }
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::new();
+    for node in ast.node_views() {
+        let children = node
+            .children()
+            .iter()
+            .map(|id| rebuilt[id.index()])
+            .collect::<Vec<_>>();
+        let next = match node.kind() {
+            SurfaceNodeKind::Token(token) if node.range().start == start => {
+                builder.add_recovered_token(token.kind, token.text.clone(), node.range())
+            }
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), node.range())
+            }
+            kind => builder.add_node(kind.clone(), node.range(), children),
+        };
+        rebuilt.push(next);
+    }
+    let recovered = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+    let shells = crate::declarations::DeclarationShellCollector::new(&recovered, &module).collect();
+    let collected =
+        crate::symbols::SignatureProjectionExtractor::new(&recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(&recovered, &module).unwrap();
+    for symbols in [&env, collected.env()] {
+        let before = (recovered_arena.clone(), symbols.clone());
+        assert!(
+            crate::symbols::source_definiens_dependencies(
+                &recovered_arena,
+                symbols,
+                &selected,
+                &BTreeMap::new()
+            )
+            .is_err()
+        );
+        assert_eq!((recovered_arena.clone(), symbols.clone()), before);
+    }
+    let text = "definition let n be object; func Base: f(n) -> object equals n; pred Guard: guard n means thesis; redefine func Changed: f(n) -> object equals f(n); coherence by Proof; algorithm run(n) -> object do return n; end; synonym alias(n) for run(n); synonym chain(n) for alias(n); func Caller: caller(n) -> object equals chain(n); end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let base = definiens_symbol_at(&env, text, "func Base:");
+    let guard = definiens_symbol_at(&env, text, "pred Guard:");
+    let algorithm = definiens_symbol_at(&env, text, "algorithm run");
+    let alias = definiens_symbol_at(&env, text, "synonym alias");
+    let chain = definiens_symbol_at(&env, text, "synonym chain");
+    let mut originals = BTreeMap::new();
+    for (marker, kind, target) in [
+        (
+            "redefine func Changed:",
+            SurfaceNodeKind::FunctorRedefinition,
+            base,
+        ),
+        ("synonym alias", SurfaceNodeKind::NotationAlias, algorithm),
+        ("synonym chain", SurfaceNodeKind::NotationAlias, alias),
+    ] {
+        let node = ast
+            .node_views()
+            .find(|node| node.kind() == &kind && node.range().start == text.find(marker).unwrap())
+            .unwrap();
+        originals.insert(
+            node.id(),
+            SymbolRef::new(target.symbol().clone(), node.range()),
+        );
+    }
+    let selected = definiens_selections(
+        &ast,
+        &[
+            (
+                text.find("equals f(n)").unwrap() + "equals ".len(),
+                "f",
+                SurfaceNodeKind::TermReference,
+                base,
+            ),
+            (
+                text.rfind("chain(n)").unwrap(),
+                "chain",
+                SurfaceNodeKind::TermReference,
+                chain,
+            ),
+        ],
+    );
+    assert_eq!(
+        crate::symbols::source_definiens_dependencies(&arena, &env, &selected, &originals)
+            .unwrap()
+            .len(),
+        2
+    );
+    let relation = *originals
+        .keys()
+        .find(|id| ast.node_view(**id).unwrap().kind() == &SurfaceNodeKind::FunctorRedefinition)
+        .unwrap();
+    let alias_node = *originals
+        .keys()
+        .find(|id| {
+            ast.node_view(**id).unwrap().range().start == text.find("synonym alias").unwrap()
+        })
+        .unwrap();
+    let mut invalid_maps = Vec::new();
+    let mut missing = originals.clone();
+    missing.remove(&relation);
+    invalid_maps.push(missing);
+    for target in [
+        guard,
+        algorithm,
+        chain,
+        definiens_symbol_at(&env, text, "func Caller:"),
+    ] {
+        let mut invalid = originals.clone();
+        invalid.insert(
+            relation,
+            SymbolRef::new(
+                target.symbol().clone(),
+                ast.node_view(relation).unwrap().range(),
+            ),
+        );
+        invalid_maps.push(invalid);
+    }
+    let mut wrong_range = originals.clone();
+    wrong_range.insert(
+        relation,
+        SymbolRef::new(
+            base.symbol().clone(),
+            source_range_from_anchor(base.origin().anchor()).unwrap(),
+        ),
+    );
+    invalid_maps.push(wrong_range);
+    let mut cycle = originals.clone();
+    cycle.insert(
+        alias_node,
+        SymbolRef::new(
+            chain.symbol().clone(),
+            ast.node_view(alias_node).unwrap().range(),
+        ),
+    );
+    invalid_maps.push(cycle);
+    let mut bogus_site = originals.clone();
+    bogus_site.insert(
+        ast.root().unwrap(),
+        SymbolRef::new(
+            base.symbol().clone(),
+            ast.node_view(ast.root().unwrap()).unwrap().range(),
+        ),
+    );
+    invalid_maps.push(bogus_site);
+    for invalid in invalid_maps {
+        let before = (
+            arena.clone(),
+            env.clone(),
+            selected.clone(),
+            invalid.clone(),
+        );
+        assert!(
+            crate::symbols::source_definiens_dependencies(&arena, &env, &selected, &invalid)
+                .is_err()
+        );
+        assert_eq!(
+            (arena.clone(), env.clone(), selected.clone(), invalid),
+            before
+        );
+    }
+}

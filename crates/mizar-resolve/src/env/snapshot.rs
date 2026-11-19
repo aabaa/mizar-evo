@@ -941,6 +941,7 @@ fn declaration_dependency_kind_name(kind: DeclarationDependencyKind) -> &'static
         DeclarationDependencyKind::Import => "import",
         DeclarationDependencyKind::ReExport => "re_export",
         DeclarationDependencyKind::SignatureMention => "signature_mention",
+        DeclarationDependencyKind::DefiniensMention => "definiens_mention",
         DeclarationDependencyKind::SynonymTarget => "synonym_target",
         DeclarationDependencyKind::AntonymTarget => "antonym_target",
         DeclarationDependencyKind::RedefinitionTarget => "redefinition_target",
