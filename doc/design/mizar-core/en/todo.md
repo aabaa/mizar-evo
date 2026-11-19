@@ -801,6 +801,10 @@ Check the task off here once tests pass.
 - Phase 10 lives here per internal 07; `mizar-vc` consumes `ControlFlowIr`
   and never mutates it.
 
+## MVM R2 design follow-up
+
+- [~] [MVM-R2-CORRESPONDENCE-DESIGN](../../task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) — [Core body/call design](./mvm_correspondence.md) drafted; independent reviews and documentation lint pending. R2 implementation remains blocked.
+
 ## AST specification implementation follow-up
 
 - [ ] [AST-LOWER](../../task_contracts/en/AST-LOWER.md).

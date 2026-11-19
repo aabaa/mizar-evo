@@ -752,4 +752,8 @@ cargo test -p mizar-vc
 - internal 07 により phase 10 はここに属する。`mizar-vc` は
   `ControlFlowIr` を消費し、決して変更しない。
 
+## MVM R2 設計
+
+- [~] [MVM-R2-CORRESPONDENCE-DESIGN](../../task_contracts/ja/MVM-R2-CORRESPONDENCE-DESIGN.md) — [Core 設計](./mvm_correspondence.md)草案済み。独立レビューと文書 lint 待ち。実装はブロック中。
+
 - [ ] [AST-LOWER](../../task_contracts/ja/AST-LOWER.md).
