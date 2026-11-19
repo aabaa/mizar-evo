@@ -95,6 +95,7 @@ classification は元 block ごとの code/explicit link・image/present See slo
 各 citing 定理を Doc9 順に一度表示し、厳密な FQN を escape して validated allocation/既存 href encoder で link する。destination readiness 欠落は安全な非 link text とし、citation coverage や warning を変えない。complete-empty は none、不完全/利用不可の coverage は既知引用と併記しても明示 unavailable とする。完全性は選択済み有限 closure 内に限る。完全 template、Q12、完全 rendering は gate 内に残る。
 
 ## Adopted Isolated Fragment Templates
+`DocSourceViews::item_source_template_fragment` は `item_source_slot` と同じ入力から認証 fragment を新鮮に描画し、下記 Source section literal に LF と全拒否を保持してそのまま挿入する。この isolated expansion は完全 page や後続 gate readiness を供給しない。
 `render::comment_template_fragments` は `comment_fragments` と同じ認証入力から、既知の不在を `None`、それ以外を comment div・parameters section・See section 順の [literal expansion](../en/render.md#page-shell-and-bodies) として返す。`used_by_template_fragments` は新鮮に認証した各 UsedBy fragment を section で包む。resolver 結果、fragment bytes、拒否境界を保持し、parameter label は T escape、反復行は literal LF を使う。任意 HTML、page shell、formal owner slot、完全 page readiness は追加しない。
 
 ## Q3 Source-View And Line Routing Definition

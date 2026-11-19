@@ -1139,6 +1139,10 @@ mod q1_comments {
         use mizar_artifact::direct_by::{
             DirectByEndpoint, DirectByTarget, project_frontend_direct_by,
         };
+        use mizar_artifact::module_summary::{
+            ExportedLabelSummary, MODULE_SUMMARY_SCHEMA_FAMILY, ModuleLexicalSummary,
+            ModuleSummary, current_schema_version, module_summary_json,
+        };
         use mizar_doc::doc_build::*;
         use mizar_session::TextRange;
 
@@ -1188,8 +1192,57 @@ mod q1_comments {
             .unwrap();
         let root = f.emission_root();
         let commit = f.emit(&root, "native.mizir.json").unwrap().unwrap();
-        let publication = validated_manifest(&root);
         let artifact = &f.retained(0).artifact.artifact;
+        // The native emitter omits summaries; publish the exact label needed by G2
+        // alongside its unchanged Driver artifact before authenticating Doc inputs.
+        let export = &artifact.exports[0];
+        let mut summary = ModuleSummary {
+            schema_version: current_schema_version(),
+            module: artifact.module.clone(),
+            source_hash: artifact.source_hash,
+            interface_hash: hash(0),
+            exported_symbols: vec![],
+            exported_labels: vec![ExportedLabelSummary {
+                origin_id: export.origin_id.clone(),
+                label: "Named".into(),
+                owner_fully_qualified_name: export.fully_qualified_name.clone(),
+                visibility: "public".into(),
+                source_range: export.source_range,
+                target_kind: export.export_kind.clone(),
+            }],
+            lexical_summary: ModuleLexicalSummary {
+                schema_version: "1.0".into(),
+                fingerprint: None,
+                contributions: vec![],
+            },
+            reexports: vec![],
+            dependency_interfaces: vec![],
+        };
+        summary.refresh_interface_hash().unwrap();
+        let summary_write = mizar_artifact::store::write_published_artifact(
+            &root,
+            &PublishedArtifactPath::new("module0.summary.json").unwrap(),
+            &module_summary_json(&summary).unwrap(),
+            &artifact_hash_domain(MODULE_SUMMARY_SCHEMA_FAMILY, summary.schema_version),
+            &[],
+        )
+        .unwrap();
+        let mut manifest = commit.manifest().clone();
+        manifest.modules[0].module_summary_file = Some(summary_write.path.as_str().into());
+        manifest.modules[0].module_summary_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Artifact,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            summary_write.artifact_hash,
+        ));
+        manifest.modules[0].module_summary_interface_hash = Some(ArtifactHashRef::new(
+            ArtifactHashClass::Interface,
+            MODULE_SUMMARY_SCHEMA_FAMILY,
+            summary.schema_version,
+            summary.interface_hash,
+        ));
+        write_manifest_file(&root, &manifest).unwrap();
+        let publication = validated_manifest(&root);
         let retained = f.retained(0).clone();
         let paths = [
             root.join("artifact-manifest.json"),
@@ -1253,6 +1306,68 @@ mod q1_comments {
             &direct_by,
         )
         .unwrap();
+        let identity = mizar_artifact::verified_artifact::project_frontend_identity(
+            &f.outputs[0],
+            artifact,
+            publication.artifact_hash,
+        )
+        .unwrap();
+        let identities = authenticate_doc_identities(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &[],
+            &[&identity],
+        )
+        .unwrap();
+        let output = &request.publications[0].output_dir;
+        let source_views = mizar_doc::render::DocSourceViews::allocate(
+            &inputs,
+            &identities,
+            &sources,
+            output,
+            "used-by-spec",
+            mizar_doc::allocations::DocAllocationTable {
+                output_root: output.join("v1.2.3"),
+                coverage: DocImportCoverage::Complete,
+                pages: vec![],
+                sections: None,
+            },
+        )
+        .unwrap();
+        let item_page = source_views
+            .destinations()
+            .dedicated_item(
+                &artifact.module,
+                publication.artifact_hash,
+                &artifact.exports[0],
+            )
+            .unwrap()
+            .0;
+        assert_eq!(
+            source_views
+                .item_source_slot(
+                    &artifact.module,
+                    publication.artifact_hash,
+                    &artifact.exports[0],
+                    item_page,
+                )
+                .unwrap(),
+            "<p class=\"mizar-source\">Source: <a href=\"../../sources/src/module0.miz.html#L2\">line 2</a>; <a href=\"../../sources/src/module0.miz.html#L2\">line 2</a></p>\n"
+        );
+        for _ in 0..2 {
+            assert_eq!(
+                source_views
+                    .item_source_template_fragment(
+                        &artifact.module,
+                        publication.artifact_hash,
+                        &artifact.exports[0],
+                        item_page,
+                    )
+                    .unwrap(),
+                "<section class=\"mizar-source\"><h2>Source</h2><p class=\"mizar-source\">Source: <a href=\"../../sources/src/module0.miz.html#L2\">line 2</a>; <a href=\"../../sources/src/module0.miz.html#L2\">line 2</a></p>\n</section>\n"
+            );
+        }
         let attachments =
             mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
         let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);

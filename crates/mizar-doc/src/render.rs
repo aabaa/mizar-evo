@@ -315,6 +315,21 @@ impl<'a> DocSourceViews<'a> {
         )
     }
 
+    /// Expands the isolated Source section from a freshly authenticated item slot.
+    /// Preserves the owner's fragment bytes and all binding/range refusals.
+    pub fn item_source_template_fragment(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        export: &VerifiedExport,
+        containing_page: &str,
+    ) -> Result<String, DocBuildError> {
+        let fragment = self.item_source_slot(module, publication, export, containing_page)?;
+        Ok(format!(
+            "<section class=\"mizar-source\"><h2>Source</h2>{fragment}</section>\n"
+        ))
+    }
+
     /// Projects ordered loaded segments through the retained G3 maps without coalescing.
     /// Exact ranges and their provenance remain with the caller.
     pub fn loaded_source_slot(

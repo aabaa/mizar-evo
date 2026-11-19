@@ -11149,6 +11149,142 @@ mod doc10_authenticated {
             }
 
             #[test]
+            fn doc13_source_template_preserves_authenticated_bytes_and_refusals() {
+                for (original, eof, expected) in [
+                    (
+                        "::: source\n",
+                        false,
+                        "<p class=\"mizar-source\">Source: <a href=\"../../sources/src/one.miz.html#L1\">line 1</a></p>\n",
+                    ),
+                    (
+                        "\u{feff}::: α\r\n::: β\r\n",
+                        false,
+                        "<p class=\"mizar-source\">Source: <a href=\"../../sources/src/one.miz.html#L1\">line 1</a>; <a href=\"../../sources/src/one.miz.html#L1\">line 1</a>; <a href=\"../../sources/src/one.miz.html#L2\">line 2</a>; <a href=\"../../sources/src/one.miz.html#L2\">line 2</a></p>\n",
+                    ),
+                    (
+                        "::: α\r\n",
+                        true,
+                        "<p class=\"mizar-source\">Source: <a href=\"../../sources/src/one.miz.html#L2\">line 2</a></p>\n",
+                    ),
+                    (
+                        "",
+                        true,
+                        "<p class=\"mizar-source\">Source: <a href=\"../../sources/src/one.miz.html#L1\">line 1</a></p>\n",
+                    ),
+                ] {
+                    let mut app = fixture([original, ""]);
+                    if eof {
+                        let end = app.artifacts[0].exports[0].source_range.end_byte;
+                        app.artifacts[0].exports[0].source_range.start_byte = end;
+                        app.summaries[0].exported_labels[0].source_range =
+                            app.artifacts[0].exports[0].source_range;
+                        app.summaries[0].refresh_interface_hash().unwrap();
+                    }
+                    let (imports, identities, sources) = authenticated(&mut app);
+                    let before = (imports.clone(), identities.clone(), sources.clone());
+                    let views = DocSourceViews::allocate(
+                        &imports,
+                        &identities,
+                        &sources,
+                        &app.root.join("site"),
+                        SPEC,
+                        destinations::auxiliary(&app),
+                    )
+                    .unwrap();
+                    let artifact = &app.artifacts[0];
+                    let export = &artifact.exports[0];
+                    let page = views
+                        .destinations()
+                        .dedicated_item(&artifact.module, app.hash, export)
+                        .unwrap()
+                        .0;
+                    assert_eq!(
+                        views
+                            .item_source_slot(&artifact.module, app.hash, export, page)
+                            .unwrap(),
+                        expected
+                    );
+                    for _ in 0..2 {
+                        assert_eq!(
+                            views
+                                .item_source_template_fragment(
+                                    &artifact.module,
+                                    app.hash,
+                                    export,
+                                    page,
+                                )
+                                .unwrap(),
+                            format!(
+                                "<section class=\"mizar-source\"><h2>Source</h2>{expected}</section>\n"
+                            )
+                        );
+                    }
+                    for mutation in 0..6 {
+                        let mut module = artifact.module.clone();
+                        let mut publication = app.hash;
+                        let mut forged = export.clone();
+                        let mut containing_page = page;
+                        match mutation {
+                            0 => module.package_version = None,
+                            1 => publication = mizar_session::hash_text("foreign publication"),
+                            2 => forged.fully_qualified_name.push_str(".foreign"),
+                            3 => forged.source_range.end_byte += 1,
+                            4 => containing_page = "../foreign.html",
+                            _ => containing_page = "unallocated.html",
+                        }
+                        let producer = views
+                            .item_source_slot(&module, publication, &forged, containing_page)
+                            .unwrap_err();
+                        let template = views
+                            .item_source_template_fragment(
+                                &module,
+                                publication,
+                                &forged,
+                                containing_page,
+                            )
+                            .unwrap_err();
+                        assert_eq!(template.to_string(), producer.to_string());
+                    }
+                    assert_eq!((imports, identities, sources), before);
+                }
+                for (start, end) in [(0, 100), (5, 5)] {
+                    let mut app = fixture(["::: α", ""]);
+                    app.artifacts[0].exports[0].source_range.start_byte = start;
+                    app.artifacts[0].exports[0].source_range.end_byte = end;
+                    app.summaries[0].exported_labels[0].source_range =
+                        app.artifacts[0].exports[0].source_range;
+                    app.summaries[0].refresh_interface_hash().unwrap();
+                    let (imports, identities, sources) = authenticated(&mut app);
+                    let views = DocSourceViews::allocate(
+                        &imports,
+                        &identities,
+                        &sources,
+                        &app.root.join("site"),
+                        SPEC,
+                        destinations::auxiliary(&app),
+                    )
+                    .unwrap();
+                    let artifact = &app.artifacts[0];
+                    let export = &artifact.exports[0];
+                    let page = views
+                        .destinations()
+                        .dedicated_item(&artifact.module, app.hash, export)
+                        .unwrap()
+                        .0;
+                    let producer = views
+                        .item_source_slot(&artifact.module, app.hash, export, page)
+                        .unwrap_err();
+                    assert_eq!(
+                        views
+                            .item_source_template_fragment(&artifact.module, app.hash, export, page)
+                            .unwrap_err()
+                            .to_string(),
+                        producer.to_string()
+                    );
+                }
+            }
+
+            #[test]
             fn doc13_source_views_retain_exact_authenticated_binding() {
                 let original = "\u{feff}::: café\r\ntheorem T: thesis;\r\n";
                 let mut app = fixture([original, "::: other"]);
@@ -11463,6 +11599,17 @@ mod doc10_authenticated {
                         .unwrap(),
                     "<p class=\"mizar-source\">Source: <a href=\"../../../sources/src/nested/leaf.miz.html#L1\">line 1</a></p>\n"
                 );
+                assert_eq!(
+                    views
+                        .item_source_template_fragment(
+                            &artifact.module,
+                            app.hash,
+                            &artifact.exports[0],
+                            page,
+                        )
+                        .unwrap(),
+                    "<section class=\"mizar-source\"><h2>Source</h2><p class=\"mizar-source\">Source: <a href=\"../../../sources/src/nested/leaf.miz.html#L1\">line 1</a></p>\n</section>\n"
+                );
             }
 
             #[test]
@@ -11491,6 +11638,7 @@ mod doc10_authenticated {
                 );
                 app.without_comment_projection = true;
                 let (imports, identities, sources) = authenticated(&mut app);
+                let before = (imports.clone(), identities.clone(), sources.clone());
                 let views = DocSourceViews::allocate(
                     &imports,
                     &identities,
@@ -11518,6 +11666,18 @@ mod doc10_authenticated {
                         .unwrap(),
                     "<p class=\"mizar-source-unavailable\">Source unavailable</p>\n"
                 );
+                assert_eq!(
+                    views
+                        .item_source_template_fragment(
+                            &legacy.module,
+                            app.hash,
+                            &legacy.exports[0],
+                            page,
+                        )
+                        .unwrap(),
+                    "<section class=\"mizar-source\"><h2>Source</h2><p class=\"mizar-source-unavailable\">Source unavailable</p>\n</section>\n"
+                );
+                assert_eq!((imports, identities, sources), before);
             }
         }
 
