@@ -16,10 +16,11 @@ R2 implementation is dependency-blocked.
 
 ## Scope
 
-- Specify how genuine Resolver/Checker declarations and a typed call map to
-  exactly one matching Core algorithm, body, contracts, CFG and source/version
-  identity. Define presence/completeness, ordered inputs, and fail-closed
-  negative tests without inventing a runtime payload.
+- Freeze two separate authenticated relations: (a) algorithm definition,
+  checked body, contracts, CFG and accepted evidence, consumed by R3
+  **without a concrete call**; (b) typed resolved call/ordered actuals,
+  joined with that exported definition at R4. Define negative controls
+  and currentness without inventing a runtime payload.
 - Distinguish the *ordinary term* argument path from the reflected `expr`
   path by the existing contextual grammar. Propose any narrowing of the
   current AST-TYPE/AST-LOWER dependency for owner/human review, not as an
@@ -27,8 +28,8 @@ R2 implementation is dependency-blocked.
 - Define proof-evidence prerequisites: E1 typing, single-valuedness and
   inhabitation; E2 actual partial-correctness acceptance; E4 additionally
   for `terminating` promotion; and E5 as future actual MVM execution only.
-- Specify the R3 Artifact/loader consumer boundary without specifying a
-  serialized schema, VM bytecode, new crate or proof acceptance API.
+- Specify R3's reusable definition-side Artifact export and R4's
+  call-specific join, without fixing a serializer, bytecode, crate or API.
 
 ## Constraints and exit
 
@@ -39,7 +40,8 @@ synthesized evidence, source reparsing, or Artifact/mock execution. The
 existing `idalgo` VC is Open and is not a verified executable.
 Review the Q1 ordinary/reflection dependency and Q2 evidence completeness
 explicitly; keep R3 representation/loader choice and integration separate.
-Deliver an EN/JA owner design, rejection matrix and owner/readiness handoff.
+Deliver the EN/JA definition-versus-call owner design, rejection matrix
+and handoff.
 Independent specification, boundary, test-sufficiency, volume and EN/JA
 reviews plus documentation link/lint checks are required to close this task.
 No implementation, MVM readiness, or coverage credit follows from design.
