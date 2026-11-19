@@ -456,17 +456,14 @@ pub fn source_algorithm_call_candidates<'a>(
         }
         Ok::<_, String>(nodes)
     };
-    let identifiers = |root| {
+    let binding_names = |root| {
+        let node = ast.node_view(root).ok_or_else(invalid)?;
         Ok::<_, String>(
-            subtree(root)?
-                .into_iter()
-                .filter_map(|node| node.as_token())
+            node.children()
+                .iter()
+                .filter_map(|id| ast.node_view(*id).and_then(SurfaceNodeView::as_token))
                 .filter_map(|token| {
-                    matches!(
-                        token.kind,
-                        SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
-                    )
-                    .then_some(token.text.as_ref())
+                    (token.kind == SurfaceTokenKind::Identifier).then_some(token.text.as_ref())
                 })
                 .collect::<BTreeSet<_>>(),
         )
@@ -474,9 +471,9 @@ pub fn source_algorithm_call_candidates<'a>(
     let mut reserved = BTreeSet::new();
     for node in ast
         .node_views()
-        .filter(|node| matches!(node.kind(), SurfaceNodeKind::ReserveItem))
+        .filter(|node| matches!(node.kind(), SurfaceNodeKind::ReserveSegment))
     {
-        reserved.extend(identifiers(node.id())?);
+        reserved.extend(binding_names(node.id())?);
     }
     let mut declarations = Vec::new();
     for entry in symbols.symbols().iter() {
@@ -534,7 +531,7 @@ pub fn source_algorithm_call_candidates<'a>(
         let mut excluded = reserved.clone();
         for node in subtree(owner.declaration)? {
             if matches!(node.kind(), SurfaceNodeKind::AlgorithmParameters) {
-                excluded.extend(identifiers(node.id())?);
+                excluded.extend(binding_names(node.id())?);
             }
         }
         let mut supported = true;
@@ -557,7 +554,13 @@ pub fn source_algorithm_call_candidates<'a>(
         while let Some(id) = pending.pop() {
             let node = ast.node_view(id).ok_or_else(invalid)?;
             match node.kind() {
-                SurfaceNodeKind::DefinitionParameter => excluded.extend(identifiers(id)?),
+                SurfaceNodeKind::DefinitionParameter => {
+                    for child in node.child_views().filter(|child| {
+                        matches!(child.kind(), SurfaceNodeKind::QualifiedVariableSegment)
+                    }) {
+                        excluded.extend(binding_names(child.id())?);
+                    }
+                }
                 SurfaceNodeKind::VisibleItem => pending.extend(node.children()),
                 SurfaceNodeKind::Token(_)
                 | SurfaceNodeKind::AlgorithmDefinition
@@ -572,12 +575,34 @@ pub fn source_algorithm_call_candidates<'a>(
                 _ => supported = false,
             }
         }
+        let mut locals = Vec::new();
         for node in subtree(owner.body)? {
+            if matches!(node.kind(), SurfaceNodeKind::AlgorithmStatementList) {
+                let mut names = BTreeSet::new();
+                for declaration in node
+                    .child_views()
+                    .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableDeclaration))
+                {
+                    for binding in declaration
+                        .child_views()
+                        .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
+                    {
+                        names.extend(binding_names(binding.id())?);
+                    }
+                }
+                if !names.is_empty() {
+                    // Deliberately include earlier uses and initializers: this is
+                    // a conservative candidate exclusion, not binding resolution.
+                    locals.push((node.range(), names));
+                }
+            }
             supported &= matches!(
                 node.kind(),
                 SurfaceNodeKind::Token(_)
                     | SurfaceNodeKind::AlgorithmBody
                     | SurfaceNodeKind::AlgorithmStatementList
+                    | SurfaceNodeKind::VariableDeclaration
+                    | SurfaceNodeKind::VariableBinding
                     | SurfaceNodeKind::ReturnStatement
                     | SurfaceNodeKind::IfStatement
                     | SurfaceNodeKind::WhileStatement
@@ -631,18 +656,20 @@ pub fn source_algorithm_call_candidates<'a>(
             if tokens.next().is_some() {
                 continue;
             }
+            let call_range = ast.node_view(call.application).ok_or_else(invalid)?.range();
             if !matches!(
                 token.kind,
                 SurfaceTokenKind::Identifier | SurfaceTokenKind::UserSymbol
             ) || excluded.contains(token.text.as_ref())
+                || locals.iter().any(|(range, names)| {
+                    range.start <= call_range.start
+                        && call_range.end <= range.end
+                        && names.contains(token.text.as_ref())
+                })
             {
                 continue;
             }
-            let position = ast
-                .node_view(call.application)
-                .ok_or_else(invalid)?
-                .range()
-                .start;
+            let position = call_range.start;
             let matching = declarations
                 .iter()
                 .filter(|(range, entry, spelling)| {

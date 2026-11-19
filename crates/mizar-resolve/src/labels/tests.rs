@@ -11091,43 +11091,119 @@ fn algorithm_call_candidates_keep_completed_overloads_in_source_order() {
 
 #[test]
 fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
-    for (tail, shadowed) in [
+    let mut cases = vec![
         (
-            "definition let n be object; algorithm caller(n) -> object do return target(n); end; end;",
-            false,
+            "definition let n be object; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![true],
         ),
         (
-            "definition let n be object; algorithm caller(target) -> object do return target(n); end; end;",
-            true,
+            "definition let n be object; algorithm caller(target) -> object do return target(n); end; end;".to_owned(),
+            vec![false],
         ),
         (
-            "definition let target,n be object; algorithm caller(n) -> object do return target(n); end; end;",
-            true,
+            "definition let target,n be object; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![false],
         ),
         (
-            "reserve target for object; definition let n be object; algorithm caller(n) -> object do return target(n); end; end;",
-            true,
+            "reserve target for object; definition let n be object; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![false],
         ),
         (
-            "definition let n be object; algorithm caller(n) -> object do if target(n) = n do return n; end; var local := n; return target(n); end; end;",
-            true,
+            "definition let n be object; algorithm caller(n) -> object do if target(n) = n do return n; end; var local := n; return target(n); end; end;".to_owned(),
+            vec![true, true],
         ),
+        (
+            "definition let n be object; mode FamilyDef: Family of n is object; let local be Family[target(n)]; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![true],
+        ),
+        (
+            "definition let n be object such that target(n) = n; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![true],
+        ),
+        (
+            "definition let n be object; mode FamilyDef: Family of n is object; end; reserve local for Family[target(0)]; definition let n be object; algorithm caller(n) -> object do return target(n); end; end;".to_owned(),
+            vec![true],
+        ),
+        (
+            "definition let n be object; algorithm caller(n) -> object do return target(n); end; let target be object; end;".to_owned(),
+            vec![false],
+        ),
+        (
+            "definition let n be object; algorithm caller(n) -> object do return target(n); end; end; reserve target for object;".to_owned(),
+            vec![false],
+        ),
+    ];
+    for prefix in ["var", "const", "ghost var", "ghost const"] {
+        if matches!(prefix, "var" | "ghost var") {
+            for (name, supported) in [("local", true), ("target", false)] {
+                cases.push((
+                    format!("definition let n be object; algorithm caller(n) -> object do {prefix} {name}; return target(n); end; end;"),
+                    vec![supported],
+                ));
+            }
+        }
+        for (body, expected) in [
+            (
+                format!(
+                    "return target(n); {prefix} local := target(n), target := target(n); if target(n) = n do return target(n); end; return target(n);"
+                ),
+                vec![false; 6],
+            ),
+            (
+                format!(
+                    "{prefix} target := n, local := target(n); while target(n) = n do return target(n); end;"
+                ),
+                vec![false; 3],
+            ),
+            (
+                format!(
+                    "{prefix} local := target(n), another := n as Family[target(n)]; if target(n) = n do return target(n); end; return target(n);"
+                ),
+                vec![true; 5],
+            ),
+        ] {
+            cases.push((
+                format!("definition let n be object; mode FamilyDef: Family of n is object; algorithm caller(n) -> object do {body} end; end;"),
+                expected,
+            ));
+        }
+    }
+    cases.push((
+        "definition let n be object; algorithm caller(n) -> object do return target(n); if target(n) = n do return target(n); var target := target(n); while target(n) = n do return target(n); end; else return target(n); while target(n) = n do const target := target(n); return target(n); end; return target(n); end; return target(n); end; end;".to_owned(),
+        vec![true, true, false, false, false, false, true, true, false, false, true, true],
+    ));
+    for (unsupported, calls) in [
+        ("for local = n to n do return target(n); end;", 3),
+        (
+            "if for local being object holds target(local) = local do return target(n); end;",
+            4,
+        ),
+        ("var local := n; local := target(n);", 3),
+        ("ghost var local := n; ghost local := target(n);", 3),
+        ("var local := target(n) as object by Trusted;", 3),
+        ("assert n = n proof thus thesis; end;", 2),
     ] {
+        cases.push((
+            format!("definition let n be object; algorithm caller(n) -> object do return target(n); {unsupported} return target(n); end; end;"),
+            vec![false; calls],
+        ));
+    }
+    for (tail, expected) in cases {
         let text = format!(
             "definition let n be object; algorithm target(n) -> object do return n; end; end; {tail}"
         );
         let (_, _, _, env, arena) = parsed_private_theorem_fixture(&text);
         let (rows, candidates) =
             crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
-        assert_eq!(rows.len(), 2);
-        assert!(!rows[1].calls().is_empty());
-        assert_eq!(candidates.len(), rows[1].calls().len());
-        if shadowed {
-            assert!(candidates.values().all(Vec::is_empty), "{tail}");
-        } else {
-            let entries = &candidates[&rows[1].calls()[0].application()];
-            assert_eq!(entries.len(), 1);
-            assert!(std::ptr::eq(entries[0], rows[0].owner()));
+        assert_eq!(rows.len(), 2, "{tail}");
+        assert_eq!(rows[1].calls().len(), expected.len(), "{tail}");
+        assert_eq!(candidates.len(), expected.len(), "{tail}");
+        for (call, supported) in rows[1].calls().iter().zip(expected) {
+            let entries = &candidates[&call.application()];
+            assert_eq!(entries.len(), usize::from(supported), "{tail}");
+            if supported {
+                assert!(std::ptr::eq(entries[0], rows[0].owner()), "{tail}");
+            }
         }
     }
     let text = "definition let n be object; func Target: target(n) -> object equals ignored(n); synonym alias(n) for ignored(n); algorithm caller(n) -> object do return Ns.target([n,n],unknown(n),target(n)); end; end;";
