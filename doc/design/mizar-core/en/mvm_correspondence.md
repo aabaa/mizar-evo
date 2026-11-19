@@ -25,10 +25,10 @@ Reflected, non-ground, template and cross-package calls stay out of the pilot.
 
 | Owner | Exact association | Consumer |
 |---|---|---|
-| Resolver / Checker | Original source/module/snapshot; resolved algorithm ID, visibility, formal types, ordered typed concrete actuals and source call | Core |
-| Core | Same algorithm ID/item, immutable CoreIr body, ordered statements, contracts, CFG/exits, source mapping and dependency identities | VC; future R3 |
-| VC / Kernel / Proof | Applicable generated obligations and exact accepted results, original goal/context/polarity, dependencies and policy | R3 eligibility, never Core proof authority |
-| Artifact / Build (R3) | Validated executable content and loader bound to the accepted body/signature/contracts/dependencies | MVM (R4) |
+| Resolver / Checker (definition) | Original declaration identity, source/module/snapshot, visibility and signature | Core and definition-side R3 |
+| Core + VC / Kernel / Proof (definition) | Same immutable body, contracts, CFG/exits and actual accepted obligations under complete policy and provenance | R3 reusable algorithm export; Core never mints Proof status |
+| Resolver / Checker (invocation) | Independently resolved, typed concrete call and ordered actuals with original source/context and target identity | R4, **not a prerequisite for R3 export** |
+| Artifact / Build (R3) | Validated executable bound to the verified definition, signature, contracts and dependencies | R4 joins loader handle with typed invocation |
 
 Every join is fail-closed on missing, duplicate, reordered, stale,
 recovered or mismatched owner/input. A source hash, name, Core node or
@@ -62,9 +62,11 @@ module/snapshot, missing/deferred VC, forged evidence, wrong goal/context/
 polarity, skipped E4 and ghost leakage. Preserve the existing test/sidecar.
 
 **R2 implementation remains blocked:** Core owner first reviews Q1 and
-identifies a genuine typed call and complete accepted E1/E2/E4 producers;
-existing Core 42–53 and VC53 dependencies remain. R3 then freezes
-executable serialization, verified-body linkage and loader/visibility.
+locates genuine checked definition/accepted E1/E2 and applicable E4
+producers; R3 can export a verified body **without a prior ground call**.
+A separately authenticated typed invocation is required for R4.
+Existing Core 42–53 and VC53 dependencies remain. R3 then freezes
+serialization, correspondence and loader/visibility.
 Code-extraction RuntimeIr has separate ownership and is not an implicit
 MVM format. Open R3 choices: executable encoding and same-package
 build/publication order. No new crate, runtime API, cache key or Kernel rule.
