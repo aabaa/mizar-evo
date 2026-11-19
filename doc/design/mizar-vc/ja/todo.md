@@ -635,7 +635,7 @@ task の `external_dependency_gap` / `deferred` verification item として分�
 
 - [ ] [AST-CONTRACT](../../task_contracts/ja/AST-CONTRACT.md).
 
-- [ ] [MVM-READINESS-MAP](../../task_contracts/ja/MVM-READINESS-MAP.md) — 最小実行ケースと依存関係の文書調査のみ。MVM 実行は引き続きブロック中。
+- [~] [MVM-READINESS-MAP](../../task_contracts/ja/MVM-READINESS-MAP.md) — [実ソースに基づく調査](./mvm_readiness.md)の草案作成済み。独立レビューと文書 lint は未実施。MVM 実行は引き続きブロック中。
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/ja/ALG-MVM-EVALUATION.md).
 
 ## Premise ranking integration
