@@ -2,7 +2,9 @@
 
 use std::{collections::BTreeMap, fmt::Write, ops::Range, path::Path};
 
-use mizar_artifact::{module_summary::ModuleSummaryIdentity, verified_artifact::VerifiedExport};
+use mizar_artifact::{
+    module_summary::ModuleSummaryIdentity, store::CanonicalJson, verified_artifact::VerifiedExport,
+};
 
 use mizar_diagnostics::{
     failure_record::{
@@ -61,7 +63,24 @@ pub fn summary_text(
             .enumerate()
             .any(|(ordinal, (raw, original))| {
                 raw.range != original.range
-                    || (!parsed.blocks[ordinal].fallback && raw.lines != original.lines)
+                    || if parsed.blocks[ordinal].fallback {
+                        // Failed maps may differ, but raw recovery must retain publication text.
+                        raw.lines.len() != original.lines.len()
+                            || raw
+                                .lines
+                                .iter()
+                                .zip(&original.lines)
+                                .any(|(raw, original)| match (raw, original) {
+                                    (CanonicalJson::Array(raw), CanonicalJson::Array(original)) => {
+                                        raw.len() != original.len()
+                                            || raw.first() != original.first()
+                                            || raw.get(2..) != original.get(2..)
+                                    }
+                                    _ => true,
+                                })
+                    } else {
+                        raw.lines != original.lines
+                    }
                     || match (raw.target, original.target) {
                         (Some(left), Some(right)) => !same_target(left, right),
                         (None, None) => false,

@@ -212,9 +212,10 @@ fn doc13_summary_flattens_exact_plain_text_without_normalizing_or_truncating() {
 
 #[test]
 fn doc13_summary_module_search_preserve_published_export_order_and_identities() {
-    use mizar_artifact::verified_artifact::ExportVisibility;
+    use mizar_artifact::{store::CanonicalJson as J, verified_artifact::ExportVisibility};
     use mizar_doc::{
         comments::{CommentTarget, attach_comments},
+        doc_build::DocBuildError,
         markdown::parse_comments,
         render::{module_summary_fragments, search_summaries, summary_text},
     };
@@ -296,6 +297,27 @@ fn doc13_summary_module_search_preserve_published_export_order_and_identities() 
     assert_eq!(search[0].1.as_deref(), Some(""));
     assert_eq!(module[0].1, "<p class=\"mizar-summary\"></p>\n");
     assert!(search[1..].iter().all(|(_, text)| text.is_none()));
+    let mut attachments = attach_comments(&plan, doc7_attach(&plan).module, Some(&source)).unwrap();
+    let J::Array(fields) = &mut faulty_row else {
+        panic!("documentation row")
+    };
+    fields[2] = J::string("::: forged\n");
+    attachments.blocks[1].lines[0] = &faulty_row;
+    let parsed = parse_comments(&attachments, &[]);
+    assert!(parsed.blocks[1].fallback);
+    assert_eq!(doc8_codes(&parsed.warnings), ["W0411"]);
+    assert!(matches!(
+        summary_text(&parsed, CommentTarget::Item(&attachments.input.exports[0])),
+        Err(DocBuildError::Binding(_))
+    ));
+    assert!(matches!(
+        search_summaries(&parsed),
+        Err(DocBuildError::Binding(_))
+    ));
+    assert!(matches!(
+        module_summary_fragments(&parsed),
+        Err(DocBuildError::Binding(_))
+    ));
     std::fs::remove_dir_all(root).unwrap();
 }
 

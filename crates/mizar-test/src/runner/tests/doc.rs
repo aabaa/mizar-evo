@@ -8674,8 +8674,11 @@ mod doc10_authenticated {
 
                     #[test]
                     fn doc13_flow_preserves_complete_content_order_and_raw_recovery() {
+                        use mizar_artifact::store::CanonicalJson as J;
+                        use mizar_doc::render::summary_text;
+
                         fixture(
-                            "::: # Heading\n:::\n::: > quoted **bold** and *emphasis*\n:::\n::: - first\n::: - second\n:::\n::: @requires required\n:::\n::: @ensures ensured\n:::\n::: @since v1\n:::\n::: @deprecated v2 old\n:::\n::: @unknown opaque\n:::\n::: @param, malformed\n:::\n::: @requires required\n\n::: <script>failed & raw</script>\n\n::: Last neighbor\n",
+                            "::: # Heading\n:::\n::: > quoted **bold** and *emphasis*\n:::\n::: - first\n::: - second\n:::\n::: @requires required\n:::\n::: @ensures ensured\n:::\n::: @since v1\n:::\n::: @deprecated v2 old\n:::\n::: @unknown opaque\n:::\n::: @param, malformed\n:::\n::: @requires required\n\n::: <script>failed & raw</script>\n::: Second raw line\n\n::: Last neighbor\n",
                             |_, plans, imports, allocations| {
                                 let attached = doc7_attach(&plans[0]);
                                 let parsed = parse_comments(&attached, &[]);
@@ -8725,6 +8728,8 @@ mod doc10_authenticated {
                                 attached.blocks[1].lines[0] = &faulty;
                                 let parsed = parse_comments(&attached, &[]);
                                 assert!(parsed.blocks[1].fallback);
+                                assert!(doc8_codes(&parsed.warnings).contains(&"W0411".into()));
+                                let recovery_warnings = parsed.warnings.clone();
                                 let before = format!("{parsed:?}");
                                 let (result, links) =
                                     flow(&parsed, imports, allocations, &[vec![], vec![], vec![]])
@@ -8739,8 +8744,59 @@ mod doc10_authenticated {
                                         < html.find("Last neighbor").unwrap()
                                 );
                                 assert!(!html.contains("<script>"));
+                                assert!(html.contains("Second raw line"));
                                 unchanged_links(&parsed, imports, allocations, &links);
                                 assert_eq!(format!("{parsed:?}"), before);
+                                let rows = attached.blocks[1]
+                                    .lines
+                                    .iter()
+                                    .map(|row| (*row).clone())
+                                    .collect::<Vec<_>>();
+                                for mutation in 0..5 {
+                                    let mut rows = rows.clone();
+                                    match mutation {
+                                        0..=2 => {
+                                            let row = usize::from(mutation == 1);
+                                            let J::Array(fields) = &mut rows[row] else {
+                                                panic!("row")
+                                            };
+                                            fields[if mutation == 2 { 0 } else { 2 }] =
+                                                J::string(if mutation == 2 {
+                                                    "single_line"
+                                                } else {
+                                                    "::: forged\n"
+                                                });
+                                        }
+                                        3 => {
+                                            rows.pop();
+                                        }
+                                        _ => rows.swap(0, 1),
+                                    }
+                                    let mut attached = doc7_attach(&plans[0]);
+                                    attached.blocks[1].lines = rows.iter().collect();
+                                    let parsed = parse_comments(&attached, &[]);
+                                    assert!(parsed.blocks[1].fallback, "mutation {mutation}");
+                                    assert_eq!(parsed.warnings, recovery_warnings);
+                                    assert!(
+                                        matches!(
+                                            summary_text(&parsed, CommentTarget::Module),
+                                            Err(DocBuildError::Binding(_))
+                                        ),
+                                        "mutation {mutation}"
+                                    );
+                                    assert!(
+                                        matches!(
+                                            flow(
+                                                &parsed,
+                                                imports,
+                                                allocations,
+                                                &[vec![], vec![], vec![]]
+                                            ),
+                                            Err(DocBuildError::Binding(_))
+                                        ),
+                                        "mutation {mutation}"
+                                    );
+                                }
                             },
                         );
                     }
