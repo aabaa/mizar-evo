@@ -677,6 +677,7 @@ Check the task off here once tests pass.
 - [~] [MVM-R4-EXECUTOR-DESIGN](../../task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) — [authenticated direct-return design](./mvm_executor.md) drafted; independent review/documentation lint pending, implementation remains blocked.
 - [~] [MVM-R5-EXTENDED-EXECUTION-DESIGN](../../task_contracts/en/MVM-R5-EXTENDED-EXECUTION-DESIGN.md) — [R5-A–F design decomposition](./mvm_extended_execution.md) drafted; independent review/documentation lint pending. R5 implementation remains blocked by R4 and feature-specific producers.
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md).
+- [~] [MVM-R6-ADMISSION-DESIGN](../../task_contracts/en/MVM-R6-ADMISSION-DESIGN.md) — [full local/imported computation-closure design](./mvm_computation_admission.md) drafted; independent review/documentation lint pending. VC generation and Proof admission remain dependency-blocked.
 
 ## Premise ranking integration
 
