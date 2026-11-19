@@ -578,22 +578,32 @@ pub fn source_algorithm_call_candidates<'a>(
         let mut locals = Vec::new();
         for node in subtree(owner.body)? {
             if matches!(node.kind(), SurfaceNodeKind::AlgorithmStatementList) {
-                let mut names = BTreeSet::new();
                 for declaration in node
                     .child_views()
                     .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableDeclaration))
                 {
+                    let precise = declaration
+                        .child_views()
+                        .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
+                        .count()
+                        == 1
+                        && !declaration
+                            .child_views()
+                            .any(|child| matches!(child.kind(), SurfaceNodeKind::TypeExpression));
                     for binding in declaration
                         .child_views()
                         .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
                     {
-                        names.extend(binding_names(binding.id())?);
+                        let mut range = node.range();
+                        // Multi-binding/annotation visibility stays conservative
+                        // within the declaration until its semantics are owned.
+                        range.start = if precise {
+                            binding.range().end
+                        } else {
+                            declaration.range().start
+                        };
+                        locals.push((range, binding_names(binding.id())?));
                     }
-                }
-                if !names.is_empty() {
-                    // Deliberately include earlier uses and initializers: this is
-                    // a conservative candidate exclusion, not binding resolution.
-                    locals.push((node.range(), names));
                 }
             }
             supported &= matches!(

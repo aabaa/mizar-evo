@@ -11137,17 +11137,23 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
         if matches!(prefix, "var" | "ghost var") {
             for (name, supported) in [("local", true), ("target", false)] {
                 cases.push((
-                    format!("definition let n be object; algorithm caller(n) -> object do {prefix} {name}; return target(n); end; end;"),
-                    vec![supported],
+                    format!("definition let n be object; algorithm caller(n) -> object do return target(n); {prefix} {name}; return target(n); end; end;"),
+                    vec![true, supported],
                 ));
             }
         }
         for (body, expected) in [
             (
                 format!(
+                    "return target(n); {prefix} target := target(n); if target(n) = n do return target(n); end; return target(n);"
+                ),
+                vec![true, true, false, false, false],
+            ),
+            (
+                format!(
                     "return target(n); {prefix} local := target(n), target := target(n); if target(n) = n do return target(n); end; return target(n);"
                 ),
-                vec![false; 6],
+                vec![true, false, false, false, false, false],
             ),
             (
                 format!(
@@ -11161,6 +11167,26 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
                 ),
                 vec![true; 5],
             ),
+            (
+                format!(
+                    "return target(n); {prefix} target := target(n) as Family[target(n)]; return target(n);"
+                ),
+                vec![true, false, false, false],
+            ),
+            (
+                format!(
+                    "{prefix} target := target(n); if target(n) = n do {prefix} target := target(n); return target(n); end; return target(n);"
+                ),
+                vec![true, false, false, false, false],
+            ),
+            (
+                format!(
+                    "return target(n); if target(n) = n do return target(n); {prefix} target := target(n); while target(n) = n do return target(n); end; else return target(n); while target(n) = n do {prefix} target := target(n); return target(n); end; return target(n); end; return target(n);"
+                ),
+                vec![
+                    true, true, true, true, false, false, true, true, true, false, true, true,
+                ],
+            ),
         ] {
             cases.push((
                 format!("definition let n be object; mode FamilyDef: Family of n is object; algorithm caller(n) -> object do {body} end; end;"),
@@ -11168,10 +11194,6 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
             ));
         }
     }
-    cases.push((
-        "definition let n be object; algorithm caller(n) -> object do return target(n); if target(n) = n do return target(n); var target := target(n); while target(n) = n do return target(n); end; else return target(n); while target(n) = n do const target := target(n); return target(n); end; return target(n); end; return target(n); end; end;".to_owned(),
-        vec![true, true, false, false, false, false, true, true, false, false, true, true],
-    ));
     for (unsupported, calls) in [
         ("for local = n to n do return target(n); end;", 3),
         (
@@ -11192,13 +11214,36 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
         let text = format!(
             "definition let n be object; algorithm target(n) -> object do return n; end; end; {tail}"
         );
-        let (_, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
         let (rows, candidates) =
             crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
         assert_eq!(rows.len(), 2, "{tail}");
         assert_eq!(rows[1].calls().len(), expected.len(), "{tail}");
         assert_eq!(candidates.len(), expected.len(), "{tail}");
-        for (call, supported) in rows[1].calls().iter().zip(expected) {
+        let caller_start = text.find("algorithm caller(").unwrap();
+        assert_eq!(
+            text[caller_start..].match_indices("target(").count(),
+            expected.len(),
+            "{tail}"
+        );
+        for ((call, supported), (offset, _)) in rows[1]
+            .calls()
+            .iter()
+            .zip(expected)
+            .zip(text[caller_start..].match_indices("target("))
+        {
+            let start = caller_start + offset;
+            let application = &text[start..start + text[start..].find(')').unwrap() + 1];
+            assert_eq!(
+                call.application(),
+                algorithm_inventory_node_at(
+                    &ast,
+                    start,
+                    application,
+                    SurfaceNodeKind::ApplicationTerm
+                ),
+                "{tail}"
+            );
             let entries = &candidates[&call.application()];
             assert_eq!(entries.len(), usize::from(supported), "{tail}");
             if supported {
