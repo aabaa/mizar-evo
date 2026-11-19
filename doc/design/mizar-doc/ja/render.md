@@ -156,7 +156,7 @@ semantic reference は owner が明示束縛した Doc9 lookup context/classific
 | overview 不在を宣言する明示的な完全選択が認証済み | fragment は zero bytes とし、package template の既存 `mizar-overview` wrapper を保つ。placeholder・説明 text・node は追加しない。unavailable fallback ではない。 |
 | owner/選択/content/完全性/binding または必須 rendering evidence が unavailable | slot は未充足のまま。暗黙の空 content・架空 unavailable node・新 build refusal/diagnostic を作らない。module comment 欠落・空 module inventory・source file 欠落は既知不在の根拠ではない。 |
 
-矛盾/stale binding と lower-reader integrity/schema/currentness refusal は既存 error の意味を保ち、正常な unavailable/absent 表示にしない。Q12 descriptor・severity・location・precedence・warning promotion・complete-build 結果は割り当てない。package Modules expansion は独立したまま。完全 rendering/search/auxiliary interface 採用、残る owner slot/Q12、G4/G5 実行 witness、schema/publication、Doc23/24、completion credit は[順序付き前提条件](./render_prerequisites.md#順序付き-readiness-gate)の gate 内に残る。
+矛盾/stale binding と lower-reader integrity/schema/currentness refusal は既存 error の意味を保ち、正常な unavailable/absent 表示にしない。Q12 descriptor・severity・location・precedence・warning promotion・complete-build 結果は割り当てない。package Modules expansion は独立したまま。Doc13 全体の整合した rendering/search/auxiliary interface 採用、残る owner slot/Q12、G4/G5 実行 witness、schema/publication、Doc23/24、completion credit は[順序付き前提条件](./render_prerequisites.md#順序付き-readiness-gate)の gate 内に残る。
 
 ## Adopted Local Style And Search Assets
 status と results hook は別要素で相互に包含しないこと。重複する hook は load/query binding 前に search unavailable とする。
