@@ -24,7 +24,8 @@ use crate::{
     comments::{CommentTarget, attach_comments},
     doc_build::{
         AuthenticatedDocDirectBy, AuthenticatedDocIdentities, AuthenticatedDocImports,
-        AuthenticatedDocSources, DocBuildError, DocImportCoverage, validate_coordinate_range,
+        AuthenticatedDocSources, DocBuildError, DocBuildPlan, DocImportCoverage,
+        validate_coordinate_range,
     },
     links::{
         ClassifiedDocOccurrence, DocLinkOutcome, DocReferenceClassification, DocReferenceForm,
@@ -32,6 +33,38 @@ use crate::{
     },
     markdown::{MarkdownBlock, ParsedComments, occurrence, parse_comments, same_target},
 };
+
+/// Expands only the selected package's Modules section using matching G2 destinations.
+/// Includes zero-export modules in full identity order, without dependency-only modules.
+pub fn package_modules_template_fragment(
+    plan: &DocBuildPlan,
+    inputs: &AuthenticatedDocImports,
+    destinations: &DocDestinationAllocations,
+    specification_version: &str,
+    containing_page: &str,
+) -> Result<String, DocBuildError> {
+    let allocations = destinations.allocations();
+    if !inputs.matches_plan(plan)
+        || !allocations.matches_inputs(inputs, specification_version)
+        || !allocations.contains_page(containing_page)
+    {
+        return Err(DocBuildError::Binding("package Modules binding mismatch"));
+    }
+    let mut rows = String::new();
+    for module in plan.index.modules.keys() {
+        let path = allocations
+            .module_page(module, plan.manifest.artifact_hash)
+            .ok_or(DocBuildError::Binding(
+                "package Modules destination unavailable",
+            ))?;
+        let href = relative_source_href(containing_page, path, None);
+        let name = escape(&module.module_path, false);
+        writeln!(rows, "<li><a href=\"{href}\">{name}</a></li>").expect("string write succeeds");
+    }
+    Ok(format!(
+        "<section class=\"mizar-modules\"><h2>Modules</h2><ul>{rows}</ul></section>\n"
+    ))
+}
 
 /// Projects the first eligible successful paragraph for this exact attached target.
 /// Known absence is `None`; available comments without a paragraph are empty text.
@@ -1528,6 +1561,18 @@ pub fn validate_search_assets(assets: &[(&str, &[u8])]) -> Result<(), DocBuildEr
 #[cfg(test)]
 mod source_tests {
     use super::*;
+
+    #[test]
+    fn package_modules_lower_escaping_preserves_unreachable_authored_bytes() {
+        assert_eq!(
+            escape("é&<>\"'{MODULES}\r\n", false),
+            "é&amp;&lt;&gt;&quot;&#39;{MODULES}\r\n"
+        );
+        assert_eq!(
+            relative_source_href("nested/page.html", "~c3~a9~25~23/index.html", None),
+            "../~c3~a9~25~23/index.html"
+        );
+    }
 
     #[test]
     fn nested_source_hrefs_encode_original_components_once() {

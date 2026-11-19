@@ -10675,6 +10675,203 @@ mod doc10_authenticated {
             }
 
             #[test]
+            fn doc13_package_modules_exact_order_empty_exports_and_dependency_exclusion() {
+                use mizar_doc::render::package_modules_template_fragment;
+
+                let mut app = fixture([&["zed"], &["nested", "two"]]);
+                app.artifacts[1].exports.clear();
+                app.summaries[1].exported_labels.clear();
+                app.summaries[1].refresh_interface_hash().unwrap();
+                let mut dep = publication("modules-dependency", [&["dependency"], &["other"]]);
+                for artifact in &mut dep.artifacts {
+                    artifact.exports.clear();
+                }
+                let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+                let plan = plans
+                    .iter()
+                    .find(|plan| plan.request.package == app.manifest.package)
+                    .unwrap();
+                let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
+                let imported = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    plan,
+                    &inventory,
+                    &inputs(&app, &views[0])
+                        .into_iter()
+                        .chain(inputs(&dep, &views[1]))
+                        .collect::<Vec<_>>(),
+                )
+                .unwrap();
+                let products = products(&app)
+                    .into_iter()
+                    .chain(products(&dep))
+                    .collect::<Vec<_>>();
+                let identities = authenticate_doc_identities(
+                    &registry,
+                    &workspace,
+                    &imported,
+                    &inventory,
+                    &products.iter().rev().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                let mut table = auxiliary(&app);
+                table.pages.extend(["package.html", "guide/deep/é%&.html"].map(page));
+                let destinations = allocate(&app, &imported, &identities, table).unwrap();
+                let before = (plan.clone(), imported.clone(), destinations.clone());
+                for _ in 0..2 {
+                    for (containing_page, expected) in [
+                        (
+                            "package.html",
+                            "<section class=\"mizar-modules\"><h2>Modules</h2><ul><li><a href=\"nested/two.html\">nested.two</a></li>\n<li><a href=\"zed/index.html\">zed</a></li>\n</ul></section>\n",
+                        ),
+                        (
+                            "guide/deep/é%&.html",
+                            "<section class=\"mizar-modules\"><h2>Modules</h2><ul><li><a href=\"../../nested/two.html\">nested.two</a></li>\n<li><a href=\"../../zed/index.html\">zed</a></li>\n</ul></section>\n",
+                        ),
+                    ] {
+                        assert_eq!(
+                            package_modules_template_fragment(
+                                plan,
+                                &imported,
+                                &destinations,
+                                SPEC,
+                                containing_page,
+                            )
+                            .unwrap(),
+                            expected,
+                        );
+                    }
+                }
+                assert_eq!((plan, &imported, &destinations), (&before.0, &before.1, &before.2));
+
+                let root_only = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    plan,
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                assert!(package_modules_template_fragment(
+                    plan,
+                    &root_only,
+                    &destinations,
+                    SPEC,
+                    "package.html",
+                )
+                .is_err());
+            }
+
+            #[test]
+            fn doc13_package_modules_refuses_foreign_tampered_or_unready_bindings() {
+                use mizar_doc::render::package_modules_template_fragment;
+
+                let mut app = fixture([&["one"], &["nested", "two"]]);
+                let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                let plan = &plans[0];
+                let imported = authenticate_doc_imports(
+                    &registry,
+                    &workspace,
+                    plan,
+                    &[],
+                    &inputs(&app, &views[0]),
+                )
+                .unwrap();
+                let products = products(&app);
+                let identities = authenticate_doc_identities(
+                    &registry,
+                    &workspace,
+                    &imported,
+                    &[],
+                    &products.iter().collect::<Vec<_>>(),
+                )
+                .unwrap();
+                let destinations = allocate(&app, &imported, &identities, auxiliary(&app)).unwrap();
+                for mutation in 0..7 {
+                    let mut tampered = plan.clone();
+                    match mutation {
+                        0 => tampered.request.package.package_id.push_str("-foreign"),
+                        1 => tampered.profile.include_private_docs = true,
+                        2 => tampered.request.output_dir.push("foreign"),
+                        3 => tampered.index.modules.clear(),
+                        4 => tampered.index.package_version.push_str("-foreign"),
+                        5 => tampered.manifest.manifest.modules.reverse(),
+                        _ => tampered.index.modules.values_mut().next().unwrap().exports.clear(),
+                    }
+                    assert!(package_modules_template_fragment(
+                        &tampered,
+                        &imported,
+                        &destinations,
+                        SPEC,
+                        "one/index.html",
+                    )
+                    .is_err(), "plan mutation {mutation}");
+                }
+                for (specification, containing_page) in [
+                    ("foreign-spec", "one/index.html"),
+                    (SPEC, "missing.html"),
+                    (SPEC, "nested/index.html"),
+                    (SPEC, "one/index.html#foreign"),
+                    (SPEC, "../index.html"),
+                ] {
+                    assert!(package_modules_template_fragment(
+                        plan,
+                        &imported,
+                        &destinations,
+                        specification,
+                        containing_page,
+                    )
+                    .is_err());
+                }
+            }
+
+            #[test]
+            fn doc13_package_modules_available_empty_rows() {
+                use mizar_doc::render::package_modules_template_fragment;
+
+                let mut app = fixture([&["one"], &["two"]]);
+                let (registry, workspace, plans, _) = context(&mut [&mut app]);
+                app.manifest.modules.clear();
+                app.artifacts.clear();
+                app.summaries.clear();
+                app.publish();
+                let mut request = plans[0].request.clone();
+                request.expected_manifest_hash = app.hash;
+                let plans = build_doc_plans(
+                    &registry,
+                    plans[0].build_request,
+                    plans[0].snapshot,
+                    &workspace,
+                    &DocBuildRequest {
+                        profile: plans[0].profile.clone(),
+                        publications: vec![request],
+                    },
+                )
+                .unwrap();
+                let imported =
+                    authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &[]).unwrap();
+                let identities =
+                    authenticate_doc_identities(&registry, &workspace, &imported, &[], &[]).unwrap();
+                let mut table = auxiliary(&app);
+                table.pages.push(page("package.html"));
+                let destinations = allocate(&app, &imported, &identities, table).unwrap();
+                for _ in 0..2 {
+                    assert_eq!(
+                        package_modules_template_fragment(
+                            &plans[0],
+                            &imported,
+                            &destinations,
+                            SPEC,
+                            "package.html",
+                        )
+                        .unwrap(),
+                        "<section class=\"mizar-modules\"><h2>Modules</h2><ul></ul></section>\n",
+                    );
+                }
+            }
+
+            #[test]
             fn doc13_destination_q1_spelling_preserves_exact_stored_components() {
                 for (label, encoded) in [
                     ("Simple_2-3.4", "Simple_2-3.4"),

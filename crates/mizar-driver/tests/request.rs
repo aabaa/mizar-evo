@@ -1330,7 +1330,12 @@ mod q1_comments {
             mizar_doc::allocations::DocAllocationTable {
                 output_root: output.join("v1.2.3"),
                 coverage: DocImportCoverage::Complete,
-                pages: vec![],
+                pages: vec![mizar_doc::allocations::DocPageAllocation {
+                    path: "package.html".into(),
+                    module: None,
+                    items: vec![],
+                    section_ids: vec![],
+                }],
                 sections: None,
             },
         )
@@ -1344,6 +1349,19 @@ mod q1_comments {
             )
             .unwrap()
             .0;
+        for _ in 0..2 {
+            assert_eq!(
+                mizar_doc::render::package_modules_template_fragment(
+                    &plans[0],
+                    &inputs,
+                    source_views.destinations(),
+                    "used-by-spec",
+                    "package.html",
+                )
+                .unwrap(),
+                "<section class=\"mizar-modules\"><h2>Modules</h2><ul><li><a href=\"module0/index.html\">module0</a></li>\n</ul></section>\n",
+            );
+        }
         assert_eq!(
             source_views
                 .item_source_slot(
