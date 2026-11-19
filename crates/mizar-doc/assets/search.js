@@ -86,11 +86,15 @@
     const results = own(".mizar-search-results");
     const unavailable = () => {
       if (results) results.replaceChildren();
-      if (status) status.textContent = "Search unavailable";
+      if (status) {
+        status.textContent = "Search unavailable";
+        if (!root.contains(status)) root.append(status);
+      }
     };
     if (!(input instanceof HTMLInputElement) || input.type !== "search" ||
         !status || status.getAttribute("role") !== "status" ||
-        !results || results.tagName !== "UL") {
+        !results || results.tagName !== "UL" ||
+        status.contains(results) || results.contains(status)) {
       unavailable();
       return;
     }

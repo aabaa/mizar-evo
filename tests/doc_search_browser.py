@@ -131,6 +131,13 @@ ASSERTIONS = r"""
    search(name,'Zeta');
    assert(/unavailable/i.test(status(name)) && rows(name).length===0,'refusal after query '+name);
   }
+  for (const name of OVERLAPS) {
+   const state=section(name).querySelector('.mizar-search-status');
+   assert(/unavailable/i.test(state.textContent),'overlap unavailable '+name);
+   assert(rows(name).length===0,'overlap rendered results '+name);
+   search(name,'Zeta');
+   assert(/unavailable/i.test(state.textContent) && rows(name).length===0,'overlap refusal after query '+name);
+  }
   assert(rows('empty').length===0, 'complete-empty');
   assert(rows('kinds').length===16, 'G1 vocabulary');
   const checkRows = (name, items) => {
@@ -170,6 +177,8 @@ ASSERTIONS = r"""
   assert(getComputedStyle(rows('good')[0].querySelector('.mizar-signature')).whiteSpace==='pre-wrap','local signature presentation');
   assert([...document.styleSheets].some(s=>s.href && new URL(s.href).pathname==='/assets/style.css'),'local stylesheet');
   assert(rows('neighbor').length===expected.items.length,'neighbor independence');
+  search('neighbor','second'); checkRows('neighbor',[expected.items[1]]);
+  search('neighbor',''); checkRows('neighbor',expected.items);
   assert(rows('nested-neighbor').length===expected.items.length,'nested neighbor independence');
   for (const sink of ['results','status']) for (const input of ['complete','missing']) {
    const outer='isolation-'+sink+'-'+input, inner='nested-'+sink+'-'+input;
@@ -212,6 +221,7 @@ def main():
     for entry in manifest["assets"]:
         assert hashlib.sha256((ASSETS / Path(entry["path"]).name).read_bytes()).hexdigest() == entry["sha256"]
     cases, items, hostile = fixtures()
+    overlaps = ["overlap-shared", "overlap-status-ancestor", "overlap-results-ancestor"]
     failed = [name for name in cases if name.startswith("bad-")] + ["missing", "http-failed", "redirect", "foreign"]
     requests = []
 
@@ -239,6 +249,13 @@ def main():
                               good.replace('type="search"', 'type="button"'), good.replace('data-mizar-index="../../version/good.json"', '')]
                 controls += [control.replace('id="malformed"', f'id="malformed-{i}"') for i, control in enumerate(malformed)]
                 controls += [shell("neighbor", "../../version/good.json")]
+                sinks = '<p class="mizar-search-status" role="status"></p><ul class="mizar-search-results"></ul>'
+                for name, replacement in zip(overlaps, [
+                    '<ul class="mizar-search-status mizar-search-results" role="status"></ul>',
+                    '<div class="mizar-search-status" role="status"><ul class="mizar-search-results"></ul></div>',
+                    '<ul class="mizar-search-results"><li><p class="mizar-search-status" role="status"></p></li></ul>',
+                ]):
+                    controls.append(shell(name).replace(sinks, replacement))
                 nested = shell("malformed-nested", "../../version/good.json").replace('<label>Search <input type="search" class="mizar-search-query"></label>', '')
                 controls += [nested[:-10] + shell("nested-neighbor", "../../version/good.json") + '</section>']
                 for sink in ["results", "status"]:
@@ -253,7 +270,7 @@ def main():
                         else:
                             outer = outer.replace('<p class="mizar-search-status" role="status"></p>', '<div class="mizar-search-status" role="status">' + inner + '</div>')
                         controls.append(outer)
-                script = ASSERTIONS.replace("EXPECTED", json.dumps({"items": items, "hostile": hostile}, ensure_ascii=True).replace("<", "\\u003c")).replace("BAD", json.dumps(failed))
+                script = ASSERTIONS.replace("EXPECTED", json.dumps({"items": items, "hostile": hostile}, ensure_ascii=True).replace("<", "\\u003c")).replace("BAD", json.dumps(failed)).replace("OVERLAPS", json.dumps(overlaps))
                 data = ('<!doctype html><html lang=en-US><meta charset=utf-8><link rel=stylesheet href=/assets/style.css>'
                         + ''.join(controls) + '<script src=/assets/search.js></script><script>' + script + '</script></html>').encode()
                 content_type = "text/html; charset=utf-8"
@@ -265,8 +282,8 @@ def main():
             elif path == "/version/http-failed.json":
                 self.send_error(503)
                 return
-            elif path.startswith("/version/") and path.endswith(".json") and path[9:-5] in cases:
-                data, content_type = cases[path[9:-5]], "application/json"
+            elif path.startswith("/version/") and path.endswith(".json") and (path[9:-5] in cases or path[9:-5] in overlaps):
+                data, content_type = cases["good" if path[9:-5] in overlaps else path[9:-5]], "application/json"
             elif path.startswith("/assets/") and path[8:] in ["style.css", "search.js"]:
                 data = (ASSETS / path[8:]).read_bytes()
                 content_type = "text/css" if path.endswith(".css") else "application/javascript"
@@ -299,6 +316,7 @@ def main():
                 snapshots.append(report["dom"])
         assert snapshots[0] == snapshots[1], "terminal result DOM differs"
         assert "/version/http-failed.json" in requests and "/version/redirect.json" in requests
+        assert all("/version/" + name + ".json" not in requests for name in overlaps), "overlapping control loaded index"
         print(f"six search witness families passed; {len(cases)} supplied indexes; {version}; repeated DOM identical")
     finally:
         server.shutdown()
