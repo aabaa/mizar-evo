@@ -3,7 +3,8 @@
 use std::{collections::BTreeMap, fmt::Write, ops::Range, path::Path};
 
 use mizar_artifact::{
-    module_summary::ModuleSummaryIdentity, store::CanonicalJson, verified_artifact::VerifiedExport,
+    manifest::PackageIdentity, module_summary::ModuleSummaryIdentity, store::CanonicalJson,
+    verified_artifact::VerifiedExport,
 };
 
 use mizar_diagnostics::{
@@ -13,7 +14,9 @@ use mizar_diagnostics::{
     },
     registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
 };
-use mizar_session::{Hash, SourceRange, TextRange};
+use mizar_session::{
+    Hash, SessionIdAllocator, SnapshotRegistry, SourceRange, TextRange, WorkspaceRoot,
+};
 use pulldown_cmark::{Event, Tag};
 
 use crate::{
@@ -25,7 +28,7 @@ use crate::{
     doc_build::{
         AuthenticatedDocDirectBy, AuthenticatedDocIdentities, AuthenticatedDocImports,
         AuthenticatedDocSources, DocBuildError, DocBuildPlan, DocImportCoverage,
-        validate_coordinate_range,
+        authenticate_doc_identities, validate_coordinate_range,
     },
     links::{
         ClassifiedDocOccurrence, DocLinkOutcome, DocReferenceClassification, DocReferenceForm,
@@ -33,6 +36,148 @@ use crate::{
     },
     markdown::{MarkdownBlock, ParsedComments, occurrence, parse_comments, same_target},
 };
+
+/// Composes complete selected-publication search data with canonical version-1 bytes.
+/// Reauthenticates the original G1 producers before returning; emits no files.
+pub fn canonical_search_json<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    workspace_root: &WorkspaceRoot,
+    inventory: &[(&PackageIdentity, Hash, &Path)],
+    inputs: &AuthenticatedDocImports,
+    identities: &AuthenticatedDocIdentities,
+    parsed: &[&ParsedComments<'_, '_>],
+    allocation: (&DocDestinationAllocations, &str),
+) -> Result<String, DocBuildError> {
+    let refuse = || DocBuildError::Binding("search composition binding mismatch");
+    let (destinations, specification_version) = allocation;
+    if !identities.matches_inputs(inputs)
+        || !destinations
+            .allocations()
+            .matches_inputs(inputs, specification_version)
+    {
+        return Err(refuse());
+    }
+    let publication = inputs.publications().first().ok_or_else(refuse)?;
+    let version = publication
+        .manifest
+        .package
+        .package_version
+        .as_deref()
+        .ok_or_else(refuse)?;
+    let selected = identities
+        .identities()
+        .iter()
+        .filter(|identity| identity.publication_hash() == publication.artifact_hash)
+        .collect::<Vec<_>>();
+    if parsed.len() != selected.len()
+        || parsed
+            .iter()
+            .any(|parsed| !inputs.matches_plan(parsed.attachments.plan))
+    {
+        return Err(refuse());
+    }
+    let mut output = String::from("{\"format_version\":1,\"package_version\":");
+    search_json_string(&mut output, Some(version));
+    output.push_str(",\"items\":[");
+    let mut first = true;
+    for identity in selected {
+        let artifact = identity.artifact();
+        let module = &artifact.module;
+        let mut matching = parsed
+            .iter()
+            .filter(|parsed| parsed.attachments.module == module);
+        let parsed = matching.next().ok_or_else(refuse)?;
+        if matching.next().is_some() {
+            return Err(refuse());
+        }
+        let mut summaries = search_summaries(parsed)?;
+        summaries.sort_by(|(left, _), (right, _)| {
+            left.fully_qualified_name
+                .cmp(&right.fully_qualified_name)
+                .then_with(|| left.origin_id.cmp(&right.origin_id))
+        });
+        if summaries.len() != artifact.exports.len()
+            || summaries
+                .iter()
+                .zip(&artifact.exports)
+                .any(|((export, _), original)| *export != original)
+        {
+            return Err(refuse());
+        }
+        let module_version = module.package_version.as_deref().ok_or_else(refuse)?;
+        for (export, summary) in summaries {
+            let (path, fragment, _) = destinations
+                .dedicated_item(module, identity.publication_hash(), export)
+                .ok_or_else(refuse)?;
+            if !first {
+                output.push(',');
+            }
+            first = false;
+            output.push_str("{\"identity\":[");
+            search_json_string(&mut output, Some(&module.package_id));
+            output.push(',');
+            search_json_string(&mut output, Some(module_version));
+            output.push(',');
+            search_json_string(&mut output, module.lockfile_identity.as_deref());
+            output.push_str(",[");
+            for (ordinal, component) in identity.module_components().iter().enumerate() {
+                if ordinal != 0 {
+                    output.push(',');
+                }
+                search_json_string(&mut output, Some(component));
+            }
+            output.push_str("],");
+            search_json_string(&mut output, Some(&module.language_edition));
+            output.push(',');
+            search_json_string(&mut output, Some(&export.origin_id));
+            output.push(',');
+            search_json_string(
+                &mut output,
+                Some(&identity.publication_hash().to_lower_hex()),
+            );
+            output.push(']');
+            let href = encode_doc_href(path, Some(fragment));
+            for (key, value) in [
+                ("fqn", Some(export.fully_qualified_name.as_str())),
+                ("kind", Some(export.export_kind.as_str())),
+                ("summary", summary.as_deref()),
+                ("signature", Some(export.rendered_signature.as_str())),
+                ("href", Some(href.as_str())),
+            ] {
+                write!(output, ",\"{key}\":").expect("string write succeeds");
+                search_json_string(&mut output, value);
+            }
+            output.push('}');
+        }
+    }
+    output.push_str("]}\n");
+    let producers = identities.identities().iter().collect::<Vec<_>>();
+    if authenticate_doc_identities(registry, workspace_root, inputs, inventory, &producers)?
+        != *identities
+    {
+        return Err(refuse());
+    }
+    Ok(output)
+}
+
+fn search_json_string(output: &mut String, value: Option<&str>) {
+    let Some(value) = value else {
+        output.push_str("null");
+        return;
+    };
+    output.push('"');
+    for character in value.chars() {
+        match character {
+            '"' => output.push_str("\\\""),
+            '\\' => output.push_str("\\\\"),
+            '\0'..='\u{1f}' => {
+                write!(output, "\\u{:04x}", u32::from(character)).expect("string write succeeds");
+            }
+            _ => output.push(character),
+        }
+    }
+    output.push('"');
+}
 
 /// Expands only the selected package's Modules section using matching G2 destinations.
 /// Includes zero-export modules in full identity order, without dependency-only modules.

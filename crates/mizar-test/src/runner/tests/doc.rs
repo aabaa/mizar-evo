@@ -10872,6 +10872,555 @@ mod doc10_authenticated {
             }
 
             #[test]
+            fn doc13_search_golden_identity_order_escaping_and_permutations() {
+                use mizar_doc::{
+                    comments::attach_comments, markdown::parse_comments,
+                    render::canonical_search_json,
+                };
+                for lock in [None, Some("stored-lock")] {
+                    let mut app = fixture([&["zed"], &["nested", "leaf"]]);
+                    app.manifest.package.lockfile_identity = lock.map(str::to_owned);
+                    for (index, (artifact, summary)) in
+                        app.artifacts.iter_mut().zip(&mut app.summaries).enumerate()
+                    {
+                        artifact.module.lockfile_identity = lock.map(str::to_owned);
+                        summary.module = artifact.module.clone();
+                        artifact.exports[0].origin_id = ["first", "second"][index].into();
+                        artifact.exports[0].fully_qualified_name = "exact.é/\"\\".into();
+                        artifact.exports[0].rendered_signature = if index == 0 {
+                            (0u8..32).map(char::from).collect::<String>() + "é/\"\\"
+                        } else {
+                            "second signature".into()
+                        };
+                        artifact.exports[0].visibility = if index == 0 {
+                            ExportVisibility::Reexported
+                        } else {
+                            ExportVisibility::Public
+                        };
+                        summary.exported_labels[0].owner_fully_qualified_name =
+                            artifact.exports[0].fully_qualified_name.clone();
+                        summary.exported_labels[0].label = "é%#~".into();
+                        summary.exported_labels[0].origin_id =
+                            artifact.exports[0].origin_id.clone();
+                        summary.refresh_interface_hash().unwrap();
+                    }
+                    let mut earlier = app.artifacts[1].exports[0].clone();
+                    earlier.origin_id = "earlier".into();
+                    earlier.fully_qualified_name = "aaa.earlier".into();
+                    let mut label = app.summaries[1].exported_labels[0].clone();
+                    label.origin_id = earlier.origin_id.clone();
+                    label.owner_fully_qualified_name = earlier.fully_qualified_name.clone();
+                    label.label = "Earlier".into();
+                    app.artifacts[1].exports.push(earlier);
+                    app.summaries[1].exported_labels.push(label);
+                    app.summaries[1].refresh_interface_hash().unwrap();
+                    let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                    let mut request = plans[0].request.clone();
+                    request.output_dir = auxiliary(&app).output_root;
+                    plans = build_doc_plans(
+                        &registry,
+                        plans[0].build_request,
+                        plans[0].snapshot,
+                        &workspace,
+                        &DocBuildRequest {
+                            profile: plans[0].profile.clone(),
+                            publications: vec![request],
+                        },
+                    )
+                    .unwrap();
+                    let producers = inputs(&app, &views[0]);
+                    let imports =
+                        authenticate_doc_imports(&registry, &workspace, &plans[0], &[], &producers)
+                            .unwrap();
+                    let products = products(&app);
+                    let identities = authenticate_doc_identities(
+                        &registry,
+                        &workspace,
+                        &imports,
+                        &[],
+                        &products.iter().collect::<Vec<_>>(),
+                    )
+                    .unwrap();
+                    let destinations =
+                        allocate(&app, &imports, &identities, auxiliary(&app)).unwrap();
+                    let attached = app
+                        .artifacts
+                        .iter()
+                        .map(|a| attach_comments(&plans[0], &a.module, None).unwrap())
+                        .collect::<Vec<_>>();
+                    let parsed = attached
+                        .iter()
+                        .map(|a| parse_comments(a, &[]))
+                        .collect::<Vec<_>>();
+                    let original = (
+                        plans[0].clone(),
+                        imports.clone(),
+                        identities.clone(),
+                        destinations.clone(),
+                        format!("{parsed:?}"),
+                    );
+                    let lock = lock.map_or("null".to_owned(), |s| format!("\"{s}\""));
+                    let hash = app.hash.to_lower_hex();
+                    let expected = format!(
+                        concat!(
+                            "{{\"format_version\":1,\"package_version\":\"1.0.0-test\",\"items\":[",
+                            "{{\"identity\":[\"destination-allocation\",\"1.0.0-test\",{},[\"nested\",\"leaf\"],\"2026\",\"earlier\",\"{}\"],",
+                            "\"fqn\":\"aaa.earlier\",\"kind\":\"theorem\",\"summary\":null,\"signature\":\"second signature\",\"href\":\"nested/leaf/items/Earlier.html#aaa.earlier\"}},",
+                            "{{\"identity\":[\"destination-allocation\",\"1.0.0-test\",{},[\"nested\",\"leaf\"],\"2026\",\"second\",\"{}\"],",
+                            "\"fqn\":\"exact.é/\\\"\\\\\",\"kind\":\"theorem\",\"summary\":null,\"signature\":\"second signature\",\"href\":\"nested/leaf/items/~c3~a9~25~23~7e.html#exact.%C3%A9%2F%22%5C\"}},",
+                            "{{\"identity\":[\"destination-allocation\",\"1.0.0-test\",{},[\"zed\"],\"2026\",\"first\",\"{}\"],",
+                            "\"fqn\":\"exact.é/\\\"\\\\\",\"kind\":\"theorem\",\"summary\":null,\"signature\":\"",
+                            "\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\u0008\\u0009\\u000a\\u000b\\u000c\\u000d\\u000e\\u000f",
+                            "\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b\\u001c\\u001d\\u001e\\u001fé/\\\"\\\\\",",
+                            "\"href\":\"zed/items/~c3~a9~25~23~7e.html#exact.%C3%A9%2F%22%5C\"}}]}}\n"
+                        ),
+                        lock, hash, lock, hash, lock, hash
+                    );
+                    for reverse in [false, true] {
+                        let mut producers = producers.clone();
+                        let mut supplied = products.iter().collect::<Vec<_>>();
+                        let mut comments = parsed.iter().collect::<Vec<_>>();
+                        if reverse {
+                            producers.reverse();
+                            supplied.reverse();
+                            comments.reverse();
+                        }
+                        let imports = authenticate_doc_imports(
+                            &registry,
+                            &workspace,
+                            &plans[0],
+                            &[],
+                            &producers,
+                        )
+                        .unwrap();
+                        let identities = authenticate_doc_identities(
+                            &registry,
+                            &workspace,
+                            &imports,
+                            &[],
+                            &supplied,
+                        )
+                        .unwrap();
+                        let result = canonical_search_json(
+                            &registry,
+                            &workspace,
+                            &[],
+                            &imports,
+                            &identities,
+                            &comments,
+                            (&destinations, SPEC),
+                        )
+                        .unwrap();
+                        assert_eq!(result.as_bytes(), expected.as_bytes());
+                        if let Some(path) = std::env::var_os("ENTRY304_SEARCH_WITNESS") {
+                            std::fs::write(path, &result).unwrap();
+                        }
+                    }
+                    assert_eq!(
+                        (
+                            &plans[0],
+                            &imports,
+                            &identities,
+                            &destinations,
+                            format!("{parsed:?}")
+                        ),
+                        (
+                            &original.0,
+                            &original.1,
+                            &original.2,
+                            &original.3,
+                            original.4
+                        )
+                    );
+                }
+            }
+
+            #[test]
+            fn doc13_search_empty_dependency_exclusion_and_complete_module_inputs() {
+                use mizar_doc::{
+                    comments::attach_comments, markdown::parse_comments,
+                    render::canonical_search_json,
+                };
+                for empty in [false, true] {
+                    let mut app = fixture([&["one"], &["two"]]);
+                    app.artifacts[1].exports.clear();
+                    app.summaries[1].exported_labels.clear();
+                    if empty {
+                        app.artifacts[0].exports.clear();
+                        app.summaries[0].exported_labels.clear();
+                    }
+                    for summary in &mut app.summaries {
+                        summary.refresh_interface_hash().unwrap();
+                    }
+                    let mut dep = publication("search-dependency", [&["dep"], &["other"]]);
+                    for (artifact, summary) in dep.artifacts.iter().zip(&mut dep.summaries) {
+                        let export = &artifact.exports[0];
+                        summary.exported_labels = vec![
+                            mizar_artifact::module_summary::ExportedLabelSummary {
+                                origin_id: export.origin_id.clone(),
+                                label: "DependencyItem".into(),
+                                owner_fully_qualified_name: export.fully_qualified_name.clone(),
+                                visibility: "public".into(),
+                                source_range: export.source_range,
+                                target_kind: "theorem".into(),
+                            },
+                        ];
+                        summary.refresh_interface_hash().unwrap();
+                    }
+                    let (registry, workspace, mut plans, views) =
+                        context(&mut [&mut app, &mut dep]);
+                    let dependency_plan = plans[1].clone();
+                    let mut request = plans[0].request.clone();
+                    request.output_dir = auxiliary(&app).output_root;
+                    plans = build_doc_plans(
+                        &registry,
+                        plans[0].build_request,
+                        plans[0].snapshot,
+                        &workspace,
+                        &DocBuildRequest {
+                            profile: plans[0].profile.clone(),
+                            publications: vec![request],
+                        },
+                    )
+                    .unwrap();
+                    let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
+                    let producers = inputs(&app, &views[0])
+                        .into_iter()
+                        .chain(inputs(&dep, &views[1]))
+                        .collect::<Vec<_>>();
+                    let imports = authenticate_doc_imports(
+                        &registry, &workspace, &plans[0], &inventory, &producers,
+                    )
+                    .unwrap();
+                    let products = products(&app)
+                        .into_iter()
+                        .chain(products(&dep))
+                        .collect::<Vec<_>>();
+                    let identities = authenticate_doc_identities(
+                        &registry,
+                        &workspace,
+                        &imports,
+                        &inventory,
+                        &products.iter().collect::<Vec<_>>(),
+                    )
+                    .unwrap();
+                    let destinations =
+                        allocate(&app, &imports, &identities, auxiliary(&app)).unwrap();
+                    let attached = app
+                        .artifacts
+                        .iter()
+                        .map(|a| attach_comments(&plans[0], &a.module, None).unwrap())
+                        .collect::<Vec<_>>();
+                    let parsed = attached
+                        .iter()
+                        .map(|a| parse_comments(a, &[]))
+                        .collect::<Vec<_>>();
+                    let comments = parsed.iter().collect::<Vec<_>>();
+                    let render = |comments: &[&mizar_doc::markdown::ParsedComments<'_, '_>]| {
+                        canonical_search_json(
+                            &registry,
+                            &workspace,
+                            &inventory,
+                            &imports,
+                            &identities,
+                            comments,
+                            (&destinations, SPEC),
+                        )
+                    };
+                    let result = render(&comments).unwrap();
+                    assert!(!result.contains("search-dependency"));
+                    if empty {
+                        assert_eq!(
+                            result,
+                            "{\"format_version\":1,\"package_version\":\"1.0.0-test\",\"items\":[]}\n"
+                        );
+                    } else {
+                        assert_eq!(result.matches("\"identity\"").count(), 1);
+                        assert!(result.contains("\"fqn\":\"exact.Item0\""));
+                    }
+                    assert!(render(&comments[..1]).is_err());
+                    assert!(render(&[comments[0], comments[0]]).is_err());
+                    let foreign =
+                        attach_comments(&dependency_plan, &dep.artifacts[0].module, None).unwrap();
+                    let foreign = parse_comments(&foreign, &[]);
+                    assert!(render(&[&foreign, comments[1]]).is_err());
+                    assert!(
+                        canonical_search_json(
+                            &registry,
+                            &workspace,
+                            &[],
+                            &imports,
+                            &identities,
+                            &comments,
+                            (&destinations, SPEC)
+                        )
+                        .is_err()
+                    );
+                    assert!(
+                        canonical_search_json(
+                            &registry,
+                            &workspace,
+                            &inventory,
+                            &imports,
+                            &identities,
+                            &comments,
+                            (&destinations, "foreign-spec")
+                        )
+                        .is_err()
+                    );
+                    let mut altered = plans[0].clone();
+                    for mutation in 0..5 {
+                        altered.clone_from(&plans[0]);
+                        match mutation {
+                            0 => altered.profile.include_private_docs = true,
+                            1 => {
+                                altered.request.expected_manifest_hash =
+                                    mizar_session::hash_text("foreign publication")
+                            }
+                            2 => {
+                                altered.index.modules.values_mut().next().unwrap().exports =
+                                    dep.artifacts[0].exports.clone()
+                            }
+                            3 => altered.request.output_dir.push("foreign"),
+                            _ => {
+                                altered
+                                    .index
+                                    .modules
+                                    .values_mut()
+                                    .next()
+                                    .unwrap()
+                                    .comment_projection = mizar_artifact::store::CanonicalJson::Null
+                            }
+                        }
+                        let foreign =
+                            attach_comments(&altered, &app.artifacts[0].module, None).unwrap();
+                        let foreign = parse_comments(&foreign, &[]);
+                        assert!(
+                            render(&[&foreign, comments[1]]).is_err(),
+                            "mutation {mutation}"
+                        );
+                    }
+                    let snapshot = registry.get(plans[0].snapshot).unwrap();
+                    registry
+                        .create_snapshot(
+                            plans[0].build_request,
+                            SnapshotInput {
+                                workspace_root: snapshot.workspace_root,
+                                source_versions: snapshot.source_versions,
+                                dependency_artifacts: snapshot.dependency_artifacts,
+                                lockfile_hash: snapshot.lockfile_hash,
+                                toolchain: snapshot.toolchain,
+                                verifier_config_hash: mizar_session::hash_text("stale search"),
+                            },
+                        )
+                        .unwrap();
+                    assert!(render(&comments).is_err());
+                }
+            }
+
+            #[test]
+            fn doc13_search_shared_item_summaries_and_recovery_preserve_inputs() {
+                use mizar_artifact::{comment_projection::*, store::CanonicalJson as J};
+                use mizar_doc::{
+                    comments::attach_comments,
+                    markdown::parse_comments,
+                    render::{canonical_search_json, search_summaries},
+                };
+                for (body, expected, recovery) in [
+                    ("", "null", 0),
+                    ("", "null", 3),
+                    (":::\n", "\"\"", 0),
+                    ("::: <script>raw & failed</script>\n", "\"\"", 2),
+                    (
+                        "::: <script>raw & failed</script>\n\n::: **kept** / λ\n",
+                        "\"kept / λ\"",
+                        2,
+                    ),
+                    (
+                        "::: raw map recovery\n\n::: **kept** / λ\n",
+                        "\"kept / λ\"",
+                        1,
+                    ),
+                ] {
+                    let text = format!("::: module\nbegin\n{body}theorem T: thesis;");
+                    let mut app = fixture([&["one"], &["two"]]);
+                    app.without_comment_projection = recovery == 3;
+                    std::fs::write(app.root.join(&app.artifacts[0].source_file), &text).unwrap();
+                    let artifact = &mut app.artifacts[0];
+                    artifact.source_hash = mizar_session::hash_text(&text);
+                    let lexical = mizar_lexer::preprocess_source_for_lexing(&text).lexical_text;
+                    artifact.exports[0].source_range =
+                        mizar_artifact::module_summary::SourceRangeSummary {
+                            start_byte: lexical.find("theorem").unwrap() as u64,
+                            end_byte: lexical.len() as u64,
+                        };
+                    app.summaries[0].source_hash = artifact.source_hash;
+                    app.summaries[0].exported_labels[0].source_range =
+                        artifact.exports[0].source_range;
+                    let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                    if recovery != 3 {
+                        // Add the original item's landmark to the genuine published comment product.
+                        let start = text.find("theorem").unwrap();
+                        let commented = CommentedArtifact {
+                            artifact: app.artifacts[0].clone(),
+                            comments: doc7_projection(
+                                &text,
+                                vec![doc7_landmark(
+                                    "TheoremItem",
+                                    start,
+                                    text.len(),
+                                    None,
+                                    Some(&app.artifacts[0].exports[0]),
+                                )],
+                            ),
+                        };
+                        let entry = &mut app.manifest.modules[0];
+                        let write = write_published_artifact(
+                            &app.root,
+                            &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+                            &commented_artifact_json(&commented).unwrap(),
+                            &artifact_hash_domain(
+                                COMMENTED_ARTIFACT_SCHEMA_FAMILY,
+                                COMMENTED_ARTIFACT_SCHEMA_VERSION,
+                            ),
+                            &mizar_artifact::comment_projection::artifact_hash_excluded_paths(),
+                        )
+                        .unwrap();
+                        entry.artifact_hash.digest = write.artifact_hash;
+                        entry.interface_hash.digest = commented.compute_interface_hash().unwrap();
+                        entry.implementation_hash.digest =
+                            commented.compute_implementation_hash().unwrap();
+                        app.hash = write_manifest_file(&app.root, &app.manifest)
+                            .unwrap()
+                            .artifact_hash;
+                    }
+                    let mut request = plans[0].request.clone();
+                    request.expected_manifest_hash = app.hash;
+                    request.output_dir = auxiliary(&app).output_root;
+                    plans = build_doc_plans(
+                        &registry,
+                        plans[0].build_request,
+                        plans[0].snapshot,
+                        &workspace,
+                        &DocBuildRequest {
+                            profile: plans[0].profile.clone(),
+                            publications: vec![request],
+                        },
+                    )
+                    .unwrap();
+                    let imports = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let products = products(&app);
+                    let identities = authenticate_doc_identities(
+                        &registry,
+                        &workspace,
+                        &imports,
+                        &[],
+                        &products.iter().collect::<Vec<_>>(),
+                    )
+                    .unwrap();
+                    let destinations =
+                        allocate(&app, &imports, &identities, auxiliary(&app)).unwrap();
+                    let mut attached =
+                        attach_comments(&plans[0], &app.artifacts[0].module, None).unwrap();
+                    let mut faulty = attached
+                        .blocks
+                        .get(1)
+                        .map_or(J::Null, |block| block.lines[0].clone());
+                    if matches!(recovery, 1 | 2) {
+                        let J::Array(fields) = &mut faulty else {
+                            panic!("row")
+                        };
+                        let J::String(raw) = &fields[2] else {
+                            panic!("raw")
+                        };
+                        fields[1] = doc7_range(1, if recovery == 1 { 1 + raw.len() } else { 1 });
+                        attached.blocks[1].lines[0] = &faulty;
+                    }
+                    let parsed = parse_comments(&attached, &[]);
+                    let other = attach_comments(&plans[0], &app.artifacts[1].module, None).unwrap();
+                    let other = parse_comments(&other, &[]);
+                    let before = (
+                        plans[0].clone(),
+                        format!("{attached:?}{parsed:?}"),
+                        parsed.warnings.clone(),
+                    );
+                    if recovery == 3 {
+                        assert!(!parsed.available());
+                        assert!(
+                            canonical_search_json(
+                                &registry,
+                                &workspace,
+                                &[],
+                                &imports,
+                                &identities,
+                                &[&parsed, &other],
+                                (&destinations, SPEC)
+                            )
+                            .is_err()
+                        );
+                        continue;
+                    }
+                    let shared = search_summaries(&parsed).unwrap();
+                    assert_eq!(shared.len(), 1);
+                    assert_eq!(
+                        shared[0].1.as_deref(),
+                        match expected {
+                            "null" => None,
+                            "\"\"" => Some(""),
+                            _ => Some("kept / λ"),
+                        }
+                    );
+                    let result = canonical_search_json(
+                        &registry,
+                        &workspace,
+                        &[],
+                        &imports,
+                        &identities,
+                        &[&parsed, &other],
+                        (&destinations, SPEC),
+                    )
+                    .unwrap();
+                    assert!(
+                        result.contains(&format!("\"summary\":{expected},")),
+                        "{result}"
+                    );
+                    if body.contains("raw") {
+                        assert!(parsed.blocks.iter().any(|b| b.fallback));
+                        assert!(doc8_codes(&parsed.warnings).contains(&"W0411".into()));
+                    }
+                    assert_eq!(
+                        (
+                            &plans[0],
+                            format!("{attached:?}{parsed:?}"),
+                            &parsed.warnings
+                        ),
+                        (&before.0, before.1, &before.2)
+                    );
+                    let mut unavailable = parse_comments(&attached, &[]);
+                    unavailable.blocks.clear();
+                    assert!(
+                        canonical_search_json(
+                            &registry,
+                            &workspace,
+                            &[],
+                            &imports,
+                            &identities,
+                            &[&unavailable, &other],
+                            (&destinations, SPEC)
+                        )
+                        .is_err()
+                    );
+                }
+            }
+
+            #[test]
             fn doc13_destination_q1_spelling_preserves_exact_stored_components() {
                 for (label, encoded) in [
                     ("Simple_2-3.4", "Simple_2-3.4"),

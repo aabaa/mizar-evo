@@ -1389,6 +1389,39 @@ mod q1_comments {
         let attachments =
             mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
         let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+        let search = mizar_doc::render::canonical_search_json(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &[],
+            &inputs,
+            &identities,
+            &[&parsed],
+            (source_views.destinations(), "used-by-spec"),
+        )
+        .unwrap();
+        let wire: serde_json::Value = serde_json::from_str(&search).unwrap();
+        assert_eq!(wire["format_version"], 1);
+        assert_eq!(wire["package_version"], "1.2.3");
+        let records = wire["items"].as_array().unwrap();
+        assert_eq!(records.len(), artifact.exports.len());
+        for (record, export) in records.iter().zip(&artifact.exports) {
+            assert_eq!(record["fqn"], export.fully_qualified_name);
+            assert_eq!(record["kind"], export.export_kind);
+            assert_eq!(record["signature"], export.rendered_signature);
+            assert_eq!(record["identity"][3], serde_json::json!(["module0"]));
+            assert_eq!(
+                record["identity"][6],
+                publication.artifact_hash.to_lower_hex()
+            );
+            let (path, fqn, _) = source_views
+                .destinations()
+                .dedicated_item(&artifact.module, publication.artifact_hash, export)
+                .unwrap();
+            assert_eq!(
+                record["href"],
+                mizar_doc::allocations::encode_doc_href(path, Some(fqn))
+            );
+        }
         let output = &request.publications[0].output_dir;
         let allocations = mizar_doc::allocations::validate_doc_allocations(
             &inputs,
