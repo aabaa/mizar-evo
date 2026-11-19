@@ -50,6 +50,8 @@ This design derives the resolver-owned label contract from:
 
 ## Purpose
 
+`symbols::source_algorithm_definition_labels` authenticates the whole source/environment and returns source-ordered pairs of borrowed Algorithm owners and original optional terminating-definition-label token ids. Exact shell-origin joins preserve ownership; prefix tokens retain original spelling/ranges. Unlabelled algorithms yield no pair; malformed associations/prefix ranges refuse atomically. These identities add no label path, visibility clock, index, citation, promotion evidence or consumer wiring; existing collectors remain unchanged. Physical source currentness remains caller-owned.
+
 The labels phase resolves label declarations and citation use sites after
 imports, declaration shells, and namespace lookup are available, but before
 proof checking, type checking, ATP dispatch, template instantiation, or

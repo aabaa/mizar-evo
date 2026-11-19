@@ -1,5 +1,7 @@
 # Module: labels
 
+`symbols::source_algorithm_definition_labels` は source/environment 全体を認証し、借用した Algorithm owner と元の optional terminating-definition-label token id の組を source 順に返す。完全な shell origin で所有者を照合し、prefix token の元の綴り・範囲を保持する。ラベルなしは組を返さず、不正な対応・prefix 範囲は全体を拒否する。label path・visibility clock・index・引用・promotion 根拠・consumer 接続は追加せず、既存 collector は維持する。物理 source の currentness は呼出側が所有する。
+
 `collect_with_native_proof_organization` は owner・分岐・条件・変換引用と proofless owner の末尾を収集する。呼出側が元の全構造と環境を認証し、解決された識別子も証明根拠にはならない。既存4経路は変更しない。 native traversal は通常/library annotation の prefix を外し、label clock の step を追加しない。
 
 theorem-owner opt-in は正確で recovery のない public/private VisibleItem/VisibilityMarker/TheoremItem wrapper を扱う。実 marker から optional private/public 条件を得て Private/LocalOnly または Public/Exported symbol を要求し、内部 owner node/range を保持する。直接項目の照合は保持し、全 source/symbol/definition 認証は下記 candidate 検証が所有する。他の wrapper と generic collector の範囲は変えない。

@@ -811,4 +811,4 @@ foreign/augmented/recovered source-env の実旧結果を先に確認し、不�
 
 ## Terminating Algorithm Label Boundary
 
-厳密な terminating labelled direct header では algorithm projection が label/colon の後の実際の名前を選び、ラベルなしの共有 name helper は保つ。宣言全体の origin と label を含む opaque signature/raw syntax payload を維持する。DefinitionLabel identity/citation/promotion は deferred とし、既存の variable/type/export consumer は意味的前提の実装まで labelled header を拒否する。
+厳密な terminating labelled direct header では algorithm projection が label/colon の後の実際の名前を選び、ラベルなしの共有 name helper は保つ。宣言全体の origin と label を含む opaque signature/raw syntax payload を維持する。[label identity producer](labels.md#目的) は実際の owner と元の token を保持する。引用・promotion は deferred のままとし、既存 variable/type/export consumer profile は維持する。

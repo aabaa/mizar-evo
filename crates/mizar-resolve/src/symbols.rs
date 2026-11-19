@@ -53,6 +53,132 @@ pub fn source_declaration_shells(
     Ok(DeclarationShellCollector::new(&ast, source.module()).collect())
 }
 
+/// Projects terminating-algorithm definition labels onto their original owners.
+///
+/// Each pair retains the borrowed Algorithm entry and the original label token
+/// node in `source`, including its spelling and range. This does not populate a
+/// label index, adopt citations or establish promotion. Callers retain the source
+/// association and own physical raw-source currentness.
+pub fn source_algorithm_definition_labels<'a>(
+    source: &SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+) -> Result<Vec<(&'a SymbolEntry, SurfaceNodeId)>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = || "invalid source algorithm definition labels".to_owned();
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let mut owners = BTreeSet::new();
+    let mut labels = Vec::new();
+    for shell in shells.declarations() {
+        if shell.kind() != DeclarationShellKind::AlgorithmDefinition {
+            continue;
+        }
+        let block = shells
+            .declaration(shell.parent().ok_or_else(invalid)?)
+            .filter(|block| block.kind() == DeclarationShellKind::DefinitionBlock)
+            .ok_or_else(invalid)?;
+        if shell.range().source_id != block.range().source_id
+            || shell.range().start < block.range().start
+            || shell.range().end > block.range().end
+        {
+            return Err(invalid());
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut matching = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm && entry.origin() == &origin);
+        let owner = matching.next().ok_or_else(invalid)?;
+        if matching.next().is_some() || !owners.insert(owner.symbol()) {
+            return Err(invalid());
+        }
+        let declaration = ast.node_view(shell.node_id()).ok_or_else(invalid)?;
+        let mut header = declaration.child_views();
+        let first = header.next().ok_or_else(invalid)?;
+        let terminating = matches!(first.kind(), SurfaceNodeKind::AlgorithmTerminationClause);
+        let token_is = |node: SurfaceNodeView<'_>, kind, text: &str| {
+            node.as_token()
+                .is_some_and(|token| token.kind == kind && token.text.as_ref() == text)
+        };
+        let keyword = if terminating {
+            let [token] = first.children() else {
+                return Err(invalid());
+            };
+            let token = ast.node_view(*token).ok_or_else(invalid)?;
+            if !token_is(token, SurfaceTokenKind::ReservedWord, "terminating")
+                || token.range().source_id != first.range().source_id
+                || token.range().start < first.range().start
+                || token.range().end > first.range().end
+                || token.range().start >= token.range().end
+            {
+                return Err(invalid());
+            }
+            header.next().ok_or_else(invalid)?
+        } else {
+            first
+        };
+        if !token_is(keyword, SurfaceTokenKind::ReservedWord, "algorithm") {
+            return Err(invalid());
+        }
+        let name_or_label = header.next().ok_or_else(invalid)?;
+        let next = header.next().ok_or_else(invalid)?;
+        let labelled = token_is(next, SurfaceTokenKind::ReservedSymbol, ":");
+        let mut prefix = vec![first];
+        if terminating {
+            prefix.push(keyword);
+        }
+        prefix.push(name_or_label);
+        if labelled {
+            if !terminating {
+                return Err(invalid());
+            }
+            prefix.push(next);
+            prefix.push(header.next().ok_or_else(invalid)?);
+        } else if !matches!(
+            next.kind(),
+            SurfaceNodeKind::AlgorithmParameters | SurfaceNodeKind::TemplateLoci
+        ) {
+            return Err(invalid());
+        }
+        for node in [name_or_label, *prefix.last().ok_or_else(invalid)?] {
+            if !node.as_token().is_some_and(|token| {
+                token.kind == SurfaceTokenKind::Identifier && !token.text.is_empty()
+            }) {
+                return Err(invalid());
+            }
+        }
+        let mut previous_end = declaration.range().start;
+        for node in prefix {
+            let range = node.range();
+            if range.source_id != ast.source_id
+                || range.start < previous_end
+                || range.start >= range.end
+                || range.end > declaration.range().end
+            {
+                return Err(invalid());
+            }
+            previous_end = range.end;
+        }
+        if labelled {
+            labels.push((owner, name_or_label.id()));
+        }
+    }
+    if owners.len()
+        != symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+            .count()
+    {
+        return Err(invalid());
+    }
+    Ok(labels)
+}
+
 /// Authenticates all proof occurrence rows against the original source and symbols.
 pub fn validate_source_proof_occurrences(
     source: &SurfaceResolvedArena,

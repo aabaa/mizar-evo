@@ -12998,3 +12998,358 @@ fn source_algorithm_recursive_groups_refuse_invalid_associations_atomically_even
         );
     }
 }
+
+#[test]
+fn algorithm_definition_labels_preserve_borrowed_owners_and_original_tokens() {
+    let text =
+        include_str!("../../../../tests/miz/pass/parser/pass_parser_terminating_labels_001.miz");
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let before = (ast.clone(), env.clone(), arena.clone());
+    let rows = crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 4);
+    for ((owner, label), (spelling, name, visibility)) in rows.iter().zip([
+        ("PublicDef", "public_alg", Visibility::Public),
+        ("PrivateDef", "hidden", Visibility::Private),
+        ("DefaultDef", "default_alg", Visibility::Public),
+        ("TemplateDef", "templated", Visibility::Public),
+    ]) {
+        let start = text.find(&format!("{spelling}:")).unwrap();
+        let token = ast.node_view(*label).unwrap();
+        assert_eq!(
+            token.range(),
+            range(ast.source_id, start, start + spelling.len())
+        );
+        assert_eq!(token.as_token().unwrap().kind, SurfaceTokenKind::Identifier);
+        assert_eq!(token.as_token().unwrap().text.as_ref(), spelling);
+        let expected = env
+            .symbols()
+            .iter()
+            .find(|entry| entry.primary_spelling() == name)
+            .unwrap();
+        assert!(std::ptr::eq(*owner, expected));
+        assert_eq!(owner.kind(), SymbolKind::Algorithm);
+        assert_eq!(owner.visibility(), visibility);
+        assert_eq!(owner.origin().source_id(), ast.source_id);
+        let declaration = source_range_from_anchor(owner.origin().anchor()).unwrap();
+        assert!(declaration.start <= start && start + spelling.len() <= declaration.end);
+        assert!(arena.resolved_node_for(*label).is_some());
+    }
+    assert_eq!(
+        crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap(),
+        rows
+    );
+    assert_eq!((ast, env, arena), before);
+}
+
+#[test]
+fn algorithm_definition_labels_skip_empty_nonalgorithm_and_unlabelled_sources() {
+    for text in [
+        "",
+        "theorem Unrelated: 0 = 0;",
+        "definition let n be object; func OtherDef: other(n) -> object equals n; pred GuardDef: guard n means n = n; end;",
+        "definition terminating algorithm total() do end; algorithm partial() do end; end;",
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        assert!(
+            crate::symbols::source_algorithm_definition_labels(&arena, &env)
+                .unwrap()
+                .is_empty(),
+            "{text}"
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn algorithm_definition_labels_join_repeated_spellings_by_declaration_identity() {
+    let text = "definition let n be object; terminating algorithm Repeated: same(n) -> object do return n; end; terminating algorithm Other: other() do end; end; definition terminating algorithm Repeated: later() do end; terminating algorithm Other: last() do end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let rows = crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap();
+    let prefixes = [
+        "terminating algorithm Repeated: same(n)",
+        "terminating algorithm Other: other()",
+        "terminating algorithm Repeated: later()",
+        "terminating algorithm Other: last()",
+    ];
+    assert_eq!(rows.len(), prefixes.len());
+    for ((owner, token), prefix) in rows.iter().zip(prefixes) {
+        let expected = definiens_symbol_at(&env, text, prefix);
+        assert!(std::ptr::eq(*owner, expected));
+        let start = text.find(prefix).unwrap() + "terminating algorithm ".len();
+        assert_eq!(ast.node_view(*token).unwrap().range().start, start);
+    }
+    assert_ne!(rows[0].0.symbol(), rows[2].0.symbol());
+    assert_ne!(rows[0].1, rows[2].1);
+    // Repeated algorithm names in a different genuine source do not transfer ownership.
+    let (_, _, _, relocated_env, relocated_arena) =
+        parsed_private_theorem_fixture(&format!(":: relocated\n{text}"));
+    assert_eq!(
+        crate::symbols::source_algorithm_definition_labels(&relocated_arena, &relocated_env)
+            .unwrap()
+            .len(),
+        rows.len()
+    );
+    for (source, symbols) in [(&arena, &relocated_env), (&relocated_arena, &env)] {
+        let upstream = crate::symbols::validated_source_symbol_ast(source, symbols).unwrap_err();
+        assert_eq!(
+            crate::symbols::source_algorithm_definition_labels(source, symbols).unwrap_err(),
+            upstream
+        );
+    }
+}
+
+#[test]
+fn algorithm_definition_labels_follow_genuine_relocation_trivia_and_body_edits() {
+    let fixture =
+        include_str!("../../../../tests/miz/pass/parser/pass_parser_terminating_labels_001.miz");
+    for text in [
+        format!(":: λ relocation\n{fixture}"),
+        fixture.replace("PublicDef:", "PublicDef :: label trivia\n :"),
+        fixture.replace("return x;", "var y := x; return y;"),
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let rows = crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap();
+        assert_eq!(rows.len(), 4);
+        for ((owner, token), spelling) in
+            rows.iter()
+                .zip(["PublicDef", "PrivateDef", "DefaultDef", "TemplateDef"])
+        {
+            let node = ast.node_view(*token).unwrap();
+            let start = text.find(spelling).unwrap();
+            assert_eq!(
+                node.range(),
+                range(ast.source_id, start, start + spelling.len())
+            );
+            let owners = env
+                .symbols()
+                .iter()
+                .filter(|entry| {
+                    source_range_from_anchor(entry.origin().anchor())
+                        .is_some_and(|range| range.start <= start && start < range.end)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(owners.len(), 1);
+            assert!(std::ptr::eq(*owner, owners[0]));
+        }
+        assert_eq!(
+            crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap(),
+            rows
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn algorithm_definition_labels_refuse_foreign_recovered_and_malformed_inputs_atomically() {
+    use mizar_frontend::{
+        orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, SourceInput, SourceOriginInput, normalize_path,
+    };
+    let text = "definition terminating algorithm First: first() do end; terminating algorithm Last: last() do end; end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    assert_eq!(
+        crate::symbols::source_algorithm_definition_labels(&arena, &env)
+            .unwrap()
+            .len(),
+        2
+    );
+    let (_, _, _, foreign_env, _) =
+        parsed_private_theorem_fixture(&text.replace("last()", "other()"));
+    let (_, _, _, augmented, _) =
+        parsed_private_theorem_fixture(&format!("{text} theorem Added: 0 = 0;"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    for (source, symbols) in [
+        (&arena, &foreign_env),
+        (&arena, &augmented),
+        (&foreign, &env),
+    ] {
+        let before = (source.clone(), symbols.clone());
+        let upstream = crate::symbols::validated_source_symbol_ast(source, symbols).unwrap_err();
+        assert_eq!(
+            crate::symbols::source_algorithm_definition_labels(source, symbols).unwrap_err(),
+            upstream
+        );
+        assert_eq!((source.clone(), symbols.clone()), before);
+    }
+    // Frozen scope: refuse malformed labelled prefixes, including source/range/order.
+    for mutation in 0..6 {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for node in ast.node_views() {
+            let children = node
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect();
+            let mut token_range = node.range();
+            let next = match node.kind() {
+                SurfaceNodeKind::Token(token) => {
+                    let mut kind = token.kind;
+                    let mut spelling = token.text.to_string();
+                    if token_range.start == text.find("Last:").unwrap() {
+                        match mutation {
+                            0 => kind = SurfaceTokenKind::Numeral,
+                            1 => token_range.end = token_range.start,
+                            2 => token_range.source_id = distinct_source_ids().1,
+                            3 => token_range.end = text.len() + 1,
+                            5 => token_range.start -= "algorithm ".len(),
+                            _ => {}
+                        }
+                    }
+                    if mutation == 4 && token_range.start == text.find("Last:").unwrap() + 4 {
+                        spelling = ".".to_owned();
+                    }
+                    builder.add_token(kind, spelling, token_range)
+                }
+                kind => builder.add_node(kind.clone(), token_range, children),
+            };
+            rebuilt.push(next);
+        }
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&changed, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&changed, &shells, namespace.clone())
+                .collect(&module);
+        let changed_arena = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        let before = (changed.clone(), collected.clone(), changed_arena.clone());
+        let error =
+            crate::symbols::source_algorithm_definition_labels(&changed_arena, collected.env())
+                .unwrap_err();
+        let upstream = crate::symbols::validated_source_symbol_ast(&changed_arena, collected.env());
+        if mutation == 5 {
+            assert!(
+                upstream.is_ok(),
+                "prefix-order mutation must reach the producer"
+            );
+        }
+        match upstream {
+            Err(upstream) => assert_eq!(error, upstream),
+            Ok(_) => assert_eq!(error, "invalid source algorithm definition labels"),
+        }
+        assert_eq!((changed, collected, changed_arena), before);
+    }
+    let root = std::env::temp_dir().join(format!(
+        "mizar-algorithm-label-recovery-{}",
+        std::process::id()
+    ));
+    let path = root.join("src/main.miz");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, format!("{text} theorem Broken: 0 = ;")).unwrap();
+    let frontend = Frontend::new(
+        FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+        NoImportedSummaries,
+        MizarParserSeam,
+    )
+    .run(
+        mizar_frontend::source::SourceUnitRequest {
+            snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                "mizar-session-build-snapshot-v1:{}",
+                "31".repeat(Hash::BYTE_LEN)
+            ))
+            .unwrap(),
+            input: SourceInput {
+                package_id: PackageId::new("pkg"),
+                module_path: ModulePath::new("main"),
+                normalized_path: normalize_path(&root, &path).unwrap(),
+                edition: Edition::new("2025"),
+                origin: SourceOriginInput::Disk { path },
+            },
+        },
+        &InMemorySessionIdAllocator::new(),
+    )
+    .unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+    assert!(!frontend.diagnostics.is_empty());
+    let recovered = frontend.ast.as_ref().unwrap();
+    assert!(recovered.node_views().any(
+        |node| node.is_recovered() || matches!(node.kind(), SurfaceNodeKind::ErrorRecovery(_))
+    ));
+    let shells = crate::declarations::DeclarationShellCollector::new(recovered, &module).collect();
+    let collected =
+        crate::symbols::SignatureProjectionExtractor::new(recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(recovered, &module).unwrap();
+    let before = (frontend.clone(), collected.clone(), recovered_arena.clone());
+    let upstream =
+        crate::symbols::validated_source_symbol_ast(&recovered_arena, collected.env()).unwrap_err();
+    assert_eq!(
+        crate::symbols::source_algorithm_definition_labels(&recovered_arena, collected.env())
+            .unwrap_err(),
+        upstream
+    );
+    assert_eq!((frontend, collected, recovered_arena), before);
+}
+
+#[test]
+fn algorithm_definition_labels_leave_collector_profiles_and_citations_unchanged() {
+    // §16.5.1: identity alone grants neither a definition-label nor name citation.
+    let text = "definition let n be object; terminating algorithm AlgoDef: run(n) -> object do var x := run(n); if x = n do assert n = n; end; return x; end; end; theorem Use: 0 = 0 proof thus 0 = 0 by AlgoDef, run; end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let owner = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.primary_spelling() == "Use")
+        .unwrap();
+    let collector = ProofLabelSourceCollector::new(
+        &ast,
+        &module,
+        namespace.clone(),
+        owner.contribution(),
+        &arena,
+    )
+    .unwrap();
+    let before = [
+        collector.collect().unwrap(),
+        collector.collect_with_let_conditions().unwrap(),
+        collector.collect_with_proof_organization().unwrap(),
+        collector.collect_with_theorem_owners(&env).unwrap(),
+        collector
+            .collect_with_native_proof_organization(&env)
+            .unwrap(),
+    ];
+    let rows = crate::symbols::source_algorithm_definition_labels(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].0.primary_spelling(), "run");
+    let after = [
+        collector.collect().unwrap(),
+        collector.collect_with_let_conditions().unwrap(),
+        collector.collect_with_proof_organization().unwrap(),
+        collector.collect_with_theorem_owners(&env).unwrap(),
+        collector
+            .collect_with_native_proof_organization(&env)
+            .unwrap(),
+    ];
+    assert_eq!(before, after);
+    for collection in after {
+        assert!(
+            !collection
+                .projections()
+                .iter()
+                .any(|row| ["AlgoDef", "run"].contains(&row.primary_spelling()))
+        );
+        assert_eq!(
+            collection
+                .references()
+                .iter()
+                .map(|reference| reference.site().spelling())
+                .collect::<Vec<_>>(),
+            ["AlgoDef", "run"]
+        );
+        let result = LabelResolver::new(collection.projections()).resolve(
+            &module,
+            &namespace,
+            collection.references(),
+        );
+        assert!(result.has_unresolved());
+        assert_eq!(result.ids().len(), 2);
+        assert!(result.ids().iter().all(|id| matches!(
+            result.table().get(*id).unwrap().resolution(),
+            LabelResolution::Unresolved(_)
+        )));
+    }
+}

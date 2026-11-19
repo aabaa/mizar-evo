@@ -881,4 +881,4 @@ Calibrate genuine foreign Frontend/collection, imports/extra declarations/privat
 
 ## Terminating Algorithm Label Boundary
 
-For the exact terminating labelled direct header, algorithm projection selects the name after the label/colon; the shared unlabelled name helper stays unchanged. Keep the full declaration origin and label-bearing opaque signature/raw syntax payload. DefinitionLabel identity/citation/promotion remain deferred; existing variable/type/export consumers reject labelled headers until their semantic prerequisite is owned.
+For the exact terminating labelled direct header, algorithm projection selects the name after the label/colon; the shared unlabelled name helper stays unchanged. Keep the full declaration origin and label-bearing opaque signature/raw syntax payload. The [label identity producer](labels.md#purpose) retains actual owners and original tokens; citation/promotion remain deferred, and existing variable/type/export consumer profiles remain unchanged.
