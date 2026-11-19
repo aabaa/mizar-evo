@@ -120,6 +120,8 @@ pub enum DocLinkOutcome {
 /// Lookup retains authenticated candidates and all distinct provenance routes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocReferenceResolution {
+    /// Original per-block position, supplied only by authenticated traversal.
+    pub(crate) encounter_ordinal: Option<usize>,
     /// Original producer handoff.
     pub occurrence: ClassifiedDocOccurrence,
     /// Safe presentation outcome.
@@ -128,6 +130,17 @@ pub struct DocReferenceResolution {
     pub candidates: Vec<DocLinkTarget>,
     /// Known routes, independently of lookup completeness.
     pub routes: Vec<DocLinkRoute>,
+}
+
+impl DocReferenceResolution {
+    /// Returns the zero-based original encounter position within `occurrence.block`.
+    ///
+    /// Ordinary and external occurrences consume positions too. Lower supplied-
+    /// occurrence resolution leaves this absent; output order cannot authenticate it.
+    /// This describes the producer result, not subsequent caller mutations.
+    pub fn encounter_ordinal(&self) -> Option<usize> {
+        self.encounter_ordinal
+    }
 }
 
 /// Direct syntactic citation reversal for one theorem in the attached module.
@@ -429,6 +442,7 @@ fn resolve_reference(
     occurrence: &ClassifiedDocOccurrence,
 ) -> (DocReferenceResolution, Vec<Value>) {
     let mut reference = DocReferenceResolution {
+        encounter_ordinal: None,
         occurrence: occurrence.clone(),
         outcome: DocLinkOutcome::Excluded,
         candidates: Vec::new(),

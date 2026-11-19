@@ -888,7 +888,7 @@ mod q1_comments {
         use mizar_doc::doc_build::*;
         use mizar_session::TextRange;
 
-        let original = "\u{feff}::: café\r\ntheorem Named: thesis by Named, Named;\r\n";
+        let original = "\u{feff}::: café [first][r] [second][r]\r\n:::\r\n::: [r]: https://host\r\ntheorem Named: thesis by Named, Named;\r\n";
         let mut f = Fixture::new(original, None);
         let frontend = f.frontend(0);
         f.capture(0, &frontend);
@@ -1011,9 +1011,9 @@ mod q1_comments {
             .unwrap();
         assert_eq!(view_path, "sources/src/module0.miz.html");
         assert!(
-            html.contains("<li id=\"L1\"><pre><code>\u{feff}::: café\\u{d}</code></pre></li>\n")
+            html.contains("<li id=\"L1\"><pre><code>\u{feff}::: café [first][r] [second][r]\\u{d}</code></pre></li>\n")
         );
-        assert!(html.contains("<li id=\"L3\"><pre><code></code></pre></li>\n"));
+        assert!(html.contains("<li id=\"L5\"><pre><code></code></pre></li>\n"));
         let loaded_start = f.outputs[0].source.source_text.find("theorem").unwrap();
         assert_eq!(
             source_views
@@ -1024,7 +1024,7 @@ mod q1_comments {
                     "module0/index.html",
                 )
                 .unwrap(),
-            "<p class=\"mizar-source\">Source: <a href=\"../sources/src/module0.miz.html#L2\">line 2</a></p>\n"
+            "<p class=\"mizar-source\">Source: <a href=\"../sources/src/module0.miz.html#L4\">line 4</a></p>\n"
         );
         assert_eq!(
             source_views
@@ -1040,7 +1040,7 @@ mod q1_comments {
         assert_eq!(
             mizar_doc::render::summary_text(&parsed, mizar_doc::comments::CommentTarget::Module)
                 .unwrap(),
-            Some("café".into())
+            Some("café first second".into())
         );
         let comment_allocations = mizar_doc::allocations::validate_doc_allocations(
             &inputs,
@@ -1061,13 +1061,53 @@ mod q1_comments {
             &direct_by,
             &comment_allocations,
             "source-view-spec",
-            &[vec![]],
+            &[vec![
+                mizar_doc::links::DocReferenceClassification::External;
+                2
+            ]],
         )
         .unwrap();
-        assert_eq!(fragments.complete.as_deref(), Some("<p>café</p>\n"));
+        assert_eq!(
+            fragments.complete.as_deref(),
+            Some(
+                "<p>café <a href=\"https://host\">first</a> <a href=\"https://host\">second</a></p>\n"
+            )
+        );
         assert!(fragments.parameters.is_empty());
         assert!(fragments.see.is_empty());
-        assert!(links.references.is_empty());
+        assert_eq!(links.references.len(), 2);
+        assert_eq!(
+            links.references[0].occurrence.range,
+            links.references[1].occurrence.range
+        );
+        assert_eq!(
+            links
+                .references
+                .iter()
+                .map(|reference| reference.encounter_ordinal())
+                .collect::<Vec<_>>(),
+            [Some(0), Some(1)]
+        );
+        let supplied = links
+            .references
+            .iter()
+            .map(|reference| reference.occurrence.clone())
+            .collect::<Vec<_>>();
+        let lower = mizar_doc::links::resolve_doc_links(
+            &parsed,
+            &inputs,
+            &direct_by,
+            &comment_allocations,
+            "source-view-spec",
+            &supplied,
+        )
+        .unwrap();
+        assert!(
+            lower
+                .references
+                .iter()
+                .all(|reference| reference.encounter_ordinal().is_none())
+        );
         let (templates, template_links) = mizar_doc::render::comment_template_fragments(
             &parsed,
             mizar_doc::comments::CommentTarget::Module,
@@ -1075,13 +1115,16 @@ mod q1_comments {
             &direct_by,
             &comment_allocations,
             "source-view-spec",
-            &[vec![]],
+            &[vec![
+                mizar_doc::links::DocReferenceClassification::External;
+                2
+            ]],
         )
         .unwrap();
         assert_eq!(
             templates.unwrap(),
             [
-                "<div class=\"mizar-comment\"><p>café</p>\n</div>\n",
+                "<div class=\"mizar-comment\"><p>café <a href=\"https://host\">first</a> <a href=\"https://host\">second</a></p>\n</div>\n",
                 "<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody></tbody></table></section>\n",
                 "<section class=\"mizar-see-also\"><h2>See also</h2><ul></ul></section>\n",
             ]

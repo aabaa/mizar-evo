@@ -824,9 +824,10 @@ pub fn comment_fragments(
         if slots.len() != classes.len() {
             return Err(refuse());
         }
-        for ((_, event, form, range, interpreted), classification) in slots.into_iter().zip(classes)
+        for (encounter, ((_, event, form, range, interpreted), classification)) in
+            slots.into_iter().zip(classes).enumerate()
         {
-            bindings.push(event);
+            bindings.push((event, encounter));
             occurrences.push(ClassifiedDocOccurrence {
                 block: ordinal,
                 destination_ranges: vec![range.clone()],
@@ -846,14 +847,15 @@ pub fn comment_fragments(
         &occurrences,
     )?;
     // Apply the same URL policy once per original occurrence, never per derived view.
-    for (ordinal, reference) in resolved.references.iter().enumerate() {
+    for (reference, (event, encounter)) in resolved.references.iter_mut().zip(&bindings) {
+        reference.encounter_ordinal = Some(*encounter);
         let occurrence = &reference.occurrence;
         if occurrence.classification == DocReferenceClassification::External
             && let Some(url) = occurrence.interpreted.as_deref()
             && !accepted_url(url)
         {
             let block = &parsed.blocks[occurrence.block];
-            let Some(destination) = bindings[ordinal].and_then(|event| {
+            let Some(destination) = event.and_then(|event| {
                 block
                     .destinations
                     .iter()
@@ -861,7 +863,7 @@ pub fn comment_fragments(
             }) else {
                 continue;
             };
-            let image = bindings[ordinal].is_some_and(|event| {
+            let image = event.is_some_and(|event| {
                 matches!(block.events[event].0, Event::Start(Tag::Image { .. }))
             });
             resolved.warnings.push(url_draft(
@@ -911,7 +913,7 @@ pub fn comment_fragments(
         let references: Vec<_> = resolved
             .references
             .iter()
-            .zip(&bindings)
+            .zip(bindings.iter().map(|(event, _)| event))
             .filter(|(reference, _)| reference.occurrence.block == ordinal)
             .collect();
         result

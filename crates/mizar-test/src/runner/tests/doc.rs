@@ -8647,14 +8647,18 @@ mod doc10_authenticated {
                     classifications: &[Vec<DocReferenceClassification>],
                 ) -> Result<(Vec<String>, ResolvedDocLinks), DocBuildError> {
                     let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
-                    url_fragments(
+                    let result = url_fragments(
                         parsed,
                         imports,
                         &direct_by,
                         allocations,
                         VERSION,
                         classifications,
-                    )
+                    );
+                    if let Ok((_, links)) = &result {
+                        assert!(links.references.iter().all(|reference| reference.encounter_ordinal().is_none()));
+                    }
+                    result
                 }
 
                 fn rejected(result: &ResolvedDocLinks) -> Vec<&DiagnosticDraft> {
@@ -8695,6 +8699,10 @@ mod doc10_authenticated {
                         match (&result, expanded) {
                             (Ok((fragments, links)), Ok((templates, resolved))) => {
                                 assert_eq!(format!("{links:?}"), format!("{resolved:?}"));
+                                assert_eq!(
+                                    links.references.iter().map(|reference| (reference.occurrence.block, reference.encounter_ordinal())).collect::<Vec<_>>(),
+                                    classes.iter().enumerate().flat_map(|(block, classes)| (0..classes.len()).map(move |ordinal| (block, Some(ordinal)))).collect::<Vec<_>>(),
+                                );
                                 if let Some(complete) = &fragments.complete {
                                     let [comment, params, see] = templates.unwrap();
                                     assert_eq!(comment.strip_prefix("<div class=\"mizar-comment\">").unwrap().strip_suffix("</div>\n").unwrap(), complete);
@@ -8728,9 +8736,115 @@ mod doc10_authenticated {
                     ) {
                         let occurrences = links.references.iter().map(|reference| reference.occurrence.clone()).collect::<Vec<_>>();
                         let lower = resolve(parsed, imports, allocations, &occurrences);
-                        assert_eq!(links.references, lower.references);
+                        assert_eq!(links.references.len(), lower.references.len());
+                        for (reference, lower) in links.references.iter().zip(&lower.references) {
+                            assert_eq!(reference.occurrence, lower.occurrence);
+                            assert_eq!(reference.outcome, lower.outcome);
+                            assert_eq!(reference.candidates, lower.candidates);
+                            assert_eq!(reference.routes, lower.routes);
+                            assert_eq!(lower.encounter_ordinal(), None);
+                        }
                         assert_eq!(links.used_by, lower.used_by);
                         assert_eq!(links.warnings, lower.warnings);
+                    }
+
+                    #[test]
+                    fn doc13_flow_reference_ordinals_follow_encounters_not_destination_ranges() {
+                        use DocReferenceClassification::{External, Label};
+                        use DocReferenceForm::{Code, Explicit, See};
+
+                        fixture(
+                            "::: [before]: https://before/?a&amp;b\n:::\n::: `Exact` [one][before] ![image][after] [two][before] [nested `ignored`](https://host)\n:::\n::: @param `opaque` $inline$\n:::\n::: @see Exact body\n:::\n::: @see\n:::\n::: $$\n::: `display`\n::: $$\n:::\n::: [after]: https://image\n\n::: `Exact` [again](Exact)\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                let classes = [
+                                    vec![Label, External, External, External, External, Label],
+                                    vec![Label, Label],
+                                ];
+                                let (_, links) =
+                                    flow(&parsed, imports, allocations, &classes).unwrap();
+                                let text = &parsed.blocks[0].text;
+                                let code = text.find("`Exact`").unwrap();
+                                let before = text.find("https://before/?a&amp;b").unwrap();
+                                let after = text.find("https://image").unwrap();
+                                let nested = text.find("https://host").unwrap();
+                                let see = text.find("Exact body").unwrap();
+                                for (reference, (form, range, interpreted)) in
+                                    links.references[..6].iter().zip([
+                                        (Code, code..code + "`Exact`".len(), "Exact"),
+                                        (
+                                            Explicit,
+                                            before..before + "https://before/?a&amp;b".len(),
+                                            "https://before/?a&b",
+                                        ),
+                                        (
+                                            Explicit,
+                                            after..after + "https://image".len(),
+                                            "https://image",
+                                        ),
+                                        (
+                                            Explicit,
+                                            before..before + "https://before/?a&amp;b".len(),
+                                            "https://before/?a&b",
+                                        ),
+                                        (
+                                            Explicit,
+                                            nested..nested + "https://host".len(),
+                                            "https://host",
+                                        ),
+                                        (See, see..see + "Exact".len(), "Exact"),
+                                    ])
+                                {
+                                    assert_eq!(reference.occurrence.form, form);
+                                    assert_eq!(reference.occurrence.range, range);
+                                    assert_eq!(
+                                        reference.occurrence.destination_ranges,
+                                        vec![range]
+                                    );
+                                    assert_eq!(
+                                        reference.occurrence.interpreted.as_deref(),
+                                        Some(interpreted)
+                                    );
+                                }
+                                assert_eq!(
+                                    links.references[1].occurrence.range,
+                                    links.references[3].occurrence.range
+                                );
+                                assert!(
+                                    links.references[1].occurrence.range.start
+                                        < links.references[0].occurrence.range.start
+                                );
+                                assert!(
+                                    links.references[2].occurrence.range.start
+                                        > links.references[5].occurrence.range.start
+                                );
+                                assert_eq!(links.references[6].encounter_ordinal(), Some(0));
+                                unchanged_links(&parsed, imports, allocations, &links);
+                                let supplied = links
+                                    .references
+                                    .iter()
+                                    .rev()
+                                    .chain(links.references.iter().take(1))
+                                    .map(|reference| reference.occurrence.clone())
+                                    .collect::<Vec<_>>();
+                                let lower = resolve(&parsed, imports, allocations, &supplied);
+                                assert_eq!(
+                                    lower
+                                        .references
+                                        .iter()
+                                        .map(|reference| &reference.occurrence)
+                                        .collect::<Vec<_>>(),
+                                    supplied.iter().collect::<Vec<_>>()
+                                );
+                                assert!(
+                                    lower
+                                        .references
+                                        .iter()
+                                        .all(|reference| reference.encounter_ordinal().is_none())
+                                );
+                            },
+                        );
                     }
 
                     #[test]
@@ -8969,7 +9083,7 @@ mod doc10_authenticated {
 
                     #[test]
                     fn doc13_flow_supplied_reference_outcomes_and_promotion_are_unchanged() {
-                        use DocReferenceClassification::{Label, Ordinary, Section};
+                        use DocReferenceClassification::{External, Label, Ordinary, Section, Unavailable};
                         let mut app = publication(&[
                             ("exact.FQN", "Exact"),
                             ("one.FQN", "Twin"),
@@ -8977,7 +9091,7 @@ mod doc10_authenticated {
                         ]);
                         document(
                             &mut app,
-                            "::: `Exact` [missing](Missing) `expression` [ambiguous](Twin) [section](unknown)\n:::\n::: @see Exact *body*\n",
+                            "::: `Exact` [missing](Missing) `expression` [ambiguous](Twin) [section](unknown) [external](https://host) [unavailable](Exact)\n:::\n::: @see Exact *body*\n",
                         );
                         let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
                         let imports = authenticate_doc_imports(
@@ -8989,7 +9103,7 @@ mod doc10_authenticated {
                         )
                         .unwrap();
                         let allocations = validate(&app, &imports, table(&app)).unwrap();
-                        let classes = [vec![Label, Label, Ordinary, Label, Section, Label]];
+                        let classes = [vec![Label, Label, Ordinary, Label, Section, External, Unavailable, Label]];
                         let attached = doc7_attach(&plans[0]);
                         let parsed = parse_comments(&attached, &[]);
                         let (result, links) =
@@ -9009,7 +9123,9 @@ mod doc10_authenticated {
                         assert_eq!(links.references[2].outcome, DocLinkOutcome::Excluded);
                         assert_eq!(links.references[3].outcome, DocLinkOutcome::Ambiguous);
                         assert_eq!(links.references[4].outcome, DocLinkOutcome::Incomplete);
-                        assert_eq!(links.references[5].outcome, links.references[0].outcome);
+                        assert_eq!(links.references[5].outcome, DocLinkOutcome::Linked { href: "https://host".into() });
+                        assert_eq!(links.references[6].outcome, DocLinkOutcome::Unresolved);
+                        assert_eq!(links.references[7].outcome, links.references[0].outcome);
                         assert!(html.contains("<code>expression</code>"));
                         assert!(html.contains("missing"), "{html}");
                         assert!(html.contains("ambiguous"), "{html}");
@@ -9022,8 +9138,11 @@ mod doc10_authenticated {
                         unchanged_links(&parsed, &imports, &allocations, &links);
                         assert!(!links.documentation_failed());
                         assert!(flow(&parsed, &imports, &allocations, &[]).is_err());
+                        let mut extra = classes[0].clone();
+                        extra.push(Label);
+                        assert!(flow(&parsed, &imports, &allocations, &[extra]).is_err());
                         assert!(
-                            flow(&parsed, &imports, &allocations, &[classes[0][..5].to_vec()])
+                            flow(&parsed, &imports, &allocations, &[classes[0][..7].to_vec()])
                                 .is_err()
                         );
                         drop(parsed);
@@ -9293,11 +9412,13 @@ mod doc10_authenticated {
                                         4 => tampered.blocks[0].destinations[0].1 = 0..1,
                                         _ => tampered.blocks[0].source_map.clear(),
                                     }
+                                    let before = format!("{tampered:?}");
                                     assert!(
                                         flow(&tampered, imports, allocations, &external(&parsed))
                                             .is_err(),
                                         "change {change}"
                                     );
+                                    assert_eq!(format!("{tampered:?}"), before);
                                 }
                                 assert_eq!(format!("{parsed:?}"), before);
                                 assert_eq!(plans[0], plan_before);
