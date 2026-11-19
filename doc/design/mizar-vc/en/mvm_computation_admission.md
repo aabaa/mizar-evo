@@ -64,8 +64,8 @@ and never makes R3 executable publication depend on future R7 records.
 - **Q2:** bind each accepted VC or syntactic exemption to the **same**
   request, contract, closure, policy and version; validate on change.
   Proof remains the sole acceptance owner.
-- **Q3:** a genuine unprovable uniqueness VC on a supported computation
-  request yields E0330; an unformed producer/closure has no such VC.
+- **Q3:** a genuine uniqueness VC that cannot be discharged on a supported
+  computation request yields E0330; an unformed producer/closure has no such VC.
   Never infer E0330 from an arbitrary status flag.
 
 **First possible implementation freeze:** R6-A local source-edge
