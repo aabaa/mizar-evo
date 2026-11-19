@@ -1,8 +1,11 @@
 # Task MVM-READINESS-MAP: Authentic MVM first-slice readiness inventory
 
 Canonical language: English; [Japanese pointer](../ja/MVM-READINESS-MAP.md).
-Status: planned, documentation-only; ready for Muse dispatch under the MVM
-preparation fallback in the [roadmap](../../todo.md#mvm-readiness-decomposition--).
+Status: in progress, documentation-only; source inventory and owner DAG are
+committed in [mvm_readiness.md](../../mizar-vc/en/mvm_readiness.md), with
+independent reviews and repository lint still required before R1 completion.
+The task remains the MVM preparation fallback in the
+[roadmap](../../todo.md#mvm-readiness-decomposition--).
 Tier: full documentation/review gates. Sole task owner:
 [mizar-vc plan](../../mizar-vc/en/00.crate_plan.md). The inventory coordinates
 Core, Checker, Artifact, Build and Test without assuming their authority.
