@@ -17,14 +17,15 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0017", "E0018", "E0019", "E0020", "E0021", "E0022", "E0023", "E0024", "E0025", "E0026",
     "E0027", "E0028", "E0029", "E0030", "E0031", "E0032", "E0033", "E0034", "E0035", "E0036",
     "E0037", "E0038", "E0039", "E0040", "E0041", "E0042", "E0043", "E0044", "E0045", "E0046",
-    "E0047", "E0048", "E0049", "E0050", "E0051", "E0052", "E0101", "E0102", "E0103", "E0110",
-    "E0120", "E0121", "E0122", "E0201", "E0202", "E0203", "E0204", "E0220", "E0221", "E0222",
-    "E0223", "E0224", "E0301", "E0302", "E0303", "E0310", "E0320", "E0321", "E0350", "E0351",
-    "E0352", "E0353", "E0401", "E0410", "E0411", "E0420", "E0421", "E0422", "E0423", "E0424",
-    "E0425", "E0426", "E0430", "E0600", "E0601", "E0602", "E0603", "W0001", "W0002", "W0003",
-    "W0010", "W0101", "W0102", "W0103", "W0201", "W0202", "W0210", "W0301", "W0302", "W0303",
-    "W0304", "W0305", "W0400", "W0401", "W0402", "W0403", "W0404", "W0405", "W0406", "W0407",
-    "W0408", "W0409", "W0410", "W0411", "W0412", "W0413", "W0414", "W0415",
+    "E0047", "E0048", "E0049", "E0050", "E0051", "E0052", "E0101", "E0102", "E0103", "E0104",
+    "E0110", "E0111", "E0112", "E0120", "E0121", "E0122", "E0201", "E0202", "E0203", "E0204",
+    "E0206", "E0220", "E0221", "E0222", "E0223", "E0224", "E0301", "E0302", "E0303", "E0310",
+    "E0320", "E0321", "E0332", "E0333", "E0350", "E0351", "E0352", "E0353", "E0401", "E0410",
+    "E0411", "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430", "E0600",
+    "E0601", "E0602", "E0603", "W0001", "W0002", "W0003", "W0010", "W0101", "W0102", "W0103",
+    "W0201", "W0202", "W0210", "W0301", "W0302", "W0303", "W0304", "W0305", "W0400", "W0401",
+    "W0402", "W0403", "W0404", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410", "W0411",
+    "W0412", "W0413", "W0414", "W0415",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -480,6 +481,111 @@ fn import_allocations_match_spec_and_construct_shared_records() {
         .expect("allocated import code creates record");
         assert_eq!(record.code(), code);
         assert_eq!(record.semantic_name(), name);
+    }
+}
+
+#[test]
+fn reflection_allocations_match_spec_and_construct_shared_records() {
+    let spec = include_str!("../../../doc/spec/en/22.error_handling_and_diagnostics.md");
+    let rows = spec
+        .lines()
+        .filter(|line| line.starts_with("| E") && line.contains("| §22.4.8 |"))
+        .map(|line| {
+            let columns = line.split('|').map(str::trim).collect::<Vec<_>>();
+            (columns[1], columns[2].trim_matches('`'), columns[4])
+        })
+        .collect::<Vec<_>>();
+    let expected = [
+        ("E0104", "type.ghost_runtime_flow", PhaseFamily::Type),
+        ("E0111", "type.binder_formation", PhaseFamily::Type),
+        ("E0112", "type.valuation_formation", PhaseFamily::Type),
+        ("E0206", "resolve.ast_scope", PhaseFamily::Resolution),
+        (
+            "E0332",
+            "proof.computation.invalid_import",
+            PhaseFamily::Proof,
+        ),
+        ("E0333", "proof.computation.incomplete", PhaseFamily::Proof),
+    ];
+    assert_eq!(rows.len(), expected.len());
+    let registry = DiagnosticRegistry::builtin();
+    let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
+        "mizar-session-build-snapshot-v1:{}",
+        "48".repeat(32)
+    ))
+    .unwrap();
+    let source_id = InMemorySessionIdAllocator::new()
+        .next_source_id(snapshot)
+        .unwrap();
+    for (index, ((code_text, name, summary), (expected_code, expected_name, family))) in
+        rows.into_iter().zip(expected).enumerate()
+    {
+        assert_eq!((code_text, name), (expected_code, expected_name));
+        assert_eq!(
+            summary,
+            "Reflection diagnostic; specified, registry/emission deferred."
+        );
+        let code = DiagnosticCode::from_str(code_text).unwrap();
+        let descriptor = registry
+            .lookup(code)
+            .expect("allocated reflection descriptor");
+        assert_eq!(descriptor.code, code);
+        assert_eq!(descriptor.semantic_name, name);
+        assert_eq!(descriptor.meaning_key, name);
+        assert_eq!(descriptor.summary, summary);
+        assert_eq!(descriptor.default_severity, DiagnosticSeverity::Error);
+        assert_eq!(descriptor.phase_family, family);
+        assert_eq!(descriptor.status, DiagnosticStatus::Active);
+        assert_eq!(descriptor.since, "spec-22.7-v1");
+        assert_eq!(
+            descriptor.doc_url,
+            "doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference"
+        );
+        assert!(descriptor.aliases.is_empty());
+        assert_eq!(descriptor.retired_since, None);
+        assert!(descriptor.replacement_codes.is_empty());
+        assert_eq!(
+            registry.lookup_semantic_name(family, name),
+            Some(descriptor)
+        );
+        // Synthetic registry construction establishes no owning-stage emission coverage.
+        let draft = DiagnosticDraft::new(DiagnosticDraftInput {
+            source_snapshot: snapshot,
+            code,
+            phase: PipelinePhase::Internal,
+            category: FailureCategory::InternalInvariant,
+            stable_detail_key: name.to_owned(),
+            message: summary.to_owned(),
+            primary_location: DiagnosticPrimaryLocation::Span(
+                DiagnosticSpan::primary(
+                    SourceRange {
+                        source_id,
+                        start: 0,
+                        end: 1,
+                    },
+                    None,
+                )
+                .unwrap(),
+            ),
+            secondary_spans: vec![],
+            notes: vec![],
+            details: DiagnosticDetails::new(),
+            fixes: vec![],
+            explanation: None,
+        })
+        .expect("allocated reflection code creates draft");
+        let record = DiagnosticRecord::from_draft(
+            draft,
+            DiagnosticHandle::new(snapshot, DiagnosticId::new(index as u64)),
+            DiagnosticFreshness::Current {
+                source_snapshot: snapshot,
+            },
+            vec![],
+        )
+        .expect("allocated reflection code creates record");
+        assert_eq!(record.code(), descriptor.code);
+        assert_eq!(record.semantic_name(), descriptor.semantic_name);
+        assert_eq!(record.severity(), descriptor.default_severity);
     }
 }
 

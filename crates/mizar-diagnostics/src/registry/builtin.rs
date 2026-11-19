@@ -439,10 +439,31 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
     ),
     builtin_descriptor!(
         Error,
+        104,
+        "type.ghost_runtime_flow",
+        Type,
+        "Reflection diagnostic; specified, registry/emission deferred."
+    ),
+    builtin_descriptor!(
+        Error,
         110,
         "type.inference_conflict",
         Type,
         "Conflicting type constraints within an expression"
+    ),
+    builtin_descriptor!(
+        Error,
+        111,
+        "type.binder_formation",
+        Type,
+        "Reflection diagnostic; specified, registry/emission deferred."
+    ),
+    builtin_descriptor!(
+        Error,
+        112,
+        "type.valuation_formation",
+        Type,
+        "Reflection diagnostic; specified, registry/emission deferred."
     ),
     builtin_descriptor!(
         Error,
@@ -492,6 +513,13 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "resolve.incompatible_refinement_join",
         Resolution,
         "Same-root redefinitions expose incompatible joined facts"
+    ),
+    builtin_descriptor!(
+        Error,
+        206,
+        "resolve.ast_scope",
+        Resolution,
+        "Reflection diagnostic; specified, registry/emission deferred."
     ),
     builtin_descriptor!(
         Error,
@@ -574,6 +602,20 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
         "proof.atp.axiom_budget_exceeded",
         Proof,
         "Axiom set exceeds `max_axioms` limit for the obligation"
+    ),
+    builtin_descriptor!(
+        Error,
+        332,
+        "proof.computation.invalid_import",
+        Proof,
+        "Reflection diagnostic; specified, registry/emission deferred."
+    ),
+    builtin_descriptor!(
+        Error,
+        333,
+        "proof.computation.incomplete",
+        Proof,
+        "Reflection diagnostic; specified, registry/emission deferred."
     ),
     builtin_descriptor!(
         Error,
