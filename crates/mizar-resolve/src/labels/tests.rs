@@ -39,6 +39,19 @@ fn parsed_private_theorem_fixture(
     SymbolEnv,
     SurfaceResolvedArena,
 ) {
+    parsed_private_theorem_fixture_with_unresolved_imports(text, 0)
+}
+
+fn parsed_private_theorem_fixture_with_unresolved_imports(
+    text: &str,
+    unresolved_imports: usize,
+) -> (
+    SurfaceAst,
+    ModuleId,
+    NamespacePath,
+    SymbolEnv,
+    SurfaceResolvedArena,
+) {
     use mizar_frontend::{
         orchestration::Frontend, parsing::MizarParserSeam, source::FrontendSourceLoader,
     };
@@ -90,7 +103,18 @@ fn parsed_private_theorem_fixture(
     )
     .unwrap();
     std::fs::remove_dir_all(root).unwrap();
-    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    assert_eq!(
+        output.diagnostics.len(),
+        unresolved_imports,
+        "{text}\n{:?}",
+        output.diagnostics
+    );
+    assert!(output.diagnostics.iter().all(|diagnostic| {
+        diagnostic.code
+            == mizar_frontend::orchestration::DiagnosticCode::LexicalEnvironment(
+                mizar_frontend::lexical_env::LexicalEnvironmentDiagnosticCode::UnresolvedImport,
+            )
+    }));
     let ast = output.ast.expect("private theorem source has a parser AST");
     let module = module_id("pkg", "main");
     let namespace = NamespacePath::new("main");
@@ -11016,7 +11040,7 @@ fn algorithm_call_candidates_keep_recursive_sites_and_binder_free_control_flow()
 }
 
 #[test]
-fn algorithm_call_candidates_withhold_genuine_header_regions() {
+fn algorithm_call_candidates_keep_completed_header_regions_without_forward_permission() {
     let text = "definition let n be object; mode FamilyDef: Family of n is object; algorithm shape(n) -> object do return n; end; algorithm allowed(n) -> object do return n; end; algorithm promised(n) -> object do return n; end; algorithm measure(n) -> object do return n; end; algorithm bodycall(n) -> object do return n; end; algorithm contract(n) -> Family[shape(n)] requires allowed(n) = n ensures result = promised(n) decreasing measure(n) do return bodycall(n); end; end;";
     let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
     let (rows, candidates) =
@@ -11037,17 +11061,77 @@ fn algorithm_call_candidates_withhold_genuine_header_regions() {
             call.application(),
             algorithm_inventory_node_at(&ast, start, application, SurfaceNodeKind::ApplicationTerm)
         );
+        let declaration = format!("algorithm {}", application.split('(').next().unwrap());
+        let expected = env
+            .symbols()
+            .iter()
+            .find(|entry| {
+                source_range_from_anchor(entry.origin().anchor())
+                    .is_some_and(|range| range.start == text.find(&declaration).unwrap())
+            })
+            .unwrap();
+        let entries = &candidates[&call.application()];
+        assert_eq!(entries.len(), 1);
+        assert!(std::ptr::eq(entries[0], expected));
         if application == "bodycall(n)" {
             assert_eq!(call.region(), row.body());
-            assert_eq!(candidates[&call.application()].len(), 1);
-            assert!(std::ptr::eq(
-                candidates[&call.application()][0],
-                rows[4].owner()
-            ));
         } else {
             assert!(row.header().contains(&call.region()));
-            assert!(candidates[&call.application()].is_empty());
         }
+    }
+    for (header, body, expected) in [
+        (
+            "requires target(n) = n",
+            "var target := n; return target(n);",
+            vec![true, false],
+        ),
+        (
+            "requires ex target being Family[target(n)] st target(n) = n",
+            "return target(n);",
+            vec![true, false, true],
+        ),
+        (
+            "ensures (target |-> target(n)) = n",
+            "return target(n);",
+            vec![false, true],
+        ),
+        (
+            "requires target(n) = n",
+            "match n do case (local,target) |-> body do return target |-> target(n); end; end;",
+            vec![true, false],
+        ),
+    ] {
+        let text = format!(
+            "definition let n be object; algorithm target(n) -> object do return n; end; end; definition let n be object; mode FamilyDef: Family of n is object; algorithm caller(n) -> object {header} do {body} end; end;"
+        );
+        let (_, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let (rows, candidates) =
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+        assert_eq!(rows[1].calls().len(), expected.len(), "{header}");
+        for (call, allowed) in rows[1].calls().iter().zip(expected) {
+            let entries = &candidates[&call.application()];
+            assert_eq!(entries.len(), usize::from(allowed), "{header}");
+            if allowed {
+                assert!(std::ptr::eq(entries[0], rows[0].owner()));
+            }
+        }
+    }
+    let text = "definition let n be object; algorithm caller(n) -> object requires caller(n) = later(n) ensures result = caller(n) decreasing later(n) do return later(caller(n)); end; algorithm later(n) -> object do return n; end; end;";
+    let (_, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let (rows, candidates) =
+        crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+    assert_eq!(rows[0].calls().len(), 6);
+    for call in &rows[0].calls()[..4] {
+        assert!(rows[0].header().contains(&call.region()));
+        assert!(candidates[&call.application()].is_empty());
+    }
+    for (call, expected) in rows[0].calls()[4..]
+        .iter()
+        .zip([rows[1].owner(), rows[0].owner()])
+    {
+        assert_eq!(call.region(), rows[0].body());
+        assert_eq!(candidates[&call.application()].len(), 1);
+        assert!(std::ptr::eq(candidates[&call.application()][0], expected));
     }
 }
 
@@ -11208,7 +11292,7 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
                 format!(
                     "return target(n); {prefix} local := target(n), target := target(n) as Family[target(n)] by Trusted; return target(n);"
                 ),
-                vec![false; 5],
+                vec![true, true, true, false, false],
             ),
         ] {
             cases.push((
@@ -11324,7 +11408,67 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
         ),
         (
             "return target(n) by Trusted; return target(n);",
-            vec![false; 2],
+            vec![true; 2],
+        ),
+        (
+            "assert target(n) = n by Trusted; return target(n);",
+            vec![true; 2],
+        ),
+        (
+            "assert target(n) = n proof thus target(n) = n; end; return target(n);",
+            vec![true; 3],
+        ),
+        (
+            "assert target(n) = n proof now let target be Family[target(n)]; thus target(n) = n; end; end; return target(n);",
+            vec![true, true, false, true],
+        ),
+        (
+            "assert n = n proof given target being Family[target(n)] such that target(n) = n; thus target(n) = n; end; return target(n);",
+            vec![true, false, false, true],
+        ),
+        (
+            "assert n = n proof consider target being Family[target(n)] such that target(n) = n by Trusted; thus target(n) = n; end; return target(n);",
+            vec![true, false, false, true],
+        ),
+        (
+            "assert n = n proof set target = target(n); thus target(n) = n; end; return target(n);",
+            vec![true, false, true],
+        ),
+        (
+            "assert n = n proof take target = target(n); thus target(n) = n; end; return target(n);",
+            vec![true, false, true],
+        ),
+        (
+            "assert n = n proof reconsider target = target(n) as object by Trusted; thus target(n) = n; end; return target(n);",
+            vec![true, false, true],
+        ),
+        (
+            "assert n = n proof deffunc local(target be object) -> object equals target(n); thus target(n) = n; end; return target(n);",
+            vec![false, true, true],
+        ),
+        (
+            "assert n = n proof defpred local(target be object) means target(n) = n; thus target(n) = n; end; return target(n);",
+            vec![false, true, true],
+        ),
+        (
+            "assert n = n proof deffunc local(target be object) -> Family[target(n)] equals n; thus target(n) = n; end; return target(n);",
+            vec![false, true, true],
+        ),
+        (
+            "assert n = n proof defpred local(target be object, x be Family[target(n)]) means target(n) = n; thus target(n) = n; end; return target(n);",
+            vec![false, false, true, true],
+        ),
+        (
+            "assert n = n proof deffunc local(x be Family[target(n)], target be object) -> Family[target(n)] equals target(n); thus target(n) = n; end; return target(n);",
+            vec![true, false, false, true, true],
+        ),
+        (
+            "assert n = n proof thus target(n) = n; now let target be Family[target(n)]; thus target(n) = n; end; thus target(n) = n; end; return target(n);",
+            vec![true, true, false, true, true],
+        ),
+        (
+            "return target(n) proof now let target be object; thus target(n) = n; end; end; return target(n);",
+            vec![true, false, true],
         ),
     ] {
         cases.push((
@@ -11332,14 +11476,14 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
             expected,
         ));
     }
-    for (unsupported, calls) in [
+    for (statement, calls) in [
         ("var local := n; local := target(n);", 3),
         ("ghost var local := n; ghost local := target(n);", 3),
         ("assert n = n proof thus thesis; end;", 2),
     ] {
         cases.push((
-            format!("definition let n be object; algorithm caller(n) -> object do return target(n); {unsupported} return target(n); end; end;"),
-            vec![false; calls],
+            format!("definition let n be object; algorithm caller(n) -> object do return target(n); {statement} return target(n); end; end;"),
+            vec![true; calls],
         ));
     }
     for (tail, expected) in cases {
@@ -11439,6 +11583,123 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
             assert_eq!(entries.len(), usize::from(supported), "{declaration}");
             if supported {
                 assert!(std::ptr::eq(entries[0], symbol), "{declaration}");
+            }
+        }
+    }
+    for (prelude, declaration, body, expected) in [
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "return main.target(n);",
+            vec![("main.target(n)", true)],
+        ),
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "return pkg.main.target(n);",
+            vec![("pkg.main.target(n)", false)],
+        ),
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "return Unknown.target(n);",
+            vec![("Unknown.target(n)", false)],
+        ),
+        (
+            "import external.library as Alias;",
+            "func Target: target(n) -> object equals n;",
+            "return Alias.target(n);",
+            vec![("Alias.target(n)", false)],
+        ),
+        (
+            "import external.library as main;",
+            "func Target: target(n) -> object equals n;",
+            "return main.target(n);",
+            vec![("main.target(n)", false)],
+        ),
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "var main := n; return main.target(n);",
+            vec![("main.target(n)", false)],
+        ),
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "if n = n do var main := n; return main.target(n); end; return main.target(n);",
+            vec![("main.target(n)", false), ("main.target(n)", true)],
+        ),
+        (
+            "",
+            "let T be type; func Target: target[T](n) -> object equals n;",
+            "return target[set](target(n));",
+            vec![("target[set](target(n))", true), ("target(n)", true)],
+        ),
+        (
+            "",
+            "func Target: target(n) -> object equals n;",
+            "return [target(n),n];",
+            vec![("[target(n),n]", false), ("target(n)", true)],
+        ),
+        ("", "", "return [n,n];", vec![("[n,n]", false)]),
+        (
+            "import external.library;",
+            "",
+            "return imported(n);",
+            vec![("imported(n)", false)],
+        ),
+        ("", "", "return unknown(n);", vec![("unknown(n)", false)]),
+    ] {
+        let text = format!(
+            "{prelude} definition let n,m be object; {declaration} algorithm caller(n) -> object do {body} end; end;"
+        );
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture_with_unresolved_imports(
+            &text,
+            usize::from(!prelude.is_empty()),
+        );
+        let (rows, candidates) =
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+        assert_eq!(rows.len(), 1, "{text}");
+        assert_eq!(rows[0].calls().len(), expected.len(), "{text}");
+        assert_eq!(candidates.len(), expected.len(), "{text}");
+        let symbol = (!declaration.is_empty()).then(|| {
+            env.symbols()
+                .iter()
+                .find(|entry| {
+                    source_range_from_anchor(entry.origin().anchor())
+                        .is_some_and(|range| range.start == text.find("func Target:").unwrap())
+                })
+                .unwrap()
+        });
+        let body_start = text.find(" do ").unwrap() + 4;
+        let mut occurrences = std::collections::BTreeMap::new();
+        for (call, (application, supported)) in rows[0].calls().iter().zip(expected) {
+            let occurrence = occurrences.entry(application).or_insert(0);
+            let start = body_start
+                + text[body_start..]
+                    .match_indices(application)
+                    .nth(*occurrence)
+                    .unwrap()
+                    .0;
+            *occurrence += 1;
+            assert_eq!(
+                call.application(),
+                algorithm_inventory_node_at(
+                    &ast,
+                    start,
+                    application,
+                    SurfaceNodeKind::ApplicationTerm
+                ),
+                "{text}"
+            );
+            let entries = &candidates[&call.application()];
+            assert_eq!(
+                entries.len(),
+                usize::from(supported),
+                "{application}: {text}"
+            );
+            if supported {
+                assert!(std::ptr::eq(entries[0], symbol.unwrap()), "{text}");
             }
         }
     }

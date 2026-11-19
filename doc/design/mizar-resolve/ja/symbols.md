@@ -571,7 +571,7 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 `source_algorithm_call_inventory` は arena/environment 全体の対応を再照合し、各 algorithm shell を実 `SymbolEntry` に結び付け、opaque signature を保持する。不変の inventory row は元の宣言、包含 definition block、直接の header 領域、body、入れ子 application/callee/順序付き引数ノードを参照し、range は source arena に残る。header application と body call を区別し、呼出しのない宣言も保持する。対応不正、recovery、構造 provenance 不正では全体を拒否し、生ソースの currentness は caller が担う。
 
-`source_algorithm_call_candidates` はこの inventory を変えず、元の各 application から source の実 `SymbolEntry` を借用する順序付き候補への map を保守的な body profile に従って返す。同一 block の algorithm は自己・後続 peer を候補とし、通常の宣言には完了を要求する。return/expression/if/while 構文、対応する var/const/ghost 宣言および限定された束縛構文内の単一 token 非修飾 body callee のみを対象とし、名前付き prefix functor は実宣言パターンの先頭を使う。正確な parameter/reservation/definition の束縛名は空リストを保持し、型・条件内の出現だけでは名前を除外しない。header、修飾/bracket call は空リストを保持し、body/binder が未対応・分類不能、または代入、justification、包含 context が未対応ならその body の全候補を保留する。候補は typed winner、dependency graph/group の完全性、consumer admission、type/cycle/termination/promotion acceptance を確立しない。
+`source_algorithm_call_candidates` はこの inventory を変えず、代入、justification、認証済み修飾/bracket/template head を含む header/body scope で source の実 `SymbolEntry` を借用する順序付き候補を返す。body の再帰 scope は同一 block の自己・後続 algorithm を候補とし、header と通常宣言には完了を要求する。未対応構文および存在しない import/builtin identity は未解決のままとする。候補は typed winner、dependency graph/group の完全性、consumer admission、type/cycle/termination/promotion acceptance を確立しない。
 
 ## Source registration owner payloads
 
