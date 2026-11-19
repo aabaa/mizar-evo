@@ -8592,6 +8592,102 @@ mod doc10_authenticated {
                 }
 
                 #[test]
+                fn doc13_url_control_whitespace_preserves_destination_and_location() {
+                    fixture(
+                        "::: [vt](\u{b}javascript:x) [ff](\u{c}javascript:x) [ref-vt][vt] [ref-ff][ff]\n:::\n::: [vt]:\u{b}javascript:x\n::: [ff]:\u{c}javascript:x\n",
+                        |app, plans, imports, allocations| {
+                            let source = &app.frontend[0].source;
+                            let loaded = mizar_session::LoadedSource {
+                                source_id: source.source_id,
+                                package_id: source.package_id.clone(),
+                                module_path: source.module_path.clone(),
+                                normalized_path: source.normalized_path.clone(),
+                                text: source.source_text.clone(),
+                                source_hash: source.source_hash,
+                                edition: source.edition.clone(),
+                                origin: source.origin.clone(),
+                                line_map: source.line_map.clone(),
+                                loading_map: source.loading_map.clone(),
+                                generated_anchor: source.generated_anchor.clone(),
+                            };
+                            let attached =
+                                attach_comments(&plans[0], &app.summaries[0].module, Some(&loaded))
+                                    .unwrap();
+                            let parsed = parse_comments(&attached, &[]);
+                            let block = &parsed.blocks[0];
+                            let raw = "javascript:x";
+                            let logical = block.text.match_indices(raw).map(|(i, _)| i).collect::<Vec<_>>();
+                            let mapped = loaded.text.match_indices(raw).map(|(i, _)| i).collect::<Vec<_>>();
+                            assert_eq!(block.destinations.len(), 4);
+                            let (fragments, result) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert_eq!(fragments, ["vt", "ff", "ref-vt", "ref-ff"]);
+                            let warnings = rejected(&result);
+                            assert_eq!(warnings.len(), 4);
+                            for (ordinal, warning) in warnings.iter().enumerate() {
+                                let range = logical[ordinal]..logical[ordinal] + raw.len();
+                                assert_eq!(block.destinations[ordinal].1, range);
+                                assert_eq!(&block.text[range.clone()], raw);
+                                assert_eq!(block.interpreted_destination(ordinal).as_deref(), Some(raw));
+                                assert_eq!(
+                                    warning.details().entries()["documentation.render.url"],
+                                    V::List(vec![
+                                        V::String("link".into()),
+                                        V::String(ordinal.to_string()),
+                                        V::String(raw.into()),
+                                        V::String(raw.into()),
+                                    ])
+                                );
+                                let V::List(subject) =
+                                    &warning.details().entries()["documentation.occurrence"]
+                                else {
+                                    panic!("occurrence")
+                                };
+                                assert_eq!(
+                                    subject[5],
+                                    V::List(vec![
+                                        V::String(range.start.to_string()),
+                                        V::String(range.end.to_string()),
+                                    ])
+                                );
+                                let expected = mizar_session::SourceRange {
+                                    source_id: loaded.source_id,
+                                    start: mapped[ordinal],
+                                    end: mapped[ordinal] + raw.len(),
+                                };
+                                assert!(matches!(warning.primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected));
+                                assert!(warning.secondary_spans().is_empty());
+                            }
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_label_html_emits_once_with_adjacent_html_retained() {
+                    fixture(
+                        "::: [before *<b>R &amp; `code`</b>* after](javascript:x) [before *<i>A &amp; `code`</i>* after](https://host) ![before *<u>R &amp; `code`</u>* after](data:x) ![before *<em>A &amp; `code`</em>* after](https://image) <hr>\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            assert_eq!(parsed.blocks[0].destinations.len(), 4);
+                            let (fragments, result) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert_eq!(
+                                fragments,
+                                [
+                                    "before &lt;b&gt;R &amp; code&lt;/b&gt; after",
+                                    "<a href=\"https://host\">before &lt;i&gt;A &amp; code&lt;/i&gt; after</a>",
+                                    "before &lt;u&gt;R &amp; code&lt;/u&gt; after",
+                                    "<img src=\"https://image\" alt=\"before &lt;em&gt;A &amp; code&lt;/em&gt; after\">",
+                                    "&lt;hr&gt;",
+                                ]
+                            );
+                            assert_eq!(rejected(&result).len(), 2);
+                        },
+                    );
+                }
+
+                #[test]
                 fn doc13_url_mapped_segments_never_bridge_and_unmapped_keeps_block() {
                     fixture(
                         "::: [visible](javascript:bad)\n",

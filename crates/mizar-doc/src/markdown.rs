@@ -572,7 +572,7 @@ fn derive(block: &mut MarkdownBlock, conditions: &mut Vec<Condition>) {
 
 fn destination_range(text: &str, mut start: usize, end: usize, lines: &[Line]) -> Range<usize> {
     let bytes = text.as_bytes();
-    while start < end && w(bytes[start]) {
+    while start < end && matches!(bytes[start], b' ' | b'\t'..=b'\r') {
         start += 1;
         if let Some(line) = lines.iter().find(|line| line.range.start == start) {
             start = line.content.start;

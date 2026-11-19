@@ -100,6 +100,7 @@ pub fn url_fragments(
             continue;
         }
         let mut destinations = block.destinations.iter().enumerate().peekable();
+        let mut label_end = 0;
         for (index, (event, range)) in block.events.iter().enumerate() {
             if destinations
                 .peek()
@@ -119,7 +120,7 @@ pub fn url_fragments(
                 let dest_url = destination_value.as_ref();
                 let mut label = String::new();
                 let mut depth = 1;
-                for (event, _) in &block.events[index + 1..] {
+                for (offset, (event, _)) in block.events[index + 1..].iter().enumerate() {
                     match event {
                         Event::Start(_) => depth += 1,
                         Event::End(_) => depth -= 1,
@@ -130,6 +131,7 @@ pub fn url_fragments(
                         _ => {}
                     }
                     if depth == 0 {
+                        label_end = label_end.max(index + offset + 2);
                         break;
                     }
                 }
@@ -153,6 +155,7 @@ pub fn url_fragments(
                     ));
                 }
             } else if let Event::Html(text) | Event::InlineHtml(text) = event
+                && index >= label_end
                 && !block.math.iter().any(|math| {
                     math.display && math.range.start < range.end && range.start < math.range.end
                 })
