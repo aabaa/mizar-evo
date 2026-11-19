@@ -1,7 +1,7 @@
 # MVM R4 — Minimal Authenticated Executor
 
 > Canonical English; [Japanese companion](../ja/mvm_executor.md).
-> [R4 design task](../../task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md).
+> R4 design task `MVM-R4-EXECUTOR-DESIGN`.
 > Design proposal only. The executor and its proof/runtime interfaces
 > are **not implemented** by this document.
 
@@ -13,7 +13,7 @@ state, ground/direct or explicit calls, and runtime failure/exhaustion.
 [§20.13.1 E5](../../../spec/en/20.algorithm_and_verification.md#20131-contract-axioms)
 allows an internal `returns_f(c,v)` fact **only from a real finite normal
 MVM return** bound to the verified body and complete input. The current
-[ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md)
+`ALG-MVM-EVALUATION`
 owner is `mizar-vc`, not Core, Kernel or Artifact.
 
 First *hypothetical* supported case: the existing
