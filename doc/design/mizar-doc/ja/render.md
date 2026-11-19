@@ -1,6 +1,6 @@
 # Doc13 Render 定義提案
 正本は英語: [English companion](../en/render.md)。
-状態: 下記の限定 Q5 出力/URL 診断前提・opaque Q6/Q11 transport、および [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) 採用済み Q3 href interface ①を除き提案。Q3 は相対 href の percent-UTF8 encoding と厳密な FQN DOM id を採用し、source routing と残る Doc13 render/wire 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、page renderer 実装や schema 登録は許可しない。
+状態: 下記の限定 supplied-search reader/local asset と、限定 Q5 出力/URL 診断前提・opaque Q6/Q11 transport、および [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) 採用済み Q3 href interface ①を除き提案。Q3 は相対 href の percent-UTF8 encoding と厳密な FQN DOM id を採用し、source routing と残る Doc13 render/wire 選択は未選択。本状態は以下の矛盾する候補・表表記に優先し、page renderer 実装や schema 登録は許可しない。
 別途 [限定的な G1 identity 引渡し](./render_prerequisites.md#採用済み-g1-identity-binding) を採用するが、render/wire interface の採用を意味しない。
 
 ## Adopted Opaque Math Transport
@@ -55,8 +55,8 @@ Q12 は既存 Documentation 順序・provenance・profile 境界に従う。限�
 | Q12 — render diagnostic | 既存順序/provenance/profile 境界内で diagnostic owner の別定義/採用を求める。 | 上流 owner の検証済み diagnostic draft と明示 render-failure gate を要求し、location/precedence を採用前に定義する。 |
 
 ## 採用境界
-提案のみの[前提条件の補完](./render_prerequisites.md) が、上で未定義の具体的な identity/allocation 引渡し、検索値 encoding、cross-reference/UsedBy serialization、順序付き readiness gate を所有する。その定義は当該 placeholder に優先するが、新しい interface を採用しない。
-Doc14/15 は Doc13 の整合的採用、必須の完全 producer/destination と serialization 定義、presentation 診断採用、Doc10/12 readiness、未解決 Doc11/MT 依存に引き続き gate される。Doc23 公開と Doc24 実行可能な決定性 test は別課題。採用済み Q3 と限定 opaque-math/URL 前提を除く残る提案は、規範的 spec/test 意図、schema/code 割当、coverage/owner credit、広範な Doc4/5/crate 完了を生まない。
+提案のみの[前提条件の補完](./render_prerequisites.md) が、上で未定義の具体的な identity/allocation 引渡し、検索値 encoding、cross-reference/UsedBy serialization、順序付き readiness gate を所有する。その定義は当該 placeholder に優先するが、明示した限定 reader/handoff だけを採用する。
+Doc14/15 は Doc13 の整合的採用、必須の完全 producer/destination と serialization 定義、presentation 診断採用、Doc10/12 readiness、未解決 Doc11/MT 依存に引き続き gate される。Doc23 公開と Doc24 実行可能な決定性 test は別課題。採用済み Q3 と限定 opaque-math/URL/search 前提を除く残る提案は、規範的 spec/test 意図、schema/code 割当、coverage/owner credit、広範な Doc4/5/crate 完了を生まない。
 
 ## 採用済み HTML/URL 出力方針
 限定 Q5 採用の正本は [出力方針](../en/render.md#adopted-html-and-url-output-policy)。raw HTML は inline tag を含め literal spelling を context escape して表示し、警告しない。通常 URL-class link/image は CommonMark 解釈済み destination に正本の厳密な predicate を適用する。C0/DEL/backslash は拒否し、検査時だけ端の ASCII space を除く。最初の `/ ? #` より前の colon は正しい ASCII scheme と `http|https|mailto` の ASCII-case-insensitive 一致を要求する。それ以外は空・fragment・network-path を含む相対 URL とする。再 decode/修復せず raw/interpreted 値と Doc10 分類・解決を保持する。許可値は attribute escape し、拒否 link は href なしの label、image は src なしの代替 text を表示する。生成時に remote fetch しない。[診断](../../mizar-diagnostics/ja/documentation_urls.md) は別所有で、限定検出・発行を採用し、全体 renderer は gate 内に残る。
@@ -81,4 +81,8 @@ overview/comment/tag body は documentation owner の安全な flow fragment、s
 所有者の未定義・未供給は未充足 slot であり、暗黙の空文字列・架空 node・新たな build refusal/diagnostic にしない。採用済み block-local recovery と lower-reader refusal は変更しない。complete-comment は Doc8 順序・保持 tag/raw content・recovery を保ち、採用済み URL/raw-HTML fragment を二重 escape や label HTML の反復なしで合成する。semantic link は Doc9 が所有する。
 opaque math fragment は有効な flow/phrasing 位置へ verbatim 挿入し、`.mizar-math[data-mizar-tex]`、status/code child、hex payload、元の block/occurrence/display 属性を保持する。display div を paragraph/link 内に置かない。symbolic math/numbering は未解決 owner slot で Doc8 ordinal を転用しない。
 style/search-script/math-client/search-index は version root 内の `assets/style.css`、`assets/search.js`、`assets/katex/client.js`、`search.json` を指す。inline script/style、remote dependency、未検証 KaTeX の直接 load は追加しない。math client は自身の URL から immutable subtree を検証して runtime/CSS/font を load する既存契約を保持する。
-search は各 `.mizar-search` 内の `.mizar-search-query`、`.mizar-search-status`、`.mizar-search-results` と `data-mizar-index` を使う。compatible local data と Q9 matching/index 順を保持する。index 内の version-root 相対 href は search-index directory から包含 page への相対値に rebase して result-href とし、既存 percent escape と fragment を保持する。nested page に直接相対解釈したり再符号化したりしない。正本の result row の FQN/kind/summary/signature は text node、href は検証済み属性とし innerHTML にしない。summary の既知不在 null は空 text、未解決は null でない。browser status/result 更新は canonical page bytes 外で、load/compatibility 失敗は空 match 集合でなく既存 Q9 の search unavailable とする。具体的 client/style bytes、pinned manifest、実行 template witness は別義務のままである。
+search は各 `.mizar-search` 内の `.mizar-search-query`、`.mizar-search-status`、`.mizar-search-results` と `data-mizar-index` を使う。compatible local data と Q9 matching/index 順を保持する。index 内の version-root 相対 href は search-index directory から包含 page への相対値に rebase して result-href とし、既存 percent escape と fragment を保持する。nested page に直接相対解釈したり再符号化したりしない。正本の result row の FQN/kind/summary/signature は text node、href は検証済み属性とし innerHTML にしない。summary の既知不在 null は空 text、未解決は null でない。browser status/result 更新は canonical page bytes 外で、load/compatibility 失敗は空 match 集合でなく既存 Q9 の search unavailable とする。完全 template の実行 witness は別義務のままである。
+
+## Adopted Local Style And Search Assets
+`render::bundled_search_assets` は固定 `assets/style.css`、`assets/search.js`、`assets/search-manifest.json` bytes を供給する。不変 manifest は CSS/JS の SHA-256 digest を固定し、`validate_search_assets` は manifest を含む欠落・余剰・重複・改変を integration 前に拒否する。bundled bytes との handoff 認証であり、browser 自己 integrity や site publication を保証しない。remote dependency はなく、CSS は label/status、keyboard focus、text wrapping を保持する。
+単独 client は [supplied-search reader 契約](./render_prerequisites.md#adopted-g4-supplied-search-reader) と上記 scoped hook/text-only result shape だけを消費する。Q9 ASCII whitespace は U+0009–000D と U+0020。status 文言と CSS は presentation 判断であり、完全 page renderer、index producer、owner-slot fallback は供給しない。

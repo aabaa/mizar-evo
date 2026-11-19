@@ -1,0 +1,11 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+body { max-width: 72rem; margin: auto; padding: 1rem; }
+header, .mizar-search { border-bottom: 1px solid; padding-block: 1rem; }
+.mizar-version, .mizar-kind { margin-inline-start: 0.75rem; }
+.mizar-search-query { font: inherit; max-width: 100%; padding: 0.25rem; }
+:focus-visible { outline: 3px solid Highlight; outline-offset: 3px; }
+.mizar-search-status { min-height: 1.5em; }
+.mizar-search-results { padding-inline-start: 1.5rem; }
+.mizar-search-results li { margin-block: 1rem; overflow-wrap: anywhere; }
+.mizar-search-results .mizar-summary, .mizar-search-results .mizar-signature { display: block; }
+.mizar-signature, code { font-family: ui-monospace, monospace; white-space: pre-wrap; }

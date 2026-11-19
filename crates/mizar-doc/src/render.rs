@@ -361,3 +361,29 @@ pub fn validate_math_assets(assets: &[(&str, &[u8])]) -> Result<(), DocBuildErro
     }
     Ok(())
 }
+
+/// Fixed local search/style assets and their immutable integration manifest.
+pub fn bundled_search_assets() -> &'static [(&'static str, &'static [u8])] {
+    &[
+        ("assets/style.css", include_bytes!("../assets/style.css")),
+        ("assets/search.js", include_bytes!("../assets/search.js")),
+        (
+            "assets/search-manifest.json",
+            include_bytes!("../assets/search-manifest.json"),
+        ),
+    ]
+}
+
+/// Refuses missing, extra, duplicated or changed search/style assets and manifest.
+pub fn validate_search_assets(assets: &[(&str, &[u8])]) -> Result<(), DocBuildError> {
+    let expected = bundled_search_assets();
+    if assets.len() != expected.len()
+        || expected.iter().any(|(path, bytes)| {
+            let mut found = assets.iter().filter(|(candidate, _)| candidate == path);
+            !found.next().is_some_and(|(_, supplied)| supplied == bytes) || found.next().is_some()
+        })
+    {
+        return Err(DocBuildError::Binding("search/style local assets mismatch"));
+    }
+    Ok(())
+}
