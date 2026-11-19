@@ -674,6 +674,7 @@ Check the task off here once tests pass.
 - [ ] [AST-CONTRACT](../../task_contracts/en/AST-CONTRACT.md).
 
 - [~] [MVM-READINESS-MAP](../../task_contracts/en/MVM-READINESS-MAP.md) — [source-backed first-slice readiness inventory](./mvm_readiness.md) drafted; independent reviews and repository lint pending. Docs only; MVM execution remains blocked.
+- [~] [MVM-R4-EXECUTOR-DESIGN](../../task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) — [authenticated direct-return design](./mvm_executor.md) drafted; independent review/documentation lint pending, implementation remains blocked.
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md).
 
 ## Premise ranking integration
