@@ -1089,6 +1089,14 @@ pub fn url_fragments(
                     || block.text != original.text
                     || block.events != original.events
                     || block.destinations != original.destinations
+                    || !block
+                        .math
+                        .iter()
+                        .map(|math| (&math.range, &math.content, math.display))
+                        .eq(original
+                            .math
+                            .iter()
+                            .map(|math| (&math.range, &math.content, math.display)))
                     || block
                         .source_map
                         .windows(2)

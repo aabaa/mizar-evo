@@ -9501,9 +9501,64 @@ mod doc10_authenticated {
                 }
 
                 #[test]
+                fn doc13_url_forged_math_cannot_suppress_html() {
+                    fixture(
+                        "::: [label](https://host) <hr>\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let mut parsed = parse_comments(&attached, &[]);
+                            let (fragments, _) =
+                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            assert_eq!(fragments, ["<a href=\"https://host\">label</a>", "&lt;hr&gt;"]);
+                            let start = parsed.blocks[0].text.find("<hr>").unwrap();
+                            parsed.blocks[0].math.push(mizar_doc::markdown::MathRange {
+                                range: start..start + 4,
+                                content: std::iter::once(start + 1..start + 3).collect(),
+                                display: true,
+                            });
+                            assert!(matches!(
+                                output(&parsed, imports, allocations, &external(&parsed)),
+                                Err(DocBuildError::Binding(_))
+                            ));
+                        },
+                    );
+                }
+
+                #[test]
+                fn doc13_url_rejects_altered_math_metadata() {
+                    fixture(
+                        "::: $x$\n:::\n::: $$\n::: y <z>\n::: $$\n",
+                        |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            for change in 0..5 {
+                                let mut parsed = parse_comments(&attached, &[]);
+                                assert_eq!(parsed.blocks[0].math.len(), 2);
+                                let math = &mut parsed.blocks[0].math;
+                                match change {
+                                    0 => math[0].range.end -= 1,
+                                    1 => math[0].content[0].end -= 1,
+                                    2 => math[0].display = !math[0].display,
+                                    3 => {
+                                        math.remove(0);
+                                    }
+                                    _ => math.swap(0, 1),
+                                }
+                                assert!(
+                                    matches!(
+                                        output(&parsed, imports, allocations, &external(&parsed)),
+                                        Err(DocBuildError::Binding(_))
+                                    ),
+                                    "math metadata change {change}"
+                                );
+                            }
+                        },
+                    );
+                }
+
+                #[test]
                 fn doc13_url_mapped_segments_never_bridge_and_unmapped_keeps_block() {
                     fixture(
-                        "::: [visible](javascript:bad)\n",
+                        "::: [visible](javascript:bad) $x$ <hr>\n:::\n::: $$\n::: y <z>\n::: $$\n",
                         |app, plans, imports, allocations| {
                             let source = &app.frontend[0].source;
                             let loaded = mizar_session::LoadedSource {
@@ -9523,6 +9578,20 @@ mod doc10_authenticated {
                                 attach_comments(&plans[0], &app.summaries[0].module, Some(&loaded))
                                     .unwrap();
                             let mut parsed = parse_comments(&attached, &[]);
+                            let math = mizar_doc::render::opaque_math_fragments(&parsed).unwrap();
+                            assert_eq!(math.len(), 2);
+                            assert!(!parsed.blocks[0].math[0].display);
+                            assert!(parsed.blocks[0].math[1].display);
+                            let checked_output = |parsed: &ParsedComments<'_, '_>| {
+                                assert_eq!(
+                                    mizar_doc::render::opaque_math_fragments(parsed).unwrap(),
+                                    math
+                                );
+                                let (fragments, result) =
+                                    output(parsed, imports, allocations, &external(parsed)).unwrap();
+                                assert_eq!(fragments, ["visible", "&lt;hr&gt;"]);
+                                result
+                            };
                             let (_, range) = parsed.blocks[0].destinations[0].clone();
                             let start = loaded.text.find("javascript:bad").unwrap();
                             let expected = |a, b| mizar_session::SourceRange {
@@ -9530,8 +9599,7 @@ mod doc10_authenticated {
                                 start: start + a,
                                 end: start + b,
                             };
-                            let (_, result) =
-                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            let result = checked_output(&parsed);
                             assert!(
                                 matches!(rejected(&result)[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, range.len()))
                             );
@@ -9567,8 +9635,7 @@ mod doc10_authenticated {
                                     ),
                                 ),
                             ];
-                            let (_, result) =
-                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            let result = checked_output(&parsed);
                             let warning = rejected(&result)[0];
                             assert!(
                                 matches!(warning.primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, 4))
@@ -9582,14 +9649,12 @@ mod doc10_authenticated {
                                 [expected(6, range.len())]
                             );
                             parsed.blocks[0].source_map.truncate(1);
-                            let (_, partial) =
-                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            let partial = checked_output(&parsed);
                             assert!(
                                 matches!(rejected(&partial)[0].primary_location(), DiagnosticPrimaryLocation::Span(span) if span.range() == expected(0, 4))
                             );
                             parsed.blocks[0].source_map.clear();
-                            let (_, unmapped) =
-                                output(&parsed, imports, allocations, &external(&parsed)).unwrap();
+                            let unmapped = checked_output(&parsed);
                             assert!(matches!(
                                 rejected(&unmapped)[0].primary_location(),
                                 DiagnosticPrimaryLocation::Documentation {
