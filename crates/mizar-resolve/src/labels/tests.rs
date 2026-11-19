@@ -11141,6 +11141,10 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
                     vec![true, supported],
                 ));
             }
+            cases.push((
+                format!("definition let n be object; mode FamilyDef: Family of n is object; algorithm caller(n) -> object do {prefix} local := target(n), target, another := target(n) as Family[target(n)]; return target(n); end; end;"),
+                vec![true, false, false, false],
+            ));
         }
         for (body, expected) in [
             (
@@ -11153,13 +11157,13 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
                 format!(
                     "return target(n); {prefix} local := target(n), target := target(n); if target(n) = n do return target(n); end; return target(n);"
                 ),
-                vec![true, false, false, false, false, false],
+                vec![true, true, true, false, false, false],
             ),
             (
                 format!(
-                    "{prefix} target := n, local := target(n); while target(n) = n do return target(n); end;"
+                    "{prefix} target := n, local := target(n), another := target(n) as Family[target(n)]; while target(n) = n do return target(n); end;"
                 ),
-                vec![false; 3],
+                vec![false; 5],
             ),
             (
                 format!(
@@ -11171,21 +11175,40 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
                 format!(
                     "return target(n); {prefix} target := target(n) as Family[target(n)]; return target(n);"
                 ),
-                vec![true, false, false, false],
+                vec![true, true, false, false],
             ),
             (
                 format!(
-                    "{prefix} target := target(n); if target(n) = n do {prefix} target := target(n); return target(n); end; return target(n);"
+                    "{prefix} local := target(n), target := target(n), another := target(n) as Family[target(n)]; return target(n);"
                 ),
-                vec![true, false, false, false, false],
+                vec![true, true, false, false, false],
             ),
             (
                 format!(
-                    "return target(n); if target(n) = n do return target(n); {prefix} target := target(n); while target(n) = n do return target(n); end; else return target(n); while target(n) = n do {prefix} target := target(n); return target(n); end; return target(n); end; return target(n);"
+                    "{prefix} local := target(n), another := target(n), target := target(n) as Family[target(n)]; return target(n);"
+                ),
+                vec![true, true, true, false, false],
+            ),
+            (
+                format!(
+                    "{prefix} target := target(n); if target(n) = n do {prefix} local := target(n), target := target(n), another := target(n) as Family[target(n)]; return target(n); end; return target(n);"
+                ),
+                vec![true, false, false, false, false, false, false, false],
+            ),
+            (
+                format!(
+                    "return target(n); if target(n) = n do return target(n); {prefix} local := target(n), target := target(n) as Family[target(n)]; while target(n) = n do return target(n); end; else return target(n); while target(n) = n do {prefix} local := target(n), target := target(n) as Family[target(n)]; return target(n); end; return target(n); end; return target(n);"
                 ),
                 vec![
-                    true, true, true, true, false, false, true, true, true, false, true, true,
+                    true, true, true, true, true, false, false, false, true, true, true, true,
+                    false, false, true, true,
                 ],
+            ),
+            (
+                format!(
+                    "return target(n); {prefix} local := target(n), target := target(n) as Family[target(n)] by Trusted; return target(n);"
+                ),
+                vec![false; 5],
             ),
         ] {
             cases.push((
@@ -11202,7 +11225,6 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
         ),
         ("var local := n; local := target(n);", 3),
         ("ghost var local := n; ghost local := target(n);", 3),
-        ("var local := target(n) as object by Trusted;", 3),
         ("assert n = n proof thus thesis; end;", 2),
     ] {
         cases.push((

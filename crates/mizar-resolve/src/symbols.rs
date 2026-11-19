@@ -582,26 +582,13 @@ pub fn source_algorithm_call_candidates<'a>(
                     .child_views()
                     .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableDeclaration))
                 {
-                    let precise = declaration
-                        .child_views()
-                        .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
-                        .count()
-                        == 1
-                        && !declaration
-                            .child_views()
-                            .any(|child| matches!(child.kind(), SurfaceNodeKind::TypeExpression));
                     for binding in declaration
                         .child_views()
                         .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
                     {
                         let mut range = node.range();
-                        // Multi-binding/annotation visibility stays conservative
-                        // within the declaration until its semantics are owned.
-                        range.start = if precise {
-                            binding.range().end
-                        } else {
-                            declaration.range().start
-                        };
+                        // Initializers precede their own binding end; shared tails follow all bindings.
+                        range.start = binding.range().end;
                         locals.push((range, binding_names(binding.id())?));
                     }
                 }
