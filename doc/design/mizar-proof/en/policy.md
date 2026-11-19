@@ -456,7 +456,7 @@ Proof import validation must establish that authenticated origin and complete bi
 
 On successful validation, only the ordinary/definitional premises specified above may be exposed; the imported provenance remains attached to that acceptance and does not become a fresh local kernel result. Complete-group acceptance precedes exposing even one exported member. Genuine non-computable or contract-only promotion uses the same logical trust path without runtime artifacts; computation retains its separate artifact/correspondence checks.
 
-This is the approved trust-transfer specification decision. Authentication mechanism, transport representation and executable validators belong to later Artifact/Proof slices; this definition supplies none of them and changes no language rule or kernel inference.
+This is the approved trust-transfer specification decision. The [Artifact producer transport design](../../mizar-artifact/en/manifest.md#producer-transport-design) selects authentication and representation; executable transport and Proof import validators remain later slices. This rule changes no language rule or kernel inference.
 
 ### Portable validation design obligations
 
@@ -472,8 +472,8 @@ These six rows specify future producer/consumer checks; none is executable porta
 | Untrusted/self-authorized origin, hash/status/public-summary-only or runtime-only input | No promoted premise; integrity, visibility and normal-return metadata never establish promotion acceptance. |
 
 Existing [status tests](../../../../crates/mizar-proof/src/status/tests.rs) cover local classes, witness publication, policy mismatch and reuse invalidation; [kernel tests](../../../../crates/mizar-kernel/src/checker/tests.rs) cover imported context/projection/policy checks. They do not implement the positive portable rows.
-Ordered slices: genuine VC57 local prerequisite/group acceptance remains a prerequisite; next design Artifact producer transport, then Proof import validation, then VC59 connection against this rule. Implement genuine producers/validators and all six refusal/success rows before connecting VC59 to authenticated outputs. Opaque imports never re-prove the exporting module ([§12.6.1](../../../spec/en/12.modules_and_namespaces.md#1261-opaque-imports)); runtime correspondence stays with execution owners.
-`external_dependency_gap`: genuine local aggregate E1/E2/E4/group outputs, Artifact producer transport, Proof import-validation implementation and VC59 connection remain absent. The trust-transfer definition resolves the former authority-definition gap only; it grants no executable acceptance or coverage credit and does not unblock VC59.
+Ordered slices: genuine VC57 local prerequisite/group acceptance remains a prerequisite; the Artifact producer transport design precedes Proof import validation, then VC59 connection against this rule. Implement genuine producers/validators and all six refusal/success rows before connecting VC59 to authenticated outputs. Opaque imports never re-prove the exporting module ([§12.6.1](../../../spec/en/12.modules_and_namespaces.md#1261-opaque-imports)); runtime correspondence stays with execution owners.
+`external_dependency_gap`: genuine local aggregate E1/E2/E4/group outputs, Artifact producer transport implementation, Proof import-validation implementation and VC59 connection remain absent. The trust-transfer definition resolves the former authority-definition gap only; it grants no executable acceptance or coverage credit and does not unblock VC59.
 
 ## Computation Admission Boundary
 

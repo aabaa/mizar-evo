@@ -434,7 +434,7 @@ Proof import validation は authenticated origin と完全な binding を確立�
 
 validation 成功時に公開できるのは上記の ordinary/definitional premise だけであり、imported provenance を受理に保持し、新たな local kernel result にはしない。export された一 member の公開にも complete-group acceptance が先行する。真正な non-computable/contract-only promotion は runtime artifact なしで同じ logical trust path を使い、computation は別の artifact/correspondence check を保つ。
 
-これが承認済み trust-transfer 仕様決定である。authentication mechanism、transport representation、実行可能な validator は後続の Artifact/Proof slice が担う。この定義はそれらを提供せず、言語規則や kernel inference を変更しない。
+これが承認済み trust-transfer 仕様決定である。[Artifact producer transport design](../../mizar-artifact/ja/manifest.md#producer-transport-design) が authentication と representation を選定し、実行可能 transport と Proof import validator は後続 slice に残る。この規則は言語規則や kernel inference を変更しない。
 
 ### Portable validation design obligations
 
@@ -450,8 +450,8 @@ validation 成功時に公開できるのは上記の ordinary/definitional prem
 | 未信頼・自己承認 origin、hash/status/public-summary-only または runtime-only input | promoted premise を公開しない。integrity、visibility、normal-return metadata は promotion acceptance を確立しない。 |
 
 既存 [status test](../../../../crates/mizar-proof/src/status/tests.rs) は local class、witness publication、policy mismatch、reuse invalidation を、[kernel test](../../../../crates/mizar-kernel/src/checker/tests.rs) は imported context/projection/policy check を扱う。portable 成功行の実装ではない。
-実装順序: 真正な VC57 local prerequisite/group acceptance は引き続き前提であり、次にこの規則に従って Artifact producer transport、Proof import validation、VC59 connection の順に設計する。真正な producer/validator と六行すべての成功/拒否を実装してから、認証済み output のみに VC59 を接続する。opaque import は exporting module を再証明しない（[§12.6.1](../../../spec/ja/12.modules_and_namespaces.md#1261-不透明なインポート)）。runtime correspondence は execution owner に残る。
-`external_dependency_gap`: 真正な local aggregate E1/E2/E4/group output、Artifact producer transport、Proof import-validation 実装、VC59 connection は依然として存在しない。trust-transfer 定義が解消するのは従来の authority-definition gap のみであり、実行可能な acceptance/coverage credit を与えず、VC59 を unblock しない。
+実装順序: 真正な VC57 local prerequisite/group acceptance は引き続き前提であり、この規則に従う Artifact producer transport design、Proof import validation、VC59 connection の順序を保つ。真正な producer/validator と六行すべての成功/拒否を実装してから、認証済み output のみに VC59 を接続する。opaque import は exporting module を再証明しない（[§12.6.1](../../../spec/ja/12.modules_and_namespaces.md#1261-不透明なインポート)）。runtime correspondence は execution owner に残る。
+`external_dependency_gap`: 真正な local aggregate E1/E2/E4/group output、Artifact producer transport 実装、Proof import-validation 実装、VC59 connection は依然として存在しない。trust-transfer 定義が解消するのは従来の authority-definition gap のみであり、実行可能な acceptance/coverage credit を与えず、VC59 を unblock しない。
 
 ## Computation Admission Boundary
 
