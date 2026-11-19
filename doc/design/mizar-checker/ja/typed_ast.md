@@ -1986,6 +1986,47 @@ Capture state、semantic table、diagnostic、Core payload、active routeは作�
 capture テストは同じ UID で異なる C と Var 同一性を分け、既定 codomain/自由 UID、無変更再構築、内側衝突を検査する。
 暫定の source-authenticated formation record は request transport と VC/Proof checking だけに渡す。受理済みの対応する evidence が Checker に戻るまで final checked Core handoff は禁止。library certification/per-use formation は算法 E1/E2/E4 と別責務。分類テストは pure R1/mixed R2/R3、数学的 func head/dynamic・promoted algorithm execution、分類前の template/inline/overload elaboration を区別し、古い T2 tree/UID/context correspondence の再利用を拒否する。
 
+### Pinned library inventory
+
+対象は Mizar 8.1.15 / MML 5.94.1493 と [§20.5.3 の表](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax)に限定する。article 参照は必要入力の指定であり、受理 evidence の存在を意味しない。repository 内には当該版の article source、resolved declaration、defining proof がなく、以下の全行で未取得である。expandable mode の source anchor と実 scheme instance も同様。外部公開先への参照は認証済みローカル入力を供給しない。
+予定消費先: C = Checker の分類/type view、V = Proof の条件付き M1–M7 valuation 基礎、B = §13.10/M4 の Binder 構築。これは義務であり稼働中の認証 consumer ではない。全行で正確な edition/content/declaration identity と適用可能な受理済み proof material が必要で、premise は元の type/UID/context に保持する。
+
+| 対応 | 必要な固定版 declaration/proof 参照 | 条件付き premise と予定消費先 |
+|---|---|---|
+| Real ↔ REAL | XREAL_0:NM1, def 1; NUMBERS:def 1 | REAL の非空性。C/V、Real domain/range の B。 |
+| Nat ↔ NAT | ORDINAL1:NM6, defs 11–12; NUMBERS:NK1, theorem 19 | NAT ⊆ REAL。同名 type/set の同一視なし。C/V。 |
+| Element of A | SUBSET_1:def 1 | 非空 A のとき membership。空 A では空集合 object となり一律 carrier A ではない。C/V/B domain 検査。 |
+| Function/application/dom/rng | FUNCT_1:defs 1–3, theorem 1; RELAT_1:NK1/NK2 → XTUPLE_0:defs 12/13 | domain 外の適用は {}。range typing は実 domain membership を要する。C/V/B。 |
+| PartFunc of A,B | PARTFUN1:NM1, theorem 4; RELSET_1:NM1, CC2, theorem 4 | 実 dom ⊆ A、rng ⊆ B。C/V/B、実 domain を保持。 |
+| Function of A,B | FUNCT_2:NM1, def 1, theorems 3/5/6/130 | 正確な dom = A には B = {} ⇒ A = {} が必要。空 B だけでは空関数を許す。C/V/B の全入力 range guard。 |
+| Function construction/uniqueness | FUNCT_1:sch 3 または sch 6, theorem 2; FUNCT_2:sch 2 (Lambda1) | 整形式の実 scheme instance、正確な domain、全値の B 所属。domain/値の一致による等価性は空 domain も含む。B/V。 |
+| Finite sequences | FINSEQ_1:NM1, defs 2/4 | 有限 Seg domain、集合 D に対する rng ⊆ D。soft element type は全 entry の検査が必要で同名集合とはしない。C/V、children traversal。 |
+| Seg/constant finite sequence | FINSEQ_1:def 1, theorem 1; FUNCOP_1:def 2, theorems 7/13; FINSEQ_2:def 2, theorems 57/58 | 旧 n \|-> a = (Seg n) --> a は n = 0 も含む。C/V、Binder 構文とは区別。 |
+| boolean/true/false | XBOOLEAN:defs 1–3; MARGREL1:defs 11/12 | FALSE = 0、TRUE = 1、BOOLEAN = {0,1}、boolean iff その一方、0 ≠ 1。C/V の term/truth 区別。 |
+| Ordered-pair construction | 正確な固定版 article/proof locator は §20.5.3 に未指定。ローカル入力なし | 有限 head packing の各二項 pair 構築。B。 |
+| Ordered-pair injectivity | 正確な固定版 article/proof locator は未指定。ローカル入力なし | pair 値の座標を平坦化せず順序付き座標を復元。B。 |
+| Cartesian-product sethood | 正確な固定版 article/proof locator は未指定。ローカル入力なし | 空 factor を含む domain 集合の積。B。 |
+| Cartesian-product membership | 正確な固定版 article/proof locator は未指定。ローカル入力なし | 空 factor も含め、pair membership と両 factor membership の対応。B。 |
+| Finite packing/decomposition | [§13.10](../../../spec/en/13.term_expression.md#1310-function-binder--)、上記四つの二項法則から導出。受理済み導出なし | P1/D1 の基底と左入れ子の有限反復で arity/順序、各 head type、全入力 premise を保持。B。 |
+
+既存 seam と未実装の検証経路:
+- Resolver/Artifact: [ModuleSummary](../../../../crates/mizar-artifact/src/module_summary.rs) は module identity/version、source/interface hash、export signature と projected status を持ち、[project_validated](../../../../crates/mizar-resolve/src/module_summary_reuse.rs) は渡された summary を検査する。固定版 MML declaration/proof の取得・認証は行わない (依存 D1)。namespace の綴りは library material ではない。
+- Proof/Kernel: [imported fact evidence](../../../../crates/mizar-kernel/src/checker.rs) は渡された identity、statement fingerprint、accepted status を消費し、[formula evidence](../../../../crates/mizar-kernel/src/formula_evidence.rs) は渡された projection を結ぶ。[Proof policy](../../mizar-proof/en/policy.md#formation-evidence-boundary) は実検証を要求するが、固定 library の acceptance producer (D2) と対応する受理 evidence の Checker adoption (D3) はない。一般 imported-fact 検査はその権威を新設しない。
+- Checker: [source evidence request](../../../../crates/mizar-checker/src/source_evidence.rs) は mode expansion、inhabitation、sethood、nonemptiness、inheritance、coercion を扱い、payload は反映 library certification を供給しない。M1–M7 基礎には真正な typed syntax、互換 environment、保持した KΓ、受理済み per-use proof も必要で、この表はそれらの導出を供給しない。formation は E1/E2/E4/execution から独立して blocked のまま。
+
+検証行列は延期のまま。既存 native `.miz` fixture と synthetic imported-fact test は固定版 MML evidence ではない。source-to-acceptance 経路や実行 coverage を主張しない。
+
+| 検証 family | 必要な実入力と期待結果 | 欠落経路 |
+|---|---|---|
+| Authentic positive | 正確な固定版定義と受理済み適用 proof のみが列挙対応を有効にする。資料欠落時は利用不可。 | D1–D3 |
+| Version/content mismatch | 古い版や改変された article/proof content は認証不可。 | D1 認証、D2/D3 の結合 |
+| Identity/impostor | 誤った declaration identity や同名 user definition は特別な意味を得ない。 | D1 identity、D3 adoption |
+| Missing proof/premise | proof 欠落、未 instance 化 scheme、domain 外 range 主張、空 codomain guard 欠落では認証不可。 | D2 検証、D3 premise 対応 |
+| Carrier boundary | supported carrier は実 proof を要する。object/set/任意 user carrier と未認証 structure update は未対応のまま。 | supported 入力の D1–D3、規則拡張なし |
+| Pair/product/iteration | 実二項 proof と有限 packing/decomposition、空 factor、全入力 range proof が必要。一つでも欠ければ multi-head formation 不可。 | D1 の正確な二項 locator/material、D2 導出、D3 adoption |
+
+解除依存の所有者は Resolver/Artifact (D1)、Proof (D2)、Checker (D3)。認証実装前に固定版の二項 source を特定・認証し、その実 premise を検証する。未確定の基礎や acceptance meaning は人間の仕様所有者へ戻す。この inventory はその意味選択をせず、proof/coverage credit を付与しない。
+
 ## Original-source theorem context installation
 量化context ownerは実first-child・range・context・recovery対応と、Universalならfor、Existentialならexの正確なreserved opening-token tagを要求する。これは局所的な整合性であり、整合的に改変されたsource履歴の証明ではない。その認証はcanonical original/final replayが所有する。
 [実 original-source theorem handoff](source_context.md#original-source-theorem-context-handoff)では、既存の全 handoff source/module/table/root/item/declaration 検証を維持する。Theorem/Lemma item link だけが item 自身の module binding/local context と異なり得る。非 root SourceFormula/Expression または SourceStatement/Proof context と、その実 item range 内の exact typed boundary owner/kind/range/context、全 binding-to-local link 表を通した parent 対応を要求する。全 local context は1回ずつ link し、item context は実 typed site の context のままとする。cross-item/不一致/欠落/重複を原子的に拒否する。他 role の旧 exact context-link rule と generic A/B/C・他 installer admission は維持する。

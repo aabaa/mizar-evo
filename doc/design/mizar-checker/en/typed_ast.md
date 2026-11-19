@@ -2130,6 +2130,47 @@ Tests cover typed R1/R2/R3 mixed construction, covariance/ghost flow, dependent 
 Capture tests distinguish the same UID with different C from Var identity, preserve default codomain/free UIDs, and check unchanged reconstruction plus inner collisions.
 Provisional source-authenticated formation records feed only request transport and VC/Proof checking; accepted matching evidence must re-enter Checker before final checked Core handoff. Library certification and per-use formation are distinct from algorithm E1/E2/E4. Classification tests separate pure R1 from mixed R2/R3, mathematical func heads from dynamic/promoted algorithm execution, and template/inline/overload elaboration before classification; stale T2 tree/UID/context correspondence rejects reuse.
 
+### Pinned library inventory
+
+The inventory uses exactly Mizar 8.1.15 / MML 5.94.1493 and the [§20.5.3 table](../../../spec/en/20.algorithm_and_verification.md#2053-reflected-syntax). Its article references identify required inputs, not available acceptance evidence: no pinned article sources, resolved declarations or defining proofs are present in the repository. This applies to every row below, including expandable-mode source anchors and actual scheme instantiations. External publication references do not supply authenticated local inputs.
+Intended consumers: C = Checker classification/type views; V = Proof's conditional M1–M7 valuation foundations; B = Binder construction in §13.10 and M4. These are obligations, not active certification consumers. Every row requires exact edition/content/declaration identity and applicable accepted proof material; premises remain attached to the original types/UIDs/context.
+
+| Correspondence | Required pinned declaration/proof reference | Conditional premises and intended consumer |
+|---|---|---|
+| Real ↔ REAL | XREAL_0:NM1, def 1; NUMBERS:def 1 | Nonempty REAL; C/V, B for Real domains/ranges. |
+| Nat ↔ NAT | ORDINAL1:NM6, defs 11–12; NUMBERS:NK1, theorem 19 | NAT ⊆ REAL, without same-name type/set identification; C/V. |
+| Element of A | SUBSET_1:def 1 | Membership only for nonempty A; empty A gives the empty-set object, not uniform carrier A; C/V/B domain checking. |
+| Function/application/dom/rng | FUNCT_1:defs 1–3, theorem 1; RELAT_1:NK1/NK2 → XTUPLE_0:defs 12/13 | Off-domain application is {}; range typing needs actual-domain membership; C/V/B. |
+| PartFunc of A,B | PARTFUN1:NM1, theorem 4; RELSET_1:NM1, CC2, theorem 4 | Actual dom ⊆ A and rng ⊆ B; C/V/B, preserving the actual domain. |
+| Function of A,B | FUNCT_2:NM1, def 1, theorems 3/5/6/130 | Exact dom = A needs B = {} ⇒ A = {}; an empty B alone permits an empty function; C/V/B all-input range guard. |
+| Function construction/uniqueness | FUNCT_1:sch 3 or sch 6, theorem 2; FUNCT_2:sch 2 (Lambda1) | Well-formed actual scheme instance, exact domain, every value in B; equality from equal domains/values includes empty domains; B/V. |
+| Finite sequences | FINSEQ_1:NM1, defs 2/4 | Finite Seg domain, rng ⊆ set D; a soft element type requires every entry, not a same-spelled set; C/V and children traversal. |
+| Seg/constant finite sequence | FINSEQ_1:def 1, theorem 1; FUNCOP_1:def 2, theorems 7/13; FINSEQ_2:def 2, theorems 57/58 | Legacy n \|-> a = (Seg n) --> a also at n = 0; C/V, distinct from Binder syntax. |
+| boolean/true/false | XBOOLEAN:defs 1–3; MARGREL1:defs 11/12 | FALSE = 0, TRUE = 1, BOOLEAN = {0,1}, boolean iff one of these, 0 ≠ 1; C/V term/truth distinction. |
+| Ordered-pair construction | Exact pinned article/proof locator not supplied by §20.5.3; no local input | Construct each binary pair for finite head packing; B. |
+| Ordered-pair injectivity | Exact pinned article/proof locator not supplied; no local input | Recover ordered coordinates without flattening a pair-valued coordinate; B. |
+| Cartesian-product sethood | Exact pinned article/proof locator not supplied; no local input | Product of the domain sets, including empty factors; B. |
+| Cartesian-product membership | Exact pinned article/proof locator not supplied; no local input | Pair membership corresponds to both factor memberships, including empty factors; B. |
+| Finite packing/decomposition | [§13.10](../../../spec/en/13.term_expression.md#1310-function-binder--), derived from the four binary laws above; no accepted derivation | P1/D1 base and left-nested finite iteration preserve arity/order, component head types and all-input premises; B. |
+
+Available seams and missing validation paths:
+- Resolver/Artifact: [ModuleSummary](../../../../crates/mizar-artifact/src/module_summary.rs) carries module identity/version, source/interface hashes, exported signatures and projected status; [project_validated](../../../../crates/mizar-resolve/src/module_summary_reuse.rs) checks a supplied summary. Neither acquires/authenticates the pinned MML declarations and proofs (dependency D1). A namespace spelling is not library material.
+- Proof/Kernel: [imported fact evidence](../../../../crates/mizar-kernel/src/checker.rs) consumes supplied identities, statement fingerprints and accepted statuses; [formula evidence](../../../../crates/mizar-kernel/src/formula_evidence.rs) binds supplied projections. [Proof policy](../../mizar-proof/en/policy.md#formation-evidence-boundary) requires actual validation; there is no pinned-library acceptance producer (D2), nor Checker adoption of matching accepted library evidence (D3). Generic imported-fact checks cannot bootstrap that authority.
+- Checker: [source evidence requests](../../../../crates/mizar-checker/src/source_evidence.rs) concern mode expansion, inhabitation, sethood, nonemptiness, inheritance and coercion; their payloads do not provide reflected-library certification. M1–M7 foundations additionally need authentic typed syntax, compatible environments, retained KΓ and accepted per-use proofs; this table supplies none of those derivations. Formation remains blocked independently of E1/E2/E4 and execution.
+
+The validation matrix remains deferred; existing native `.miz` fixtures and synthetic imported-fact tests are not pinned MML evidence. No source-to-acceptance route or executable coverage is claimed.
+
+| Validation family | Required real input and expected outcome | Missing route |
+|---|---|---|
+| Authentic positive | Exact pinned definitions and accepted applicable proofs enable only the listed correspondence; absent material keeps it unavailable. | D1–D3 |
+| Version/content mismatch | Stale edition or changed article/proof content cannot certify. | D1 authentication, D2/D3 binding |
+| Identity/impostor | Wrong declaration identity or a same-spelled user definition receives no special meaning. | D1 identity, D3 adoption |
+| Missing proof/premise | Missing proof, uninstantiated scheme, off-domain range claim or missing empty-codomain guard cannot certify. | D2 validation, D3 premise match |
+| Carrier boundary | A supported carrier needs its actual proof; object/set/arbitrary user carriers and uncertified structure updates remain unsupported. | D1–D3 for supported inputs; no widened rule |
+| Pair/product/iteration | Actual binary proofs plus finite packing/decomposition, empty factors and all-input range proofs are required; missing any blocks multi-head formation. | D1 exact binary locators/material, D2 derivation, D3 adoption |
+
+Release dependencies stay with Resolver/Artifact (D1), Proof (D2) and Checker (D3). Locate and authenticate the binary sources in the pinned edition and validate their actual premises before any certification implementation; an unresolved foundation or acceptance meaning returns to the human specification owner. This inventory makes no such semantic choice and grants no proof or coverage credit.
+
 ## Original-source theorem context installation
 A Universal context owner requires the exact reserved for token tag; Existential requires ex, with actual first-child/range/context/recovery joins. This local compatibility is not a coherent-source-history certificate; canonical original/final replay retains that authority.
 For the [original-source theorem handoff](source_context.md#original-source-theorem-context-handoff), retain the existing whole-handoff source/module/table/root/item/declaration checks. Only Theorem/Lemma item links may differ from the item's own module binding/local contexts: require a nonroot SourceFormula/Expression or SourceStatement/Proof context, its exact typed boundary owner/kind/range/context inside that item's actual range, and its parent correspondence through the complete binding-to-local link table. Each local context is linked once; source-item context stays its actual typed-site context. Reject mismatched/cross-item/missing/duplicate associations atomically. Other roles keep their exact original context-link rule; no generic A/B/C or other installer admission changes.
