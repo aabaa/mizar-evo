@@ -639,6 +639,7 @@ task の `external_dependency_gap` / `deferred` verification item として分�
 - [~] [MVM-R4-EXECUTOR-DESIGN](../../task_contracts/ja/MVM-R4-EXECUTOR-DESIGN.md) — [検証付き最小実行器の設計](./mvm_executor.md)草案済み。独立レビューと lint 待ち、実装はブロック中。
 - [~] [MVM-R5-EXTENDED-EXECUTION-DESIGN](../../task_contracts/ja/MVM-R5-EXTENDED-EXECUTION-DESIGN.md) — [R5-A〜F 設計分割](./mvm_extended_execution.md)草案。独立レビューと文書 lint 待ち。R5 実装はブロック中。
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/ja/ALG-MVM-EVALUATION.md).
+- [~] [MVM-R6-ADMISSION-DESIGN](../../task_contracts/ja/MVM-R6-ADMISSION-DESIGN.md) — [閉包全体の決定性・受理の設計](./mvm_computation_admission.md)草案。独立レビュー・文書 lint 待ち。実装はブロック中。
 
 ## Premise ranking integration
 
