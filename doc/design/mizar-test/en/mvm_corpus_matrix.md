@@ -16,7 +16,7 @@ stages for integrated verification only where semantics and test result
 boundaries are supported. Introducing a runtime-specific stage/phase is a
 separate reviewed test-infrastructure decision, not this task's authority.
 
-[AST-CORPUS](../../task_contracts/en/AST-CORPUS.md) retains ownership of
+`AST-CORPUS` retains ownership of
 reflection-specific test preparation. This R8 matrix also covers ordinary
 ground algorithms, but does not duplicate AST-CORPUS's implementation
 contract or alter [traceability](./traceability.md) by assertion.
