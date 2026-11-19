@@ -673,6 +673,7 @@ Check the task off here once tests pass.
 
 - [ ] [AST-CONTRACT](../../task_contracts/en/AST-CONTRACT.md).
 
+- [ ] [MVM-READINESS-MAP](../../task_contracts/en/MVM-READINESS-MAP.md) — source-backed first-slice, executable/correspondence and owner readiness inventory; docs only. MVM execution remains blocked.
 - [ ] [ALG-MVM-EVALUATION](../../task_contracts/en/ALG-MVM-EVALUATION.md).
 
 ## Premise ranking integration
