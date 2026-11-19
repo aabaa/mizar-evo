@@ -6,7 +6,7 @@
 
 ## 責務と順序
 
-[仕様 §20.9.1](../../../spec/ja/20.algorithm_and_verification.md#2091-the-mizar-virtual-machine-mvm)
+[仕様 §20.9.1](../../../spec/ja/20.algorithm_and_verification.md)
 に従い、公開可能な計算アルゴリズムを元の本体・型・契約・検証証拠・
 推移的実行依存・VM 版と結び付ける。公開宣言やハッシュだけでは
 実行可能と認定しない。
