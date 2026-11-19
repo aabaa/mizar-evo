@@ -1,7 +1,7 @@
 # MVM R3 — Runtime Artifact and Validating Loader
 
 > Canonical English; [Japanese companion](../ja/mvm_runtime_export.md).
-> [Design task](../../task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md);
+> Design task;
 > **proposal only**, not an executable payload schema or implementation.
 
 ## Required boundary
@@ -12,7 +12,7 @@ including default-public items, with exact identity, signature, contracts,
 accepted verification and executable correspondence, transitive dependencies
 and compatible MVM semantics. [§23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility)
 governs ordered builds and reproducibility. The existing
-[AST-ARTIFACT](../../task_contracts/en/AST-ARTIFACT.md) splits *runtime
+AST-ARTIFACT splits *runtime
 export* from later *computation-record provenance*. An ordinary
 [VerifiedArtifact](./verified_artifact.md) export or a receipt/hash alone
 is **not** runnable proof-checked code.
