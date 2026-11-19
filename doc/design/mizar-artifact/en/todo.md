@@ -386,6 +386,10 @@ Check the task off here once tests pass.
   the [reassessment](phase15_emission_reevaluation.md). Do not add placeholder
   fields for resolution-trace certificates.
 
+## MVM R3 design follow-up
+
+- [~] [MVM-R3-ARTIFACT-LOADER-DESIGN](../../task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md) — [runtime export/loader design](./mvm_runtime_export.md) drafted; independent review/lint pending, implementation blocked on R2 authentic evidence and format decisions.
+
 ## AST specification implementation follow-up
 
 - [ ] [AST-ARTIFACT](../../task_contracts/en/AST-ARTIFACT.md).
