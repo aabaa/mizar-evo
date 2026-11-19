@@ -11,7 +11,7 @@
 | R5-A | 局所 `var`/`const`、代入、`if` と正常復帰 | R4、真正な Core/CFG、証拠、実行 Artifact |
 | R5-B | `while`、`for to/downto`、列の `for in`、`break`/`continue` | Core のループ・終了状態、R4 |
 | R5-C | 呼出し・再帰・検証済み依存 Artifact の連鎖 | Resolver/Core の真正な call、R3 のローダー |
-| R5-D | 順序未指定の集合反復、実行時 Pick、構文 `match` | 実行可能な要素選択、構文認証と R6 の決定性受理 |
+| R5-D | 順序未指定の集合反復、実行時 Pick、構文 `match` | 実行可能な要素選択と構文認証（証明への利用は R6 の決定性受理が追加条件） |
 | R5-E | `fail`、計算不可能な演算、ghost 隔離 | Core/Checker の失敗配置と効果検証 |
 | R5-F | `steps`・`timeout`・`nest`、中断と制限超過 | R4 の実行ステップ計数規則と版管理 |
 
