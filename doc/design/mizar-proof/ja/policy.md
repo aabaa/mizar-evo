@@ -422,22 +422,36 @@ boolean conversion test は certified two-valuedness の下で B=true/B≠false�
 通常の promotion は guarded totality/contract を公開し、definitional algorithm だけが §20.13.6 の guarded return equation を textual-order path guard と repeated const substitution とともに公開する。新たな coverage/consistency obligation は加えない。mutual promotion は全適用 prerequisite と complete membership の受理まで全 member を保留し、equation はさらに全 member が definitional であることを必要とする。
 現在の source に、これらの義務の aggregate promotion producer や portable acceptance validator はない。VC57 の module-local acceptance dependency も未実装で、その契約は transferable receipt を禁止する。[Artifact binding](../../mizar-artifact/ja/manifest.md#imported-promotion-authority-boundary) は既存の transport foundation であり、代替 proof path ではない。
 
+### Trust-transfer rule
+
+信頼元は **importer が承認した Proof execution authority** による、実際の aggregate acceptance result の committed publication とする。importer は imported artifact から独立した自身の管理下の trust configuration により、その authority、承認済み Proof/kernel implementation と version、許可する policy/profile/checker-schema scope を確立する。authority がそれらの check を忠実に実行し、真正な結果だけを公開することを信頼する。artifact、caller、package registry、dependency は自己承認や trust scope の拡張を行えず、独立に確立した authority がなければ promoted premise を一つも与えない。
+
+authority が promotion acceptance を公開できるのは、真正な accepted かつ untainted な kernel/Proof evidence が、完全な recursive group の全 member について上記の適用対象 prerequisite をすべて確立した後に限る。publication はその受理済み aggregate result から authority 管理下の execution と commit を経て生成され、caller が accepted result を捏造・置換できてはならない。この規則は既存の acceptance decision を移送し、Open、assumed、externally attested、failed、unchecked evidence を kernel acceptance に格上げしない。
+
+Artifact transport は承認済み execution と committed publication から、正確な package/module/export と algorithm identity、contract、適格な equation、完全な group membership、member ごとの prerequisite までの authenticated binding を保持する。binding は上記の完全な guarded input/context identity、source と pinned library content、dependency version/lockfile、実際の proof-policy/profile/checker-schema provenance を含む。integrity hash は結び付いた content を識別するが、その受理者を確立しない。新 receipt/schema、public summary、caller が渡す accepted status だけでは authority を与えない。
+
+Proof import validation は authenticated origin と完全な binding を確立し、importer が解決した object/dependency と現在の trust configuration に照合し、export 側 policy/profile/checker schema が importer の active acceptance requirement を満たすことを要求する。同じ policy label だけでは不十分で、弱い・不明な policy を import により強い status にしない。authority/binding/policy data が missing、unauthenticated、forged、stale、partial、mismatched、unsupported なら、どの member premise も公開しない。この provenance/projection validation は exporting module の再証明も opaque body の load も要求しない。
+
+validation 成功時に公開できるのは上記の ordinary/definitional premise だけであり、imported provenance を受理に保持し、新たな local kernel result にはしない。export された一 member の公開にも complete-group acceptance が先行する。真正な non-computable/contract-only promotion は runtime artifact なしで同じ logical trust path を使い、computation は別の artifact/correspondence check を保つ。
+
+これが承認済み trust-transfer 仕様決定である。authentication mechanism、transport representation、実行可能な validator は後続の Artifact/Proof slice が担う。この定義はそれらを提供せず、言語規則や kernel inference を変更しない。
+
 ### Portable validation design obligations
 
-以下の六行は将来の producer/consumer check であり、実行可能な portable-promotion coverage ではない。成功には真正で認証された exporter acceptance が必要で、合成した public status data では足りない。
+以下の六行は将来の producer/consumer check であり、実行可能な portable-promotion coverage ではない。成功には上記 trust-transfer rule に従って認証した exporter acceptance が必要である。
 
 | 入力形状 | 必要な結果と欠けた経路 |
 |---|---|
-| 正確な algorithm/contracts、適用 E1/E2/E4、complete-group evidence を持つ ordinary/definitional accepted export | 検証済み totality/contract と適格な defining equation だけが VC59 へ届く。aggregate producer、transport、import acceptance validator が未実装。 |
+| 承認された authority が真正に公開した、正確な algorithm/contracts、適用 E1/E2/E4、complete-group evidence を持つ ordinary/definitional accepted export | 検証済み totality/contract と適格な defining equation だけが VC59 へ届く。aggregate producer、transport、import acceptance validator が未実装。 |
 | 適用 E1/E2/E4 または任意 member evidence が missing、Open、failed、forged、invalid | どの member premise も公開しない。認証済み prerequisite/group validation が未実装。 |
 | algorithm/contract/equations、source/library binding、dependency/version、group membership が stale | premise を公開しない。正確な portable binding/currentness validation が未実装。 |
-| 非互換 proof policy/profile 下の accepted evidence | premise を公開しない。既存 kernel status check は portable policy provenance を認証しない。 |
+| 非互換 proof policy/profile/checker schema 下の accepted evidence | premise を公開しない。既存 kernel status check は portable policy provenance を認証しない。 |
 | 真正な accepted non-computable/contract-only export | runtime artifact を load せず logical import が成功する。認証された logical-only path が未実装。computation は別に execution artifact の欠落/不正を拒否する。 |
-| hash/status/public-summary-only または runtime-only input | promoted premise を公開しない。integrity、visibility、normal-return metadata は promotion acceptance を確立しない。 |
+| 未信頼・自己承認 origin、hash/status/public-summary-only または runtime-only input | promoted premise を公開しない。integrity、visibility、normal-return metadata は promotion acceptance を確立しない。 |
 
 既存 [status test](../../../../crates/mizar-proof/src/status/tests.rs) は local class、witness publication、policy mismatch、reuse invalidation を、[kernel test](../../../../crates/mizar-kernel/src/checker/tests.rs) は imported context/projection/policy check を扱う。portable 成功行の実装ではない。
-実装順序: (1) 真正な VC57 local prerequisite/group acceptance、(2) 以下の authentication authority を解決してから Artifact producer transport と Proof import-validation contract を固定、(3) producer/validator と六行すべての成功/拒否を実装、(4) 認証済み output のみに VC59 を接続する。opaque import は exporting module を再証明しない（[§12.6.1](../../../spec/ja/12.modules_and_namespaces.md#1261-不透明なインポート)）。runtime correspondence は execution owner に残る。
-`external_dependency_gap`: 真正な local aggregate output と portable producer/consumer validation が不足する。`spec_gap`: exporting Proof run が正確な prerequisite と complete group を許可 policy 下で受理したことを、再証明せず importer が信頼する根拠は何か。参照 authority は必要 evidence と identity check を定めるが portable producer-authentication rule を定めない。人間による解放条件: adoption design 前に既存の権威ある trust-transfer rule を特定するか、それを定義する仕様決定を承認する。hash、新 receipt/schema、caller が渡す accepted status はこの問題を解決しない。この inventory は authentication/trust rule を選ばない。
+実装順序: 真正な VC57 local prerequisite/group acceptance は引き続き前提であり、次にこの規則に従って Artifact producer transport、Proof import validation、VC59 connection の順に設計する。真正な producer/validator と六行すべての成功/拒否を実装してから、認証済み output のみに VC59 を接続する。opaque import は exporting module を再証明しない（[§12.6.1](../../../spec/ja/12.modules_and_namespaces.md#1261-不透明なインポート)）。runtime correspondence は execution owner に残る。
+`external_dependency_gap`: 真正な local aggregate E1/E2/E4/group output、Artifact producer transport、Proof import-validation 実装、VC59 connection は依然として存在しない。trust-transfer 定義が解消するのは従来の authority-definition gap のみであり、実行可能な acceptance/coverage credit を与えず、VC59 を unblock しない。
 
 ## Computation Admission Boundary
 
