@@ -161,6 +161,7 @@ Tasks1–3 は [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/ja/DOC-PUBLI
     - 依存: 8、11。仕様: `math.md`。
 
 13. **仕様: `render.md`。** [ ]
+    - [Reference encounter ordinal](../../task_contracts/ja/DOC13-REFERENCE-ENCOUNTER-ORDINAL.md) は認証済み traversal/result のみ。補助 JSON 合成は gate 内。
     - [独立した search 合成](../../task_contracts/ja/DOC13-SEARCH-COMPOSITION.md)は canonical in-memory JSON のみを返す。emission と全体 readiness は gate 内に残る。
     - [Render 定義提案](../../task_contracts/ja/DOC13-RENDER-DEFINITION.md)。新しい所有者判断は未選択のまま。
     - [前提条件の補完定義](../../task_contracts/ja/DOC13-PREREQUISITES-DEFINITION.md)は[限定 interface 採用](../../task_contracts/ja/DOC13-PREREQUISITE-INTERFACE-ADOPTION.md)に従う。完全 producer と Doc13 全体の整合 readiness は gate 内に残る。
