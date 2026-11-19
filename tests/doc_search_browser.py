@@ -92,6 +92,16 @@ def fixtures():
         value["items"][0]["identity"][position] = replacement
         invalid[f"identity-{i}"] = payload(value)
     raw = payload(base)
+    # Preserve exact non-integral values that JSON.parse rounds to version 1.
+    # Do not construct these tokens through Python floating-point values.
+    version_tokens = [b"1.0000000000000001", b"0.99999999999999999",
+                      b"10000000000000001e-16", b"99999999999999999e-17"]
+    reordered = payload({"items": items, "package_version": "1.2", "format_version": 1})
+    cases["escaped-version"] = reordered.replace(b'"format_version":1', b'"format_vers\\u0069on" \t:\r\n1')
+    for i, token in enumerate(version_tokens):
+        invalid[f"rounded-version-{i}"] = cases["good"].replace(b'"format_version":1', b'"format_version":' + token)
+        invalid[f"escaped-rounded-version-{i}"] = reordered.replace(
+            b'"format_version":1', b'"format_vers\\u0069on" \t:\r\n' + token)
     invalid["duplicate-envelope"] = raw.replace(b'"format_version":1', b'"format_version":1,"format_version":1')
     invalid["escaped-duplicate-envelope"] = raw.replace(b'"items":', b'"it\\u0065ms":[],"items":')
     invalid["duplicate-record"] = raw.replace(b'"fqn":', b'"fqn":"ignored","fqn":')
@@ -139,6 +149,7 @@ ASSERTIONS = r"""
   };
   checkRows('good',expected.items);
   checkRows('pretty',expected.items);
+  checkRows('escaped-version',expected.items);
   assert(query('good').labels.length===1 && query('good').labels[0].textContent.includes('Search'),'accessible label');
   assert(section('good').querySelector('.mizar-search-status').getAttribute('role')==='status','accessible status');
   const queries=[['ALPHA\tTHEOREM \nBETA \rGAMMA\v\f',[0]],['',[0,1,2,3]],['   \t\r\n\v\f',[0,1,2,3]],['second',[1]],['é',[]],['É',[0]],['Ω',[0]],['ω',[]],['e\u0301',[0]],['é beta',[]],['alpha\u00a0beta',[]],['absent',[]]];

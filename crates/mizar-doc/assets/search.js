@@ -15,8 +15,7 @@
   const refuse = () => { throw new Error("Incompatible search index"); };
 
   function parse(text) {
-    const value = JSON.parse(text);
-    // JSON.parse validates syntax; this separate lexical pass retains duplicate keys.
+    // Retain duplicate keys and the integer version token before JSON.parse loses them.
     const tokens = /"(?:[^"\\]|\\[\s\S])*"|[{}\[\]:]/g;
     const stack = [];
     for (const match of text.matchAll(tokens)) {
@@ -27,12 +26,15 @@
       else if (token.startsWith('"') &&
                /^[\x09\x0a\x0d\x20]*:/.test(text.slice(match.index + token.length))) {
         const key = JSON.parse(token);
+        if (stack.length === 1 && key === "format_version" &&
+            !/^[\x09\x0a\x0d\x20]*:[\x09\x0a\x0d\x20]*1(?=[\x09\x0a\x0d\x20,}])/
+              .test(text.slice(match.index + token.length))) refuse();
         const keys = stack[stack.length - 1];
         if (keys.has(key)) refuse();
         keys.add(key);
       }
     }
-    return value;
+    return JSON.parse(text);
   }
 
   function validate(text) {
