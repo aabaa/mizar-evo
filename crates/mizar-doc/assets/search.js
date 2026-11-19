@@ -79,7 +79,7 @@
     const own = selector => {
       const nodes = Array.from(root.querySelectorAll(selector))
         .filter(node => node.closest(".mizar-search") === root);
-      return nodes.length === 1 ? nodes[0] : null;
+      return nodes.length === 1 && !nodes[0].querySelector(".mizar-search") ? nodes[0] : null;
     };
     const input = own(".mizar-search-query");
     const status = own(".mizar-search-status");

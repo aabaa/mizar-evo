@@ -171,6 +171,18 @@ ASSERTIONS = r"""
   assert([...document.styleSheets].some(s=>s.href && new URL(s.href).pathname==='/assets/style.css'),'local stylesheet');
   assert(rows('neighbor').length===expected.items.length,'neighbor independence');
   assert(rows('nested-neighbor').length===expected.items.length,'nested neighbor independence');
+  for (const sink of ['results','status']) for (const input of ['complete','missing']) {
+   const outer='isolation-'+sink+'-'+input, inner='nested-'+sink+'-'+input;
+   assert(section(inner)?.isConnected,'nested control removed '+outer);
+   checkRows(inner,expected.items);
+   search(inner,'second'); checkRows(inner,[expected.items[1]]);
+   search(inner,''); checkRows(inner,expected.items);
+   if (input==='complete') search(outer,'Zeta');
+   assert(section(inner).isConnected,'outer query removed nested control '+outer);
+   checkRows(inner,expected.items);
+   if (sink==='results') assert(/unavailable/i.test(status(outer)),'unsafe results status '+outer);
+   else assert(section(outer).querySelector(':scope > .mizar-search-results').children.length===0,'unsafe status rendered '+outer);
+  }
   for (const malformed of document.querySelectorAll('[id^="malformed-"]')) {
    const list=malformed.querySelector('.mizar-search-results');
    if (list) assert(list.children.length===0,'malformed control rendered results');
@@ -229,6 +241,18 @@ def main():
                 controls += [shell("neighbor", "../../version/good.json")]
                 nested = shell("malformed-nested", "../../version/good.json").replace('<label>Search <input type="search" class="mizar-search-query"></label>', '')
                 controls += [nested[:-10] + shell("nested-neighbor", "../../version/good.json") + '</section>']
+                for sink in ["results", "status"]:
+                    for input_state in ["complete", "missing"]:
+                        name = sink + "-" + input_state
+                        outer = shell("isolation-" + name, "../../version/good.json")
+                        if input_state == "missing":
+                            outer = outer.replace('<label>Search <input type="search" class="mizar-search-query"></label>', '')
+                        inner = shell("nested-" + name, "../../version/good.json")
+                        if sink == "results":
+                            outer = outer.replace('<ul class="mizar-search-results"></ul>', '<ul class="mizar-search-results"><li>' + inner + '</li></ul>')
+                        else:
+                            outer = outer.replace('<p class="mizar-search-status" role="status"></p>', '<div class="mizar-search-status" role="status">' + inner + '</div>')
+                        controls.append(outer)
                 script = ASSERTIONS.replace("EXPECTED", json.dumps({"items": items, "hostile": hostile}, ensure_ascii=True).replace("<", "\\u003c")).replace("BAD", json.dumps(failed))
                 data = ('<!doctype html><html lang=en-US><meta charset=utf-8><link rel=stylesheet href=/assets/style.css>'
                         + ''.join(controls) + '<script src=/assets/search.js></script><script>' + script + '</script></html>').encode()
