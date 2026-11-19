@@ -343,6 +343,7 @@ LSP conversion must apply the protocol's UTF-16 position rules in the `mizar-lsp
 ### Loaded-to-Original Mapping
 
 `LoadingMapSegment::original_ranges_for_loaded` intersects validated ordered loading segments independently and returns mapped pieces plus coverage, without enclosing gaps. Callers validate frame bounds and UTF-8 boundaries; normalized-newline pieces retain their degraded kind independently of complete byte coverage.
+An empty request uses the existing loading-map point policy: the containing segment, or its original endpoint at loaded EOF. Missing segments supply no invented point.
 
 1. Use the retained `LoadingMap` for the `SourceId`.
 2. If the retained service has no `LoadingMap` for that `SourceId`, return `SourceMapError::MissingLoadingMapSegment`. Callers that need identity conversion should retain a `LoadingMap::identity`.

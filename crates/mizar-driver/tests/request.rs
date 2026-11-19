@@ -965,6 +965,75 @@ mod q1_comments {
             ),
             Some(mizar_session::hash_text(original))
         );
+        assert_eq!(
+            sources
+                .original_text(
+                    &artifact.module,
+                    publication.artifact_hash,
+                    &artifact.source_file,
+                    mizar_session::hash_text(original),
+                )
+                .unwrap(),
+            Some(original)
+        );
+        let identity = mizar_artifact::verified_artifact::project_frontend_identity(
+            &f.outputs[0],
+            artifact,
+            publication.artifact_hash,
+        )
+        .unwrap();
+        let identities = authenticate_doc_identities(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &[],
+            &[&identity],
+        )
+        .unwrap();
+        let doc_dir = &request.publications[0].output_dir;
+        let source_views = mizar_doc::render::DocSourceViews::allocate(
+            &inputs,
+            &identities,
+            &sources,
+            doc_dir,
+            "source-view-spec",
+            mizar_doc::allocations::DocAllocationTable {
+                output_root: doc_dir.join("v1.2.3"),
+                coverage: DocImportCoverage::Complete,
+                pages: vec![],
+                sections: None,
+            },
+        )
+        .unwrap();
+        let (view_path, html) = source_views
+            .view(&artifact.module, publication.artifact_hash, "Fixture docs")
+            .unwrap()
+            .unwrap();
+        assert_eq!(view_path, "sources/src/module0.miz.html");
+        assert!(
+            html.contains("<li id=\"L1\"><pre><code>\u{feff}::: café\\u{d}</code></pre></li>\n")
+        );
+        assert!(html.contains("<li id=\"L3\"><pre><code></code></pre></li>\n"));
+        let loaded_start = f.outputs[0].source.source_text.find("theorem").unwrap();
+        assert_eq!(
+            source_views
+                .loaded_source_slot(
+                    &artifact.module,
+                    publication.artifact_hash,
+                    &[TextRange::new(loaded_start, loaded_start)],
+                    "module0/index.html",
+                )
+                .unwrap(),
+            "<p class=\"mizar-source\">Source: <a href=\"../sources/src/module0.miz.html#L2\">line 2</a></p>\n"
+        );
+        assert_eq!(
+            source_views
+                .view(&artifact.module, publication.artifact_hash, "Fixture docs")
+                .unwrap()
+                .unwrap()
+                .1,
+            html
+        );
         let attachments =
             mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
         let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);

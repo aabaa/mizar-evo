@@ -589,7 +589,34 @@ impl LoadingMapSegment {
     pub fn original_ranges_for_loaded(
         segments: &[Self],
         loaded: TextRange,
+        loaded_text_len: usize,
     ) -> (Vec<LoadedToOriginalRange>, bool) {
+        if loaded.is_empty() {
+            let offset = segments
+                .iter()
+                .find_map(|segment| segment.original_offset_for_loaded_inside(loaded.start))
+                .or_else(|| {
+                    (loaded.start == loaded_text_len)
+                        .then(|| {
+                            segments.iter().find_map(|segment| {
+                                segment.original_offset_for_loaded_end(loaded.start)
+                            })
+                        })
+                        .flatten()
+                });
+            return offset.map_or_else(
+                || (Vec::new(), false),
+                |offset| {
+                    (
+                        vec![LoadedToOriginalRange {
+                            original: text_point(offset),
+                            kind: LoadedToOriginalRangeKind::Exact,
+                        }],
+                        true,
+                    )
+                },
+            );
+        }
         let mut result = Vec::new();
         let mut covered = 0;
         for segment in segments {

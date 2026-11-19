@@ -86,6 +86,10 @@ pub struct ValidatedDocAllocations {
 }
 
 impl ValidatedDocAllocations {
+    pub(crate) fn contains_page(&self, path: &str) -> bool {
+        self.table.pages.iter().any(|page| page.path == path) && self.page_ready(path)
+    }
+
     pub(crate) fn matches_inputs(
         &self,
         inputs: &AuthenticatedDocImports,

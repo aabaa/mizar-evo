@@ -1,6 +1,8 @@
 //! Isolated documentation fragments and local asset readiness.
 
-use std::fmt::Write;
+use std::{collections::BTreeMap, fmt::Write, path::Path};
+
+use mizar_artifact::{module_summary::ModuleSummaryIdentity, verified_artifact::VerifiedExport};
 
 use mizar_diagnostics::{
     failure_record::{
@@ -9,18 +11,268 @@ use mizar_diagnostics::{
     },
     registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
 };
-use mizar_session::SourceRange;
+use mizar_session::{Hash, SourceRange, TextRange};
 use pulldown_cmark::{Event, Tag};
 
 use crate::{
-    allocations::ValidatedDocAllocations,
-    doc_build::{AuthenticatedDocDirectBy, AuthenticatedDocImports, DocBuildError},
+    allocations::{
+        DocAllocationTable, DocDestinationAllocations, DocPageAllocation, ValidatedDocAllocations,
+        allocate_doc_destinations, encode_doc_href,
+    },
+    doc_build::{
+        AuthenticatedDocDirectBy, AuthenticatedDocIdentities, AuthenticatedDocImports,
+        AuthenticatedDocSources, DocBuildError, DocImportCoverage, validate_coordinate_range,
+    },
     links::{
         ClassifiedDocOccurrence, DocReferenceClassification, DocReferenceForm, ResolvedDocLinks,
         resolve_doc_links,
     },
     markdown::{ParsedComments, occurrence, parse_comments},
 };
+
+/// Isolated source views retaining one authenticated source and allocation handoff.
+#[derive(Debug)]
+pub struct DocSourceViews<'a> {
+    inputs: &'a AuthenticatedDocImports,
+    sources: &'a AuthenticatedDocSources,
+    destinations: DocDestinationAllocations,
+    paths: BTreeMap<ModuleSummaryIdentity, String>,
+}
+
+impl<'a> DocSourceViews<'a> {
+    /// Declares all available source views in the complete G2 auxiliary namespace.
+    pub fn allocate(
+        inputs: &'a AuthenticatedDocImports,
+        identities: &AuthenticatedDocIdentities,
+        sources: &'a AuthenticatedDocSources,
+        doc_dir: &Path,
+        specification_version: &str,
+        mut auxiliary: DocAllocationTable,
+    ) -> Result<Self, DocBuildError> {
+        if !sources.matches_inputs(inputs) {
+            return Err(DocBuildError::Binding("source view inventory mismatch"));
+        }
+        let mut paths = BTreeMap::new();
+        for (module, publication) in inputs.inventory() {
+            let (source_file, digest) = sources
+                .source_binding(module, publication)
+                .ok_or(DocBuildError::Binding("source view binding mismatch"))?;
+            if digest.is_some() {
+                let path = format!("sources/{source_file}.html");
+                auxiliary.pages.push(DocPageAllocation {
+                    path: path.clone(),
+                    module: None,
+                    items: Vec::new(),
+                    section_ids: Vec::new(),
+                });
+                paths.insert(module.clone(), path);
+            }
+        }
+        let destinations = allocate_doc_destinations(
+            inputs,
+            identities,
+            doc_dir,
+            specification_version,
+            auxiliary,
+        )?;
+        Ok(Self {
+            inputs,
+            sources,
+            destinations,
+            paths,
+        })
+    }
+
+    /// Returns the complete validated destination handoff.
+    pub fn destinations(&self) -> &DocDestinationAllocations {
+        &self.destinations
+    }
+
+    /// Renders the fixed source shell with the owner's authoritative package display name.
+    /// Legacy original text remains unavailable; version comes from the bound publication.
+    pub fn view(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        package_display_name: &str,
+    ) -> Result<Option<(&str, String)>, DocBuildError> {
+        let (source_file, digest) = self
+            .sources
+            .source_binding(module, publication)
+            .ok_or(DocBuildError::Binding("source view binding mismatch"))?;
+        let Some(digest) = digest else {
+            return Ok(None);
+        };
+        let text = self
+            .sources
+            .original_text(module, publication, source_file, digest)?
+            .ok_or(DocBuildError::Binding("source view text mismatch"))?;
+        let path = self
+            .paths
+            .get(module)
+            .ok_or(DocBuildError::Binding("source view allocation mismatch"))?;
+        let package = &self
+            .inputs
+            .publications()
+            .iter()
+            .find(|published| published.artifact_hash == publication)
+            .ok_or(DocBuildError::Binding("source view publication mismatch"))?
+            .manifest
+            .package;
+        let mut rows = String::new();
+        for (index, line) in text.split('\n').enumerate() {
+            let mut visible = String::new();
+            for ch in line.chars() {
+                if (ch <= '\u{1f}' && ch != '\t') || ch == '\u{7f}' {
+                    write!(visible, "\\u{{{:x}}}", u32::from(ch))
+                        .expect("writing to String cannot fail");
+                } else {
+                    visible.push(ch);
+                }
+            }
+            writeln!(
+                rows,
+                "<li id=\"L{}\"><pre><code>{}</code></pre></li>",
+                index + 1,
+                escape(&visible, false)
+            )
+            .expect("writing to String cannot fail");
+        }
+        let version = package
+            .package_version
+            .as_ref()
+            .map_or_else(String::new, |version| {
+                format!(
+                    " <span class=\"mizar-version\">{}</span>",
+                    escape(version, false)
+                )
+            });
+        let title = escape(source_file, false);
+        let package = escape(package_display_name, false);
+        let style = relative_source_href(path, "assets/style.css", None);
+        let search_script = relative_source_href(path, "assets/search.js", None);
+        let math_client = relative_source_href(path, "assets/katex/client.js", None);
+        let search_index = relative_source_href(path, "search.json", None);
+        Ok(Some((
+            path,
+            format!(
+                "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>{title}</title>\n<link rel=\"stylesheet\" href=\"{style}\">\n<script defer src=\"{search_script}\"></script>\n<script defer src=\"{math_client}\"></script>\n</head>\n<body>\n<header><span class=\"mizar-package\">{package}</span>{version}</header>\n<section class=\"mizar-search\" data-mizar-index=\"{search_index}\"><label>Search <input type=\"search\" class=\"mizar-search-query\"></label><p class=\"mizar-search-status\" role=\"status\"></p><ul class=\"mizar-search-results\"></ul></section>\n<main>\n<h1>{title}</h1>\n<ol class=\"mizar-source-lines\">{rows}</ol>\n</main>\n</body>\n</html>\n"
+            ),
+        )))
+    }
+
+    /// Uses the exact authenticated Artifact export range in the loaded frame.
+    pub fn item_source_slot(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        export: &VerifiedExport,
+        containing_page: &str,
+    ) -> Result<String, DocBuildError> {
+        if !self
+            .inputs
+            .exports(module, publication)
+            .is_some_and(|exports| exports.contains(export))
+        {
+            return Err(DocBuildError::Binding("source item binding mismatch"));
+        }
+        let start = usize::try_from(export.source_range.start_byte)
+            .map_err(|_| DocBuildError::Binding("source item range overflow"))?;
+        let end = usize::try_from(export.source_range.end_byte)
+            .map_err(|_| DocBuildError::Binding("source item range overflow"))?;
+        self.loaded_source_slot(
+            module,
+            publication,
+            &[TextRange { start, end }],
+            containing_page,
+        )
+    }
+
+    /// Projects ordered loaded segments through the retained G3 maps without coalescing.
+    /// Exact ranges and their provenance remain with the caller.
+    pub fn loaded_source_slot(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        ranges: &[TextRange],
+        containing_page: &str,
+    ) -> Result<String, DocBuildError> {
+        if !self
+            .destinations
+            .allocations()
+            .contains_page(containing_page)
+        {
+            return Err(DocBuildError::Binding("source containing page mismatch"));
+        }
+        let (source_file, digest) = self
+            .sources
+            .source_binding(module, publication)
+            .ok_or(DocBuildError::Binding("source slot binding mismatch"))?;
+        let Some(digest) = digest else {
+            return Ok("<p class=\"mizar-source-unavailable\">Source unavailable</p>\n".to_owned());
+        };
+        let text = self
+            .sources
+            .original_text(module, publication, source_file, digest)?
+            .ok_or(DocBuildError::Binding("source slot text mismatch"))?;
+        let path = self
+            .paths
+            .get(module)
+            .ok_or(DocBuildError::Binding("source slot allocation mismatch"))?;
+        let (segments, coverage) =
+            self.sources
+                .loaded_ranges(module, publication, source_file, digest, ranges)?;
+        source_slot(text, &segments, coverage, containing_page, path)
+    }
+}
+
+fn source_slot(
+    text: &str,
+    segments: &[TextRange],
+    coverage: DocImportCoverage,
+    containing_page: &str,
+    path: &str,
+) -> Result<String, DocBuildError> {
+    if segments.is_empty() {
+        return Ok(
+            "<p class=\"mizar-source-unavailable\">Source location unavailable</p>\n".to_owned(),
+        );
+    }
+    let mut starts = vec![0];
+    starts.extend(text.match_indices('\n').map(|(offset, _)| offset + 1));
+    let mut links = Vec::new();
+    for segment in segments {
+        validate_coordinate_range(text, *segment)?;
+        let line = starts.partition_point(|start| *start <= segment.start);
+        let href = relative_source_href(containing_page, path, Some(&format!("L{line}")));
+        links.push(format!("<a href=\"{href}\">line {line}</a>"));
+    }
+    let mapping = if coverage == DocImportCoverage::Complete {
+        ""
+    } else {
+        " <span class=\"mizar-source-mapping\">incomplete mapping</span>"
+    };
+    Ok(format!(
+        "<p class=\"mizar-source\">Source: {}{mapping}</p>\n",
+        links.join("; ")
+    ))
+}
+
+fn relative_source_href(from: &str, to: &str, fragment: Option<&str>) -> String {
+    let mut from = from.split('/').collect::<Vec<_>>();
+    from.pop();
+    let to = to.split('/').collect::<Vec<_>>();
+    let shared = from
+        .iter()
+        .zip(&to)
+        .take_while(|(left, right)| left == right)
+        .count();
+    let path = std::iter::repeat_n("..", from.len() - shared)
+        .chain(to[shared..].iter().copied())
+        .collect::<Vec<_>>()
+        .join("/");
+    escape(&encode_doc_href(&path, fragment), false)
+}
 
 /// Emits genuine External destinations and escaped raw HTML after resolver binding.
 pub fn url_fragments(
@@ -386,4 +638,66 @@ pub fn validate_search_assets(assets: &[(&str, &[u8])]) -> Result<(), DocBuildEr
         return Err(DocBuildError::Binding("search/style local assets mismatch"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod source_tests {
+    use super::*;
+
+    #[test]
+    fn nested_source_hrefs_encode_original_components_once() {
+        assert_eq!(
+            relative_source_href(
+                "深/nested/item.html",
+                "sources/非%#&\"'.miz.html",
+                Some("L2")
+            ),
+            "../../sources/%E9%9D%9E%25%23%26%22%27.miz.html#L2"
+        );
+    }
+
+    #[test]
+    fn partial_source_links_keep_order_repeats_points_and_no_end_links() {
+        let segments = [
+            TextRange { start: 2, end: 5 },
+            TextRange { start: 0, end: 1 },
+            TextRange { start: 2, end: 2 },
+            TextRange { start: 5, end: 5 },
+        ];
+        assert_eq!(
+            source_slot(
+                "a\nβ\n",
+                &segments,
+                DocImportCoverage::Incomplete,
+                "items/x.html",
+                "sources/a.html"
+            )
+            .unwrap(),
+            "<p class=\"mizar-source\">Source: <a href=\"../sources/a.html#L2\">line 2</a>; <a href=\"../sources/a.html#L1\">line 1</a>; <a href=\"../sources/a.html#L2\">line 2</a>; <a href=\"../sources/a.html#L3\">line 3</a> <span class=\"mizar-source-mapping\">incomplete mapping</span></p>\n"
+        );
+        assert!(
+            source_slot(
+                "β",
+                &[TextRange { start: 1, end: 1 }],
+                DocImportCoverage::Complete,
+                "x.html",
+                "sources/a.html"
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn empty_mapping_never_invents_a_line() {
+        for coverage in [
+            DocImportCoverage::Complete,
+            DocImportCoverage::Incomplete,
+            DocImportCoverage::Unavailable,
+        ] {
+            assert_eq!(
+                source_slot("", &[], coverage, "x.html", "sources/a.html").unwrap(),
+                "<p class=\"mizar-source-unavailable\">Source location unavailable</p>\n"
+            );
+        }
+    }
 }

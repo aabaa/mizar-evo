@@ -740,6 +740,46 @@ pub struct AuthenticatedDocSources {
 }
 
 impl AuthenticatedDocSources {
+    pub(crate) fn matches_inputs(&self, inputs: &AuthenticatedDocImports) -> bool {
+        self.selected_plan == inputs.selected_plan
+            && self.direct_by.matches_inputs(inputs)
+            && self.modules.len() == inputs.modules.len()
+            && inputs.inventory().all(|(module, publication)| {
+                self.modules.get(module).is_some_and(|row| {
+                    row.0 == publication
+                        && inputs.publications().iter().any(|published| {
+                            published.artifact_hash == publication
+                                && published.manifest.modules.iter().any(|entry| {
+                                    &entry.module == module && entry.source_file == row.1
+                                })
+                        })
+                })
+            })
+    }
+
+    /// Borrows retained original text only for its exact authenticated binding.
+    pub fn original_text(
+        &self,
+        module: &ModuleSummaryIdentity,
+        publication: Hash,
+        source_file: &str,
+        original_digest: Hash,
+    ) -> Result<Option<&str>, DocBuildError> {
+        let (_, _, projection) = self
+            .modules
+            .get(module)
+            .filter(|row| row.0 == publication && row.1 == source_file)
+            .ok_or(DocBuildError::Binding("original source binding mismatch"))?;
+        if projection == &CanonicalJson::Null {
+            return Ok(None);
+        }
+        let text = projection_text(projection, "original");
+        if mizar_session::hash_text(text) != original_digest {
+            return Err(DocBuildError::Binding("original source digest mismatch"));
+        }
+        Ok(Some(text))
+    }
+
     /// Exact packaged path and supplementary original-byte digest; null stays unavailable.
     pub fn source_binding(
         &self,
@@ -795,8 +835,11 @@ impl AuthenticatedDocSources {
         let mut complete = true;
         for range in ranges {
             validate_coordinate_range(loaded, *range)?;
-            let (mapped, covered) =
-                mizar_session::LoadingMapSegment::original_ranges_for_loaded(&segments, *range);
+            let (mapped, covered) = mizar_session::LoadingMapSegment::original_ranges_for_loaded(
+                &segments,
+                *range,
+                loaded.len(),
+            );
             complete &= covered;
             result.extend(mapped.into_iter().map(|part| part.original));
         }

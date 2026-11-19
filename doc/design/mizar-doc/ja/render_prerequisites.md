@@ -1,6 +1,6 @@
 # Doc13 Render 前提条件の補完提案
 正規言語: 英語。[英語正本](../en/render_prerequisites.md)。
-状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate 引渡しと限定 G4 opaque client と URL 方針診断の前提・供給 search reader を除き非規範的である。schema 登録や page renderer 実装は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
+状態: [Doc13 候補①](./render.md) の render/wire 提案は、採用済み Q3 href と下記の限定的な in-memory G1 identity、G2 destination、G3 coordinate/source-view 引渡しと限定 G4 opaque client と URL 方針診断の前提・供給 search reader を除き非規範的である。schema 登録や完全 page producer は認可しない。以下は内部の presentation/serialization 提案を定めるもので、他の所有者の意味と readiness は引き続き gate される。
 
 ## 採用済み G1 identity binding
 Artifact の `project_frontend_identity` は元 source に束縛された不変の identity product を捕捉し、Driver は `PublishedSourceMetadata::identity()` に保持する。source/snapshot lineage は Driver が所有する。producer は native `src/<components>.miz` の成分を Session の既存 module identifier 検証規則と厳密な canonical module identity に照合する。FQN や任意の artifact 文字列から成分を作らない。非 ASCII native identifier を含む不正・非 lossless path は拒否する。
@@ -53,7 +53,7 @@ used_by は producer が分類した選択済み theorem ごとに一 record と
 各 gate は独立に検査できる所有者 evidence を必要とし、文章による定義や screening は合格 witness ではない。
 1. 限定的な [G1 identity 引渡し](#採用済み-g1-identity-binding) は、完全 export に対する kind/version 互換性と認証済み lossless module 成分を採用する。必要な Doc13 ① render/wire interface の整合採用は別途行い、採用済み Doc8/9 と Q3 href を保持する。この前提条件だけでは Doc13 は ready にならない。
 2. Doc10 import/closure/direct-by 入力と render page/id/alias/section allocation を供給・認証する。complete-empty、incomplete、refusal state、反復/自己/cross-package citation、予約名/file-directory/case 衝突、label 不在、非 ASCII href を実証する。lower-reader integrity/schema/currentness failure は error のまま。
-3. 限定的な [source-coordinate 引渡し](#採用済み-g3-source-coordinates) は認証済みの元 byte segment を供給する。元順序の reference 遭遇/classification は Doc8/9 の作業に残し、別の [Q3 source-view/行定義](./render.md#q3-source-view-and-line-routing-definition)は内部 routing/表示を定めるが、認証 original-text access、配置、rendering の witness は未実装のまま。map 欠落時は synthetic offset なしで provenance を保持し、source 欠落は既存 unavailable/warning 動作を保つ。採用済み block-local recovery を変えず Q4/MT 劣化 summary を解決する。
+3. 限定的な [source-coordinate 引渡し](#採用済み-g3-source-coordinates) は認証済みの元 byte segment を供給する。元順序の reference 遭遇/classification は Doc8/9 の作業に残し、別の [Q3 source-view/行定義](./render.md#q3-source-view-and-line-routing-definition)は内部 routing/表示を定め、限定的な認証 original-text access・配置・rendering handoff を採用する。map 欠落時は synthetic offset なしで provenance を保持し、source 欠落は既存 unavailable/warning 動作を保つ。採用済み block-local recovery を変えず Q4/MT 劣化 summary を解決する。
 4. diagnostic owner と別途 Q12 render 診断、location、overlap/precedence、profile を定義・採用する。共有 link 診断は render warning を割り当てず、下記の限定 URL 前提が rejected-URL 一種類のみを割り当てる。Render が [完全 page template 定義](../en/render.md#complete-page-template-definition)を所有するが、定義は実行 template witness を供給しない。上記の限定 supplied-search reader/local asset は残る Doc11/math・owner-slot 表示依存を解消しない。warning promotion は documentation だけに影響し、proof/extraction acceptance には影響しない。
 5. その後に限り、採用済み interface と完全入力に対して Doc14/15 実装を dispatch し、上記 wire shape と canonical byte の positive/refusal/incompatibility witness を備える。Doc23 atomic publication、Doc24 executable determinism、optional DocIndex schema/compatibility は個別 gate のままで、この補完では一つも解消しない。
 

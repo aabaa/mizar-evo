@@ -343,6 +343,7 @@ LSP 変換は、プロトコルの UTF-16 位置規則を `mizar-lsp` ブリッ�
 ### 読み込み済みから元入力への対応付け
 
 `LoadingMapSegment::original_ranges_for_loaded` は検証済みの順序付き loading segment と独立に交差し、隙間を囲まず mapped piece と coverage を返す。caller は frame の範囲と UTF-8 境界を検証する。正規化 newline piece の degraded kind は完全な byte coverage と独立に保持する。
+空の要求は既存 loading-map point 方針に従い、包含 segment、または loaded EOF でその original endpoint に対応する。segment 欠落から point を捏造しない。
 
 1. `SourceId` に対応する保持済み `LoadingMap` を用いる。
 2. 保持されたサービスにその `SourceId` の `LoadingMap` が無い場合、`SourceMapError::MissingLoadingMapSegment` を返す。恒等変換が必要な呼び出し側は `LoadingMap::identity` を保持する必要があります。

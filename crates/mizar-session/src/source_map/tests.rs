@@ -1827,3 +1827,60 @@ fn snapshot_string(seed: u8) -> String {
     }
     serialized
 }
+
+#[test]
+fn loading_points_use_authored_segments_and_only_the_final_endpoint() {
+    use LoadingMapSegment::{NormalizedNewline, Original};
+    let segments = [
+        Original {
+            loaded: TextRange { start: 0, end: 1 },
+            original: TextRange { start: 3, end: 4 },
+        },
+        NormalizedNewline {
+            loaded: TextRange { start: 1, end: 2 },
+            original: TextRange { start: 4, end: 6 },
+        },
+        Original {
+            loaded: TextRange { start: 3, end: 4 },
+            original: TextRange { start: 7, end: 8 },
+        },
+    ];
+    for (point, original) in [
+        (0, Some(3)),
+        (1, Some(4)),
+        (2, None),
+        (3, Some(7)),
+        (4, Some(8)),
+        (5, None),
+    ] {
+        let (mapped, complete) = LoadingMapSegment::original_ranges_for_loaded(
+            &segments,
+            TextRange {
+                start: point,
+                end: point,
+            },
+            4,
+        );
+        assert_eq!(
+            mapped.first().map(|range| range.original),
+            original.map(|offset| TextRange {
+                start: offset,
+                end: offset
+            })
+        );
+        assert_eq!(complete, original.is_some());
+    }
+    assert_eq!(
+        LoadingMapSegment::original_ranges_for_loaded(&[], TextRange { start: 0, end: 0 }, 0),
+        (Vec::new(), false)
+    );
+    // The last known segment endpoint is not EOF when trailing map data is absent.
+    assert_eq!(
+        LoadingMapSegment::original_ranges_for_loaded(
+            &segments[..1],
+            TextRange { start: 1, end: 1 },
+            4
+        ),
+        (Vec::new(), false)
+    );
+}
