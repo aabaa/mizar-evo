@@ -11541,6 +11541,509 @@ mod doc10_authenticated {
                 }
             }
 
+            mod auxiliary {
+                use super::*;
+                use mizar_artifact::store::CanonicalJson as AJ;
+                use serde_json::Value as J;
+                use mizar_doc::{
+                    comments::attach_comments,
+                    links::DocReferenceClassification as C,
+                    markdown::{ParsedComments, parse_comments},
+                    render::canonical_auxiliary_json,
+                };
+
+                struct Fixture {
+                    app: Publication,
+                    registry: SnapshotRegistry,
+                    workspace: WorkspaceRoot,
+                    plan: DocBuildPlan,
+                    imports: AuthenticatedDocImports,
+                    identities: AuthenticatedDocIdentities,
+                    sources: AuthenticatedDocSources,
+                    direct: AuthenticatedDocDirectBy,
+                    destinations: DocDestinationAllocations,
+                }
+
+                impl Fixture {
+                    fn new(texts: [&str; 2], unavailable: bool) -> Self {
+                        let mut app = fixture([&["one"], &["two"]]);
+                        app.without_comment_projection = unavailable;
+                        if texts.iter().any(|text| !text.contains(":::")) {
+                            let _ = context(&mut [&mut app]);
+                        }
+                        for (index, text) in texts.into_iter().enumerate() {
+                            std::fs::write(app.root.join(&app.artifacts[index].source_file), text)
+                                .unwrap();
+                            let artifact = &mut app.artifacts[index];
+                            artifact.source_hash = mizar_session::hash_text(text);
+                            let lexical = mizar_lexer::preprocess_source_for_lexing(text).lexical_text;
+                            artifact.exports[0].source_range.start_byte =
+                                lexical.find("theorem").unwrap() as u64;
+                            artifact.exports[0].source_range.end_byte = lexical.len() as u64;
+                            app.summaries[index].source_hash = artifact.source_hash;
+                            app.summaries[index].exported_labels[0].source_range =
+                                artifact.exports[0].source_range;
+                            app.summaries[index].exported_labels[0].label = "Item0".into();
+                            app.summaries[index].refresh_interface_hash().unwrap();
+                        }
+                        let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                        for (index, text) in texts.into_iter().enumerate().filter(|(_, text)| text.contains("\nreserve x for object;\n")) {
+                            use mizar_artifact::comment_projection::*;
+                            let commented = CommentedArtifact {
+                                artifact: app.artifacts[index].clone(),
+                                comments: doc7_projection(text, vec![doc7_landmark(
+                                    "TheoremItem", text.find("theorem").unwrap(), text.len(), None,
+                                    Some(&app.artifacts[index].exports[0]),
+                                )]),
+                            };
+                            let entry = &mut app.manifest.modules[index];
+                            let written = write_published_artifact(
+                                &app.root, &PublishedArtifactPath::new(&entry.artifact_file).unwrap(),
+                                &commented_artifact_json(&commented).unwrap(),
+                                &artifact_hash_domain(COMMENTED_ARTIFACT_SCHEMA_FAMILY, COMMENTED_ARTIFACT_SCHEMA_VERSION),
+                                &artifact_hash_excluded_paths(),
+                            ).unwrap();
+                            entry.artifact_hash.digest = written.artifact_hash;
+                            entry.interface_hash.digest = commented.compute_interface_hash().unwrap();
+                            entry.implementation_hash.digest = commented.compute_implementation_hash().unwrap();
+                        }
+                        app.hash = write_manifest_file(&app.root, &app.manifest).unwrap().artifact_hash;
+                        let mut request = plans[0].request.clone();
+                        request.expected_manifest_hash = app.hash;
+                        request.output_dir = auxiliary(&app).output_root;
+                        let plan = build_doc_plans(
+                            &registry,
+                            plans[0].build_request,
+                            plans[0].snapshot,
+                            &workspace,
+                            &DocBuildRequest {
+                                profile: plans[0].profile.clone(),
+                                publications: vec![request],
+                            },
+                        )
+                        .unwrap()
+                        .remove(0);
+                        let imports = authenticate_doc_imports(
+                            &registry, &workspace, &plan, &[], &inputs(&app, &views[0]),
+                        )
+                        .unwrap();
+                        assert_eq!(imports.closure_coverage(), DocImportCoverage::Complete);
+                        let products = products(&app);
+                        let identities = authenticate_doc_identities(
+                            &registry, &workspace, &imports, &[],
+                            &products.iter().collect::<Vec<_>>(),
+                        )
+                        .unwrap();
+                        let direct = authenticate_doc_direct_by(&imports, &[]).unwrap();
+                        let sources = authenticate_doc_sources(
+                            &registry, &workspace, &imports, &[], &direct,
+                        )
+                        .unwrap();
+                        let destinations =
+                            allocate(&app, &imports, &identities, auxiliary(&app)).unwrap();
+                        Self { app, registry, workspace, plan, imports, identities, sources, direct, destinations }
+                    }
+
+                    fn compose(
+                        &self,
+                        parsed: &[(&ParsedComments<'_, '_>, &[Vec<C>])],
+                    ) -> Result<String, DocBuildError> {
+                        canonical_auxiliary_json(
+                            &self.registry, &self.workspace, &[], &self.imports,
+                            (&self.identities, &self.sources, &self.direct), parsed,
+                            (&self.destinations, SPEC),
+                        )
+                    }
+                }
+
+                fn field<'a>(value: &'a J, key: &str) -> &'a J {
+                    let J::Object(fields) = value else { panic!("object") };
+                    &fields[key]
+                }
+
+                fn rows(value: &J) -> &[J] {
+                    let J::Array(rows) = value else { panic!("array") };
+                    rows
+                }
+
+                fn wire(text: &str) -> J {
+                    serde_json::from_str(text).unwrap()
+                }
+
+                #[test]
+                fn doc13_auxiliary_mixed_encounters_keep_gaps_repeats_and_resolution() {
+                    let f = Fixture::new([
+                        "::: [shared]: Item0\n:::\n::: `ordinary` `Item0` [a][shared] [url](https://host) [b][shared] `Missing`\n:::\n::: @see exact.Item1\n:::\n::: @see\nreserve x for object;\n::: `Item0`\ntheorem T: thesis;",
+                        "::: `exact.Item1`\ntheorem T: thesis;",
+                    ], false);
+                    let attached = f.app.artifacts.iter().map(|a| attach_comments(&f.plan, &a.module, None).unwrap()).collect::<Vec<_>>();
+                    let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                    let classes = [vec![vec![C::Ordinary, C::Label, C::Label, C::External, C::Label, C::Label, C::Fqn], vec![C::Label]], vec![vec![C::Fqn]]];
+                    let pairs = [(&parsed[0], classes[0].as_slice()), (&parsed[1], classes[1].as_slice())];
+                    let output = f.compose(&pairs).unwrap();
+                    assert_eq!(output, f.compose(&[pairs[1], pairs[0]]).unwrap());
+                    let value = wire(&output);
+                    let refs = rows(field(&value, "references"));
+                    assert_eq!(refs.len(), 7);
+                    assert_eq!(field(&refs[5], "subject"), &serde_json::json!([
+                        ["destination-allocation", "1.0.0-test", null, ["one"], "2026", f.app.hash.to_lower_hex()],
+                        ["item", f.app.artifacts[0].exports[0].origin_id, "exact.Item0"],
+                    ]));
+                    assert_eq!(refs[..5].iter().map(|r| field(field(r, "provenance"), "occurrence")).collect::<Vec<_>>(), ["1", "2", "4", "5", "6"].iter().map(|s| J::String((*s).into())).collect::<Vec<_>>().iter().collect::<Vec<_>>());
+                    assert_eq!(field(&refs[1], "reference"), field(&refs[2], "reference"));
+                    assert_eq!(field(&refs[1], "form"), &J::String("explicit".into()));
+                    assert_eq!(field(&refs[1], "reference"), &serde_json::json!(["Item0", "Item0"]));
+                    assert_eq!(field(&refs[4], "reference"), &serde_json::json!(["exact.Item1", "exact.Item1"]));
+                    assert_eq!(field(field(&refs[1], "provenance"), "logical_range"), field(field(&refs[2], "provenance"), "logical_range"));
+                    assert_eq!(field(&refs[3], "state"), &J::String("unresolved".into()));
+                    assert!(rows(field(&refs[3], "targets")).is_empty());
+                    assert_eq!(field(&refs[4], "form"), &J::String("see".into()));
+                    assert_eq!(field(&refs[0], "state"), &J::String("resolved".into()));
+                    assert_eq!(field(&refs[4], "state"), &J::String("resolved".into()));
+                    let target = serde_json::json!(["item", ["destination-allocation", "1.0.0-test", null, ["one"], "2026", f.app.artifacts[0].exports[0].origin_id, f.app.hash.to_lower_hex()]]);
+                    let module = serde_json::json!(["destination-allocation", "1.0.0-test", null, ["one"], "2026", f.app.hash.to_lower_hex()]);
+                    assert_eq!(field(&refs[0], "targets"), &serde_json::json!([target]));
+                    assert_eq!(field(&refs[0], "destinations"), &serde_json::json!([[target, [["one", "index.html"], "exact.Item0"]]]));
+                    assert_eq!(field(&refs[0], "routes"), &serde_json::json!([[target, "current", null, module]]));
+                    let section = [vec![C::Section; 7]];
+                    assert!(f.compose(&[(&parsed[0], &section), pairs[1]]).is_err());
+                }
+
+                #[test]
+                fn doc13_auxiliary_required_products_and_forged_views_refuse_without_mutation() {
+                    let f = Fixture::new(["::: `Item0` [link](Item0)\n:::\n::: @see Item1 body\ntheorem T: thesis;", "::: empty\ntheorem T: thesis;"], false);
+                    let attached = f.app.artifacts.iter().map(|a| attach_comments(&f.plan, &a.module, None).unwrap()).collect::<Vec<_>>();
+                    let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                    let classes = [vec![vec![C::Label; 3]], vec![vec![]]];
+                    let pairs = [(&parsed[0], classes[0].as_slice()), (&parsed[1], classes[1].as_slice())];
+                    let before = format!("{:?}{:?}{:?}{:?}{:?}{:?}{:?}", f.plan, f.imports, f.identities, f.sources, f.direct, f.destinations, parsed);
+                    assert!(f.compose(&pairs).is_ok());
+                    assert!(f.compose(&pairs[..1]).is_err());
+                    assert!(f.compose(&[pairs[0], pairs[0]]).is_err());
+                    assert!(f.compose(&[(&parsed[0], &[vec![C::Label]]), pairs[1]]).is_err());
+                    for mutation in 0..4 {
+                        let mut forged = parse_comments(&attached[0], &[]);
+                        match mutation {
+                            0 => forged.blocks[0].events.clear(),
+                            1 => forged.blocks[0].source_map[0].1.start += 1,
+                            2 => forged.blocks[0].fields[0].body.clear(),
+                            _ => forged.blocks[0].destinations.clear(),
+                        }
+                        assert!(f.compose(&[(&forged, &classes[0]), pairs[1]]).is_err(), "mutation {mutation}");
+                    }
+                    assert!(canonical_auxiliary_json(&f.registry, &f.workspace, &[], &f.imports, (&f.identities, &f.sources, &f.direct), &pairs, (&f.destinations, "foreign")).is_err());
+                    for mutation in 0..4 {
+                        let mut changed = f.plan.clone();
+                        match mutation {
+                            0 => changed.profile.include_private_docs = true,
+                            1 => changed.request.output_dir.push("changed"),
+                            2 => changed.request.expected_manifest_hash = mizar_session::hash_text("foreign"),
+                            _ => changed.index.modules.values_mut().next().unwrap().comment_projection = AJ::Null,
+                        }
+                        let foreign = attach_comments(&changed, &f.app.artifacts[0].module, None).unwrap();
+                        let foreign = parse_comments(&foreign, &[]);
+                        assert!(f.compose(&[(&foreign, &classes[0]), pairs[1]]).is_err());
+                    }
+                    assert_eq!(before, format!("{:?}{:?}{:?}{:?}{:?}{:?}{:?}", f.plan, f.imports, f.identities, f.sources, f.direct, f.destinations, parsed));
+                    let manifest_path = f.app.root.join("artifact-manifest.json");
+                    let original_manifest = std::fs::read(&manifest_path).unwrap();
+                    std::fs::write(&manifest_path, b"tampered").unwrap();
+                    assert!(f.compose(&pairs).is_err());
+                    std::fs::write(&manifest_path, original_manifest).unwrap();
+                    assert!(f.compose(&pairs).is_ok());
+                    let snapshot = f.registry.get(f.plan.snapshot).unwrap();
+                    f.registry.create_snapshot(f.plan.build_request, SnapshotInput {
+                        workspace_root: snapshot.workspace_root,
+                        source_versions: snapshot.source_versions,
+                        dependency_artifacts: snapshot.dependency_artifacts,
+                        lockfile_hash: snapshot.lockfile_hash,
+                        toolchain: snapshot.toolchain,
+                        verifier_config_hash: mizar_session::hash_text("stale auxiliary"),
+                    }).unwrap();
+                    assert!(f.compose(&pairs).is_err());
+                }
+
+                #[test]
+                fn doc13_auxiliary_empty_and_failed_conversion_never_fabricate_occurrences() {
+                    for (body, unavailable) in [("", false), (":::\n", false), ("::: <script>raw</script>\n", false), ("::: `Item0\n::: continued`\n", false), (":::\n", true)] {
+                        let text = format!("{body}theorem T: thesis;");
+                        let f = Fixture::new([&text, "::: `Item1`\ntheorem T: thesis;"], unavailable);
+                        let attached = f.app.artifacts.iter().map(|a| attach_comments(&f.plan, &a.module, None).unwrap()).collect::<Vec<_>>();
+                        let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                        let first = if body.contains('`') { vec![vec![C::Label]] } else { parsed[0].blocks.iter().map(|_| vec![]).collect() };
+                        let second = if unavailable { vec![] } else { vec![vec![C::Label]] };
+                        let output = f.compose(&[(&parsed[0], &first), (&parsed[1], &second)]).unwrap();
+                        let value = wire(&output);
+                        let refs = rows(field(&value, "references"));
+                        assert_eq!(parsed[0].available(), !unavailable);
+                        assert_eq!(refs.len(), if unavailable { 0 } else if body.contains('`') { 2 } else { 1 });
+                        for reference in refs {
+                            let provenance = field(reference, "provenance");
+                            assert_eq!(field(provenance, "mapping"), &J::String("complete".into()));
+                            assert!(!rows(field(provenance, "segments")).is_empty());
+                        }
+                        assert_eq!(field(field(&value, "coverage"), "citation_state"), &J::String("unavailable".into()));
+                        if body.contains('`') {
+                            assert_eq!(rows(field(field(&refs[0], "provenance"), "segments")).len(), 2);
+                            for missing in [false, true] {
+                                let mut degraded = parse_comments(&attached[0], &[]);
+                                if missing {
+                                    degraded.blocks[0].source_map.clear();
+                                } else {
+                                    degraded.blocks[0].source_map.pop();
+                                }
+                                let output = f.compose(&[(&degraded, &first), (&parsed[1], &[vec![C::Label]])]).unwrap();
+                                let value = wire(&output);
+                                let degraded_refs = rows(field(&value, "references"));
+                                assert_eq!(degraded_refs.len(), 2);
+                                let provenance = field(&degraded_refs[0], "provenance");
+                                assert_eq!(field(provenance, "mapping"), &J::String(if missing { "unavailable" } else { "incomplete" }.into()));
+                                assert_eq!(rows(field(provenance, "segments")).len(), usize::from(!missing));
+                            }
+                            let mut faulty_attachment = attach_comments(&f.plan, &f.app.artifacts[0].module, None).unwrap();
+                            let mut faulty_row = faulty_attachment.blocks[0].lines[0].clone();
+                            let AJ::Array(fields) = &mut faulty_row else { panic!("line") };
+                            fields[1] = doc7_range(1, 1);
+                            faulty_attachment.blocks[0].lines[0] = &faulty_row;
+                            let failed = parse_comments(&faulty_attachment, &[]);
+                            assert!(failed.blocks[0].fallback);
+                            let output = f.compose(&[(&failed, &[vec![]]), (&parsed[1], &[vec![C::Label]])]).unwrap();
+                            assert_eq!(rows(field(&wire(&output), "references")).len(), 1);
+                        }
+                    }
+                }
+
+                #[test]
+                fn doc13_auxiliary_citation_coverage_empty_unmapped_and_repeated_edges() {
+                    let mut f = Fixture::new(["::: module\ntheorem T: thesis by T, T;", "::: module\ntheorem T: thesis;"], false);
+                    let attached = f.app.artifacts.iter().map(|a| attach_comments(&f.plan, &a.module, None).unwrap()).collect::<Vec<_>>();
+                    let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                    let pairs = [(&parsed[0], &[vec![]][..]), (&parsed[1], &[vec![]][..])];
+                    let endpoint = DirectByTarget::Theorem(Box::new(theorem_endpoint(&f.app, 0)));
+                    let complete = citation_projection(&f.app, 0, vec![endpoint.clone(), endpoint]);
+                    let empty = citation_projection(&f.app, 1, vec![]);
+                    let unmapped = citation_projection(&f.app, 0, vec![DirectByTarget::Unmapped; 2]);
+                    for (projections, state, count) in [
+                        (vec![], "unavailable", 0),
+                        (vec![&complete], "incomplete", 2),
+                        (vec![&empty, &complete], "complete", 2),
+                        (vec![&unmapped, &empty], "incomplete", 2),
+                    ] {
+                        f.direct = authenticate_doc_direct_by(&f.imports, &projections).unwrap();
+                        f.sources = authenticate_doc_sources(&f.registry, &f.workspace, &f.imports, &[], &f.direct).unwrap();
+                        let output = f.compose(&pairs).unwrap();
+                        let value = wire(&output);
+                        let coverage = field(&value, "coverage");
+                        assert_eq!(field(coverage, "closure_state"), &J::String("complete".into()));
+                        assert_eq!(field(coverage, "citation_state"), &J::String(state.into()));
+                        let citations = rows(field(&value, "citations"));
+                        assert_eq!(citations.len(), count);
+                        if count != 0 {
+                            assert_eq!(field(&citations[0], "target_ordinal"), &J::String("0".into()));
+                            assert_eq!(field(&citations[1], "target_ordinal"), &J::String("1".into()));
+                        }
+                        let used = rows(field(&value, "used_by"));
+                        assert_eq!(used.len(), 2);
+                        assert!(used.iter().all(|row| field(row, "state") == &J::String(state.into())));
+                        if state == "complete" {
+                            assert_eq!(rows(field(&used[0], "citing")).len(), 1);
+                            assert!(rows(field(&used[1], "citing")).is_empty());
+                            assert_eq!(rows(field(coverage, "examined")).len(), 2);
+                        } else if state == "incomplete" && rows(field(&used[0], "citing")).is_empty() {
+                            assert!(citations.iter().all(|row| field(row, "cited") == &J::Null));
+                        }
+                    }
+                    let absent_citing = project_frontend_direct_by(
+                        &f.app.frontend[0], &f.app.artifacts[0], f.app.hash,
+                        |_| None, |_, _| DirectByTarget::Unmapped,
+                    ).unwrap();
+                    f.direct = authenticate_doc_direct_by(&f.imports, &[&absent_citing, &empty]).unwrap();
+                    f.sources = authenticate_doc_sources(&f.registry, &f.workspace, &f.imports, &[], &f.direct).unwrap();
+                    assert!(f.compose(&pairs).is_err());
+                    let producers = f.app.artifacts.iter().map(|artifact| (
+                        artifact.module.clone(), f.app.hash,
+                        f.imports.producer(&artifact.module, f.app.hash).unwrap(),
+                    )).collect::<Vec<_>>();
+                    let products = products(&f.app);
+                    for (count, state) in [(0, "unavailable"), (1, "incomplete")] {
+                        let imports = authenticate_doc_imports(&f.registry, &f.workspace, &f.plan, &[], &producers[..count]).unwrap();
+                        let identities = authenticate_doc_identities(&f.registry, &f.workspace, &imports, &[], &products.iter().collect::<Vec<_>>()).unwrap();
+                        let direct = authenticate_doc_direct_by(&imports, &[&complete, &empty]).unwrap();
+                        let sources = authenticate_doc_sources(&f.registry, &f.workspace, &imports, &[], &direct).unwrap();
+                        let destinations = allocate(&f.app, &imports, &identities, auxiliary(&f.app)).unwrap();
+                        let output = canonical_auxiliary_json(&f.registry, &f.workspace, &[], &imports, (&identities, &sources, &direct), &pairs, (&destinations, SPEC)).unwrap();
+                        let value = wire(&output);
+                        let coverage = field(&value, "coverage");
+                        assert_eq!(field(coverage, "closure_state"), &J::String(state.into()));
+                        assert_eq!(field(coverage, "citation_state"), &J::String("complete".into()));
+                        assert!(rows(field(&value, "used_by")).iter().all(|row| field(row, "state") == &J::String(state.into())));
+                    }
+                }
+
+                #[test]
+                fn doc13_auxiliary_full_closure_excludes_dependency_subjects_and_is_order_stable() {
+                    let mut app = theorem_publication("aux-app", [
+                        "::: `T`\nimport aux_dep.module_0 as D; import aux_dep.module_1 as E; theorem T: thesis by T, T, D;",
+                        "::: module\ntheorem T: thesis;",
+                    ]);
+                    let mut dep = theorem_publication("aux_dep", [
+                        "::: `T`\ntheorem T: thesis proof thus thesis by T; end;", "::: module\ntheorem T: thesis;",
+                    ]);
+                    for publication in [&mut app, &mut dep] {
+                        publication.artifacts[1].proof_witnesses = publication.artifacts[0].proof_witnesses.clone();
+                        publication.artifacts[1].obligations = publication.artifacts[0].obligations.clone();
+                        publication.manifest.modules[1].proof_witnesses = publication.manifest.modules[0].proof_witnesses.clone();
+                        for (artifact, summary) in publication.artifacts.iter().zip(&mut publication.summaries) {
+                            let export = &artifact.exports[0];
+                            summary.exported_labels = vec![mizar_artifact::module_summary::ExportedLabelSummary {
+                                origin_id: export.origin_id.clone(), label: "T".into(),
+                                owner_fully_qualified_name: export.fully_qualified_name.clone(),
+                                visibility: "public".into(), source_range: export.source_range,
+                                target_kind: "theorem".into(),
+                            }];
+                            summary.refresh_interface_hash().unwrap();
+                        }
+                    }
+                    app.summaries[0].exported_labels[0].label = "Local".into();
+                    for (index, (artifact, summary)) in app.artifacts.iter_mut().zip(&mut app.summaries).enumerate() {
+                        artifact.module.module_path = format!("app_{index}");
+                        let source_file = format!("src/app_{index}.miz");
+                        std::fs::rename(app.root.join(&artifact.source_file), app.root.join(&source_file)).unwrap();
+                        artifact.source_file = source_file;
+                        artifact.exports[0].fully_qualified_name = format!("aux-app::app_{index}::T");
+                        summary.module = artifact.module.clone();
+                        summary.exported_labels[0].owner_fully_qualified_name = artifact.exports[0].fully_qualified_name.clone();
+                        summary.refresh_interface_hash().unwrap();
+                    }
+                    for publication in [&mut app, &mut dep] {
+                        for (artifact, summary) in publication.artifacts.iter().zip(&mut publication.summaries) {
+                            summary.exported_symbols = artifact.exports.iter().map(|export| {
+                                mizar_artifact::module_summary::ExportedSymbolSummary {
+                                    origin_id: export.origin_id.clone(),
+                                    fully_qualified_name: export.fully_qualified_name.clone(),
+                                    namespace_path: vec![],
+                                    visibility: "public".into(),
+                                    declaration_kind: export.export_kind.clone(),
+                                    source_range: export.source_range,
+                                    rendered_signature: export.rendered_signature.clone(),
+                                    interface_fingerprint: export.interface_fingerprint.digest,
+                                    proof_status: None,
+                                }
+                            }).collect();
+                            summary.refresh_interface_hash().unwrap();
+                        }
+                    }
+                    let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
+                    let mut request = plans[0].request.clone();
+                    request.output_dir = auxiliary(&app).output_root;
+                    let plans = build_doc_plans(&registry, plans[0].build_request, plans[0].snapshot, &workspace, &DocBuildRequest { profile: plans[0].profile.clone(), publications: vec![request] }).unwrap();
+                    let inventory = [(&dep.manifest.package, dep.hash, dep.root.as_path())];
+                    let producers = inputs(&app, &views[0]).into_iter().chain(inputs(&dep, &views[1])).collect::<Vec<_>>();
+                    let imports = authenticate_doc_imports(&registry, &workspace, &plans[0], &inventory, &producers).unwrap();
+                    assert_eq!(imports.closure_coverage(), DocImportCoverage::Complete);
+                    let products = products(&app).into_iter().chain(products(&dep)).collect::<Vec<_>>();
+                    let identities = authenticate_doc_identities(&registry, &workspace, &imports, &inventory, &products.iter().rev().collect::<Vec<_>>()).unwrap();
+                    let own = DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)));
+                    let external = DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0)));
+                    let projections = [
+                        citation_projection(&app, 0, vec![own.clone(), own, external.clone()]),
+                        citation_projection(&app, 1, vec![]),
+                        citation_projection(&dep, 0, vec![external]),
+                        citation_projection(&dep, 1, vec![]),
+                    ];
+                    let attached = app.artifacts.iter().map(|a| attach_comments(&plans[0], &a.module, None).unwrap()).collect::<Vec<_>>();
+                    let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                    let classes = [vec![vec![C::Label]], vec![vec![]]];
+                    let destinations = allocate_doc_destinations(&imports, &identities, &app.root.join("site"), SPEC, auxiliary(&app)).unwrap();
+                    let mut outputs = Vec::new();
+                    for reverse in [false, true] {
+                        let direct = authenticate_doc_direct_by(&imports, &if reverse { projections.iter().rev().collect::<Vec<_>>() } else { projections.iter().collect() }).unwrap();
+                        let sources = authenticate_doc_sources(&registry, &workspace, &imports, &inventory, &direct).unwrap();
+                        let pairs = if reverse { [(&parsed[1], classes[1].as_slice()), (&parsed[0], classes[0].as_slice())] } else { [(&parsed[0], classes[0].as_slice()), (&parsed[1], classes[1].as_slice())] };
+                        outputs.push(canonical_auxiliary_json(&registry, &workspace, &inventory, &imports, (&identities, &sources, &direct), &pairs, (&destinations, SPEC)).unwrap());
+                    }
+                    assert_eq!(outputs[0], outputs[1]);
+                    let value = wire(&outputs[0]);
+                    let endpoint = |publication: &Publication, index: usize| serde_json::json!([
+                        publication.manifest.package.package_id, "1.0.0-test", null,
+                        [publication.artifacts[index].module.module_path], "2026",
+                        publication.artifacts[index].exports[0].origin_id, publication.hash.to_lower_hex(),
+                    ]);
+                    let a0 = endpoint(&app, 0);
+                    let a1 = endpoint(&app, 1);
+                    let d0 = endpoint(&dep, 0);
+                    let d1 = endpoint(&dep, 1);
+                    let module = |item: &J| { let mut value = item.clone(); value.as_array_mut().unwrap().remove(5); value };
+                    let references = rows(field(&value, "references"));
+                    assert_eq!(references.len(), 1);
+                    assert_eq!(field(&references[0], "state"), &J::String("ambiguous".into()));
+                    let targets = serde_json::json!([["item", d0], ["item", d1]]);
+                    assert_eq!(field(&references[0], "targets"), &targets);
+                    assert_eq!(field(&references[0], "routes"), &serde_json::json!([
+                        [["item", d0], "import", "0", module(&d0)],
+                        [["item", d1], "import", "1", module(&d1)],
+                    ]));
+                    assert_eq!(field(&references[0], "destinations"), &serde_json::json!([
+                        [["item", d0], [["module_0", "index.html"], "aux_dep::module_0::T"]],
+                        [["item", d1], [["module_1", "index.html"], "aux_dep::module_1::T"]],
+                    ]));
+                    let citations = rows(field(&value, "citations"));
+                    assert_eq!(citations.iter().map(|row| serde_json::json!([field(row, "citing"), field(row, "cited"), field(row, "by_ordinal"), field(row, "target_ordinal")])).collect::<Vec<_>>(), vec![
+                        serde_json::json!([a0, a0, "0", "0"]),
+                        serde_json::json!([a0, a0, "0", "1"]),
+                        serde_json::json!([a0, d0, "0", "2"]),
+                        serde_json::json!([d0, d0, "0", "0"]),
+                    ]);
+                    assert_eq!(field(&value, "used_by"), &serde_json::json!([
+                        {"target": a0, "state": "complete", "citing": [a0]},
+                        {"target": a1, "state": "complete", "citing": []},
+                    ]));
+                    let coverage = field(&value, "coverage");
+                    assert_eq!(field(coverage, "closure"), &serde_json::json!([module(&a0), module(&a1), module(&d0), module(&d1)]));
+                    assert_eq!(field(coverage, "examined"), &serde_json::json!([[a0, ["body"]], [a1, ["body"]], [d0, ["body", "proof"]], [d1, ["body"]]]));
+                    assert_eq!(field(coverage, "citation_state"), &J::String("complete".into()));
+                    for subject in rows(field(&value, "references")).iter().map(|r| field(r, "subject")) {
+                        assert!(!format!("{subject:?}").contains("aux_dep"));
+                    }
+                }
+
+                #[test]
+                fn doc13_auxiliary_golden_canonical_identity_nulls_offsets_and_utf8() {
+                    let text = "::: `é/\u{1}`\ntheorem T: thesis by T;";
+                    let mut f = Fixture::new([text, "::: empty\ntheorem T: thesis;"], false);
+                    let projection = citation_projection(&f.app, 0, vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&f.app, 0)))]);
+                    let empty = citation_projection(&f.app, 1, vec![]);
+                    f.direct = authenticate_doc_direct_by(&f.imports, &[&projection, &empty]).unwrap();
+                    f.sources = authenticate_doc_sources(&f.registry, &f.workspace, &f.imports, &[], &f.direct).unwrap();
+                    let attached = f.app.artifacts.iter().map(|a| attach_comments(&f.plan, &a.module, None).unwrap()).collect::<Vec<_>>();
+                    let parsed = attached.iter().map(|a| parse_comments(a, &[])).collect::<Vec<_>>();
+                    let pairs = [(&parsed[0], &[vec![C::Unavailable]][..]), (&parsed[1], &[vec![]][..])];
+                    let hash = f.app.hash.to_lower_hex();
+                    let source_hash = f.app.artifacts[0].source_hash.to_lower_hex();
+                    let one = format!("[\"destination-allocation\",\"1.0.0-test\",null,[\"one\"],\"2026\",\"{hash}\"]");
+                    let two = format!("[\"destination-allocation\",\"1.0.0-test\",null,[\"two\"],\"2026\",\"{hash}\"]");
+                    let item = |index: usize, path: &str| format!("[\"destination-allocation\",\"1.0.0-test\",null,[\"{path}\"],\"2026\",\"{}\",\"{hash}\"]", f.app.artifacts[index].exports[0].origin_id);
+                    let cited_start = text.find("by T").unwrap() + 3;
+                    let expected = format!(concat!(
+                        "{{\"format_version\":1,\"package_version\":\"1.0.0-test\",\"references\":[",
+                        "{{\"subject\":[{},[\"module\"]],\"form\":\"code\",\"reference\":[\"`é/\\u0001`\",\"é/\\u0001\"],",
+                        "\"state\":\"unresolved\",\"targets\":[],\"routes\":[],\"destinations\":[],",
+                        "\"provenance\":{{\"block\":\"0\",\"occurrence\":\"0\",\"logical_range\":[\"0\",\"6\"],\"mapping\":\"complete\",",
+                        "\"segments\":[[[{},\"src/one.miz\",\"{}\"],\"4\",\"10\"]]}}}}],",
+                        "\"citations\":[{{\"citing\":{},\"cited\":{},\"by_ordinal\":\"0\",\"target_ordinal\":\"0\",",
+                        "\"provenance\":{{\"mapping\":\"complete\",\"segments\":[[[{},\"src/one.miz\",\"{}\"],\"{}\",\"{}\"]]}}}}],",
+                        "\"used_by\":[{{\"target\":{},\"state\":\"complete\",\"citing\":[{}]}},",
+                        "{{\"target\":{},\"state\":\"complete\",\"citing\":[]}}],",
+                        "\"coverage\":{{\"closure_state\":\"complete\",\"closure\":[{},{}],\"citation_state\":\"complete\",\"examined\":[[{},[\"body\"]],[{},[\"body\"]]]}}}}\n"
+                    ), one, one, source_hash, item(0, "one"), item(0, "one"), one, source_hash,
+                        cited_start, cited_start + 1, item(0, "one"), item(0, "one"), item(1, "two"),
+                        one, two, item(0, "one"), item(1, "two"));
+                    for _ in 0..2 {
+                        assert_eq!(f.compose(&pairs).unwrap(), expected);
+                    }
+                }
+            }
+
             #[test]
             fn doc13_destination_q1_spelling_preserves_exact_stored_components() {
                 for (label, encoded) in [

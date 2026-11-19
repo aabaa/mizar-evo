@@ -160,6 +160,592 @@ pub fn canonical_search_json<A: SessionIdAllocator>(
     Ok(output)
 }
 
+/// Composes authenticated version-1 reference, citation and UsedBy data in memory.
+/// Section references remain gated on authenticated section-publication provenance.
+pub fn canonical_auxiliary_json<A: SessionIdAllocator>(
+    registry: &SnapshotRegistry<A>,
+    workspace_root: &WorkspaceRoot,
+    inventory: &[(&PackageIdentity, Hash, &Path)],
+    inputs: &AuthenticatedDocImports,
+    products: (
+        &AuthenticatedDocIdentities,
+        &AuthenticatedDocSources,
+        &AuthenticatedDocDirectBy,
+    ),
+    parsed: &[(&ParsedComments<'_, '_>, &[Vec<DocReferenceClassification>])],
+    allocation: (&DocDestinationAllocations, &str),
+) -> Result<String, DocBuildError> {
+    use mizar_artifact::direct_by::DirectByTarget;
+    let (identities, sources, direct_by) = products;
+    let refuse = || DocBuildError::Binding("auxiliary composition binding mismatch");
+    let (destinations, specification_version) = allocation;
+    if !identities.matches_inputs(inputs)
+        || !sources.matches_inputs(inputs)
+        || !direct_by.matches_inputs(inputs)
+        || !destinations
+            .allocations()
+            .matches_inputs(inputs, specification_version)
+    {
+        return Err(refuse());
+    }
+    let publication = inputs.publications().first().ok_or_else(refuse)?;
+    let version = publication
+        .manifest
+        .package
+        .package_version
+        .as_deref()
+        .ok_or_else(refuse)?;
+    let selected = identities
+        .identities()
+        .iter()
+        .filter(|identity| identity.publication_hash() == publication.artifact_hash)
+        .collect::<Vec<_>>();
+    if parsed.len() != selected.len() {
+        return Err(refuse());
+    }
+    let mut output = String::from("{\"format_version\":1,\"package_version\":");
+    search_json_string(&mut output, Some(version));
+    output.push_str(",\"references\":[");
+    let mut first = true;
+    let mut used_by = Vec::new();
+    for identity in selected {
+        let artifact = identity.artifact();
+        let module = &artifact.module;
+        let hash = identity.publication_hash();
+        let mut matching = parsed
+            .iter()
+            .filter(|(parsed, _)| parsed.attachments.module == module);
+        let (parsed, classes) = matching.next().ok_or_else(refuse)?;
+        if matching.next().is_some()
+            || !inputs.matches_plan(parsed.attachments.plan)
+            || classes
+                .iter()
+                .flatten()
+                .any(|class| *class == DocReferenceClassification::Section)
+        {
+            return Err(refuse());
+        }
+        let resolved = if parsed.available() {
+            let canonical = parse_comments(parsed.attachments, &[]);
+            if canonical.blocks.len() != parsed.blocks.len() {
+                return Err(refuse());
+            }
+            for (ordinal, (provided, original)) in
+                parsed.blocks.iter().zip(&canonical.blocks).enumerate()
+            {
+                if provided.text != original.text
+                    || provided.events != original.events
+                    || provided.destinations != original.destinations
+                    || provided.fallback != original.fallback
+                    || provided.paragraphs != original.paragraphs
+                    || !provided
+                        .fields
+                        .iter()
+                        .map(|field| (&field.marker, &field.slot, &field.body, &field.payload))
+                        .eq(original
+                            .fields
+                            .iter()
+                            .map(|field| (&field.marker, &field.slot, &field.body, &field.payload)))
+                    || !provided
+                        .math
+                        .iter()
+                        .map(|math| (&math.range, &math.content, math.display))
+                        .eq(original
+                            .math
+                            .iter()
+                            .map(|math| (&math.range, &math.content, math.display)))
+                {
+                    return Err(refuse());
+                }
+                if provided.fallback {
+                    if provided.source_map != original.source_map {
+                        return Err(refuse());
+                    }
+                } else {
+                    // Authenticate retained segments even for blocks with no references.
+                    crate::markdown::original_ranges(sources, parsed, ordinal, &[])?;
+                }
+            }
+            comment_fragments(
+                &canonical,
+                CommentTarget::Module,
+                inputs,
+                direct_by,
+                destinations.allocations(),
+                specification_version,
+                classes,
+            )?
+            .1
+        } else {
+            if !parsed.attachments.blocks.is_empty()
+                || !parsed.blocks.is_empty()
+                || !classes.is_empty()
+                || !std::ptr::eq(
+                    parsed.attachments.input,
+                    parsed
+                        .attachments
+                        .plan
+                        .index
+                        .modules
+                        .get(module)
+                        .ok_or_else(refuse)?,
+                )
+            {
+                return Err(refuse());
+            }
+            resolve_doc_links(
+                parsed,
+                inputs,
+                direct_by,
+                destinations.allocations(),
+                specification_version,
+                &[],
+            )?
+        };
+        let original = attach_comments(parsed.attachments.plan, module, None).ok_or_else(refuse)?;
+        for subject in std::iter::once(CommentTarget::Module)
+            .chain(artifact.exports.iter().map(CommentTarget::Item))
+        {
+            for reference in &resolved.references {
+                let occurrence = &reference.occurrence;
+                if matches!(
+                    occurrence.classification,
+                    DocReferenceClassification::Ordinary | DocReferenceClassification::External
+                ) {
+                    continue;
+                }
+                let target = original
+                    .blocks
+                    .get(occurrence.block)
+                    .and_then(|block| block.target)
+                    .ok_or_else(refuse)?;
+                if !match (subject, target) {
+                    (CommentTarget::Module, CommentTarget::Module) => true,
+                    (CommentTarget::Item(left), CommentTarget::Item(right)) => left == right,
+                    _ => false,
+                } {
+                    continue;
+                }
+                let ordinal = reference.encounter_ordinal().ok_or_else(refuse)?;
+                let (segments, mapping) = crate::markdown::original_ranges(
+                    sources,
+                    parsed,
+                    occurrence.block,
+                    &occurrence.destination_ranges,
+                )?;
+                if !first {
+                    output.push(',');
+                }
+                first = false;
+                output.push_str("{\"subject\":[");
+                auxiliary_json_identity(&mut output, identities, module, hash, None)?;
+                output.push_str(",[");
+                match subject {
+                    CommentTarget::Module => output.push_str("\"module\""),
+                    CommentTarget::Item(export) => {
+                        output.push_str("\"item\",");
+                        search_json_string(&mut output, Some(&export.origin_id));
+                        output.push(',');
+                        search_json_string(&mut output, Some(&export.fully_qualified_name));
+                    }
+                }
+                output.push_str("]],\"form\":");
+                search_json_string(
+                    &mut output,
+                    Some(match occurrence.form {
+                        DocReferenceForm::Code => "code",
+                        DocReferenceForm::Explicit => "explicit",
+                        DocReferenceForm::See => "see",
+                    }),
+                );
+                output.push_str(",\"reference\":[");
+                search_json_string(
+                    &mut output,
+                    Some(
+                        parsed.blocks[occurrence.block]
+                            .text
+                            .get(occurrence.range.clone())
+                            .ok_or_else(refuse)?,
+                    ),
+                );
+                output.push(',');
+                search_json_string(&mut output, occurrence.interpreted.as_deref());
+                output.push_str("],\"state\":");
+                search_json_string(
+                    &mut output,
+                    Some(match reference.outcome {
+                        DocLinkOutcome::Linked { .. } => "resolved",
+                        DocLinkOutcome::Unresolved => "unresolved",
+                        DocLinkOutcome::Ambiguous => "ambiguous",
+                        DocLinkOutcome::Incomplete => "incomplete",
+                        DocLinkOutcome::Excluded => return Err(refuse()),
+                    }),
+                );
+                output.push_str(",\"targets\":[");
+                for (index, candidate) in reference.candidates.iter().enumerate() {
+                    if index != 0 {
+                        output.push(',');
+                    }
+                    auxiliary_json_target(&mut output, identities, candidate)?;
+                }
+                output.push_str("],\"routes\":[");
+                for (index, route) in reference.routes.iter().enumerate() {
+                    if index != 0 {
+                        output.push(',');
+                    }
+                    output.push('[');
+                    auxiliary_json_target(&mut output, identities, &route.candidate)?;
+                    output.push(',');
+                    search_json_string(&mut output, Some(route.kind));
+                    output.push(',');
+                    match route.position {
+                        Some(position) => auxiliary_json_ordinal(&mut output, position)?,
+                        None => output.push_str("null"),
+                    }
+                    output.push(',');
+                    auxiliary_json_identity(
+                        &mut output,
+                        identities,
+                        &route.endpoint.0,
+                        route.endpoint.1,
+                        None,
+                    )?;
+                    output.push(']');
+                }
+                output.push_str("],\"destinations\":[");
+                let mut first_destination = true;
+                for candidate in &reference.candidates {
+                    if let Some((path, fragment, _)) = destinations.allocations().item(
+                        &candidate.module,
+                        candidate.publication_hash,
+                        &candidate.export,
+                    ) {
+                        if !first_destination {
+                            output.push(',');
+                        }
+                        first_destination = false;
+                        output.push('[');
+                        auxiliary_json_target(&mut output, identities, candidate)?;
+                        output.push_str(",[[");
+                        for (index, component) in path.split('/').enumerate() {
+                            if index != 0 {
+                                output.push(',');
+                            }
+                            search_json_string(&mut output, Some(component));
+                        }
+                        output.push_str("],");
+                        search_json_string(&mut output, Some(fragment));
+                        output.push_str("]]");
+                    }
+                }
+                output.push_str("],\"provenance\":{\"block\":");
+                auxiliary_json_ordinal(&mut output, occurrence.block)?;
+                output.push_str(",\"occurrence\":");
+                auxiliary_json_ordinal(&mut output, ordinal)?;
+                output.push_str(",\"logical_range\":[");
+                auxiliary_json_ordinal(&mut output, occurrence.range.start)?;
+                output.push(',');
+                auxiliary_json_ordinal(&mut output, occurrence.range.end)?;
+                output.push_str("],\"mapping\":");
+                search_json_string(&mut output, Some(auxiliary_coverage(mapping)));
+                output.push_str(",\"segments\":[");
+                for (index, segment) in segments.iter().enumerate() {
+                    if index != 0 {
+                        output.push(',');
+                    }
+                    let (path, digest) = sources.source_binding(module, hash).ok_or_else(refuse)?;
+                    output.push_str("[[");
+                    auxiliary_json_identity(&mut output, identities, module, hash, None)?;
+                    output.push(',');
+                    search_json_string(&mut output, Some(path));
+                    output.push(',');
+                    search_json_string(
+                        &mut output,
+                        Some(&digest.ok_or_else(refuse)?.to_lower_hex()),
+                    );
+                    output.push_str("],");
+                    auxiliary_json_ordinal(&mut output, segment.start)?;
+                    output.push(',');
+                    auxiliary_json_ordinal(&mut output, segment.end)?;
+                    output.push(']');
+                }
+                output.push_str("]}}");
+            }
+        }
+        used_by.extend(resolved.used_by);
+    }
+    let mut citations = Vec::new();
+    let mut examined = Vec::new();
+    for producer in direct_by.producers() {
+        for examination in producer.examinations() {
+            if let Some(owner) = &examination.owner {
+                examined.push((owner, examination));
+            }
+        }
+        for occurrence in producer.occurrences() {
+            if matches!(occurrence.target, DirectByTarget::NonTheorem) {
+                continue;
+            }
+            let citing = occurrence.citing.as_ref().ok_or_else(refuse)?;
+            citations.push((citing, producer, occurrence));
+        }
+    }
+    citations.sort_by_key(|(citing, _, occurrence)| {
+        (
+            &citing.module,
+            &citing.export.fully_qualified_name,
+            &citing.export.origin_id,
+            citing.publication_hash.to_lower_hex(),
+            occurrence.by_ordinal,
+            occurrence.target_ordinal,
+        )
+    });
+    examined.sort_by_key(|(owner, _)| {
+        (
+            &owner.module,
+            &owner.export.fully_qualified_name,
+            &owner.export.origin_id,
+            owner.publication_hash.to_lower_hex(),
+        )
+    });
+    output.push_str("],\"citations\":[");
+    for (index, (citing, producer, occurrence)) in citations.iter().enumerate() {
+        if index != 0 {
+            output.push(',');
+        }
+        output.push_str("{\"citing\":");
+        auxiliary_json_identity(
+            &mut output,
+            identities,
+            &citing.module,
+            citing.publication_hash,
+            Some(&citing.export),
+        )?;
+        output.push_str(",\"cited\":");
+        if let DirectByTarget::Theorem(cited) = &occurrence.target
+            && inputs
+                .exports(&cited.module, cited.publication_hash)
+                .is_some()
+        {
+            auxiliary_json_identity(
+                &mut output,
+                identities,
+                &cited.module,
+                cited.publication_hash,
+                Some(&cited.export),
+            )?;
+        } else {
+            output.push_str("null");
+        }
+        output.push_str(",\"by_ordinal\":");
+        auxiliary_json_ordinal(&mut output, occurrence.by_ordinal)?;
+        output.push_str(",\"target_ordinal\":");
+        auxiliary_json_ordinal(&mut output, occurrence.target_ordinal)?;
+        let (segments, mapping) = sources.citation_ranges(producer, &[occurrence.target_range])?;
+        output.push_str(",\"provenance\":{\"mapping\":");
+        search_json_string(&mut output, Some(auxiliary_coverage(mapping)));
+        output.push_str(",\"segments\":[");
+        for (index, segment) in segments.iter().enumerate() {
+            if index != 0 {
+                output.push(',');
+            }
+            let (path, digest) = sources
+                .source_binding(producer.module(), producer.publication_hash())
+                .ok_or_else(refuse)?;
+            output.push_str("[[");
+            auxiliary_json_identity(
+                &mut output,
+                identities,
+                producer.module(),
+                producer.publication_hash(),
+                None,
+            )?;
+            output.push(',');
+            search_json_string(&mut output, Some(path));
+            output.push(',');
+            search_json_string(
+                &mut output,
+                Some(&digest.ok_or_else(refuse)?.to_lower_hex()),
+            );
+            output.push_str("],");
+            auxiliary_json_ordinal(&mut output, segment.start)?;
+            output.push(',');
+            auxiliary_json_ordinal(&mut output, segment.end)?;
+            output.push(']');
+        }
+        output.push_str("]}}");
+    }
+    output.push_str("],\"used_by\":[");
+    for (index, entry) in used_by.iter().enumerate() {
+        if index != 0 {
+            output.push(',');
+        }
+        output.push_str("{\"target\":");
+        let target = &entry.target;
+        auxiliary_json_identity(
+            &mut output,
+            identities,
+            &target.module,
+            target.publication_hash,
+            Some(&target.export),
+        )?;
+        output.push_str(",\"state\":");
+        let state = match (entry.closure_coverage, entry.citation_coverage) {
+            (DocImportCoverage::Unavailable, _) | (_, DocImportCoverage::Unavailable) => {
+                DocImportCoverage::Unavailable
+            }
+            (DocImportCoverage::Incomplete, _) | (_, DocImportCoverage::Incomplete) => {
+                DocImportCoverage::Incomplete
+            }
+            _ => DocImportCoverage::Complete,
+        };
+        search_json_string(&mut output, Some(auxiliary_coverage(state)));
+        output.push_str(",\"citing\":[");
+        for (index, citing) in entry.citing.iter().enumerate() {
+            if index != 0 {
+                output.push(',');
+            }
+            auxiliary_json_identity(
+                &mut output,
+                identities,
+                &citing.module,
+                citing.publication_hash,
+                Some(&citing.export),
+            )?;
+        }
+        output.push_str("]}");
+    }
+    output.push_str("],\"coverage\":{\"closure_state\":");
+    search_json_string(
+        &mut output,
+        Some(auxiliary_coverage(inputs.closure_coverage())),
+    );
+    output.push_str(",\"closure\":[");
+    for (index, (module, hash)) in inputs.inventory().enumerate() {
+        if index != 0 {
+            output.push(',');
+        }
+        auxiliary_json_identity(&mut output, identities, module, hash, None)?;
+    }
+    output.push_str("],\"citation_state\":");
+    search_json_string(
+        &mut output,
+        Some(auxiliary_coverage(direct_by.citation_coverage())),
+    );
+    output.push_str(",\"examined\":[");
+    for (index, (owner, examination)) in examined.iter().enumerate() {
+        if index != 0 {
+            output.push(',');
+        }
+        output.push('[');
+        auxiliary_json_identity(
+            &mut output,
+            identities,
+            &owner.module,
+            owner.publication_hash,
+            Some(&owner.export),
+        )?;
+        output.push_str(",[\"body\"");
+        if examination.proof_range.is_some() {
+            output.push_str(",\"proof\"");
+        }
+        output.push_str("]]");
+    }
+    output.push_str("]}}\n");
+    let producers = identities.identities().iter().collect::<Vec<_>>();
+    if authenticate_doc_identities(registry, workspace_root, inputs, inventory, &producers)?
+        != *identities
+        || crate::doc_build::authenticate_doc_sources(
+            registry,
+            workspace_root,
+            inputs,
+            inventory,
+            direct_by,
+        )? != *sources
+    {
+        return Err(refuse());
+    }
+    Ok(output)
+}
+
+fn auxiliary_coverage(coverage: DocImportCoverage) -> &'static str {
+    match coverage {
+        DocImportCoverage::Unavailable => "unavailable",
+        DocImportCoverage::Incomplete => "incomplete",
+        DocImportCoverage::Complete => "complete",
+    }
+}
+
+fn auxiliary_json_ordinal(output: &mut String, ordinal: usize) -> Result<(), DocBuildError> {
+    let value = u64::try_from(ordinal)
+        .map_err(|_| DocBuildError::Binding("auxiliary ordinal exceeds u64"))?;
+    search_json_string(output, Some(&value.to_string()));
+    Ok(())
+}
+
+fn auxiliary_json_target(
+    output: &mut String,
+    identities: &AuthenticatedDocIdentities,
+    target: &crate::links::DocLinkTarget,
+) -> Result<(), DocBuildError> {
+    output.push_str("[\"item\",");
+    auxiliary_json_identity(
+        output,
+        identities,
+        &target.module,
+        target.publication_hash,
+        Some(&target.export),
+    )?;
+    output.push(']');
+    Ok(())
+}
+
+fn auxiliary_json_identity(
+    output: &mut String,
+    identities: &AuthenticatedDocIdentities,
+    module: &ModuleSummaryIdentity,
+    hash: Hash,
+    export: Option<&VerifiedExport>,
+) -> Result<(), DocBuildError> {
+    let refuse = || DocBuildError::Binding("auxiliary identity binding mismatch");
+    let identity = identities
+        .identities()
+        .iter()
+        .find(|identity| {
+            &identity.artifact().module == module && identity.publication_hash() == hash
+        })
+        .ok_or_else(refuse)?;
+    if export.is_some_and(|export| !identity.artifact().exports.contains(export)) {
+        return Err(refuse());
+    }
+    output.push('[');
+    search_json_string(output, Some(&module.package_id));
+    output.push(',');
+    search_json_string(
+        output,
+        Some(module.package_version.as_deref().ok_or_else(refuse)?),
+    );
+    output.push(',');
+    search_json_string(output, module.lockfile_identity.as_deref());
+    output.push_str(",[");
+    for (index, component) in identity.module_components().iter().enumerate() {
+        if index != 0 {
+            output.push(',');
+        }
+        search_json_string(output, Some(component));
+    }
+    output.push_str("],");
+    search_json_string(output, Some(&module.language_edition));
+    output.push(',');
+    if let Some(export) = export {
+        search_json_string(output, Some(&export.origin_id));
+        output.push(',');
+    }
+    search_json_string(output, Some(&hash.to_lower_hex()));
+    output.push(']');
+    Ok(())
+}
+
 fn search_json_string(output: &mut String, value: Option<&str>) {
     let Some(value) = value else {
         output.push_str("null");

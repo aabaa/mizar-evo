@@ -1189,7 +1189,7 @@ mod q1_comments {
         use mizar_doc::doc_build::*;
         use mizar_session::TextRange;
 
-        let original = "\u{feff}::: café\r\ntheorem Named: thesis by Named, Named;\r\n";
+        let original = "\u{feff}::: café `Named` [again](Named) `Missing`\r\ntheorem Named: thesis by Named, Named;\r\n";
         let mut f = Fixture::new(original, None);
         let frontend = f.frontend(0);
         let mut input = f.input(0, vec![frontend.erase()]);
@@ -1306,7 +1306,7 @@ mod q1_comments {
                 package: commit.manifest().package.clone(),
                 artifact_root: root.clone(),
                 expected_manifest_hash: publication.artifact_hash,
-                output_dir: f.files.root().join("doc-output"),
+                output_dir: f.files.root().join("doc-output/v1.2.3"),
                 source_bundle: None,
                 dependency_indexes: None,
                 import_order: Default::default(),
@@ -1368,10 +1368,10 @@ mod q1_comments {
             &inputs,
             &identities,
             &sources,
-            output,
+            output.parent().unwrap(),
             "used-by-spec",
             mizar_doc::allocations::DocAllocationTable {
-                output_root: output.join("v1.2.3"),
+                output_root: output.clone(),
                 coverage: DocImportCoverage::Complete,
                 pages: vec![mizar_doc::allocations::DocPageAllocation {
                     path: "package.html".into(),
@@ -1465,6 +1465,82 @@ mod q1_comments {
                 mizar_doc::allocations::encode_doc_href(path, Some(fqn))
             );
         }
+        let auxiliary = mizar_doc::render::canonical_auxiliary_json(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &[],
+            &inputs,
+            (&identities, &sources, &direct_by),
+            &[(
+                &parsed,
+                &[vec![mizar_doc::links::DocReferenceClassification::Label; 3]],
+            )],
+            (source_views.destinations(), "used-by-spec"),
+        )
+        .unwrap();
+        let auxiliary_wire: serde_json::Value = serde_json::from_str(&auxiliary).unwrap();
+        let references = auxiliary_wire["references"].as_array().unwrap();
+        assert_eq!(references.len(), 3);
+        for (ordinal, reference) in references.iter().enumerate() {
+            assert_eq!(reference["subject"][1], serde_json::json!(["module"]));
+            assert_eq!(
+                reference["state"],
+                if ordinal < 2 {
+                    "resolved"
+                } else {
+                    "incomplete"
+                }
+            );
+            assert_eq!(reference["provenance"]["occurrence"], ordinal.to_string());
+            assert_eq!(reference["provenance"]["mapping"], "complete");
+        }
+        assert_eq!(auxiliary_wire["coverage"]["closure_state"], "unavailable");
+        assert_eq!(auxiliary_wire["coverage"]["citation_state"], "complete");
+        assert_eq!(auxiliary_wire["used_by"][0]["state"], "unavailable");
+        assert_eq!(
+            auxiliary_wire["used_by"][0]["citing"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        let citations = auxiliary_wire["citations"].as_array().unwrap();
+        assert_eq!(citations.len(), 2);
+        for (ordinal, (record, (start, _))) in citations
+            .iter()
+            .zip(original.match_indices("Named").skip(3))
+            .enumerate()
+        {
+            assert_eq!(record["citing"], record["cited"]);
+            assert_eq!(record["citing"][5], "Named");
+            assert_eq!(record["by_ordinal"], "0");
+            assert_eq!(record["target_ordinal"], ordinal.to_string());
+            assert_eq!(record["provenance"]["mapping"], "complete");
+            let segment = &record["provenance"]["segments"][0];
+            assert_eq!(segment[0][1], "src/module0.miz");
+            assert_eq!(
+                segment[0][2],
+                mizar_session::hash_text(original).to_lower_hex()
+            );
+            assert_eq!(segment[1], start.to_string());
+            assert_eq!(segment[2], (start + "Named".len()).to_string());
+        }
+        assert_eq!(
+            auxiliary,
+            mizar_doc::render::canonical_auxiliary_json(
+                &f.snapshots,
+                &snapshot.workspace_root,
+                &[],
+                &inputs,
+                (&identities, &sources, &direct_by),
+                &[(
+                    &parsed,
+                    &[vec![mizar_doc::links::DocReferenceClassification::Label; 3]]
+                )],
+                (source_views.destinations(), "used-by-spec"),
+            )
+            .unwrap()
+        );
         let output = &request.publications[0].output_dir;
         let allocations = mizar_doc::allocations::validate_doc_allocations(
             &inputs,
@@ -1528,7 +1604,7 @@ mod q1_comments {
         assert_eq!(used.target.export, endpoint.export);
         assert_eq!(used.occurrences, producer.occurrences());
         assert_eq!(used.occurrences.len(), 2);
-        let offsets = original.match_indices("Named").skip(1);
+        let offsets = original.match_indices("Named").skip(3);
         for (ordinal, (edge, (start, _))) in used.occurrences.iter().zip(offsets).enumerate() {
             assert_eq!((edge.by_ordinal, edge.target_ordinal), (0, ordinal));
             assert_eq!(edge.citing.as_ref(), Some(&endpoint));

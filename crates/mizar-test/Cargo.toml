@@ -22,6 +22,7 @@ mizar-syntax = { path = "../mizar-syntax" }
 mizar-vc = { path = "../mizar-vc" }
 
 [dev-dependencies]
+serde_json = "1"
 mizar-build = { path = "../mizar-build" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-doc = { path = "../mizar-doc" }
