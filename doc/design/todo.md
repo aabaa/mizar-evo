@@ -191,11 +191,14 @@ token, unpublished draft, or mock payload is not an accepted proof.
    its paired contract and crate-plan assignment under normal review **before**
    dispatch, not as an implied permission from this priority table.
 4. If all M1 slices are blocked, choose a ready, independent Step 6/7
-   producer or real-service-equivalence prerequisite; next choose Step 8
-   source-input, editor lifecycle, snapshot or native-diagnostic transport
-   work using existing outputs; next other dependency-ready tasks in the
-   existing plan. Never advance Artifact 17, accepted-result consumers,
-   semantic LSP metadata, or MVM execution ahead of their actual producers.
+   producer or real-service-equivalence prerequisite; then the docs-only
+   [MVM-R1 source-readiness inventory](#mvm-readiness-decomposition--)
+   if not already in flight; next choose Step 8 source-input, editor
+   lifecycle, snapshot or native-diagnostic transport work using existing
+   outputs; next other dependency-ready tasks in the existing plan.
+   MVM preparation is not a second dispatch lane or permission to start
+   blocked execution. Never advance Artifact 17, accepted-result consumers,
+   semantic LSP metadata, or MVM execution ahead of actual producers.
 5. After M1 acceptance, prioritize [Step 6C equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md),
    Step 7 proof reuse/ATP generalization, and broader source/Core/VC proof
    families. Each retains its own original completion gate; M1 does not
@@ -1017,6 +1020,47 @@ The [Binder task decomposition](./task_contracts/en/AST-MULTI-BINDER-PLAN.md) as
 9. [ ] AST-ARTIFACT computation provenance/publication stage follows AST-COMPUTE; it does not block the earlier runtime export.
 10. [ ] [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) — each test stage follows its owner; parser additions can proceed first.
 
+### MVM Readiness Decomposition [ ]
+
+The existing [reflected-syntax implementation](#reflected-syntax-implementation--)
+and [algorithm definitional](#algorithm-definitional-semantics-specification-amendment--)
+sections remain the **only implementation-contract owners**. This table
+decomposes their MVM critical path into narrower dependency/dispatch gates;
+it does not redefine the language, add a second global ordering authority,
+or make blocked implementations ready. Only R1 below is a newly registered
+docs-only task. R2-R8 are *planned slices of their linked existing contracts*,
+not separately dispatchable implementation tasks until the correct owner has
+frozen a paired EN/JA contract (and updated its crate plan). All steps are
+subject to the protocol's real-producer, reviewed-contract and test-oracle
+requirements.
+
+| Slice | Existing owner and deliverable | Dependency / dispatch rule |
+|---|---|---|
+| **MVM-R1 [ ]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`. Select or explicitly block one spec-supported ordinary ground/direct call; locate actual source-to-checked-body inputs, identity, evidence, export, loader, tests and exact downstream owners. Documentation only. | **Ready for a docs-only dispatch and reviews** from current specs/source. Does not implement an executor, authorize runtime semantics or produce coverage. Muse may select this as a fallback after ready M1/Step 6/7 work, without allocating a second agent lane. |
+| **MVM-R2** — verified body/call correspondence | [Core 42-53](./mizar-core/en/todo.md), [AST-TYPE](./task_contracts/en/AST-TYPE.md), [AST-LOWER](./task_contracts/en/AST-LOWER.md), [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), and [normal-return VC 53](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md). Define the smallest authentic checked algorithm/CFG/call input and executable-body relation, with named Core/Checker/VC ownership and rejection controls. | Design can be refined after R1. Actual checked output remains blocked on the applicable producer and proof gates. Whether a plain ordinary-ground subset avoids *reflection-specific* formation requires a reviewed owner decision; do not silently bypass the current AST-LOWER dependency. |
+| **MVM-R3** — runtime export and validating loader | [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) (Artifact owner) with Build/Driver consumers. Freeze executable representation, exact verified-body/signature/contract binding, visibility, transitive execution-dependency identities, format/version, loader rejection and reproducibility before implementation. | Requires the R2 authentic correspondence producer. Runtime **export precedes evaluation**; the later computation provenance/publication stage follows R7 and must not block initial export. No arbitrary supplied executable or dependency-source fallback. |
+| **MVM-R4** — minimal actual evaluator | [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md), VC-owned execution. Implement the smallest authenticated call-by-value normal-return path for a real supported ground/direct call, preserving actual local state, exact input and validated artifact identity. | Requires R2+R3, typed computability and applicable accepted source/body prerequisites. A private executor prototype, request or unverified test fixture provides **no** runtime/proof credit. Do not create a new `mizar-mvm` crate without a separately reviewed ownership decision. |
+| **MVM-R5** — control flow, failure and resource bounds | Same [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) owner, extended by concrete supported source cases: local assignment, control flow/calls, `fail`, noncomputable operations, ghost isolation, `steps`/`timeout`/`nest`, and transitive artifact refusal. | After R4 per actual Core/CFG producer. Split by genuine semantic/implementation boundaries, bundle identical-shape cases per protocol. Failures and exhaustion produce no return fact, contract evidence or inferred non-return. |
+| **MVM-R6** — full-closure deterministic admission | [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md) with [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md) and Proof owners. Authenticate complete direct/transitive calls, private helpers, applicable uniqueness proofs or specified exemptions. | Needed **before computation-based proof discharge**, not a substitute for actual execution. Imported closure requires R3 validated exports; pending/Open obligations never grant admission. |
+| **MVM-R7** — certified computation and replay | [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) (Proof) and later [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) provenance (Artifact). Consume real MVM normal-return reports, independently justify `requires`, `Adm`/`InputOK`, apply directed T1-T8 conversion and residual inspection, then handle `computed` versus replayed `kernel_verified` policy and cache identity. | Needs R4/R5 supported execution, R6 admission, [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) and complete accepted formation/proof prerequisites. Never upgrade a result by hashing or successful evaluation alone. |
+| **MVM-R8** — stage-specific end-to-end corpus | [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) (Test owner). Prepare spec-derived positive/negative tests for R2-R7, source/version/identity corruption, public/private imports, missing artifacts, failure and resource exhaustion, replay and strict release. | Test-first parser cases can advance where their owner contracts are frozen; source runtime and `by computation` tests activate only with their corresponding genuine producers and verification stages. No expectation rebaseline or synthetic success. |
+
+**Milestone separation:** (A) R1-R3 readiness/design/export prerequisites;
+(B) R4-R5 actual execution of supported verified algorithms; (C) R6-R7
+certified `by computation` integration; (D) R8/generality and the remaining
+reflected-syntax/Binder, cross-package, extraction and release gates. Completion
+of a narrower stage never implies completion of a later stage or the
+[complete processor](#completion-gates). The verified ordinary input path is
+not an exemption from the currently recorded AST/Proof dependencies.
+
+**Muse rule:** keep the existing single dispatch queue and M1 priority.
+Do not dispatch R2-R8 from this table alone: first read the linked owning
+contract, record authentic producer readiness, and freeze any needed narrower
+task in the corresponding owner plan. If no such implementation is ready,
+the docs-only R1 inventory is the sole newly independent preparation task.
+No active Step 6/7 work is preempted, and no parallel worktree or second
+orchestrator is implied by this decomposition.
+
 ### Distribution and playground [ ]
 
 Installation and web access for the complete-processor claim. They follow the
@@ -1064,7 +1108,8 @@ Not part of the sequential flow; each row records its re-entry trigger.
 | [mizar-kernel task 32](./mizar-kernel/en/todo.md) — solver step-budget deferral (audit F3) | any pinned `batsat` version change (task-24 audit procedure) |
 | [mizar-parser task 46](./mizar-parser/en/todo.md) — concrete operator declarations | [x] completed after fresh audit confirmed frontend Task 20 had already met the trigger |
 | [mizar-syntax task 21](./mizar-syntax/en/todo.md) — rustdoc summaries | deferred documentation pass |
-| MVM / code-extraction / backend runtime work (spec 20) | MVM follows the active reflected-syntax contracts above; code extraction/backends remain parked before claiming algorithm *execution* support (see [Completion Gates](#completion-gates)) |
+| MVM execution (spec 20) | Actual execution follows the existing reflected-syntax contracts and the [MVM readiness decomposition](#mvm-readiness-decomposition--); R1 is independently preparatory, while R2-R8 require their documented producers and reviewed owner contracts. |
+| Code extraction / additional runtime backends | Remain parked until separately contracted; neither MVM R4 execution nor `by computation` acceptance by itself authorizes them or the complete-processor claim. |
 
 ## Appendix A — Incremental Verification Contract Inventory
 
