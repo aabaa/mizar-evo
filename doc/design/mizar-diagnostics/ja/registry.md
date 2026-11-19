@@ -299,3 +299,20 @@ E0220–E0224 は仕様22.7の名前と英語正本のsummaryを用い、`meanin
 既存の syntax/runtime/verification コードの役割を保ち、推測/新規 ID と未許可の期待値変更を行わない。
 
 [URL 出力診断](./documentation_urls.md) が厳密な descriptor の W0415 を追加する。残る render 診断は gate 内。
+
+## Missing Packaged Source Warning Proposal
+[英語正本](../en/registry.md#missing-packaged-source-warning-proposal)に対応する定義のみ。architecture13 の既存の「source 未同梱で source link が利用不可なら warning」という意図を限定する。割当・予約・採用・発行は行わず、W0416–W0499 は未割当のまま。[Gate 4](../../mizar-doc/en/render_prerequisites.md#ordered-readiness-gates) に正式な割当・location 採用・producer 由来の発行/profile witness を残す。
+
+### Trigger Evidence
+source/publication owner が、選択された module の元 source が未同梱で、その documentation source link が利用不可であることを明示的に確立する必要がある。選択 publication 内の当該 module source を網羅する証拠を、既存 selected-plan/source owner を通じて厳密な publication hash、完全な module/package/version/lock/edition identity、現在の request/snapshot/options に認証して結合する。caller の申告、表示 path、digest 単独、source-free artifact read は証拠にならず、source fetch・filesystem/network 検索・packaging 推測を行わない。
+availability 不明は未同梱ではない。optional source bundle の省略、null/legacy original-text projection、original digest 欠落、comment projection 利用不可、coordinate map 欠落/部分状態だけでは警告しない。認証済み text があっても source location がない場合は location gap のまま。[Q3 source-slot 表示](../../mizar-doc/en/render.md#q3-source-view-and-line-routing-definition)は変えない。証拠の欠落・他主体・古さ・矛盾・不完全さから draft を作らず、既存 lower-reader refusal は error を保つ。現在の unavailable-source API は明示的な未同梱証拠を供給せず、その producer 定義・認証は別途残る。
+
+### Candidate Descriptor And Identity
+候補は W0416、semantic name/不変 meaning key は `documentation.render.missing_packaged_source`、summary は `Documentation source is not packaged`、family `Documentation`、default `Warning`、phase `Documentation`、category `DocumentationWarning`。候補 lifecycle は active、aliases/retirement/replacements は空。`doc_url = doc/design/mizar-diagnostics/en/registry.md#missing-packaged-source-warning-proposal`。`since` は後続の実割当 revision/task を示し、この定義 task にはしない。registry entry や W0416 発行許可ではない。
+`stable_detail_key = semantic_name` と既存 String/List detail 一つ `documentation.render.source = [publication, module, "not_packaged"]` を用いる。publication/module は[共有 identity encoding](../en/documentation_links.md#structured-identity-and-details)の小文字 publication hash と、optional 値の区別を保持した完全 module tuple。item target・occurrence・block ordinal・推測 offset・caller path・message は subject に含めない。同じ publication/module の利用不可 source link 全体で一警告とし、item/block/worker/route の反復で増やさない。別 publication/完全 module identity は区別する。
+
+### Proposed Locations, Precedence And Profiles
+当該 descriptor に既存 [DocumentationScope location](../en/failure_record.md#shared-link-provenance) の適用を提案し、認証済み publication/完全 module identity と既存 module-scope primary 表示を保つ。block・SourceId・span/EOF/挿入点・行列・underline・excerpt を捏造しない。現行 [spec22 applicability](../../../spec/en/22.error_handling_and_diagnostics.md#2212-source-span-and-context-display) は link completeness を対象とし、missing-source 適用は後続の正式採用を要する。record variant/API は増やさない。共有 module source key、scope-before-block 順序、descriptor/detail comparator、deduplication、snapshot freshness を変えず、message を identity にしない。
+lower integrity/schema/binding/currentness refusal は依存する missing-source draft を抑止する。source 欠落だけで W0411 conversion failure、W0412 unresolved、W0413 ambiguous、W0414 incomplete-link-input、W0415 rejected-URL 条件を作らない。独立に確立した link/URL・Doc8 警告は意味を保つ。Doc8 failed-view recovery は block 内に留まり、packaging 証拠を作らず、独立に確立した module source 警告も抑止しない。包括的 precedence や新しい build-refusal outcome は導入しない。
+別途採用後に既存 warning control と `Phase16Profile.fail_on_doc_warnings` を適用する。default Warning/code identity は固定し、promotion は documentation quality のみを失敗させ得る。proof validity、published verification input、extraction acceptance と独立 warning policy は変えず、新 profile/suppression syntax は定義しない。
+general readiness 診断の trigger/outcome と package-level provenance は未定義で対象外。完全 rendering/search、interface adoption、条件付き package-overview producer readiness、schemas/publication、Doc23/24、G4/G5、completion credit は別 gate のまま。
