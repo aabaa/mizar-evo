@@ -1061,4 +1061,5 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 本文は英語正本へ移管: [../en/todo.md](../en/todo.md) / [archive](../../archive/test_todo_sections.md).
 
+- [~] [MVM-R8-CORPUS-DESIGN](../../task_contracts/ja/MVM-R8-CORPUS-DESIGN.md) — [R8-A〜H 段階別テスト設計](./mvm_corpus_matrix.md)草案。独立レビューと文書 lint 待ち。実行・カバレッジは未達。
 - [ ] [AST-CORPUS](../../task_contracts/ja/AST-CORPUS.md).
