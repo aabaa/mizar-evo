@@ -39,11 +39,15 @@ establishes neither E1/E2/E4, requires, Adm/InputOK nor replay.
 | **R6-C — VC generation** (VC 58 local; full admission successor) | For each triggering, non-exempt callee, form the exact parameter-type-guard, precondition `P`, and twice-instantiated complete `Q` uniqueness goal; retain original goal/context, dependency/version and call identity. Local VC58 may yield **Open** goals without full imported closure and without acceptance. | Wrong guard or result binder, omitted `requires`/`ensures`, substituted origin, missing/synthetic proof -> remain Open; generation never means proved |
 | **R6-D — Proof admission** (Proof owner) | Validate completeness of the entire request-linked closure and genuinely accepted per-callee proof or authenticated exact exemption before **any computation-based discharge**. Proof owns E0330 when a real applicable nondeterminism obligation fails; publish no fact from mere VC/VM report. | Rejected/Open/stale/forged proof or missing closure prevents admission. When a *genuine generated* uniqueness obligation cannot be discharged in an actual computation proof, apply spec E0330; mere absence of a source/export producer is an unavailable input, not fabricated E0330 evidence |
 
-Order: original call and typed Core/CFG + R3 validated exports ->
-R6-A/B -> R6-C goals -> R6-D acceptance -> R7 certified import.
-R4/R5 may return an internal report, but cannot make R6-D pass.
-R6 gates **computation-based proof discharge**, emits no E5 return,
-and never makes R3 executable publication depend on future R7 records.
+Order: authentic call/CFG -> local R6-A/B/C goal preparation
+(in parallel with R3/R4 where genuine producers permit); R3 validated
+imports complete the closure. Final R6-D checks the source closure
+against the actual executed-call/dependency record or an independently
+authenticated complete execution-closure relation, then accepts only
+genuine proofs/exemptions. A static candidate graph or VM return alone
+does not attest the complete evaluated closure. R6 gates **proof
+discharge**, not R4 execution, emits no E5, and never makes R3 export
+depend on later R7 records.
 
 ## Test-first design, not activated cases
 
