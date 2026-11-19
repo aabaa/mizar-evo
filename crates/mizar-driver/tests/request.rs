@@ -1068,6 +1068,25 @@ mod q1_comments {
         assert!(fragments.parameters.is_empty());
         assert!(fragments.see.is_empty());
         assert!(links.references.is_empty());
+        let (templates, template_links) = mizar_doc::render::comment_template_fragments(
+            &parsed,
+            mizar_doc::comments::CommentTarget::Module,
+            &inputs,
+            &direct_by,
+            &comment_allocations,
+            "source-view-spec",
+            &[vec![]],
+        )
+        .unwrap();
+        assert_eq!(
+            templates.unwrap(),
+            [
+                "<div class=\"mizar-comment\"><p>café</p>\n</div>\n",
+                "<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody></tbody></table></section>\n",
+                "<section class=\"mizar-see-also\"><h2>See also</h2><ul></ul></section>\n",
+            ]
+        );
+        assert_eq!(format!("{template_links:?}"), format!("{links:?}"));
         let search = mizar_doc::render::search_summaries(&parsed).unwrap();
         let module = mizar_doc::render::module_summary_fragments(&parsed).unwrap();
         assert_eq!(search.len(), attachments.input.exports.len());
@@ -1276,6 +1295,21 @@ mod q1_comments {
         assert_eq!(resolved.references, expected.references);
         assert_eq!(resolved.used_by, expected.used_by);
         assert_eq!(resolved.warnings, expected.warnings);
+        let (templates, template_links) = mizar_doc::render::used_by_template_fragments(
+            &parsed,
+            &inputs,
+            &direct_by,
+            &allocations,
+            "used-by-spec",
+        )
+        .unwrap();
+        assert_eq!(
+            templates,
+            [
+                "<section class=\"mizar-used-by\"><h2>Used by</h2><p>Used by: unavailable (coverage is incomplete or unavailable).</p>\n<ul>\n<li>Fixture::Named</li>\n</ul>\n</section>\n"
+            ]
+        );
+        assert_eq!(format!("{template_links:?}"), format!("{resolved:?}"));
         assert_eq!(
             resolved.documentation_failed(),
             expected.documentation_failed()

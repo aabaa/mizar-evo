@@ -461,6 +461,77 @@ pub struct DocCommentFragments {
     pub see: Vec<String>,
 }
 
+/// Expands authenticated comment, parameters and See slots into isolated templates.
+/// Known absence stays `None`; attached empty comments retain all three wrappers.
+/// The fresh resolver result and all owner-fragment bytes remain unchanged.
+pub fn comment_template_fragments(
+    parsed: &ParsedComments<'_, '_>,
+    target: CommentTarget<'_>,
+    inputs: &AuthenticatedDocImports,
+    direct_by: &AuthenticatedDocDirectBy,
+    allocations: &ValidatedDocAllocations,
+    specification_version: &str,
+    classifications: &[Vec<DocReferenceClassification>],
+) -> Result<(Option<[String; 3]>, ResolvedDocLinks), DocBuildError> {
+    let (fragments, resolved) = comment_fragments(
+        parsed,
+        target,
+        inputs,
+        direct_by,
+        allocations,
+        specification_version,
+        classifications,
+    )?;
+    let Some(complete) = fragments.complete else {
+        return Ok((None, resolved));
+    };
+    let comment = format!("<div class=\"mizar-comment\">{complete}</div>\n");
+    let mut parameters = String::from(
+        "<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody>",
+    );
+    for (label, body) in fragments.parameters {
+        writeln!(
+            parameters,
+            "<tr><th scope=\"row\">{}</th><td>{body}</td></tr>",
+            escape(&label, false)
+        )
+        .expect("writing to String cannot fail");
+    }
+    parameters.push_str("</tbody></table></section>\n");
+    let mut see = String::from("<section class=\"mizar-see-also\"><h2>See also</h2><ul>");
+    for entry in fragments.see {
+        writeln!(see, "<li>{entry}</li>").expect("writing to String cannot fail");
+    }
+    see.push_str("</ul></section>\n");
+    Ok((Some([comment, parameters, see]), resolved))
+}
+
+/// Wraps each freshly authenticated UsedBy fragment in its isolated section.
+pub fn used_by_template_fragments(
+    parsed: &ParsedComments<'_, '_>,
+    inputs: &AuthenticatedDocImports,
+    direct_by: &AuthenticatedDocDirectBy,
+    allocations: &ValidatedDocAllocations,
+    specification_version: &str,
+) -> Result<(Vec<String>, ResolvedDocLinks), DocBuildError> {
+    let (fragments, resolved) = used_by_fragments(
+        parsed,
+        inputs,
+        direct_by,
+        allocations,
+        specification_version,
+    )?;
+    Ok((
+        fragments
+            .into_iter()
+            .map(|fragment| {
+                format!("<section class=\"mizar-used-by\"><h2>Used by</h2>{fragment}</section>\n")
+            })
+            .collect(),
+        resolved,
+    ))
+}
+
 /// Composes one exact target from authenticated original events, without reparsing bodies.
 /// Classifications have one vector per original block, including empty fallback blocks.
 /// Within a block, genuine code events, explicit link/image start events and present

@@ -8338,7 +8338,7 @@ mod doc10_authenticated {
 
             mod used_by_output {
                 use super::*;
-                use mizar_doc::render::used_by_fragments;
+                use mizar_doc::render::{used_by_fragments, used_by_template_fragments};
 
                 const UNAVAILABLE: &str =
                     "<p>Used by: unavailable (coverage is incomplete or unavailable).</p>\n";
@@ -8366,6 +8366,22 @@ mod doc10_authenticated {
                         before,
                         format!("{parsed:?}{imports:?}{citations:?}{allocations:?}")
                     );
+                    let (templates, expanded) =
+                        used_by_template_fragments(parsed, imports, citations, allocations, VERSION)
+                            .unwrap();
+                    assert_eq!(format!("{expanded:?}"), format!("{lower:?}"));
+                    let (again, repeated) =
+                        used_by_template_fragments(parsed, imports, citations, allocations, VERSION)
+                            .unwrap();
+                    assert_eq!(templates, again);
+                    assert_eq!(format!("{expanded:?}"), format!("{repeated:?}"));
+                    assert_eq!(
+                        before,
+                        format!("{parsed:?}{imports:?}{citations:?}{allocations:?}")
+                    );
+                    assert_eq!(templates, fragments.iter().map(|fragment| format!(
+                        "<section class=\"mizar-used-by\"><h2>Used by</h2>{fragment}</section>\n"
+                    )).collect::<Vec<_>>());
                     assert_eq!(fragments.len(), result.used_by.len());
                     for (fragment, used) in fragments.iter().zip(&result.used_by) {
                         assert_eq!(fragment.starts_with(UNAVAILABLE), !used.available);
@@ -8440,6 +8456,10 @@ mod doc10_authenticated {
                             "<ul>\n<li><a href=\"p/%C3%A9%25%23%26.html#app%3A%3A%C3%A9%25%23%3C%26%22%27\">app::é%#&lt;&amp;&quot;&#39;</a></li>\n</ul>\n"
                         ]
                     );
+                    let (templates, _) = used_by_template_fragments(
+                        &parsed, &imports, &citations, &allocations, VERSION,
+                    ).unwrap();
+                    assert_eq!(templates, ["<section class=\"mizar-used-by\"><h2>Used by</h2><ul>\n<li><a href=\"p/%C3%A9%25%23%26.html#app%3A%3A%C3%A9%25%23%3C%26%22%27\">app::é%#&lt;&amp;&quot;&#39;</a></li>\n</ul>\n</section>\n"]);
                     for mutation in 0..3 {
                         let mut supplied = original.clone();
                         match mutation {
@@ -8537,6 +8557,10 @@ mod doc10_authenticated {
                             used_by_fragments(&parsed, inputs, direct_by, allocated, version),
                             Err(DocBuildError::Binding(_))
                         ));
+                        assert!(matches!(
+                            used_by_template_fragments(&parsed, inputs, direct_by, allocated, version),
+                            Err(DocBuildError::Binding(_))
+                        ));
                     }
                     for mutation in 0..3 {
                         let mut plan = plans[0].clone();
@@ -8561,12 +8585,20 @@ mod doc10_authenticated {
                             used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION),
                             Err(DocBuildError::Binding(_))
                         ));
+                        assert!(matches!(
+                            used_by_template_fragments(&parsed, &imports, &citations, &allocations, VERSION),
+                            Err(DocBuildError::Binding(_))
+                        ));
                     }
                     let mut attached = doc7_attach(&plans[0]);
                     attached.module = &app.summaries[1].module;
                     let parsed = parse_comments(&attached, &[]);
                     assert!(matches!(
                         used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION),
+                        Err(DocBuildError::Binding(_))
+                    ));
+                    assert!(matches!(
+                        used_by_template_fragments(&parsed, &imports, &citations, &allocations, VERSION),
                         Err(DocBuildError::Binding(_))
                     ));
                 }
@@ -8637,7 +8669,7 @@ mod doc10_authenticated {
                     use super::*;
                     use mizar_doc::{
                         comments::CommentTarget,
-                        render::{DocCommentFragments, comment_fragments, opaque_math_fragments},
+                        render::{DocCommentFragments, comment_fragments, comment_template_fragments, opaque_math_fragments},
                     };
 
                     fn flow(
@@ -8648,15 +8680,44 @@ mod doc10_authenticated {
                     ) -> Result<(DocCommentFragments, ResolvedDocLinks), DocBuildError>
                     {
                         let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
-                        comment_fragments(
-                            parsed,
-                            CommentTarget::Module,
-                            imports,
-                            &direct_by,
-                            allocations,
-                            VERSION,
-                            classes,
-                        )
+                        let before = format!("{parsed:?}{imports:?}{direct_by:?}{allocations:?}{classes:?}");
+                        let result = comment_fragments(
+                            parsed, CommentTarget::Module, imports, &direct_by, allocations, VERSION, classes,
+                        );
+                        let expanded = comment_template_fragments(
+                            parsed, CommentTarget::Module, imports, &direct_by, allocations, VERSION, classes,
+                        );
+                        let repeated = comment_template_fragments(
+                            parsed, CommentTarget::Module, imports, &direct_by, allocations, VERSION, classes,
+                        );
+                        assert_eq!(format!("{expanded:?}"), format!("{repeated:?}"));
+                        assert_eq!(before, format!("{parsed:?}{imports:?}{direct_by:?}{allocations:?}{classes:?}"));
+                        match (&result, expanded) {
+                            (Ok((fragments, links)), Ok((templates, resolved))) => {
+                                assert_eq!(format!("{links:?}"), format!("{resolved:?}"));
+                                if let Some(complete) = &fragments.complete {
+                                    let [comment, params, see] = templates.unwrap();
+                                    assert_eq!(comment.strip_prefix("<div class=\"mizar-comment\">").unwrap().strip_suffix("</div>\n").unwrap(), complete);
+                                    let mut rows = params.strip_prefix("<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody>").unwrap().strip_suffix("</tbody></table></section>\n").unwrap();
+                                    for (_, body) in &fragments.parameters {
+                                        rows = rows.strip_prefix("<tr><th scope=\"row\">").unwrap();
+                                        rows = rows.split_once("</th><td>").unwrap().1;
+                                        rows = rows.strip_prefix(body.as_str()).unwrap().strip_prefix("</td></tr>\n").unwrap();
+                                    }
+                                    assert!(rows.is_empty());
+                                    let mut rows = see.strip_prefix("<section class=\"mizar-see-also\"><h2>See also</h2><ul>").unwrap().strip_suffix("</ul></section>\n").unwrap();
+                                    for entry in &fragments.see {
+                                        rows = rows.strip_prefix("<li>").unwrap().strip_prefix(entry.as_str()).unwrap().strip_prefix("</li>\n").unwrap();
+                                    }
+                                    assert!(rows.is_empty());
+                                } else {
+                                    assert!(templates.is_none());
+                                }
+                            }
+                            (Err(lower), Err(expanded)) => assert_eq!(format!("{lower:?}"), format!("{expanded:?}")),
+                            _ => panic!("comment template changed success/refusal"),
+                        }
+                        result
                     }
 
                     fn unchanged_links(
@@ -8799,6 +8860,36 @@ mod doc10_authenticated {
                                 }
                             },
                         );
+                    }
+
+                    #[test]
+                    fn doc13_template_exact_wrappers_rows_and_text_escaping() {
+                        fixture(
+                            "::: @param é&<>\"'{T:slot} body\n:::\n::: @returns\n:::\n::: @see\n",
+                            |_, plans, imports, allocations| {
+                                let attached = doc7_attach(&plans[0]);
+                                let parsed = parse_comments(&attached, &[]);
+                                flow(&parsed, imports, allocations, &[vec![]]).unwrap();
+                                let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                                let (templates, _) = comment_template_fragments(
+                                    &parsed, CommentTarget::Module, imports, &direct_by,
+                                    allocations, VERSION, &[vec![]],
+                                ).unwrap();
+                                let templates = templates.unwrap();
+                                assert_eq!(templates[1], "<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody><tr><th scope=\"row\">é&amp;&lt;&gt;&quot;&#39;{T:slot}</th><td><p>body</p>\n</td></tr>\n<tr><th scope=\"row\">Returns</th><td></td></tr>\n</tbody></table></section>\n");
+                                assert_eq!(templates[2], "<section class=\"mizar-see-also\"><h2>See also</h2><ul><li></li>\n</ul></section>\n");
+                            },
+                        );
+                        fixture("::: λ {F:complete-comment}\n", |_, plans, imports, allocations| {
+                            let attached = doc7_attach(&plans[0]);
+                            let parsed = parse_comments(&attached, &[]);
+                            let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
+                            let (templates, _) = comment_template_fragments(
+                                &parsed, CommentTarget::Module, imports, &direct_by,
+                                allocations, VERSION, &[vec![]],
+                            ).unwrap();
+                            assert_eq!(templates.unwrap()[0], "<div class=\"mizar-comment\"><p>λ {F:complete-comment}</p>\n</div>\n");
+                        });
                     }
 
                     #[test]
@@ -9116,6 +9207,12 @@ mod doc10_authenticated {
                                 let direct_by = authenticate_doc_direct_by(imports, &[]).unwrap();
                                 let (result, _) = comment_fragments(&parsed, target, imports, &direct_by, allocations, VERSION, &classes).unwrap();
                                 assert_eq!(result.complete.as_deref(), expected);
+                                let (templates, _) = comment_template_fragments(&parsed, target, imports, &direct_by, allocations, VERSION, &classes).unwrap();
+                                assert_eq!(templates, expected.map(|_| [
+                                    "<div class=\"mizar-comment\"></div>\n".into(),
+                                    "<section class=\"mizar-parameters\"><h2>Parameters and returns</h2><table><tbody></tbody></table></section>\n".into(),
+                                    "<section class=\"mizar-see-also\"><h2>See also</h2><ul></ul></section>\n".into(),
+                                ]));
                             });
                         }
                         fixture(
@@ -9141,6 +9238,30 @@ mod doc10_authenticated {
                                 );
                                 assert!(
                                     comment_fragments(
+                                        &parsed,
+                                        CommentTarget::Module,
+                                        imports,
+                                        &direct_by,
+                                        allocations,
+                                        "wrong",
+                                        &external(&parsed)
+                                    )
+                                    .is_err()
+                                );
+                                assert!(
+                                    comment_template_fragments(
+                                        &parsed,
+                                        CommentTarget::Item(&foreign),
+                                        imports,
+                                        &direct_by,
+                                        allocations,
+                                        VERSION,
+                                        &external(&parsed)
+                                    )
+                                    .is_err()
+                                );
+                                assert!(
+                                    comment_template_fragments(
                                         &parsed,
                                         CommentTarget::Module,
                                         imports,
