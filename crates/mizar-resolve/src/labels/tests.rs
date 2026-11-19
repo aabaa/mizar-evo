@@ -12448,3 +12448,553 @@ fn source_definiens_dependencies_refuse_invalid_inputs_and_relation_associations
         );
     }
 }
+
+#[test]
+fn source_algorithm_recursive_groups_require_explicit_complete_selections_and_preserve_inputs() {
+    for text in [
+        "",
+        "theorem Plain: 0 = 0;",
+        "definition let n be object; algorithm quiet(n) -> object do return n; end; end;",
+        "definition let n be object; algorithm quiet(n) -> object do return quiet(n); end; end;",
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let inventory = format!(
+            "{:?}",
+            crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap()
+        );
+        let candidates = format!(
+            "{:?}",
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap()
+        );
+        let dependencies = crate::symbols::source_definiens_dependencies(
+            &arena,
+            &env,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let result = crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        if text.contains("return quiet(n)") {
+            assert_eq!(result, None);
+            let owner = definiens_symbol_at(&env, text, "algorithm quiet");
+            let selected = definiens_selections(
+                &ast,
+                &[(
+                    text.rfind("quiet(n)").unwrap(),
+                    "quiet(n)",
+                    SurfaceNodeKind::ApplicationTerm,
+                    owner,
+                )],
+            );
+            let groups = crate::symbols::source_algorithm_recursive_groups(
+                &arena,
+                &env,
+                &selected,
+                &BTreeMap::new(),
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(groups, vec![vec![owner]]);
+            assert!(std::ptr::eq(groups[0][0], owner));
+        } else {
+            assert_eq!(result, Some(Vec::new()));
+        }
+        assert_eq!(
+            format!(
+                "{:?}",
+                crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap()
+            ),
+            inventory
+        );
+        assert_eq!(
+            format!(
+                "{:?}",
+                crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap()
+            ),
+            candidates
+        );
+        assert_eq!(
+            crate::symbols::source_definiens_dependencies(
+                &arena,
+                &env,
+                &BTreeMap::new(),
+                &BTreeMap::new()
+            )
+            .unwrap(),
+            dependencies
+        );
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn source_algorithm_recursive_groups_cover_partial_terminating_and_all_body_occurrences() {
+    let text = "definition let n be object; mode FamilyDef: Family of n is object; algorithm recur(n) -> Family[shape(n)] requires allowed(n) = n ensures result = promised(n) decreasing measure(n) do var x := recur(recur(n)); x := recur(n); assert n = n by computation(recur(n)); return recur(n); end; terminating algorithm total(n) -> object decreasing n do return total(n); end; algorithm headers(n) -> object requires headers(n) = n do return n; end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let recur = definiens_symbol_at(&env, text, "algorithm recur");
+    let total = definiens_symbol_at(&env, text, "terminating algorithm total");
+    let mut selected = BTreeMap::new();
+    for (marker, application, owner) in [
+        ("var x := recur(recur(n))", "recur(recur(n))", recur),
+        ("recur(recur(n))", "recur(n)", recur),
+        ("x := recur(n)", "recur(n)", recur),
+        ("computation(recur(n))", "recur(n)", recur),
+        ("return recur(n)", "recur(n)", recur),
+        ("return total(n)", "total(n)", total),
+    ] {
+        let start = text.find(marker).unwrap() + marker.find(application).unwrap();
+        selected.extend(definiens_selections(
+            &ast,
+            &[(start, application, SurfaceNodeKind::ApplicationTerm, owner)],
+        ));
+    }
+    assert_eq!(selected.len(), 6);
+    let before = (ast.clone(), env.clone(), arena.clone(), selected.clone());
+    assert_eq!(
+        crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &selected,
+            &BTreeMap::new()
+        )
+        .unwrap(),
+        Some(vec![vec![recur], vec![total]])
+    );
+    for site in selected.keys() {
+        let mut missing = selected.clone();
+        missing.remove(site);
+        assert_eq!(
+            crate::symbols::source_algorithm_recursive_groups(
+                &arena,
+                &env,
+                &missing,
+                &BTreeMap::new()
+            )
+            .unwrap(),
+            None
+        );
+    }
+    for application in [
+        "shape(n)",
+        "allowed(n)",
+        "promised(n)",
+        "measure(n)",
+        "headers(n)",
+    ] {
+        let start = if application == "headers(n)" {
+            text.rfind(application).unwrap()
+        } else {
+            text.find(application).unwrap()
+        };
+        let mut invalid = selected.clone();
+        invalid.extend(definiens_selections(
+            &ast,
+            &[(start, application, SurfaceNodeKind::ApplicationTerm, recur)],
+        ));
+        assert!(
+            crate::symbols::source_algorithm_recursive_groups(
+                &arena,
+                &env,
+                &invalid,
+                &BTreeMap::new()
+            )
+            .is_err()
+        );
+    }
+    assert_eq!((ast, env, arena, selected), before);
+}
+
+#[test]
+fn source_algorithm_recursive_groups_are_maximal_and_ordered_with_tails_and_disjoint_components() {
+    let text = "definition let n be object; algorithm tail(n) -> object do return alpha(n); end; algorithm alpha(n) -> object do return gamma(n); end; algorithm pairone(n) -> object do return pairtwo(n); end; algorithm gamma(n) -> object do return beta(n); end; algorithm pairtwo(n) -> object do return pairone(n); end; algorithm beta(n) -> object do return alpha(n); end; algorithm sink(n) -> object do return n; end; algorithm acyclic(n) -> object do return sink(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let mut selected = BTreeMap::new();
+    for (caller, callee) in [
+        ("tail", "alpha"),
+        ("alpha", "gamma"),
+        ("pairone", "pairtwo"),
+        ("gamma", "beta"),
+        ("pairtwo", "pairone"),
+        ("beta", "alpha"),
+        ("acyclic", "sink"),
+    ] {
+        let marker = format!("algorithm {caller}(n) -> object do return ");
+        let application = format!("{callee}(n)");
+        let target = definiens_symbol_at(&env, text, &format!("algorithm {callee}"));
+        selected.extend(definiens_selections(
+            &ast,
+            &[(
+                text.find(&marker).unwrap() + marker.len(),
+                &application,
+                SurfaceNodeKind::ApplicationTerm,
+                target,
+            )],
+        ));
+    }
+    let expected = vec![
+        vec![
+            definiens_symbol_at(&env, text, "algorithm alpha"),
+            definiens_symbol_at(&env, text, "algorithm gamma"),
+            definiens_symbol_at(&env, text, "algorithm beta"),
+        ],
+        vec![
+            definiens_symbol_at(&env, text, "algorithm pairone"),
+            definiens_symbol_at(&env, text, "algorithm pairtwo"),
+        ],
+    ];
+    assert_eq!(
+        crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &selected,
+            &BTreeMap::new()
+        )
+        .unwrap(),
+        Some(expected)
+    );
+}
+
+#[test]
+fn source_algorithm_recursive_groups_do_not_connect_blocks_or_logical_definiens_paths() {
+    let text = "definition let n be object; func Bridge: bridge(n) -> object equals mixed(n); algorithm first(n) -> object do return second(n); end; algorithm mixed(n) -> object do return bridge(n); end; end; definition let n be object; algorithm second(n) -> object do return first(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let first = definiens_symbol_at(&env, text, "algorithm first");
+    let second = definiens_symbol_at(&env, text, "algorithm second");
+    let mixed = definiens_symbol_at(&env, text, "algorithm mixed");
+    let bridge = definiens_symbol_at(&env, text, "func Bridge:");
+    let mut selected = BTreeMap::new();
+    for (application, target) in [
+        ("second(n)", second),
+        ("bridge(n)", bridge),
+        ("first(n)", first),
+    ] {
+        selected.extend(definiens_selections(
+            &ast,
+            &[(
+                text.find(&format!("return {application}")).unwrap() + 7,
+                application,
+                SurfaceNodeKind::ApplicationTerm,
+                target,
+            )],
+        ));
+    }
+    assert_eq!(
+        crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &selected,
+            &BTreeMap::new()
+        )
+        .unwrap(),
+        Some(Vec::new())
+    );
+    let logical = definiens_selections(
+        &ast,
+        &[(
+            text.find("equals mixed(n)").unwrap() + 7,
+            "mixed",
+            SurfaceNodeKind::TermReference,
+            mixed,
+        )],
+    );
+    assert_eq!(
+        crate::symbols::source_definiens_dependencies(&arena, &env, &logical, &BTreeMap::new())
+            .unwrap()
+            .len(),
+        1
+    );
+    selected.extend(logical);
+    assert!(
+        crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &selected,
+            &BTreeMap::new()
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn source_algorithm_recursive_groups_follow_original_synonyms_and_explicit_overload_choices() {
+    use crate::resolved_ast::SymbolRef;
+    let text = "definition let n be object; algorithm run(n) -> object do return chain(n); end; synonym alias(n) for run(n); synonym chain(n) for alias(n); algorithm shared(n) -> object do return shared(n); end; func Shared: shared(n) -> object equals n; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let run = definiens_symbol_at(&env, text, "algorithm run");
+    let shared = definiens_symbol_at(&env, text, "algorithm shared");
+    let logical = definiens_symbol_at(&env, text, "func Shared:");
+    let alias = definiens_symbol_at(&env, text, "synonym alias");
+    let chain = definiens_symbol_at(&env, text, "synonym chain");
+    let mut originals = BTreeMap::new();
+    for (marker, target) in [("synonym alias", run), ("synonym chain", alias)] {
+        let node = ast
+            .node_views()
+            .find(|node| {
+                node.kind() == &SurfaceNodeKind::NotationAlias
+                    && node.range().start == text.find(marker).unwrap()
+            })
+            .unwrap();
+        originals.insert(
+            node.id(),
+            SymbolRef::new(target.symbol().clone(), node.range()),
+        );
+    }
+    let mut selected = definiens_selections(
+        &ast,
+        &[(
+            text.find("return chain(n)").unwrap() + 7,
+            "chain(n)",
+            SurfaceNodeKind::ApplicationTerm,
+            chain,
+        )],
+    );
+    for (target, expected) in [
+        (logical, vec![vec![run]]),
+        (shared, vec![vec![run], vec![shared]]),
+    ] {
+        selected.extend(definiens_selections(
+            &ast,
+            &[(
+                text.find("return shared(n)").unwrap() + 7,
+                "shared(n)",
+                SurfaceNodeKind::ApplicationTerm,
+                target,
+            )],
+        ));
+        assert_eq!(
+            crate::symbols::source_algorithm_recursive_groups(&arena, &env, &selected, &originals)
+                .unwrap(),
+            Some(expected)
+        );
+    }
+    let text = "definition let n be object; func Base: f(n) -> object equals n; redefine func Changed: f(n) -> object equals n; coherence by Proof; algorithm run(n) -> object do return n; end; synonym alias(n) for run(n); end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let mut originals = BTreeMap::new();
+    for (marker, kind, target) in [
+        (
+            "redefine func Changed:",
+            SurfaceNodeKind::FunctorRedefinition,
+            "func Base:",
+        ),
+        (
+            "synonym alias",
+            SurfaceNodeKind::NotationAlias,
+            "algorithm run",
+        ),
+    ] {
+        let node = ast
+            .node_views()
+            .find(|node| node.kind() == &kind && node.range().start == text.find(marker).unwrap())
+            .unwrap();
+        originals.insert(
+            node.id(),
+            SymbolRef::new(
+                definiens_symbol_at(&env, text, target).symbol().clone(),
+                node.range(),
+            ),
+        );
+    }
+    assert_eq!(
+        crate::symbols::source_algorithm_recursive_groups(
+            &arena,
+            &env,
+            &BTreeMap::new(),
+            &originals
+        )
+        .unwrap(),
+        Some(Vec::new())
+    );
+}
+
+#[test]
+fn source_algorithm_recursive_groups_refuse_invalid_associations_atomically_even_when_incomplete() {
+    use crate::resolved_ast::{ImportResolution, ResolvedImport, ResolvedImports, SymbolRef};
+    let text = "definition let n be object; pred Guard: guard n means thesis; algorithm run(n) -> object do return chain(run(n)); end; synonym alias(n) for run(n); synonym chain(n) for alias(n); end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let run = definiens_symbol_at(&env, text, "algorithm run");
+    let guard = definiens_symbol_at(&env, text, "pred Guard:");
+    let alias = definiens_symbol_at(&env, text, "synonym alias");
+    let chain = definiens_symbol_at(&env, text, "synonym chain");
+    let start = text.find("chain(run(n))").unwrap();
+    let selected = definiens_selections(
+        &ast,
+        &[
+            (
+                start,
+                "chain(run(n))",
+                SurfaceNodeKind::ApplicationTerm,
+                chain,
+            ),
+            (start + 6, "run(n)", SurfaceNodeKind::ApplicationTerm, run),
+        ],
+    );
+    let mut originals = BTreeMap::new();
+    for (marker, target) in [("synonym alias", run), ("synonym chain", alias)] {
+        let node = ast
+            .node_views()
+            .find(|node| {
+                node.kind() == &SurfaceNodeKind::NotationAlias
+                    && node.range().start == text.find(marker).unwrap()
+            })
+            .unwrap();
+        originals.insert(
+            node.id(),
+            SymbolRef::new(target.symbol().clone(), node.range()),
+        );
+    }
+    assert_eq!(
+        crate::symbols::source_algorithm_recursive_groups(&arena, &env, &selected, &originals)
+            .unwrap(),
+        Some(vec![vec![run]])
+    );
+    let (_, _, _, stale, _) =
+        parsed_private_theorem_fixture(&text.replace("pred Guard:", "pred Other:"));
+    let (_, _, _, augmented, _) =
+        parsed_private_theorem_fixture(&format!("{text} theorem Added: 0 = 0;"));
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    for (source, symbols) in [(&arena, &stale), (&arena, &augmented), (&foreign, &env)] {
+        let before = (source.clone(), symbols.clone());
+        assert!(
+            crate::symbols::source_algorithm_recursive_groups(
+                source, symbols, &selected, &originals
+            )
+            .is_err()
+        );
+        assert_eq!((source.clone(), symbols.clone()), before);
+    }
+    let site = algorithm_inventory_node_at(
+        &ast,
+        start,
+        "chain(run(n))",
+        SurfaceNodeKind::ApplicationTerm,
+    );
+    let reference = &selected[&site];
+    let mut imports = ResolvedImports::new();
+    let import = imports.push_import(ResolvedImport::new(
+        arena.resolved_node_for(ast.root().unwrap()).unwrap(),
+        reference.range(),
+        "external",
+        None,
+        ImportResolution::Resolved(module_id("pkg", "external")),
+        run.origin().clone(),
+    ));
+    let mut wrong_range = reference.range();
+    wrong_range.end += 1;
+    let mut foreign_range = reference.range();
+    foreign_range.source_id = distinct_source_ids().1;
+    let unknown = SymbolId::new(
+        module_id("pkg", "foreign"),
+        LocalSymbolId::new("missing"),
+        FullyQualifiedName::new("foreign.missing"),
+    );
+    for (node, invalid_reference) in [
+        (ast.root().unwrap(), reference.clone()),
+        (
+            algorithm_inventory_node_at(&ast, start, "chain", SurfaceNodeKind::TermReference),
+            reference.clone(),
+        ),
+        (site, SymbolRef::new(unknown, reference.range())),
+        (
+            site,
+            SymbolRef::new(guard.symbol().clone(), reference.range()),
+        ),
+        (site, SymbolRef::new(run.symbol().clone(), wrong_range)),
+        (site, SymbolRef::new(run.symbol().clone(), foreign_range)),
+        (site, reference.clone().with_import(import)),
+    ] {
+        // Deliberately leave the nested application missing: invalid data wins over incompleteness.
+        let invalid = BTreeMap::from([(node, invalid_reference)]);
+        let before = (
+            arena.clone(),
+            env.clone(),
+            invalid.clone(),
+            originals.clone(),
+        );
+        assert!(
+            crate::symbols::source_algorithm_recursive_groups(&arena, &env, &invalid, &originals)
+                .is_err()
+        );
+        assert_eq!(
+            (arena.clone(), env.clone(), invalid, originals.clone()),
+            before
+        );
+    }
+    let alias_node = *originals
+        .keys()
+        .find(|id| {
+            ast.node_view(**id).unwrap().range().start == text.find("synonym alias").unwrap()
+        })
+        .unwrap();
+    let mut invalid_originals = Vec::new();
+    for relation in originals.keys() {
+        let mut missing = originals.clone();
+        missing.remove(relation);
+        invalid_originals.push(missing);
+    }
+    let range = ast.node_view(alias_node).unwrap().range();
+    for target in [guard, chain] {
+        let mut invalid = originals.clone();
+        invalid.insert(alias_node, SymbolRef::new(target.symbol().clone(), range));
+        invalid_originals.push(invalid);
+    }
+    let mut invalid = originals.clone();
+    invalid.insert(
+        alias_node,
+        SymbolRef::new(run.symbol().clone(), reference.range()),
+    );
+    invalid_originals.push(invalid);
+    let mut invalid = originals.clone();
+    invalid.insert(ast.root().unwrap(), reference.clone());
+    invalid_originals.push(invalid);
+    for invalid in invalid_originals {
+        let before = (selected.clone(), invalid.clone());
+        assert!(
+            crate::symbols::source_algorithm_recursive_groups(&arena, &env, &selected, &invalid)
+                .is_err()
+        );
+        assert_eq!((selected.clone(), invalid), before);
+    }
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let mut rebuilt = Vec::new();
+    for node in ast.node_views() {
+        let children = node
+            .children()
+            .iter()
+            .map(|id| rebuilt[id.index()])
+            .collect::<Vec<_>>();
+        let next = match node.kind() {
+            SurfaceNodeKind::Token(token) if node.range().start == start => {
+                builder.add_recovered_token(token.kind, token.text.clone(), node.range())
+            }
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), node.range())
+            }
+            kind => builder.add_node(kind.clone(), node.range(), children),
+        };
+        rebuilt.push(next);
+    }
+    let recovered = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+    let shells = crate::declarations::DeclarationShellCollector::new(&recovered, &module).collect();
+    let collected =
+        crate::symbols::SignatureProjectionExtractor::new(&recovered, &shells, namespace)
+            .collect(&module);
+    let recovered_arena = SurfaceResolvedArena::lower(&recovered, &module).unwrap();
+    for symbols in [&env, collected.env()] {
+        assert!(
+            crate::symbols::source_algorithm_recursive_groups(
+                &recovered_arena,
+                symbols,
+                &selected,
+                &originals
+            )
+            .is_err()
+        );
+    }
+}

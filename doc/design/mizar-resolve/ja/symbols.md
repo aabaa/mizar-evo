@@ -575,7 +575,11 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 `source_definiens_dependencies` は caller が選択した実ソース参照と再定義/synonym の元 target を受け取り、`DefiniensMention` 辺を持つ独立した `DeclarationDependencyIndex` を返す。arena/environment、元の use node/range、local endpoint の対応を検証する。選択の正しさと生ソースの currentness は caller が担い、singleton を含む scope 候補から依存先を自動選択しない。
 
-辺は実 func equals/means、pred/attr means、mode-is 展開と条件分岐の値・guard を対象とする。再定義は元の論理記号を、synonym の使用は algorithm を含む元の呼出しを保持する。反復出現は各 anchor を保ち、生成された `it` 置換や定義式 head は辺を増やさない。選択の欠落は完全性を保証せず、不正な対応は全体を拒否する。外部 identity carrier、完全な group、consumer、cycle/termination acceptance は引き続き延期する。
+辺は実 func equals/means、pred/attr means、mode-is 展開と条件分岐の値・guard を対象とする。再定義は元の論理記号を、synonym の使用は algorithm を含む元の呼出しを保持する。反復出現は各 anchor を保ち、生成された `it` 置換や定義式 head は辺を増やさない。選択の欠落は完全性を保証せず、不正な対応は全体を拒否する。外部 identity carrier、consumer、cycle/termination acceptance は引き続き延期する。
+
+`source_algorithm_recursive_groups` は justification を含む全ての inventory body application の明示的な選択と、検証済み local synonym 元 target を要求する。選択が完全な場合だけ、借用した algorithm group をソース順で返す。選択欠落は `None`、供給された不正な対応は全体拒否となる。header/contract と relation 宣言は body 辺を作らない。選択された論理呼出しは application の完全性を満たすが、その definiens を通じて group を接続しない。
+
+group は同一 definition block 内の algorithm body 呼出しによる最大相互到達成分であり、singleton は実際の自己呼出しがある場合だけ含む。partial algorithm も参加し、同一 block の配置や一方向呼出しだけでは membership を確立しない。block 間呼出しは group を結合しない。選択/currentness の caller 責任、通常の可視性、consumer と acceptance の境界は維持する。
 
 ## Source registration owner payloads
 

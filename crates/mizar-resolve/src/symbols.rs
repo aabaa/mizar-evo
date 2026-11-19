@@ -644,6 +644,105 @@ pub fn source_algorithm_call_inventory<'a>(
     Ok(inventory)
 }
 
+/// Returns complete same-block recursive groups from explicitly selected body calls.
+/// Missing selections return `None`; every supplied association is still validated.
+/// Members and groups retain source order, and logical definiens create no edges.
+pub fn source_algorithm_recursive_groups<'a>(
+    source: &SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+    selected: &BTreeMap<SurfaceNodeId, SymbolRef>,
+    originals: &BTreeMap<SurfaceNodeId, SymbolRef>,
+) -> Result<Option<Vec<Vec<&'a SymbolEntry>>>, String> {
+    let inventory = source_algorithm_call_inventory(source, symbols)?;
+    source_definiens_dependencies(source, symbols, &BTreeMap::new(), originals)?;
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = || "invalid source algorithm recursive-group association".to_owned();
+    // The definiens producer authenticates relation sites, targets and chains.
+    // Recover their symbol identities from those authenticated declaration ranges.
+    let mut relations = BTreeMap::new();
+    for reference in originals.values() {
+        let mut entries = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.origin().anchor() == &SourceAnchor::Range(reference.range()));
+        let entry = entries.next().ok_or_else(invalid)?;
+        if entries.next().is_some() {
+            return Err(invalid());
+        }
+        relations.insert(entry.symbol(), reference.symbol());
+    }
+    let canonical = |start: &SymbolId| -> Result<&'a SymbolEntry, String> {
+        let mut entry = symbols.symbols().get(start).ok_or_else(invalid)?;
+        while matches!(entry.kind(), SymbolKind::Synonym | SymbolKind::Redefinition) {
+            let target = relations.get(entry.symbol()).ok_or_else(invalid)?;
+            entry = symbols.symbols().get(target).ok_or_else(invalid)?;
+        }
+        if !matches!(entry.kind(), SymbolKind::Functor | SymbolKind::Algorithm) {
+            return Err(invalid());
+        }
+        Ok(entry)
+    };
+    let mut sites = BTreeMap::new();
+    let mut owners = BTreeMap::new();
+    for (index, algorithm) in inventory.iter().enumerate() {
+        owners.insert(algorithm.owner().symbol(), index);
+        for call in algorithm.calls() {
+            if call.region() == algorithm.body() {
+                sites.insert(call.application(), index);
+            }
+        }
+    }
+    let mut edges = vec![BTreeSet::new(); inventory.len()];
+    for (id, reference) in selected {
+        let &owner = sites.get(id).ok_or_else(invalid)?;
+        let node = ast.node_view(*id).ok_or_else(invalid)?;
+        if reference.import().is_some() || reference.range() != node.range() {
+            return Err(invalid());
+        }
+        let target = canonical(reference.symbol())?;
+        if let Some(&target) = owners.get(target.symbol())
+            && inventory[owner].definition_block() == inventory[target].definition_block()
+        {
+            edges[owner].insert(target);
+        }
+    }
+    if selected.len() != sites.len() {
+        return Ok(None);
+    }
+    let reachable: Vec<_> = (0..inventory.len())
+        .map(|start| {
+            let mut reached = BTreeSet::new();
+            let mut pending = vec![start];
+            while let Some(node) = pending.pop() {
+                if reached.insert(node) {
+                    pending.extend(edges[node].iter().copied());
+                }
+            }
+            reached
+        })
+        .collect();
+    let mut grouped = BTreeSet::new();
+    let mut groups = Vec::new();
+    for start in 0..inventory.len() {
+        if grouped.contains(&start) {
+            continue;
+        }
+        let members: Vec<_> = (start..inventory.len())
+            .filter(|&other| reachable[start].contains(&other) && reachable[other].contains(&start))
+            .collect();
+        if members.len() > 1 || edges[start].contains(&start) {
+            grouped.extend(members.iter().copied());
+            groups.push(
+                members
+                    .into_iter()
+                    .map(|index| inventory[index].owner())
+                    .collect(),
+            );
+        }
+    }
+    Ok(Some(groups))
+}
+
 /// Returns authenticated inventory and conservative header/body scope candidates.
 /// Empty rows include unsupported syntax and never establish a selected target.
 // Rationale: preserve the existing inventory and borrowed entries without a wrapper.
