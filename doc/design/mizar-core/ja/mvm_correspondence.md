@@ -5,9 +5,9 @@
 
 ## 仕様と通常入力
 
-[§20.1.1](../../../spec/ja/20.algorithm_and_verification.md#2011-algorithm-definition-block)
+[§20.1.1](../../../spec/ja/20.algorithm_and_verification.md)
 では通常の引数は項であり、式・ラベル・`thesis` は
-`expr of boolean` 引数に限られる。[§20.9](../../../spec/ja/20.algorithm_and_verification.md#209-execution-model-and-computability)
+`expr of boolean` 引数に限られる。[§20.9](../../../spec/ja/20.algorithm_and_verification.md)
 は値渡し・局所状態・検証済み実行 Artifact を要求する。
 
 **Q1 は未承認の提案：** 通常の ground 入力に架空の
