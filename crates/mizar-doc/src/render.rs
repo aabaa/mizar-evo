@@ -382,6 +382,55 @@ fn relative_source_href(from: &str, to: &str, fragment: Option<&str>) -> String 
     escape(&encode_doc_href(&path, fragment), false)
 }
 
+/// Emits one safe flow fragment per Doc9 theorem, in the returned UsedBy order.
+/// The fresh resolver result retains coverage, repeated occurrences and warnings.
+/// No comment reference occurrences are resolved by this isolated presentation.
+pub fn used_by_fragments(
+    parsed: &ParsedComments<'_, '_>,
+    inputs: &AuthenticatedDocImports,
+    direct_by: &AuthenticatedDocDirectBy,
+    allocations: &ValidatedDocAllocations,
+    specification_version: &str,
+) -> Result<(Vec<String>, ResolvedDocLinks), DocBuildError> {
+    let resolved = resolve_doc_links(
+        parsed,
+        inputs,
+        direct_by,
+        allocations,
+        specification_version,
+        &[],
+    )?;
+    let mut fragments = Vec::new();
+    for entry in &resolved.used_by {
+        let mut html = String::new();
+        if !entry.available {
+            html.push_str("<p>Used by: unavailable (coverage is incomplete or unavailable).</p>\n");
+        } else if entry.citing.is_empty() {
+            html.push_str("<p>Used by: none.</p>\n");
+        }
+        if !entry.citing.is_empty() {
+            html.push_str("<ul>\n");
+            for citing in &entry.citing {
+                html.push_str("<li>");
+                let label = escape(&citing.export.fully_qualified_name, false);
+                if let Some((path, fragment, _)) =
+                    allocations.item(&citing.module, citing.publication_hash, &citing.export)
+                {
+                    let href = encode_doc_href(path, Some(fragment));
+                    write!(html, "<a href=\"{}\">{label}</a>", escape(&href, false))
+                        .expect("writing to String cannot fail");
+                } else {
+                    html.push_str(&label);
+                }
+                html.push_str("</li>\n");
+            }
+            html.push_str("</ul>\n");
+        }
+        fragments.push(html);
+    }
+    Ok((fragments, resolved))
+}
+
 /// Safe fragments for the three comment owner slots, retaining each tag occurrence.
 #[derive(Debug)]
 pub struct DocCommentFragments {

@@ -1,6 +1,6 @@
 # Doc13 Render 定義提案
 正本は英語: [English companion](../en/render.md)。
-状態: 下記の限定 supplied-search reader/local asset と、限定 Q5 出力/URL 診断前提・opaque Q6/Q11 transport、および [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) 採用済み Q3 href interface ①を除き提案。Q3 は相対 href の percent-UTF8 encoding と厳密な FQN DOM id を採用し、[限定 Q3 source-view/行定義](#q3-source-view-and-line-routing-definition) は限定 source-view 前提としてのみ採用し、限定[共同 Q4/MT summary 定義](#joint-q4mt-summary-definition)は consumer text 投影だけを定め、限定 [comment/tag safe-flow handoff](#adopted-comment-and-tag-safe-flow-handoff) を採用し、残る Doc13 render/wire 選択は gate 内。本状態は以下の矛盾する候補・表表記に優先し、完全 page producer や schema 登録は許可しない。
+状態: 下記の限定 supplied-search reader/local asset と、限定 Q5 出力/URL 診断前提・opaque Q6/Q11 transport、および [spec24.2](../../../spec/ja/24.documentation_generation.md#242-相互参照とハイパーリンク) 採用済み Q3 href interface ①を除き提案。Q3 は相対 href の percent-UTF8 encoding と厳密な FQN DOM id を採用し、[限定 Q3 source-view/行定義](#q3-source-view-and-line-routing-definition) は限定 source-view 前提としてのみ採用し、限定[共同 Q4/MT summary 定義](#joint-q4mt-summary-definition)は consumer text 投影だけを定め、限定 [comment/tag safe-flow handoff](#adopted-comment-and-tag-safe-flow-handoff) と [UsedBy handoff](#adopted-usedby-safe-flow-handoff) を採用し、残る Doc13 render/wire 選択は gate 内。本状態は以下の矛盾する候補・表表記に優先し、完全 page producer や schema 登録は許可しない。
 別途 [限定的な G1 identity 引渡し](./render_prerequisites.md#採用済み-g1-identity-binding) を採用するが、render/wire interface の採用を意味しない。
 
 ## Adopted Opaque Math Transport
@@ -59,7 +59,7 @@ Q8 は必須の producer 提供 page/search projection 欠落時、当該 packag
 Q12 は既存 Documentation 順序・provenance・profile 境界に従う。限定 [URL 診断](../../mizar-diagnostics/ja/documentation_urls.md) は採用済みだが、残る descriptor/location/overlap/failure precedence/profile は別途 owner の定義・採用を要し、それ以上の code を予約しない。限定検出・発行は採用済み。profile 失敗は documentation quality だけに影響し proof validity/extraction acceptance を変えない。Doc23 が staging/atomic replacement/write-failure cleanup を所有し、本提案は publication 実装を許可しない。
 
 ## 未選択の所有者 Q-decision
-上記の限定 Q5/URL 診断前提と opaque Q6/Q11 transport、限定 comment/tag safe-flow handoff と Q3 href interface ①以外は未選択。上記状態が歴史的な候補表記に優先し、Q3 source-view/行 routing は下記の限定定義を持つが、限定 source-view handoff のみを採用する。選択肢の組合せ変更には整合的提案の改訂が必要で、どちらも spec24 を緩和せず採用済み Doc8/Doc9 判断を再決定しない。
+上記の限定 Q5/URL 診断前提と opaque Q6/Q11 transport、限定 comment/tag/UsedBy safe-flow handoff と Q3 href interface ①以外は未選択。上記状態が歴史的な候補表記に優先し、Q3 source-view/行 routing は下記の限定定義を持つが、限定 source-view handoff のみを採用する。選択肢の組合せ変更には整合的提案の改訂が必要で、どちらも spec24 を緩和せず採用済み Doc8/Doc9 判断を再決定しない。
 
 | 質問 / 対象 gate | ①（Q3 href interface のみ採用済み、他は未選択） | 未選択② |
 |---|---|---|
@@ -88,7 +88,11 @@ Doc14/15 は Doc13 の整合的採用、必須の完全 producer/destination と
 
 ## Adopted Comment And Tag Safe-Flow Handoff
 [英語の所有定義](../en/render.md#adopted-comment-and-tag-safe-flow-handoff)が正本。`render::comment_fragments` は genuine Doc8 view と認証済み Doc9 入力・供給 classification を借用し、対象に束縛された完全 comment、元順序の param/returns body と See entry を出力する。既知の absence と attached empty を区別し、unavailable/foreign/改変 binding は拒否する。失敗 block は再解析せず escape 済み raw fallback と既存 warning を保つ。
-classification は元 block ごとの code/explicit link・image/present See slot の出現順。opaque tag slot と link label 内 code は入れ子 link を作らない。分類欠落を推測で補わず、Doc9 outcome、warning/profile を保持し incomplete を可視表示する。CommonMark の元構造と Q5 safety、厳密な opaque math ordinal/payload を合成し、tag body は再解析せず inline wrapper を切断・整合する。完全 comment は全 tag/raw/重複を保持し、派生 view も全 occurrence を元順序で保つ。accepted image は src/alt を保持し、label 内 opaque math を同じ image event 直後の元順序 phrasing sibling として一度だけ置く。非 math label HTML は再出力せず、rejected/unlinked image は元 inline label と math を表示する。See body は slot anchor の外、display div は paragraph と inline wrapper の外に置く。UsedBy、symbolic math、template、Q12、完全 rendering は gate 内。
+classification は元 block ごとの code/explicit link・image/present See slot の出現順。opaque tag slot と link label 内 code は入れ子 link を作らない。分類欠落を推測で補わず、Doc9 outcome、warning/profile を保持し incomplete を可視表示する。CommonMark の元構造と Q5 safety、厳密な opaque math ordinal/payload を合成し、tag body は再解析せず inline wrapper を切断・整合する。完全 comment は全 tag/raw/重複を保持し、派生 view も全 occurrence を元順序で保つ。accepted image は src/alt を保持し、label 内 opaque math を同じ image event 直後の元順序 phrasing sibling として一度だけ置く。非 math label HTML は再出力せず、rejected/unlinked image は元 inline label と math を表示する。See body は slot anchor の外、display div は paragraph と inline wrapper の外に置く。symbolic math、template、Q12、完全 rendering は gate 内。
+
+## Adopted UsedBy Safe-Flow Handoff
+[英語の所有定義](../en/render.md#adopted-usedby-safe-flow-handoff)が正本。`render::used_by_fragments` は認証済み resolver から comment reference occurrence なしで新しい Doc9 結果を取得し、定理順の safe flow fragment と変更していない結果を返す。反復 occurrence provenance、独立した closure/citation coverage、warning と promotion を保持し、comment availability や citation discovery を追加しない。
+各 citing 定理を Doc9 順に一度表示し、厳密な FQN を escape して validated allocation/既存 href encoder で link する。destination readiness 欠落は安全な非 link text とし、citation coverage や warning を変えない。complete-empty は none、不完全/利用不可の coverage は既知引用と併記しても明示 unavailable とする。完全性は選択済み有限 closure 内に限る。template、Q12、完全 rendering は gate 内に残る。
 
 ## Q3 Source-View And Line Routing Definition
 Render 所有の限定 local source 表示/routing 定義である。local source 表示/routing のみを採用し、完全 Doc13 や Q12 診断は供給しない。[G3 original-coordinate 認証](./render_prerequisites.md#採用済み-g3-source-coordinates)を使い、正規化済み hash や独立に開き直した source file は使わない。`AuthenticatedDocSources::original_text` は厳密 binding を検証して同じ保持済み original text を参照する。`render::DocSourceViews::allocate` は source view を完全 G2 namespace に加え、不変 sources/inputs を保持する。`view` は owner 供給の package display name を必須とし認証 version の固定 shell、`item_source_slot` は G3 を通した認証 export range を描画する。`loaded_source_slot` は順序付き loaded-frame range を同じ G3 合成で受け取り、original segment と mapping coverage は G3 が保持する。出力は in-memory HTML のみ。

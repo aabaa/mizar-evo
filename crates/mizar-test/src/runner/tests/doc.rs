@@ -7693,12 +7693,20 @@ mod doc10_authenticated {
                 let mut app = theorem_publication(
                     "app",
                     [
-                        "::: T\nimport dep.module_0 as D; theorem T: thesis by T, T, D;",
+                        "::: T\nimport dep.module_0 as D; theorem T: thesis by T, T, D, N;",
                         "theorem T: thesis by T;",
                     ],
                 );
-                let mut dep =
-                    theorem_publication("dep", ["theorem T: thesis by U;", "theorem T: thesis;"]);
+                let mut non_theorem = app.artifacts[0].exports[0].clone();
+                non_theorem.export_kind = "functor".into();
+                non_theorem.origin_id = "N".into();
+                non_theorem.fully_qualified_name = "app::module_0::N".into();
+                app.artifacts[0].exports.push(non_theorem);
+                app.publish();
+                let mut dep = theorem_publication(
+                    "dep",
+                    ["theorem T: thesis by U;", "theorem T: thesis by U;"],
+                );
                 let (registry, workspace, plans, views) = context(&mut [&mut app, &mut dep]);
                 let all = inputs(&app, &views[0])
                     .into_iter()
@@ -7721,11 +7729,16 @@ mod doc10_authenticated {
                             own.clone(),
                             own.clone(),
                             DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0))),
+                            DirectByTarget::NonTheorem,
                         ],
                     ),
                     citation_projection(&app, 1, vec![own.clone()]),
                     citation_projection(&dep, 0, vec![own]),
-                    citation_projection(&dep, 1, vec![]),
+                    citation_projection(
+                        &dep,
+                        1,
+                        vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&dep, 0)))],
+                    ),
                 ];
                 let allocations = validate(&app, &imports, table(&app)).unwrap();
                 let attached = doc7_attach(&plans[0]);
@@ -7733,14 +7746,29 @@ mod doc10_authenticated {
                 let complete =
                     authenticate_doc_direct_by(&imports, &projections.iter().collect::<Vec<_>>())
                         .unwrap();
-                let result =
-                    resolve_doc_links(&parsed, &imports, &complete, &allocations, VERSION, &[])
-                        .unwrap();
+                let result = used_by_output::checked(&parsed, &imports, &complete, &allocations);
+                let (fragments, _) = mizar_doc::render::used_by_fragments(
+                    &parsed,
+                    &imports,
+                    &complete,
+                    &allocations,
+                    VERSION,
+                )
+                .unwrap();
+                let positions = ["app::module_0::T</", "app::module_1::T</", "dep::module_0::T</"]
+                    .map(|identity| fragments[0].find(identity).unwrap());
+                assert!(positions[0] < positions[1] && positions[1] < positions[2]);
                 let used = result
                     .used_by
                     .iter()
                     .find(|used| used.target.export == app.artifacts[0].exports[0])
                     .unwrap();
+                assert!(
+                    result.used_by.iter().all(|entry| entry.target.export.export_kind == "theorem")
+                );
+                assert!(
+                    !used.citing.iter().any(|target| target.export == dep.artifacts[1].exports[0])
+                );
                 assert!(used.available);
                 assert_eq!(used.closure_coverage, DocImportCoverage::Complete);
                 assert_eq!(used.citation_coverage, DocImportCoverage::Complete);
@@ -7777,21 +7805,12 @@ mod doc10_authenticated {
                 .unwrap();
                 assert_eq!(
                     result.used_by,
-                    resolve_doc_links(&parsed, &imports, &reversed, &allocations, VERSION, &[])
-                        .unwrap()
-                        .used_by
+                    used_by_output::checked(&parsed, &imports, &reversed, &allocations).used_by
                 );
                 for producers in [vec![], vec![&projections[0]]] {
                     let citations = authenticate_doc_direct_by(&imports, &producers).unwrap();
-                    let result = resolve_doc_links(
-                        &parsed,
-                        &imports,
-                        &citations,
-                        &allocations,
-                        VERSION,
-                        &[],
-                    )
-                    .unwrap();
+                    let result =
+                        used_by_output::checked(&parsed, &imports, &citations, &allocations);
                     let used = &result.used_by[0];
                     assert!(!used.available);
                     assert_eq!(used.closure_coverage, DocImportCoverage::Complete);
@@ -7809,6 +7828,7 @@ mod doc10_authenticated {
                         DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0))),
                         DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0))),
                         DirectByTarget::Unmapped,
+                        DirectByTarget::NonTheorem,
                     ],
                 );
                 let citations = authenticate_doc_direct_by(
@@ -7816,9 +7836,7 @@ mod doc10_authenticated {
                     &[&unmapped, &projections[1], &projections[2], &projections[3]],
                 )
                 .unwrap();
-                let result =
-                    resolve_doc_links(&parsed, &imports, &citations, &allocations, VERSION, &[])
-                        .unwrap();
+                let result = used_by_output::checked(&parsed, &imports, &citations, &allocations);
                 assert!(!result.used_by[0].available);
                 assert_eq!(result.used_by[0].occurrences.len(), 4);
                 let warning = result
@@ -7859,15 +7877,8 @@ mod doc10_authenticated {
                 )
                 .unwrap();
                 let allocations = validate(&app, &missing_imports, table(&app)).unwrap();
-                let result = resolve_doc_links(
-                    &parsed,
-                    &missing_imports,
-                    &citations,
-                    &allocations,
-                    VERSION,
-                    &[],
-                )
-                .unwrap();
+                let result =
+                    used_by_output::checked(&parsed, &missing_imports, &citations, &allocations);
                 assert_eq!(
                     result.used_by[0].closure_coverage,
                     DocImportCoverage::Unavailable
@@ -7903,9 +7914,7 @@ mod doc10_authenticated {
                 let allocations = validate(&empty, &imports, table(&empty)).unwrap();
                 let attached = doc7_attach(&plans[0]);
                 let parsed = parse_comments(&attached, &[]);
-                let result =
-                    resolve_doc_links(&parsed, &imports, &citations, &allocations, VERSION, &[])
-                        .unwrap();
+                let result = used_by_output::checked(&parsed, &imports, &citations, &allocations);
                 assert!(result.used_by.iter().all(|used| used.available
                     && used.citing.is_empty()
                     && used.occurrences.is_empty()));
@@ -7978,15 +7987,8 @@ mod doc10_authenticated {
                 let parsed = parse_comments(&attached, &[]);
                 for producers in [vec![&projected, &other], vec![&other, &projected]] {
                     let citations = authenticate_doc_direct_by(&imports, &producers).unwrap();
-                    let result = resolve_doc_links(
-                        &parsed,
-                        &imports,
-                        &citations,
-                        &allocations,
-                        VERSION,
-                        &[],
-                    )
-                    .unwrap();
+                    let result =
+                        used_by_output::checked(&parsed, &imports, &citations, &allocations);
                     let used = result
                         .used_by
                         .iter()
@@ -8332,6 +8334,242 @@ mod doc10_authenticated {
                     ),
                     Err(DocBuildError::Binding(_))
                 ));
+            }
+
+            mod used_by_output {
+                use super::*;
+                use mizar_doc::render::used_by_fragments;
+
+                const UNAVAILABLE: &str =
+                    "<p>Used by: unavailable (coverage is incomplete or unavailable).</p>\n";
+
+                pub(super) fn checked(
+                    parsed: &ParsedComments<'_, '_>,
+                    imports: &AuthenticatedDocImports,
+                    citations: &AuthenticatedDocDirectBy,
+                    allocations: &ValidatedDocAllocations,
+                ) -> ResolvedDocLinks {
+                    let before = format!("{parsed:?}{imports:?}{citations:?}{allocations:?}");
+                    let lower =
+                        resolve_doc_links(parsed, imports, citations, allocations, VERSION, &[])
+                            .unwrap();
+                    let (fragments, result) =
+                        used_by_fragments(parsed, imports, citations, allocations, VERSION)
+                            .unwrap();
+                    assert_eq!(format!("{result:?}"), format!("{lower:?}"));
+                    let (again, repeated) =
+                        used_by_fragments(parsed, imports, citations, allocations, VERSION)
+                            .unwrap();
+                    assert_eq!(fragments, again);
+                    assert_eq!(format!("{result:?}"), format!("{repeated:?}"));
+                    assert_eq!(
+                        before,
+                        format!("{parsed:?}{imports:?}{citations:?}{allocations:?}")
+                    );
+                    assert_eq!(fragments.len(), result.used_by.len());
+                    for (fragment, used) in fragments.iter().zip(&result.used_by) {
+                        assert_eq!(fragment.starts_with(UNAVAILABLE), !used.available);
+                        assert_eq!(fragment.matches("<li>").count(), used.citing.len());
+                        if used.available && used.citing.is_empty() {
+                            assert_eq!(fragment, "<p>Used by: none.</p>\n");
+                        } else if !used.available && used.citing.is_empty() {
+                            assert_eq!(fragment, UNAVAILABLE);
+                        } else {
+                            assert!(fragment.ends_with("</ul>\n"));
+                        }
+                    }
+                    result
+                }
+
+                #[test]
+                fn doc13_used_by_exact_destinations_fallbacks_and_promotion() {
+                    let mut app = theorem_publication(
+                        "app",
+                        [
+                            "::: @requires\ntheorem T: thesis by T;",
+                            "theorem T: thesis;",
+                        ],
+                    );
+                    let fqn = "app::é%#<&\"'";
+                    app.artifacts[0].exports[0].fully_qualified_name = fqn.into();
+                    app.summaries[0].exported_labels.push(ExportedLabelSummary {
+                        origin_id: "used-by-label".into(),
+                        label: "ShortAlias".into(),
+                        owner_fully_qualified_name: fqn.into(),
+                        visibility: "public".into(),
+                        source_range: app.artifacts[0].exports[0].source_range,
+                        target_kind: "theorem".into(),
+                    });
+                    app.summaries[0].refresh_interface_hash().unwrap();
+                    app.publish();
+                    let (registry, workspace, mut plans, views) = context(&mut [&mut app]);
+                    let imports = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let projections = [
+                        citation_projection(
+                            &app,
+                            0,
+                            vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)))],
+                        ),
+                        citation_projection(&app, 1, vec![]),
+                    ];
+                    let citations =
+                        authenticate_doc_direct_by(&imports, &[&projections[0], &projections[1]])
+                            .unwrap();
+                    let mut original = table(&app);
+                    original.pages[0].path = "p/é%#&.html".into();
+                    original.pages[0].items[0].alias = Some("ShortAlias".into());
+                    let allocations = validate(&app, &imports, original.clone()).unwrap();
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    assert!(!parsed.warnings.is_empty());
+                    let lower = checked(&parsed, &imports, &citations, &allocations);
+                    assert!(!lower.documentation_failed());
+                    let (fragments, _) =
+                        used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION)
+                            .unwrap();
+                    assert_eq!(
+                        fragments,
+                        [
+                            "<ul>\n<li><a href=\"p/%C3%A9%25%23%26.html#app%3A%3A%C3%A9%25%23%3C%26%22%27\">app::é%#&lt;&amp;&quot;&#39;</a></li>\n</ul>\n"
+                        ]
+                    );
+                    for mutation in 0..3 {
+                        let mut supplied = original.clone();
+                        match mutation {
+                            0 => {
+                                supplied.pages.remove(0);
+                            }
+                            1 => supplied.pages[0].items[0].label = None,
+                            _ => supplied.pages[0].section_ids.push(fqn.into()),
+                        }
+                        let allocations = validate(&app, &imports, supplied).unwrap();
+                        let result = checked(&parsed, &imports, &citations, &allocations);
+                        assert_eq!(result.used_by, lower.used_by);
+                        let (fragments, _) =
+                            used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION)
+                                .unwrap();
+                        assert_eq!(
+                            fragments,
+                            ["<ul>\n<li>app::é%#&lt;&amp;&quot;&#39;</li>\n</ul>\n"]
+                        );
+                    }
+                    let warnings = lower.warnings;
+                    drop(parsed);
+                    drop(attached);
+                    plans[0].profile.fail_on_doc_warnings = true;
+                    let promoted = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    let result = checked(&parsed, &promoted, &citations, &allocations);
+                    assert!(result.documentation_failed());
+                    assert_eq!(result.warnings, warnings);
+                    assert!(!app.root.join("out").exists());
+                }
+
+                #[test]
+                fn doc13_used_by_binding_refusals_and_unavailable_comments() {
+                    let mut app = theorem_publication(
+                        "app",
+                        [
+                            "::: legacy comment\ntheorem T: thesis by T;",
+                            "theorem T: thesis;",
+                        ],
+                    );
+                    app.without_comment_projection = true;
+                    app.publish();
+                    let (registry, workspace, plans, views) = context(&mut [&mut app]);
+                    let imports = authenticate_doc_imports(
+                        &registry,
+                        &workspace,
+                        &plans[0],
+                        &[],
+                        &inputs(&app, &views[0]),
+                    )
+                    .unwrap();
+                    let projections = [
+                        citation_projection(
+                            &app,
+                            0,
+                            vec![DirectByTarget::Theorem(Box::new(theorem_endpoint(&app, 0)))],
+                        ),
+                        citation_projection(&app, 1, vec![]),
+                    ];
+                    let citations =
+                        authenticate_doc_direct_by(&imports, &[&projections[0], &projections[1]])
+                            .unwrap();
+                    let allocations = validate(&app, &imports, table(&app)).unwrap();
+                    let attached = doc7_attach(&plans[0]);
+                    let parsed = parse_comments(&attached, &[]);
+                    let result = checked(&parsed, &imports, &citations, &allocations);
+                    assert!(result.used_by[0].available);
+                    assert_eq!(result.used_by[0].occurrences.len(), 1);
+                    assert!(parsed.blocks.is_empty());
+                    let mut foreign = theorem_publication(
+                        "foreign",
+                        ["theorem T: thesis;", "theorem T: thesis;"],
+                    );
+                    let foreign_imports = authenticated(&mut foreign);
+                    let foreign_citations =
+                        authenticate_doc_direct_by(&foreign_imports, &[]).unwrap();
+                    let foreign_allocations =
+                        validate(&foreign, &foreign_imports, table(&foreign)).unwrap();
+                    for (inputs, direct_by, allocated, version) in [
+                        (&foreign_imports, &citations, &allocations, VERSION),
+                        (&imports, &foreign_citations, &allocations, VERSION),
+                        (&imports, &citations, &foreign_allocations, VERSION),
+                        (&imports, &citations, &allocations, "wrong-version"),
+                    ] {
+                        assert!(matches!(
+                            used_by_fragments(&parsed, inputs, direct_by, allocated, version),
+                            Err(DocBuildError::Binding(_))
+                        ));
+                    }
+                    for mutation in 0..3 {
+                        let mut plan = plans[0].clone();
+                        match mutation {
+                            0 => plan.request.output_dir.push("foreign-root"),
+                            1 => {
+                                plan.request.expected_manifest_hash =
+                                    mizar_session::hash_text("foreign publication")
+                            }
+                            _ => plan
+                                .index
+                                .modules
+                                .get_mut(&app.summaries[0].module)
+                                .unwrap()
+                                .exports[0]
+                                .origin_id
+                                .push_str("-foreign"),
+                        }
+                        let attached = doc7_attach(&plan);
+                        let parsed = parse_comments(&attached, &[]);
+                        assert!(matches!(
+                            used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION),
+                            Err(DocBuildError::Binding(_))
+                        ));
+                    }
+                    let mut attached = doc7_attach(&plans[0]);
+                    attached.module = &app.summaries[1].module;
+                    let parsed = parse_comments(&attached, &[]);
+                    assert!(matches!(
+                        used_by_fragments(&parsed, &imports, &citations, &allocations, VERSION),
+                        Err(DocBuildError::Binding(_))
+                    ));
+                }
             }
 
             mod url_output {

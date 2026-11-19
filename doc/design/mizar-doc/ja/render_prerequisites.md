@@ -60,4 +60,4 @@ used_by は producer が分類した選択済み theorem ごとに一 record と
 ## 採用済み G4 URL 方針診断の前提
 限定 [Q5 出力方針](./render.md#採用済み-htmlurl-出力方針) と [共有 URL 診断](../../mizar-diagnostics/ja/documentation_urls.md) を採用する。実 Doc8 destination、供給 Doc10 分類との binding、限定 safe output と W0415 検出・発行を採用する。全体 rendering、template 実装 witness、残る Q12/source/readiness 診断、symbolic math、他の G4/G5 は gate 内に残る。
 
-限定 comment/tag/See [safe-flow handoff](./render.md#adopted-comment-and-tag-safe-flow-handoff) は genuine Doc8 view と supplied Doc9 classification を合成する。UsedBy fragment と template は別 gate のまま。
+限定 comment/tag/See [safe-flow handoff](./render.md#adopted-comment-and-tag-safe-flow-handoff) は genuine Doc8 view と supplied Doc9 classification を合成する。限定 [UsedBy safe-flow handoff](./render.md#adopted-usedby-safe-flow-handoff) は認証済み Doc9 逆引用を coverage/provenance の変更なしに表示する。template は別 gate のまま。

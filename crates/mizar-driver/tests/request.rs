@@ -1116,6 +1116,201 @@ mod q1_comments {
     }
 
     #[test]
+    fn doc13_used_by_preserves_native_mapped_self_citations_and_offsets() {
+        use mizar_artifact::direct_by::{
+            DirectByEndpoint, DirectByTarget, project_frontend_direct_by,
+        };
+        use mizar_doc::doc_build::*;
+        use mizar_session::TextRange;
+
+        let original = "\u{feff}::: café\r\ntheorem Named: thesis by Named, Named;\r\n";
+        let mut f = Fixture::new(original, None);
+        let frontend = f.frontend(0);
+        let mut input = f.input(0, vec![frontend.erase()]);
+        let loaded = &f.outputs[0].source.source_text;
+        input
+            .exports
+            .push(mizar_artifact::verified_artifact::VerifiedExport {
+                origin_id: "Named".into(),
+                fully_qualified_name: "Fixture::Named".into(),
+                namespace_path: vec!["Fixture".into()],
+                visibility: mizar_artifact::verified_artifact::ExportVisibility::Public,
+                export_kind: "theorem".into(),
+                source_range: mizar_artifact::module_summary::SourceRangeSummary {
+                    start_byte: loaded.find("theorem").unwrap() as u64,
+                    end_byte: loaded.len() as u64,
+                },
+                rendered_signature: "theorem Named: thesis".into(),
+                interface_fingerprint: ArtifactHashRef::new(
+                    ArtifactHashClass::Interface,
+                    "mizar-ir/export",
+                    ArtifactSchemaVersion::new(1, 0),
+                    hash(20),
+                ),
+                proof_status: None,
+                documentation_ref: None,
+            });
+        let mut targets = vec![None; f.metadata[0].boundaries().len()];
+        let theorem = f.metadata[0]
+            .boundaries()
+            .iter()
+            .position(|boundary| format!("{:?}", boundary.kind()) == "TheoremItem")
+            .unwrap();
+        targets[theorem] = Some(("Named".into(), "Fixture::Named".into()));
+        f.session
+            .capture_commented_module(
+                &f.publisher,
+                &f.snapshots,
+                input,
+                &frontend,
+                &f.metadata[0],
+                &targets,
+            )
+            .unwrap();
+        let root = f.emission_root();
+        let commit = f.emit(&root, "native.mizir.json").unwrap().unwrap();
+        let publication = validated_manifest(&root);
+        let artifact = &f.retained(0).artifact.artifact;
+        let retained = f.retained(0).clone();
+        let paths = [
+            root.join("artifact-manifest.json"),
+            root.join("native.mizir.json"),
+            f.files.root().join("src/module0.miz"),
+        ];
+        let bytes = paths.each_ref().map(|path| std::fs::read(path).unwrap());
+        let snapshot = f.session.captured().snapshot();
+        let request = DocBuildRequest {
+            profile: Phase16Profile {
+                render_docs: true,
+                extract_code: false,
+                fail_on_doc_warnings: false,
+                fail_on_extraction_warnings: false,
+                include_private_docs: false,
+            },
+            publications: vec![DocPublicationRequest {
+                package: commit.manifest().package.clone(),
+                artifact_root: root.clone(),
+                expected_manifest_hash: publication.artifact_hash,
+                output_dir: f.files.root().join("doc-output"),
+                source_bundle: None,
+                dependency_indexes: None,
+                import_order: Default::default(),
+            }],
+        };
+        let plans = build_doc_plans(
+            &f.snapshots,
+            f.session.request().id,
+            snapshot.id,
+            &snapshot.workspace_root,
+            &request,
+        )
+        .unwrap();
+        let inputs =
+            authenticate_doc_imports(&f.snapshots, &snapshot.workspace_root, &plans[0], &[], &[])
+                .unwrap();
+        let endpoint = DirectByEndpoint {
+            module: artifact.module.clone(),
+            publication_hash: publication.artifact_hash,
+            export: artifact.exports[0].clone(),
+        };
+        let producer = project_frontend_direct_by(
+            &f.outputs[0],
+            artifact,
+            publication.artifact_hash,
+            |id| {
+                let start = f.outputs[0].ast.as_ref()?.node(id)?.range.start as u64;
+                (start == endpoint.export.source_range.start_byte).then(|| endpoint.export.clone())
+            },
+            |_, _| DirectByTarget::Theorem(Box::new(endpoint.clone())),
+        )
+        .unwrap();
+        let direct_by = authenticate_doc_direct_by(&inputs, &[&producer]).unwrap();
+        assert_eq!(direct_by.citation_coverage(), DocImportCoverage::Complete);
+        let sources = authenticate_doc_sources(
+            &f.snapshots,
+            &snapshot.workspace_root,
+            &inputs,
+            &[],
+            &direct_by,
+        )
+        .unwrap();
+        let attachments =
+            mizar_doc::comments::attach_comments(&plans[0], &artifact.module, None).unwrap();
+        let parsed = mizar_doc::markdown::parse_comments(&attachments, &[]);
+        let output = &request.publications[0].output_dir;
+        let allocations = mizar_doc::allocations::validate_doc_allocations(
+            &inputs,
+            output,
+            "used-by-spec",
+            mizar_doc::allocations::DocAllocationTable {
+                output_root: output.clone(),
+                coverage: DocImportCoverage::Unavailable,
+                pages: vec![],
+                sections: None,
+            },
+        )
+        .unwrap();
+        let expected = mizar_doc::links::resolve_doc_links(
+            &parsed,
+            &inputs,
+            &direct_by,
+            &allocations,
+            "used-by-spec",
+            &[],
+        )
+        .unwrap();
+        let (fragments, resolved) = mizar_doc::render::used_by_fragments(
+            &parsed,
+            &inputs,
+            &direct_by,
+            &allocations,
+            "used-by-spec",
+        )
+        .unwrap();
+        assert_eq!(
+            fragments,
+            vec![
+                "<p>Used by: unavailable (coverage is incomplete or unavailable).</p>\n<ul>\n<li>Fixture::Named</li>\n</ul>\n"
+            ]
+        );
+        assert_eq!(resolved.references, expected.references);
+        assert_eq!(resolved.used_by, expected.used_by);
+        assert_eq!(resolved.warnings, expected.warnings);
+        assert_eq!(
+            resolved.documentation_failed(),
+            expected.documentation_failed()
+        );
+        let used = &resolved.used_by[0];
+        assert_eq!(used.citing, vec![used.target.clone()]);
+        assert_eq!(used.target.export, endpoint.export);
+        assert_eq!(used.occurrences, producer.occurrences());
+        assert_eq!(used.occurrences.len(), 2);
+        let offsets = original.match_indices("Named").skip(1);
+        for (ordinal, (edge, (start, _))) in used.occurrences.iter().zip(offsets).enumerate() {
+            assert_eq!((edge.by_ordinal, edge.target_ordinal), (0, ordinal));
+            assert_eq!(edge.citing.as_ref(), Some(&endpoint));
+            assert_eq!(
+                edge.target,
+                DirectByTarget::Theorem(Box::new(endpoint.clone()))
+            );
+            assert_eq!(
+                sources
+                    .citation_ranges(&producer, &[edge.target_range])
+                    .unwrap(),
+                (
+                    vec![TextRange::new(start, start + "Named".len())],
+                    DocImportCoverage::Complete
+                )
+            );
+        }
+        assert_eq!(f.retained(0), &retained);
+        for (path, before) in paths.iter().zip(bytes) {
+            assert_eq!(std::fs::read(path).unwrap(), before);
+        }
+        assert!(!output.exists());
+    }
+
+    #[test]
     fn q1_emission_disk_keeps_exact_draft_after_file_removal_and_clone() {
         let mut f = Fixture::new(TEXT, None);
         let frontend = f.frontend(0);
