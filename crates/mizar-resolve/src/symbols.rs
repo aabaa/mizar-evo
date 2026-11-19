@@ -576,7 +576,176 @@ pub fn source_algorithm_call_candidates<'a>(
             }
         }
         let mut locals = Vec::new();
+        let mut patterns = Vec::new();
+        let mut captures = Vec::new();
+        let mut capture_groups = Vec::new();
         for node in subtree(owner.body)? {
+            match node.kind() {
+                SurfaceNodeKind::ForRangeStatement | SurfaceNodeKind::ForCollectionStatement => {
+                    let names = binding_names(node.id())?;
+                    for child in node.child_views().filter(|child| {
+                        matches!(
+                            child.kind(),
+                            SurfaceNodeKind::LoopInvariantClause
+                                | SurfaceNodeKind::LoopDecreasingClause
+                                | SurfaceNodeKind::AlgorithmStatementList
+                        )
+                    }) {
+                        locals.push((child.range(), names.clone()));
+                    }
+                }
+                SurfaceNodeKind::QuantifiedFormula(_) | SurfaceNodeKind::SetComprehension => {
+                    let mut names = BTreeSet::new();
+                    for segment in node.child_views().filter(|child| {
+                        matches!(
+                            child.kind(),
+                            SurfaceNodeKind::QuantifierVariableSegment
+                                | SurfaceNodeKind::ComprehensionVariableSegment
+                        )
+                    }) {
+                        names.extend(binding_names(segment.id())?);
+                    }
+                    for child in node.child_views().filter(|child| {
+                        child.as_token().is_none()
+                            && !matches!(
+                                child.kind(),
+                                SurfaceNodeKind::QuantifierVariableSegment
+                                    | SurfaceNodeKind::ComprehensionVariableSegment
+                            )
+                    }) {
+                        locals.push((child.range(), names.clone()));
+                    }
+                }
+                SurfaceNodeKind::MatchCase => {
+                    let mut children = node
+                        .child_views()
+                        .filter(|child| child.as_token().is_none());
+                    let pattern = children.next().ok_or_else(invalid)?;
+                    let branch = children.next().ok_or_else(invalid)?.range();
+                    patterns.push(pattern.range());
+                    let mut names = BTreeSet::new();
+                    for part in subtree(pattern.id())? {
+                        if matches!(part.kind(), SurfaceNodeKind::BinderExpression) {
+                            let group: Vec<_> = part
+                                .child_views()
+                                .filter_map(SurfaceNodeView::as_token)
+                                .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+                                .map(|token| token.text.as_ref())
+                                .collect();
+                            names.extend(group.iter().copied());
+                            capture_groups.push((branch, group));
+                        } else if matches!(
+                            part.kind(),
+                            SurfaceNodeKind::TermReference | SurfaceNodeKind::PredicateHead
+                        ) {
+                            let tokens: Vec<_> = subtree(part.id())?
+                                .into_iter()
+                                .filter_map(SurfaceNodeView::as_token)
+                                .collect();
+                            let [token] = tokens.as_slice() else {
+                                supported = false;
+                                continue;
+                            };
+                            let parent = ast
+                                .node_views()
+                                .find(|parent| parent.children().contains(&part.id()))
+                                .ok_or_else(invalid)?;
+                            let callable = matches!(part.kind(), SurfaceNodeKind::PredicateHead)
+                                || (matches!(parent.kind(), SurfaceNodeKind::ApplicationTerm)
+                                    && parent.children().first() == Some(&part.id()));
+                            let symbol = callable
+                                && declarations.iter().any(|(range, entry, spelling)| {
+                                    *spelling == token.text.as_ref()
+                                        && range.end <= pattern.range().start
+                                        && entry.kind()
+                                            == if matches!(
+                                                part.kind(),
+                                                SurfaceNodeKind::PredicateHead
+                                            ) {
+                                                SymbolKind::Predicate
+                                            } else {
+                                                SymbolKind::Functor
+                                            }
+                                        && !excluded.contains(*spelling)
+                                        && !locals.iter().any(|(range, names)| {
+                                            range.start <= part.range().start
+                                                && part.range().end <= range.end
+                                                && names.contains(*spelling)
+                                        })
+                                });
+                            let bare_predicate =
+                                matches!(part.kind(), SurfaceNodeKind::PredicateHead)
+                                    && parent.child_views().all(|child| {
+                                        child.id() == part.id() || child.as_token().is_some()
+                                    });
+                            if !symbol
+                                && (!callable || bare_predicate)
+                                && token.kind == SurfaceTokenKind::Identifier
+                            {
+                                names.insert(token.text.as_ref());
+                            } else if !symbol {
+                                supported = false;
+                            }
+                        } else if !matches!(
+                            part.kind(),
+                            SurfaceNodeKind::Token(_)
+                                | SurfaceNodeKind::TermExpression
+                                | SurfaceNodeKind::NumeralTerm
+                                | SurfaceNodeKind::ParenthesizedTerm
+                                | SurfaceNodeKind::ApplicationTerm
+                                | SurfaceNodeKind::FormulaExpression
+                                | SurfaceNodeKind::BuiltinPredicateApplication
+                                | SurfaceNodeKind::PredicateApplication
+                                | SurfaceNodeKind::PredicateSegment
+                                | SurfaceNodeKind::QualifiedSymbol
+                                | SurfaceNodeKind::PathSegment
+                                | SurfaceNodeKind::BinaryFormula(_)
+                                | SurfaceNodeKind::PrefixFormula(_)
+                                | SurfaceNodeKind::ParenthesizedFormula
+                                | SurfaceNodeKind::FormulaConstant(_)
+                        ) {
+                            supported = false;
+                        }
+                    }
+                    locals.push((branch, names.clone()));
+                    captures.push((branch, names));
+                }
+                SurfaceNodeKind::BinderExpression
+                    if !patterns.iter().any(|range| {
+                        range.start <= node.range().start && node.range().end <= range.end
+                    }) =>
+                {
+                    let names = binding_names(node.id())?;
+                    let group: Vec<_> = node
+                        .child_views()
+                        .filter_map(SurfaceNodeView::as_token)
+                        .filter(|token| token.kind == SurfaceTokenKind::Identifier)
+                        .map(|token| token.text.as_ref())
+                        .collect();
+                    let mut active = captures.iter().filter(|(range, captures)| {
+                        range.start <= node.range().start
+                            && node.range().end <= range.end
+                            && !names.is_disjoint(captures)
+                    });
+                    if let Some((branch, _)) = active.next() {
+                        supported &= active.next().is_none()
+                            && capture_groups
+                                .iter()
+                                .any(|(range, captured)| range == branch && *captured == group)
+                            && !locals.iter().any(|(range, shadow)| {
+                                range != branch
+                                    && branch.start <= range.start
+                                    && range.start <= node.range().start
+                                    && node.range().end <= range.end
+                                    && !names.is_disjoint(shadow)
+                            });
+                    }
+                    if let Some(body) = node.child_views().last() {
+                        locals.push((body.range(), names));
+                    }
+                }
+                _ => {}
+            }
             if matches!(node.kind(), SurfaceNodeKind::AlgorithmStatementList) {
                 for declaration in node
                     .child_views()
@@ -603,6 +772,12 @@ pub fn source_algorithm_call_candidates<'a>(
                     | SurfaceNodeKind::ReturnStatement
                     | SurfaceNodeKind::IfStatement
                     | SurfaceNodeKind::WhileStatement
+                    | SurfaceNodeKind::ForRangeStatement
+                    | SurfaceNodeKind::ForCollectionStatement
+                    | SurfaceNodeKind::MatchStatement
+                    | SurfaceNodeKind::MatchCase
+                    | SurfaceNodeKind::MatchEnding
+                    | SurfaceNodeKind::SnapshotStatement
                     | SurfaceNodeKind::LoopInvariantClause
                     | SurfaceNodeKind::LoopDecreasingClause
                     | SurfaceNodeKind::TermExpression
@@ -611,6 +786,11 @@ pub fn source_algorithm_call_candidates<'a>(
                     | SurfaceNodeKind::ParenthesizedTerm
                     | SurfaceNodeKind::ApplicationTerm
                     | SurfaceNodeKind::SetEnumeration
+                    | SurfaceNodeKind::SetComprehension
+                    | SurfaceNodeKind::ComprehensionVariableSegment
+                    | SurfaceNodeKind::BinderExpression
+                    | SurfaceNodeKind::QuaExpression
+                    | SurfaceNodeKind::ChoiceTerm
                     | SurfaceNodeKind::InfixExpression(_)
                     | SurfaceNodeKind::PrefixExpression(_)
                     | SurfaceNodeKind::PostfixExpression(_)
@@ -623,6 +803,8 @@ pub fn source_algorithm_call_candidates<'a>(
                     | SurfaceNodeKind::BinaryFormula(_)
                     | SurfaceNodeKind::ParenthesizedFormula
                     | SurfaceNodeKind::FormulaConstant(_)
+                    | SurfaceNodeKind::QuantifiedFormula(_)
+                    | SurfaceNodeKind::QuantifierVariableSegment
                     | SurfaceNodeKind::IsAssertion
                     | SurfaceNodeKind::AttributeTestChain
                     | SurfaceNodeKind::TypeExpression

@@ -11217,12 +11217,122 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
             ));
         }
     }
-    for (unsupported, calls) in [
-        ("for local = n to n do return target(n); end;", 3),
+    for (body, expected) in [
         (
-            "if for local being object holds target(local) = local do return target(n); end;",
-            4,
+            "for local = target(n) to target(n) step target(n) do invariant target(n) = n; return target(n); end; return target(n);",
+            vec![true; 6],
         ),
+        (
+            "for target = target(n) downto target(n) step target(n) do invariant target(n) = n; return target(n); end; return target(n);",
+            vec![true, true, true, false, false, true],
+        ),
+        (
+            "for target = target(n) to n do for local = target(n) to n do return target(n); end; return target(n); end; return target(n);",
+            vec![true, false, false, false, true],
+        ),
+        (
+            "for local in target(n) do invariant target(n) = n; return target(n); end; return target(n);",
+            vec![true; 4],
+        ),
+        (
+            "for target in target(n) do invariant target(n) = n; return target(n); end; return target(n);",
+            vec![true, false, false, true],
+        ),
+        (
+            "for local in target(n) processed target do invariant target(n) = n; return target(n); end; return target(n);",
+            vec![true, false, false, true],
+        ),
+        (
+            "for target in target(n) do for local in target(n) do return target(n); end; return target(n); end; return target(n);",
+            vec![true, false, false, false, true],
+        ),
+        (
+            "if for local being object holds target(local) = local do return target(n); end; return target(n);",
+            vec![true; 3],
+        ),
+        (
+            "if for target being Family[target(n)] holds target(n) = n do return target(n); else return target(n); end; return target(n);",
+            vec![true, false, true, true, true],
+        ),
+        (
+            "if ex target being object st target(n) = n do return target(n); end; return target(n);",
+            vec![false, true, true],
+        ),
+        (
+            "var local := {target(n) where local is object : target(n) = n}; return target(n);",
+            vec![true; 3],
+        ),
+        (
+            "var local := {target(n) where target is object : target(n) = n}; return target(n);",
+            vec![false, false, true],
+        ),
+        (
+            "var local := target |-> target(n); return target(n);",
+            vec![false, true],
+        ),
+        (
+            "var local := (local,target) |-> target(n); return target(n);",
+            vec![false, true],
+        ),
+        (
+            "var local := local |-> target(n); return target(n);",
+            vec![true, true],
+        ),
+        (
+            "var local := target |-> local |-> target(n); return target(n);",
+            vec![false, true],
+        ),
+        (
+            "match target(n) do case target do return target(n); end; case local do return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true, false, true, true, true],
+        ),
+        (
+            "match target(n) do case target & local do return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true, false, true, true],
+        ),
+        (
+            "match target(n) do case target do match target(n) do case local do return target(n); end; end; return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true, false, false, false, true, true],
+        ),
+        (
+            "match target(n) do case (local,target) |-> body do return (local,target) |-> target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true, false, true, true],
+        ),
+        (
+            "match target(n) do case (local,target) |-> body do return target |-> target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![false; 4],
+        ),
+        (
+            "match target(n) do case (local,target) |-> body do return (target,local) |-> target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![false; 4],
+        ),
+        (
+            "match target(n) do case (local,target) |-> body do return (local,another) |-> target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![false; 4],
+        ),
+        (
+            "match n do case (local,target) |-> body do match n do case (target,local) |-> inner do return (local,target) |-> target(n); end; end; end; end; return target(n);",
+            vec![false; 2],
+        ),
+        (
+            "match n do case (local,target) |-> body do var local := n; return (local,target) |-> target(n); end; end; return target(n);",
+            vec![false; 2],
+        ),
+        (
+            "snapshot target; var local := the Family[target(n)]; return target(n);",
+            vec![true, true],
+        ),
+        (
+            "return target(n) by Trusted; return target(n);",
+            vec![false; 2],
+        ),
+    ] {
+        cases.push((
+            format!("definition let n be object; mode FamilyDef: Family of n is object; algorithm caller(n) -> object do {body} end; end;"),
+            expected,
+        ));
+    }
+    for (unsupported, calls) in [
         ("var local := n; local := target(n);", 3),
         ("ghost var local := n; ghost local := target(n);", 3),
         ("assert n = n proof thus thesis; end;", 2),
@@ -11270,6 +11380,65 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
             assert_eq!(entries.len(), usize::from(supported), "{tail}");
             if supported {
                 assert!(std::ptr::eq(entries[0], rows[0].owner()), "{tail}");
+            }
+        }
+    }
+    for (declaration, body, expected) in [
+        (
+            "func Target: target(n) -> object equals n;",
+            "match target(n) do case target(local) do return target(n); end; case local do return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true; 6],
+        ),
+        (
+            "func Target: target(n) -> object equals n;",
+            "match target(n) do case target(target) do return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![false; 5],
+        ),
+        (
+            "pred Target: target means n = n;",
+            "match n do case not target do return target(n); end; otherwise return target(n); end; end; return target(n);",
+            vec![true; 3],
+        ),
+    ] {
+        let text = format!(
+            "definition let n be object; {declaration} algorithm caller(n) -> object do {body} end; end;"
+        );
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(&text);
+        let (rows, candidates) =
+            crate::symbols::source_algorithm_call_candidates(&arena, &env).unwrap();
+        assert_eq!(rows.len(), 1, "{declaration}");
+        assert_eq!(rows[0].calls().len(), expected.len(), "{declaration}");
+        assert_eq!(candidates.len(), expected.len(), "{declaration}");
+        let symbol = env
+            .symbols()
+            .iter()
+            .find(|entry| {
+                source_range_from_anchor(entry.origin().anchor())
+                    .is_some_and(|range| range.start == text.find(declaration).unwrap())
+            })
+            .unwrap();
+        let caller_start = text.find("algorithm caller(").unwrap();
+        for ((call, supported), (offset, _)) in rows[0]
+            .calls()
+            .iter()
+            .zip(expected)
+            .zip(text[caller_start..].match_indices("target("))
+        {
+            let start = caller_start + offset;
+            let application = &text[start..start + text[start..].find(')').unwrap() + 1];
+            assert_eq!(
+                call.application(),
+                algorithm_inventory_node_at(
+                    &ast,
+                    start,
+                    application,
+                    SurfaceNodeKind::ApplicationTerm
+                )
+            );
+            let entries = &candidates[&call.application()];
+            assert_eq!(entries.len(), usize::from(supported), "{declaration}");
+            if supported {
+                assert!(std::ptr::eq(entries[0], symbol), "{declaration}");
             }
         }
     }
