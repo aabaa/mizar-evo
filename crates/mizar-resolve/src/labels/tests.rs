@@ -11232,6 +11232,26 @@ fn algorithm_call_candidates_exclude_bindings_and_unsupported_callees() {
         }
         for (body, expected) in [
             (
+                format!("{prefix} target := n; return target(n);"),
+                vec![false],
+            ),
+            (
+                format!("@trace(\"entry\", 1) {prefix} target := n; return target(n);"),
+                vec![false],
+            ),
+            (
+                format!(
+                    "return target(n); @trace(\"entry\", 1) {prefix} local := target(n), target := target(n), another := target(n) as Family[target(n)]; return target(n);"
+                ),
+                vec![true, true, true, false, false, false],
+            ),
+            (
+                format!(
+                    "return target(n); if target(n) = n do @trace(\"entry\", 1) {prefix} target := target(n); return target(n); else return target(n); end; return target(n);"
+                ),
+                vec![true, true, true, false, true, true],
+            ),
+            (
                 format!(
                     "return target(n); {prefix} target := target(n); if target(n) = n do return target(n); end; return target(n);"
                 ),

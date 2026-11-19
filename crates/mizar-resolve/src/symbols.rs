@@ -1301,10 +1301,17 @@ pub fn source_algorithm_call_candidates<'a>(
                 _ => {}
             }
             if matches!(node.kind(), SurfaceNodeKind::AlgorithmStatementList) {
-                for declaration in node
-                    .child_views()
-                    .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableDeclaration))
-                {
+                for mut declaration in node.child_views() {
+                    while matches!(
+                        declaration.kind(),
+                        SurfaceNodeKind::AnnotatedStatement
+                            | SurfaceNodeKind::AnnotatedAlgorithmStatement
+                    ) {
+                        declaration = declaration.child_views().last().ok_or_else(invalid)?;
+                    }
+                    if !matches!(declaration.kind(), SurfaceNodeKind::VariableDeclaration) {
+                        continue;
+                    }
                     for binding in declaration
                         .child_views()
                         .filter(|child| matches!(child.kind(), SurfaceNodeKind::VariableBinding))
