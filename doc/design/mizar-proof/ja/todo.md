@@ -540,4 +540,5 @@ cargo test -p mizar-cache
 - witness は artifact manifest が参照して初めて公開到達可能になる。
   stage だけでは何も公開されない。
 
+- [~] [MVM-R7-CERTIFIED-IMPORT-DESIGN](../../task_contracts/ja/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) — [R7-A〜E 計算証拠変換設計](./mvm_computation_import.md)草案。独立レビュー・文書検査待ち。実装はブロック中。
 - [ ] [AST-COMPUTE](../../task_contracts/ja/AST-COMPUTE.md).
