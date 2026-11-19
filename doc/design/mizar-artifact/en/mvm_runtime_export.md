@@ -1,7 +1,7 @@
 # MVM R3 — Runtime Artifact and Validating Loader
 
 > Canonical English; [Japanese companion](../ja/mvm_runtime_export.md).
-> [Design task](../../task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md);
+> Design task;
 > **proposal only**, not an executable payload schema or implementation.
 
 ## Required boundary
@@ -12,7 +12,7 @@ including default-public items, with exact identity, signature, contracts,
 accepted verification and executable correspondence, transitive dependencies
 and compatible MVM semantics. [§23.4](../../../spec/en/23.package_management_and_build_system.md#234-build-lifecycle-and-reproducibility)
 governs ordered builds and reproducibility. The existing
-[AST-ARTIFACT](../../task_contracts/en/AST-ARTIFACT.md) splits *runtime
+AST-ARTIFACT splits *runtime
 export* from later *computation-record provenance*. An ordinary
 [VerifiedArtifact](./verified_artifact.md) export or a receipt/hash alone
 is **not** runnable proof-checked code.
@@ -21,7 +21,7 @@ is **not** runnable proof-checked code.
 
 | Phase owner | Input -> output boundary | Fail-closed requirement |
 |---|---|---|
-| Core / Checker / VC / Proof (R2) | Original selected body, typed signature/call, contracts, CFG and *accepted applicable* verification evidence -> authenticated executable-eligibility input | Missing body, ambiguous call, Open/tainted evidence, changed source/context or incomplete contract/CFG refuses eligibility; Artifact never decides proof validity |
+| Core / Checker / VC / Proof (definition-side R2) | Authenticated original algorithm definition, checked signature/body, contracts, CFG and applicable accepted proof evidence -> export-eligibility input **without a concrete ground call** | Missing/ambiguous definition, Open/tainted evidence, changed source or incomplete body/contract/CFG refuses eligibility; Artifact never decides proof validity |
 | Artifact producer (R3) | Exact eligible body and dependencies -> immutable candidate executable and authenticated correspondence metadata | No text-reparse, independent unverified source lowering, placeholder bytecode or unproven private helpers; runtime erasure must preserve verified behavior |
 | Artifact store / manifest (R3) | Versioned canonical content, verified identity and dependency references -> atomic published package reference | Reuse [store](./store.md) validating reads and [manifest](./manifest.md) transaction semantics; never publish raw CoreIr, proof authority, temporary or orphan files as executable exports |
 | Artifact validating reader + Build/Driver (R3) | Manifest-selected executable and dependency closure -> read-only validated loader handle | Reject unknown format/VM version, mismatched hashes or source/algorithm/body/contracts/proof, stale lock/policy/snapshot, missing dependencies and traversal/symlink violations; no path or Git source fallback |
@@ -36,8 +36,9 @@ signature without a verified executable remains usable through contracts,
 not by computation; missing or invalid runtime data is never repaired from
 dependency source. Preserve module/version/FQN identity at each call edge.
 
-**Order:** R2 accepted body/call -> R3 executable generation and validated
-publication -> R4 execution -> R6 admission/R7 conversion/replay -> later
+**Order:** R2 accepted **definition/body** -> R3 reusable executable generation
+and validated publication; separately typed R2 **invocation** + R3 loader ->
+R4 execution -> R6 admission/R7 conversion/replay -> later
 AST-ARTIFACT computation record. Publication of computed results cannot
 be required to construct the initial executable, or the graph is circular.
 Execution caches depend on exact executable bytes/versions, dependencies,
@@ -46,8 +47,9 @@ Cache owns compatibility, not Artifact.
 
 ## Tests and decisions for the next implementation freeze
 
-Positive *future* oracle: only an actually accepted matching algorithm with
-a validating executable/manifest can be loaded and called. The current
+Positive *future* oracle: a genuinely accepted algorithm **without any
+existing invocation** may be exported and validated; a separate authentic
+caller can then load and execute that verified export. The current
 [`idalgo` corpus](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz)
 has an [Open VC expectation](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml);
 it is **not** an eligible positive runtime fixture. Compare equivalent

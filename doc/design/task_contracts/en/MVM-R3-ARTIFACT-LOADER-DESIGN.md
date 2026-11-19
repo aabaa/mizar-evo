@@ -14,12 +14,14 @@ Authority: [spec §20.9.1](../../../spec/en/20.algorithm_and_verification.md#209
 [existing manifest](../../mizar-artifact/en/manifest.md) and
 [store](../../mizar-artifact/en/store.md).
 Readiness: design can be reviewed now; implementation/export blocked by
-R2 authentic accepted-body/call correspondence and an approved loader/format.
+R2 accepted **definition/body** correspondence (not a concrete ground call)
+and an approved executable format/loader.
 
 ## Scope
 
-- Describe an owner-verified immutable executable export, one-to-one with
-  accepted source algorithm/body, public signature and contracts, precise
+- Describe a reusable, owner-verified immutable algorithm executable,
+  independent of any concrete caller, bound to the accepted source body,
+  public signature and contracts, precise
   proof/verification lineage, compatible VM version, and complete transitive
   executable dependencies. Do not equate a VerifiedArtifact metadata row
   with runnable bytes.
@@ -41,7 +43,7 @@ R2 authentic accepted-body/call correspondence and an approved loader/format.
 Deliver a compact EN/JA design with an owner/dependency table,
 negative controls, honest unavailable states, and specific release
 conditions for the next Artifact-owned implementation freeze. Reject
-forged/missing/stale bytes, wrong body/call/contracts, visibility, version,
+forged/missing/stale bytes, wrong body/contracts, visibility, version,
 dependencies, snapshot/manifest and policy, with no unverified fallback.
 Neither a proof status alone nor hashing unchecked code grants validity.
 Existing .miz/expectations, source, schema, completion/coverage and

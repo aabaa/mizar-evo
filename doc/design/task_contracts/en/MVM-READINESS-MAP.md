@@ -1,74 +1,49 @@
 # Task MVM-READINESS-MAP: Authentic MVM first-slice readiness inventory
 
-Canonical language: English; [Japanese pointer](../ja/MVM-READINESS-MAP.md).
-Status: in progress, documentation-only; source inventory and owner DAG are
-committed in [mvm_readiness.md](../../mizar-vc/en/mvm_readiness.md), with
-independent reviews and repository lint still required before R1 completion.
-The task remains the MVM preparation fallback in the
-[roadmap](../../todo.md#mvm-readiness-decomposition--).
-Tier: full documentation/review gates. Sole task owner:
-[mizar-vc plan](../../mizar-vc/en/00.crate_plan.md). The inventory coordinates
-Core, Checker, Artifact, Build and Test without assuming their authority.
-Dependencies: existing specification, currently committed owner contracts and
-source/tests; no unimplemented runtime producer is a prerequisite for this
-read-only inventory.
-Authority: [specification §20.9](../../../spec/en/20.algorithm_and_verification.md#209-execution-model-and-computability),
-[§20.13.1 E1-E5](../../../spec/en/20.algorithm_and_verification.md#20131-contract-axioms),
-[§20.13.7](../../../spec/en/20.algorithm_and_verification.md#20137-certified-computation-import-t1t8),
-[AST-LOWER](AST-LOWER.md), [AST-CONTRACT](AST-CONTRACT.md),
-[AST-ARTIFACT](AST-ARTIFACT.md), [ALG-MVM-EVALUATION](ALG-MVM-EVALUATION.md),
-[AST-COMPUTE](AST-COMPUTE.md), [ALGDEF-COMPUTATION-ADMISSION](ALGDEF-COMPUTATION-ADMISSION.md),
-and [autonomous protocol](../../autonomous_crate_development.md).
+Canonical English; [Japanese pointer](../ja/MVM-READINESS-MAP.md).
+Status: documentation inventory drafted; independent reviews and lint
+pending. Sole owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).
+Inventory: [mvm_readiness.md](../../mizar-vc/en/mvm_readiness.md).
+Tier: full documentation gates. No runtime or proof acceptance credit.
+Authority: [§20.9](../../../spec/en/20.algorithm_and_verification.md#209-execution-model-and-computability),
+[§20.13.1](../../../spec/en/20.algorithm_and_verification.md#20131-contract-axioms),
+[§20.13.7](../../../spec/en/20.algorithm_and_verification.md#20137-certified-computation-import-t1t8);
+existing AST-LOWER, AST-CONTRACT, AST-ARTIFACT, ALG-MVM-EVALUATION,
+AST-COMPUTE and ALGDEF-COMPUTATION-ADMISSION contracts.
+Dependencies: source/specification and existing producer contracts only;
+read-only inventory requires no executable MVM or accepted algorithm.
 
-## Scope and deliverable
+## Deliverables
 
-1. Inventory the actual implemented and missing source-owned path from one
-   smallest spec-supported ground/direct algorithm call: original Frontend /
-   Resolver / Checker identity and types, CoreIr/ControlFlowIr verified body,
-   source-derived contract/normal-return evidence, executable correspondence,
-   published executable, validated loader and actual evaluation result. Cite
-   exact existing source, test, specification, and owner files for each edge.
-   Do not infer that a declaration, open computation request, synthetic fixture,
-   or existing theorem-reflexivity artifact is an executable algorithm.
-2. Choose the smallest honest pilot case if an existing source fixture and
-   acceptance oracle support it; otherwise record the exact missing producer
-   and a proposed test-first case derived from the specification, not from
-   implementation output. Distinguish plain ordinary ground values from
-   reflected syntax/Binder/context-C input; do not exempt a case from an
-   existing AST-TYPE/AST-LOWER or certification gate without a reviewed,
-   spec-grounded owner decision.
-3. Map exact prerequisites and owners for the roadmap's MVM-R2 through MVM-R8
-   slices: checked body/call association (Core), executable export/loader
-   (Artifact), evaluator (VC), failure/budgets and calls (VC), full computation
-   closure (VC/Proof), certified import/replay (Proof), and stage-specific
-   corpus (Test). Confirm that runtime export precedes MVM execution, whereas
-   computation-record publication follows AST-COMPUTE; never invert these
-   dependencies. Keep algorithm-execution and proof-acceptance claims distinct.
-4. Record the owner-resolved matrix in
-   `doc/design/mizar-vc/en/mvm_readiness.md`, with a synchronized Japanese
-   companion or pointer under `ja/`. Each row must say implemented,
-   ready-for-contract, dependency-blocked, or open-question, its exact
-   prerequisite, producer, consuming owner, and negative control. Add
-   separate paired task contracts and crate-plan entries **only** for a
-   genuinely ready new implementation unit, never for a fabricated API.
+1. Identify a source-backed smallest algorithm body and distinguish
+   its actual parser/resolver/checker/Core/VC/Proof evidence from
+   genuinely missing typed calls, executable export, loader and VM.
+   A declaration, Open VC, theorem reflexivity or symbolic computation
+   request cannot be a runtime-positive fixture.
+2. Inventory R2–R8 owners, positive/negative test oracles, dependency
+   blockers and the *separate* definition-side verified-body/export
+   path versus invocation-side typed ground call and execution path.
+   Distinguish ordinary ground terms from reflected expr/Binder/C.
+   Any narrowing of existing AST-TYPE/AST-LOWER gates needs a reviewed
+   owner/specification decision.
+3. Record an acyclic graph: validated body -> R3 runtime export;
+   validated export + genuine typed call -> R4 execution;
+   accepted R6 full computation closure + R4 normal return ->
+   R7 candidate conversion/replay; later computation record follows
+   R7 and never gates earlier executable export.
+   Test preparation is stage-specific and cannot invent producers.
+4. Record the matrix in the linked owner document and a Japanese
+   companion/pointer. Keep R2–R8 implementations blocked until real
+   owner inputs, frozen contracts and acceptance oracles exist.
 
-## Non-goals and safety
+## Exclusions and review exit
 
-No Rust, existing `.miz`/expectation/trace status, coverage promotion,
-public API, kernel change, MVM implementation, new crate, source fallback,
-unverified executable, invented foundational library proof or change to
-`doc/spec`. This task does not implement AST formation, normal-return
-verification, MVM or `by computation`. Missing premises remain blocked.
-
-## Acceptance
-
-A cross-owner dependency DAG with a supported pilot or exact blocker;
-stage-specific positive, rejection and provenance/corruption tests identified
-without changing protected fixtures; no circular export/compute dependency;
-distinct trust/visibility/cache boundaries; each immediate successor has
-an unambiguous single owner and a freeze trigger. Independent specification,
-boundary, test-sufficiency, volume/scope and EN/JA documentation review
-reports no unresolved blocking finding. Run both repository `lint_policy`
-suites, local link/fragment checks and `git diff --check` for this
-documentation-only task. Record verification evidence in the commit/handoff,
-not in the roadmap. No runtime coverage or feature-completion credit.
+No Rust, specification changes, existing .miz/expectation/trace edits,
+coverage/status promotion, new runtime/API/crate, arbitrary executable,
+source fallback, invented foundational proofs or kernel acceptance.
+Confirm missing inputs, ownership, negative controls and absence of
+publication/execution/proof cycles under independent spec, boundary,
+test-sufficiency, volume/scope and bilingual review. Run both
+lint_policy suites, link/fragment checks and git diff --check.
+Review and verification evidence belongs in commit/handoff, not
+this contract. No stage or milestone closes through this inventory.

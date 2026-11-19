@@ -1111,4 +1111,5 @@ Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
 
 ## AST specification implementation follow-up
 
+- [~] [MVM-R8-CORPUS-DESIGN](../../task_contracts/en/MVM-R8-CORPUS-DESIGN.md) — [R8-A–H stage-gated matrix](./mvm_corpus_matrix.md) drafted; independent reviews and documentation lint pending. No executable tests or new coverage.
 - [ ] [AST-CORPUS](../../task_contracts/en/AST-CORPUS.md).

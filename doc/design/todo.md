@@ -191,14 +191,15 @@ token, unpublished draft, or mock payload is not an accepted proof.
    its paired contract and crate-plan assignment under normal review **before**
    dispatch, not as an implied permission from this priority table.
 4. If all M1 slices are blocked, choose a ready, independent Step 6/7
-   producer or real-service-equivalence prerequisite; then the docs-only
-   [MVM-R1 source-readiness inventory](#mvm-readiness-decomposition--)
-   if not already in flight; next choose Step 8 source-input, editor
-   lifecycle, snapshot or native-diagnostic transport work using existing
-   outputs; next other dependency-ready tasks in the existing plan.
-   MVM preparation is not a second dispatch lane or permission to start
-   blocked execution. Never advance Artifact 17, accepted-result consumers,
-   semantic LSP metadata, or MVM execution ahead of actual producers.
+   producer or real-service-equivalence prerequisite; then one genuinely
+   ready R1-R8 **documentation-review/decision-gate** task from the
+   [MVM dependency table](#mvm-implementation-dependency-gates), without
+   redispatching drafted inventories; next choose Step 8 source-input,
+   editor lifecycle, snapshot or native-diagnostic transport work using
+   existing outputs; next other dependency-ready tasks. MVM preparation
+   is not a second lane or permission to start blocked execution.
+   Never advance Artifact 17, accepted-result consumers, semantic LSP
+   metadata or MVM execution ahead of actual producers.
 5. After M1 acceptance, prioritize [Step 6C equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md),
    Step 7 proof reuse/ATP generalization, and broader source/Core/VC proof
    families. Each retains its own original completion gate; M1 does not
@@ -1027,23 +1028,64 @@ and [algorithm definitional](#algorithm-definitional-semantics-specification-ame
 sections remain the **only implementation-contract owners**. This table
 decomposes their MVM critical path into narrower dependency/dispatch gates;
 it does not redefine the language, add a second global ordering authority,
-or make blocked implementations ready. R1 and R2-R5 designs are registered
-as **documentation-only** work; R2-R5 implementations and R6-R8 are not
-dispatchable from this table. Implementation slices require their real
-producer prerequisites and a separately frozen owner contract.
+or make blocked implementations ready. R1 and R2-R8 designs are registered
+as **documentation-only** work; R2-R7 implementations and R8 runtime
+test activation are not dispatchable from this table. Implementation/test
+activation slices require real producers and separately frozen owner
+contracts and independently specified test oracles.
 All steps remain subject to the real-producer, independent-review and
 test-oracle rules.
 
 | Slice | Existing owner and deliverable | Dependency / dispatch rule |
 |---|---|---|
 | **MVM-R1 [~]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`; [source-backed inventory](./mizar-vc/en/mvm_readiness.md) drafted. The minimal `idalgo` source profile is an **Open VC**, not an executed or accepted algorithm. | **Independent review and repository lint pending.** Resolve documented Q1–Q3 under existing authorities before any R2 implementation contract; runtime R2–R8 remain gated. Do not redispatch the completed inventory work or start a second lane. |
-| **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for authentic ordinary input, body/CFG, E1/E2/E4 evidence and R3 handoff; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; independent review/lint pending.** R1 review and the proposed ordinary/reflected boundary (Q1), genuine typed call and accepted whole-body proofs (Q2) must be settled before an R2 implementation freeze. Open VC is not verified. R3/R4 remain blocked. |
-| **MVM-R3 [~ design]** — runtime export and validating loader | [Artifact design contract](./task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md) and [EN/JA owner design](./mizar-artifact/en/mvm_runtime_export.md) drafted; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains implementation ownership, Build/Driver are loader consumers. | **Docs-only; independent review/lint pending.** R2 authenticated accepted-body/call producer and R3 format/loader, same-package staging and correspondence decisions remain required before any export. Runtime export precedes MVM; later R7 computation-record publication must not block it. No unverified code or dependency-source fallback. |
-| **MVM-R4 [~ design]** — minimal actual evaluator | [VC-owned design contract](./task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) and [EN/JA design](./mizar-vc/en/mvm_executor.md) drafted; [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) still owns implementation. Defines the narrow actual ground/direct normal-return path, validation, failure/budget classes and R6/R7 boundary. | **Docs-only; independent review/lint pending.** R2 accepted body/call, R3 validated executable/loader, typed ground input and VM accounting/report decisions are prerequisites. No R4 implementation, trusted status, E5 credit or new `mizar-mvm` crate is authorized. |
+| **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for accepted definition/body identity and separately authenticated typed invocation; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; independent review/lint pending.** R1 review and the proposed ordinary/reflected boundary (Q1), accepted definition evidence (Q2) gates R3 export; the genuine typed call separately gates R4, not R3. Open VC is not verified. R3/R4 remain blocked. |
+| **MVM-R3 [~ design]** — runtime export and validating loader | [Artifact design contract](./task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md) and [EN/JA owner design](./mizar-artifact/en/mvm_runtime_export.md) drafted; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains implementation ownership, Build/Driver are loader consumers. | **Docs-only; independent review/lint pending.** R2 authenticated **definition/body** producer (no ground caller prerequisite) and R3 format/loader, same-package staging and correspondence decisions remain required before any export. Runtime export precedes MVM; later R7 computation-record publication must not block it. No unverified code or dependency-source fallback. |
+| **MVM-R4 [~ design]** — minimal actual evaluator | [VC-owned design contract](./task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) and [EN/JA design](./mizar-vc/en/mvm_executor.md) drafted; [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) still owns implementation. Defines the narrow actual ground/direct normal-return path, validation, failure/budget classes and R6/R7 boundary. | **Docs-only; independent review/lint pending.** R2 independently accepted definition and typed ground invocation, R3 validated executable/loader and VM accounting/report decisions are prerequisites. No R4 implementation, trusted status, E5 credit or new `mizar-mvm` crate is authorized. |
 | **MVM-R5 [~ design]** — control flow, failure and resource bounds | [VC-owned design contract](./task_contracts/en/MVM-R5-EXTENDED-EXECUTION-DESIGN.md) and [EN/JA owner design](./mizar-vc/en/mvm_extended_execution.md) drafted. R5-A local state/branch; B loops; C calls/recursion; D set/Pick/match; E failure/ghost; F budgets/cancellation. [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) retains execution ownership. | **Docs-only; independent review/lint pending.** Each R5-A–F execution slice waits for supported authentic R4, feature-specific Core/CFG, R3 validated loader and a separately frozen owner/test contract. R6 uniqueness is mandatory for computation **discharge** where applicable, not a substitute for a runtime producer. Failure/exhaustion gives no E5 or non-return proof. |
-| **MVM-R6** — full-closure deterministic admission | [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md) with [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md) and Proof owners. Authenticate complete direct/transitive calls, private helpers, applicable uniqueness proofs or specified exemptions. | Needed **before computation-based proof discharge**, not a substitute for actual execution. Imported closure requires R3 validated exports; pending/Open obligations never grant admission. |
-| **MVM-R7** — certified computation and replay | [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) (Proof) and later [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) provenance (Artifact). Consume real MVM normal-return reports, independently justify `requires`, `Adm`/`InputOK`, apply directed T1-T8 conversion and residual inspection, then handle `computed` versus replayed `kernel_verified` policy and cache identity. | Needs R4/R5 supported execution, R6 admission, [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) and complete accepted formation/proof prerequisites. Never upgrade a result by hashing or successful evaluation alone. |
-| **MVM-R8** — stage-specific end-to-end corpus | [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) (Test owner). Prepare spec-derived positive/negative tests for R2-R7, source/version/identity corruption, public/private imports, missing artifacts, failure and resource exhaustion, replay and strict release. | Test-first parser cases can advance where their owner contracts are frozen; source runtime and `by computation` tests activate only with their corresponding genuine producers and verification stages. No expectation rebaseline or synthetic success. |
+| **MVM-R6 [~ design]** — full-closure deterministic admission | [VC-owned design contract](./task_contracts/en/MVM-R6-ADMISSION-DESIGN.md) and [EN/JA owner design](./mizar-vc/en/mvm_computation_admission.md) drafted. R6-A complete local/imported call closure; B value/Pick/set triggers and exact exemptions; C full uniqueness VCs; D Proof admission/E0330. [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md) and [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md) retain implementation/acceptance ownership. | **Docs-only; independent review/lint pending.** Source-owned local R6-A/B/C VC58 preparation may precede R4; R3 is required for imported closure. R6-D final Proof acceptance must bind complete evaluated closure and per-callee genuine proofs/exemptions before computation discharge. Open or missing closure never grants admission; an R4/R5 return or E1/replay status cannot bypass R6. |
+| **MVM-R7 [~ design]** — certified computation and replay | [Proof-owned design contract](./task_contracts/en/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) and [EN/JA owner design](./mizar-proof/en/mvm_computation_import.md) drafted. R7-A E5/independent premises; B T1–T8 complete candidate translation; C whole residual inspection; D computed/replayed kernel trust and strict policy; E exact Artifact/Cache provenance. [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md) retains Proof implementation ownership; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains later publication. | **Docs-only; independent review/lint pending.** Real R4/R5 normal return, R6 accepted closure, AST-TYPE/LOWER/CONTRACT/formation, [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) and genuine replay proof basis are prerequisites. No raw return/partial ensures/unchecked residual, weaker cache hit or strict-policy computed taint may become accepted proof. |
+| **MVM-R8 [~ design]** — stage-specific end-to-end corpus | [Test-owned design contract](./task_contracts/en/MVM-R8-CORPUS-DESIGN.md) and [EN/JA test matrix](./mizar-test/en/mvm_corpus_matrix.md) drafted. R8-A source/type, B Core/CFG/VC, C accepted body, D Artifact loader, E MVM execution/failure, F closure admission, G conversion/replay/cache, H true source-to-artifact integration. [AST-CORPUS](./task_contracts/en/AST-CORPUS.md) retains test ownership. | **Docs-only; independent review/lint pending.** Existing 7 stage IDs and `expected_phase` list have no MVM-specific runtime phase; its admission requires separate harness review. Future parser-only test-first work requires a frozen owner and real oracle. R8-E–H activation waits for R2–R7 producers; no rebaseline, fake positive fixture or coverage credit. |
+
+#### MVM Implementation Dependency Gates
+
+These are **producer gates**, not a mandate to run R1–R8 implementations
+sequentially. Design review can proceed without executable inputs;
+implementation and coverage are blocked until their own gates are met.
+
+| Gate and owner | Required genuine input and first allowed work | Unlocks / current status |
+|---|---|---|
+| **G0 — ordinary/reflected distinction** (Spec/Checker/Core owners) | Review the contextual argument and AST-TYPE/AST-LOWER dependency for *ordinary ground* inputs. No implicit exemption. | R2 ordinary-only contract decision; **open**. |
+| **G1 — verified definition** (Resolver/Checker/Core/VC/Proof) | Authenticated declaration, checked body/CFG, E1/E2 and E4 **only where the applicable promotion/terminating guarantee requires it**, genuine accepted status and source/dependency identity. Existing `idalgo` VC is Open. | R2 definition-side export eligibility; **blocked**. |
+| **G2 — authenticated invocation** (Resolver/Checker) | Independently resolved typed concrete caller and ordered actual values/context; can be prepared alongside G1. | R4 call binding; **blocked**. Not needed for R3 publication. |
+| **G3 — reusable executable and loader** (Artifact/Build/Driver) | R2 definition-side G1 + versioned semantics-preserving export, transitive dependencies, current manifest and validating reader; format and same-package staging decisions remain open. | R3 executable handoff, R4 loader; **blocked**. R7 computation records are not inputs. |
+| **G4 — actual MVM execution** (VC) | G1 + G2 + G3 + computability/requirements and frozen minimal VM charging/report semantics. | R4 actual E5 normal return, then feature-gated R5-A–F; **blocked**. R5-F broad tests follow R4 but minimal accounting cannot wait. |
+| **G5 — local uniqueness VC preparation** (Resolver/Core/VC58) | Genuine local source-call edges, value/Pick/set classification and ensures. No runtime result required to generate **Open** VCs. | R6-A/B/C can be independently frozen when ready, potentially before G4; source inputs **incomplete**. |
+| **G6 — complete closure admission** (VC/Proof) | G5 + G3 for imports/private-helper closure; accepted uniqueness proofs or authentic exemptions; bind actual executed calls/dependencies before discharge. | R6-D, independent of E1/replay; **blocked**. R4 may execute internally before this but cannot discharge a theorem. |
+| **G7 — certified import/replay** (Proof → Artifact/Cache) | G4 normal report + G6 admission + independently justified requires/Adm/InputOK, formation/contract evidence, complete T1–T8 conversion and strict/replay policy. | R7 Proof status, then computation-record publication and cache reuse; **blocked**. Cannot feed G3 back. |
+| **G8 — staged corpus** (Test) | Real stage-specific source producer, oracle and runner for each R8-A–H family. Existing stage/expected_phase vocabulary has no MVM-specific phase. | Test-first low-stage design is separable now; actual runtime/Proof acceptance tests **blocked** until G4–G7 and a reviewed runner boundary. |
+
+```text
+Definition: source -> checked Core/CFG -> accepted E1/E2/(E4 if needed)
+                                      -> G3 R3 executable export/loader
+Invocation: resolved typed ground call ---------------------------+
+                                                                  |
+                                                G3 loader + call -> G4 R4/R5
+Local call graph/typed Pick/set/ensures -> G5 VC58 Open goals      |
+                         G3 validated imports -> G6 Proof closure admission
+G4 actual E5 normal return + G6 accepted closure
+                         -> G7 R7 import/replay -> computation provenance
+G8 test designs can start independently; activation follows each producer
+```
+
+**Priority and unresolved decisions:** First finish independent design
+reviews/documentation checks and resolve G0; in parallel inventory the
+genuine G1 definition/evidence and G2 invocation producers. A separate
+Artifact/Build/Driver decision must freeze G3 format and same-package
+publication order; a VC decision must freeze G4 charging/report rules.
+R6-A/B/C source-owned goal production need not wait for the MVM.
+Proof's G6/G7 acceptance, R7 replay/strict provenance and Test's
+runtime phase must not be inferred from earlier data or enabled by this table.
 
 **Milestone separation:** (A) R1-R3 readiness/design/export prerequisites;
 (B) R4-R5 actual execution of supported verified algorithms; (C) R6-R7
@@ -1054,14 +1096,15 @@ of a narrower stage never implies completion of a later stage or the
 not an exemption from the currently recorded AST/Proof dependencies.
 
 **Muse rule:** keep the existing single dispatch queue and M1 priority.
-R1-R5 **documentation reviews** may run sequentially under their paired
-contracts. Do not dispatch R2-R5 **implementations** or R6-R8 from this
-table: first verify actual producer dependencies and freeze a narrowly
-scoped implementation contract under the owning crate. Missing accepted
-proofs, reflection-formation authority, executable format, validated loader
-or VM semantics are blockers, not reasons to fabricate inputs. R5-A–F are
-design slices only, never automatically ready. No active Step 6/7 work
-is preempted, and no parallel worktree or second orchestrator is implied.
+R1-R8 **documentation reviews** may run sequentially under their paired
+contracts. Do not dispatch R2-R7 **implementations** or runtime/proof
+test activation for R8 from this table: first verify authentic producers,
+the actual stage runner and oracle, and separately freeze the owning
+implementation/test contract. Missing accepted proofs, formation,
+executable/loader, VM semantics, complete computation admission, certified
+import or runtime stage authority remain blockers. R5-A–F, R6-A–D,
+R7-A–E and R8-A–H are design slices only. No active Step 6/7 work is
+preempted or second orchestrator/parallel worktree implied.
 
 ### Distribution and playground [ ]
 

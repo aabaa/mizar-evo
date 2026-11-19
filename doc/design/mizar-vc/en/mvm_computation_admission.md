@@ -7,12 +7,10 @@
 ## Normative boundary and qualifying condition
 
 [§20.9.2](../../../spec/en/20.algorithm_and_verification.md#2092-by-computation-proof-step)
-requires the result of a computation used to discharge an obligation to
-be independent of nondeterministic choices. The closure is **every
-algorithm actually evaluated directly or transitively**, not merely the
-named root, locally visible source or a one-level caller list. For
-each **value-returning** `g` containing a non-ghost Pick or unordered
-**set** `for ... in`, admit either an accepted obligation:
+requires nondeterministic-choice independence for computation-based
+discharge. The closure is **every algorithm evaluated directly or
+transitively**, not only the root. For each **value-returning** `g`
+with non-ghost Pick or unordered **set** `for ... in`, admit either:
 
 ```text
 forall x1,...,xn,r1,r2.
@@ -20,22 +18,17 @@ forall x1,...,xn,r1,r2.
   & Q(x1,...,xn,r1) & Q(x1,...,xn,r2) implies r1 = r2
 ```
 
-or the specification's exact exemption for an `ensures` of form
-`result = t` or `result = true iff phi`, where the right side
-contains no occurrence of `result`. The formula above is a readable
-schematic copy of §20.9.2, **not** a new grammar or encoding; VC
-owns capture-avoiding typed instantiation.
+or the exact `ensures` exemption `result = t` or
+`result = true iff phi`, with no `result` in the right side.
+The schematic formula copies §20.9.2; it adds no grammar or encoding.
+VC owns capture-avoiding typed instantiation.
 
-Non-trigger value-returning bodies (no non-ghost Pick and no unordered
-set iteration) require neither this VC nor an exemption. A procedure
-with no value result is not required to prove result uniqueness.
-Ghost-only Pick does not trigger it; ghost Pick alongside unordered
-set iteration **does** trigger through the set, and a sequence loop
-alongside non-ghost Pick **does** trigger through Pick. Set iteration
-cannot be made ordered by choosing a canonical runtime enumeration.
-E1 function-graph single-valuedness is a **separate** gate: passing
-R6 or observing a VM result must not establish E1, E2, E4, requires,
-`Adm`/`InputOK` or replay.
+A non-trigger value-returning body or void procedure needs no
+result-uniqueness VC. Ghost-only Pick does not trigger; unordered set
+iteration with ghost Pick **does**, as does sequence iteration with
+non-ghost Pick. Canonical runtime enumeration cannot make set order
+specified. E1 single-valuedness is **separate**: R6 or VM execution
+establishes neither E1/E2/E4, requires, Adm/InputOK nor replay.
 
 ## Producer and acceptance DAG
 
@@ -46,15 +39,15 @@ R6 or observing a VM result must not establish E1, E2, E4, requires,
 | **R6-C — VC generation** (VC 58 local; full admission successor) | For each triggering, non-exempt callee, form the exact parameter-type-guard, precondition `P`, and twice-instantiated complete `Q` uniqueness goal; retain original goal/context, dependency/version and call identity. Local VC58 may yield **Open** goals without full imported closure and without acceptance. | Wrong guard or result binder, omitted `requires`/`ensures`, substituted origin, missing/synthetic proof -> remain Open; generation never means proved |
 | **R6-D — Proof admission** (Proof owner) | Validate completeness of the entire request-linked closure and genuinely accepted per-callee proof or authenticated exact exemption before **any computation-based discharge**. Proof owns E0330 when a real applicable nondeterminism obligation fails; publish no fact from mere VC/VM report. | Rejected/Open/stale/forged proof or missing closure prevents admission. When a *genuine generated* uniqueness obligation cannot be discharged in an actual computation proof, apply spec E0330; mere absence of a source/export producer is an unavailable input, not fabricated E0330 evidence |
 
-Ordering: original source call and typed Core/CFG classification +
-R3 validated local/imported computational export -> R6-A/B ->
-R6-C per-callee accepted-proof requests -> R6-D admission ->
-R7 certified computation import. R4/R5 execution can provide an
-internal normal-return report, but it cannot cause R6-D to pass.
-Accepted admission is a gate **for discharging a mathematical
-obligation using a computation**; R6 does not synthesize an E5
-normal return or require a future R7 computation record to build
-the R3 executable (no circular dependency).
+Order: authentic call/CFG -> local R6-A/B/C goal preparation
+(in parallel with R3/R4 where genuine producers permit); R3 validated
+imports complete the closure. Final R6-D checks the source closure
+against the actual executed-call/dependency record or an independently
+authenticated complete execution-closure relation, then accepts only
+genuine proofs/exemptions. A static candidate graph or VM return alone
+does not attest the complete evaluated closure. R6 gates **proof
+discharge**, not R4 execution, emits no E5, and never makes R3 export
+depend on later R7 records.
 
 ## Test-first design, not activated cases
 
@@ -69,24 +62,18 @@ the R3 executable (no circular dependency).
 
 ## Open Questions and implementation release
 
-- **Q1:** establish an exact typed call/body/dependency closure source
-  and a validated imported export (R2/R3), including source order,
-  complete transitive helper identities and default-public visibility;
-  local VC58 cannot manufacture imported closure.
-- **Q2:** confirm the minimal Proof-owned receipt/binding of one
-  accepted uniqueness VC versus one syntax exemption to the **same**
-  source request/contract/closure. Define fail-closed revalidation on
-  source, contract, policy, dependency and context change without
-  inventing a new public acceptance model.
-- **Q3:** distinguish an actual generated uniqueness VC that cannot
-  be discharged (E0330 on a supported computation request) from an
-  unformed or missing producer/closure, for which no VC is available.
-  An arbitrary error/status flag is not E0330 evidence.
+- **Q1:** authenticate source calls and imported exports (R2/R3),
+  including transitive helpers and visibility; local VC58 cannot
+  manufacture imported closure.
+- **Q2:** bind each accepted VC or syntactic exemption to the **same**
+  request, contract, closure, policy and version; validate on change.
+  Proof remains the sole acceptance owner.
+- **Q3:** a genuine uniqueness VC that cannot be discharged on a supported
+  computation request yields E0330; an unformed producer/closure has no such VC.
+  Never infer E0330 from an arbitrary status flag.
 
-**First possible implementation freeze:** R6-A local source call-edge
-inventory and R6-B classification where exact Resolver/Checker/Core
-producers exist, using the existing VC 58 contract. R6-C full
-export-fed generation awaits R3 actual validated export; R6-D
-acceptance awaits genuine Proof evidence. No R6-A–D implementation
-is authorized merely by this design, and no unchanged `.miz`
-expectation/trace or coverage is promoted.
+**First possible implementation freeze:** R6-A local source-edge
+inventory and R6-B classification once authentic producers exist,
+under VC58. R6-C requires R3 exports; R6-D requires genuine Proof
+acceptance. This design authorizes no R6 implementation or change
+to existing `.miz` expectations, traces or coverage.

@@ -566,4 +566,5 @@ Check the task off here once tests pass.
 
 ## AST specification implementation follow-up
 
+- [~] [MVM-R7-CERTIFIED-IMPORT-DESIGN](../../task_contracts/en/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) — [R7-A–E verified computation import design](./mvm_computation_import.md) drafted; independent reviews/documentation checks pending. Proof computation implementation remains blocked.
 - [ ] [AST-COMPUTE](../../task_contracts/en/AST-COMPUTE.md).
