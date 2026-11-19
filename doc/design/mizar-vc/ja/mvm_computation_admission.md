@@ -21,7 +21,7 @@
 |---|---|---|
 | R6-A | Resolver/Artifact の入力を VC が消費 | 同一パッケージと検証済み公開 Artifact の呼出し閉包。private helper も対象 |
 | R6-B | Checker/Core → VC | Pick の ghost 判別、集合／列、値の有無、`ensures` と免除条件 |
-| R6-C | VC 58 と後続 VC | 必要時は型ガード・`requires`・`ensures` に基づく一意性 VC を生成 |
+| R6-C | VC 58 と後続 VC | R3 exports が前提。必要時は型ガード・`requires`・`ensures` に基づく一意性 VC を生成 |
 | R6-D | Proof | 閉包全体について真正な受理済み証明または正規の免除を確認 |
 
 Open VC、ソース名、未検証の Artifact、実行結果、E1 の一意性、
