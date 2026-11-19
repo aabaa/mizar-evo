@@ -1027,17 +1027,17 @@ and [algorithm definitional](#algorithm-definitional-semantics-specification-ame
 sections remain the **only implementation-contract owners**. This table
 decomposes their MVM critical path into narrower dependency/dispatch gates;
 it does not redefine the language, add a second global ordering authority,
-or make blocked implementations ready. Only R1 below is a newly registered
-docs-only task. R2-R8 are *planned slices of their linked existing contracts*,
-not separately dispatchable implementation tasks until the correct owner has
-frozen a paired EN/JA contract (and updated its crate plan). All steps are
-subject to the protocol's real-producer, reviewed-contract and test-oracle
-requirements.
+or make blocked implementations ready. R1 and the R2 correspondence-design
+task are registered as **documentation-only** work; R2 implementation and
+R3-R8 are not dispatchable from this table. Implementation slices require
+their existing producer prerequisites and a separately frozen owner contract.
+All steps remain subject to the real-producer, independent-review and
+test-oracle rules.
 
 | Slice | Existing owner and deliverable | Dependency / dispatch rule |
 |---|---|---|
 | **MVM-R1 [~]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`; [source-backed inventory](./mizar-vc/en/mvm_readiness.md) drafted. The minimal `idalgo` source profile is an **Open VC**, not an executed or accepted algorithm. | **Independent review and repository lint pending.** Resolve documented Q1–Q3 under existing authorities before any R2 implementation contract; runtime R2–R8 remain gated. Do not redispatch the completed inventory work or start a second lane. |
-| **MVM-R2** — verified body/call correspondence | [Core 42-53](./mizar-core/en/todo.md), [AST-TYPE](./task_contracts/en/AST-TYPE.md), [AST-LOWER](./task_contracts/en/AST-LOWER.md), [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md), and [normal-return VC 53](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md). Define the smallest authentic checked algorithm/CFG/call input and executable-body relation, with named Core/Checker/VC ownership and rejection controls. | Design can be refined after R1. Actual checked output remains blocked on the applicable producer and proof gates. Whether a plain ordinary-ground subset avoids *reflection-specific* formation requires a reviewed owner decision; do not silently bypass the current AST-LOWER dependency. |
+| **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for authentic ordinary input, body/CFG, E1/E2/E4 evidence and R3 handoff; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; independent review/lint pending.** R1 review and the proposed ordinary/reflected boundary (Q1), genuine typed call and accepted whole-body proofs (Q2) must be settled before an R2 implementation freeze. Open VC is not verified. R3/R4 remain blocked. |
 | **MVM-R3** — runtime export and validating loader | [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) (Artifact owner) with Build/Driver consumers. Freeze executable representation, exact verified-body/signature/contract binding, visibility, transitive execution-dependency identities, format/version, loader rejection and reproducibility before implementation. | Requires the R2 authentic correspondence producer. Runtime **export precedes evaluation**; the later computation provenance/publication stage follows R7 and must not block initial export. No arbitrary supplied executable or dependency-source fallback. |
 | **MVM-R4** — minimal actual evaluator | [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md), VC-owned execution. Implement the smallest authenticated call-by-value normal-return path for a real supported ground/direct call, preserving actual local state, exact input and validated artifact identity. | Requires R2+R3, typed computability and applicable accepted source/body prerequisites. A private executor prototype, request or unverified test fixture provides **no** runtime/proof credit. Do not create a new `mizar-mvm` crate without a separately reviewed ownership decision. |
 | **MVM-R5** — control flow, failure and resource bounds | Same [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) owner, extended by concrete supported source cases: local assignment, control flow/calls, `fail`, noncomputable operations, ghost isolation, `steps`/`timeout`/`nest`, and transitive artifact refusal. | After R4 per actual Core/CFG producer. Split by genuine semantic/implementation boundaries, bundle identical-shape cases per protocol. Failures and exhaustion produce no return fact, contract evidence or inferred non-return. |
@@ -1054,12 +1054,13 @@ of a narrower stage never implies completion of a later stage or the
 not an exemption from the currently recorded AST/Proof dependencies.
 
 **Muse rule:** keep the existing single dispatch queue and M1 priority.
-Do not dispatch R2-R8 from this table alone: first read the linked owning
-contract, record authentic producer readiness, and freeze any needed narrower
-task in the corresponding owner plan. If no such implementation is ready,
-the docs-only R1 inventory is the sole newly independent preparation task.
-No active Step 6/7 work is preempted, and no parallel worktree or second
-orchestrator is implied by this decomposition.
+R1 and R2 **documentation reviews** may run sequentially under their paired
+contracts. Do not dispatch R2 **implementation** or R3-R8 from this table:
+first verify the actual producer dependencies and freeze a narrowly scoped
+implementation contract under the owning crate. Missing accepted proofs or
+reflection-formation authority are blockers, not reasons to fabricate
+inputs. No active Step 6/7 work is preempted, and no parallel worktree or
+second orchestrator is implied by this decomposition.
 
 ### Distribution and playground [ ]
 
