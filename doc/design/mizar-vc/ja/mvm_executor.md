@@ -1,7 +1,7 @@
 # MVM R4 — 最小限の検証付き実行器
 
 > 英語正本: [mvm_executor.md](../en/mvm_executor.md)。
-> [R4 設計契約](../../task_contracts/ja/MVM-R4-EXECUTOR-DESIGN.md)。
+> R4 設計契約 `MVM-R4-EXECUTOR-DESIGN`。
 > 設計草案のみ。実行器・証明受理・公開形式の実装完了ではない。
 
 ## 境界と最小対象
