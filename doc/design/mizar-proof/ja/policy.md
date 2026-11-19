@@ -407,7 +407,37 @@ boolean conversion test は certified two-valuedness の下で B=true/B≠false�
 
 ## Imported Promotion Authority Boundary
 
-移送可能な promoted premise は、algorithm/contracts/equations と dependency/version/policy provenance に結び付いた真正な適用対象 E1/E2/E4 と complete-group evidence の検証を必要とする。実装経路の固定前に既存 producer/import validator を棚卸しし、未確定の acceptance meaning は明示 spec_gap に残す。module-local status と runtime/hash metadata はこの権威を与えない。
+移送可能な promoted premise は、algorithm/contracts/equations と dependency/version/policy provenance に結び付いた真正な適用対象 E1/E2/E4 と complete-group evidence の検証を必要とする。module-local status と runtime/hash metadata はこの権威を与えない。
+
+### Accepted evidence and validators
+
+| 既存 producer/validator | 正確な権威と限界 |
+|---|---|
+| [KernelPolicyInput::from_kernel_result と accepted_evidence_hash_from_kernel_result](../../../../crates/mizar-proof/src/policy.rs)、[TrustedKernelEvidence::from_policy_input](../../../../crates/mizar-proof/src/selection.rs) | 実際の Accepted、untainted ProofObligation kernel result と target/checked evidence。external/open/audit/cache metadata はこの権威を得ない。個別義務の local acceptance に限る。 |
+| [ProofObligationIdentity と project_status](../../../../crates/mizar-proof/src/status.rs) | obligation/VC/context/dependency identity と active selection-policy の一致。通常の kernel-verified publication は witness を必要とする。algorithm return-reflexivity/state-transitivity、theorem、registration check は真正な限定 producer だが、集約 E1/E2/E4/group acceptance ではない。 |
+| [TrustedKernelWitnessMetadata と CommittedWitnessPublicationProof::from_source_theorem_manifest_commit](../../../../crates/mizar-proof/src/witness_store.rs) | private な accepted-result binding と committed source-theorem publication の検証。witness-file reader は untrusted wire evidence を復元する。それも theorem publication proof も imported promotion を検証しない。 |
+| [FormulaImportedFactEvidence、validate_formula_import_projection、validate_formula_import_status](../../../../crates/mizar-kernel/src/checker.rs) | caller が渡す immutable imported context と package/module/export/statement identity、正確な statement-to-formula projection、許可 status を照合する。legacy identity/status check も生成元について同じ限界を持ち、exporting producer や promotion group を認証しない。 |
+
+必要な論理内容は [§20.13.1–6](../../../spec/ja/20.algorithm_and_verification.md#2013-論理エンコーディング) に従う。E1 は result typing、single-valued execution、主張する全 typed input 上の value existence を正当化し、E2 は body partial correctness を検証し、E4 は正確な guard の下で normal return を独立に検証する。宣言、単なる停止、continuation の仮定 return、一つの ground call の E5 は E4 を代替しない。完全な input、type/requires guard、適用対象 syntax environment/InputOK/context/C binding を保持する。
+通常の promotion は guarded totality/contract を公開し、definitional algorithm だけが §20.13.6 の guarded return equation を textual-order path guard と repeated const substitution とともに公開する。新たな coverage/consistency obligation は加えない。mutual promotion は全適用 prerequisite と complete membership の受理まで全 member を保留し、equation はさらに全 member が definitional であることを必要とする。
+現在の source に、これらの義務の aggregate promotion producer や portable acceptance validator はない。VC57 の module-local acceptance dependency も未実装で、その契約は transferable receipt を禁止する。[Artifact binding](../../mizar-artifact/ja/manifest.md#imported-promotion-authority-boundary) は既存の transport foundation であり、代替 proof path ではない。
+
+### Portable validation design obligations
+
+以下の六行は将来の producer/consumer check であり、実行可能な portable-promotion coverage ではない。成功には真正で認証された exporter acceptance が必要で、合成した public status data では足りない。
+
+| 入力形状 | 必要な結果と欠けた経路 |
+|---|---|
+| 正確な algorithm/contracts、適用 E1/E2/E4、complete-group evidence を持つ ordinary/definitional accepted export | 検証済み totality/contract と適格な defining equation だけが VC59 へ届く。aggregate producer、transport、import acceptance validator が未実装。 |
+| 適用 E1/E2/E4 または任意 member evidence が missing、Open、failed、forged、invalid | どの member premise も公開しない。認証済み prerequisite/group validation が未実装。 |
+| algorithm/contract/equations、source/library binding、dependency/version、group membership が stale | premise を公開しない。正確な portable binding/currentness validation が未実装。 |
+| 非互換 proof policy/profile 下の accepted evidence | premise を公開しない。既存 kernel status check は portable policy provenance を認証しない。 |
+| 真正な accepted non-computable/contract-only export | runtime artifact を load せず logical import が成功する。認証された logical-only path が未実装。computation は別に execution artifact の欠落/不正を拒否する。 |
+| hash/status/public-summary-only または runtime-only input | promoted premise を公開しない。integrity、visibility、normal-return metadata は promotion acceptance を確立しない。 |
+
+既存 [status test](../../../../crates/mizar-proof/src/status/tests.rs) は local class、witness publication、policy mismatch、reuse invalidation を、[kernel test](../../../../crates/mizar-kernel/src/checker/tests.rs) は imported context/projection/policy check を扱う。portable 成功行の実装ではない。
+実装順序: (1) 真正な VC57 local prerequisite/group acceptance、(2) 以下の authentication authority を解決してから Artifact producer transport と Proof import-validation contract を固定、(3) producer/validator と六行すべての成功/拒否を実装、(4) 認証済み output のみに VC59 を接続する。opaque import は exporting module を再証明しない（[§12.6.1](../../../spec/ja/12.modules_and_namespaces.md#1261-不透明なインポート)）。runtime correspondence は execution owner に残る。
+`external_dependency_gap`: 真正な local aggregate output と portable producer/consumer validation が不足する。`spec_gap`: exporting Proof run が正確な prerequisite と complete group を許可 policy 下で受理したことを、再証明せず importer が信頼する根拠は何か。参照 authority は必要 evidence と identity check を定めるが portable producer-authentication rule を定めない。人間による解放条件: adoption design 前に既存の権威ある trust-transfer rule を特定するか、それを定義する仕様決定を承認する。hash、新 receipt/schema、caller が渡す accepted status はこの問題を解決しない。この inventory は authentication/trust rule を選ばない。
 
 ## Computation Admission Boundary
 

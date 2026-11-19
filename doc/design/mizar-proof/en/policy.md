@@ -429,7 +429,37 @@ Validate actual pinned library and per-use formation evidence with its precise c
 
 ## Imported Promotion Authority Boundary
 
-Portable promoted premises require genuine validated applicable E1/E2/E4 and complete-group evidence, bound to algorithm/contracts/equations and dependency/version/policy provenance. Inventory existing producers/import validators before freezing an implementation path; unknown acceptance meaning stays an explicit spec_gap. Module-local status and runtime/hash metadata cannot supply this authority.
+Portable promoted premises require genuine validated applicable E1/E2/E4 and complete-group evidence, bound to algorithm/contracts/equations and dependency/version/policy provenance. Module-local status and runtime/hash metadata cannot supply this authority.
+
+### Accepted evidence and validators
+
+| Existing producer/validator | Exact authority and limit |
+|---|---|
+| [KernelPolicyInput::from_kernel_result and accepted_evidence_hash_from_kernel_result](../../../../crates/mizar-proof/src/policy.rs), [TrustedKernelEvidence::from_policy_input](../../../../crates/mizar-proof/src/selection.rs) | Actual Accepted, untainted ProofObligation kernel result, target and checked evidence; external/open/audit/cache metadata cannot acquire this authority. It is local per-obligation acceptance. |
+| [ProofObligationIdentity and project_status](../../../../crates/mizar-proof/src/status.rs) | Obligation/VC/context/dependency identity and active selection-policy agreement; ordinary kernel-verified publication requires a witness. Algorithm return-reflexivity/state-transitivity, theorem and registration checks are genuine bounded producers, not aggregate E1/E2/E4/group acceptance. |
+| [TrustedKernelWitnessMetadata and CommittedWitnessPublicationProof::from_source_theorem_manifest_commit](../../../../crates/mizar-proof/src/witness_store.rs) | Private accepted-result binding and committed source-theorem publication validation. Witness-file readers recover untrusted wire evidence; neither they nor the theorem publication proof validate imported promotion. |
+| [FormulaImportedFactEvidence, validate_formula_import_projection and validate_formula_import_status](../../../../crates/mizar-kernel/src/checker.rs) | Caller-supplied immutable imported context is checked against package/module/export/statement identity, exact statement-to-formula projection and permitted status. Legacy identity/status checks have the same origin limitation: none authenticates the exporting producer or a promotion group. |
+
+Required logical content follows [§20.13.1–6](../../../spec/en/20.algorithm_and_verification.md#2013-logical-encoding): E1 justifies result typing, single-valued execution and any asserted all-typed-input value existence; E2 verifies body partial correctness; E4 independently verifies normal return under the exact guards. Declaration, stopping alone, a continuation's assumed return or E5 for one ground call cannot substitute for E4. Retain full inputs, type/requires guards and applicable syntax environment/InputOK/context/C bindings.
+Ordinary promotion exposes guarded totality and contract; only definitional algorithms expose the §20.13.6 guarded return equations, with textual-order path guards and repeated const substitution, and no new coverage/consistency obligations. Mutual promotion withholds every member until all applicable prerequisites and complete membership are accepted; equations additionally require every member to be definitional.
+There is no aggregate promotion producer for these obligations or portable acceptance validator in the current sources. VC57's module-local acceptance dependency is absent and its contract forbids transferable receipts. [Artifact bindings](../../mizar-artifact/en/manifest.md#imported-promotion-authority-boundary) identify available transport foundations, not a replacement proof path.
+
+### Portable validation design obligations
+
+These six rows specify future producer/consumer checks; none is executable portable-promotion coverage. A positive outcome requires genuine authenticated exporter acceptance, not synthetic public status data.
+
+| Input shape | Required outcome; absent route |
+|---|---|
+| Ordinary and definitional accepted exports with exact algorithm/contracts, applicable E1/E2/E4 and complete-group evidence | Only validated totality/contract, plus eligible defining equations, reach VC59; aggregate producer, transport and import acceptance validator absent. |
+| Missing, Open, failed, forged or invalid applicable E1/E2/E4 or any member evidence | No member premise; authenticated prerequisite/group validation absent. |
+| Stale algorithm/contract/equations, source/library binding, dependency/version or group membership | No premise; exact portable binding/currentness validation absent. |
+| Evidence accepted under an incompatible proof policy/profile | No premise; existing kernel status checks cannot authenticate portable policy provenance. |
+| Genuine accepted non-computable or contract-only export | Logical import succeeds without loading runtime artifacts; authenticated logical-only path absent. Computation separately rejects missing/invalid execution artifacts. |
+| Hash/status/public-summary-only or runtime-only input | No promoted premise; integrity, visibility and normal-return metadata never establish promotion acceptance. |
+
+Existing [status tests](../../../../crates/mizar-proof/src/status/tests.rs) cover local classes, witness publication, policy mismatch and reuse invalidation; [kernel tests](../../../../crates/mizar-kernel/src/checker/tests.rs) cover imported context/projection/policy checks. They do not implement the positive portable rows.
+Ordered slices: (1) genuine VC57 local prerequisite/group acceptance; (2) resolve the authentication authority below before freezing Artifact producer transport and Proof import-validation contracts; (3) implement those producers/validators and all six refusal/success rows; (4) connect VC59 only to authenticated outputs. Opaque imports never re-prove the exporting module ([§12.6.1](../../../spec/en/12.modules_and_namespaces.md#1261-opaque-imports)); runtime correspondence stays with execution owners.
+`external_dependency_gap`: genuine local aggregate outputs and portable producer/consumer validation are missing. `spec_gap`: which trusted source authorizes an importer to accept that an exporting Proof run accepted these exact prerequisites and complete group under permitted policy, without re-proving it? The linked authorities fix required evidence and identity checks but provide no portable producer-authentication rule. Human release condition: identify an existing authoritative trust-transfer rule or approve a specification decision defining it before adoption design; hashes, a new receipt/schema or caller-supplied accepted status cannot resolve this question. This inventory chooses no authentication or trust rule.
 
 ## Computation Admission Boundary
 
