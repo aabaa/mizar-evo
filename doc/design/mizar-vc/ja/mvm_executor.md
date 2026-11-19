@@ -6,7 +6,7 @@
 
 ## 境界と最小対象
 
-[仕様 §20.9](../../../spec/ja/20.algorithm_and_verification.md#209-execution-model-and-computability)
+[仕様 §20.9](../../../spec/ja/20.algorithm_and_verification.md)
 では値渡し、局所状態、正常復帰・実行失敗・制限超過を区別する。
 R4 の最小候補は `idalgo(a)` の直接 `return a` だが、既存テストの
 VC は Open であり、型付き ground 呼出しも未確定である。
