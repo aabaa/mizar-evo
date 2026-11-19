@@ -10392,3 +10392,530 @@ fn fresh_function_binder_free_references_refuse_omitted_witness_winners() {
         }
     }
 }
+
+fn algorithm_inventory_node_at(
+    ast: &SurfaceAst,
+    start: usize,
+    text: &str,
+    kind: SurfaceNodeKind,
+) -> mizar_syntax::SurfaceNodeId {
+    let matches = ast
+        .node_views()
+        .filter(|node| {
+            node.kind() == &kind
+                && node.range().start == start
+                && node.range().end == start + text.len()
+        })
+        .map(|node| node.id())
+        .collect::<Vec<_>>();
+    assert_eq!(matches.len(), 1, "original {kind:?} at {start}: {text}");
+    matches[0]
+}
+
+fn assert_algorithm_inventory_call(
+    ast: &SurfaceAst,
+    call: &crate::symbols::SourceAlgorithmCallSite,
+    start: usize,
+    application: &str,
+    callee: &str,
+    arguments: &[(usize, &str)],
+) {
+    assert_eq!(
+        call.application(),
+        algorithm_inventory_node_at(ast, start, application, SurfaceNodeKind::ApplicationTerm)
+    );
+    assert_eq!(
+        call.callee(),
+        algorithm_inventory_node_at(ast, start, callee, SurfaceNodeKind::TermReference)
+    );
+    assert_eq!(
+        call.arguments(),
+        arguments
+            .iter()
+            .map(|(start, text)| algorithm_inventory_node_at(
+                ast,
+                *start,
+                text,
+                SurfaceNodeKind::TermExpression
+            ))
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn algorithm_call_inventory_preserves_empty_and_call_free_declarations() {
+    for text in [
+        "",
+        "theorem Unrelated: 0 = 0;",
+        "definition let n be object; algorithm quiet(n) -> object do return n; end; algorithm still(n) -> object do return n; end; end;",
+    ] {
+        let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+        let before = (ast.clone(), env.clone(), arena.clone());
+        let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+        let owners = env
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm)
+            .collect::<Vec<_>>();
+        assert_eq!(rows.len(), owners.len());
+        for (ordinal, row) in rows.iter().enumerate() {
+            let name = ["quiet", "still"][ordinal];
+            let owner = owners
+                .iter()
+                .find(|entry| entry.primary_spelling() == name)
+                .unwrap();
+            assert!(std::ptr::eq(row.owner(), *owner));
+            assert!(row.owner().signature().is_some());
+            let declaration = format!("algorithm {name}(n) -> object do return n; end;");
+            let start = text.find(&declaration).unwrap();
+            assert_eq!(
+                row.declaration(),
+                algorithm_inventory_node_at(
+                    &ast,
+                    start,
+                    &declaration,
+                    SurfaceNodeKind::AlgorithmDefinition
+                )
+            );
+            let body_start = start + declaration.find("do").unwrap();
+            assert_eq!(
+                row.body(),
+                algorithm_inventory_node_at(
+                    &ast,
+                    body_start,
+                    "do return n; end",
+                    SurfaceNodeKind::AlgorithmBody
+                )
+            );
+            assert_eq!(
+                row.definition_block(),
+                algorithm_inventory_node_at(&ast, 0, text, SurfaceNodeKind::DefinitionBlockItem)
+            );
+            assert!(row.calls().is_empty());
+            let header = row
+                .header()
+                .iter()
+                .map(|id| ast.node_view(*id).unwrap())
+                .collect::<Vec<_>>();
+            assert!(header.iter().all(|node| node.range().end <= body_start));
+            assert!(
+                header
+                    .iter()
+                    .any(|node| matches!(node.kind(), SurfaceNodeKind::AlgorithmParameters))
+            );
+            assert!(
+                header
+                    .iter()
+                    .any(|node| matches!(node.kind(), SurfaceNodeKind::TypeExpression))
+            );
+        }
+        assert_eq!((ast, env, arena), before);
+    }
+}
+
+#[test]
+fn algorithm_call_inventory_keeps_nested_recursive_sites_and_repeated_arguments() {
+    let text = "definition let n,m be object; algorithm alpha(n,m) -> object do var x := beta(alpha(n,n),n); var z := packed([n,n], vacant()); return beta(n,n); end; algorithm beta(n,m) -> object do return alpha(n,m); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(
+        rows.iter()
+            .map(|row| row.owner().primary_spelling())
+            .collect::<Vec<_>>(),
+        ["alpha", "beta"]
+    );
+    assert_eq!(rows[0].calls().len(), 6);
+    assert_eq!(rows[1].calls().len(), 1);
+    let outer = text.find("beta(alpha").unwrap();
+    let inner = outer + 5;
+    let repeated = text.find("beta(n,n)").unwrap();
+    let mutual = text.find("alpha(n,m); end").unwrap();
+    for (row, call, start, application, callee, arguments) in [
+        (
+            0,
+            0,
+            outer,
+            "beta(alpha(n,n),n)",
+            "beta",
+            vec![(inner, "alpha(n,n)"), (outer + 16, "n")],
+        ),
+        (
+            0,
+            1,
+            inner,
+            "alpha(n,n)",
+            "alpha",
+            vec![(inner + 6, "n"), (inner + 8, "n")],
+        ),
+        (
+            0,
+            5,
+            repeated,
+            "beta(n,n)",
+            "beta",
+            vec![(repeated + 5, "n"), (repeated + 7, "n")],
+        ),
+        (
+            1,
+            0,
+            mutual,
+            "alpha(n,m)",
+            "alpha",
+            vec![(mutual + 6, "n"), (mutual + 8, "m")],
+        ),
+    ] {
+        let site = &rows[row].calls()[call];
+        assert_algorithm_inventory_call(&ast, site, start, application, callee, &arguments);
+        assert_eq!(site.region(), rows[row].body());
+        let body = ast.node_view(rows[row].body()).unwrap().range();
+        assert!(body.start <= start && start + application.len() <= body.end);
+    }
+    let sites = rows[0]
+        .calls()
+        .iter()
+        .map(|call| call.application())
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(sites.len(), 6);
+    let packed = text.find("packed(").unwrap();
+    let bracket = packed + 7;
+    let vacant = text.find("vacant()").unwrap();
+    assert_algorithm_inventory_call(
+        &ast,
+        &rows[0].calls()[2],
+        packed,
+        "packed([n,n], vacant())",
+        "packed",
+        &[(bracket, "[n,n]"), (vacant, "vacant()")],
+    );
+    assert_algorithm_inventory_call(&ast, &rows[0].calls()[4], vacant, "vacant()", "vacant", &[]);
+    assert_eq!(rows[0].calls()[2].region(), rows[0].body());
+    assert_eq!(rows[0].calls()[4].region(), rows[0].body());
+    let site = &rows[0].calls()[3];
+    assert_eq!(site.region(), rows[0].body());
+    assert_eq!(
+        site.application(),
+        algorithm_inventory_node_at(&ast, bracket, "[n,n]", SurfaceNodeKind::ApplicationTerm)
+    );
+    let opener = ast.node_views().find(|node| node.range().start == bracket && node.range().end == bracket + 1 && matches!(node.kind(), SurfaceNodeKind::Token(token) if token.text.as_ref() == "[")).unwrap();
+    assert_eq!(site.callee(), opener.id());
+    assert_eq!(
+        site.arguments(),
+        [
+            algorithm_inventory_node_at(&ast, bracket + 1, "n", SurfaceNodeKind::TermExpression),
+            algorithm_inventory_node_at(&ast, bracket + 3, "n", SurfaceNodeKind::TermExpression)
+        ]
+    );
+    assert_ne!(
+        rows[0].calls()[5].arguments()[0],
+        rows[0].calls()[5].arguments()[1]
+    );
+    let text = "definition let n be object; algorithm a(n) -> object do assert n = n by computation(inspect(n = n)); return n; end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].calls().len(), 1);
+    let start = text.find("inspect(n = n)").unwrap();
+    let call = &rows[0].calls()[0];
+    assert_eq!(call.region(), rows[0].body());
+    assert_eq!(
+        call.application(),
+        algorithm_inventory_node_at(
+            &ast,
+            start,
+            "inspect(n = n)",
+            SurfaceNodeKind::ApplicationTerm
+        )
+    );
+    assert_eq!(
+        call.callee(),
+        algorithm_inventory_node_at(&ast, start, "inspect", SurfaceNodeKind::TermReference)
+    );
+    assert_eq!(
+        call.arguments(),
+        [algorithm_inventory_node_at(
+            &ast,
+            start + 8,
+            "n = n",
+            SurfaceNodeKind::FormulaExpression
+        )]
+    );
+}
+
+#[test]
+fn algorithm_call_inventory_keeps_signature_and_contract_regions_separate() {
+    let text = "definition let n be object; mode FamilyDef: Family of n is object; end; definition let n be object; algorithm contract(n) -> Family[shape(n)] requires allowed(n) = n ensures result = promised(n) decreasing measure(n) do return bodycall(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    let row = &rows[0];
+    assert_eq!(row.calls().len(), 5);
+    for (ordinal, application, callee, region_text, kind) in [
+        (
+            0,
+            "shape(n)",
+            "shape",
+            "Family[shape(n)]",
+            SurfaceNodeKind::TypeExpression,
+        ),
+        (
+            1,
+            "allowed(n)",
+            "allowed",
+            "requires allowed(n) = n",
+            SurfaceNodeKind::AlgorithmRequiresClause,
+        ),
+        (
+            2,
+            "promised(n)",
+            "promised",
+            "ensures result = promised(n)",
+            SurfaceNodeKind::AlgorithmEnsuresClause,
+        ),
+        (
+            3,
+            "measure(n)",
+            "measure",
+            "decreasing measure(n)",
+            SurfaceNodeKind::AlgorithmDecreasingClause,
+        ),
+        (
+            4,
+            "bodycall(n)",
+            "bodycall",
+            "do return bodycall(n); end",
+            SurfaceNodeKind::AlgorithmBody,
+        ),
+    ] {
+        let start = text.find(application).unwrap();
+        let region =
+            algorithm_inventory_node_at(&ast, text.find(region_text).unwrap(), region_text, kind);
+        assert_algorithm_inventory_call(
+            &ast,
+            &row.calls()[ordinal],
+            start,
+            application,
+            callee,
+            &[(start + callee.len() + 1, "n")],
+        );
+        assert_eq!(row.calls()[ordinal].region(), region);
+        if ordinal < 4 {
+            assert!(row.header().contains(&region));
+            assert_ne!(region, row.body());
+        } else {
+            assert_eq!(region, row.body());
+            assert!(!row.header().contains(&region));
+        }
+    }
+    let declaration = ast.node_view(row.declaration()).unwrap();
+    assert!(
+        row.header()
+            .iter()
+            .all(|id| declaration.children().contains(id))
+    );
+}
+
+#[test]
+fn algorithm_call_inventory_does_not_select_overloads_or_relax_forward_uses() {
+    let text = "theorem Earlier: sharedfn(0) = 0; definition let n be object; func Unary: sharedfn(n) -> object equals n; algorithm sample(n) -> object do var sample := n; return sample(n); end; end; definition let n be set; func SetCase: sharedfn(n) -> object equals n; algorithm pair(n) -> object do return Ns.sharedfn(unknown(n)); end; end; definition let n be object; algorithm later(n) -> object do return absent(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let before = (ast.clone(), env.clone(), arena.clone());
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(env.overloads().iter().count(), 1);
+    for (row, declaration_text, body_text, block_text) in [
+        (
+            0,
+            "algorithm sample(n) -> object do var sample := n; return sample(n); end;",
+            "do var sample := n; return sample(n); end",
+            "definition let n be object; func Unary: sharedfn(n) -> object equals n; algorithm sample(n) -> object do var sample := n; return sample(n); end; end;",
+        ),
+        (
+            1,
+            "algorithm pair(n) -> object do return Ns.sharedfn(unknown(n)); end;",
+            "do return Ns.sharedfn(unknown(n)); end",
+            "definition let n be set; func SetCase: sharedfn(n) -> object equals n; algorithm pair(n) -> object do return Ns.sharedfn(unknown(n)); end; end;",
+        ),
+        (
+            2,
+            "algorithm later(n) -> object do return absent(n); end;",
+            "do return absent(n); end",
+            "definition let n be object; algorithm later(n) -> object do return absent(n); end; end;",
+        ),
+    ] {
+        let start = text.find(declaration_text).unwrap();
+        let declaration = algorithm_inventory_node_at(
+            &ast,
+            start,
+            declaration_text,
+            SurfaceNodeKind::AlgorithmDefinition,
+        );
+        assert_eq!(rows[row].declaration(), declaration);
+        assert_eq!(
+            rows[row].body(),
+            algorithm_inventory_node_at(
+                &ast,
+                text.find(body_text).unwrap(),
+                body_text,
+                SurfaceNodeKind::AlgorithmBody
+            )
+        );
+        assert_eq!(
+            rows[row].definition_block(),
+            algorithm_inventory_node_at(
+                &ast,
+                text.find(block_text).unwrap(),
+                block_text,
+                SurfaceNodeKind::DefinitionBlockItem
+            )
+        );
+        let owner = env
+            .symbols()
+            .iter()
+            .find(|entry| {
+                source_range_from_anchor(entry.origin().anchor())
+                    == Some(ast.node_view(declaration).unwrap().range())
+            })
+            .unwrap();
+        assert!(std::ptr::eq(rows[row].owner(), owner));
+    }
+    assert_eq!(
+        rows.iter().map(|row| row.calls().len()).collect::<Vec<_>>(),
+        [1, 2, 1]
+    );
+    for (row, ordinal, application, callee, argument) in [
+        (0, 0, "sample(n)", "sample", "n"),
+        (1, 0, "Ns.sharedfn(unknown(n))", "Ns.sharedfn", "unknown(n)"),
+        (1, 1, "unknown(n)", "unknown", "n"),
+        (2, 0, "absent(n)", "absent", "n"),
+    ] {
+        let start = text.rfind(application).unwrap();
+        assert_algorithm_inventory_call(
+            &ast,
+            &rows[row].calls()[ordinal],
+            start,
+            application,
+            callee,
+            &[(start + callee.len() + 1, argument)],
+        );
+        assert_eq!(rows[row].calls()[ordinal].region(), rows[row].body());
+    }
+    assert!(rows.iter().flat_map(|row| row.calls()).all(|call| {
+        ast.node_view(call.application()).unwrap().range().start > text.find("definition").unwrap()
+    }));
+    assert_eq!((ast, env, arena), before);
+}
+
+#[test]
+fn algorithm_call_inventory_excludes_func_definiens_and_synonym_applications() {
+    let text = "definition let n be object; func Wrapped: wrapped(n) -> object equals ignored(n); synonym alias(n) for ignored(n); algorithm actual(n) -> object do return kept(n); end; end;";
+    let (ast, _, _, env, arena) = parsed_private_theorem_fixture(text);
+    let definiens = algorithm_inventory_node_at(
+        &ast,
+        text.find("ignored(n)").unwrap(),
+        "ignored(n)",
+        SurfaceNodeKind::ApplicationTerm,
+    );
+    let synonym = algorithm_inventory_node_at(
+        &ast,
+        text.find("synonym").unwrap(),
+        "synonym alias(n) for ignored(n);",
+        SurfaceNodeKind::NotationAlias,
+    );
+    let synonym_target = algorithm_inventory_node_at(
+        &ast,
+        text.rfind("ignored(n)").unwrap(),
+        "ignored(n)",
+        SurfaceNodeKind::NotationPattern,
+    );
+    assert!(
+        ast.node_view(synonym).unwrap().range().start
+            < ast.node_view(synonym_target).unwrap().range().start
+            && ast.node_view(synonym_target).unwrap().range().end
+                <= ast.node_view(synonym).unwrap().range().end
+    );
+    let rows = crate::symbols::source_algorithm_call_inventory(&arena, &env).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].owner().primary_spelling(), "actual");
+    assert_eq!(rows[0].calls().len(), 1);
+    assert_ne!(rows[0].calls()[0].application(), definiens);
+    assert_ne!(rows[0].calls()[0].application(), synonym_target);
+    let start = text.find("kept(n)").unwrap();
+    assert_algorithm_inventory_call(
+        &ast,
+        &rows[0].calls()[0],
+        start,
+        "kept(n)",
+        "kept",
+        &[(start + 5, "n")],
+    );
+    assert_eq!(rows[0].calls()[0].region(), rows[0].body());
+}
+
+#[test]
+fn algorithm_call_inventory_refuses_stale_augmented_and_recovered_inputs_atomically() {
+    let text = "definition let n be object; algorithm first(n) -> object do return stable(n); end; algorithm second(n) -> object do return late(n); end; end;";
+    let (ast, module, namespace, env, arena) = parsed_private_theorem_fixture(text);
+    let (_, _, _, stale, _) =
+        parsed_private_theorem_fixture(&text.replace("second(n)", "changed(n)"));
+    let (_, _, _, augmented, _) = parsed_private_theorem_fixture(&format!(
+        "{text} definition let n be object; algorithm extra(n) -> object do return n; end; end;"
+    ));
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    for (source, symbols) in [(&arena, &stale), (&arena, &augmented), (&foreign, &env)] {
+        let before = (source.clone(), symbols.clone());
+        assert!(crate::symbols::source_algorithm_call_inventory(source, symbols).is_err());
+        assert_eq!((source.clone(), symbols.clone()), before);
+    }
+    let before = (ast.clone(), env.clone(), arena.clone());
+    assert_eq!(
+        crate::symbols::source_algorithm_call_inventory(&arena, &env)
+            .unwrap()
+            .len(),
+        2
+    );
+    for mutation in 0..3 {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        let late = text.find("late(n)").unwrap();
+        for node in ast.node_views() {
+            let mut children = node
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect::<Vec<_>>();
+            let mut range = node.range();
+            if matches!(node.kind(), SurfaceNodeKind::ApplicationTerm) && range.start == late {
+                if mutation == 1 {
+                    children.clear();
+                } else if mutation == 2 {
+                    range.end = text.len() + 1;
+                }
+            }
+            let next = match node.kind() {
+                SurfaceNodeKind::Token(token) if mutation == 0 && range.start == late => {
+                    builder.add_recovered_token(token.kind, token.text.clone(), range)
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), range)
+                }
+                kind => builder.add_node(kind.clone(), range, children),
+            };
+            rebuilt.push(next);
+        }
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&changed, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&changed, &shells, namespace.clone())
+                .collect(&module);
+        let changed_arena = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        let original = (changed.clone(), collected.clone(), changed_arena.clone());
+        assert!(
+            crate::symbols::source_algorithm_call_inventory(&changed_arena, collected.env())
+                .is_err(),
+            "mutation {mutation}"
+        );
+        assert_eq!((changed, collected, changed_arena), original);
+    }
+    assert_eq!((ast, env, arena), before);
+}

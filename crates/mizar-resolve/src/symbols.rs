@@ -198,6 +198,237 @@ pub fn validated_source_symbol_ast(
     Ok(ast)
 }
 
+/// Original declaration nodes and call sites, retaining the owner's opaque signature.
+#[derive(Debug)]
+pub struct SourceAlgorithmInventory<'a> {
+    owner: &'a SymbolEntry,
+    definition_block: SurfaceNodeId,
+    declaration: SurfaceNodeId,
+    header: Vec<SurfaceNodeId>,
+    body: SurfaceNodeId,
+    calls: Vec<SourceAlgorithmCallSite>,
+}
+
+impl<'a> SourceAlgorithmInventory<'a> {
+    pub const fn owner(&self) -> &'a SymbolEntry {
+        self.owner
+    }
+    pub const fn definition_block(&self) -> SurfaceNodeId {
+        self.definition_block
+    }
+    pub const fn declaration(&self) -> SurfaceNodeId {
+        self.declaration
+    }
+    pub fn header(&self) -> &[SurfaceNodeId] {
+        &self.header
+    }
+    pub const fn body(&self) -> SurfaceNodeId {
+        self.body
+    }
+    pub fn calls(&self) -> &[SourceAlgorithmCallSite] {
+        &self.calls
+    }
+}
+
+/// A structural application; its callee is syntax, never a selected symbol.
+#[derive(Debug)]
+pub struct SourceAlgorithmCallSite {
+    region: SurfaceNodeId,
+    application: SurfaceNodeId,
+    callee: SurfaceNodeId,
+    arguments: Vec<SurfaceNodeId>,
+}
+
+impl SourceAlgorithmCallSite {
+    pub const fn region(&self) -> SurfaceNodeId {
+        self.region
+    }
+    pub const fn application(&self) -> SurfaceNodeId {
+        self.application
+    }
+    pub const fn callee(&self) -> SurfaceNodeId {
+        self.callee
+    }
+    pub fn arguments(&self) -> &[SurfaceNodeId] {
+        &self.arguments
+    }
+}
+
+/// Authenticates source structure and inventories every algorithm application.
+///
+/// Node ids and ranges belong to `source`. Header regions are direct declaration
+/// children other than the body and punctuation tokens. Calls use structural
+/// preorder, including nested applications and repeated argument occurrences.
+/// A reserved bracket application retains its opening `[` token as its callee.
+/// This establishes neither call targets nor recursion or verification results.
+/// Callers own physical source currentness: body edits can preserve the symbol
+/// environment, and reconstruction cannot authenticate the current raw text.
+pub fn source_algorithm_call_inventory<'a>(
+    source: &SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+) -> Result<Vec<SourceAlgorithmInventory<'a>>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    let invalid = || "invalid source algorithm call inventory".to_owned();
+    let mut parents = BTreeMap::new();
+    for node in ast.node_views() {
+        let range = node.range();
+        if range.source_id != ast.source_id || range.start > range.end {
+            return Err(invalid());
+        }
+        let mut previous_end = range.start;
+        for &child in node.children() {
+            let child_node = ast.node_view(child).ok_or_else(invalid)?;
+            let child_range = child_node.range();
+            if child_range.source_id != range.source_id
+                || child_range.start < range.start
+                || child_range.end > range.end
+            {
+                return Err(invalid());
+            }
+            // Roots expose a flat token overlay alongside their structural tree.
+            if matches!(node.kind(), SurfaceNodeKind::Root)
+                && matches!(child_node.kind(), SurfaceNodeKind::Token(_))
+            {
+                continue;
+            }
+            if child_range.start < previous_end || parents.insert(child, node.id()).is_some() {
+                return Err(invalid());
+            }
+            previous_end = child_range.end;
+        }
+    }
+    if let Some(root) = ast.root() {
+        if parents.contains_key(&root) || parents.len().checked_add(1) != Some(ast.nodes().len()) {
+            return Err(invalid());
+        }
+    } else if !ast.nodes().is_empty() {
+        return Err(invalid());
+    }
+    let shells = DeclarationShellCollector::new(&ast, source.module()).collect();
+    let token_is = |id, text: &str| {
+        ast.node_view(id)
+            .and_then(SurfaceNodeView::as_token)
+            .is_some_and(|token| {
+                token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == text
+            })
+    };
+    let mut inventory = Vec::new();
+    let mut owners = BTreeSet::new();
+    for shell in shells.declarations() {
+        if shell.kind() != DeclarationShellKind::AlgorithmDefinition {
+            continue;
+        }
+        let block = shells
+            .declaration(shell.parent().ok_or_else(invalid)?)
+            .filter(|parent| parent.kind() == DeclarationShellKind::DefinitionBlock)
+            .ok_or_else(invalid)?;
+        let mut ancestor = shell.node_id();
+        while ancestor != block.node_id() {
+            ancestor = *parents.get(&ancestor).ok_or_else(invalid)?;
+        }
+        let origin = shell_origin(
+            ast.source_id,
+            source.module(),
+            shell,
+            &shell_context(&shells, shell),
+        );
+        let mut matching = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.kind() == SymbolKind::Algorithm && entry.origin() == &origin);
+        let owner = matching.next().ok_or_else(invalid)?;
+        if matching.next().is_some() || !owners.insert(owner.symbol()) {
+            return Err(invalid());
+        }
+        let declaration = ast.node_view(shell.node_id()).ok_or_else(invalid)?;
+        let mut body = None;
+        let mut header = Vec::new();
+        for &child in declaration.children() {
+            let node = ast.node_view(child).ok_or_else(invalid)?;
+            if matches!(node.kind(), SurfaceNodeKind::AlgorithmBody) {
+                if body.replace(child).is_some() {
+                    return Err(invalid());
+                }
+            } else if !matches!(node.kind(), SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::ReservedSymbol)
+            {
+                header.push(child);
+            }
+        }
+        let body = body.ok_or_else(invalid)?;
+        let mut calls = Vec::new();
+        for region in header.iter().copied().chain(std::iter::once(body)) {
+            let mut pending = vec![region];
+            while let Some(id) = pending.pop() {
+                let node = ast.node_view(id).ok_or_else(invalid)?;
+                if matches!(node.kind(), SurfaceNodeKind::ApplicationTerm) {
+                    let children = node.children();
+                    let (&callee, rest) = children.split_first().ok_or_else(invalid)?;
+                    let bracket = token_is(callee, "[");
+                    let arguments =
+                        if bracket && rest.last().is_some_and(|&id| token_is(id, "]")) {
+                            Some(&rest[..rest.len() - 1])
+                        } else if ast.node_view(callee).is_some_and(|node| {
+                            matches!(node.kind(), SurfaceNodeKind::TermReference)
+                        }) && rest.first().is_some_and(|&id| token_is(id, "("))
+                            && rest.last().is_some_and(|&id| token_is(id, ")"))
+                        {
+                            Some(&rest[1..rest.len() - 1])
+                        } else {
+                            None
+                        }
+                        .ok_or_else(invalid)?;
+                    let mut arguments_out = Vec::new();
+                    for (index, &argument) in arguments.iter().enumerate() {
+                        if index % 2 == 1 {
+                            if !token_is(argument, ",") {
+                                return Err(invalid());
+                            }
+                        } else if ast.node_view(argument).is_some_and(|node| {
+                            matches!(
+                                node.kind(),
+                                SurfaceNodeKind::TermExpression
+                                    | SurfaceNodeKind::FormulaExpression
+                            )
+                        }) {
+                            arguments_out.push(argument);
+                        } else {
+                            return Err(invalid());
+                        }
+                    }
+                    if (!arguments.is_empty() && arguments.len() % 2 == 0)
+                        || (bracket && arguments.is_empty())
+                    {
+                        return Err(invalid());
+                    }
+                    calls.push(SourceAlgorithmCallSite {
+                        region,
+                        application: id,
+                        callee,
+                        arguments: arguments_out,
+                    });
+                }
+                pending.extend(node.children().iter().rev().copied());
+            }
+        }
+        inventory.push(SourceAlgorithmInventory {
+            owner,
+            definition_block: block.node_id(),
+            declaration: shell.node_id(),
+            header,
+            body,
+            calls,
+        });
+    }
+    if symbols
+        .symbols()
+        .iter()
+        .any(|entry| entry.kind() == SymbolKind::Algorithm && !owners.contains(entry.symbol()))
+    {
+        return Err(invalid());
+    }
+    Ok(inventory)
+}
+
 /// Derives named owner content from the validated structural source arena.
 pub fn source_registration_owner_payloads_from_arena(
     source: &SurfaceResolvedArena,

@@ -639,7 +639,9 @@ Future constructor-actual resolution consumes real mode/structure signatures and
 
 ## Planned Algorithm Call Dependencies
 
-The existing signature index is not a source body-call/definiens graph. Future authentic call targets, complete definition-block recursive groups and source/range/edge provenance feed Checker cycle/applicability checks and Core lowering; Resolver never chooses typed overload winners or treats graph references as accepted calls.
+`source_algorithm_call_inventory` replays the complete arena/environment association and joins each algorithm shell to its actual `SymbolEntry`, retaining its opaque signature. Immutable inventory rows reference the original declaration, containing definition block, direct header regions, body and nested application/callee/ordered argument nodes; ranges remain in the source arena. Header applications are distinct from body calls, and call-free declarations remain present. Any invalid association, recovery or malformed structural provenance refuses the entire inventory; callers own raw-source currentness.
+
+This inventory and the signature index are not a source body-call/definiens graph. Call-target resolution, definition-block recursion scope, complete recursive groups and checked consumers remain deferred. Resolver never chooses typed overload winners or treats syntax inventory as type, cycle, termination or promotion acceptance.
 
 ## Source registration owner payloads
 

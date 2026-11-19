@@ -569,7 +569,9 @@ AST から宣言 shell と signature を再収集し、この collection との�
 
 ## Planned Algorithm Call Dependencies
 
-既存 signature index は source body-call/definiens graph ではない。将来の真正な call target、完全な definition-block recursive group、source/range/edge provenance を Checker cycle/applicability check と Core lowering へ渡す。Resolver は typed overload winner を選ばず、graph reference を accepted call と扱わない。
+`source_algorithm_call_inventory` は arena/environment 全体の対応を再照合し、各 algorithm shell を実 `SymbolEntry` に結び付け、opaque signature を保持する。不変の inventory row は元の宣言、包含 definition block、直接の header 領域、body、入れ子 application/callee/順序付き引数ノードを参照し、range は source arena に残る。header application と body call を区別し、呼出しのない宣言も保持する。対応不正、recovery、構造 provenance 不正では全体を拒否し、生ソースの currentness は caller が担う。
+
+この inventory と signature index は source body-call/definiens graph ではない。call-target resolution、definition-block recursion scope、完全な recursive group と checked consumer は未実装のまま残す。Resolver は typed overload winner を選ばず、syntax inventory に type/cycle/termination/promotion acceptance を与えない。
 
 ## Source registration owner payloads
 
