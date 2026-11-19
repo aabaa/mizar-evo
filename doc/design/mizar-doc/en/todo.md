@@ -164,6 +164,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
     - Deps: 8, 11. Spec: `math.md`.
 
 13. **Spec: `render.md`.** [ ]
+    - [Auxiliary composition](../../task_contracts/en/DOC13-AUXILIARY-COMPOSITION.md): authenticated representable in-memory JSON only; owner gates remain.
     - [Reference encounter ordinals](../../task_contracts/en/DOC13-REFERENCE-ENCOUNTER-ORDINAL.md): authenticated traversal/results only; auxiliary composition remains gated.
     - [Isolated search composition](../../task_contracts/en/DOC13-SEARCH-COMPOSITION.md) returns canonical in-memory JSON only; emission and coherent readiness remain gated.
     - [Render definition proposal](../../task_contracts/en/DOC13-RENDER-DEFINITION.md); new owner choices remain unselected.
