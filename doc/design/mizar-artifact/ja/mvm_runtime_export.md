@@ -1,7 +1,7 @@
 # MVM R3 — 実行 Artifact と検証付きローダー
 
 > 英語正本: [mvm_runtime_export.md](../en/mvm_runtime_export.md)。
-> [設計契約](../../task_contracts/ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md)。
+> 設計契約。
 > 現段階は設計案であり、実行形式や実装の承認ではない。
 
 ## 責務と順序
