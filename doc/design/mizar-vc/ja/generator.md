@@ -626,6 +626,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 binder と term の組は object(r) の fresh r を実 immutable a に置換する記述である。単一 existential binder、object body、parameter との変数の相違を要求する。atomic body に nested binder はなく capture は生じない。子は元の typed-input context における authentic object(a) guard の要求記述であり、新たな実行可能 VC や検証済み前提ではない。親の式・provenance・Open 四要求・Deferred termination・incomplete/reuse-ineligible slice を維持する。generic substitution、Kernel wire/evidence、checking、existential introduction 検証、Proof adoption、symbol introduction、promotion、publication、acceptance/coverage credit は与えない。
 
+### E4 operational-reduction request
+
+`generate_source_algorithm_e4_operational_reduction_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` は authentic direct-return graph 全体を再生成した後、その Open E4 existential のみを選ぶ。既存型の tuple として、変更しない `VcSet`、実 return の `CoreTermId`、元の existential `ContextEntryId`、独立した置換後の `VcGeneratedFormulaShape::AlgorithmReturns` と残余 `VcGeneratedFormulaShape::True`、親の raw `DependencySlice` 全体を返す。選択した元の goal/context/anchor と Proof identity は変えない。
+
+単一の fresh existential binder と、元 relation の正確な algorithm・CFG・唯一の return statement・immutable input を要求する。candidate result を、その statement が実際に返す parameter に置換する。atomic relation に nested binder はない。`returns(a,a)` から `True` への組は、immutable variable の評価がその input を返し、唯一の `Return` がその値で正常終了するという具体的な operational step の要求である。未検証の reduction proposal であり、検証済み実行や正常復帰の fact ではない。残余 `True` は operation や existential introduction の証明を与えない。equality alias、premise、relation interpretation、graph rewrite、新たな実行可能 VC、evidence、checking、adoption、symbol introduction、status promotion、publication、acceptance/coverage credit は導入しない。四要求は Open、termination は Deferred、raw slice は incomplete/reuse-ineligible のままとする。call・他の body・任意の candidate result の reduction は対象外とする。
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 は E1 の型/inhabitation/単一値性と検証済み E2 部分正当性を要求する。E4 正常復帰は terminating/昇格の文脈に適用し、すべての部分定義には要求しない。
