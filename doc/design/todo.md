@@ -191,13 +191,15 @@ token, unpublished draft, or mock payload is not an accepted proof.
    its paired contract and crate-plan assignment under normal review **before**
    dispatch, not as an implied permission from this priority table.
 4. If all M1 slices are blocked, choose a ready, independent Step 6/7
-   producer or real-service-equivalence prerequisite; then one genuinely
-   ready R1-R8 **documentation-review/decision-gate** task from the
-   [MVM dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes), without
-   redispatching drafted inventories; next choose Step 8 source-input,
-   editor lifecycle, snapshot or native-diagnostic transport work using
-   existing outputs; next other dependency-ready tasks. MVM preparation
-   is not a second lane or permission to start blocked execution.
+   producer or real-service-equivalence prerequisite; next choose Step 8
+   source-input, editor lifecycle, snapshot or native-diagnostic
+   transport work using existing outputs; next other dependency-ready
+   tasks. R1-R8 **documentation-review/decision-gate** tasks of the
+   [MVM dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes)
+   are dispatched only by Lane 2 under the
+   [MVM Muse rule](#mvm-readiness-decomposition--), never from this
+   queue and without redispatching drafted inventories. Lane 2 is not
+   permission to start blocked execution.
    Never advance Artifact 17, accepted-result consumers, semantic LSP
    metadata or MVM execution ahead of actual producers.
 5. After M1 acceptance, prioritize [Step 6C equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md),
@@ -1038,8 +1040,8 @@ test-oracle rules.
 
 | Slice | Existing owner and deliverable | Dependency / dispatch rule |
 |---|---|---|
-| **MVM-R1 [~]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`; [source-backed inventory](./mizar-vc/en/mvm_readiness.md) drafted. The minimal `idalgo` source profile is an **Open VC**, not an executed or accepted algorithm. | **Independent review and repository lint pending.** Resolve documented Q1–Q3 under existing authorities before any R2 implementation contract; runtime R2–R8 remain gated. Do not redispatch the completed inventory work or start a second lane. |
-| **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for accepted definition/body identity and separately authenticated typed invocation; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; independent review/lint pending.** R1 review and the proposed ordinary/reflected boundary (Q1), accepted definition evidence (Q2) gates R3 export; the genuine typed call separately gates R4, not R3. Open VC is not verified. R3/R4 remain blocked. |
+| **MVM-R1 [~]** — authentic source readiness inventory | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md), owned by `mizar-vc`; [source-backed inventory](./mizar-vc/en/mvm_readiness.md) drafted. The minimal `idalgo` source profile is an **Open VC**, not an executed or accepted algorithm. | **Independent review and repository lint pending.** Resolve documented Q1–Q3 under existing authorities before any R2 implementation contract: record a decision the owner already made, link the owner document that answers the question, or keep it open under its owning slice; a review unit makes no new choice. Runtime R2–R8 remain gated. Do not redispatch the completed inventory work; the review runs in Lane 2 under the Muse rule below, which unlocks no implementation. |
+| **MVM-R2 [~ design]** — verified body/call correspondence | [Core-owned design contract](./task_contracts/en/MVM-R2-CORRESPONDENCE-DESIGN.md) and [EN/JA design](./mizar-core/en/mvm_correspondence.md) drafted for accepted definition/body identity and separately authenticated typed invocation; existing Core 42-53, AST-TYPE/LOWER, AST-CONTRACT and VC 53 retain implementation ownership. | **Docs-only; design review closed.** R1 review and the proposed ordinary/reflected boundary (Q1), accepted definition evidence (Q2) gates R3 export; the genuine typed call separately gates R4, not R3. Open VC is not verified. R3/R4 remain blocked. |
 | **MVM-R3 [~ design]** — runtime export and validating loader | [Artifact design contract](./task_contracts/en/MVM-R3-ARTIFACT-LOADER-DESIGN.md) and [EN/JA owner design](./mizar-artifact/en/mvm_runtime_export.md) drafted; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md) retains implementation ownership, Build/Driver are loader consumers. | **Docs-only; independent review/lint pending.** R2 authenticated **definition/body** producer (no ground caller prerequisite) and R3 format/loader, same-package staging and correspondence decisions remain required before any export. Runtime export precedes MVM; later R7 computation-record publication must not block it. No unverified code or dependency-source fallback. |
 | **MVM-R4 [~ design]** — minimal actual evaluator | [VC-owned design contract](./task_contracts/en/MVM-R4-EXECUTOR-DESIGN.md) and [EN/JA design](./mizar-vc/en/mvm_executor.md) drafted; [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) still owns implementation. Defines the narrow actual ground/direct normal-return path, validation, failure/budget classes and R6/R7 boundary. | **Docs-only; independent review/lint pending.** R2 independently accepted definition and typed ground invocation, R3 validated executable/loader and VM accounting/report decisions are prerequisites. No R4 implementation, trusted status, E5 credit or new `mizar-mvm` crate is authorized. |
 | **MVM-R5 [~ design]** — control flow, failure and resource bounds | [VC-owned design contract](./task_contracts/en/MVM-R5-EXTENDED-EXECUTION-DESIGN.md) and [EN/JA owner design](./mizar-vc/en/mvm_extended_execution.md) drafted. R5-A local state/branch; B loops; C calls/recursion; D set/Pick/match; E failure/ghost; F budgets/cancellation. [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md) retains execution ownership. | **Docs-only; independent review/lint pending.** Each R5-A–F execution slice waits for supported authentic R4, feature-specific Core/CFG, R3 validated loader and a separately frozen owner/test contract. R6 uniqueness is mandatory for computation **discharge** where applicable, not a substitute for a runtime producer. Failure/exhaustion gives no E5 or non-return proof. |
@@ -1061,16 +1063,34 @@ of a narrower stage never implies completion of a later stage or the
 [complete processor](#completion-gates). The verified ordinary input path is
 not an exemption from the currently recorded AST/Proof dependencies.
 
-**Muse rule:** keep the existing single dispatch queue and M1 priority.
-R1-R8 **documentation reviews** may run sequentially under their paired
-contracts. Do not dispatch R2-R7 **implementations** or runtime/proof
-test activation for R8 from this table: first verify authentic producers,
-the actual stage runner and oracle, and separately freeze the owning
-implementation/test contract. Missing accepted proofs, formation,
-executable/loader, VM semantics, complete computation admission, certified
-import or runtime stage authority remain blockers. R5-A–F, R6-A–D,
-R7-A–E and R8-A–H are design slices only. No active Step 6/7 work is
-preempted or second orchestrator/parallel worktree implied.
+**Muse rule (two lanes, owner decision 2026-11-20):** Lane 1 is the
+existing dispatch queue with M1 priority, unchanged. Lane 2 carries only
+the R1-R8 **documentation reviews** of this table: one paired contract
+per unit, sequentially in dependency order, in its own worktree, never
+redispatching a closed review or a drafted inventory. Lane 2 selects
+nothing outside this table and is not a second global ordering
+authority; Lane 1 does not dispatch these reviews. A Lane 2 unit writes
+only its MVM contract pair, its owner-design pair and the state phrase
+of its own row above. A finding that would change a gate, prerequisite,
+dependency edge, owner or trust/acceptance boundary, or a document
+outside that set, is parked for an owner decision and is not fixed by
+the unit; a parked unit in one lane never blocks the other lane.
+Lane 2 commits enter local `main` only by rebase and fast-forward while
+no Lane 1 run is active, after the documentation checks pass on the
+integrated tree and the authorities the unit reviewed are unchanged
+there. The changed-task count, the ten-task full `cargo test`, the
+pre-push audit and the push stay single and project-wide; a Lane 2 unit
+counts once, when integrated.
+Do not dispatch R2-R7 **implementations** or runtime/proof
+test activation for R8 from this table or from Lane 2: first verify
+authentic producers, the actual stage runner and oracle, and separately
+freeze the owning implementation/test contract. Missing accepted proofs,
+formation, executable/loader, VM semantics, complete computation
+admission, certified import or runtime stage authority remain blockers.
+R5-A–F, R6-A–D, R7-A–E and R8-A–H are design slices only. No active
+Step 6/7 work is preempted and no second orchestrator is implied. When
+every review above is closed Lane 2 is idle; it gains no other work
+without a new owner decision.
 
 ### Distribution and playground [ ]
 
