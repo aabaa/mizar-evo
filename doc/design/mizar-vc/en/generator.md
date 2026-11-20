@@ -762,13 +762,16 @@ incomplete/cache-ineligible slices, Open4/Deferred and all credit exclusions per
 
 ### E4 checked original existential
 
-`check_source_algorithm_e4_existential_request` takes the operational-reduction
+`check_source_algorithm_e4_existential_result` takes the operational-reduction
 producer's arguments and calls it first, preserving errors. Authenticate the sole
 original existential binder, original AlgorithmReturns body, typed-input Core
 CheckerFact and exact premise association. Pass that original tuple, unchanged
 binder, actual witness and original assumption to Kernel's
 [existential rule](../../mizar-kernel/en/checker.md#original-algorithmreturns-existential).
-Success returns only the unchanged descriptor. No earlier boolean or detached
+Success pairs the unchanged descriptor with the genuine Kernel
+`AlgorithmReturnsExistentialCheck` produced in that same authenticated call.
+`check_source_algorithm_e4_existential_request` delegates and drops only the result,
+preserving its descriptor-only behavior. No earlier boolean or detached
 child/residual supplies proof; the instantiated-child consumer remains independent.
 Semantic environment association, Proof identity/current-policy binding/adoption,
 separate E1 duties and broader body interpretation remain deferred. Whole raw

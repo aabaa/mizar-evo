@@ -120,6 +120,8 @@ Covered top-level public items:
 - `check_imported_facts`
 - `check_instantiated_algorithm_returns`
 - `check_algorithm_returns_existential`
+- `AlgorithmReturnsExistentialCheck`
+- `check_algorithm_returns_existential_result`
 - `KernelCheckInput`
 - `KernelEvidenceCheckInput`
 - `KernelCheckPolicy`

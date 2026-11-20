@@ -6031,6 +6031,7 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
     use mizar_vc::{
         generator::{
             check_source_algorithm_e4_existential_request as existential,
+            check_source_algorithm_e4_existential_result as existential_result,
             check_source_algorithm_e4_instantiated_request as instantiated,
             check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
@@ -6128,6 +6129,31 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
             else {
                 panic!("original fresh declaration")
             };
+            let (paired, result) = existential_result(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                &GenerationSchemaVersion::new("relocated-generation"),
+                &VcSchemaVersion::new("relocated-vc"),
+                VcId::new(4),
+            )
+            .unwrap();
+            assert_eq!(paired, descriptor);
+            assert!(std::ptr::eq(result.core(), &core));
+            assert_eq!(
+                result.target(),
+                (
+                    id,
+                    mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&id],
+                    statement,
+                    (environment[0].0, None),
+                    (var, None),
+                )
+            );
+            assert_eq!(result.witness(), term);
+            assert_eq!(result.context(), &[environment[0].1]);
             assert_ne!(var, environment[0].0);
             assert_ne!(var, algorithm.result.as_ref().unwrap().var);
             assert!(
@@ -6197,6 +6223,7 @@ fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_o
 fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_precedence() {
     use mizar_vc::generator::{
         check_source_algorithm_e4_existential_request as existential,
+        check_source_algorithm_e4_existential_result as existential_result,
         check_source_algorithm_e4_instantiated_request as instantiated,
         check_source_algorithm_e4_local_request as consume,
         generate_source_algorithm_e4_operational_reduction_request as reduction,
@@ -6237,7 +6264,23 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                 .unwrap_err(),
                 error
             );
-            for checked in [instantiated, existential] {
+            for checked in [
+                instantiated,
+                existential,
+                |source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+                 check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+                 symbols: &mizar_resolve::env::SymbolEnv,
+                 core: &mizar_core::core_ir::CoreIr,
+                 snapshot,
+                 generation: &GenerationSchemaVersion,
+                 schema: &VcSchemaVersion,
+                 selected| {
+                    existential_result(
+                        source, check, symbols, core, snapshot, generation, schema, selected,
+                    )
+                    .map(|(descriptor, _)| descriptor)
+                },
+            ] {
                 assert_eq!(
                     checked(
                         source,
@@ -6326,7 +6369,24 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                                 .unwrap_err(),
                                 error
                             );
-                            for checked in [instantiated, existential] {
+                            for checked in [
+                                instantiated,
+                                existential,
+                                |source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+                                 check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+                                 symbols: &mizar_resolve::env::SymbolEnv,
+                                 core: &mizar_core::core_ir::CoreIr,
+                                 snapshot,
+                                 generation: &GenerationSchemaVersion,
+                                 schema: &VcSchemaVersion,
+                                 selected| {
+                                    existential_result(
+                                        source, check, symbols, core, snapshot, generation, schema,
+                                        selected,
+                                    )
+                                    .map(|(descriptor, _)| descriptor)
+                                },
+                            ] {
                                 assert_eq!(
                                     checked(
                                         source,
@@ -6370,6 +6430,7 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
         dependency_slice::DependencySliceCompleteness,
         generator::{
             check_source_algorithm_e4_existential_request as existential,
+            check_source_algorithm_e4_existential_result as existential_result,
             check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
         },
@@ -6459,6 +6520,25 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
                 .unwrap(),
                 descriptor
             );
+            let result = || {
+                existential_result(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    snapshot,
+                    &generation,
+                    &schema,
+                    VcId::new(4),
+                )
+                .unwrap()
+            };
+            for (paired, checked) in [result(), result()] {
+                assert_eq!(paired, descriptor);
+                assert!(std::ptr::eq(checked.core(), core));
+                assert_eq!(checked.witness(), descriptor.1);
+                assert_eq!(checked.context(), &[environment[0].1]);
+            }
             assert_eq!(checked(), descriptor);
             assert_eq!(request().0, descriptor);
             assert!(std::ptr::eq(output.2, &environment[0].2));
@@ -6771,6 +6851,7 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
         dependency_slice::DependencySliceCompleteness,
         generator::{
             check_source_algorithm_e4_existential_request as existential,
+            check_source_algorithm_e4_existential_result as existential_result,
             check_source_algorithm_e4_instantiated_request as checked,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
         },
@@ -6904,6 +6985,22 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
             witness,
             &[guard]
         ));
+        let (paired, result) = existential_result(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            generation,
+            vcs.schema_version(),
+            VcId::new(4),
+        )
+        .unwrap();
+        assert_eq!(paired, introduced);
+        assert!(std::ptr::eq(result.core(), core));
+        assert_eq!(result.target(), target);
+        assert_eq!(result.witness(), witness);
+        assert_eq!(result.context(), &[guard]);
         assert_eq!(actual.4, Shape::True);
         let raw = source_algorithm_direct_return_slice_oracle(
             source, check, symbols, core, &actual.0, generation,
@@ -7106,7 +7203,22 @@ fn source_algorithm_e4_existential_kernel_requires_original_binder_and_rechecked
             CoreTermId, CoreTermKind, CoreVarId,
         },
     };
-    use mizar_kernel::checker::check_algorithm_returns_existential as checked;
+    use mizar_kernel::checker::{
+        check_algorithm_returns_existential, check_algorithm_returns_existential_result,
+    };
+    let checked = |core: &CoreIr, target, binder, witness, context: &[_]| {
+        let accepted = check_algorithm_returns_existential(core, target, binder, witness, context);
+        let result =
+            check_algorithm_returns_existential_result(core, target, binder, witness, context);
+        assert_eq!(result.is_some(), accepted);
+        if let Some(result) = result {
+            assert!(std::ptr::eq(result.core(), core));
+            assert_eq!(result.target(), target);
+            assert_eq!(result.witness(), witness);
+            assert_eq!(result.context(), context);
+        }
+        accepted
+    };
     with_direct_return_request_fixture(|_, _, _, core, _| {
         let (id, algorithm) = core.algorithms().iter().next().unwrap();
         let statement = algorithm.statements[0];

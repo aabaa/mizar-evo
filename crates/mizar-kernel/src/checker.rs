@@ -1390,6 +1390,92 @@ pub fn check_algorithm_returns_existential(
         )
 }
 
+/// A checked `exists r.returns(a,r)` under the retained Core context.
+/// Only the exact existential rule can construct this immutable result.
+#[expect(
+    clippy::type_complexity,
+    reason = "retain the original relation tuple without a single-use representation"
+)]
+pub struct AlgorithmReturnsExistentialCheck<'core> {
+    core: &'core CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    witness: CoreTermId,
+    context: [CoreFormulaId; 1],
+}
+
+impl<'core> AlgorithmReturnsExistentialCheck<'core> {
+    #[must_use]
+    pub const fn core(&self) -> &'core CoreIr {
+        self.core
+    }
+
+    #[must_use]
+    #[expect(
+        clippy::type_complexity,
+        reason = "project the checked original relation tuple without a parallel representation"
+    )]
+    pub const fn target(
+        &self,
+    ) -> (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ) {
+        self.target
+    }
+
+    #[must_use]
+    pub const fn witness(&self) -> CoreTermId {
+        self.witness
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &[CoreFormulaId] {
+        &self.context
+    }
+}
+
+/// Checks and retains the original AlgorithmReturns existential in the same call.
+/// The target's result variable retains the checked existential binder.
+#[expect(
+    clippy::type_complexity,
+    reason = "retain the existing existential rule inputs without a single-use representation"
+)]
+pub fn check_algorithm_returns_existential_result<'core>(
+    core: &'core CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    witness: CoreTermId,
+    context: &[CoreFormulaId],
+) -> Option<AlgorithmReturnsExistentialCheck<'core>> {
+    if !check_algorithm_returns_existential(core, target, binder, witness, context) {
+        return None;
+    }
+    let [assumption] = context else {
+        return None;
+    };
+    Some(AlgorithmReturnsExistentialCheck {
+        core,
+        target,
+        witness,
+        context: [*assumption],
+    })
+}
+
 /// A checked `exists r.object(r)` under the retained Core context.
 /// Construction is private and performs bounded existential introduction.
 pub struct ObjectInhabitationCheck<'core> {

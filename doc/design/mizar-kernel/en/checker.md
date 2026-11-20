@@ -110,8 +110,13 @@ so distinctness also excludes the binder from context free variables. This is
 bounded capture-free existential introduction under
 [§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding).
 VC [authenticates the original body/binder/context](../../mizar-vc/en/generator.md#e4-checked-original-existential).
-Return only a boolean; semantic environment association, Proof identity/policy
-binding/adoption, separate E1 duties and broader bodies remain deferred.
+The boolean API remains unchanged. `check_algorithm_returns_existential_result`
+invokes that exact rule in its producing call; only success constructs the opaque
+`AlgorithmReturnsExistentialCheck`. Private fields retain the immutable Core,
+original relation tuple (including the binder in its result), witness and sole
+context; `core()`, `target()`, `witness()` and `context()` expose only those inputs.
+Semantic environment association, Proof identity/policy binding/adoption, separate
+E1 duties and broader bodies remain deferred.
 No evidence, acceptance, status, symbol, publication or broader credit follows.
 
 ## Bounded E1-inhabitation Witness Introduction

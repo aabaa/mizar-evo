@@ -659,11 +659,13 @@ raw unknown・incomplete/cache miss・Open4/Deferred と credit の除外を維�
 
 ### E4 checked original existential
 
-`check_source_algorithm_e4_existential_request` は operational-reduction producer と同じ
+`check_source_algorithm_e4_existential_result` は operational-reduction producer と同じ
 引数を受け、最初に呼んでエラーを保持する。単一の元 existential binder、元の
 AlgorithmReturns body、型付き入力 Core CheckerFact と正確な premise 対応を認証し、
 元 tuple・変更しない binder・実際の witness・元仮定を Kernel の存在導入 rule に渡す。
-成功時だけ変更しない descriptor を返す。先行 boolean や detached child/residual は
+成功時だけ変更しない descriptor と同じ認証呼出しで生成した真正な Kernel
+`AlgorithmReturnsExistentialCheck` を返す。`check_source_algorithm_e4_existential_request`
+は委譲し result のみを捨てて descriptor-only 動作を維持する。先行 boolean や detached child/residual は
 証明にならず、既存 child consumer は独立する。意味的 environment 対応、Proof
 identity/current-policy binding/adoption、別の E1 義務、広範な body 解釈は延期する。
 raw unknown・incomplete/cache miss・Open4/Deferred と evidence・symbol・promotion・

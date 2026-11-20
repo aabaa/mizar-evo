@@ -3571,6 +3571,49 @@ pub fn check_source_algorithm_e4_existential_request(
     ),
     String,
 > {
+    check_source_algorithm_e4_existential_result(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )
+    .map(|(descriptor, _)| descriptor)
+}
+
+/// Produces a Kernel result for the freshly authenticated original E4 existential.
+/// The unchanged descriptor retains its original selection and raw dependency slice.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "retain authentic inputs and the unchanged descriptor without a parallel wrapper type"
+)]
+pub fn check_source_algorithm_e4_existential_result<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        (
+            VcSet,
+            mizar_core::core_ir::CoreTermId,
+            ContextEntryId,
+            crate::vc_ir::VcGeneratedFormulaShape,
+            crate::vc_ir::VcGeneratedFormulaShape,
+            crate::dependency_slice::DependencySlice,
+        ),
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    ),
+    String,
+> {
     use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape};
 
     let descriptor = generate_source_algorithm_e4_operational_reduction_request(
@@ -3622,23 +3665,24 @@ pub fn check_source_algorithm_e4_existential_request(
         || binder.id != *descriptor_binder
         || binders.as_slice() != [binder.id]
         || parent.premises.as_slice() != [PremiseRef::LocalContext(typed.id)]
-        || !mizar_kernel::checker::check_algorithm_returns_existential(
-            core,
-            (
-                *algorithm,
-                *flow,
-                *statement,
-                (input.var, input.definition),
-                (result.var, result.definition),
-            ),
-            *var,
-            *witness,
-            &[assumption],
-        )
     {
         return Err(invalid());
     }
-    Ok(descriptor)
+    let result = mizar_kernel::checker::check_algorithm_returns_existential_result(
+        core,
+        (
+            *algorithm,
+            *flow,
+            *statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        *var,
+        *witness,
+        &[assumption],
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, result))
 }
 
 /// Associates an authentic E4 request with exact conditional Kernel inputs/expected output.
