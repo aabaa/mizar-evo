@@ -697,7 +697,26 @@ The new VcSet retains the original postcondition and expands its source seed to 
 
 `generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` first regenerates the complete authentic four-request graph through the existing producer, preserving its errors. Select only the Open E1-inhabitation existential. Return the unchanged `VcSet`, actual returned `CoreTermId`, original `ContextEntryId` binder, instantiated child `VcFormulaRef::Core(parameter.ty_guard)` and entire original raw `DependencySlice`. The selected ID plus whole original set retain its goal, context, anchor and fingerprints; Proof's existing original-identity route remains authoritative for Proof identities.
 
-The explicit binder-to-term pair describes substitution of fresh r by actual immutable a in object(r). Require the single existential binder, object body and distinct parameter variable; its atomic body contains no nested binders, so capture is impossible. The child is the authenticated object(a) input guard under the original typed-input context, a request descriptor rather than a new schedulable VC or checked premise. Preserve all parent formulas, provenance, Open requests, Deferred termination and incomplete/reuse-ineligible slice. No generic substitution framework, Kernel wire/evidence, checking, existential-introduction validation, Proof adoption, symbol introduction, status promotion, publication or acceptance/coverage credit is supplied.
+The explicit binder-to-term pair describes substitution of fresh r by actual immutable a in object(r). Require the single existential binder, object body and distinct parameter variable; its atomic body contains no nested binders, so capture is impossible. The child is the authenticated object(a) input guard under the original typed-input context, a request descriptor rather than a new schedulable VC or checked premise. Preserve all parent formulas, provenance, Open requests, Deferred termination and incomplete/reuse-ineligible slice. The descriptor supplies no generic substitution framework, Kernel wire/evidence, checking, existential-introduction validation or Proof adoption, symbol introduction, status promotion, publication or acceptance/coverage credit.
+
+### E1 inhabitation witness-introduction check
+
+`check_source_algorithm_e1_inhabitation_witness` takes the existing descriptor
+producer inputs and regenerates that descriptor before checking. Require the
+selected original Exists with one result binder and an atomic, definition-free
+object body. Its original context must contain exactly the sole CheckerFact
+Core guard followed by that binder, with the guard as its sole local premise.
+Project these original entries and body to Kernel's bounded borrowed schema;
+invoke `check_object_inhabitation_witness` with the actual witness, instantiated
+child and entire original typed-input context. VC depends on Kernel for this
+rule; Kernel does not depend on VC. Return the unchanged descriptor only after
+the child/guard, substitution and introduction check succeeds. Upstream errors
+retain precedence; association/check failures produce no descriptor.
+
+This is a fresh local check. Raw unknowns and incomplete/cache-ineligible slices,
+all four Open requests and Deferred termination persist. No evidence, Proof
+identity/checker-policy binding, adoption, status, symbol, promotion, publication
+or acceptance/coverage credit follows. E4 checking remains deferred.
 
 ### E4 operational-reduction request
 

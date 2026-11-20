@@ -84,6 +84,23 @@ remains unchanged. No Formula variant, evidence bytes, Kernel acceptance,
 original E4 proof, existential introduction, Proof adoption, status promotion,
 symbol introduction, publication or acceptance/coverage credit follows.
 
+## Bounded E1-inhabitation Witness Introduction
+
+`check_object_inhabitation_witness(core, target, witness, child, context)` checks
+only `exists r. object(r)` under one original typed-input assumption. The borrowed
+`target` tuple supplies the existential binder, atomic body variable and type name;
+VC authenticates its projection from the original generated existential. Require
+body variable = binder, type `object`, a variable witness distinct from
+the binder, and exactly one context formula. Resolve both the child and context
+as `object` predicates on the witness variable: this checks the child by the
+assumption rule, its target type guard and atomic capture-free substitution,
+then existential introduction ([§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding)).
+Missing, unsupported or mismatched inputs return false; success is only a local
+checked rule, outside `check_kernel_evidence`, with no evidence or acceptance.
+VC owns original-request/context association; Proof binding and adoption remain
+deferred. No generic Formula/wire extension, E4 interpretation, operational
+premise, status change, symbol or publication is supplied.
+
 ## Trust Statement
 
 This module is trusted kernel code. It may accept a proof only after all

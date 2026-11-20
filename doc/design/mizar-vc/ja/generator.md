@@ -694,3 +694,12 @@ build_control_flow_ir、build_obligation_seed_handoff、SeedIntakeTable::try_fro
 同一 task の直接 production caller は Proof canonical inputs、VC theorem-handoff replay、fresh Proof theorem reflexivity check の三つ。registration の専用 generator と独立 test 構築は変更しない。
 最初の caller は lower/roots/Core56 を generation より前に保つ。replay は selected lookup を前に、whole equality/profile check を後に保ち、実 selected anchor generation schema と set VC schema/snapshot を使う。周囲の旧 statement、validation、構造、順序、error は全て保つ。
 これは theorem-profile validator、source seal、acceptance/現在性 API ではない。type/field/adapter/helper/dependency/encoder/receipt/validation を追加せず、anchor/status/schema と generic behavior 全てを保つ。
+
+## E1 inhabitation witness-introduction check
+
+`check_source_algorithm_e1_inhabitation_witness` は元の記述子を再生成し、元の
+existential・result binder・原子 object 本体・単一 CheckerFact とその premise を照合する。
+元の型付き context と child を Kernel の限定規則へ渡し、成功時のみ未変更の記述子を返す。
+上流 error の優先順序、raw slice/unknown、Open4/Deferred は保持する。
+証拠、Proof binding/adoption、状態変更、symbol、promotion、publication、acceptance/coverage credit はない。
+詳細は [英語版](../en/generator.md#e1-inhabitation-witness-introduction-check) を参照。

@@ -20,6 +20,17 @@ policy が受理できないようにする。
 [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md) の
 「Kernel Check Service」を精緻化する。
 
+## 限定 E1 inhabitation の存在導入
+
+`check_object_inhabitation_witness(core, target, witness, child, context)` は
+元の型付き入力仮定の下で `exists r. object(r)` のみを検査する。
+借用 tuple の束縛変数・原子本体変数・型名を照合し、witness と異なる新鮮な
+binder、object 型、単一 context を要求する。Core の child と context を解決し、
+witness 変数の object 述語であることから仮定規則・型 guard・capture-free な
+原子置換・存在導入を検査する。不正入力は false。元要求と context の対応は VC 所有。
+証拠・受理・E4 解釈・状態変更・symbol・publication はなく、Proof の binding/adoption は延期する。
+詳細は [英語版](../en/checker.md#bounded-e1-inhabitation-witness-introduction) を参照。
+
 ## Closeout 後の修正
 
 task 13 から task 22 までの checker は、resolution replay を中心にした legacy
