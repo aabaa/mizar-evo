@@ -693,6 +693,12 @@ The new VcSet retains the original postcondition and expands its source seed to 
 | E1 inhabitation | Existential object result on all typed inputs, with no return/P assumption; no precondition-only witness generalization. |
 | E4 and isolation | Independent return existential; stale/cross-source/check/Core/CFG and changed schema controls regenerate differently or refuse. Missing/swapped proof, declaration, old postcondition, continuation or stopping-only evidence cannot authorize adoption; that consumer is deferred. |
 
+### Original E1 typing descriptor
+
+`generate_source_algorithm_e1_typing_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` regenerates the authentic direct-return graph before selecting only Open E1 typing. Require its original single Forall result binder, implication, exact algorithm/CFG/return/input association in the AlgorithmReturns antecedent, atomic object conclusion and sole CheckerFact input guard/premise. Source/Core/CFG authentication remains with the unchanged producer; errors precede selection refusal.
+
+Return `(VcSet, ContextEntryId, VcFormulaRef, VcFormulaRef, VcFormulaRef, DependencySlice)`: whole unchanged graph, original binder, antecedent, conclusion, Core typed-input guard and whole original raw slice. References describe the original formula without substitution, child scheduling, checking or proof credit. Preserve Open4/Deferred, unknown/incomplete/cache-miss states and caller-owned currentness. No environment interpretation, single-valuedness, adoption, symbol introduction, promotion, reuse or acceptance/coverage follows; formula-cycle hardening remains separate.
+
 ### E1 inhabitation witness-reduction request
 
 `generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` first regenerates the complete authentic four-request graph through the existing producer, preserving its errors. Select only the Open E1-inhabitation existential. Return the unchanged `VcSet`, actual returned `CoreTermId`, original `ContextEntryId` binder, instantiated child `VcFormulaRef::Core(parameter.ty_guard)` and entire original raw `DependencySlice`. The selected ID plus whole original set retain its goal, context, anchor and fingerprints; Proof's existing original-identity route remains authoritative for Proof identities.

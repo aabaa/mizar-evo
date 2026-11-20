@@ -3058,6 +3058,133 @@ pub fn generate_source_algorithm_direct_return_requests(
     .map_err(|error| error.to_string())
 }
 
+/// Decomposes the original Open E1 typing request without checking or replacing its formulas.
+/// Returns the whole graph, result binder, antecedent, conclusion, input guard and raw slice.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain the authentic source producer inputs and existing untrusted descriptor types"
+)]
+pub fn generate_source_algorithm_e1_typing_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        ContextEntryId,
+        VcFormulaRef,
+        VcFormulaRef,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+
+    let vcs = generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e1_typing_request".to_owned();
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    if parent.kind != VcKind::AlgorithmE1Typing || parent.status != VcStatus::Open {
+        return Err(invalid());
+    }
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Forall,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [typed, binder] = parent.local_context.entries() else {
+        return Err(invalid());
+    };
+    let ContextEntryKind::BinderDeclaration { var, role } = &binder.kind else {
+        return Err(invalid());
+    };
+    let Shape::Implies {
+        premise: VcFormulaRef::Generated(antecedent),
+        conclusion: VcFormulaRef::Generated(conclusion),
+    } = &vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let parameter = &algorithm.params[0];
+    let guard = VcFormulaRef::Core(parameter.ty_guard.ok_or_else(invalid)?);
+    let candidate = VcProgramValue {
+        var: *var,
+        definition: None,
+    };
+    // The source producer authenticates the whole Core and sole-return CFG before selection.
+    let flow = mizar_core::control_flow::build_control_flow_ir(core)
+        .flow_map
+        .get(&algorithm_id)
+        .copied()
+        .ok_or_else(invalid)?;
+    if typed.kind != ContextEntryKind::CheckerFact
+        || typed.formula != Some(guard)
+        || parent.premises.as_slice() != [PremiseRef::LocalContext(typed.id)]
+        || binder.formula.is_some()
+        || role.as_str() != "result"
+        || binders.as_slice() != [binder.id]
+        || *var == parameter.var
+        || vcs
+            .generated_formula(*antecedent)
+            .ok_or_else(invalid)?
+            .shape
+            != (Shape::AlgorithmReturns {
+                algorithm: algorithm_id,
+                flow,
+                statement: algorithm.statements[0],
+                input: VcProgramValue {
+                    var: parameter.var,
+                    definition: None,
+                },
+                result: candidate,
+            })
+        || vcs
+            .generated_formula(*conclusion)
+            .ok_or_else(invalid)?
+            .shape
+            != (Shape::ProgramTypePredicate {
+                subject: candidate,
+                ty: "object".into(),
+            })
+    {
+        return Err(invalid());
+    }
+    let binder = binder.id;
+    let antecedent = VcFormulaRef::Generated(*antecedent);
+    let conclusion = VcFormulaRef::Generated(*conclusion);
+    let slices =
+        crate::dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices(
+            source,
+            check,
+            symbols,
+            core,
+            &vcs,
+            generation_schema,
+        )?;
+    let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
+    Ok((vcs, binder, antecedent, conclusion, guard, slice))
+}
+
 /// Describes an untrusted witness reduction while retaining the whole original request graph.
 /// The binder-to-term pair and child guard grant no checking or existential-introduction credit.
 #[expect(

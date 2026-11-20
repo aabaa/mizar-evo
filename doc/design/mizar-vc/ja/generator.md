@@ -620,6 +620,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 | E1 inhabitation | 全 typed input で object result が存在する goal。return/P 仮定や precondition 下だけの witness 一般化はない。 |
 | E4 と isolation | 独立 return existential。stale/cross-source/check/Core/CFG、schema 変更は拒否または異なる再生成結果となる。欠落・差替え proof、宣言、旧 postcondition、continuation、stopping-only evidence は adoption を許可せず、consumer は未実装。 |
 
+### 元の E1 typing descriptor
+
+`generate_source_algorithm_e1_typing_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` は authentic direct-return graph を再生成してから Open E1 typing のみを選ぶ。元の単一 Forall result binder、含意、AlgorithmReturns 前件の正確な algorithm/CFG/return/input 関連、atomic object 結論、唯一の CheckerFact 入力 guard/premise を要求する。source/Core/CFG 認証は変更しない producer が所有し、その error は選択拒否に先行する。
+
+`(VcSet, ContextEntryId, VcFormulaRef, VcFormulaRef, VcFormulaRef, DependencySlice)` として、変更しない graph 全体、元 binder、前件、結論、Core typed-input guard、元の raw slice 全体を返す。元の式への参照であり、置換、子の scheduling、checking、proof credit は与えない。Open4/Deferred、unknown/incomplete/cache-miss、呼出側 currentness を保つ。環境解釈、single-valuedness、adoption、symbol introduction、promotion、reuse、acceptance/coverage は伴わず、formula-cycle hardening は別件のままとする。
+
 ### E1 inhabitation witness-reduction request
 
 `generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` は既存 producer で四要求の authentic graph 全体を再生成し、元の error を保つ。Open E1-inhabitation existential のみを選び、変更しない `VcSet`、実 return の `CoreTermId`、元の binder `ContextEntryId`、置換後の子 `VcFormulaRef::Core(parameter.ty_guard)`、親の raw `DependencySlice` 全体を返す。選択 ID と元 set 全体で goal/context/anchor/fingerprint を保持する。Proof identity の権限は既存 Proof route に残る。

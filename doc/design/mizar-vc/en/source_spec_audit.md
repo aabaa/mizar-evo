@@ -114,6 +114,7 @@ Literal top-level public items:
 - `CoreGenerationInput`, `VcNormalizationInput`,
   `CoreGenerationCandidateSet`, `CoreGenerationCandidate`,
   `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`, `generate_source_void_claim`, `generate_source_existential_registration`, `generate_source_computation_request`
+- `generate_source_algorithm_e1_typing_request`: [original E1 typing descriptor](generator.md#original-e1-typing-descriptor).
 
 Correspondence:
 

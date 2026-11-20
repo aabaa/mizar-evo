@@ -2790,13 +2790,17 @@ fn source_algorithm_direct_return_requests_preserve_authentic_output() {
 fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr, CoreIrParts};
     use mizar_vc::{
-        generator::generate_source_algorithm_direct_return_requests,
+        generator::{
+            generate_source_algorithm_direct_return_requests,
+            generate_source_algorithm_e1_typing_request as descriptor,
+        },
         vc_ir::{
-            ContextEntryKind, QuantifierKind, VcGeneratedFormulaShape as Shape, VcKind,
-            VcProgramValue,
+            ContextEntryKind, PremiseRef, QuantifierKind, VcFormulaRef,
+            VcGeneratedFormulaShape as Shape, VcKind, VcProgramValue,
         },
     };
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
         let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
         let parameter = &algorithm.params[0];
         let result = algorithm.result.as_ref().unwrap();
@@ -2851,6 +2855,49 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                 },
                 result: candidate,
             }
+        );
+        let entries = request.local_context.entries();
+        let guard = VcFormulaRef::Core(parameter.ty_guard.unwrap());
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].kind, ContextEntryKind::CheckerFact);
+        assert_eq!(entries[0].formula, Some(guard));
+        assert_eq!(request.premises, [PremiseRef::LocalContext(entries[0].id)]);
+        assert_eq!(entries[1].id, *binder);
+        assert_eq!(entries[1].formula, None);
+        assert_ne!(var, parameter.var);
+        assert_ne!(var, result.var);
+        let generation = &request.anchor.generation_schema_version;
+        let slices = source_algorithm_direct_return_slice_oracle(
+            source, check, symbols, core, vcs, generation,
+        );
+        let slice = slices.slice_for(request.id).unwrap();
+        let expected = (
+            vcs.clone(),
+            *binder,
+            *premise,
+            *conclusion,
+            guard,
+            slice.clone(),
+        );
+        for _ in 0..2 {
+            assert_eq!(
+                descriptor(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    generation,
+                    vcs.schema_version(),
+                    request.id
+                )
+                .unwrap(),
+                expected
+            );
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
         );
         for mutation in 0..8 {
             let mut parts = CoreIrParts {
@@ -2929,19 +2976,33 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                 }
             }
             let changed = CoreIr::try_new(parts).unwrap();
-            assert!(
-                generate_source_algorithm_direct_return_requests(
-                    source,
-                    check,
-                    symbols,
-                    &changed,
-                    vcs.snapshot(),
-                    &request.anchor.generation_schema_version,
-                    vcs.schema_version(),
-                )
-                .is_err(),
-                "Core mutation {mutation}"
-            );
+            let expected = generate_source_algorithm_direct_return_requests(
+                source,
+                check,
+                symbols,
+                &changed,
+                vcs.snapshot(),
+                &request.anchor.generation_schema_version,
+                vcs.schema_version(),
+            )
+            .unwrap_err();
+            for selected in [request.id, VcId::new(usize::MAX)] {
+                assert_eq!(
+                    mizar_vc::generator::generate_source_algorithm_e1_typing_request(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        &request.anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        selected,
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core mutation {mutation} must precede selection {selected:?}"
+                );
+            }
         }
     });
 }
@@ -3951,6 +4012,34 @@ fn source_algorithm_direct_return_identity_refuses_old_absent_and_broader_profil
 }
 
 #[test]
+fn source_algorithm_typing_descriptor_refuses_every_other_role_and_absent_id() {
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        for selected in vcs
+            .vcs()
+            .iter()
+            .filter(|vc| vc.kind != mizar_vc::vc_ir::VcKind::AlgorithmE1Typing)
+            .map(|vc| vc.id)
+            .chain([VcId::new(vcs.vcs().len()), VcId::new(usize::MAX)])
+        {
+            assert_eq!(
+                mizar_vc::generator::generate_source_algorithm_e1_typing_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    selected,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e1_typing_request"
+            );
+        }
+    });
+}
+
+#[test]
 fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind};
     use mizar_vc::{
@@ -4233,7 +4322,79 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
                 &schema,
             )
             .unwrap();
+            let typing = &parent.vcs()[1];
+            let Shape::Quantified {
+                kind: QuantifierKind::Forall,
+                binders,
+                body,
+            } = direct_return_request_shape(&parent, typing.goal)
+            else {
+                panic!("original universal typing")
+            };
+            let [typing_binder] = binders.as_slice() else {
+                panic!("one typing binder")
+            };
+            let ContextEntryKind::BinderDeclaration {
+                var: typing_var, ..
+            } = typing.local_context.entries()[typing_binder.index()].kind
+            else {
+                panic!("original typing binder declaration")
+            };
             let algorithm = core.algorithms().iter().next().unwrap().1;
+            assert_ne!(typing_var, algorithm.params[0].var);
+            assert_ne!(typing_var, algorithm.result.as_ref().unwrap().var);
+            assert!(core.terms().iter().all(
+                |(_, term)| !matches!(term.kind, CoreTermKind::Var(old) if old == typing_var)
+            ));
+            let Shape::Implies {
+                premise,
+                conclusion,
+            } = direct_return_request_shape(&parent, *body)
+            else {
+                panic!("original typing implication")
+            };
+            assert!(matches!(direct_return_request_shape(&parent, *premise),
+                Shape::AlgorithmReturns { input, result, .. }
+                    if input.var == algorithm.params[0].var && result.var == typing_var));
+            assert_eq!(
+                direct_return_request_shape(&parent, *conclusion),
+                &Shape::ProgramTypePredicate {
+                    subject: VcProgramValue {
+                        var: typing_var,
+                        definition: None
+                    },
+                    ty: "object".into(),
+                }
+            );
+            let typing_slices = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                &core,
+                &parent,
+                &generation,
+            );
+            assert_eq!(
+                mizar_vc::generator::generate_source_algorithm_e1_typing_request(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    snapshot_id(0),
+                    &generation,
+                    &schema,
+                    typing.id,
+                )
+                .unwrap(),
+                (
+                    parent.clone(),
+                    *typing_binder,
+                    *premise,
+                    *conclusion,
+                    VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
+                    typing_slices.slice_for(typing.id).unwrap().clone()
+                )
+            );
             let CoreAlgorithmStmtKind::Return(Some(term)) = core
                 .algorithm_statements()
                 .get(algorithm.statements[0])
@@ -4476,6 +4637,22 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             ).unwrap_err(),
                             expected,
                         );
+                        for selected in [VcId::new(1), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                mizar_vc::generator::generate_source_algorithm_e1_typing_request(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                        }
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
                             for policy in [
                                 mizar_proof::policy::VerifierPolicy::default(),
