@@ -87,8 +87,10 @@ status promotion・symbol introduction・publication・acceptance/coverage credi
 不透明な `ObjectInhabitationCheck` を返す。非公開の immutable Core 借用、元の存在束縛子、
 単一 context 式を `core()`・`binder()`・`context()` で参照できる。型が固定結論と Kernel
 規則の由来を表し、任意 target hash、汎用 Accepted、axiom、SAT report、Proof policy の
-意味を持たない。VC が元要求と witness の対応を保持し、Proof 消費は保留、bool API は維持。
+意味を持たない。VC が元要求と witness の対応を保持し、bool API は維持。
 詳細は [英語版](../en/checker.md#bounded-e1-inhabitation-witness-introduction) を参照。
+
+`ObjectInhabitationCheck::checker_schema_version()` はこの正の rule の Kernel 所有 schema を返す。Proof は要求された版を実 checker の版として記録せず、実際の現在 policy と照合する。
 
 ## Trust Statement
 

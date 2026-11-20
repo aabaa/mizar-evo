@@ -183,6 +183,10 @@ It returns false for:
 Scheduling permission is not acceptance. A scheduled candidate becomes trusted
 only if the kernel returns `Accepted`.
 
+## Bounded native positive-result policy
+
+The crate-private `consume_object_inhabitation` consumes an actual Kernel `ObjectInhabitationCheck`, whose opaque type fixes positive existential introduction and rule origin. Require enabled `BuiltinKernelEvidence` and exact agreement between its Kernel-owned checker schema and the supplied policy's requested schema; otherwise refuse. Return that policy's fingerprint only after these checks. This post-check primitive eligibility path does not create a generic `KernelPolicyInput`, selectable class, accepted-evidence hash or refutation polarity. Existing generic classification and trusted selection remain unchanged.
+
 ## Externally Attested Evidence
 
 Externally attested evidence is policy evidence. It is never kernel-verified

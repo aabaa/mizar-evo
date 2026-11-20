@@ -107,8 +107,9 @@ an immutable Core borrow, the original existential binder and sole context formu
 `core()`, `binder()` and `context()` expose that checked target/context. The type
 encodes the fixed conclusion `exists r.object(r)` and Kernel rule origin. It has no
 caller target hash, generic Accepted state, axioms, SAT report or proof-policy
-meaning. VC retains original-request/witness association; Proof consumption stays
-deferred. The bool API remains available.
+meaning. VC retains original-request/witness association. The bool API remains available.
+
+`ObjectInhabitationCheck::checker_schema_version()` reports the Kernel-owned schema of this positive rule; Proof must compare it with the actual current policy rather than stamp a requested version.
 
 ## Trust Statement
 

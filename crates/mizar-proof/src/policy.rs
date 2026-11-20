@@ -264,6 +264,21 @@ impl ProofPolicyEvaluator {
         self.policy.policy_fingerprint()
     }
 
+    /// Consumes the checked positive rule without creating selectable evidence.
+    pub(crate) fn consume_object_inhabitation(
+        &self,
+        result: &mizar_kernel::checker::ObjectInhabitationCheck<'_>,
+    ) -> Result<PolicyFingerprint, String> {
+        if !self
+            .policy
+            .supports_kernel_format(KernelEvidenceFormat::BuiltinKernelEvidence)
+            || self.policy.checker_schema_version() != result.checker_schema_version()
+        {
+            return Err("algorithm.proof.native_e1_policy_rejected".to_owned());
+        }
+        Ok(self.policy_fingerprint())
+    }
+
     #[must_use]
     pub fn candidate_class(&self, candidate: &PolicyCandidate) -> CandidatePolicyClass {
         self.evaluate_candidate(candidate).class

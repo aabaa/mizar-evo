@@ -175,6 +175,10 @@ No exhaustive public enum exceptions are owned by this module.
 scheduling permission は acceptance ではない。scheduled candidate は kernel が
 `Accepted` を返した場合だけ trusted になる。
 
+## Bounded native positive-result policy
+
+crate-private `consume_object_inhabitation` は実際の Kernel `ObjectInhabitationCheck` を消費する。不透明型が正の存在導入と rule origin を固定する。`BuiltinKernelEvidence` が有効で、Kernel 所有の checker schema と指定 policy の要求 schema が完全一致する場合だけ、その policy の fingerprint を返す。それ以外は拒否する。この検査後の primitive 適格性経路は汎用 `KernelPolicyInput`、選択可能 class、accepted-evidence hash、refutation polarity を作らない。既存の汎用分類と trusted selection は変更しない。
+
 ## Externally Attested Evidence
 
 externally attested evidence は policy evidence である。kernel-verified evidence では

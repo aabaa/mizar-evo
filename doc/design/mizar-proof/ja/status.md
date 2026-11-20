@@ -559,6 +559,11 @@ API より前に実 check/Core/raw graph/VC74 handoff、v1 parse、実 name enco
 原文、parameter rename、Unicode trivia、algorithm owner rename を baseline で扱う。別 snapshot と default/development/interactive policy の変更は原文のみに独立の case とし、直積にしない。実 raw Open/Deferred/不完全 anchor/accounting と source/nodes/symbols/policy/先行実 result を保持し、編集間 hash 不変は仮定しない。
 absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ensures 二 return Core は既存 generator String、object result の bare-return 実 source は既存 checker String を absent-id/disabled-policy より先に返す。valid source/handoff 後の empty・formula-only format は scheduling error、absent target は disabled policy より先。既存 lower profile/normal grammar/name/context/policy の拒否 matrix を再利用し、架空 producer や checker test の重複は禁止。
 
+## Bounded native E1 result consumption
+
+`check_source_algorithm_e1_inhabitation(source, check, symbols, core, snapshot, vc_id, policy)` は元 identity、raw slice 全体、借用 `ObjectInhabitationCheck`、現在の policy fingerprint を返す。先に上記固定 direct-return schema で真正な VC native-result producer を呼び、エラーを保持する。次に同じ入力から既存の元 identity を取得し、slice 全体の一致を要求する。producer が選択された元の存在量化・binder・context と、同じ不変 Core および固定された正の結論を結び付ける。呼出側の detached token/identity は受け取らない。
+関連付け後に [native primitive policy](policy.md#bounded-native-positive-result-policy) で実結果を消費し、四値を atomic に返す。currentness は呼出側の責務。trusted selection/reuse、status、adoption、evidence、symbol、promotion、publication、acceptance/coverage credit は付与しない。四要求は Open、termination は Deferred、独立した E1 義務は未証明のまま。
+
 ## Source algorithm return canonical inputs
 
 `source_algorithm_return_canonical_inputs(check: &SourceAlgorithmCheck<'_>, snapshot: BuildSnapshotId, vc_id: VcId) -> Result<(CanonicalVcFingerprint, Hash, LocalContextFingerprint, DependencySlice), String>` を既存 status.rs の source_theorem_canonical_inputs の完全な doccomments/function 前へ一つ追加する。実 opaque source check と通常の snapshot/選択だけを受け、caller Core/maps/VC/hashes/slice/result/flag は受けない。

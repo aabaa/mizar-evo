@@ -1247,6 +1247,12 @@ pub struct ObjectInhabitationCheck<'core> {
 }
 
 impl<'core> ObjectInhabitationCheck<'core> {
+    /// Schema of this Kernel-owned positive existential-introduction rule.
+    #[must_use]
+    pub const fn checker_schema_version(&self) -> u16 {
+        1
+    }
+
     #[must_use]
     pub const fn core(&self) -> &'core CoreIr {
         self.core

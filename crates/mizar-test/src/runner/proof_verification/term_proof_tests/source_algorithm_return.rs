@@ -4069,6 +4069,23 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
             assert!(std::ptr::eq(result.core(), &core));
             assert_eq!(result.binder(), var);
             assert_eq!(result.context(), &[guard]);
+            let policy = mizar_proof::policy::VerifierPolicy::default();
+            let consumed = mizar_proof::status::check_source_algorithm_e1_inhabitation(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                VcId::new(3),
+                &policy,
+            )
+            .unwrap();
+            assert_eq!((&consumed.0, &consumed.1), (&identity, &slice));
+            assert!(std::ptr::eq(consumed.2.core(), result.core()));
+            assert_eq!(consumed.2.binder(), result.binder());
+            assert_eq!(consumed.2.context(), result.context());
+            assert_eq!(consumed.2.checker_schema_version(), 1);
+            assert_eq!(consumed.3, policy.policy_fingerprint());
             let (_, repeated) = native(
                 source,
                 check,
@@ -4229,6 +4246,22 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
             assert!(std::ptr::eq(result.core(), &core));
             assert_eq!(result.binder(), var);
             assert_eq!(result.context(), &[algorithm.params[0].ty_guard.unwrap()]);
+            let consumed = mizar_proof::status::check_source_algorithm_e1_inhabitation(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                VcId::new(3),
+                &mizar_proof::policy::VerifierPolicy::default(),
+            )
+            .unwrap();
+            let (identity, _, _, _, slice) =
+                source_algorithm_direct_return_reference(source, check, symbols, snapshot_id(0), 2);
+            assert_eq!((consumed.0, consumed.1), (identity, slice));
+            assert!(std::ptr::eq(consumed.2.core(), result.core()));
+            assert_eq!(consumed.2.binder(), var);
+            assert_eq!(consumed.2.context(), result.context());
             for witness in [witness, checked] {
                 assert_eq!(
                     witness(
@@ -4357,6 +4390,28 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             expected,
                         );
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
+                            for policy in [
+                                mizar_proof::policy::VerifierPolicy::default(),
+                                mizar_proof::policy::VerifierPolicy::default()
+                                    .with_kernel_evidence_formats([]),
+                                mizar_proof::policy::VerifierPolicy::default()
+                                    .with_checker_schema_version(2),
+                            ] {
+                                assert_eq!(
+                                    mizar_proof::status::check_source_algorithm_e1_inhabitation(
+                                        source,
+                                        check,
+                                        symbols,
+                                        core,
+                                        vcs.snapshot(),
+                                        selected,
+                                        &policy,
+                                    )
+                                    .err()
+                                    .unwrap(),
+                                    expected
+                                );
+                            }
                             assert_eq!(
                                 native(
                                     source,
@@ -4504,6 +4559,30 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
             assert!(std::ptr::eq(result.core(), core));
             assert_eq!(result.binder(), var);
             assert_eq!(result.context(), &[algorithm.params[0].ty_guard.unwrap()]);
+            let policy = mizar_proof::policy::VerifierPolicy::default();
+            let consumed = mizar_proof::status::check_source_algorithm_e1_inhabitation(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                VcId::new(3),
+                &policy,
+            )
+            .unwrap();
+            let (identity, _, _, _, whole_slice) =
+                source_algorithm_direct_return_reference(source, check, symbols, snapshot, 2);
+            assert_eq!((consumed.0, consumed.1.clone()), (identity, whole_slice));
+            assert!(!consumed.1.entries().is_empty());
+            assert!(!consumed.1.unknowns().is_empty());
+            assert_eq!(
+                consumed.1.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(consumed.1.requires_cache_miss());
+            assert_eq!(consumed.1.status(), &VcStatus::Open);
+            assert_eq!(consumed.2.binder(), var);
+            assert_eq!(consumed.2.context(), result.context());
             for witness in [witness, checked] {
                 assert_eq!(
                     witness(
@@ -4524,6 +4603,126 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
         assert_eq!(
             format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
             before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_native_e1_refuses_wrong_roles_before_policy() {
+    use mizar_proof::{
+        policy::VerifierPolicy, status::check_source_algorithm_e1_inhabitation as consume,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        for selected in [
+            VcId::new(0),
+            VcId::new(1),
+            VcId::new(2),
+            VcId::new(4),
+            VcId::new(usize::MAX),
+        ] {
+            for policy in [
+                VerifierPolicy::default(),
+                VerifierPolicy::default().with_kernel_evidence_formats([]),
+                VerifierPolicy::default().with_checker_schema_version(2),
+            ] {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        selected,
+                        &policy
+                    )
+                    .err()
+                    .unwrap(),
+                    "algorithms.direct_return.invalid_inhabitation_witness_request"
+                );
+            }
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_native_e1_uses_current_policy_and_actual_checker_schema() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::check_source_algorithm_e1_inhabitation as consume,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let default = VerifierPolicy::default();
+        let prior = consume(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(3),
+            &default,
+        )
+        .unwrap();
+        for policy in [
+            default.clone(),
+            VerifierPolicy::development(),
+            VerifierPolicy::interactive(),
+            default.clone().with_profile_id("changed-native-policy"),
+        ] {
+            let actual = consume(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                VcId::new(3),
+                &policy,
+            )
+            .unwrap();
+            assert_eq!((&actual.0, &actual.1), (&prior.0, &prior.1));
+            assert_eq!(actual.3, policy.policy_fingerprint());
+            if policy != default {
+                assert_ne!(actual.3, prior.3);
+            }
+            assert_eq!(actual.2.checker_schema_version(), 1);
+        }
+        for policy in [
+            default.clone().with_kernel_evidence_formats([]),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            default.clone().with_checker_schema_version(0),
+            default.clone().with_checker_schema_version(2),
+        ] {
+            let before = policy.clone();
+            assert_eq!(
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(3),
+                    &policy
+                )
+                .err()
+                .unwrap(),
+                "algorithm.proof.native_e1_policy_rejected"
+            );
+            assert_eq!(policy, before);
+        }
+        assert_eq!(
+            consume(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                VcId::new(3),
+                &default
+            )
+            .unwrap()
+            .3,
+            prior.3
         );
     });
 }
