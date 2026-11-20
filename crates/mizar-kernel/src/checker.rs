@@ -1238,6 +1238,89 @@ pub fn check_sole_return_var<'a, T>(
     Some((*statement_id, term_id, value))
 }
 
+/// Checks only the instantiated symbolic child `returns(a,a)` under `object(a)`.
+/// VC authenticates the original relation projection and context association.
+/// This supplies no E4 existential introduction, evidence or Proof adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "project the existing relation tuple without a single-use representation"
+)]
+pub fn check_instantiated_algorithm_returns(
+    core: &CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    witness: CoreTermId,
+    context: &[CoreFormulaId],
+) -> bool {
+    let (algorithm_id, flow_id, statement_id, input, result) = target;
+    let Some(algorithm) = core.algorithms().get(algorithm_id) else {
+        return false;
+    };
+    let ([parameter], Some(output), [assumption]) = (
+        algorithm.params.as_slice(),
+        algorithm.result.as_ref(),
+        context,
+    ) else {
+        return false;
+    };
+    if core.has_error_nodes()
+        || !core.diagnostics().is_empty()
+        || !algorithm.diagnostics.is_empty()
+        || !algorithm.ghost_effects.is_empty()
+        || parameter.role.as_str() != "parameter"
+        || output.role.as_str() != "result"
+        || parameter.var == output.var
+        || input != (parameter.var, None)
+        || result != input
+        || parameter.ty_guard != Some(*assumption)
+        || output
+            .ty_guard
+            .is_none_or(|id| core.formulas().get(id).is_none())
+        || algorithm.statements.as_slice() != [statement_id]
+        || core
+            .terms()
+            .get(witness)
+            .is_none_or(|term| term.kind != CoreTermKind::Var(parameter.var))
+    {
+        return false;
+    }
+    let Some(CoreFormulaKind::TypePred { subject, ty }) = core
+        .formulas()
+        .get(*assumption)
+        .map(|formula| &formula.kind)
+    else {
+        return false;
+    };
+    if ty.as_str() != "object"
+        || core
+            .terms()
+            .get(*subject)
+            .is_none_or(|term| term.kind != CoreTermKind::Var(parameter.var))
+        || core
+            .algorithm_statements()
+            .get(statement_id)
+            .is_none_or(|statement| {
+                statement.owner != algorithm_id
+                    || !statement.diagnostics.is_empty()
+                    || statement.kind != CoreAlgorithmStmtKind::Return(Some(witness))
+            })
+    {
+        return false;
+    }
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    cfg.flow_map.get(&algorithm_id) == Some(&flow_id)
+        && cfg
+            .flows
+            .get(flow_id)
+            .is_some_and(|flow| flow.algorithm == algorithm_id)
+}
+
 /// A checked `exists r.object(r)` under the retained Core context.
 /// Construction is private and performs bounded existential introduction.
 pub struct ObjectInhabitationCheck<'core> {

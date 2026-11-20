@@ -746,6 +746,20 @@ The input tuple is the exact request to Kernel's [conditional validator](../../m
 
 This is conditional local checking under the handoff's caller premises, with no semantic environment association or original AlgorithmReturns proof. E4 existential introduction, Proof identity/current-policy binding and adoption remain deferred. The descriptor/raw slice and Open4/Deferred states stay unchanged; no generic evidence/status/reuse or broader credit follows.
 
+### E4 checked instantiated child
+
+`check_source_algorithm_e4_instantiated_request` takes the operational-reduction
+producer's arguments and calls it first, preserving errors. Authenticate the
+original E4 existential's result binder, sole typed-input Core CheckerFact and
+premise association; pass the full instantiated AlgorithmReturns tuple, actual
+witness and original assumption to Kernel's [symbolic child rule](../../mizar-kernel/en/checker.md#symbolic-instantiated-algorithmreturns-child).
+Only success returns the unchanged original descriptor; refusal is atomic.
+This checks `returns(a,a)` under the symbolic typed-input assumption, without
+interpreting opaque runtime values or altering the local consumer's premises.
+Original E4 existential introduction, semantic environment association and Proof
+identity/current-policy binding/adoption remain deferred. Whole raw unknowns,
+incomplete/cache-ineligible slices, Open4/Deferred and all credit exclusions persist.
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 require E1 typing/inhabitation/single-valuedness and verified E2 partial correctness; E4 normal return applies in terminating/promotion contexts, not to every partial definition.

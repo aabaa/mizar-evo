@@ -645,6 +645,18 @@ binder と term の組は object(r) の fresh r を実 immutable a に置換す�
 
 これは handoff の呼出側前提に基づく条件付き局所検査であり、意味的 environment association や元の AlgorithmReturns proof は与えない。E4 existential introduction、Proof identity/current-policy binding、adoption は延期のままである。descriptor/raw slice と Open4/Deferred は変わらず、汎用 evidence/status/reuse や広い credit は与えない。
 
+### E4 checked instantiated child
+
+`check_source_algorithm_e4_instantiated_request` は operational-reduction producer と同じ
+引数を受け、最初に呼んでエラーを保持する。元 E4 存在量化の result binder、単一の
+型付き入力 Core CheckerFact と premise 対応を認証し、置換済み AlgorithmReturns
+tuple 全体・実際の witness・元仮定を Kernel の symbolic child rule に渡す。
+成功時だけ変更しない元 descriptor を返し、拒否は atomic。型付き入力仮定の下の
+`returns(a,a)` のみを検査し、opaque 実行値や既存 local consumer の前提は変えない。
+E4 存在導入・意味的 environment 対応・Proof identity/current-policy binding/adoption は延期。
+raw unknown・incomplete/cache miss・Open4/Deferred と credit の除外を維持する。
+詳細は [英語版](../en/generator.md#e4-checked-instantiated-child) を参照。
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 は E1 の型/inhabitation/単一値性と検証済み E2 部分正当性を要求する。E4 正常復帰は terminating/昇格の文脈に適用し、すべての部分定義には要求しない。

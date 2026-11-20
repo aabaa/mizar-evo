@@ -3436,6 +3436,115 @@ pub fn generate_source_algorithm_e4_operational_reduction_request(
     Ok((vcs, witness, binder, instantiated, Shape::True, slice))
 }
 
+/// Checks only the instantiated child of an authentic E4 request under its typed-input context.
+/// Returns the unchanged descriptor without original E4 existential introduction or adoption.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain authentic source inputs and the unchanged operational descriptor types"
+)]
+pub fn check_source_algorithm_e4_instantiated_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        mizar_core::core_ir::CoreTermId,
+        ContextEntryId,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+
+    let descriptor = generate_source_algorithm_e4_operational_reduction_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e4_instantiated_request".to_owned();
+    let (vcs, witness, descriptor_binder, child, _, _) = &descriptor;
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Exists,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [typed, binder] = parent.local_context.entries() else {
+        return Err(invalid());
+    };
+    let ContextEntryKind::BinderDeclaration { var, role } = &binder.kind else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(assumption)) = typed.formula else {
+        return Err(invalid());
+    };
+    let Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = child
+    else {
+        return Err(invalid());
+    };
+    if typed.kind != ContextEntryKind::CheckerFact
+        || binder.formula.is_some()
+        || role.as_str() != "result"
+        || binder.id != *descriptor_binder
+        || binders.as_slice() != [binder.id]
+        || parent.premises.as_slice() != [PremiseRef::LocalContext(typed.id)]
+        || vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+            != (Shape::AlgorithmReturns {
+                algorithm: *algorithm,
+                flow: *flow,
+                statement: *statement,
+                input: *input,
+                result: VcProgramValue {
+                    var: *var,
+                    definition: None,
+                },
+            })
+    {
+        return Err(invalid());
+    }
+    let target = (
+        *algorithm,
+        *flow,
+        *statement,
+        (input.var, input.definition),
+        (result.var, result.definition),
+    );
+    if !mizar_kernel::checker::check_instantiated_algorithm_returns(
+        core,
+        target,
+        *witness,
+        &[assumption],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Associates an authentic E4 request with exact conditional Kernel inputs/expected output.
 ///
 /// This does not invoke Kernel or check opaque value typing/initialization: those

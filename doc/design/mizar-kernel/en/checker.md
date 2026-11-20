@@ -84,6 +84,20 @@ remains unchanged. No Formula variant, evidence bytes, Kernel acceptance,
 original E4 proof, existential introduction, Proof adoption, status promotion,
 symbol introduction, publication or acceptance/coverage credit follows.
 
+## Symbolic Instantiated AlgorithmReturns Child
+
+`check_instantiated_algorithm_returns(core, target, witness, context)` checks only
+`returns(a,a)` under the sole original `object(a)` Core assumption. The tuple
+projects algorithm, flow, statement and input/result `(var, definition)` pairs.
+Require both values to be the immutable parameter without a local definition,
+the actual witness `Var(a)`, its sole owned Return, valid roles/guards and no
+errors, diagnostics or ghost effects. The context must equal the parameter guard
+and resolve to `object(a)`. Rebuild Core CFG and match its algorithm-to-flow map
+and flow owner. Return a boolean; no opaque runtime value supplies a premise.
+VC owns [original relation/context authentication](../../mizar-vc/en/generator.md#e4-checked-instantiated-child).
+This child check supplies no original E4 existential introduction, semantic
+environment association, Proof identity/policy binding/adoption or broader credit.
+
 ## Bounded E1-inhabitation Witness Introduction
 
 `check_object_inhabitation_witness(core, target, witness, child, context)` checks
@@ -97,8 +111,8 @@ assumption rule, its target type guard and atomic capture-free substitution,
 then existential introduction ([§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding)).
 Missing, unsupported or mismatched inputs return false; success is only a local
 checked rule, outside `check_kernel_evidence`, with no evidence or acceptance.
-VC owns original-request/context association; Proof binding and adoption remain
-deferred. No generic Formula/wire extension, E4 interpretation, operational
+VC owns original-request/context association; generic/broader Proof binding and
+adoption remain deferred; [bounded native E1 inhabitation adoption](../../mizar-proof/en/status.md#native-e1-inhabitation-adoption) is separate. No generic Formula/wire extension, E4 interpretation, operational
 premise, status change, symbol or publication is supplied.
 
 `check_object_inhabitation_result` checks the same rule in its producing call and

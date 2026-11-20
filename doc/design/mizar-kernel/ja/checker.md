@@ -28,8 +28,20 @@ policy が受理できないようにする。
 binder、object 型、単一 context を要求する。Core の child と context を解決し、
 witness 変数の object 述語であることから仮定規則・型 guard・capture-free な
 原子置換・存在導入を検査する。不正入力は false。元要求と context の対応は VC 所有。
-証拠・受理・E4 解釈・状態変更・symbol・publication はなく、Proof の binding/adoption は延期する。
+証拠・受理・E4 解釈・状態変更・symbol・publication はなく、汎用・広範な Proof の binding/adoption は延期する。[限定 native E1 inhabitation adoption](../../mizar-proof/en/status.md#native-e1-inhabitation-adoption) は別の経路である。
 詳細は [英語版](../en/checker.md#bounded-e1-inhabitation-witness-introduction) を参照。
+
+## Symbolic Instantiated AlgorithmReturns Child
+
+`check_instantiated_algorithm_returns(core, target, witness, context)` は、単一の元の
+`object(a)` Core 仮定の下で置換済み `returns(a,a)` のみを検査する。tuple 全体の
+algorithm/flow/statement/input/result、local definition のない不変 parameter、
+実際の `Var(a)` witness と所有する単一 Return、role/guard とエラー等の不在を照合する。
+context は parameter guard と同一で `object(a)` に解決できなければならない。
+Core CFG を再構築し map と flow owner を照合して boolean を返す。実行値は前提を供給しない。
+元の関係/context の認証は VC 所有。E4 存在導入、意味的 environment 対応、Proof
+identity/policy binding/adoption や広範な credit は与えない。
+詳細は [英語版](../en/checker.md#symbolic-instantiated-algorithmreturns-child) を参照。
 
 ## Closeout 後の修正
 

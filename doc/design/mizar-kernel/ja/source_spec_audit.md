@@ -115,6 +115,7 @@ Covered top-level public items:
 - `CheckedImportedFact`
 - `ImportedFactCheckResult`
 - `check_imported_facts`
+- `check_instantiated_algorithm_returns`
 - `KernelCheckInput`
 - `KernelEvidenceCheckInput`
 - `KernelCheckPolicy`

@@ -5554,6 +5554,10 @@ fn source_algorithm_sole_return_var_refuses_other_roles_and_executable_bodies() 
             algorithm.params[0].ty_guard.unwrap(),
             (),
         )];
+        let flow = mizar_core::control_flow::build_control_flow_ir(core).flow_map[&id];
+        let value = (algorithm.params[0].var, None);
+        let target = (id, flow, statement, value, value);
+        let context = [algorithm.params[0].ty_guard.unwrap()];
         for mutation in 0..18 {
             let mut parts = sole_return_core_parts(core);
             match mutation {
@@ -5649,6 +5653,12 @@ fn source_algorithm_sole_return_var_refuses_other_roles_and_executable_bodies() 
                 None,
                 "mutation {mutation}"
             );
+            assert!(
+                !mizar_kernel::checker::check_instantiated_algorithm_returns(
+                    &changed, target, term, &context,
+                ),
+                "instantiated mutation {mutation}"
+            );
         }
     });
 }
@@ -5672,6 +5682,10 @@ fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() 
             algorithm.params[0].ty_guard.unwrap(),
             (),
         )];
+        let flow = mizar_core::control_flow::build_control_flow_ir(core).flow_map[&id];
+        let value = (algorithm.params[0].var, None);
+        let target = (id, flow, statement, value, value);
+        let context = [algorithm.params[0].ty_guard.unwrap()];
         assert_eq!(
             check_sole_return_var(
                 core,
@@ -5788,11 +5802,20 @@ fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() 
                         ..
                     })
                 )),
-                _ => assert_eq!(
-                    check_sole_return_var(&changed.unwrap(), id, &environment),
-                    None,
-                    "mutation {mutation}"
-                ),
+                _ => {
+                    let changed = changed.unwrap();
+                    assert_eq!(
+                        check_sole_return_var(&changed, id, &environment),
+                        None,
+                        "mutation {mutation}"
+                    );
+                    assert!(
+                        !mizar_kernel::checker::check_instantiated_algorithm_returns(
+                            &changed, target, term, &context,
+                        ),
+                        "instantiated mutation {mutation}"
+                    );
+                }
             }
         }
     });
@@ -6007,6 +6030,7 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e4_instantiated_request as instantiated,
             check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
         },
@@ -6066,6 +6090,20 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
                     &VcSchemaVersion::new("relocated-vc"),
                     VcId::new(4),
                     &environment,
+                )
+                .unwrap(),
+                descriptor
+            );
+            assert_eq!(
+                instantiated(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    snapshot_id(0),
+                    &GenerationSchemaVersion::new("relocated-generation"),
+                    &VcSchemaVersion::new("relocated-vc"),
+                    VcId::new(4)
                 )
                 .unwrap(),
                 descriptor
@@ -6155,6 +6193,7 @@ fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_o
 #[test]
 fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_precedence() {
     use mizar_vc::generator::{
+        check_source_algorithm_e4_instantiated_request as instantiated,
         check_source_algorithm_e4_local_request as consume,
         generate_source_algorithm_e4_operational_reduction_request as reduction,
         generate_source_algorithm_e4_validator_handoff_request as handoff,
@@ -6190,6 +6229,20 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                     vcs.schema_version(),
                     selected,
                     &environment,
+                )
+                .unwrap_err(),
+                error
+            );
+            assert_eq!(
+                instantiated(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    generation,
+                    vcs.schema_version(),
+                    selected
                 )
                 .unwrap_err(),
                 error
@@ -6263,6 +6316,20 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                                     vcs.schema_version(),
                                     selected,
                                     &environment,
+                                )
+                                .unwrap_err(),
+                                error
+                            );
+                            assert_eq!(
+                                instantiated(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected
                                 )
                                 .unwrap_err(),
                                 error
@@ -6671,5 +6738,282 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
         let changed = CoreIr::try_new(parts).unwrap();
         assert!(!introduce(&changed, target, alias, child, &[guard]));
         assert!(checked(&changed, target, alias, child, &[guard]).is_none());
+    });
+}
+
+#[test]
+fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbolic_child() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
+    use mizar_vc::{
+        dependency_slice::DependencySliceCompleteness,
+        generator::{
+            check_source_algorithm_e4_instantiated_request as checked,
+            generate_source_algorithm_e4_operational_reduction_request as reduction,
+        },
+        vc_ir::{
+            ContextEntryKind, PremiseRef, VcFormulaRef, VcGeneratedFormulaShape as Shape, VcStatus,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        let produce = || {
+            reduction(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                VcId::new(4),
+            )
+            .unwrap()
+        };
+        let consume = || {
+            checked(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                VcId::new(4),
+            )
+            .unwrap()
+        };
+        let original = produce();
+        let actual = consume();
+        assert_eq!(actual, original);
+        assert_eq!(consume(), actual);
+        assert_eq!(produce(), original);
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let CoreAlgorithmStmtKind::Return(Some(witness)) =
+            core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("actual return")
+        };
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let value = (algorithm.params[0].var, None);
+        let flow = mizar_core::control_flow::build_control_flow_ir(core).flow_map[&id];
+        assert_eq!(actual.1, witness);
+        assert_eq!(
+            core.terms().get(witness).unwrap().kind,
+            CoreTermKind::Var(value.0)
+        );
+        let Shape::AlgorithmReturns {
+            algorithm,
+            flow: child_flow,
+            statement: child_statement,
+            input,
+            result,
+        } = actual.3
+        else {
+            panic!("instantiated relation")
+        };
+        assert_eq!(
+            (
+                algorithm,
+                child_flow,
+                child_statement,
+                (input.var, input.definition),
+                (result.var, result.definition)
+            ),
+            (id, flow, statement, value, value)
+        );
+        // The independent oracle uses Core's actual return and CFG, not descriptor fields.
+        assert!(mizar_kernel::checker::check_instantiated_algorithm_returns(
+            core,
+            (id, flow, statement, value, value),
+            witness,
+            &[guard]
+        ));
+        let request = &actual.0.vcs()[actual.5.vc().index()];
+        let entries = request.local_context.entries();
+        assert_eq!(entries[0].kind, ContextEntryKind::CheckerFact);
+        assert_eq!(entries[0].formula, Some(VcFormulaRef::Core(guard)));
+        assert_eq!(request.premises, [PremiseRef::LocalContext(entries[0].id)]);
+        let Shape::Quantified { binders, body, .. } =
+            direct_return_request_shape(&actual.0, request.goal)
+        else {
+            panic!("original existential")
+        };
+        assert_eq!(binders, &[actual.2]);
+        let ContextEntryKind::BinderDeclaration { var, ref role } = entries[actual.2.index()].kind
+        else {
+            panic!("original result binder")
+        };
+        assert_eq!(role.as_str(), "result");
+        assert_ne!(var, value.0);
+        assert!(
+            matches!(direct_return_request_shape(&actual.0, *body), Shape::AlgorithmReturns { result, .. } if result.var == var)
+        );
+        assert_eq!(actual.4, Shape::True);
+        let raw = source_algorithm_direct_return_slice_oracle(
+            source, check, symbols, core, &actual.0, generation,
+        );
+        assert_eq!(&actual.5, raw.slice_for(VcId::new(4)).unwrap());
+        assert!(!actual.5.unknowns().is_empty());
+        assert_eq!(
+            actual.5.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(actual.5.requires_cache_miss());
+        assert_eq!(actual.0, *vcs);
+        assert_eq!(actual.0.vcs().len(), 5);
+        assert!(
+            actual
+                .0
+                .vcs()
+                .iter()
+                .all(|vc| vc.status == VcStatus::Open && vc.proof_hint.is_none())
+        );
+        assert!(actual.0.seed_accounting().iter().any(|seed| seed.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred));
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guards() {
+    use mizar_core::{
+        control_flow::{ControlFlowId, build_control_flow_ir},
+        core_ir::{
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr,
+            CoreTermId, CoreTermKind,
+        },
+    };
+    use mizar_kernel::checker::check_instantiated_algorithm_returns as checked;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let CoreAlgorithmStmtKind::Return(Some(witness)) =
+            core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("actual return")
+        };
+        let flow = build_control_flow_ir(core).flow_map[&id];
+        let value = (algorithm.params[0].var, None);
+        let other = (algorithm.result.as_ref().unwrap().var, None);
+        let target = (id, flow, statement, value, value);
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
+        assert!(checked(core, target, witness, &[guard]));
+        for target in [
+            (
+                CoreAlgorithmId::new(core.algorithms().len()),
+                flow,
+                statement,
+                value,
+                value,
+            ),
+            (id, ControlFlowId::new(usize::MAX), statement, value, value),
+            (
+                id,
+                flow,
+                CoreAlgorithmStmtId::new(core.algorithm_statements().len()),
+                value,
+                value,
+            ),
+            (id, flow, statement, other, value),
+            (id, flow, statement, value, other),
+            (id, flow, statement, other, other),
+            (id, flow, statement, (value.0, Some(statement)), value),
+            (id, flow, statement, value, (value.0, Some(statement))),
+        ] {
+            assert!(
+                !checked(core, target, witness, &[guard]),
+                "target {target:?}"
+            );
+        }
+        for context in [
+            vec![],
+            vec![guard, guard],
+            vec![result_guard],
+            vec![guard, result_guard],
+        ] {
+            assert!(!checked(core, target, witness, &context));
+        }
+        assert!(!checked(
+            core,
+            target,
+            CoreTermId::new(core.terms().len()),
+            &[guard]
+        ));
+        let CoreFormulaKind::TypePred { subject, .. } = core.formulas().get(guard).unwrap().kind
+        else {
+            panic!("typed input")
+        };
+        let CoreFormulaKind::TypePred {
+            subject: wrong_subject,
+            ..
+        } = core.formulas().get(result_guard).unwrap().kind
+        else {
+            panic!("other binder")
+        };
+        for kind in [
+            CoreFormulaKind::True,
+            CoreFormulaKind::False,
+            CoreFormulaKind::TypePred {
+                subject,
+                ty: "set".into(),
+            },
+            CoreFormulaKind::TypePred {
+                subject: wrong_subject,
+                ty: "object".into(),
+            },
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.formulas.get_mut(guard).unwrap().kind = kind;
+            assert!(!checked(
+                &CoreIr::try_new(parts).unwrap(),
+                target,
+                witness,
+                &[guard]
+            ));
+        }
+        // The supplied flow exists but belongs to another algorithm.
+        let mut parts = sole_return_core_parts(core);
+        let other_id = CoreAlgorithmId::new(parts.algorithms.len());
+        let mut other_statement = core.algorithm_statements().get(statement).unwrap().clone();
+        other_statement.owner = other_id;
+        let other_statement_id = parts.algorithm_statements.insert(other_statement.clone());
+        parts
+            .source_map
+            .algorithm_sources
+            .insert(other_statement_id, other_statement.source);
+        let mut other_algorithm = algorithm.clone();
+        other_algorithm.statements = vec![other_statement_id];
+        assert_eq!(parts.algorithms.insert(other_algorithm), other_id);
+        let two = CoreIr::try_new(parts).unwrap();
+        let other_flow = build_control_flow_ir(&two).flow_map[&other_id];
+        assert_ne!(flow, other_flow);
+        assert!(checked(&two, target, witness, &[guard]));
+        assert!(!checked(
+            &two,
+            (id, other_flow, statement, value, value),
+            witness,
+            &[guard]
+        ));
+        let mut parts = sole_return_core_parts(core);
+        parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Var(other.0);
+        assert!(!checked(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            witness,
+            &[guard]
+        ));
+        let mut parts = sole_return_core_parts(core);
+        parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Numeral("0".into());
+        assert!(!checked(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            witness,
+            &[guard]
+        ));
     });
 }
