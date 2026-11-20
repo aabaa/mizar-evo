@@ -600,29 +600,25 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 ## Bounded direct-return E1/E4 producer design
 
-将来 producer の設計であり、変更しない [idalgo source](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz) を使う。immutable な object parameter 一つ、object result、等式 ensures、唯一の `return a` に限定し、call、loop、Pick、recursion、group、premise exposure を除外する。[fixture expectation](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml) は VC-generation-only のままであり、ここでは実装も executable acceptance/coverage も供給しない。
+`generate_source_algorithm_direct_return_requests(source, check, symbols, core, snapshot, generation_schema, vc_schema)` は、変更しない [idalgo source](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz) の要求専用経路である。immutable object parameter、object result、equality ensures、唯一の `return a` に限定する。[fixture expectation](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml) と既存 postcondition generator は維持する。call、loop、Pick、recursion、group、syntax input、premise exposure は範囲外。
 
-**真正入力。** 同じ immutable source/resolved arena、typed tree、symbol environment、snapshot から新しい opaque source algorithm check と [Core shell](../../mizar-core/ja/core_ir.md#algorithm-shell)、[CFG/handoff](../../mizar-core/ja/control_flow.md#core-to-cfg-construction) を生成する。正確な definition/algorithm symbol、source/check association、header `terminating`、順序付き parameter/result binding と object guard、実 ensures、return operand と parameter reference、完全な body、entry/return site、edge、source map、provenance を認証する。追加 statement、effect、call、failure、fallthrough のない直接復帰形だけを認める。名前、数値 handle、渡された Core graph はこれらの結合を認証しない。requires 省略は P=⊤。この profile は syntax input や reconstruction context を認めない。
+**真正入力と関係。** 同じ immutable resolved source、typed tree、symbol environment を再検査し、完全な Core を再構築して比較した上で、完全な CFG/handoff を生成・検証する。algorithm symbol、認証済み terminating intent、順序付き object parameter/result guard、equality ensures、実 parameter return reference、唯一の statement、source map、provenance を要求する。requires 省略は P=⊤。ID、名前、metadata、等式だけでは認証しない。関係 atom は当該 algorithm、flow、return statement、実 immutable input、別に束縛された候補 result を参照し、この source body の正常実行とその結果を意味する。未検証の operational request であり、等式の別名、関数等式、検証済み証拠ではない。
 
-限定 [Core46 handoff](../../mizar-core/ja/core_ir.md#algorithm-shell) は認証済み header 意図を SourceAlgorithmCheck、CoreAlgorithm、対応する Core52 CFG termination plan へ保持する。goal のない `PartialTermination` 行は Deferred のままであり、宣言意図と decreasing の不在は正常復帰を証明しない。
+**独立した四つの Open goal。** object(a) だけを前提とし、capture のない明示的な result binder を使う。E1 typing は `forall r. returns(a,r) -> object(r)`、E1 single-valuedness は `forall r,s. (returns(a,r) & returns(a,s)) -> r=s`、E1 全 typed input inhabitation は `exists r. object(r)`、独立した E4 は `exists r. returns(a,r)`。実 return a は将来の witness 候補であり、生成済み証明ではない。inhabitation は return/P を、単一値性は E1/E3/ensures を、E4 は宣言意図・関数等式・E2 continuation・受理済み postcondition を仮定しない。
 
-**記号導入前の E1。** 同じ完全な typed input a に対し、checked parameter reference と object result guard から返り値の型を正当化する。この唯一の直接 return の任意の二つの正常実行が同じ a を返し、結果が等しいことを独立に証明する。E1、E3、ensures 等式から単一値性を導かない。return や P を仮定しない全 typed input の inhabitation は a 自身を object の witness とする。dependent result type や precondition 下だけの witness を一般化しない。三つの正当化は関数記号導入前に真正に検証する。型互換な term だけが供給するのは型/witness 成分に限る。
+新 VcSet は元 postcondition を保持し、その source seed を四要求へ個別に展開する。goal のない PartialTermination 行は Deferred のまま。真正な再生成で source/type/body/return/CFG association、snapshot、generation/VC schema を保持する。binder declaration は premise ではない。意味認証には結果全体の再生成が必要であり、独立した VcSet 構築は認証を与えない。未完成 dependency footprint は conservative/reuse-ineligible のまま。proof policy や checker-schema receipt を捏造せず、将来の adoption は実 checker/policy も束縛する。
 
-**独立した E4。** object(a)、P=⊤ の下で、将来の証明は source に結び付いた実行関係における a の直接正常復帰、従って `exists r. returns_idalgo(a,r)` を確立する。唯一の return と、競合/failure/fallthrough path の不在を完全な CFG から認証する。この operational normal-return proof の前提に E1、関数等式、受理済み ensures、E2 continuation assumption、宣言を用いない。関係の encoding と proof-producing/checking support は未実装であり、ここでの schematic `returns_idalgo` は生成済み formula/evidence ではない。有限実行 budget と E5 は範囲外。
+**未実装の Proof 境界。** 真正 Kernel check、policy、義務別 identity、原子的 replay/adoption は Proof が所有する。[既存 source identity](../../mizar-proof/ja/status.md#source-algorithm-return-obligation-identity) と [return reflexivity result](../../mizar-proof/ja/status.md#source-algorithm-return-reflexivity-status) は旧 postcondition だけを扱う。Open/missing/rejected/stale/cross-bound E1 は記号導入を block し、E4 は独立検証まで未取得。E1 は E4 を、E4 は E1/E2 を補わない。status promotion、aggregate receipt、acceptance、coverage、E5 execution、import を与えない。
 
-**VC→Proof handoff。** 真正入力から E1 の各前提と E4 の別々の attributed request を生成する。正確な obligation kind、typed complete input と binder substitution、result type/term、source/body/return/CFG association、assumption、snapshot、generation/checker schema を保持する。[既存 source identity route](../../mizar-proof/ja/status.md#source-algorithm-return-obligation-identity) を binding の先例とし、その postcondition identity/result を新義務へ付け替えない。将来 handoff は request 全体と context を replay する。capture、事実の欠落/追加、obligation/algorithm/result/CFG 間の差替え、source/dependency/schema/policy 変更では adoption を原子的に拒否する。呼出側が所有する source/snapshot currentness と incomplete footprint は独立 gate のまま。
+**Producer 行列（五ケース）。** 真正 source/check/Core/CFG を使い、全 formula/context/seed accounting/provenance を比較する。証明依存の対照例は将来の前提に留める。
 
-各 request の実 Kernel check と policy decision は Proof が所有する。[既存 return reflexivity result](../../mizar-proof/ja/status.md#source-algorithm-return-reflexivity-status) は置換済み postcondition だけを扱う。Open、missing、rejected、stale、mismatched な E1 成分は記号導入を block する。未取得 E4 は incomplete/open のまま正常復帰 adoption を block する。受理済み E1 は E4 を供給せず、受理済み E4 は不足する E1/E2 を供給しない。aggregate receipt、promotion、definition-label premise、imported evidence を生まず、既存 E2/promotion 前提は元の owner に残る。
-
-**将来テスト行列（五ケース、テスト追加なし）。** producer ができた後、各ケースは真正 source/check/Core/CFG と独立に検証された proof control を使う。未取得 control は open prerequisite のままとし、成功を捏造しない。
-
-| Case | 必要な結果 |
+| Case | Producer の結果と未実装の proof control |
 |---|---|
-| 変更しない fixture と完全な association | E1/E4 request 全体、context、provenance を実 upstream output と独立に比較する。Open request だけでは何も許可しない。 |
-| E1 typing | checked return a が宣言 object 型を持つ。parameter/result typing の欠落や cross-binding で E1 を拒否する。 |
-| E1 single-valuedness | 直接復帰の実行一意性を検証する。証明欠落や受理済み ensures/E3 等式の代用で E1 を拒否する。 |
-| E1 inhabitation | return/P 仮定なしの全 typed input における witness a を検証する。根拠欠落や precondition P 下だけの witness では all-input typing を拒否する。 |
-| E4 と handoff isolation | 直接正常復帰の存在を検証する。宣言、旧受理済み postcondition、continuation、stopping-only evidence では E4 を拒否する。各義務の source/type/CFG/proof binding を独立に除去/差替え/stale 化し、無関係な Open/Deferred status を保って adoption を拒否する。 |
+| 変更しない fixture | 全出力を実 upstream data と比較し、元 postcondition、Deferred termination、別々の四 Open goal を保持する。 |
+| E1 typing | parameter/result typing の欠落・cross-binding を拒否し、typing 自体は証明を要する Open goal。 |
+| E1 single-valuedness | 別々の量化 result が同じ relation/input を共有し、ensures/E3 は premise/proof にならない。 |
+| E1 inhabitation | 全 typed input で object result が存在する goal。return/P 仮定や precondition 下だけの witness 一般化はない。 |
+| E4 と isolation | 独立 return existential。stale/cross-source/check/Core/CFG、schema 変更は拒否または異なる再生成結果となる。欠落・差替え proof、宣言、旧 postcondition、continuation、stopping-only evidence は adoption を許可せず、consumer は未実装。 |
 
 ## Reflected Algorithm Obligations
 
