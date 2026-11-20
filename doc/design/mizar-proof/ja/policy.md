@@ -449,6 +449,16 @@ validation 成功時に公開できるのは上記の ordinary/definitional prem
 
 **拒否と限界。** structural/content/transaction refusal は Artifact に残り、signature、authority、resolved-binding、acceptance/policy、projection refusal は Proof が所有する。どの失敗でも該当 group の全 promoted premise を保留し、status/hash/cache fallback や部分公開を行わない。legacy opaque signature は既存経路で利用できるが promotion authority は持たない。diagnostic naming/API shape は実装時に決め、この設計で public diagnostic code を追加しない。真正な non-computable/contract-only acceptance も runtime load なしで同じ logical gate を通り、computation は別の artifact/correspondence check を保つ。
 
+### VC59 connection design
+
+将来の VC59 経路が受け取るのは、[Proof import validation](#proof-import-validation-design) が完了した group validation のみであり、その検証に使った正確な importer 解決済み export と snapshot に対応させる。Artifact load、public summary、local VC57 acceptance、caller が渡す status は、検証済み imported acceptance としてこの経路に入れない。Proof は authentication/acceptance を、VC は検証済み projection の選択と premise への組込みを所有する。この handoff に新たな public receipt や serialized schema は要求しない。
+
+- **適格な premise の選択。** 既存 import/name visibility で imported definition label を解決し、VC57 と同じ definition-expansion policy を適用する。後続 VC がその label を引用するか policy が利用可能にするとき、選択した algorithm の promotion axiom を渡す。algorithm 名や call は引用ではない（[§16.5.1](../../../spec/ja/16.theorems_and_proofs.md#1651-単純な引用)）。item order を保ち、遡及的に fact を追加しない。ordinary promotion は検証済みの guarded totality/contract のみを、definitional promotion はさらに上記の適格な equation のみを与え得る。正確な検証済み formula と完全な guarded input/context binding を使い、consumer は余分な equation や guard を外した強い statement を合成しない。
+- **消費まで provenance を保持。** 各 premise を正確な解決済み export/algorithm と statement projection、および完了した validation の authenticated imported provenance に対応させ、complete-group と importer-snapshot の対応も保つ。VC 構築と kernel imported-context/projection/status check を通じてその対応を保持する。これらの check は引き続き必要だが Proof validation の代替にはならない。単なる formula/status に平坦化せず、local accepted witness/kernel result へ変換せず、別 export/group/context の authority にしない。再利用は validator の currentness 規則に従う。
+- **不可分な公開と利用。** 選択した export が一つでも全 group を検証し、完全な validation と consumer mapping の成功後にのみ、選択した premise をまとめて利用可能にする。premise の構築から消費まで、同じ immutable publication と現在の importer snapshot を使う。resolution、authorization、acceptance requirement の変更は pending/reused premise を無効にするため破棄し、現在の input に対する validation 後にのみ再構築する。projection または provenance 対応の欠落・不一致は該当 group の全 promoted premise を保留し、部分的に組み立てた集合を VC に渡さない。import visibility、cached premise、以前の check 成功でもこの条件を省略しない。
+
+[六行の portable validation](#portable-validation-design-obligations) は、この接続の将来の consumer check にも適用する。成功する ordinary/definitional と logical-only import は、正確な適格 formula と imported provenance を消費まで保ち、すべての拒否は group premise を一つも与えない。実際の接続は、真正な local aggregate producer、Artifact transport と Proof import-validation の実装、真正な VC57 local prerequisite/group acceptance、六行すべての実行可能な成功/拒否を待つ。この経路の文書化でいずれの gate も満たさない。
+
 ### Portable validation design obligations
 
 以下の六行は将来の producer/consumer check であり、実行可能な portable-promotion coverage ではない。成功には上記 trust-transfer rule に従って認証した exporter acceptance が必要である。
