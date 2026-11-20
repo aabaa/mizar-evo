@@ -151,17 +151,8 @@ new crate, public status, Kernel rule or duplicate `RuntimeIr`.
 
 ## Open questions
 
-- **Q1 (owner decision, blocking R2):** Is the current reflected
-  `AST-TYPE`/`AST-LOWER` acceptance required for an ordinary ground-value
-  algorithm, or can Core/Checker specify a source-derived ordinary-only
-  runtime handoff without changing §20? The current ALG-MVM contract lists
-  AST-LOWER as a dependency. No exemption is approved here.
-- **Q2 (R2/R3):** Which existing verified-body, policy and obligation
-  evidence is *actually sufficient* to bind the executable to the
-  verified algorithm for a **partial** concrete call? The checked return
-  VC and source program bytes are not alone such a binding. Preserve
-  E1/E2/E4 distinctions.
-- **Q3 (R3):** Should the private MVM encoding share a representation with
-  the separately planned extraction `RuntimeIr`, or use a distinct
-  authenticated executable format? No implementation choice or new crate is
-  authorized by this inventory.
+- **Q1 (owner decision, blocking R2): DECIDED 2026-11-19 23:28 JST.**
+  Retain the current `AST-TYPE`/`AST-LOWER` gates; ordinary-only narrowing
+  is NOT approved. No exemption.
+- **Q2 (R2/R3): ANSWERED** by [R2: Q2 — definition evidence and invocation inputs](../../mizar-core/en/mvm_correspondence.md#q2-definition-evidence-and-invocation-inputs).
+- **Q3 (R3): Transferred to [R3-Q1](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze); open and undecided.**
