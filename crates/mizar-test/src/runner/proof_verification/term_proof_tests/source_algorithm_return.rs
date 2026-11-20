@@ -6154,6 +6154,31 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
             );
             assert_eq!(result.witness(), term);
             assert_eq!(result.context(), &[environment[0].1]);
+            let (identity, slice, associated) =
+                mizar_proof::status::check_source_algorithm_e4_existential(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    snapshot_id(0),
+                    VcId::new(4),
+                )
+                .unwrap();
+            assert_eq!(
+                (identity, slice),
+                mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+                    source,
+                    check,
+                    symbols,
+                    snapshot_id(0),
+                    VcId::new(4),
+                )
+                .unwrap()
+            );
+            assert!(std::ptr::eq(associated.core(), result.core()));
+            assert_eq!(associated.target(), result.target());
+            assert_eq!(associated.witness(), result.witness());
+            assert_eq!(associated.context(), result.context());
             assert_ne!(var, environment[0].0);
             assert_ne!(var, algorithm.result.as_ref().unwrap().var);
             assert!(
@@ -6297,6 +6322,19 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                 );
             }
             assert_eq!(
+                mizar_proof::status::check_source_algorithm_e4_existential(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    selected,
+                )
+                .err()
+                .unwrap(),
+                error
+            );
+            assert_eq!(
                 error,
                 reduction(
                     source,
@@ -6403,6 +6441,19 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                                 );
                             }
                             assert_eq!(
+                                mizar_proof::status::check_source_algorithm_e4_existential(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    selected,
+                                )
+                                .err()
+                                .unwrap(),
+                                error
+                            );
+                            assert_eq!(
                                 error,
                                 reduction(
                                     source,
@@ -6421,6 +6472,57 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                 },
             );
         }
+    });
+}
+
+#[test]
+fn source_algorithm_e4_proof_association_preserves_original_result_raw_slice() {
+    use mizar_proof::status::{
+        check_source_algorithm_e4_existential as associate,
+        source_algorithm_direct_return_obligation_identity as identity,
+    };
+    use mizar_vc::generator::check_source_algorithm_e4_existential_result as producer;
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+        for snapshot in [vcs.snapshot(), snapshot_id(1)] {
+            let expected = identity(source, check, symbols, snapshot, VcId::new(4)).unwrap();
+            let (descriptor, checked) = producer(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                &generation,
+                &schema,
+                VcId::new(4),
+            )
+            .unwrap();
+            let raw = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                core,
+                &descriptor.0,
+                &generation,
+            );
+            assert_eq!(&expected.1, raw.slice_for(VcId::new(4)).unwrap());
+            for _ in 0..2 {
+                let (original, slice, result) =
+                    associate(source, check, symbols, core, snapshot, VcId::new(4)).unwrap();
+                assert_eq!((&original, &slice), (&expected.0, &expected.1));
+                assert_eq!(slice, descriptor.5);
+                assert!(std::ptr::eq(result.core(), core));
+                assert_eq!(result.target(), checked.target());
+                assert_eq!(result.witness(), checked.witness());
+                assert_eq!(result.context(), checked.context());
+            }
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
     });
 }
 

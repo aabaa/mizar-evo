@@ -1183,6 +1183,42 @@ pub fn source_algorithm_direct_return_obligation_identity(
     Ok((identity, slice))
 }
 
+/// Associates the original E4 request identity and raw slice with its same-call Kernel result.
+/// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
+pub fn check_source_algorithm_e4_existential<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    ),
+    String,
+> {
+    let (descriptor, result) = mizar_vc::generator::check_source_algorithm_e4_existential_result(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1"),
+        &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1"),
+        vc_id,
+    )?;
+    let (identity, slice) = source_algorithm_direct_return_obligation_identity(
+        source, check, symbols, snapshot, vc_id,
+    )?;
+    if descriptor.5 != slice {
+        return Err("algorithm.proof.invalid_direct_return_request".to_owned());
+    }
+    Ok((identity, slice, result))
+}
+
 /// Consumes a genuine positive E1 result with its original identity and current policy.
 /// This grants no selection, adoption, status, evidence or reuse authority.
 pub fn check_source_algorithm_e1_inhabitation<'core>(

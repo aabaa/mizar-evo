@@ -666,8 +666,7 @@ AlgorithmReturns body、型付き入力 Core CheckerFact と正確な premise �
 成功時だけ変更しない descriptor と同じ認証呼出しで生成した真正な Kernel
 `AlgorithmReturnsExistentialCheck` を返す。`check_source_algorithm_e4_existential_request`
 は委譲し result のみを捨てて descriptor-only 動作を維持する。先行 boolean や detached child/residual は
-証明にならず、既存 child consumer は独立する。意味的 environment 対応、Proof
-identity/current-policy binding/adoption、別の E1 義務、広範な body 解釈は延期する。
+証明にならず、既存 child consumer は独立する。[Proof 元 identity 関連付け](../../mizar-proof/ja/status.md#original-e4-request-identity-association) は独立する。意味的 environment 対応、current-policy 消費/adoption、別の E1 義務、広範な body 解釈は延期する。
 raw unknown・incomplete/cache miss・Open4/Deferred と evidence・symbol・promotion・
 publication・acceptance/coverage の除外を維持する。
 詳細は [英語版](../en/generator.md#e4-checked-original-existential) を参照。

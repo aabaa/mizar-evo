@@ -559,6 +559,11 @@ API より前に実 check/Core/raw graph/VC74 handoff、v1 parse、実 name enco
 原文、parameter rename、Unicode trivia、algorithm owner rename を baseline で扱う。別 snapshot と default/development/interactive policy の変更は原文のみに独立の case とし、直積にしない。実 raw Open/Deferred/不完全 anchor/accounting と source/nodes/symbols/policy/先行実 result を保持し、編集間 hash 不変は仮定しない。
 absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ensures 二 return Core は既存 generator String、object result の bare-return 実 source は既存 checker String を absent-id/disabled-policy より先に返す。valid source/handoff 後の empty・formula-only format は scheduling error、absent target は disabled policy より先。既存 lower profile/normal grammar/name/context/policy の拒否 matrix を再利用し、架空 producer や checker test の重複は禁止。
 
+## Original E4 request-identity association
+
+`check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。
+同じ呼出しの真正な結果の関連付けのみを行う。detached result/identity、policy 引数、policy eligibility/消費/adoption、generic evidence 変換はない。currentness は呼出側責務。意味的 environment 解釈、独立 E1 義務、広い credit は延期する。四要求 Open・termination Deferred・raw unknown/incomplete/cache miss を保持し、限定 E1 adoption は独立する。
+
 ## Bounded native E1 result consumption
 
 `check_source_algorithm_e1_inhabitation(source, check, symbols, core, snapshot, vc_id, policy)` は元 identity、raw slice 全体、借用 `ObjectInhabitationCheck`、現在の policy fingerprint を返す。先に上記固定 direct-return schema で真正な VC native-result producer を呼び、エラーを保持する。次に同じ入力から既存の元 identity を取得し、slice 全体の一致を要求する。producer が選択された元の存在量化・binder・context と、同じ不変 Core および固定された正の結論を結び付ける。呼出側の detached token/identity は受け取らない。
