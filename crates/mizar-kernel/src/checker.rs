@@ -1313,12 +1313,81 @@ pub fn check_instantiated_algorithm_returns(
     {
         return false;
     }
+    // CFG rebuilding visits unrelated returns too. Refuse cyclic term graphs
+    // before its recursive use collection, retaining the full CFG authentication.
+    let mut parents = vec![Vec::new(); core.terms().len()];
+    let mut remaining = vec![0; core.terms().len()];
+    for (id, term) in core.terms().iter() {
+        let children = match &term.kind {
+            CoreTermKind::Apply { args, .. }
+            | CoreTermKind::Tuple(args)
+            | CoreTermKind::SetEnum(args)
+            | CoreTermKind::Generated { args, .. } => args.as_slice(),
+            CoreTermKind::Select { base, .. } => std::slice::from_ref(base),
+            _ => &[],
+        };
+        remaining[id.index()] = children.len();
+        for child in children {
+            parents[child.index()].push(id.index());
+        }
+    }
+    let mut ready = remaining
+        .iter()
+        .enumerate()
+        .filter_map(|(id, count)| (*count == 0).then_some(id))
+        .collect::<Vec<_>>();
+    let mut visited = 0;
+    while let Some(id) = ready.pop() {
+        visited += 1;
+        for parent in &parents[id] {
+            remaining[*parent] -= 1;
+            if remaining[*parent] == 0 {
+                ready.push(*parent);
+            }
+        }
+    }
+    if visited != core.terms().len() {
+        return false;
+    }
     let cfg = mizar_core::control_flow::build_control_flow_ir(core);
     cfg.flow_map.get(&algorithm_id) == Some(&flow_id)
         && cfg
             .flows
             .get(flow_id)
             .is_some_and(|flow| flow.algorithm == algorithm_id)
+}
+
+/// Checks `exists r.returns(a,r)` by deriving and checking its exact child.
+/// The child rule fixes the witness to `Var(a)` and the context to `object(a)`;
+/// requiring `r != a` therefore also excludes free occurrence in that context.
+/// This boolean supplies no native evidence or Proof adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "project the existing relation tuple without a single-use representation"
+)]
+pub fn check_algorithm_returns_existential(
+    core: &CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    witness: CoreTermId,
+    context: &[CoreFormulaId],
+) -> bool {
+    let (algorithm, flow, statement, input, result) = target;
+    result == (binder, None)
+        && binder != input.0
+        && check_instantiated_algorithm_returns(
+            core,
+            (algorithm, flow, statement, input, input),
+            witness,
+            context,
+        )
 }
 
 /// A checked `exists r.object(r)` under the retained Core context.

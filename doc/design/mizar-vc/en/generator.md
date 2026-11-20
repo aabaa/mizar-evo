@@ -756,9 +756,24 @@ witness and original assumption to Kernel's [symbolic child rule](../../mizar-ke
 Only success returns the unchanged original descriptor; refusal is atomic.
 This checks `returns(a,a)` under the symbolic typed-input assumption, without
 interpreting opaque runtime values or altering the local consumer's premises.
-Original E4 existential introduction, semantic environment association and Proof
-identity/current-policy binding/adoption remain deferred. Whole raw unknowns,
+This child consumer leaves original E4 existential introduction, semantic environment
+association and Proof identity/current-policy binding/adoption deferred. Whole raw unknowns,
 incomplete/cache-ineligible slices, Open4/Deferred and all credit exclusions persist.
+
+### E4 checked original existential
+
+`check_source_algorithm_e4_existential_request` takes the operational-reduction
+producer's arguments and calls it first, preserving errors. Authenticate the sole
+original existential binder, original AlgorithmReturns body, typed-input Core
+CheckerFact and exact premise association. Pass that original tuple, unchanged
+binder, actual witness and original assumption to Kernel's
+[existential rule](../../mizar-kernel/en/checker.md#original-algorithmreturns-existential).
+Success returns only the unchanged descriptor. No earlier boolean or detached
+child/residual supplies proof; the instantiated-child consumer remains independent.
+Semantic environment association, Proof identity/current-policy binding/adoption,
+separate E1 duties and broader body interpretation remain deferred. Whole raw
+unknowns, incomplete/cache-ineligible slices and cache misses, Open4/Deferred and
+all evidence, symbol, promotion, publication and acceptance/coverage exclusions persist.
 
 ## Reflected Algorithm Obligations
 

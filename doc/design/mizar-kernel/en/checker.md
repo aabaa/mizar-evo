@@ -92,11 +92,27 @@ projects algorithm, flow, statement and input/result `(var, definition)` pairs.
 Require both values to be the immutable parameter without a local definition,
 the actual witness `Var(a)`, its sole owned Return, valid roles/guards and no
 errors, diagnostics or ghost effects. The context must equal the parameter guard
-and resolve to `object(a)`. Rebuild Core CFG and match its algorithm-to-flow map
+and resolve to `object(a)`. Refuse term cycles with an iterative topological scan
+before rebuilding Core CFG; match its algorithm-to-flow map
 and flow owner. Return a boolean; no opaque runtime value supplies a premise.
 VC owns [original relation/context authentication](../../mizar-vc/en/generator.md#e4-checked-instantiated-child).
 This child check supplies no original E4 existential introduction, semantic
 environment association, Proof identity/policy binding/adoption or broader credit.
+
+## Original AlgorithmReturns Existential
+
+`check_algorithm_returns_existential(core, target, binder, witness, context)`
+checks the original `exists r. returns(a,r)` using the same borrowed relation tuple.
+Require result `(binder,None)` and a binder distinct from input; replace only
+result with input and invoke the child rule in the same call. That rule checks
+the actual `Var(a)` witness, sole `object(a)` context and complete CFG association,
+so distinctness also excludes the binder from context free variables. This is
+bounded capture-free existential introduction under
+[§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding).
+VC [authenticates the original body/binder/context](../../mizar-vc/en/generator.md#e4-checked-original-existential).
+Return only a boolean; semantic environment association, Proof identity/policy
+binding/adoption, separate E1 duties and broader bodies remain deferred.
+No evidence, acceptance, status, symbol, publication or broader credit follows.
 
 ## Bounded E1-inhabitation Witness Introduction
 

@@ -6030,6 +6030,7 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e4_existential_request as existential,
             check_source_algorithm_e4_instantiated_request as instantiated,
             check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
@@ -6094,20 +6095,22 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
                 .unwrap(),
                 descriptor
             );
-            assert_eq!(
-                instantiated(
-                    source,
-                    check,
-                    symbols,
-                    &core,
-                    snapshot_id(0),
-                    &GenerationSchemaVersion::new("relocated-generation"),
-                    &VcSchemaVersion::new("relocated-vc"),
-                    VcId::new(4)
-                )
-                .unwrap(),
-                descriptor
-            );
+            for checked in [instantiated, existential] {
+                assert_eq!(
+                    checked(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        &GenerationSchemaVersion::new("relocated-generation"),
+                        &VcSchemaVersion::new("relocated-vc"),
+                        VcId::new(4)
+                    )
+                    .unwrap(),
+                    descriptor
+                );
+            }
             assert_eq!(input.1, id);
             assert!(std::ptr::eq(input.0, &core));
             assert!(std::ptr::eq(input.2, environment.as_slice()));
@@ -6193,6 +6196,7 @@ fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_o
 #[test]
 fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_precedence() {
     use mizar_vc::generator::{
+        check_source_algorithm_e4_existential_request as existential,
         check_source_algorithm_e4_instantiated_request as instantiated,
         check_source_algorithm_e4_local_request as consume,
         generate_source_algorithm_e4_operational_reduction_request as reduction,
@@ -6233,20 +6237,22 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                 .unwrap_err(),
                 error
             );
-            assert_eq!(
-                instantiated(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    generation,
-                    vcs.schema_version(),
-                    selected
-                )
-                .unwrap_err(),
-                error
-            );
+            for checked in [instantiated, existential] {
+                assert_eq!(
+                    checked(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        generation,
+                        vcs.schema_version(),
+                        selected
+                    )
+                    .unwrap_err(),
+                    error
+                );
+            }
             assert_eq!(
                 error,
                 reduction(
@@ -6320,20 +6326,22 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                                 .unwrap_err(),
                                 error
                             );
-                            assert_eq!(
-                                instantiated(
-                                    source,
-                                    check,
-                                    symbols,
-                                    core,
-                                    vcs.snapshot(),
-                                    generation,
-                                    vcs.schema_version(),
-                                    selected
-                                )
-                                .unwrap_err(),
-                                error
-                            );
+                            for checked in [instantiated, existential] {
+                                assert_eq!(
+                                    checked(
+                                        source,
+                                        check,
+                                        symbols,
+                                        core,
+                                        vcs.snapshot(),
+                                        generation,
+                                        vcs.schema_version(),
+                                        selected
+                                    )
+                                    .unwrap_err(),
+                                    error
+                                );
+                            }
                             assert_eq!(
                                 error,
                                 reduction(
@@ -6361,6 +6369,7 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
     use mizar_vc::{
         dependency_slice::DependencySliceCompleteness,
         generator::{
+            check_source_algorithm_e4_existential_request as existential,
             check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
         },
@@ -6436,6 +6445,20 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
             };
             let descriptor = checked();
             assert_eq!(descriptor, original);
+            assert_eq!(
+                existential(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    snapshot,
+                    &generation,
+                    &schema,
+                    VcId::new(4)
+                )
+                .unwrap(),
+                descriptor
+            );
             assert_eq!(checked(), descriptor);
             assert_eq!(request().0, descriptor);
             assert!(std::ptr::eq(output.2, &environment[0].2));
@@ -6747,6 +6770,7 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
     use mizar_vc::{
         dependency_slice::DependencySliceCompleteness,
         generator::{
+            check_source_algorithm_e4_existential_request as existential,
             check_source_algorithm_e4_instantiated_request as checked,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
         },
@@ -6785,6 +6809,22 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
         };
         let original = produce();
         let actual = consume();
+        let introduce = || {
+            existential(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                VcId::new(4),
+            )
+            .unwrap()
+        };
+        let introduced = introduce();
+        assert_eq!(introduced, original);
+        assert_eq!(introduce(), introduced);
         assert_eq!(actual, original);
         assert_eq!(consume(), actual);
         assert_eq!(produce(), original);
@@ -6804,7 +6844,7 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
             CoreTermKind::Var(value.0)
         );
         let Shape::AlgorithmReturns {
-            algorithm,
+            algorithm: child_algorithm,
             flow: child_flow,
             statement: child_statement,
             input,
@@ -6815,7 +6855,7 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
         };
         assert_eq!(
             (
-                algorithm,
+                child_algorithm,
                 child_flow,
                 child_statement,
                 (input.var, input.definition),
@@ -6847,9 +6887,23 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
         };
         assert_eq!(role.as_str(), "result");
         assert_ne!(var, value.0);
+        assert_ne!(var, algorithm.result.as_ref().unwrap().var);
         assert!(
-            matches!(direct_return_request_shape(&actual.0, *body), Shape::AlgorithmReturns { result, .. } if result.var == var)
+            core.terms()
+                .iter()
+                .all(|(_, term)| !matches!(term.kind, CoreTermKind::Var(old) if old == var))
         );
+        let target = (id, flow, statement, value, (var, None));
+        assert!(
+            matches!(direct_return_request_shape(&actual.0, *body), Shape::AlgorithmReturns { algorithm, flow: original_flow, statement: original_statement, input, result } if (*algorithm, *original_flow, *original_statement, (input.var, input.definition), (result.var, result.definition)) == target)
+        );
+        assert!(mizar_kernel::checker::check_algorithm_returns_existential(
+            core,
+            target,
+            var,
+            witness,
+            &[guard]
+        ));
         assert_eq!(actual.4, Shape::True);
         let raw = source_algorithm_direct_return_slice_oracle(
             source, check, symbols, core, &actual.0, generation,
@@ -6999,6 +7053,31 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
             witness,
             &[guard]
         ));
+        // N1: an unrelated, CoreIr-valid return cycle must refuse before CFG traversal.
+        let mut parts = sole_return_core_parts(&two);
+        let mut cyclic_term = core.terms().get(witness).unwrap().clone();
+        let cyclic_id = CoreTermId::new(parts.terms.len());
+        cyclic_term.kind = CoreTermKind::Tuple(vec![cyclic_id]);
+        assert_eq!(parts.terms.insert(cyclic_term), cyclic_id);
+        parts
+            .source_map
+            .term_sources
+            .insert(cyclic_id, core.terms().get(witness).unwrap().source.clone());
+        parts
+            .algorithm_statements
+            .get_mut(other_statement_id)
+            .unwrap()
+            .kind = CoreAlgorithmStmtKind::Return(Some(cyclic_id));
+        let cyclic = CoreIr::try_new(parts).unwrap();
+        assert!(!checked(&cyclic, target, witness, &[guard]));
+        let binder = mizar_core::core_ir::CoreVarId::new(usize::MAX);
+        assert!(!mizar_kernel::checker::check_algorithm_returns_existential(
+            &cyclic,
+            (id, flow, statement, value, (binder, None)),
+            binder,
+            witness,
+            &[guard]
+        ));
         let mut parts = sole_return_core_parts(core);
         parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Var(other.0);
         assert!(!checked(
@@ -7012,6 +7091,165 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
         assert!(!checked(
             &CoreIr::try_new(parts).unwrap(),
             target,
+            witness,
+            &[guard]
+        ));
+    });
+}
+
+#[test]
+fn source_algorithm_e4_existential_kernel_requires_original_binder_and_rechecked_child() {
+    use mizar_core::{
+        control_flow::{ControlFlowId, build_control_flow_ir},
+        core_ir::{
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr,
+            CoreTermId, CoreTermKind, CoreVarId,
+        },
+    };
+    use mizar_kernel::checker::check_algorithm_returns_existential as checked;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let CoreAlgorithmStmtKind::Return(Some(witness)) =
+            core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("actual return")
+        };
+        let flow = build_control_flow_ir(core).flow_map[&id];
+        let input = (algorithm.params[0].var, None);
+        let old_result = (algorithm.result.as_ref().unwrap().var, None);
+        let binder = CoreVarId::new(
+            core.terms()
+                .iter()
+                .filter_map(|(_, term)| match term.kind {
+                    CoreTermKind::Var(var) => Some(var.index()),
+                    _ => None,
+                })
+                .max()
+                .unwrap()
+                + 1,
+        );
+        let result = (binder, None);
+        let target = (id, flow, statement, input, result);
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
+        assert!(checked(core, target, binder, witness, &[guard]));
+        for (target, binder) in [
+            (target, CoreVarId::new(binder.index() + 1)),
+            ((id, flow, statement, input, input), input.0),
+            ((id, flow, statement, input, old_result), binder),
+            (
+                (id, flow, statement, input, (binder, Some(statement))),
+                binder,
+            ),
+            (
+                (id, flow, statement, (input.0, Some(statement)), result),
+                binder,
+            ),
+            ((id, flow, statement, result, input), binder),
+            ((id, flow, statement, old_result, result), binder),
+            (
+                (
+                    CoreAlgorithmId::new(core.algorithms().len()),
+                    flow,
+                    statement,
+                    input,
+                    result,
+                ),
+                binder,
+            ),
+            (
+                (id, ControlFlowId::new(usize::MAX), statement, input, result),
+                binder,
+            ),
+            (
+                (
+                    id,
+                    flow,
+                    CoreAlgorithmStmtId::new(core.algorithm_statements().len()),
+                    input,
+                    result,
+                ),
+                binder,
+            ),
+        ] {
+            assert!(
+                !checked(core, target, binder, witness, &[guard]),
+                "{target:?}, {binder:?}"
+            );
+        }
+        for context in [
+            vec![],
+            vec![guard, guard],
+            vec![result_guard],
+            vec![guard, result_guard],
+        ] {
+            assert!(!checked(core, target, binder, witness, &context));
+        }
+        assert!(!checked(
+            core,
+            target,
+            binder,
+            CoreTermId::new(core.terms().len()),
+            &[guard]
+        ));
+        for kind in [
+            CoreFormulaKind::True,
+            CoreFormulaKind::False,
+            CoreFormulaKind::TypePred {
+                subject: witness,
+                ty: "set".into(),
+            },
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.formulas.get_mut(guard).unwrap().kind = kind;
+            assert!(!checked(
+                &CoreIr::try_new(parts).unwrap(),
+                target,
+                binder,
+                witness,
+                &[guard]
+            ));
+        }
+        // A guard containing the existential binder cannot be its input premise.
+        let mut parts = sole_return_core_parts(core);
+        parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Var(binder);
+        assert!(!checked(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            binder,
+            witness,
+            &[guard]
+        ));
+        // Even a previously successful child check supplies no reusable truth premise.
+        assert!(mizar_kernel::checker::check_instantiated_algorithm_returns(
+            core,
+            (id, flow, statement, input, input),
+            witness,
+            &[guard]
+        ));
+        for kind in [
+            CoreTermKind::Var(old_result.0),
+            CoreTermKind::Numeral("0".into()),
+            CoreTermKind::Tuple(vec![]),
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.terms.get_mut(witness).unwrap().kind = kind;
+            assert!(!checked(
+                &CoreIr::try_new(parts).unwrap(),
+                target,
+                binder,
+                witness,
+                &[guard]
+            ));
+        }
+        let mut parts = sole_return_core_parts(core);
+        parts.algorithm_statements.get_mut(statement).unwrap().kind =
+            CoreAlgorithmStmtKind::Return(None);
+        assert!(!checked(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            binder,
             witness,
             &[guard]
         ));

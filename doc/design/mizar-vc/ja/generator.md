@@ -653,9 +653,22 @@ binder と term の組は object(r) の fresh r を実 immutable a に置換す�
 tuple 全体・実際の witness・元仮定を Kernel の symbolic child rule に渡す。
 成功時だけ変更しない元 descriptor を返し、拒否は atomic。型付き入力仮定の下の
 `returns(a,a)` のみを検査し、opaque 実行値や既存 local consumer の前提は変えない。
-E4 存在導入・意味的 environment 対応・Proof identity/current-policy binding/adoption は延期。
+この child consumer では E4 存在導入・意味的 environment 対応・Proof identity/current-policy binding/adoption は延期。
 raw unknown・incomplete/cache miss・Open4/Deferred と credit の除外を維持する。
 詳細は [英語版](../en/generator.md#e4-checked-instantiated-child) を参照。
+
+### E4 checked original existential
+
+`check_source_algorithm_e4_existential_request` は operational-reduction producer と同じ
+引数を受け、最初に呼んでエラーを保持する。単一の元 existential binder、元の
+AlgorithmReturns body、型付き入力 Core CheckerFact と正確な premise 対応を認証し、
+元 tuple・変更しない binder・実際の witness・元仮定を Kernel の存在導入 rule に渡す。
+成功時だけ変更しない descriptor を返す。先行 boolean や detached child/residual は
+証明にならず、既存 child consumer は独立する。意味的 environment 対応、Proof
+identity/current-policy binding/adoption、別の E1 義務、広範な body 解釈は延期する。
+raw unknown・incomplete/cache miss・Open4/Deferred と evidence・symbol・promotion・
+publication・acceptance/coverage の除外を維持する。
+詳細は [英語版](../en/generator.md#e4-checked-original-existential) を参照。
 
 ## Reflected Algorithm Obligations
 

@@ -38,10 +38,23 @@ witness 変数の object 述語であることから仮定規則・型 guard・c
 algorithm/flow/statement/input/result、local definition のない不変 parameter、
 実際の `Var(a)` witness と所有する単一 Return、role/guard とエラー等の不在を照合する。
 context は parameter guard と同一で `object(a)` に解決できなければならない。
-Core CFG を再構築し map と flow owner を照合して boolean を返す。実行値は前提を供給しない。
+反復的な topological scan で term cycle を拒否してから Core CFG を再構築し、map と
+flow owner を照合して boolean を返す。実行値は前提を供給しない。
 元の関係/context の認証は VC 所有。E4 存在導入、意味的 environment 対応、Proof
 identity/policy binding/adoption や広範な credit は与えない。
 詳細は [英語版](../en/checker.md#symbolic-instantiated-algorithmreturns-child) を参照。
+
+## Original AlgorithmReturns Existential
+
+`check_algorithm_returns_existential(core, target, binder, witness, context)` は
+元の `exists r. returns(a,r)` を同じ借用 relation tuple から検査する。
+result が `(binder,None)`、binder が input と異なることを要求し、result のみを
+input に置換して同じ呼出しで child rule を実行する。実際の `Var(a)`、単一の
+`object(a)` context、完全な CFG 対応を child が検査するため、binder は context に
+自由出現しない。元 body/binder/context の認証は VC が所有する。boolean のみを返し、
+意味的 environment 対応、Proof identity/policy binding/adoption、別の E1 義務、
+広範な body 解釈は延期する。evidence・受理・status・symbol・publication・広範な credit はない。
+詳細は [英語版](../en/checker.md#original-algorithmreturns-existential) を参照。
 
 ## Closeout 後の修正
 
