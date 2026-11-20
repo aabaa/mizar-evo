@@ -23,12 +23,9 @@ transitive callees. Genuine ordinary declaration/type identities and source
 provenance remain necessary; reflection-specific UID/environment/context-`C`
 inputs must neither be fabricated nor omitted where applicable.
 
-**Owner proposal, not an authorized bypass:** restrict a future pilot to
-authenticated non-reflected ordinary values and a checked body/dependency
-closure containing no reflected operations. Reflected, non-ground, template
-and cross-package calls remain outside that proposal. AST-TYPE/AST-LOWER and
-ALG-MVM-EVALUATION prerequisites remain unchanged until their owners freeze
-an explicitly reviewed narrower contract. This design grants no such subpath.
+**Owner decision 2026-11-19 23:28 JST:** narrowing the dependencies for an
+ordinary-only, non-reflected pilot was not approved. The current
+AST-TYPE/AST-LOWER and ALG-MVM-EVALUATION gates remain in force.
 
 ## Authentic binding: Core records, not a new runtime type
 
@@ -92,8 +89,8 @@ for R3, and separately a typed call joined to that definition for R4:
 Preserve the existing test/sidecar; these are future stage-specific controls,
 not activated runtime tests.
 
-**R2 implementation remains blocked:** any ordinary-only dependency narrowing
-needs a separate owner contract decision; complete accepted E1/E2 and
+**R2 implementation remains blocked:** the retained gates are unmet, and
+complete accepted E1/E2 and
 applicable E4 producers are still missing. R3 can export a verified body
 **without a prior ground call** once its definition evidence exists.
 A separately authenticated typed invocation is required for R4.

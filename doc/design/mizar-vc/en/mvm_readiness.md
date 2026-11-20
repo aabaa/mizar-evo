@@ -87,11 +87,12 @@ R1 source/owner inventory
    |       -> R4 finite normal return, or failure/incomplete
    |       -> R5 supported state/control/failure extensions
    |
-   +--> R6 local VC58 preparation: authentic Resolver call edges,
+   +--> R6-A/B local preparation: authentic Resolver call edges,
    |       Core typed Pick/set classification and actual contracts
    |       (may proceed before R4 execution)
-   |       + R3 validated imported callee/closure inputs
-   |       -> R6 Proof acceptance, bound to full evaluated closure
+   |       + R3 validated exports (same-package and imported inputs)
+   |       -> R6-C uniqueness goals, including VC58 same-package Open goals
+   |       -> R6-D Proof acceptance, bound to full evaluated closure
    |       (required before any computation-based discharge)
    |
    +--> R8 staged test design; activation follows actual producer
@@ -101,6 +102,8 @@ Adm/InputOK, verified contracts and formation/policy inputs
    -> R7 whole-candidate T1-T8 conversion + replay/strict policy
    -> later Artifact computation-record publication / Cache reuse
 ```
+
+Owner decision 2026-11-20 09:49 JST confirms reading α: the 2026-11-19 23:22 JST decision that R6-C requires R3 exports also covers VC58 same-package Open-goal generation, which cannot start before those exports exist.
 
 Runtime export in R3 must **not** depend on the post-R7 computation record:
 doing so would make R3 → R4 → R7 → R3 circular. A minimal executor may
@@ -114,7 +117,7 @@ new crate, public status, Kernel rule or duplicate `RuntimeIr`.
 | R2 | Core (`mizar-core`); coordinate Checker/VC/Proof through their existing contracts | Separate a verified **definition/body** for R3 from typed **invocation** for R4; the definition export has no ground-call prerequisite. If ordinary ground evaluation needs distinct authority from reflected AST-TYPE/LOWER, first resolve that by specification review; do not treat source-only Core content as executable. |
 | R3 | Artifact (`mizar-artifact`), Build/Driver as consumers | Freeze reusable executable representation/loader after the R2 accepted definition and required imports, **not** after a concrete call. Do not fabricate export bytes to satisfy MVM. |
 | R4–R5 | VC (`mizar-vc`) under ALG-MVM-EVALUATION | Freeze executor implementation only after R2 checked content + R3 validating export and an authentic supported ground-call test; later source features follow their actual CFG producers. |
-| R6 | VC for closure generation, Proof for acceptance; existing joint ALGDEF task | Local call-closure/VC58 preparation may proceed with real source facts **before** R4; imported closure requires R3 validated exports, and final Proof admission requires the complete executed/dependency closure and genuine accepted uniqueness or exemptions. No Open credit. |
+| R6 | VC for closure generation, Proof for acceptance; existing joint ALGDEF task | Local R6-A/B call-closure/classification preparation may proceed with real source facts **before** R3/R4; R6-C, including VC58 same-package Open-goal generation, requires R3 validated exports. Final Proof admission requires the complete executed/dependency closure and genuine accepted uniqueness or exemptions. No Open credit. |
 | R7 | Proof for conversion/acceptance, Artifact for subsequent provenance | Requires actual R4 normal return and R6 accepted prerequisites plus existing policy/formation contracts; no early certified-result publication. |
 | R8 | Test (`mizar-test`) | Freeze a spec-derived **test-first** corpus family separately, with independent pass/fail oracles. Parser-only additions can precede runtime producers; proof/runtime activation cannot. |
 

@@ -739,6 +739,8 @@ Existing [Binder parser tests](../../../../crates/mizar-test/src/runner/tests/bi
 
 ## Full Computation Closure Admission
 
+Source-owned R6-A/B closure/classification preparation may precede R3; R6-C uniqueness-goal generation, including VC58 same-package Open goals, requires R3 validated exports.
+
 Future computation admission covers every direct/transitive evaluated algorithm through authentic local or validated exported bodies/dependencies, including internal private helpers. For each value-returning callee with non-ghost Pick or unordered set iteration, retain type/precondition guards and the complete ensures uniqueness goal (§20.9.2), or the exact result=t/result=true iff φ exemption with no result occurrence in t/φ. Procedures themselves do not acquire this obligation; non-trigger value-returning controls have neither a non-ghost Pick nor an unordered set loop. Ordered sequence plus non-ghost Pick and ghost Pick plus unordered set loop still trigger the requirement. Missing closure/classification/contract inputs block admission. Tests cover each applicability boundary, imported/transitive nondeterministic callees, genuine proof/exemption versus Open/failed goals, stale contracts/group/call/dependency data and forged exemptions, for explicit computation and ground-evaluation discharge alike.
 
 ## Source theorem VC generation

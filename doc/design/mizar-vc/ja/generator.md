@@ -666,6 +666,8 @@ C/文脈を含む完全な core/CFG 入力を消費し、Adm/InputOK と適合�
 
 ## Full Computation Closure Admission
 
+ソース所有の R6-A/B 閉包・分類準備は R3 に先行できるが、VC58 の同一パッケージ Open 目標を含む R6-C 一意性目標生成は R3 の検証済み export を前提とする。
+
 将来の computation admission は真正な local/検証済み exported body/dependency から、内部 private helper を含め direct/transitive に評価する全算法を対象とする。non-ghost Pick/unordered set iteration を含む各 value-returning callee に type/precondition guard と完全な ensures uniqueness goal (§20.9.2) を保持するか、t/φ に result が現れない正確な result=t/result=true iff φ exemption を確認する。procedure 自体はこの obligation の対象外。非適用の value-returning control は non-ghost Pick と unordered set loop の両方を持たない。ordered sequence と non-ghost Pick、ghost Pick と unordered set loop の組合せは引き続き要件を発生させる。不足する closure/classification/contract input は admission を block する。テストは各適用境界、imported/transitive nondeterministic callee、真正な proof/exemption と Open/failed goal、古い contract/group/call/dependency、偽 exemption を explicit computation/ground-evaluation discharge の両方で点検する。
 
 ## Source theorem VC generation

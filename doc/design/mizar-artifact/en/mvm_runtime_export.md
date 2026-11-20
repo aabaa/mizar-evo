@@ -28,6 +28,13 @@ is **not** runnable proof-checked code.
 | VC MVM (R4) | Validated handle and authenticated typed concrete call -> execution report | Calls cannot reinterpret proofs, modify Artifact or manufacture E1/E2/E4; E5 only from actual normal return |
 | Proof / Cache (R6–R7) | Actual MVM report and separately accepted admission -> computed/replayed status and later provenance | No raw return promoted to proof, weaker-policy cache hit, or unverified transitive dependency |
 
+**R6-C export inputs:** register type guards, `requires`, complete `ensures`
+and value-return/non-ghost Pick/set-versus-sequence loop classifications for
+every closure callee, including private helpers. R6-C consumes these R3
+inputs even for VC58 same-package Open-goal generation. This registration
+does not decide whether the exporter proves and transports uniqueness or
+the importer generates its obligations; that proof-side question stays open.
+
 **Visibility:** only public computable entry points may be imported and
 called across packages. Their validated executable may include private
 helpers, which remain invisible to importers. Cross-package *transitive*

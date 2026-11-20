@@ -1,14 +1,14 @@
 # Task ALGDEF-VC58-COMPUTATION-UNIQUENESS: computation uniqueness obligation
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md).
 Status: planned. Tier: full. Owner: [VC plan](../../mizar-vc/en/00.crate_plan.md); consumers: [test plan](../../mizar-test/en/00.crate_plan.md).
-Dependencies: the existing [bounded computation request](../../mizar-vc/en/generator.md#bounded-computation-request-generation); Core 42, 44, and 46 (Pick sites, collection loops, resolved calls); VC 44 (call substitution).
-Readiness: dependency-blocked on authentic call-closure, set/sequence and Pick classifications. ALGDEF-COMPUTATION-ADMISSION owns the export-fed full-closure successor and genuine acceptance; this stage remains same-package/Open only.
+Dependencies: the existing [bounded computation request](../../mizar-vc/en/generator.md#bounded-computation-request-generation); Core 42, 44, and 46 (Pick sites, collection loops, resolved calls); VC 44 (call substitution); R3 validated computational exports.
+Readiness: dependency-blocked on R3 exports and authentic call-closure, set/sequence and Pick classifications, including for same-package Open-goal generation. ALGDEF-COMPUTATION-ADMISSION owns the full-closure successor and genuine acceptance; this stage remains same-package/Open only.
 Authority: specification §20.9.2 determinism requirement, §20.3 and §20.2.4 computation restrictions, §22.4.5 E0330; [architecture 07](../../architecture/en/07.vc_generation.md#algorithm-vcs-follow-structured-control-flow).
 Gap: `test_gap` and `source_drift`; no computation step carries the uniqueness obligation.
 
 ## Scope
 
-For a `by computation` step, compute the computation closure over resolved
+After R3 exports exist, for a `by computation` step, compute the computation closure over resolved
 calls within the same package. An imported callee whose body is available only
 through a computational export (§20.9.1, parked with the MVM) leaves the
 closure unestablished: the step stays open and nothing is guessed. For each
@@ -27,12 +27,13 @@ made to match behavior.
 
 ## Tests
 
-Test-first real sources: `exists_greater` from §20.9.2 (exempt), a single-valued Pick algorithm
+With authentic R3 exports, test-first real sources: `exists_greater` from §20.9.2 (exempt), a single-valued Pick algorithm
 with an underdetermining `ensures` (§20.3; obligation generated and left open), a closure that reaches such
 an algorithm transitively, an ordered sequence loop with no Pick and no
 obligation, and an imported callee that leaves the closure unestablished.
 Corruption tests cover a missing callee, a stale closure, and a forged
 exemption.
+Missing, stale or forged R3 exports block even same-package Open-goal generation.
 
 ## Coverage, reviews, and exit
 
