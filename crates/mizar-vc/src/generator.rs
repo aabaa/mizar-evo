@@ -3517,6 +3517,55 @@ pub fn generate_source_algorithm_e4_validator_handoff_request<'c, 'a, T>(
     Ok((descriptor, inputs, expected_output))
 }
 
+/// Checks the authentic conditional E4 local request and returns its original descriptor.
+///
+/// Initialization and semantic parameter-guard satisfaction remain caller premises.
+/// Success supplies no original E4 proof, existential introduction or adoption.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain the authentic request inputs without a single-use type"
+)]
+pub fn check_source_algorithm_e4_local_request<T>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+    environment: &[(mizar_core::core_ir::CoreVarId, CoreFormulaId, T)],
+) -> Result<
+    (
+        VcSet,
+        mizar_core::core_ir::CoreTermId,
+        ContextEntryId,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    let (descriptor, input, expected) = generate_source_algorithm_e4_validator_handoff_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+        environment,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e4_local_request".to_owned();
+    let actual = mizar_kernel::checker::check_sole_return_var(input.0, input.1, input.2)
+        .ok_or_else(invalid)?;
+    if actual.0 != expected.0 || actual.1 != expected.1 || !std::ptr::eq(actual.2, expected.2) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 fn source_program_value(
     core: &mizar_core::core_ir::CoreIr,
     term: mizar_core::core_ir::CoreTermId,

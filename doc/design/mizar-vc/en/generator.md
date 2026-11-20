@@ -740,6 +740,12 @@ Require one fresh existential binder and the original relation's exact algorithm
 
 The input tuple is the exact request to Kernel's [conditional validator](../../mizar-kernel/en/checker.md#bounded-varsole-return-local-validation); the output tuple is its expected local association, not a checked result. This function never invokes Kernel. Initialization and semantic satisfaction of the parameter guard remain explicit caller premises; guard IDs establish association only. No environment premise is installed into the VC context. Kernel checking, original E4 proof, existential introduction, result typing/contracts, Proof identity/currentness/policy binding and adoption remain separate. Four requests stay Open and termination Deferred, with no evidence, symbol, status, publication or acceptance/coverage credit.
 
+### E4 checked local request
+
+`check_source_algorithm_e4_local_request` takes the handoff's arguments and calls it first, preserving upstream errors. Invoke unchanged Kernel `check_sole_return_var` on exactly the returned input tuple. Require actual statement/term IDs and borrowed-value pointer identity to match the expected output; refusal returns an error, and only success returns the unchanged original descriptor. Arbitrary T needs neither Eq nor Clone; no value is interpreted or copied.
+
+This is conditional local checking under the handoff's caller premises, with no semantic environment association or original AlgorithmReturns proof. E4 existential introduction, Proof identity/current-policy binding and adoption remain deferred. The descriptor/raw slice and Open4/Deferred states stay unchanged; no generic evidence/status/reuse or broader credit follows.
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 require E1 typing/inhabitation/single-valuedness and verified E2 partial correctness; E4 normal return applies in terminating/promotion contexts, not to every partial definition.

@@ -639,6 +639,12 @@ binder と term の組は object(r) の fresh r を実 immutable a に置換す�
 
 入力 tuple は Kernel の[条件付き validator](../../mizar-kernel/ja/checker.md#bounded-varsole-return-local-validation) への正確な要求であり、出力 tuple は期待する局所的 association であって検証済み結果ではない。この関数は Kernel を呼ばない。初期化と parameter guard の意味的充足は呼出側の明示的前提であり、guard ID は association のみを示す。environment premise は VC context に追加しない。Kernel checking・元の E4 proof・existential introduction・result typing/contracts・Proof identity/currentness/policy binding・adoption は別途必要である。四要求は Open、termination は Deferred のままで、evidence・symbol・status・publication・acceptance/coverage credit を与えない。
 
+### E4 checked local request
+
+`check_source_algorithm_e4_local_request` は handoff と同じ引数を受け、最初にそれを呼んで上流エラーを保持する。返された入力 tuple そのものを変更しない Kernel `check_sole_return_var` に渡す。実際の statement/term ID と借用値のポインタ同一性が期待出力に一致することを要求し、拒否時はエラー、成功時だけ変更しない元 descriptor を返す。任意の T に Eq/Clone を要求せず、値を解釈・複製しない。
+
+これは handoff の呼出側前提に基づく条件付き局所検査であり、意味的 environment association や元の AlgorithmReturns proof は与えない。E4 existential introduction、Proof identity/current-policy binding、adoption は延期のままである。descriptor/raw slice と Open4/Deferred は変わらず、汎用 evidence/status/reuse や広い credit は与えない。
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 は E1 の型/inhabitation/単一値性と検証済み E2 部分正当性を要求する。E4 正常復帰は terminating/昇格の文脈に適用し、すべての部分定義には要求しない。

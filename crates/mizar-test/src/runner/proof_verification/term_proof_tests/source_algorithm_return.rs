@@ -5912,6 +5912,7 @@ fn source_algorithm_e4_validator_handoff_preserves_descriptor_and_borrowed_oracl
     use mizar_core::core_ir::CoreAlgorithmStmtKind;
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e4_local_request as consume,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
             generate_source_algorithm_e4_validator_handoff_request as handoff,
         },
@@ -5979,10 +5980,25 @@ fn source_algorithm_e4_validator_handoff_preserves_descriptor_and_borrowed_oracl
         assert!(std::ptr::eq(input.2, environment.as_slice()));
         assert_eq!((output.0, output.1), (statement, term));
         assert!(std::ptr::eq(output.2, &environment[0].2));
-        let checked =
-            mizar_kernel::checker::check_sole_return_var(input.0, input.1, input.2).unwrap();
+        let checked = mizar_kernel::checker::check_sole_return_var(core, id, &environment).unwrap();
         assert_eq!((checked.0, checked.1), (output.0, output.1));
         assert!(std::ptr::eq(checked.2, output.2));
+        assert_eq!(
+            consume(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                VcId::new(4),
+                &environment,
+            )
+            .unwrap(),
+            descriptor
+        );
+        assert_eq!(*environment[0].2.lock().unwrap(), vec![255_u8, 0, 7]);
     });
 }
 
@@ -5990,7 +6006,10 @@ fn source_algorithm_e4_validator_handoff_preserves_descriptor_and_borrowed_oracl
 fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_binder() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
     use mizar_vc::{
-        generator::generate_source_algorithm_e4_validator_handoff_request as handoff,
+        generator::{
+            check_source_algorithm_e4_local_request as consume,
+            generate_source_algorithm_e4_validator_handoff_request as handoff,
+        },
         vc_ir::{ContextEntryKind, VcGeneratedFormulaShape as Shape},
     };
     let text = fs::read_to_string(config().workspace_root.join(
@@ -6036,6 +6055,21 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
                 core.terms().get(term).unwrap().kind,
                 CoreTermKind::Var(environment[0].0)
             );
+            assert_eq!(
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    snapshot_id(0),
+                    &GenerationSchemaVersion::new("relocated-generation"),
+                    &VcSchemaVersion::new("relocated-vc"),
+                    VcId::new(4),
+                    &environment,
+                )
+                .unwrap(),
+                descriptor
+            );
             assert_eq!(input.1, id);
             assert!(std::ptr::eq(input.0, &core));
             assert!(std::ptr::eq(input.2, environment.as_slice()));
@@ -6066,7 +6100,10 @@ fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_bi
 
 #[test]
 fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_output() {
-    use mizar_vc::generator::generate_source_algorithm_e4_validator_handoff_request as handoff;
+    use mizar_vc::generator::{
+        check_source_algorithm_e4_local_request as consume,
+        generate_source_algorithm_e4_validator_handoff_request as handoff,
+    };
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
         let (_, algorithm) = core.algorithms().iter().next().unwrap();
         let parameter = &algorithm.params[0];
@@ -6096,6 +6133,21 @@ fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_o
                 .unwrap_err(),
                 "algorithms.direct_return.invalid_e4_validator_handoff_request"
             );
+            assert_eq!(
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    VcId::new(4),
+                    &environment,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e4_validator_handoff_request"
+            );
         }
     });
 }
@@ -6103,6 +6155,7 @@ fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_o
 #[test]
 fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_precedence() {
     use mizar_vc::generator::{
+        check_source_algorithm_e4_local_request as consume,
         generate_source_algorithm_e4_operational_reduction_request as reduction,
         generate_source_algorithm_e4_validator_handoff_request as handoff,
     };
@@ -6114,8 +6167,20 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
         ); 0] = [];
         let generation = &vcs.vcs()[0].anchor.generation_schema_version;
         for selected in [0, 1, 2, 3, usize::MAX].map(VcId::new) {
+            let error = handoff(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                selected,
+                &environment,
+            )
+            .unwrap_err();
             assert_eq!(
-                handoff(
+                consume(
                     source,
                     check,
                     symbols,
@@ -6127,6 +6192,10 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                     &environment,
                 )
                 .unwrap_err(),
+                error
+            );
+            assert_eq!(
+                error,
                 reduction(
                     source,
                     check,
@@ -6171,8 +6240,20 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                         &other_core,
                     ))) {
                         for selected in [VcId::new(4), VcId::new(usize::MAX)] {
+                            let error = handoff(
+                                source,
+                                check,
+                                symbols,
+                                core,
+                                vcs.snapshot(),
+                                generation,
+                                vcs.schema_version(),
+                                selected,
+                                &environment,
+                            )
+                            .unwrap_err();
                             assert_eq!(
-                                handoff(
+                                consume(
                                     source,
                                     check,
                                     symbols,
@@ -6184,6 +6265,10 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                                     &environment,
                                 )
                                 .unwrap_err(),
+                                error
+                            );
+                            assert_eq!(
+                                error,
                                 reduction(
                                     source,
                                     check,
@@ -6208,7 +6293,10 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
 fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_purity() {
     use mizar_vc::{
         dependency_slice::DependencySliceCompleteness,
-        generator::generate_source_algorithm_e4_validator_handoff_request as handoff,
+        generator::{
+            check_source_algorithm_e4_local_request as consume,
+            generate_source_algorithm_e4_validator_handoff_request as handoff,
+        },
         vc_ir::{VcKind, VcStatus},
     };
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
@@ -6264,7 +6352,24 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
                 )
                 .unwrap()
             };
-            let (descriptor, _, output) = request();
+            let (original, _, output) = request();
+            let checked = || {
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    snapshot,
+                    &generation,
+                    &schema,
+                    VcId::new(4),
+                    &environment,
+                )
+                .unwrap()
+            };
+            let descriptor = checked();
+            assert_eq!(descriptor, original);
+            assert_eq!(checked(), descriptor);
             assert_eq!(request().0, descriptor);
             assert!(std::ptr::eq(output.2, &environment[0].2));
             assert_eq!(descriptor.0.snapshot(), snapshot);
