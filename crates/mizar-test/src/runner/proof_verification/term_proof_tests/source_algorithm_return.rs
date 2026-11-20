@@ -6513,6 +6513,7 @@ fn source_algorithm_e4_proof_association_preserves_original_result_raw_slice() {
                     associate(source, check, symbols, core, snapshot, VcId::new(4)).unwrap();
                 assert_eq!((&original, &slice), (&expected.0, &expected.1));
                 assert_eq!(slice, descriptor.5);
+                assert_eq!(result.checker_schema_version(), 1);
                 assert!(std::ptr::eq(result.core(), core));
                 assert_eq!(result.target(), checked.target());
                 assert_eq!(result.witness(), checked.witness());
@@ -7099,6 +7100,7 @@ fn source_algorithm_e4_instantiated_request_preserves_original_and_checks_symbol
         )
         .unwrap();
         assert_eq!(paired, introduced);
+        assert_eq!(result.checker_schema_version(), 1);
         assert!(std::ptr::eq(result.core(), core));
         assert_eq!(result.target(), target);
         assert_eq!(result.witness(), witness);
@@ -7314,6 +7316,7 @@ fn source_algorithm_e4_existential_kernel_requires_original_binder_and_rechecked
             check_algorithm_returns_existential_result(core, target, binder, witness, context);
         assert_eq!(result.is_some(), accepted);
         if let Some(result) = result {
+            assert_eq!(result.checker_schema_version(), 1);
             assert!(std::ptr::eq(result.core(), core));
             assert_eq!(result.target(), target);
             assert_eq!(result.witness(), witness);

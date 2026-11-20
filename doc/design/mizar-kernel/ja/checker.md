@@ -56,7 +56,8 @@ input に置換して同じ呼出しで child rule を実行する。実際の `
 不透明な `AlgorithmReturnsExistentialCheck` を構築する。非公開 field は immutable Core、
 元 relation tuple（result に binder を含む）、witness、単一 context を保持し、
 `core()`・`target()`・`witness()`・`context()` はその入力だけを公開する。
-意味的 environment 対応、Proof identity/policy binding/adoption、別の E1 義務、
+`checker_schema_version()` はこの正の元存在導入 rule の Kernel 所有 schema `1` を返し、policy 適格性や adoption は与えない。
+意味的 environment 対応、Proof policy consumption/adoption、別の E1 義務、
 広範な body 解釈は延期する。evidence・受理・status・symbol・publication・広範な credit はない。
 詳細は [英語版](../en/checker.md#original-algorithmreturns-existential) を参照。
 
