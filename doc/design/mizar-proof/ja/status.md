@@ -802,3 +802,8 @@ source mainArtifact、実書込み、manifest commit、opaque Proof publication 
 最終 term_proof_tests brace 前に `source_theorem_candidate_witness_file_matches_transport` と `source_theorem_candidate_witness_file_rejects_cross_associations` のみ追記し、既存 helper、通常 SnapshotRegistry/sourceid を parse 前に設定し src/配置を使う。新API前に実67 triple全体、通常 generic stage/ref2/7keyhash、独立8key全metadata/FILEhash/通常Ref2を取得し、全戻り値とcanonical全bytes、保持する全staged field/本物AXprovenance、全wire/v2names、元/処理後・local/imported区別/raw状態/purity/no-witness、異なる両hashを比較する。
 実 Artifact write/read（expectedFILEhash）→既存readerによる正確wire→実Draft.stage_source_theorem_file を検証する。小さい二つの実format/Disk/OpenBuffer/source/policy/path/現在schemaを実baselineで比較し、下位cross-productは複製しない。旧Builtin全テストを保持し、本物Builtin生成/reader/stagerと実Ref3も正例として確認するが、通常受理に改名しない。
 負例は実生成物の非信頼fileを整合編集/rehashできる。内容より先の互換性、profile/version/field/hex/metadata/readhash/ref/path、実別source/policy/wireを確認する。両方向のprofile relabelを必須とし、本物wire/metaから非信頼opposite-profile FILE/refを作って構造reader成功を先に示し、実際の元classのDraft関連付けは拒否させる。これは非信頼データだけで新しいAccepted/Kernel/token正例ではない。readerエラーFIRST、67下位エラーFIRSTと一つの優先例を照合し、private/selectedhash/deepmatrixは静的/下位テストに委ね、hookを作らない。
+
+## アルゴリズム直接 return の要求 identity
+
+[英語正本の設計](../en/status.md#source-algorithm-direct-return-request-identity)に従い、Proof は同じ source/check/symbols を再検査し、Core と四つの Open 要求を再生成する。二つの専用 API は既存 Hash・DependencySlice・ProofObligationIdentity を使い、要求別 role、正規化 Core/guard、宣言束縛変数、policy 入力、所有者と構文を結び付ける。ハッシュの厳密なフィールド・domain・schema は正本が所有する。
+旧 postcondition API は維持する。依存 slice 全体、不完全な anchor、Deferred termination、必須 cache miss を保持する。source/snapshot/filesystem の currentness は呼出側が所有する。証拠生成・検査・採用、symbol 導入、promotion、acceptance/coverage、publication の権限は生じない。E1 inhabitation は真正な存在証人、他の要求は認証済み運用証拠 bridge と Kernel 検査を VC/Kernel/Proof の責務として待つ。
