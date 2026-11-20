@@ -1,6 +1,6 @@
 # Task ALGDEF-VC53-NORMAL-RETURN: Normal-return and function-graph prerequisites
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC53-NORMAL-RETURN.md).
-Status: bounded requests, validation and structural dependencies; bounded inhabitation adoption; broader proof blocked. Tier: full gates. Owners: [Core plan](../../mizar-core/en/00.crate_plan.md), [VC plan](../../mizar-vc/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [Kernel plan](../../mizar-kernel/en/00.crate_plan.md).
+Status: bounded requests/adoption; broader proof blocked. Tier: full gates. Owners: [Core plan](../../mizar-core/en/00.crate_plan.md), [VC plan](../../mizar-vc/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [Kernel plan](../../mizar-kernel/en/00.crate_plan.md).
 Consumers: mizar-test/promotion; import: ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.
 Dependencies: ALGDEF-PARSER-FAIL; Core42–53/CFG, VC formulas, proof/kernel results; producer Core46.
 Authority: [§20.2.6, §20.3, §20.7.2, E1–E5 and VC schema](../../../spec/en/20.algorithm_and_verification.md); [algorithm graph](../../mizar-vc/en/source_vc_decomposition.md#accepted-algorithm-vc-task-graph).
@@ -10,9 +10,7 @@ Owner details: [Core/CFG graph](../../mizar-core/en/source_family_decomposition.
 
 Core43/48/53: failure gives no continuation/postcondition; void fallthrough returns, value fallthrough rejects; ghost cannot fail/influence runtime.
 VC44 retains partial-call returns/ensures and recursive E2; external E2 needs verified body correctness. Continuation proves no E4.
-VC 53 requires independently checked exact-call evidence for
-terminating child calls/ranges; stopping/equality is insufficient. Core owns
-identities, VC capture-free substitution, Proof acceptance. Open goals grant no status.
+VC53 requires exact-call evidence for terminating children/ranges; stopping/equality is insufficient. Core owns identities, VC substitution, Proof acceptance. Open grants no status.
 E1 needs single-valuedness, typing and inhabitation wherever return typing is asserted; E2 needs body correctness, E4 verified normal return. Keep environment/InputOK
 guards for syntax-bearing inputs with AST-CONTRACT. Ghost Pick requires static
 discharge; non-ghost unsupported set Pick may fail only in partial execution.
@@ -29,7 +27,7 @@ Replay emits relation/Open4: E1 typing, single-valuedness, all-typed-input inhab
 Exclude calls, loops, Pick, recursion, groups, premise exposure, symbol introduction, promotion, acceptance/coverage, fixture/expectation changes. Parser reconciliation and mixed-group E2 remain excluded.
 ## Existing request boundaries
 [Proof identity](../../mizar-proof/en/status.md#source-algorithm-direct-return-request-identity): same-source regeneration, fixed four-role schemas, normalized goal/context and owner binding; inputs remain incomplete/reuse-ineligible, currentness caller-owned.
-VC [witness reduction](../../mizar-vc/en/generator.md#e1-inhabitation-witness-reduction-request), [E4 reduction](../../mizar-vc/en/generator.md#e4-operational-reduction-request) and [validator handoff](../../mizar-vc/en/generator.md#e4-authenticated-validator-handoff) retain original identities, binders, witnesses and raw slices; detached substitution/local associations supply no proof. Kernel [conditional validator](../../mizar-kernel/en/checker.md#bounded-varsole-return-local-validation) leaves initialized/typed-input satisfaction to callers. Original E4 checking and Proof identity association are bounded below; adoption stays deferred.
+VC [witness reduction](../../mizar-vc/en/generator.md#e1-inhabitation-witness-reduction-request), [E4 reduction](../../mizar-vc/en/generator.md#e4-operational-reduction-request) and [validator handoff](../../mizar-vc/en/generator.md#e4-authenticated-validator-handoff) retain original identities, binders, witnesses and raw slices; detached substitution/local associations supply no proof. Kernel [conditional validator](../../mizar-kernel/en/checker.md#bounded-varsole-return-local-validation) leaves initialized/typed-input satisfaction to callers.
 ## Dependency boundaries
 VC [structural/authenticated collector](../../mizar-vc/en/dependency_slice.md#authenticated-direct-return-core-contribution) retains ID-free alias structure, authenticated reachable Core contributions and every unknown/raw remainder. Plain collection remains structural; slices stay incomplete/reuse-ineligible.
 
@@ -40,11 +38,13 @@ Proof [same-call association](../../mizar-proof/en/status.md#original-e4-request
 Association alone supplies no policy authority. Source/snapshot/filesystem currentness remains caller-owned. Preserve Open4/Deferred, raw unknowns, IncompleteUncacheable/cache misses and all exclusions. Formula-cycle hardening remains separate PRODUCER-MISSING; no formula-cycle/general-cycle safety claim. R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
 
 ## Kernel-owned E4 checker-schema provenance
-`AlgorithmReturnsExistentialCheck::checker_schema_version() -> u16` reports Kernel-owned schema `1` for the existing original-existential rule, without caller-requested versions or a new type/field.
+Kernel owns checker-schema provenance.
 
 ## Proof-only E4 current-policy consumption
-Full tier: new public seam and E4 policy consumer fail the pattern criteria. Add `consume_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id, policy)` around the unchanged association. Propagate association errors first; inline require enabled BuiltinKernelEvidence and exact agreement between current policy and genuine result checker schemas, otherwise `algorithm.proof.native_e4_policy_rejected`. Atomically return original identity, whole raw slice, borrowed result and actual `policy.policy_fingerprint()`.
-No helper/type/field, detached inputs, generic evidence/status conversion, adoption, semantic environment interpretation, separate E1 discharge or broader credit. Affect Proof status, existing source-return tests and necessary paired Proof owners/inventories only; no Kernel/VC/Core production, spec, fixture/expectation, trace/coverage, protocol or AGENTS edits.
-Two focused test groups, cap two: (1) genuine association outputs match whole identity/slice/result and actual fingerprints under permitted current-policy variants, with repeatability/purity; (2) disabled Builtin/unsupported formats and mismatching checker schemas refuse, while real upstream errors precede policy refusals. Reuse lower tuple/binder/role/id, raw-state, alpha/ID relocation and E1 controls.
-Exit: independent specification/test-intent, sufficiency, precision/trust, volume, final source/docs/ENJA and quality reviews; fmt, all-target/all-feature Clippy, both lint_policy suites, Kernel/VC/Proof owners, source-return, proof-verification E2E and scoped links/fragments. Full cargo test follows cadence.
-Pattern follow-up: predecessor `42e7becee`; add Builtin-only policy to success variants, preserving assertions.
+The existing [policy consumer](../../mizar-proof/en/status.md#original-e4-current-policy-consumption) retains association-first errors and current Builtin/schema checks.
+
+## Native original-E4 adoption
+Full tier: new public adoption seam and consumer fail pattern criteria. `NativeE4NormalReturn::from_source(source, check, symbols, core, snapshot, vc_id, policy)` uses that unchanged same-call consumer, privately retaining identity, whole slice, snapshot and result. Following E1, `adopt_original_request` takes the same inputs, regenerates complete original identity/slice first, and returns false on identity, whole-slice, snapshot or immutable Core pointer mismatch. Then inline re-evaluate current Builtin/schema policy against the retained result, preserving `algorithm.proof.native_e4_policy_rejected`; return true only for that original E4 existential. Upstream errors remain errors. No retained policy authorization.
+No generic evidence/status conversion, semantic environment interpretation, E1/E2 discharge, promotion, reuse or broader credit. Affect Proof status, source-return tests and paired Proof owners/inventories only; no Kernel/VC/Core production, spec, fixtures/expectations, trace/coverage, protocol or AGENTS edits.
+Test matrix, cap five groups: genuine construction/adoption with repeatability, purity and Open4/Deferred; other roles/ids and changed original content/raw association refuse; snapshot and distinct equal/cloned Core refuse; current permitted policy variants succeed while disabled Builtin/unsupported formats/schema mismatch error after earlier success; real constructor and regeneration errors precede policy refusals and association mismatch returns false first. Reuse lower tuple/binder/witness, alpha/ID relocation, raw incomplete/cache-miss and E1 controls; no cycle-safety claim.
+Exit: specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Kernel/VC/Proof owners, source-return, proof-verification E2E and scoped links/fragments. Full cargo test follows cadence.
