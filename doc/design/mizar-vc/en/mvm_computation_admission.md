@@ -36,12 +36,12 @@ establishes neither E1/E2/E4, requires, Adm/InputOK nor replay.
 |---|---|---|
 | **R6-A — local/imported closure** (Resolver/Artifact inputs; VC owner) | Resolve each original local direct/transitive evaluated call, including internal private helpers; import only **validated** public computational exports and their complete executable/dependency body closure. Preserve selected algorithm identity, signatures, source/versions, call provenance and complete request/closure association. | Unresolved/ambiguous call, missing body, missing helper, private cross-package target, stale/altered export or incomplete transitive closure -> unavailable/Open; no local source fallback or invented callee |
 | **R6-B — classification/exemptions** (Checker/Core facts; VC owner) | Distinguish value/procedure, non-ghost versus ghost Pick, unordered set versus ordered sequence, typed `ensures` and whether `result` occurs in exact resolved right side. Only the two spec-enumerated forms exempt; retain each reason with actual callee/contract identity. | Missing type, original body/loop-classification, contract, or untrusted exemption flag -> no exemption or admission; no spelling-only search |
-| **R6-C — VC generation** (VC 58 local; full admission successor) | R6-C requires R3 exports. For each triggering, non-exempt callee, form the exact parameter-type-guard, precondition `P`, and twice-instantiated complete `Q` uniqueness goal; retain original goal/context, dependency/version and call identity. | Wrong guard or result binder, omitted `requires`/`ensures`, substituted origin, missing/synthetic proof -> remain Open; generation never means proved |
+| **R6-C — VC generation** (VC 58 local; full admission successor) | R6-C requires R3 exports, including VC58 same-package Open-goal generation. For each triggering, non-exempt callee, form the exact parameter-type-guard, precondition `P`, and twice-instantiated complete `Q` uniqueness goal; retain original goal/context, dependency/version and call identity. | Wrong guard or result binder, omitted `requires`/`ensures`, substituted origin, missing/synthetic proof -> remain Open; generation never means proved |
 | **R6-D — Proof admission** (Proof owner) | Validate completeness of the entire request-linked closure and genuinely accepted per-callee proof or authenticated exact exemption before **any computation-based discharge**. Proof owns E0330 when a real applicable nondeterminism obligation fails; publish no fact from mere VC/VM report. | Rejected/Open/stale/forged proof or missing closure prevents admission. When a *genuine generated* uniqueness obligation cannot be discharged in an actual computation proof, apply spec E0330; mere absence of a source/export producer is an unavailable input, not fabricated E0330 evidence |
 
 Order: authentic call/CFG -> local R6-A/B preparation
 (in parallel with R3/R4 where genuine producers permit); R3 validated
-exports -> R6-C goal generation. Final R6-D checks the source closure
+exports -> R6-C goal generation, including VC58 same-package Open goals. Final R6-D checks the source closure
 against the actual executed-call/dependency record or an independently
 authenticated complete execution-closure relation, then accepts only
 genuine proofs/exemptions. A static candidate graph or VM return alone
@@ -62,18 +62,35 @@ depend on later R7 records.
 
 ## Open Questions and implementation release
 
-- **Q1:** authenticate source calls and imported exports (R2/R3),
-  including transitive helpers and visibility; local VC58 cannot
-  manufacture imported closure.
-- **Q2:** bind each accepted VC or syntactic exemption to the **same**
-  request, contract, closure, policy and version; validate on change.
-  Proof remains the sole acceptance owner.
-- **Q3:** a genuine uniqueness VC that cannot be discharged on a supported
-  computation request yields E0330; an unformed producer/closure has no such VC.
-  Never infer E0330 from an arbitrary status flag.
+All questions below remain undecided.
+
+- **R6-Q1 — VC (closure generation), with R2/R3 inputs; blocks imported
+  R6-A and R6-C:** how are source calls and validated imported exports,
+  including transitive helpers and visibility, authenticated? R6-C requires
+  R3 even for VC58 same-package Open-goal generation; local preparation
+  cannot manufacture imported closure.
+- **R6-Q2 — Proof; blocks R6-D:** how is each accepted VC or exact
+  syntactic exemption bound to the **same** request, contract, closure,
+  policy and version, and revalidated on change?
+- **R6-Q3 — Proof (E0330 projection); blocks R6-D:** how is failure to
+  discharge a genuine uniqueness VC distinguished diagnostically from an
+  unavailable producer/closure input? Public E0330 adoption remains under
+  the [separate diagnostics authority](../../todo.md#algorithm-definitional-semantics-specification-amendment--).
+- **N8 — VC; blocks R6-C and R6-D:** how is the computational closure
+  of every algorithm evaluated directly or transitively under §20.9.2
+  established: statically or dynamically?
+
+For imported execution artifacts, R6-Q1/Q2 refer to the undecided
+[R3-N2 trust-basis question](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze),
+the [Proof imported-promotion boundary](../../mizar-proof/en/policy.md#imported-promotion-authority-boundary)
+and the [Artifact imported-promotion boundary](../../mizar-artifact/en/manifest.md#imported-promotion-authority-boundary).
+These references do not decide whether imported execution artifacts require
+that authenticated publication; computation retains its separate
+artifact/correspondence checks.
 
 **First possible implementation freeze:** R6-A local source-edge
 inventory and R6-B classification once authentic producers exist,
-under VC58. R6-C requires R3 exports; R6-D requires genuine Proof
+under VC58. R6-C, including VC58 same-package Open-goal generation,
+requires R3 exports; R6-D requires genuine Proof
 acceptance. This design authorizes no R6 implementation or change
 to existing `.miz` expectations, traces or coverage.

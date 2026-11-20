@@ -1,7 +1,7 @@
 # Task MVM-R6-ADMISSION-DESIGN: Full-closure computation admission
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R6-ADMISSION-DESIGN.md).
-Status: design draft; independent reviews and documentation lint pending.
+Status: documentation-only design review closed; implementation remains blocked.
 Documentation-only; **no computation acceptance or runtime implementation**.
 Sole design owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).
 Design: [VC owner document](../../mizar-vc/en/mvm_computation_admission.md).
@@ -37,6 +37,10 @@ R3 validated exported-body/dependency producers.
 - Document stage-specific positive, refusal and corrupted-source/export/
   proof cases; never infer imported bodies or original statements from
   their names, a signature or a local source fallback.
+
+This design task executes no semantic tests. The future test matrix is limited to
+the owner design table's rows; adding a row requires the specification
+clause that requires it.
 
 ## Exit and prohibitions
 
