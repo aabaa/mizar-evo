@@ -2379,6 +2379,10 @@ fn required_goal_polarity(vc: &VcIr) -> KernelGoalPolarity {
         | VcKind::FraenkelMembershipAxiom
         | VcKind::AlgorithmPrecondition
         | VcKind::AlgorithmPostcondition
+        | VcKind::AlgorithmE1Typing
+        | VcKind::AlgorithmE1SingleValuedness
+        | VcKind::AlgorithmE1ResultInhabitation
+        | VcKind::AlgorithmE4NormalReturn
         | VcKind::CallPrecondition
         | VcKind::AlgorithmAssertion => KernelGoalPolarity::AssertFalseForRefutation,
         VcKind::LoopInvariant {

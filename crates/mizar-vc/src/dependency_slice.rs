@@ -647,6 +647,7 @@ impl<'a> SliceBuilder<'a> {
                     | VcGeneratedFormulaShape::Equals { .. }
                     | VcGeneratedFormulaShape::ProgramEquals { .. }
                     | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+                    | VcGeneratedFormulaShape::AlgorithmReturns { .. }
                     | VcGeneratedFormulaShape::Diagnostic(_) => {}
                     VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                         self.collect_formula_inner(*inner, active_formulas, active_context);
@@ -1285,6 +1286,7 @@ fn formula_shape_fingerprint_payload(
         VcGeneratedFormulaShape::Equals { .. }
         | VcGeneratedFormulaShape::ProgramEquals { .. }
         | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+        | VcGeneratedFormulaShape::AlgorithmReturns { .. }
         | VcGeneratedFormulaShape::Diagnostic(_) => None,
         VcGeneratedFormulaShape::Ref(formula) => {
             formula_fingerprint_payload_inner(vc_set, *formula, active)

@@ -1292,7 +1292,7 @@ pub enum VcGeneratedFormulaKind {
     PolicyMarker,
 }
 
-/// An immutable parameter value, actual local write, or authenticated loop cutpoint value.
+/// An immutable parameter, local write, loop cutpoint value, or declared candidate result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VcProgramValue {
     pub var: CoreVarId,
@@ -1302,6 +1302,14 @@ pub struct VcProgramValue {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum VcGeneratedFormulaShape {
+    /// Untrusted normal execution of an authenticated source body; no proof interpretation.
+    AlgorithmReturns {
+        algorithm: CoreAlgorithmId,
+        flow: ControlFlowId,
+        statement: CoreAlgorithmStmtId,
+        input: VcProgramValue,
+        result: VcProgramValue,
+    },
     ProgramEquals {
         left: VcProgramValue,
         right: VcProgramValue,
@@ -1340,6 +1348,7 @@ impl VcGeneratedFormulaShape {
             | Self::Equals { .. }
             | Self::ProgramEquals { .. }
             | Self::ProgramTypePredicate { .. }
+            | Self::AlgorithmReturns { .. }
             | Self::Diagnostic(_) => Vec::new(),
             Self::Ref(formula) | Self::Not(formula) => vec![*formula],
             Self::And(formulas) | Self::Or(formulas) => formulas.clone(),
@@ -1381,6 +1390,10 @@ pub enum VcKind {
     FraenkelMembershipAxiom,
     AlgorithmPrecondition,
     AlgorithmPostcondition,
+    AlgorithmE1Typing,
+    AlgorithmE1SingleValuedness,
+    AlgorithmE1ResultInhabitation,
+    AlgorithmE4NormalReturn,
     CallPrecondition,
     AlgorithmAssertion,
     LoopInvariant {
@@ -3108,7 +3121,8 @@ fn write_formula_shape_payload(
 ) -> bool {
     match shape {
         VcGeneratedFormulaShape::ProgramEquals { .. }
-        | VcGeneratedFormulaShape::ProgramTypePredicate { .. } => {
+        | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+        | VcGeneratedFormulaShape::AlgorithmReturns { .. } => {
             writeln!(
                 output,
                 "shape: program-value core-payload-unresolved {shape:?}"

@@ -1309,6 +1309,7 @@ fn collect_generated_formula_refs_inner(
             | VcGeneratedFormulaShape::Equals { .. }
             | VcGeneratedFormulaShape::ProgramEquals { .. }
             | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+            | VcGeneratedFormulaShape::AlgorithmReturns { .. }
             | VcGeneratedFormulaShape::Diagnostic(_) => {}
             VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
                 collect_generated_formula_refs_inner(vc_set, *inner, generated_formulas, active);
@@ -1568,6 +1569,7 @@ fn formula_truth_inner(
             | VcGeneratedFormulaShape::Equals { .. }
             | VcGeneratedFormulaShape::ProgramEquals { .. }
             | VcGeneratedFormulaShape::ProgramTypePredicate { .. }
+            | VcGeneratedFormulaShape::AlgorithmReturns { .. }
             | VcGeneratedFormulaShape::Diagnostic(_) => FormulaTruth::Unknown,
         });
 

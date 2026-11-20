@@ -2509,3 +2509,716 @@ fn source_algorithm_return_status_preserves_upstream_errors_and_inputs() {
         },
     );
 }
+
+fn with_direct_return_request_fixture(
+    f: impl FnOnce(
+        &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        &mizar_resolve::env::SymbolEnv,
+        &mizar_core::core_ir::CoreIr,
+        &mizar_vc::vc_ir::VcSet,
+    ),
+) {
+    let config = config();
+    let plan = crate::harness::build_test_plan(&config).unwrap();
+    let case = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+        .unwrap();
+    let text = fs::read_to_string(&case.source_path).unwrap();
+    let (source, typed, symbols) = super::super::super::source_registration_inputs(
+        &config.workspace_root,
+        case,
+        super::super::super::formula_statement::step5c8_test_frontend(&text),
+    )
+    .unwrap();
+    let check =
+        mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)
+            .unwrap();
+    let core = mizar_core::elaborator::lower_source_algorithms(&check).unwrap();
+    let vcs = mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+        &source,
+        &check,
+        &symbols,
+        &core,
+        snapshot_id(0),
+        &GenerationSchemaVersion::new("direct-return-test-generation"),
+        &VcSchemaVersion::new("direct-return-test-vc"),
+    )
+    .unwrap();
+    f(&source, &check, &symbols, &core, &vcs);
+}
+
+fn direct_return_request_shape(
+    vcs: &mizar_vc::vc_ir::VcSet,
+    reference: mizar_vc::vc_ir::VcFormulaRef,
+) -> &mizar_vc::vc_ir::VcGeneratedFormulaShape {
+    let mizar_vc::vc_ir::VcFormulaRef::Generated(id) = reference else {
+        panic!("request formula must be generated")
+    };
+    &vcs.generated_formula(id).unwrap().shape
+}
+
+#[test]
+fn source_algorithm_direct_return_requests_preserve_authentic_output() {
+    use mizar_core::control_flow::{build_control_flow_ir, build_obligation_seed_handoff};
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        discharge::{DischargeInput, DischargePolicy, try_discharge},
+        generator::{
+            generate_source_algorithm_direct_return_requests,
+            generate_source_algorithm_postconditions,
+        },
+        vc_ir::{
+            AnchorOwner, ContextEntry, ContextEntryId, ContextEntryKind, ExpandedVcRef,
+            ExpansionSchemaVersion, LocalContext, PremiseRef, SeedVcMapping, VcKind, VcProvenance,
+            VcProvenancePhase, VcStatus,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        let old = generate_source_algorithm_postconditions(
+            core,
+            vcs.snapshot(),
+            generation,
+            vcs.schema_version(),
+        )
+        .unwrap();
+        assert_eq!(vcs.vcs().len(), 5);
+        assert_eq!(vcs.vcs()[0], old.vcs()[0]);
+        assert_eq!(vcs.generated_formulas()[0], old.generated_formulas()[0]);
+        assert_eq!(
+            (
+                vcs.source(),
+                vcs.module(),
+                vcs.snapshot(),
+                vcs.schema_version()
+            ),
+            (
+                core.source_id(),
+                old.module(),
+                old.snapshot(),
+                old.schema_version()
+            )
+        );
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        let parameter = &algorithm.params[0];
+        let result = algorithm.result.as_ref().unwrap();
+        let statement = core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap();
+        let flow = build_control_flow_ir(core);
+        let handoff = build_obligation_seed_handoff(core, &flow);
+        let seed = &handoff.entries.get(old.vcs()[0].seed.handoff).unwrap().seed;
+        let route = VcProvenance {
+            phase: VcProvenancePhase::Generator,
+            key: format!("source-algorithm-direct-return-v1:{}", generation.as_str()).into(),
+            core: None,
+        };
+        let fresh_start = core
+            .terms()
+            .iter()
+            .filter_map(|(_, term)| {
+                if let mizar_core::core_ir::CoreTermKind::Var(var) = term.kind {
+                    Some(var.index())
+                } else {
+                    None
+                }
+            })
+            .chain([parameter.var.index(), result.var.index()])
+            .max()
+            .unwrap()
+            + 1;
+        let expected_kinds = [
+            VcKind::AlgorithmE1Typing,
+            VcKind::AlgorithmE1SingleValuedness,
+            VcKind::AlgorithmE1ResultInhabitation,
+            VcKind::AlgorithmE4NormalReturn,
+        ];
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: vcs,
+            discharge_output: None,
+        })
+        .unwrap();
+        let discharged = try_discharge(DischargeInput {
+            vc_set: vcs,
+            policy: &DischargePolicy::default(),
+        })
+        .unwrap();
+        for (vc, kind) in vcs.vcs()[1..].iter().zip(expected_kinds) {
+            assert_eq!(vc.kind, kind);
+            let mut entries = old.vcs()[0].local_context.entries().to_vec();
+            for index in 0..if kind == VcKind::AlgorithmE1SingleValuedness {
+                2
+            } else {
+                1
+            } {
+                let id = ContextEntryId::new(entries.len());
+                entries.push(ContextEntry {
+                    id,
+                    sort_key: format!("direct-return-result-{:08}", id.index()).into(),
+                    kind: ContextEntryKind::BinderDeclaration {
+                        var: mizar_core::core_ir::CoreVarId::new(fresh_start + index),
+                        role: "result".into(),
+                    },
+                    formula: None,
+                    provenance: vec![route.clone()],
+                });
+            }
+            assert_eq!(
+                vc.local_context,
+                LocalContext::try_new(entries, old.vcs()[0].local_context.policy_inputs().to_vec())
+                    .unwrap()
+            );
+            assert_eq!(
+                vc.premises,
+                vec![PremiseRef::LocalContext(ContextEntryId::new(0))]
+            );
+            assert_eq!(vc.seed, old.vcs()[0].seed);
+            let mut source = old.vcs()[0].source.clone();
+            source.related.extend([
+                algorithm.source.clone(),
+                parameter.source.clone(),
+                result.source.clone(),
+                statement.source.clone(),
+                core.formulas()
+                    .get(parameter.ty_guard.unwrap())
+                    .unwrap()
+                    .source
+                    .clone(),
+                core.formulas()
+                    .get(result.ty_guard.unwrap())
+                    .unwrap()
+                    .source
+                    .clone(),
+            ]);
+            assert_eq!(vc.source, source);
+            let mut provenance = old.vcs()[0].provenance.clone();
+            provenance.push(route.clone());
+            assert_eq!(vc.provenance, provenance);
+            assert_eq!(vc.proof_hint, old.vcs()[0].proof_hint);
+            assert_eq!(vc.anchor.owner, AnchorOwner::Algorithm(algorithm_id));
+            assert_eq!(vc.anchor.kind, kind);
+            assert_eq!(vc.anchor.local_path, seed.local_path);
+            assert_eq!(vc.anchor.semantic_origin, seed.semantic_origin);
+            assert_eq!(vc.anchor.source_range, old.vcs()[0].anchor.source_range);
+            assert_eq!(vc.anchor.label, old.vcs()[0].anchor.label);
+            assert_eq!(vc.anchor.provenance, old.vcs()[0].anchor.provenance);
+            assert_eq!(
+                vc.anchor.canonical_goal_hash,
+                old.vcs()[0].anchor.canonical_goal_hash
+            );
+            assert_eq!(
+                vc.anchor.canonical_context_hash,
+                old.vcs()[0].anchor.canonical_context_hash
+            );
+            assert_eq!(vc.anchor.completeness, old.vcs()[0].anchor.completeness);
+            assert_eq!(vc.anchor.generation_schema_version, *generation);
+            assert!(!vc.anchor.is_complete());
+            assert_ne!(
+                vc.anchor.source_shape_hash,
+                old.vcs()[0].anchor.source_shape_hash
+            );
+            assert_eq!(vc.status, VcStatus::Open);
+            assert_eq!(
+                discharged.vc_set().vc(vc.id).unwrap().status,
+                VcStatus::NeedsAtp
+            );
+            let slice = slices.slice_for(vc.id).unwrap();
+            assert!(slice.requires_cache_miss());
+            assert!(!slice.unknowns().is_empty());
+            assert!(slices.proof_reuse_key_for(&discharged, vc.id).is_none());
+        }
+        assert_eq!(vcs.generated_formulas().len(), 12);
+        for formula in &vcs.generated_formulas()[1..] {
+            assert_eq!(
+                formula.kind,
+                mizar_vc::vc_ir::VcGeneratedFormulaKind::SplitGoal
+            );
+            assert_eq!(formula.provenance, vec![route.clone()]);
+        }
+        let mut accounting = old.seed_accounting().to_vec();
+        accounting
+            .iter_mut()
+            .find(|row| row.handoff == old.vcs()[0].seed.handoff)
+            .unwrap()
+            .mapping = SeedVcMapping::Expanded {
+            vcs: vcs
+                .vcs()
+                .iter()
+                .enumerate()
+                .map(|(expansion_index, vc)| ExpandedVcRef {
+                    expansion_index,
+                    vc: vc.id,
+                })
+                .collect(),
+            expansion_schema: ExpansionSchemaVersion::new("source-algorithm-direct-return-v1"),
+        };
+        assert_eq!(vcs.seed_accounting(), accounting);
+        let termination = vcs
+            .seed_accounting()
+            .iter()
+            .find(|row| row.handoff != old.vcs()[0].seed.handoff)
+            .unwrap();
+        assert_eq!(
+            termination.seed_status,
+            mizar_core::core_ir::ObligationSeedStatus::Deferred
+        );
+        assert!(matches!(
+            termination.mapping,
+            SeedVcMapping::NoConcreteVc { .. }
+        ));
+        assert_eq!(
+            *vcs,
+            generate_source_algorithm_direct_return_requests(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+            )
+            .unwrap()
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr, CoreIrParts};
+    use mizar_vc::{
+        generator::generate_source_algorithm_direct_return_requests,
+        vc_ir::{
+            ContextEntryKind, QuantifierKind, VcGeneratedFormulaShape as Shape, VcKind,
+            VcProgramValue,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        let parameter = &algorithm.params[0];
+        let result = algorithm.result.as_ref().unwrap();
+        let request = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmE1Typing)
+            .unwrap();
+        let Shape::Quantified {
+            kind: QuantifierKind::Forall,
+            binders,
+            body,
+        } = direct_return_request_shape(vcs, request.goal)
+        else {
+            panic!("universal typing")
+        };
+        let [binder] = binders.as_slice() else {
+            panic!("one result binder")
+        };
+        let ContextEntryKind::BinderDeclaration { var, .. } =
+            request.local_context.entries()[binder.index()].kind
+        else {
+            panic!("result declaration")
+        };
+        let candidate = VcProgramValue {
+            var,
+            definition: None,
+        };
+        let Shape::Implies {
+            premise,
+            conclusion,
+        } = direct_return_request_shape(vcs, *body)
+        else {
+            panic!("return implies type")
+        };
+        assert_eq!(
+            direct_return_request_shape(vcs, *conclusion),
+            &Shape::ProgramTypePredicate {
+                subject: candidate,
+                ty: "object".into(),
+            }
+        );
+        assert_eq!(
+            direct_return_request_shape(vcs, *premise),
+            &Shape::AlgorithmReturns {
+                algorithm: algorithm_id,
+                flow: mizar_core::control_flow::build_control_flow_ir(core).flow_map[&algorithm_id],
+                statement: algorithm.statements[0],
+                input: VcProgramValue {
+                    var: parameter.var,
+                    definition: None
+                },
+                result: candidate,
+            }
+        );
+        for mutation in 0..8 {
+            let mut parts = CoreIrParts {
+                source_id: core.source_id(),
+                module_id: core.module_id().clone(),
+                items: core.items().clone(),
+                terms: core.terms().clone(),
+                formulas: core.formulas().clone(),
+                definitions: core.definitions().clone(),
+                proofs: core.proofs().clone(),
+                proof_nodes: core.proof_nodes().clone(),
+                algorithms: core.algorithms().clone(),
+                algorithm_statements: core.algorithm_statements().clone(),
+                generated: core.generated().clone(),
+                obligation_seeds: core.obligation_seeds().clone(),
+                source_map: core.source_map().clone(),
+                diagnostics: core.diagnostics().clone(),
+            };
+            match mutation {
+                0 => parts.algorithms.get_mut(algorithm_id).unwrap().params[0].ty_guard = None,
+                1 => {
+                    parts
+                        .algorithms
+                        .get_mut(algorithm_id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .ty_guard = None
+                }
+                2 => {
+                    parts.algorithms.get_mut(algorithm_id).unwrap().params[0].ty_guard =
+                        result.ty_guard
+                }
+                3 => {
+                    parts
+                        .algorithms
+                        .get_mut(algorithm_id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .ty_guard = parameter.ty_guard
+                }
+                4 => {
+                    let guard = parts.formulas.get_mut(parameter.ty_guard.unwrap()).unwrap();
+                    guard.source = algorithm.source.clone();
+                    parts
+                        .source_map
+                        .formula_sources
+                        .insert(parameter.ty_guard.unwrap(), algorithm.source.clone());
+                }
+                5 => {
+                    parts
+                        .formulas
+                        .get_mut(result.ty_guard.unwrap())
+                        .unwrap()
+                        .kind = CoreFormulaKind::True
+                }
+                6 => {
+                    parts
+                        .algorithm_statements
+                        .get_mut(algorithm.statements[0])
+                        .unwrap()
+                        .kind = CoreAlgorithmStmtKind::Return(None)
+                }
+                _ => {
+                    let term = core.terms().iter().find(|(_, term)| {
+                        matches!(term.kind, mizar_core::core_ir::CoreTermKind::Var(var) if var == result.var)
+                    }).unwrap().0;
+                    parts
+                        .algorithm_statements
+                        .get_mut(algorithm.statements[0])
+                        .unwrap()
+                        .kind = CoreAlgorithmStmtKind::Return(Some(term));
+                }
+            }
+            let changed = CoreIr::try_new(parts).unwrap();
+            assert!(
+                generate_source_algorithm_direct_return_requests(
+                    source,
+                    check,
+                    symbols,
+                    &changed,
+                    vcs.snapshot(),
+                    &request.anchor.generation_schema_version,
+                    vcs.schema_version(),
+                )
+                .is_err(),
+                "Core mutation {mutation}"
+            );
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_uniqueness_binds_distinct_results() {
+    use mizar_vc::vc_ir::{
+        ContextEntryKind, QuantifierKind, VcGeneratedFormulaShape as Shape, VcKind, VcProgramValue,
+    };
+    with_direct_return_request_fixture(|_, _, _, core, vcs| {
+        let request = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmE1SingleValuedness)
+            .unwrap();
+        let Shape::Quantified {
+            kind: QuantifierKind::Forall,
+            binders,
+            body,
+        } = direct_return_request_shape(vcs, request.goal)
+        else {
+            panic!("universal uniqueness")
+        };
+        let candidates = binders.iter().map(|id| {
+            let entry = &request.local_context.entries()[id.index()];
+            assert_eq!(entry.formula, None);
+            let ContextEntryKind::BinderDeclaration { var, .. } = entry.kind else { panic!("declaration") };
+            assert!(core.terms().iter().all(|(_, term)| {
+                !matches!(term.kind, mizar_core::core_ir::CoreTermKind::Var(original) if original == var)
+            }));
+            VcProgramValue { var, definition: None }
+        }).collect::<Vec<_>>();
+        let [r, s] = candidates.as_slice() else {
+            panic!("two result binders")
+        };
+        assert_ne!(r, s);
+        let Shape::Implies {
+            premise,
+            conclusion,
+        } = direct_return_request_shape(vcs, *body)
+        else {
+            panic!("two returns imply equality")
+        };
+        assert_eq!(
+            direct_return_request_shape(vcs, *conclusion),
+            &Shape::ProgramEquals {
+                left: *r,
+                right: *s
+            }
+        );
+        let Shape::And(relations) = direct_return_request_shape(vcs, *premise) else {
+            panic!("two executions")
+        };
+        let [first, second] = relations.as_slice() else {
+            panic!("only execution premises")
+        };
+        let Shape::AlgorithmReturns {
+            algorithm,
+            flow,
+            statement,
+            input,
+            result,
+        } = direct_return_request_shape(vcs, *first)
+        else {
+            panic!("source relation")
+        };
+        assert_eq!(*result, *r);
+        let (expected_id, expected) = core.algorithms().iter().next().unwrap();
+        assert_eq!(
+            (*algorithm, *flow, *statement, *input),
+            (
+                expected_id,
+                mizar_core::control_flow::build_control_flow_ir(core).flow_map[&expected_id],
+                expected.statements[0],
+                VcProgramValue {
+                    var: expected.params[0].var,
+                    definition: None
+                },
+            )
+        );
+        assert_eq!(
+            direct_return_request_shape(vcs, *second),
+            &Shape::AlgorithmReturns {
+                algorithm: *algorithm,
+                flow: *flow,
+                statement: *statement,
+                input: *input,
+                result: *s,
+            }
+        );
+        assert_eq!(request.premises, vcs.vcs()[0].premises);
+        assert_eq!(request.proof_hint, None);
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_inhabitation_has_only_typed_input() {
+    use mizar_vc::vc_ir::{
+        ContextEntryKind, QuantifierKind, VcFormulaRef, VcGeneratedFormulaShape as Shape, VcKind,
+        VcProgramValue,
+    };
+    with_direct_return_request_fixture(|_, _, _, core, vcs| {
+        let algorithm = core.algorithms().iter().next().unwrap().1;
+        assert!(algorithm.contracts.requires.is_empty());
+        let request = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmE1ResultInhabitation)
+            .unwrap();
+        let Shape::Quantified {
+            kind: QuantifierKind::Exists,
+            binders,
+            body,
+        } = direct_return_request_shape(vcs, request.goal)
+        else {
+            panic!("all-input inhabitation")
+        };
+        let [binder] = binders.as_slice() else {
+            panic!("one existential result")
+        };
+        let ContextEntryKind::BinderDeclaration { var, .. } =
+            request.local_context.entries()[binder.index()].kind
+        else {
+            panic!("result declaration")
+        };
+        assert_eq!(
+            direct_return_request_shape(vcs, *body),
+            &Shape::ProgramTypePredicate {
+                subject: VcProgramValue {
+                    var,
+                    definition: None
+                },
+                ty: "object".into(),
+            }
+        );
+        assert_ne!(var, algorithm.params[0].var);
+        assert_eq!(
+            request.local_context.entries()[0].formula,
+            Some(VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()))
+        );
+        assert_eq!(request.local_context.entries().len(), 2);
+        assert_eq!(request.premises, vcs.vcs()[0].premises);
+        assert_eq!(request.proof_hint, None);
+        assert_eq!(request.status, mizar_vc::vc_ir::VcStatus::Open);
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_e4_is_independent_and_replays_inputs() {
+    use mizar_vc::{
+        generator::generate_source_algorithm_direct_return_requests,
+        vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcKind, VcStatus},
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let request = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmE4NormalReturn)
+            .unwrap();
+        let Shape::Quantified {
+            kind: QuantifierKind::Exists,
+            binders,
+            body,
+        } = direct_return_request_shape(vcs, request.goal)
+        else {
+            panic!("independent return existential")
+        };
+        let [binder] = binders.as_slice() else {
+            panic!("one normal-return result")
+        };
+        let mizar_vc::vc_ir::ContextEntryKind::BinderDeclaration { var, .. } =
+            request.local_context.entries()[binder.index()].kind
+        else {
+            panic!("result declaration")
+        };
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        assert_eq!(
+            direct_return_request_shape(vcs, *body),
+            &Shape::AlgorithmReturns {
+                algorithm: algorithm_id,
+                flow: mizar_core::control_flow::build_control_flow_ir(core).flow_map[&algorithm_id],
+                statement: algorithm.statements[0],
+                input: mizar_vc::vc_ir::VcProgramValue {
+                    var: algorithm.params[0].var,
+                    definition: None
+                },
+                result: mizar_vc::vc_ir::VcProgramValue {
+                    var,
+                    definition: None
+                },
+            }
+        );
+        assert_eq!(request.premises, vcs.vcs()[0].premises);
+        assert_eq!(request.proof_hint, None);
+        for (snapshot, generation, schema) in [
+            (
+                snapshot_id(1),
+                request.anchor.generation_schema_version.clone(),
+                vcs.schema_version().clone(),
+            ),
+            (
+                vcs.snapshot(),
+                GenerationSchemaVersion::new("changed-generation"),
+                vcs.schema_version().clone(),
+            ),
+            (
+                vcs.snapshot(),
+                request.anchor.generation_schema_version.clone(),
+                VcSchemaVersion::new("changed-vc"),
+            ),
+        ] {
+            let changed = generate_source_algorithm_direct_return_requests(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                &generation,
+                &schema,
+            )
+            .unwrap();
+            assert_ne!(*vcs, changed);
+            assert!(changed.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+        }
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        for text in [
+            format!(":: stale source placement\n{original}"),
+            original.replace("idalgo", "foreign_algorithm"),
+            original.replace("terminating algorithm", "algorithm"),
+            original.replace("return a;", "const copy := a;\n    return copy;"),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+                |foreign_source, _, foreign_symbols, foreign_check| {
+                    let foreign_core =
+                        mizar_core::elaborator::lower_source_algorithms(foreign_check).unwrap();
+                    for (source, check, symbols, core) in [
+                        (foreign_source, check, symbols, core),
+                        (source, foreign_check, symbols, core),
+                        (source, check, foreign_symbols, core),
+                        (source, check, symbols, &foreign_core),
+                    ] {
+                        assert!(
+                            generate_source_algorithm_direct_return_requests(
+                                source,
+                                check,
+                                symbols,
+                                core,
+                                vcs.snapshot(),
+                                &request.anchor.generation_schema_version,
+                                vcs.schema_version(),
+                            )
+                            .is_err()
+                        );
+                    }
+                    if !foreign_check.declared_terminating() || text.contains("const copy") {
+                        assert!(
+                            generate_source_algorithm_direct_return_requests(
+                                foreign_source,
+                                foreign_check,
+                                foreign_symbols,
+                                &foreign_core,
+                                vcs.snapshot(),
+                                &request.anchor.generation_schema_version,
+                                vcs.schema_version(),
+                            )
+                            .is_err()
+                        );
+                    }
+                },
+            );
+        }
+    });
+}

@@ -75,29 +75,23 @@ fn vc_manifest_keeps_task_one_package_metadata() {
 }
 
 #[test]
-fn vc_manifest_dependency_boundary_is_task_one_minimal() {
+fn vc_manifest_dependency_boundary_is_source_authentication_minimal() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_sections(&manifest);
 
     assert_eq!(
         dependency_sections,
-        [
-            (
-                "dependencies".to_owned(),
-                vec![
-                    "mizar-core = { path = \"../mizar-core\" }",
-                    "mizar-session = { path = \"../mizar-session\" }",
-                ],
-            ),
-            (
-                "dev-dependencies".to_owned(),
-                vec!["mizar-resolve = { path = \"../mizar-resolve\" }"],
-            ),
-        ],
-        "{} must keep production dependencies limited to mizar-core and mizar-session; \
-         task 7 allows only mizar-resolve as a test fixture dependency for ControlFlowIr \
-         SymbolId construction",
+        [(
+            "dependencies".to_owned(),
+            vec![
+                "mizar-checker = { path = \"../mizar-checker\" }",
+                "mizar-core = { path = \"../mizar-core\" }",
+                "mizar-resolve = { path = \"../mizar-resolve\" }",
+                "mizar-session = { path = \"../mizar-session\" }",
+            ]
+        )],
+        "{} must keep only Checker/Resolver source authentication and Core/Session dependencies",
         manifest_path.display()
     );
 }

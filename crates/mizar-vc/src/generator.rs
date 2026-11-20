@@ -2794,6 +2794,270 @@ pub fn generate_source_algorithm_postconditions(
     .map_err(|error| error.to_string())
 }
 
+/// Emits Open E1/E4 requests for the authenticated terminating sole-parameter return profile.
+pub fn generate_source_algorithm_direct_return_requests(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+) -> Result<VcSet, String> {
+    use crate::vc_ir::{
+        ExpandedVcRef, ExpansionSchemaVersion, QuantifierKind, VcGeneratedFormula,
+        VcGeneratedFormulaId, VcGeneratedFormulaKind, VcGeneratedFormulaShape as Shape,
+        VcProgramValue,
+    };
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreTermKind, CoreVarId};
+    let invalid = || "algorithms.direct_return.unsupported_source".to_owned();
+    let fresh =
+        mizar_checker::type_checker::check_source_algorithm_types(source, check.typed(), symbols)?;
+    if fresh.algorithm() != check.algorithm()
+        || !fresh.declared_terminating()
+        || mizar_core::elaborator::lower_source_algorithms(&fresh)? != *core
+    {
+        return Err(invalid());
+    }
+    // Reuse complete Core, CFG and handoff validation without changing the old producer.
+    let original =
+        generate_source_algorithm_postconditions(core, snapshot, generation_schema, vc_schema)?;
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let [parameter] = algorithm.params.as_slice() else {
+        return Err(invalid());
+    };
+    let result = algorithm.result.as_ref().ok_or_else(invalid)?;
+    let [statement_id] = algorithm.statements.as_slice() else {
+        return Err(invalid());
+    };
+    let statement = core
+        .algorithm_statements()
+        .get(*statement_id)
+        .ok_or_else(invalid)?;
+    let CoreAlgorithmStmtKind::Return(Some(returned)) = statement.kind else {
+        return Err(invalid());
+    };
+    let [postcondition] = original.vcs() else {
+        return Err(invalid());
+    };
+    if algorithm.contracts.ensures.len() != 1
+        || core
+            .terms()
+            .get(returned)
+            .is_none_or(|term| term.kind != CoreTermKind::Var(parameter.var))
+        || original.generated_formulas().len() != 1
+    {
+        return Err(invalid());
+    }
+    let CoreFormulaKind::Equals { left, right } = core
+        .formulas()
+        .get(algorithm.contracts.ensures[0])
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Err(invalid());
+    };
+    let operands = [left, right].map(|id| match core.terms().get(id)?.kind {
+        CoreTermKind::Var(var) => Some(var),
+        _ => None,
+    });
+    if operands != [Some(parameter.var), Some(result.var)]
+        && operands != [Some(result.var), Some(parameter.var)]
+    {
+        return Err(invalid());
+    }
+    let flow_output = mizar_core::control_flow::build_control_flow_ir(core);
+    let handoff = mizar_core::control_flow::build_obligation_seed_handoff(core, &flow_output);
+    let seed = &handoff
+        .entries
+        .get(postcondition.seed.handoff)
+        .ok_or_else(invalid)?
+        .seed;
+    let flow = *flow_output
+        .flow_map
+        .get(&algorithm_id)
+        .ok_or_else(invalid)?;
+    // All variables in this authenticated profile are binder or term variables.
+    let maximum = core
+        .terms()
+        .iter()
+        .filter_map(|(_, term)| match term.kind {
+            CoreTermKind::Var(var) => Some(var.index()),
+            _ => None,
+        })
+        .chain([parameter.var.index(), result.var.index()])
+        .max()
+        .ok_or_else(invalid)?;
+    let first = maximum.checked_add(1).ok_or_else(invalid)?;
+    let second = first.checked_add(1).ok_or_else(invalid)?;
+    let value = |index| VcProgramValue {
+        var: CoreVarId::new(index),
+        definition: None,
+    };
+    let input = value(parameter.var.index());
+    let r = value(first);
+    let s = value(second);
+    let provenance = vec![VcProvenance {
+        phase: VcProvenancePhase::Generator,
+        key: format!(
+            "source-algorithm-direct-return-v1:{}",
+            generation_schema.as_str()
+        )
+        .into(),
+        core: None,
+    }];
+    let mut generated = original.generated_formulas().to_vec();
+    let mut emit = |shape| {
+        let id = VcGeneratedFormulaId::new(generated.len());
+        generated.push(VcGeneratedFormula {
+            id,
+            kind: VcGeneratedFormulaKind::SplitGoal,
+            shape,
+            provenance: provenance.clone(),
+        });
+        VcFormulaRef::Generated(id)
+    };
+    let returns_r = emit(Shape::AlgorithmReturns {
+        algorithm: algorithm_id,
+        flow,
+        statement: *statement_id,
+        input,
+        result: r,
+    });
+    let returns_s = emit(Shape::AlgorithmReturns {
+        algorithm: algorithm_id,
+        flow,
+        statement: *statement_id,
+        input,
+        result: s,
+    });
+    let object_r = emit(Shape::ProgramTypePredicate {
+        subject: r,
+        ty: "object".into(),
+    });
+    let typed_return = emit(Shape::Implies {
+        premise: returns_r,
+        conclusion: object_r,
+    });
+    let two_returns = emit(Shape::And(vec![returns_r, returns_s]));
+    let equal = emit(Shape::ProgramEquals { left: r, right: s });
+    let unique_return = emit(Shape::Implies {
+        premise: two_returns,
+        conclusion: equal,
+    });
+    let mut vcs = original.vcs().to_vec();
+    for (kind, quantifier, body, variables) in [
+        (
+            VcKind::AlgorithmE1Typing,
+            QuantifierKind::Forall,
+            typed_return,
+            vec![r],
+        ),
+        (
+            VcKind::AlgorithmE1SingleValuedness,
+            QuantifierKind::Forall,
+            unique_return,
+            vec![r, s],
+        ),
+        (
+            VcKind::AlgorithmE1ResultInhabitation,
+            QuantifierKind::Exists,
+            object_r,
+            vec![r],
+        ),
+        (
+            VcKind::AlgorithmE4NormalReturn,
+            QuantifierKind::Exists,
+            returns_r,
+            vec![r],
+        ),
+    ] {
+        let mut entries = postcondition.local_context.entries().to_vec();
+        let mut binders = Vec::new();
+        for value in variables {
+            let id = ContextEntryId::new(entries.len());
+            binders.push(id);
+            entries.push(ContextEntry {
+                id,
+                sort_key: format!("direct-return-result-{:08}", id.index()).into(),
+                kind: ContextEntryKind::BinderDeclaration {
+                    var: value.var,
+                    role: "result".into(),
+                },
+                formula: None,
+                provenance: provenance.clone(),
+            });
+        }
+        let mut vc = postcondition.clone();
+        vc.id = VcId::new(vcs.len());
+        vc.kind = kind;
+        vc.goal = emit(Shape::Quantified {
+            kind: quantifier,
+            binders,
+            body,
+        });
+        vc.local_context = LocalContext::try_new(
+            entries,
+            postcondition.local_context.policy_inputs().to_vec(),
+        )
+        .map_err(|error| error.to_string())?;
+        vc.provenance.extend(provenance.clone());
+        vc.source.related.extend([
+            algorithm.source.clone(),
+            parameter.source.clone(),
+            result.source.clone(),
+            statement.source.clone(),
+            core.formulas()
+                .get(parameter.ty_guard.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?
+                .source
+                .clone(),
+            core.formulas()
+                .get(result.ty_guard.ok_or_else(invalid)?)
+                .ok_or_else(invalid)?
+                .source
+                .clone(),
+        ]);
+        vc.anchor = anchor_for_seed(AnchorForSeedInput {
+            schema_version: generation_schema,
+            seed,
+            kind: &vc.kind,
+            owner: AnchorOwner::Algorithm(algorithm_id),
+            label: postcondition.anchor.label.clone(),
+            source: &seed.source,
+            goal: vc.goal,
+            local_context: &vc.local_context,
+        });
+        vcs.push(vc);
+    }
+    let mut seed_accounting = original.seed_accounting().to_vec();
+    seed_accounting
+        .iter_mut()
+        .find(|row| row.handoff == postcondition.seed.handoff)
+        .ok_or_else(invalid)?
+        .mapping = SeedVcMapping::Expanded {
+        vcs: vcs
+            .iter()
+            .enumerate()
+            .map(|(expansion_index, vc)| ExpandedVcRef {
+                expansion_index,
+                vc: vc.id,
+            })
+            .collect(),
+        expansion_schema: ExpansionSchemaVersion::new("source-algorithm-direct-return-v1"),
+    };
+    VcSet::try_new(VcSetParts {
+        schema_version: vc_schema.clone(),
+        snapshot,
+        source: core.source_id(),
+        module: original.module().clone(),
+        generated_formulas: generated,
+        vcs,
+        seed_accounting,
+    })
+    .map_err(|error| error.to_string())
+}
+
 fn source_program_value(
     core: &mizar_core::core_ir::CoreIr,
     term: mizar_core::core_ir::CoreTermId,
@@ -3288,6 +3552,10 @@ fn kind_classification_rank(kind: &VcKind) -> (u8, u8) {
         VcKind::FraenkelMembershipAxiom => (7, 0),
         VcKind::AlgorithmPrecondition => (8, 0),
         VcKind::AlgorithmPostcondition => (9, 0),
+        VcKind::AlgorithmE1Typing => (19, 0),
+        VcKind::AlgorithmE1SingleValuedness => (20, 0),
+        VcKind::AlgorithmE1ResultInhabitation => (21, 0),
+        VcKind::AlgorithmE4NormalReturn => (22, 0),
         VcKind::CallPrecondition => (10, 0),
         VcKind::AlgorithmAssertion => (11, 0),
         VcKind::LoopInvariant { phase } => (12, loop_invariant_rank(*phase)),
