@@ -2,7 +2,7 @@
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC53-NORMAL-RETURN.md).
 Status: blocked on producers. Tier: full gates. Owners: [Core plan](../../mizar-core/en/00.crate_plan.md), [VC plan](../../mizar-vc/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md).
 Consumers: mizar-test, module-local promotion; imported acceptance remains ALGDEF-VC59-IMPORTED-PROMOTION-FACTS.
-Dependencies: ALGDEF-PARSER-FAIL; authentic Core 42–53 call/range/group/CFG inputs and replayable VC formulas; genuine proof/kernel results. Ready only after each selected source slice has these inputs.
+Dependencies: ALGDEF-PARSER-FAIL; authentic Core 42–53 call/range/group/CFG inputs and replayable VC formulas; genuine proof/kernel results. Executable slices are ready only after these inputs; the bounded design below may precede them.
 Authority: [§20.2.6, §20.3, §20.7.2, E1–E5 and VC schema](../../../spec/en/20.algorithm_and_verification.md); [algorithm graph](../../mizar-vc/en/source_vc_decomposition.md#accepted-algorithm-vc-task-graph).
 Classification: source_drift/test_gap; source return/state/Pick/while profiles provide no general normal-return acceptance.
 Owner details: [Core/CFG graph](../../mizar-core/en/source_family_decomposition.md#accepted-phase-10-controlflowir-task-graph), [VC generator](../../mizar-vc/en/generator.md#step-4-algorithm-vcs), [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof).
@@ -45,3 +45,11 @@ Audit: retain §20 deferred ownership until executable source slices land.
 Reviews: independent specification, test sufficiency, implementation,
 volume/scope, consistency and EN/JA; full protocol gates.
 Verification: cargo fmt --check; cargo clippy --all-targets --all-features -- -D warnings; cargo test.
+
+## Bounded direct-return producer design
+
+Documentation-only preparation: freeze then paired EN/JA design in the [VC owner](../../mizar-vc/en/generator.md). Keep the unchanged [idalgo fixture](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz): one object parameter, object result, one direct return and equality ensures.
+Specify authentic source/type/CFG associations, E1 result typing, single-valuedness and all-typed-input inhabitation, independent E4 normal return, and fail-closed Core→VC→Proof handoffs. Record absent producer prerequisites at their owners; do not invent outputs or checked evidence.
+Exclude calls, loops, Pick, recursion, groups, premise exposure, implementation, executable units and acceptance/coverage credit. Parser failure-message reconciliation and mixed-group E2 prerequisites are outside this design.
+Design acceptance: owner-local obligations and a future five-case matrix cover authentic binding, the three E1 gates, independent E4 and incomplete/stale/cross-binding refusal; no executable acceptance is asserted. Existing regressions and specification semantics remain unchanged.
+Documentation checks: both lint_policy suites, documentation-volume and local link/fragment checks; full regression only on protocol cadence. Full-tier independent reviews apply to the whole unit.
