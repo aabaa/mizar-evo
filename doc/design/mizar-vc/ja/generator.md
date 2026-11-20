@@ -703,3 +703,9 @@ existential・result binder・原子 object 本体・単一 CheckerFact とそ�
 上流 error の優先順序、raw slice/unknown、Open4/Deferred は保持する。
 証拠、Proof binding/adoption、状態変更、symbol、promotion、publication、acceptance/coverage credit はない。
 詳細は [英語版](../en/generator.md#e1-inhabitation-witness-introduction-check) を参照。
+
+`check_source_algorithm_e1_inhabitation_result` は同じ再認証を行い、未変更の記述子と
+Kernel の不透明な借用結果を組にして返す。元 binder/body/context を結果生成時に検査する。
+既存 API はこの経路へ委譲する。Core のみ借用し、元の全要求・選択 ID・witness/child・
+raw slice が元要求との対応を保持する。Proof identity/policy 消費と adoption は行わず、
+currentness は caller 所有のまま。詳細は同じ英語節を参照。

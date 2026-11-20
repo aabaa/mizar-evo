@@ -101,6 +101,15 @@ VC owns original-request/context association; Proof binding and adoption remain
 deferred. No generic Formula/wire extension, E4 interpretation, operational
 premise, status change, symbol or publication is supplied.
 
+`check_object_inhabitation_result` checks the same rule in its producing call and
+returns an opaque `ObjectInhabitationCheck` only on success. Private fields retain
+an immutable Core borrow, the original existential binder and sole context formula;
+`core()`, `binder()` and `context()` expose that checked target/context. The type
+encodes the fixed conclusion `exists r.object(r)` and Kernel rule origin. It has no
+caller target hash, generic Accepted state, axioms, SAT report or proof-policy
+meaning. VC retains original-request/witness association; Proof consumption stays
+deferred. The bool API remains available.
+
 ## Trust Statement
 
 This module is trusted kernel code. It may accept a proof only after all

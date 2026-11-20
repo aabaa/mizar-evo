@@ -83,6 +83,13 @@ Formula・evidence・Kernel acceptance・元 E4 証明・存在導入・Proof ad
 status promotion・symbol introduction・publication・acceptance/coverage credit
 は与えない。詳細と権限根拠は英語版の同節を参照する。
 
+`check_object_inhabitation_result` は生成する呼出し内で同じ規則を検査し、成功時のみ
+不透明な `ObjectInhabitationCheck` を返す。非公開の immutable Core 借用、元の存在束縛子、
+単一 context 式を `core()`・`binder()`・`context()` で参照できる。型が固定結論と Kernel
+規則の由来を表し、任意 target hash、汎用 Accepted、axiom、SAT report、Proof policy の
+意味を持たない。VC が元要求と witness の対応を保持し、Proof 消費は保留、bool API は維持。
+詳細は [英語版](../en/checker.md#bounded-e1-inhabitation-witness-introduction) を参照。
+
 ## Trust Statement
 
 この module は trusted kernel code である。必要な evidence がすべて explicit immutable

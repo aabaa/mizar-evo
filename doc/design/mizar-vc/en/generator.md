@@ -718,6 +718,15 @@ all four Open requests and Deferred termination persist. No evidence, Proof
 identity/checker-policy binding, adoption, status, symbol, promotion, publication
 or acceptance/coverage credit follows. E4 checking remains deferred.
 
+`check_source_algorithm_e1_inhabitation_result` uses that same fresh association
+and returns the unchanged descriptor paired with Kernel's opaque borrowed
+`ObjectInhabitationCheck`. The original binder/body/context are the inputs of the
+result-producing check, rather than a target attached to earlier bool success.
+The descriptor-only API delegates to this route. The result borrows only Core;
+the whole returned set, selected ID, witness/child and raw slice retain authentic
+original-request association. No Proof identity/policy consumption or adoption is
+performed; currentness remains caller-owned.
+
 ### E4 operational-reduction request
 
 `generate_source_algorithm_e4_operational_reduction_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` regenerates the complete authentic direct-return graph before selecting only its Open E4 existential. Return an existing-type tuple: unchanged `VcSet`, actual returned `CoreTermId`, original existential `ContextEntryId`, detached instantiated `VcGeneratedFormulaShape::AlgorithmReturns` and detached residual `VcGeneratedFormulaShape::True`, followed by the entire original raw `DependencySlice`. The original selected goal/context/anchor and Proof identity remain unchanged.
