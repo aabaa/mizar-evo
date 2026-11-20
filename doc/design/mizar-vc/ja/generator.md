@@ -604,7 +604,7 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 **真正入力。** 同じ immutable source/resolved arena、typed tree、symbol environment、snapshot から新しい opaque source algorithm check と [Core shell](../../mizar-core/ja/core_ir.md#algorithm-shell)、[CFG/handoff](../../mizar-core/ja/control_flow.md#core-to-cfg-construction) を生成する。正確な definition/algorithm symbol、source/check association、header `terminating`、順序付き parameter/result binding と object guard、実 ensures、return operand と parameter reference、完全な body、entry/return site、edge、source map、provenance を認証する。追加 statement、effect、call、failure、fallthrough のない直接復帰形だけを認める。名前、数値 handle、渡された Core graph はこれらの結合を認証しない。requires 省略は P=⊤。この profile は syntax input や reconstruction context を認めない。
 
-現在 Core は declared-terminating field を持たず、goal のない `PartialTermination` 行は Deferred のまま。[Core 46 boundary](../../mizar-core/ja/source_family_decomposition.md#accepted-phase-10-controlflowir-task-graph) が将来の validated intent/normal-return input を所有する。真正 handoff ができるまでは fresh source/check association が header intent を保持する必要があり、decreasing の不在や CFG metadata はそれを証明しない。
+限定 [Core46 handoff](../../mizar-core/ja/core_ir.md#algorithm-shell) は認証済み header 意図を SourceAlgorithmCheck、CoreAlgorithm、対応する Core52 CFG termination plan へ保持する。goal のない `PartialTermination` 行は Deferred のままであり、宣言意図と decreasing の不在は正常復帰を証明しない。
 
 **記号導入前の E1。** 同じ完全な typed input a に対し、checked parameter reference と object result guard から返り値の型を正当化する。この唯一の直接 return の任意の二つの正常実行が同じ a を返し、結果が等しいことを独立に証明する。E1、E3、ensures 等式から単一値性を導かない。return や P を仮定しない全 typed input の inhabitation は a 自身を object の witness とする。dependent result type や precondition 下だけの witness を一般化しない。三つの正当化は関数記号導入前に真正に検証する。型互換な term だけが供給するのは型/witness 成分に限る。
 

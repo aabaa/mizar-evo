@@ -538,6 +538,8 @@ pub enum GhostVisibility {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ControlFlowTerminationPlan {
+    /// Associated algorithm header intent, independent of termination evidence.
+    pub declared_terminating: bool,
     pub algorithm_decreasing: Vec<CoreTermId>,
     pub loop_decreasing: BTreeMap<LoopId, Vec<CoreTermId>>,
     pub partial_sites: Vec<TerminationSite>,
@@ -1193,6 +1195,7 @@ impl<'a> FlowBuilder<'a> {
                 ..ControlFlowGhostTable::default()
             },
             termination: ControlFlowTerminationPlan {
+                declared_terminating: algorithm.declared_terminating,
                 algorithm_decreasing: algorithm.contracts.decreasing.clone(),
                 ..ControlFlowTerminationPlan::default()
             },
@@ -3355,6 +3358,7 @@ mod tests {
             contracts: CoreContractSet,
         ) -> CoreIr {
             let algorithm = CoreAlgorithm {
+                declared_terminating: false,
                 item: self.item,
                 symbol: symbol("AlgorithmOwner"),
                 params,

@@ -17163,6 +17163,7 @@ pub fn lower_source_algorithms(
         &proofs,
         AlgorithmLoweringInput {
             algorithms: vec![AlgorithmSeed {
+                declared_terminating: check.declared_terminating(),
                 owner,
                 symbol: symbol.clone(),
                 params,
@@ -18994,6 +18995,7 @@ pub fn lower_source_theorem_skeletons(
             return Err(invalid());
         };
         algorithm_input.algorithms.push(AlgorithmSeed {
+            declared_terminating: false,
             owner,
             symbol: symbol.clone(),
             params: Vec::new(),
@@ -19844,6 +19846,8 @@ impl Default for AlgorithmLoweringInput {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AlgorithmSeed {
+    /// Declared header intent only; this is not a termination proof.
+    pub declared_terminating: bool,
     pub owner: CoreItemId,
     pub symbol: SymbolId,
     pub params: Vec<CoreBinder>,
@@ -20009,6 +20013,7 @@ pub fn lower_algorithm_inputs(
             lower_algorithm_payload(&mut state, algorithm_id, &seed.payload)?;
         let source = normalized_source(source_with_provenance(seed.source, &seed.provenance));
         let algorithm = CoreAlgorithm {
+            declared_terminating: seed.declared_terminating,
             item: seed.owner,
             symbol: seed.symbol,
             params: seed.params,

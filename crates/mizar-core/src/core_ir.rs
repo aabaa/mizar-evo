@@ -627,6 +627,8 @@ pub enum ProofBranchKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoreAlgorithm {
+    /// Declared header intent only; this is not a termination proof.
+    pub declared_terminating: bool,
     pub item: CoreItemId,
     pub symbol: SymbolId,
     pub params: Vec<CoreBinder>,
@@ -2830,6 +2832,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 96, 97);
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("OwnerAlgorithm"),
             params: Vec::new(),
@@ -2841,6 +2844,7 @@ mod tests {
             diagnostics: Vec::new(),
         });
         let other_algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("OtherAlgorithm"),
             params: Vec::new(),
@@ -3184,6 +3188,7 @@ mod tests {
         let mut parts = minimal_parts();
         let algorithm_source = direct(parts.source_id, 11, 12);
         parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("BadAlgorithm"),
             params: Vec::new(),
@@ -3540,6 +3545,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 36, 37);
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("MissingStatementSource"),
             params: Vec::new(),
@@ -3567,6 +3573,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 37, 38);
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("MismatchedStatementSource"),
             params: Vec::new(),
@@ -3679,6 +3686,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 36, 37);
         let algorithm_a = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("AlgorithmA"),
             params: Vec::new(),
@@ -3690,6 +3698,7 @@ mod tests {
             diagnostics: Vec::new(),
         });
         let algorithm_b = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("AlgorithmB"),
             params: Vec::new(),
@@ -3719,6 +3728,7 @@ mod tests {
         let mut parts = minimal_parts();
         let source = direct(parts.source_id, 37, 38);
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("AlgorithmNested"),
             params: Vec::new(),
@@ -3730,6 +3740,7 @@ mod tests {
             diagnostics: Vec::new(),
         });
         let other_algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("AlgorithmOther"),
             params: Vec::new(),
@@ -4476,6 +4487,7 @@ mod tests {
             unrelated_source,
         ));
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("BadStatementDiagnostic"),
             params: Vec::new(),
@@ -4552,6 +4564,7 @@ mod tests {
         let algorithm_id = CoreAlgorithmId::new(parts.algorithms.len());
         let statement_id = CoreAlgorithmStmtId::new(parts.algorithm_statements.len());
         let algorithm = parts.algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item: CoreItemId::new(0),
             symbol: symbol("RecoveringAlgorithm"),
             params: Vec::new(),

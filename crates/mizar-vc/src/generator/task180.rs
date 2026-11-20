@@ -942,6 +942,7 @@ mod tests {
             Box::new(|parts| {
                 let source = parts.items.get(CoreItemId::new(0)).unwrap().source.clone();
                 parts.algorithms.insert(CoreAlgorithm {
+                    declared_terminating: false,
                     item: CoreItemId::new(0),
                     symbol: symbol(&parts.module_id, "ExtraAlgorithm"),
                     params: Vec::new(),
@@ -959,6 +960,7 @@ mod tests {
             Box::new(|parts| {
                 let source = parts.items.get(CoreItemId::new(0)).unwrap().source.clone();
                 let algorithm = parts.algorithms.insert(CoreAlgorithm {
+                    declared_terminating: false,
                     item: CoreItemId::new(0),
                     symbol: symbol(&parts.module_id, "ExtraAlgorithm"),
                     params: Vec::new(),

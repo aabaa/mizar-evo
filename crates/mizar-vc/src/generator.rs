@@ -4177,6 +4177,7 @@ mod tests {
         }
         let mut algorithms = CoreAlgorithmTable::new();
         algorithms.insert(CoreAlgorithm {
+            declared_terminating: false,
             item,
             symbol,
             params: vec![binder(0, "parameter"), binder(1, "parameter")],

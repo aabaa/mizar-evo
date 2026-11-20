@@ -472,6 +472,7 @@ struct CoreAlgorithm {
     id: CoreAlgorithmId,
     item: CoreItemId,
     symbol: SymbolId,
+    declared_terminating: bool,
     params: Vec<CoreBinder>,
     result: Option<CoreBinder>,
     contracts: CoreContractSet,
@@ -485,6 +486,7 @@ struct CoreAlgorithm {
 algorithm shell が保持するもの:
 
 - parameter / result binder。
+- 認証済み header の `declared_terminating` 意図（検証済み正常復帰の証拠ではない）。
 - lowered `requires`、`ensures`、`assert`、`invariant`、`decreasing`
   formula/term。
 - executable `the` occurrence から生成された `Pick` site。

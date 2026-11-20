@@ -319,6 +319,7 @@ fn build_core_fixture() -> CoreFixture {
         decreasing: vec![tuple_term],
     };
     let algorithm = parts.algorithms.insert(CoreAlgorithm {
+        declared_terminating: false,
         item: algorithm_item,
         symbol: symbol("AlgDeterministic"),
         params: vec![binder(

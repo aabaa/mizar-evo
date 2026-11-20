@@ -1078,6 +1078,115 @@ fn step5c14_snapshot_rejects_source_owner_and_hidden_storage_corruption() {
 }
 
 #[test]
+fn step5c14_return_transports_declared_termination_without_proof_credit() {
+    use mizar_core::control_flow::{
+        ControlFlowObligationSiteKind, build_control_flow_ir, build_obligation_seed_handoff,
+    };
+    use mizar_core::core_ir::{CoreIr, CoreIrParts, CoreSourceAnchor, ObligationSeedStatus};
+    use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+    let case = step5c14_return_case();
+    let text = std::fs::read_to_string(&case.source_path).unwrap();
+    let without = text.replace("terminating algorithm", "algorithm");
+    assert_ne!(text, without);
+    let original = step5c14_static_core(&case, &text).unwrap();
+    let cross_source = step5c14_static_core(&step5c14_state_case(), &text).unwrap();
+    for (source, declared) in [(&text, true), (&without, false)] {
+        let (resolved, typed, symbols) = super::super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            super::super::formula_statement::step5c8_test_frontend(source),
+        )
+        .unwrap();
+        let checked =
+            mizar_checker::type_checker::check_source_algorithm_types(&resolved, &typed, &symbols)
+                .unwrap();
+        assert_eq!(checked.declared_terminating(), declared);
+        let core = lower_source_algorithms(&checked).unwrap();
+        let (algorithm_id, algorithm) = core.algorithms().iter().next().unwrap();
+        assert_eq!(algorithm.declared_terminating, declared);
+        assert_eq!(&algorithm.symbol, &checked.algorithm().1);
+        let item = core.items().get(algorithm.item).unwrap();
+        assert_eq!(item.symbol, algorithm.symbol);
+        assert_eq!(item.source.anchor, algorithm.source.anchor);
+        assert!(!algorithm.source.provenance.is_empty());
+        let mizar_session::SourceAnchor::Range(range) =
+            typed.node(checked.algorithm().0).unwrap().anchor
+        else {
+            panic!("actual algorithm source missing")
+        };
+        assert_eq!(algorithm.source.anchor, CoreSourceAnchor::SourceRange(range));
+        assert_eq!(algorithm.contracts.ensures.len(), 1);
+        assert!(matches!(
+            core.formulas().get(algorithm.contracts.ensures[0]).unwrap().kind,
+            mizar_core::core_ir::CoreFormulaKind::Equals { .. }
+        ));
+        assert!(algorithm.contracts.decreasing.is_empty());
+        let roots = &algorithm.contracts.ensures;
+        assert!(source_algorithm_formula_payloads(&checked, &core, roots).is_ok());
+        assert!(source_algorithm_formula_payloads(&checked, &cross_source, roots).is_err());
+        if !declared {
+            assert!(source_algorithm_formula_payloads(&checked, &original, roots).is_err());
+            let (old_resolved, _, _) = super::super::source_registration_inputs(
+                &step5c11_config().workspace_root,
+                &case,
+                super::super::formula_statement::step5c8_test_frontend(&text),
+            )
+            .unwrap();
+            assert!(
+                mizar_checker::type_checker::check_source_algorithm_types(
+                    &old_resolved,
+                    &typed,
+                    &symbols,
+                )
+                .is_err()
+            );
+        }
+        let flow = build_control_flow_ir(&core);
+        let graph = flow.flows.get(flow.flow_map[&algorithm_id]).unwrap();
+        assert_eq!(graph.algorithm, algorithm_id);
+        assert_eq!(graph.item, algorithm.item);
+        assert_eq!(graph.symbol, algorithm.symbol);
+        assert_eq!(
+            graph.source_map.algorithm_sources[&algorithm_id],
+            algorithm.source
+        );
+        assert_eq!(graph.termination.declared_terminating, declared);
+        assert!(graph.termination.algorithm_decreasing.is_empty());
+        let handoff = build_obligation_seed_handoff(&core, &flow);
+        let partial = handoff
+            .entries
+            .iter()
+            .filter(|(_, entry)| {
+                entry.flow_site.as_ref().unwrap().kind
+                    == ControlFlowObligationSiteKind::PartialTermination
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(partial.len(), 1);
+        assert_eq!(partial[0].1.seed.owner, algorithm.item);
+        assert_eq!(partial[0].1.seed.status, ObligationSeedStatus::Deferred);
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        parts.algorithms.get_mut(algorithm_id).unwrap().declared_terminating = !declared;
+        let forged = CoreIr::try_new(parts).unwrap();
+        assert!(source_algorithm_formula_payloads(&checked, &forged, roots).is_err());
+    }
+}
+
+#[test]
 fn step5c14_return_source_preserves_contract_and_substitutes_actual_return() {
     use mizar_core::core_ir::{
         CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind as T, ObligationSeedStatus,

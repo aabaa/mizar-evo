@@ -1145,6 +1145,7 @@ fn algorithm_seed(
     start: usize,
 ) -> AlgorithmSeed {
     AlgorithmSeed {
+        declared_terminating: false,
         owner,
         symbol,
         params: Vec::new(),

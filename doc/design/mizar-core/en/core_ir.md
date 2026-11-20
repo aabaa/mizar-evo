@@ -497,6 +497,7 @@ struct CoreAlgorithm {
     id: CoreAlgorithmId,
     item: CoreItemId,
     symbol: SymbolId,
+    declared_terminating: bool,
     params: Vec<CoreBinder>,
     result: Option<CoreBinder>,
     contracts: CoreContractSet,
@@ -510,6 +511,7 @@ struct CoreAlgorithm {
 Algorithm shells preserve:
 
 - parameter and result binders;
+- authenticated header `declared_terminating` intent, without verified normal-return credit;
 - lowered `requires`, `ensures`, `assert`, `invariant`, and `decreasing`
   formulas/terms;
 - `Pick` sites produced by executable `the` occurrences;

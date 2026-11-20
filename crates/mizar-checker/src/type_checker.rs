@@ -326,6 +326,7 @@ pub struct SourceAlgorithmCheck<'a> {
     bindings: BindingEnv,
     inference: TermFormulaInferenceOutput,
     algorithm: (TypedNodeId, SymbolId),
+    declared_terminating: bool,
     snapshots: BTreeMap<TypedNodeId, (String, Vec<BindingId>)>,
 }
 
@@ -343,6 +344,11 @@ impl SourceAlgorithmCheck<'_> {
     /// Returns checked variable uses and their inferred types.
     pub const fn inference(&self) -> &TermFormulaInferenceOutput {
         &self.inference
+    }
+
+    /// Returns authenticated header intent, without asserting verified normal return.
+    pub const fn declared_terminating(&self) -> bool {
+        self.declared_terminating
     }
 
     /// Returns source-ordered visible binding identities at each flat snapshot.
@@ -572,6 +578,7 @@ pub fn check_source_algorithm_types<'a>(
             bindings,
             inference,
             algorithm: (TypedNodeId::new(algorithm.index()), owner.symbol().clone()),
+            declared_terminating: false,
             snapshots: BTreeMap::new(),
         });
     }
@@ -599,16 +606,16 @@ pub fn check_source_algorithm_types<'a>(
         ),
     ])?;
     let algorithm_parts = parts(*algorithm, &K::AlgorithmDefinition)?;
-    let algorithm_parts = if let [termination, rest @ ..] = algorithm_parts
+    let (declared_terminating, algorithm_parts) = if let [termination, rest @ ..] = algorithm_parts
         && node(*termination)?.kind() == &K::AlgorithmTerminationClause
     {
         tokens(&[(
             only(*termination, &K::AlgorithmTerminationClause)?,
             "terminating",
         )])?;
-        rest
+        (true, rest)
     } else {
-        algorithm_parts
+        (false, algorithm_parts)
     };
     let [
         algorithm_kw,
@@ -1344,6 +1351,7 @@ pub fn check_source_algorithm_types<'a>(
         bindings,
         inference,
         algorithm: (TypedNodeId::new(algorithm.index()), owner.symbol().clone()),
+        declared_terminating,
         snapshots,
     })
 }

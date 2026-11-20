@@ -343,6 +343,7 @@ re-parsing statements.
 
 `ControlFlowTerminationPlan` records:
 
+- `declared_terminating` copied from the associated Core algorithm; it does not discharge termination;
 - header-level decreasing terms for recursive or mutually recursive
   algorithms;
 - loop-level decreasing terms attached to loop headers;

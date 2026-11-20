@@ -317,6 +317,7 @@ Task 16 は assignment effect と pick local を runtime / ghost-only の別 lis
 
 `ControlFlowTerminationPlan` は次を記録する。
 
+- 対応する Core algorithm から保持した `declared_terminating`（終了性を discharge しない）。
 - recursive / mutually recursive algorithm 用の header-level decreasing term。
 - loop header に付く loop-level decreasing term。
 - measure が既に減少したことを証明しなければならない `continue` edge。
