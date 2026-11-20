@@ -6530,7 +6530,7 @@ fn source_algorithm_e4_proof_association_preserves_original_result_raw_slice() {
 #[test]
 fn source_algorithm_e4_policy_consumer_preserves_association_and_current_fingerprint() {
     use mizar_proof::{
-        policy::VerifierPolicy,
+        policy::{KernelEvidenceFormat, VerifierPolicy},
         status::{
             check_source_algorithm_e4_existential as associate,
             consume_source_algorithm_e4_existential as consume,
@@ -6543,6 +6543,9 @@ fn source_algorithm_e4_policy_consumer_preserves_association_and_current_fingerp
         let default = VerifierPolicy::default();
         for policy in [
             default.clone(),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
             VerifierPolicy::development(),
             VerifierPolicy::interactive(),
             default.clone().with_profile_id("changed-e4-policy"),
