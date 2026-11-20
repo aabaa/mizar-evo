@@ -4600,3 +4600,478 @@ fn source_algorithm_e4_reduction_isolates_schemas_snapshot_and_preserves_open_pu
         );
     });
 }
+
+fn sole_return_core_parts(core: &mizar_core::core_ir::CoreIr) -> mizar_core::core_ir::CoreIrParts {
+    mizar_core::core_ir::CoreIrParts {
+        source_id: core.source_id(),
+        module_id: core.module_id().clone(),
+        items: core.items().clone(),
+        terms: core.terms().clone(),
+        formulas: core.formulas().clone(),
+        definitions: core.definitions().clone(),
+        proofs: core.proofs().clone(),
+        proof_nodes: core.proof_nodes().clone(),
+        algorithms: core.algorithms().clone(),
+        algorithm_statements: core.algorithm_statements().clone(),
+        generated: core.generated().clone(),
+        obligation_seeds: core.obligation_seeds().clone(),
+        source_map: core.source_map().clone(),
+        diagnostics: core.diagnostics().clone(),
+    }
+}
+
+#[test]
+fn source_algorithm_sole_return_var_borrows_arbitrary_opaque_inputs_and_relocated_binding() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr};
+    use mizar_kernel::checker::check_sole_return_var;
+    // No Clone bound or runtime-value grammar; typing and initialization are caller premises.
+    #[derive(Debug, PartialEq, Eq)]
+    struct Opaque(Vec<u8>, String);
+    let check_values = |core: &CoreIr| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let CoreAlgorithmStmtKind::Return(Some(term)) = core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap()
+            .kind
+        else {
+            panic!("sole return")
+        };
+        for value in [
+            Opaque(vec![], "empty".into()),
+            Opaque(vec![255, 0, 7], "opaque".into()),
+        ] {
+            let environment = [(
+                algorithm.params[0].var,
+                algorithm.params[0].ty_guard.unwrap(),
+                value,
+            )];
+            let actual = check_sole_return_var(core, id, &environment).unwrap();
+            assert_eq!(actual, (algorithm.statements[0], term, &environment[0].2));
+            assert!(std::ptr::eq(actual.2, &environment[0].2));
+        }
+    };
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        check_values(core);
+        // A resolved result guard is an association, not a check of the opaque value's type.
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let mut parts = sole_return_core_parts(core);
+        parts
+            .formulas
+            .get_mut(algorithm.result.as_ref().unwrap().ty_guard.unwrap())
+            .unwrap()
+            .kind = CoreFormulaKind::False;
+        check_values(&CoreIr::try_new(parts).unwrap());
+    });
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap()
+    .replace(" a ", " input ")
+    .replace("(a)", "(input)")
+    .replace(" a;", " input;")
+    .replace("= a\n", "= input\n");
+    with_source_algorithm_identity_inputs(
+        &text,
+        "local-evaluation",
+        "relocated.binding",
+        7,
+        |_, _, _, check| {
+            check_values(&mizar_core::elaborator::lower_source_algorithms(check).unwrap())
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_sole_return_var_refuses_environment_mismatch_without_output() {
+    use mizar_kernel::checker::check_sole_return_var;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let parameter = &algorithm.params[0];
+        let result = algorithm.result.as_ref().unwrap();
+        let input = (parameter.var, parameter.ty_guard.unwrap(), 17);
+        let other = (result.var, result.ty_guard.unwrap(), 23);
+        for environment in [
+            vec![],
+            vec![input, input],
+            vec![input, other],
+            vec![other],
+            vec![(result.var, parameter.ty_guard.unwrap(), 17)],
+            vec![(parameter.var, result.ty_guard.unwrap(), 17)],
+        ] {
+            assert_eq!(check_sole_return_var(core, id, &environment), None);
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_sole_return_var_refuses_other_roles_and_executable_bodies() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as Stmt, CoreIr, CoreTermKind};
+    use mizar_kernel::checker::check_sole_return_var;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let Stmt::Return(Some(term)) = core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("sole return")
+        };
+        let environment = [(
+            algorithm.params[0].var,
+            algorithm.params[0].ty_guard.unwrap(),
+            (),
+        )];
+        for mutation in 0..18 {
+            let mut parts = sole_return_core_parts(core);
+            match mutation {
+                0..=3 => {
+                    parts.algorithms.get_mut(id).unwrap().params[0].role =
+                        ["local:var", "local:const", "result", "ghost"][mutation].into()
+                }
+                4 => {
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .role = "parameter".into()
+                }
+                5 => parts.terms.get_mut(term).unwrap().kind = CoreTermKind::Numeral("1".into()),
+                6 => {
+                    parts.terms.get_mut(term).unwrap().kind =
+                        CoreTermKind::Var(algorithm.result.as_ref().unwrap().var)
+                }
+                7 => {
+                    parts.algorithm_statements.get_mut(statement).unwrap().kind = Stmt::Return(None)
+                }
+                8 => {
+                    let mut extra = core.algorithm_statements().get(statement).unwrap().clone();
+                    extra.kind = Stmt::Assert {
+                        formula: algorithm.params[0].ty_guard.unwrap(),
+                    };
+                    let extra_id = parts.algorithm_statements.insert(extra.clone());
+                    parts
+                        .source_map
+                        .algorithm_sources
+                        .insert(extra_id, extra.source);
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .statements
+                        .insert(0, extra_id);
+                }
+                9 => parts.algorithms.get_mut(id).unwrap().params.clear(),
+                10 => parts
+                    .algorithms
+                    .get_mut(id)
+                    .unwrap()
+                    .params
+                    .push(algorithm.params[0].clone()),
+                11 => parts.algorithms.get_mut(id).unwrap().result = None,
+                12 => parts.algorithms.get_mut(id).unwrap().statements.clear(),
+                13 => parts
+                    .algorithms
+                    .get_mut(id)
+                    .unwrap()
+                    .ghost_effects
+                    .push("ghost-write".into()),
+                _ => {
+                    let mut binder = algorithm.result.as_ref().unwrap().clone();
+                    binder.role = "local:var".into();
+                    let mut local_term = core.terms().get(term).unwrap().clone();
+                    local_term.kind = CoreTermKind::Var(binder.var);
+                    let local_return = parts.terms.insert(local_term.clone());
+                    parts
+                        .source_map
+                        .term_sources
+                        .insert(local_return, local_term.source);
+                    parts.algorithm_statements.get_mut(statement).unwrap().kind =
+                        Stmt::Return(Some(local_return));
+                    let mut declaration =
+                        core.algorithm_statements().get(statement).unwrap().clone();
+                    declaration.kind = Stmt::Let {
+                        binder,
+                        value: (mutation % 2 == 0).then_some(term),
+                        ghost: mutation >= 16,
+                    };
+                    let declaration_id = parts.algorithm_statements.insert(declaration.clone());
+                    parts
+                        .source_map
+                        .algorithm_sources
+                        .insert(declaration_id, declaration.source);
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .statements
+                        .insert(0, declaration_id);
+                }
+            }
+            let changed = CoreIr::try_new(parts).unwrap();
+            assert_eq!(
+                check_sole_return_var(&changed, id, &environment),
+                None,
+                "mutation {mutation}"
+            );
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmId, CoreAlgorithmStmtKind as Stmt, CoreDiagnostic, CoreDiagnosticClass,
+        CoreFormulaId, CoreFormulaKind, CoreIr, CoreIrError, CoreTermKind,
+    };
+    use mizar_kernel::checker::check_sole_return_var;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let Stmt::Return(Some(term)) = core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("sole return")
+        };
+        let environment = [(
+            algorithm.params[0].var,
+            algorithm.params[0].ty_guard.unwrap(),
+            (),
+        )];
+        assert_eq!(
+            check_sole_return_var(
+                core,
+                CoreAlgorithmId::new(core.algorithms().len()),
+                &environment
+            ),
+            None
+        );
+        for mutation in 0..12 {
+            let mut parts = sole_return_core_parts(core);
+            match mutation {
+                0 => parts.algorithms.get_mut(id).unwrap().params[0].ty_guard = None,
+                1 => {
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .ty_guard = None
+                }
+                2 => {
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .var = algorithm.params[0].var
+                }
+                3 => {
+                    parts.algorithm_statements.get_mut(statement).unwrap().owner =
+                        CoreAlgorithmId::new(core.algorithms().len())
+                }
+                4 => {
+                    parts.algorithms.get_mut(id).unwrap().params[0].ty_guard =
+                        Some(CoreFormulaId::new(core.formulas().len()))
+                }
+                5 => {
+                    parts
+                        .algorithms
+                        .get_mut(id)
+                        .unwrap()
+                        .result
+                        .as_mut()
+                        .unwrap()
+                        .ty_guard = Some(CoreFormulaId::new(core.formulas().len()))
+                }
+                _ => {
+                    let source = match mutation {
+                        9 => core.terms().get(term).unwrap().source.clone(),
+                        10 => core
+                            .formulas()
+                            .get(algorithm.params[0].ty_guard.unwrap())
+                            .unwrap()
+                            .source
+                            .clone(),
+                        _ => core
+                            .algorithm_statements()
+                            .get(statement)
+                            .unwrap()
+                            .source
+                            .clone(),
+                    };
+                    let diagnostic = parts.diagnostics.insert(CoreDiagnostic::error(
+                        CoreDiagnosticClass::AlgorithmShell,
+                        "local-return-test",
+                        source,
+                    ));
+                    match mutation {
+                        6 => {}
+                        7 => parts
+                            .algorithms
+                            .get_mut(id)
+                            .unwrap()
+                            .diagnostics
+                            .push(diagnostic),
+                        8 => parts
+                            .algorithm_statements
+                            .get_mut(statement)
+                            .unwrap()
+                            .diagnostics
+                            .push(diagnostic),
+                        9 => {
+                            parts.terms.get_mut(term).unwrap().kind =
+                                CoreTermKind::Error(diagnostic)
+                        }
+                        10 => {
+                            parts
+                                .formulas
+                                .get_mut(algorithm.params[0].ty_guard.unwrap())
+                                .unwrap()
+                                .kind = CoreFormulaKind::Error(diagnostic)
+                        }
+                        _ => {
+                            parts.algorithm_statements.get_mut(statement).unwrap().kind =
+                                Stmt::Error(diagnostic)
+                        }
+                    }
+                }
+            }
+            let changed = CoreIr::try_new(parts);
+            match mutation {
+                3 => assert!(matches!(
+                    changed,
+                    Err(CoreIrError::StatementOwnerMismatch { .. })
+                )),
+                4 | 5 => assert!(matches!(
+                    changed,
+                    Err(CoreIrError::InvalidReference {
+                        table: "formula",
+                        ..
+                    })
+                )),
+                _ => assert_eq!(
+                    check_sole_return_var(&changed.unwrap(), id, &environment),
+                    None,
+                    "mutation {mutation}"
+                ),
+            }
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_sole_return_var_preserves_authentic_e4_identity_slice_and_open_status() {
+    use mizar_kernel::checker::check_sole_return_var;
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        generator::{
+            generate_source_algorithm_direct_return_requests as original,
+            generate_source_algorithm_e4_operational_reduction_request as reduction,
+        },
+        vc_ir::{VcKind, VcStatus},
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, _| {
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+        let parent = original(
+            source,
+            check,
+            symbols,
+            core,
+            snapshot_id(0),
+            &generation,
+            &schema,
+        )
+        .unwrap();
+        let vcs = &parent;
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        let descriptor = || {
+            reduction(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                generation,
+                vcs.schema_version(),
+                VcId::new(4),
+            )
+            .unwrap()
+        };
+        let identity = || {
+            mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+                source,
+                check,
+                symbols,
+                vcs.snapshot(),
+                VcId::new(4),
+            )
+            .unwrap()
+        };
+        let descriptor_before = descriptor();
+        let identity_before = identity();
+        let raw_slice = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: vcs,
+            discharge_output: None,
+        })
+        .unwrap()
+        .slice_for(VcId::new(4))
+        .unwrap()
+        .clone();
+        assert_eq!(descriptor_before.0, *vcs);
+        assert_eq!(descriptor_before.5, raw_slice);
+        assert_eq!(identity_before.1, raw_slice);
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let environment = [(
+            algorithm.params[0].var,
+            algorithm.params[0].ty_guard.unwrap(),
+            vec![1, 4, 9],
+        )];
+        let actual = check_sole_return_var(core, id, &environment).unwrap();
+        assert_eq!(
+            actual,
+            (
+                algorithm.statements[0],
+                descriptor_before.1,
+                &environment[0].2
+            )
+        );
+        assert!(std::ptr::eq(actual.2, &environment[0].2));
+        assert_eq!(descriptor(), descriptor_before);
+        assert_eq!(identity(), identity_before);
+        assert_eq!(
+            vcs.vcs()
+                .iter()
+                .filter(|vc| matches!(
+                    vc.kind,
+                    VcKind::AlgorithmE1Typing
+                        | VcKind::AlgorithmE1SingleValuedness
+                        | VcKind::AlgorithmE1ResultInhabitation
+                        | VcKind::AlgorithmE4NormalReturn
+                ))
+                .count(),
+            4
+        );
+        assert!(
+            vcs.vcs()
+                .iter()
+                .all(|vc| vc.status == VcStatus::Open && vc.proof_hint.is_none())
+        );
+        assert!(
+            vcs.seed_accounting()
+                .iter()
+                .any(|entry| entry.seed_status
+                    == mizar_core::core_ir::ObligationSeedStatus::Deferred)
+        );
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}

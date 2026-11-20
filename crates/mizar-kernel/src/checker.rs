@@ -33,7 +33,10 @@ use crate::{
         checked_substitutions_for_input, replay_substitutions,
     },
 };
-use mizar_core::core_ir::CoreFormulaId;
+use mizar_core::core_ir::{
+    CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaId, CoreIr, CoreTermId,
+    CoreTermKind, CoreVarId,
+};
 use mizar_session::{Hash, bridge_fingerprint_hash as stable_bridge_hash, lower_hex as hex};
 
 pub const SUPPORTED_NORMALIZED_CLAUSE_FINGERPRINT_ALGORITHM_ID: u8 = 1;
@@ -1183,6 +1186,56 @@ pub fn check_kernel_certificate(input: KernelCheckInput<'_>) -> KernelCheckResul
         Ok(result) => result,
         Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, None, *rejection),
     }
+}
+
+/// Derives only local Var/sole-Return evaluation under caller-supplied premises.
+///
+/// The caller premises that the opaque environment value is initialized and
+/// satisfies the named parameter guard. Guard IDs check association, not typing.
+/// Success borrows that value unchanged; it provides no evidence or acceptance
+/// and does not authenticate source/CFG inputs or check result typing/contracts.
+pub fn check_sole_return_var<'a, T>(
+    core: &CoreIr,
+    algorithm_id: CoreAlgorithmId,
+    environment: &'a [(CoreVarId, CoreFormulaId, T)],
+) -> Option<(CoreAlgorithmStmtId, CoreTermId, &'a T)> {
+    let algorithm = core.algorithms().get(algorithm_id)?;
+    let [parameter] = algorithm.params.as_slice() else {
+        return None;
+    };
+    let result = algorithm.result.as_ref()?;
+    let guard = parameter.ty_guard?;
+    core.formulas().get(guard)?;
+    core.formulas().get(result.ty_guard?)?;
+    let [(variable, environment_guard, value)] = environment else {
+        return None;
+    };
+    if core.has_error_nodes()
+        || !core.diagnostics().is_empty()
+        || !algorithm.diagnostics.is_empty()
+        || !algorithm.ghost_effects.is_empty()
+        || parameter.role.as_str() != "parameter"
+        || result.role.as_str() != "result"
+        || parameter.var == result.var
+        || *variable != parameter.var
+        || *environment_guard != guard
+    {
+        return None;
+    }
+    let [statement_id] = algorithm.statements.as_slice() else {
+        return None;
+    };
+    let statement = core.algorithm_statements().get(*statement_id)?;
+    let CoreAlgorithmStmtKind::Return(Some(term_id)) = statement.kind else {
+        return None;
+    };
+    if statement.owner != algorithm_id
+        || !statement.diagnostics.is_empty()
+        || core.terms().get(term_id)?.kind != CoreTermKind::Var(parameter.var)
+    {
+        return None;
+    }
+    Some((*statement_id, term_id, value))
 }
 
 pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckResult> {
