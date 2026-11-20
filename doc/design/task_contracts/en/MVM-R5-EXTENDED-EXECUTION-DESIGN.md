@@ -1,7 +1,7 @@
 # Task MVM-R5-EXTENDED-EXECUTION-DESIGN: Control, failure and resource cases
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R5-EXTENDED-EXECUTION-DESIGN.md).
-Status: design draft; independent review and documentation checks pending.
+Status: documentation-only design review closed; implementation remains blocked.
 Documentation-only; no R5 implementation readiness or semantic coverage.
 Sole owner: [mizar-vc plan](../../mizar-vc/en/00.crate_plan.md).
 Design: [VC owner document](../../mizar-vc/en/mvm_extended_execution.md).
@@ -32,6 +32,10 @@ inputs, a completed supported R4 evaluator and feature-specific Core/CFG.
   any pair or invent a new VM format, schema, Kernel rule or proof status.
 - Document feature-specific positive, negative, stale/forged and boundary
   tests, precise prerequisite ownership, safe refusal and release triggers.
+
+This design task executes no semantic tests. The future test matrix is limited to
+the owner design table's rows; adding a row requires the specification
+clause that requires it.
 
 ## Acceptance and restrictions
 
