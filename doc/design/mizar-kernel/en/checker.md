@@ -55,6 +55,35 @@ the legacy checker. The default policy leaves this flag `false` and returns a
 deterministic `unsupported_certificate_format` rejection at
 `policy.allow_legacy_certificate_audit`.
 
+## Bounded Var/sole-Return Local Validation
+
+`check_sole_return_var(core, algorithm, environment)` is a separate conditional
+operational validator, outside `check_kernel_evidence`. It consumes existing
+Core and a slice of `(CoreVarId, CoreFormulaId, T)` tuples. The caller premises
+that each opaque value has the named binder's type in this Core environment
+and is initialized; matching guard IDs checks association, not semantic typing.
+There is no runtime-value grammar, type inference or evidence manufacture.
+
+Require exactly one parameter with role `parameter`, a distinct guarded result
+with role `result`, and one owned `Return(Some(term))` whose term is exactly
+`Var(parameter.var)`. Both guards must resolve; the sole environment entry must
+match the parameter and its guard. Reject absent algorithms, missing guards,
+aliasing, error nodes/diagnostics, ghost effects, other roles, non-Var returns,
+void returns, missing/duplicate/extra bindings and any additional executable
+statement. Parameters are immutable and initialized by language definition
+([§20.1.2](../../../spec/en/20.algorithm_and_verification.md#2012-parameters-and-return-type));
+local mutable, ghost or uninitialized variables cannot replace them.
+
+Success returns only `(statement_id, term_id, &T)`: Var retrieves this arbitrary
+input unchanged and the sole Return exits with it
+([§20.2.6](../../../spec/en/20.algorithm_and_verification.md#2026-jump-statements-return-break-continue-fail)).
+This local derivation is conditional on the environment premises. It neither
+checks result typing/contracts nor authenticates source, CFG, VC identity or
+currentness. The VC [handoff boundary](../../mizar-vc/en/kernel_evidence_handoff.md#formula-projection)
+remains unchanged. No Formula variant, evidence bytes, Kernel acceptance,
+original E4 proof, existential introduction, Proof adoption, status promotion,
+symbol introduction, publication or acceptance/coverage credit follows.
+
 ## Trust Statement
 
 This module is trusted kernel code. It may accept a proof only after all

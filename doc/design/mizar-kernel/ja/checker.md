@@ -56,6 +56,22 @@ Default policy ではこの flag は `false` のままであり、
 `policy.allow_legacy_certificate_audit` に対する deterministic
 `unsupported_certificate_format` rejection を返す。
 
+## Bounded Var/sole-Return Local Validation
+
+`check_sole_return_var` は証明受理経路から分離した条件付き局所検査である。
+既存 Core と `(CoreVarId, CoreFormulaId, T)` の環境を使用する。値の型付けと
+初期化は呼出側の前提であり、guard ID の一致は意味的型付けを証明しない。
+単一の `parameter`、別の guarded `result`、所有関係の一致する単一の
+`Return(Some(Var(parameter)))`、正確に対応する単一環境要素を要求する。
+欠落・重複・余分な束縛、guard 欠落、別名化、error/diagnostics、ghost effects、
+別 role、非 Var/void return、追加文は拒否する。可変・ghost・未初期化の
+ローカル変数は immutable かつ initialized なパラメータを代替できない。
+成功時は `(statement_id, term_id, &T)` のみ返し、入力をそのまま返す局所的な
+正常終了を表す。結果型や契約、source/CFG/VC/currentness を認証しない。
+Formula・evidence・Kernel acceptance・元 E4 証明・存在導入・Proof adoption・
+status promotion・symbol introduction・publication・acceptance/coverage credit
+は与えない。詳細と権限根拠は英語版の同節を参照する。
+
 ## Trust Statement
 
 この module は trusted kernel code である。必要な evidence がすべて explicit immutable
