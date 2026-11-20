@@ -693,6 +693,12 @@ The new VcSet retains the original postcondition and expands its source seed to 
 | E1 inhabitation | Existential object result on all typed inputs, with no return/P assumption; no precondition-only witness generalization. |
 | E4 and isolation | Independent return existential; stale/cross-source/check/Core/CFG and changed schema controls regenerate differently or refuse. Missing/swapped proof, declaration, old postcondition, continuation or stopping-only evidence cannot authorize adoption; that consumer is deferred. |
 
+### E1 inhabitation witness-reduction request
+
+`generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` first regenerates the complete authentic four-request graph through the existing producer, preserving its errors. Select only the Open E1-inhabitation existential. Return the unchanged `VcSet`, actual returned `CoreTermId`, original `ContextEntryId` binder, instantiated child `VcFormulaRef::Core(parameter.ty_guard)` and entire original raw `DependencySlice`. The selected ID plus whole original set retain its goal, context, anchor and fingerprints; Proof's existing original-identity route remains authoritative for Proof identities.
+
+The explicit binder-to-term pair describes substitution of fresh r by actual immutable a in object(r). Require the single existential binder, object body and distinct parameter variable; its atomic body contains no nested binders, so capture is impossible. The child is the authenticated object(a) input guard under the original typed-input context, a request descriptor rather than a new schedulable VC or checked premise. Preserve all parent formulas, provenance, Open requests, Deferred termination and incomplete/reuse-ineligible slice. No generic substitution framework, Kernel wire/evidence, checking, existential-introduction validation, Proof adoption, symbol introduction, status promotion, publication or acceptance/coverage credit is supplied.
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 require E1 typing/inhabitation/single-valuedness and verified E2 partial correctness; E4 normal return applies in terminating/promotion contexts, not to every partial definition.
