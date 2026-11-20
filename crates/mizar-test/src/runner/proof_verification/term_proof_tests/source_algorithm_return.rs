@@ -3453,15 +3453,16 @@ fn source_algorithm_direct_return_identity_matches_independent_vectors() {
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
     ))
     .unwrap();
-    // Frozen from the independent reference-only test before API observations.
+    // Independently replayed from dependency/obligation hash inputs; AlgorithmReturns
+    // adds ID-free aliases. Candidate anchors and inhabitation remain unchanged.
     let vectors = [
         (
             "1abb18aa8b523d60011cfce3b5ac46127368313ee8f653e65f38fa8456c77421",
-            "13faa4b9de3e918dddf8c1a237adad369641b4329423612a1a4640d95f869ddc",
+            "c5ef9c7a68331ff789f84793329a91de89e01134f06af4db19d239a0064392fd",
         ),
         (
             "278b32210a82cf79c4cb1d076fdfa0c6094aa9e8e3498afe4418f462be74854d",
-            "781e7bcc9935734b71d764e2c7495f0acd2264fd4b905227ef6b0549cf700428",
+            "d853432a217eee35e2501d25a9032aaa482663fd8608b2921c9270c6dbce5a68",
         ),
         (
             "2bf9cf51be1f984735819dc975b146e73d66e967d4fdeb71a2382769f745b61b",
@@ -3469,7 +3470,7 @@ fn source_algorithm_direct_return_identity_matches_independent_vectors() {
         ),
         (
             "5f0f0d3bde16a1a539b3acda9f5997fc6c9bda946806de691e79f3ceb4c956b4",
-            "159c44e8dabd83809a7b64e4cabfc60038cb5181004b055d2084f6024a54fb7c",
+            "9d95f8ed703720e265cf40ecfdbdddf6258723ce4f7fb0e8598072e8b1b477f1",
         ),
     ];
     with_source_algorithm_identity_inputs(

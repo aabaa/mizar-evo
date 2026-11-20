@@ -12,22 +12,25 @@ use mizar_artifact::{
     },
 };
 use mizar_core::{
-    control_flow::ObligationHandoffId,
+    control_flow::{ControlFlowId, ObligationHandoffId},
     core_ir::{
-        CoreFormulaId, CoreItemId, CoreLabelRef, CoreProvenance, CoreProvenancePhase,
-        CoreSourceRef, LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeedId,
-        ObligationSeedStatus,
+        CoreAlgorithmId, CoreAlgorithmStmtId, CoreFormulaId, CoreItemId, CoreLabelRef,
+        CoreProvenance, CoreProvenancePhase, CoreSourceRef, CoreVarId, LocalProofOrProgramPath,
+        NormalizedSemanticOrigin, ObligationSeedId, ObligationSeedStatus,
     },
 };
 use mizar_session::{BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator, SourceRange};
 use mizar_vc::{
-    dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+    dependency_slice::{
+        DependencySliceInput, DependencyUnknownFamily, try_compute_dependency_slices,
+    },
     vc_ir::{
         AnchorCompleteness, AnchorLabel, AnchorLabelRole, AnchorOwner, CanonicalSortKey,
         ContextEntry, ContextEntryId, ContextEntryKind, GenerationSchemaVersion, HashMarker,
         LocalContext, PremiseRef, SeedAccounting, SeedOriginRef, SeedVcMapping, SeedVcRef,
-        VcFormulaRef, VcId, VcIr, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase,
-        VcSchemaVersion, VcSet, VcSetParts, VcSourceRef, VcStatus, VcText,
+        VcFormulaRef, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+        VcGeneratedFormulaShape, VcId, VcIr, VcKind, VcModuleRef, VcProgramValue, VcProvenance,
+        VcProvenancePhase, VcSchemaVersion, VcSet, VcSetParts, VcSourceRef, VcStatus, VcText,
     },
 };
 
@@ -303,6 +306,85 @@ fn vc_dependency_slice_projection_consumes_producer_slice_fingerprint() {
             _ => DependencyFootprintCompleteness::IncompleteUncacheable,
         }
     );
+}
+
+#[test]
+fn nested_algorithm_returns_remains_uncacheable_even_with_matching_digests() {
+    let mut fingerprints = Vec::new();
+    for result_var in [5, 6] {
+        let base = vc_fixture_set();
+        let mut vc = base.vcs()[0].clone();
+        vc.goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
+        vc.status = VcStatus::Open;
+        let generated_formulas = [
+            VcGeneratedFormulaShape::Ref(VcFormulaRef::Generated(VcGeneratedFormulaId::new(1))),
+            VcGeneratedFormulaShape::Not(VcFormulaRef::Generated(VcGeneratedFormulaId::new(2))),
+            VcGeneratedFormulaShape::AlgorithmReturns {
+                algorithm: CoreAlgorithmId::new(9),
+                flow: ControlFlowId::new(8),
+                statement: CoreAlgorithmStmtId::new(7),
+                input: VcProgramValue {
+                    var: CoreVarId::new(6),
+                    definition: None,
+                },
+                result: VcProgramValue {
+                    var: CoreVarId::new(result_var),
+                    definition: Some(CoreAlgorithmStmtId::new(7)),
+                },
+            },
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(id, shape)| VcGeneratedFormula {
+            id: VcGeneratedFormulaId::new(id),
+            kind: VcGeneratedFormulaKind::GeneratedTypeObligation,
+            shape,
+            provenance: vec![vc_provenance("generated")],
+        })
+        .collect();
+        let set = VcSet::try_new(VcSetParts {
+            schema_version: base.schema_version().clone(),
+            snapshot: base.snapshot(),
+            source: base.source(),
+            module: base.module().clone(),
+            generated_formulas,
+            vcs: vec![vc],
+            seed_accounting: base.seed_accounting().to_vec(),
+        })
+        .expect("nested return fixture");
+        let before = set.clone();
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("nested return slices");
+        assert_eq!(set, before);
+        let producer = slices.slice_for(VcId::new(0)).expect("return slice");
+        assert_eq!(producer.status(), &VcStatus::Open);
+        assert_eq!(
+            producer.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(producer.requires_cache_miss());
+        assert!(producer.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "generated-formula:unresolved"
+        }));
+        fingerprints.push(producer.fingerprint());
+        let mut request = request();
+        request.slices = vec![DependencySliceFingerprint::from_vc_slice(
+            "vc-slice",
+            "pkg::A",
+            "obligation-1",
+            producer,
+        )];
+        assert_eq!(request.slices[0].digest, producer.fingerprint().hash());
+        let first = uncacheable(request.clone());
+        let second = uncacheable(request);
+        assert_eq!(first.final_hash, second.final_hash);
+        assert!(first.uncacheable && second.uncacheable);
+    }
+    assert_ne!(fingerprints[0], fingerprints[1]);
 }
 
 #[test]

@@ -638,8 +638,29 @@ impl<'a> SliceBuilder<'a> {
                     DependencyEntryClass::GeneratedFormula,
                     format!("generated-formula:{}:payload", id.index()),
                     format!("kind={:?}; shape={:?}", generated.kind, generated.shape),
-                    fingerprint_payload
-                        .unwrap_or_else(|| "generated-formula:unresolved".to_owned()),
+                    fingerprint_payload.unwrap_or_else(|| match &generated.shape {
+                        VcGeneratedFormulaShape::AlgorithmReturns {
+                            statement,
+                            input,
+                            result,
+                            ..
+                        } => format!(
+                            "generated-formula:unresolved; shape=algorithm-returns; \
+                             variable-alias={}; input-definition={}; result-definition={}; \
+                             definition-alias={:?}; input-statement-alias={:?}; \
+                             result-statement-alias={:?}",
+                            input.var == result.var,
+                            input.definition.is_some(),
+                            result.definition.is_some(),
+                            input
+                                .definition
+                                .zip(result.definition)
+                                .map(|(left, right)| left == right),
+                            input.definition.map(|definition| definition == *statement),
+                            result.definition.map(|definition| definition == *statement),
+                        ),
+                        _ => "generated-formula:unresolved".to_owned(),
+                    }),
                 );
                 match &generated.shape {
                     VcGeneratedFormulaShape::True
@@ -1611,18 +1632,18 @@ mod tests {
             AnchorLabel, AnchorLabelRole, AnchorOwner, AnchorUnavailableReason, CanonicalSortKey,
             ContextEntryKind, DefinitionOpacityOverride, GenerationSchemaVersion, LocalContext,
             PolicyValue, ProofHintKey, SeedAccounting, SeedOriginRef, SeedVcMapping, SeedVcRef,
-            VcGeneratedFormula, VcGeneratedFormulaKind, VcModuleRef, VcProvenance,
+            VcGeneratedFormula, VcGeneratedFormulaKind, VcModuleRef, VcProgramValue, VcProvenance,
             VcProvenancePhase, VcSchemaVersion, VcSetParts, VcSourceRef, VerifierPolicyInput,
         },
     };
     use mizar_core::{
-        control_flow::ObligationHandoffId,
+        control_flow::{ControlFlowId, ObligationHandoffId},
         core_ir::{
-            CoreDefinitionId, CoreDiagnosticId, CoreFormulaId, CoreItemId, CoreLabelRef,
-            CoreNodeRef, CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, CoreSourceRef,
-            CoreVarId, GeneratedFrom, GeneratedOriginKey, GeneratedOriginKind,
-            LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeedId,
-            ObligationSeedStatus,
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreDefinitionId, CoreDiagnosticId,
+            CoreFormulaId, CoreItemId, CoreLabelRef, CoreNodeRef, CoreProvenance,
+            CoreProvenanceKey, CoreProvenancePhase, CoreSourceRef, CoreVarId, GeneratedFrom,
+            GeneratedOriginKey, GeneratedOriginKind, LocalProofOrProgramPath,
+            NormalizedSemanticOrigin, ObligationSeedId, ObligationSeedStatus,
         },
     };
     use mizar_session::{
@@ -2855,6 +2876,118 @@ mod tests {
                 "status fingerprint at index {index} should be unique"
             );
         }
+    }
+
+    #[test]
+    fn algorithm_returns_fingerprint_is_invariant_under_id_renumbering() {
+        for (variable_alias, definitions) in [
+            (false, [None, None]),
+            (true, [Some(1), None]),
+            (false, [None, Some(0)]),
+            (true, [Some(1), Some(1)]),
+            (false, [Some(1), Some(2)]),
+            (false, [Some(0), Some(2)]),
+            (false, [Some(1), Some(0)]),
+        ] {
+            assert_eq!(
+                algorithm_returns_fingerprint(0, variable_alias, definitions),
+                algorithm_returns_fingerprint(17, variable_alias, definitions),
+                "variable alias {variable_alias}, definitions {definitions:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn algorithm_returns_fingerprint_tracks_variable_alias() {
+        assert_ne!(
+            algorithm_returns_fingerprint(0, false, [None, None]),
+            algorithm_returns_fingerprint(0, true, [None, None])
+        );
+    }
+
+    #[test]
+    fn algorithm_returns_fingerprint_tracks_each_definition_presence() {
+        let fingerprints = [
+            [None, None],
+            [Some(1), None],
+            [None, Some(1)],
+            [Some(1), Some(2)],
+        ]
+        .map(|definitions| algorithm_returns_fingerprint(0, false, definitions));
+        for (index, fingerprint) in fingerprints.iter().enumerate() {
+            assert!(
+                fingerprints[index + 1..]
+                    .iter()
+                    .all(|other| other != fingerprint)
+            );
+        }
+    }
+
+    #[test]
+    fn algorithm_returns_fingerprint_tracks_definition_aliases() {
+        let fingerprints = [
+            [Some(1), Some(2)],
+            [Some(1), Some(1)],
+            [Some(0), Some(2)],
+            [Some(1), Some(0)],
+        ]
+        .map(|definitions| algorithm_returns_fingerprint(0, false, definitions));
+        for (index, fingerprint) in fingerprints.iter().enumerate() {
+            assert!(
+                fingerprints[index + 1..]
+                    .iter()
+                    .all(|other| other != fingerprint)
+            );
+        }
+    }
+
+    fn algorithm_returns_fingerprint(
+        offset: usize,
+        variable_alias: bool,
+        definitions: [Option<usize>; 2],
+    ) -> DependencySliceFingerprint {
+        let mut generated = (0..offset)
+            .map(|id| generated_formula(id, VcGeneratedFormulaShape::True))
+            .collect::<Vec<_>>();
+        generated.push(generated_formula(
+            offset,
+            VcGeneratedFormulaShape::AlgorithmReturns {
+                algorithm: CoreAlgorithmId::new(offset),
+                flow: ControlFlowId::new(offset),
+                statement: CoreAlgorithmStmtId::new(offset),
+                input: VcProgramValue {
+                    var: CoreVarId::new(offset),
+                    definition: definitions[0].map(|id| CoreAlgorithmStmtId::new(offset + id)),
+                },
+                result: VcProgramValue {
+                    var: CoreVarId::new(offset + usize::from(!variable_alias)),
+                    definition: definitions[1].map(|id| CoreAlgorithmStmtId::new(offset + id)),
+                },
+            },
+        ));
+        let set = fixture_set(fixture_parts(
+            VcStatus::Open,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(offset)),
+            generated,
+            complete_anchor_fixture(),
+        ));
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("algorithm return slice");
+        let slice = only_slice(&slices);
+        assert_eq!(slice.status(), &VcStatus::Open);
+        assert_eq!(
+            slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(slice.requires_cache_miss());
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "generated-formula:unresolved"
+        }));
+        slice.fingerprint()
     }
 
     fn fixture_set(parts: VcSetParts) -> VcSet {
