@@ -1223,6 +1223,69 @@ pub fn check_source_algorithm_e1_inhabitation<'core>(
     Ok((identity, slice, result, fingerprint))
 }
 
+/// Native positive evidence for only the original E1 inhabitation obligation.
+/// It cannot be used as generic proof evidence or a status/reuse authorization.
+pub struct NativeE1Inhabitation<'core> {
+    identity: ProofObligationIdentity,
+    slice: mizar_vc::dependency_slice::DependencySlice,
+    result: mizar_kernel::checker::ObjectInhabitationCheck<'core>,
+    snapshot: mizar_session::BuildSnapshotId,
+}
+
+impl<'core> NativeE1Inhabitation<'core> {
+    /// Authenticates and checks the selected original request under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (identity, slice, result, _) = check_source_algorithm_e1_inhabitation(
+            source, check, symbols, core, snapshot, vc_id, policy,
+        )?;
+        Ok(Self {
+            identity,
+            slice,
+            result,
+            snapshot,
+        })
+    }
+
+    /// True adopts only this genuine original request's inhabitation obligation.
+    /// Re-evaluates supplied current policy; currentness remains caller-owned.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "authenticates the complete original request"
+    )]
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        let (identity, slice) = source_algorithm_direct_return_obligation_identity(
+            source, check, symbols, snapshot, vc_id,
+        )?;
+        if identity != self.identity
+            || slice != self.slice
+            || snapshot != self.snapshot
+            || !std::ptr::eq(core, self.result.core())
+        {
+            return Ok(false);
+        }
+        crate::policy::ProofPolicyEvaluator::new(policy.clone())
+            .consume_object_inhabitation(&self.result)?;
+        Ok(true)
+    }
+}
+
 /// Binds genuine original algorithm return content to its full raw dependency slice.
 /// Source and snapshot freshness remain caller-owned; this grants no acceptance or reuse.
 pub fn source_algorithm_return_obligation_identity(

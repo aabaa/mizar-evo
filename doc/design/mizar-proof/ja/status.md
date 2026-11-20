@@ -564,6 +564,12 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 `check_source_algorithm_e1_inhabitation(source, check, symbols, core, snapshot, vc_id, policy)` は元 identity、raw slice 全体、借用 `ObjectInhabitationCheck`、現在の policy fingerprint を返す。先に上記固定 direct-return schema で真正な VC native-result producer を呼び、エラーを保持する。次に同じ入力から既存の元 identity を取得し、slice 全体の一致を要求する。producer が選択された元の存在量化・binder・context と、同じ不変 Core および固定された正の結論を結び付ける。呼出側の detached token/identity は受け取らない。
 関連付け後に [native primitive policy](policy.md#bounded-native-positive-result-policy) で実結果を消費し、四値を atomic に返す。currentness は呼出側の責務。trusted selection/reuse、status、adoption、evidence、symbol、promotion、publication、acceptance/coverage credit は付与しない。四要求は Open、termination は Deferred、独立した E1 義務は未証明のまま。
 
+## Native E1 inhabitation adoption
+
+`NativeE1Inhabitation::from_source` は上記の真正な consumer を使い、元 identity・raw slice 全体・指定 snapshot・借用 Kernel 結果を非公開に保持する。generic evidence/selection への変換はない。
+`adopt_original_request` は関連付け・policy 拒否より先に真正な元要求の identity/slice 全体を再生成する。両者、snapshot、同一の不変 Core が一致しなければ false。実 rule/schema に現在の native policy を再評価し、元の全 typed-input inhabitation 義務だけを true で採用する。以前の policy 成功や fingerprint は認可にならず、上流エラーは保持され、失敗は何も付与しない。
+raw graph は変更せず、四要求 Open・termination Deferred、currentness は呼出側所有。generic status/reuse、E1 全体・algorithm acceptance、typing/single-valuedness、E4、symbol、promotion、evidence/witness publication、Complete/coverage credit は保留する。
+
 ## Source algorithm return canonical inputs
 
 `source_algorithm_return_canonical_inputs(check: &SourceAlgorithmCheck<'_>, snapshot: BuildSnapshotId, vc_id: VcId) -> Result<(CanonicalVcFingerprint, Hash, LocalContextFingerprint, DependencySlice), String>` を既存 status.rs の source_theorem_canonical_inputs の完全な doccomments/function 前へ一つ追加する。実 opaque source check と通常の snapshot/選択だけを受け、caller Core/maps/VC/hashes/slice/result/flag は受けない。
