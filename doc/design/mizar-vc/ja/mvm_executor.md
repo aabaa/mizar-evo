@@ -29,6 +29,24 @@ E5 の内部入力と、R6/R7 による証明受理は異なる。
 制限・キャンセルの優先順位は実装前に凍結する。
 既存の Pre-ATP discharge 用予算を VM gas と同一視しない。
 
-R4 実装には、R2 の真正な型付き呼出しと本体の検証結果、
-R3 の実行形式・検証付きローダー、実行の肯定／拒否テストが必要。
-R1〜R3 の独立レビューが終わるまで本設計だけで実装を解禁しない。
+**R4 の選択肢の処置（owner 決定 2026-11-20 11:00 JST）:**
+(1) と (4) は既存の R3 の問いへの参照であり、新しい R4 の問いではない。
+- **(1) [R3-Q1](../../mizar-artifact/ja/mvm_runtime_export.md) — Artifact 所有・未決:**
+  R3 形式と整合する最小命令／復帰値表現。R3 実装 freeze と R4 形式選択を止める。
+- **(2) [R1-Q1](./mvm_readiness.md) — 2026-11-19 23:28 JST 決定済み:**
+  AST-TYPE/AST-LOWER ゲートを維持し、ordinary-only narrowing は不承認。
+  真正な型付き ground 呼出しは引き続き必要。
+- **(3) R5-Q1 — VC が R4 の決定として所有・未決:**
+  step 課金・timeout・nest の計数と報告形式。R4 の最初の実行を止め、
+  pilot を含め実行前に凍結する。R5 側は参照と R5 固有の拡張だけを残す。
+- **(4) [R3-Q2](../../mizar-artifact/ja/mvm_runtime_export.md) — RESERVED・未決・本スライスでは所有者未割当:**
+  R3 freeze 時の owner／仕様判断である検証済み staged load の順序。
+  R3 export と R4 same-module pilot を止める。
+架空の実行 Artifact でこれらを決めない。
+
+**実装解禁条件:** R1〜R3 の独立レビューに加え、R2 の真正な型付き呼出し、
+真正に受理済みの本体全体の証拠、R3 の実在するローダーの前提が必要。
+AST-LOWER の完全入力と型付き computability facts も必須である。
+既存の `ALG-MVM-EVALUATION` 所有の下で最小実行器契約を凍結し、
+肯定／拒否の oracle を test-first で用意する。それまでは設計のみであり、
+R5〜R7 は別のゲートである。

@@ -83,15 +83,25 @@ authenticated input, compatible VM version and execution closure.
 | Result classification | Only actual finite normal return emits report; same call repeats its exact result | `fail`, missing operation, missing requires evidence, unsupported instruction, expired budget and stale snapshot yield no accepted result |
 | Execution isolation | No ghost-to-runtime flow, global mutation or implicit source evaluation | Ghost value leak, alias/state mismatch, same-name different symbol, reused weaker-policy record rejected |
 
-**Open R4 choices:** (1) a minimal instruction/return value
-representation consistent with R3's as-yet-unfrozen format; (2) the
-authenticated typed ground call and ordinary/reflected dependency
-decision from R2; (3) gas/timeout/nest counting and report/framing;
-(4) whether same-package verification requires R3's staged verified
-load path. Never decide these by fabricating runnable artifacts.
+**R4 choice dispositions (owner decision 2026-11-20 11:00 JST):**
+(1) and (4) reference the existing R3 questions; they are not new R4 questions.
+- **(1) [R3-Q1](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze)
+  — Artifact; undecided; blocks R3 implementation freeze and R4 format choice:**
+  minimal instruction/return representation consistent with the R3 format.
+- **(2) [R1-Q1](./mvm_readiness.md#open-questions) — DECIDED
+  2026-11-19 23:28 JST:** retain AST-TYPE/AST-LOWER gates; ordinary-only
+  narrowing is not approved. Authentic typed ground invocation remains required.
+- **(3) R5-Q1 — VC-owned R4 decision; undecided; blocks R4's first execution:**
+  step-charge/timeout/nest accounting and report/framing. Freeze before even
+  the pilot runs; R5 retains a reference and its own extensions only.
+- **(4) [R3-Q2](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze)
+  — RESERVED, owner/specification judgment at R3 freeze; unassigned and undecided;
+  blocks R3 export and R4 same-module pilot:** staged verified load ordering.
+Never decide these by fabricating runnable artifacts.
 
-**Implementation release:** resolve R1/R2/R3 independent reviews,
-genuine accepted whole-body evidence and real loader prerequisites;
-freeze the smallest executor contract under the existing
+**Implementation release:** requires R1/R2/R3 independent reviews,
+genuine accepted whole-body evidence and real loader prerequisites.
+AST-LOWER complete inputs and typed computability facts remain mandatory.
+Freeze the smallest executor contract under the existing
 `ALG-MVM-EVALUATION` owner, with test-first positive and rejection
 oracles. Until then R4 is design-only; R5–R7 are separate.

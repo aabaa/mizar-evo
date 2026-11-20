@@ -1,7 +1,7 @@
 # Task MVM-R4-EXECUTOR-DESIGN: Minimal authenticated execution boundary
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R4-EXECUTOR-DESIGN.md).
-Status: design drafted; independent review and documentation lint pending.
+Status: documentation-only design review closed; implementation remains blocked. Tier: full documentation gates.
 **Documentation only**; no runtime implementation or acceptance credit.
 Sole owner: [mizar-vc](../../mizar-vc/en/00.crate_plan.md).
 Design: [VC owner document](../../mizar-vc/en/mvm_executor.md).
@@ -12,7 +12,8 @@ Authority: [spec §20.9.1–4](../../../spec/en/20.algorithm_and_verification.md
 [R3](MVM-R3-ARTIFACT-LOADER-DESIGN.md),
 [computation admission](ALGDEF-COMPUTATION-ADMISSION.md).
 Readiness: design review can proceed; R4 execution implementation remains
-blocked on authentic R2 verified body/call and R3 validated runtime artifact.
+blocked on authentic R2 verified body/call, R3 validated runtime artifact,
+AST-LOWER complete inputs and typed computability facts.
 
 ## Scope
 
@@ -46,3 +47,4 @@ artifact, default budget, proof primitive, status, diagnostic, test-credit
 or Rust change. R5 extensions are not implemented by this design task.
 Independent specification, test-sufficiency, ownership, volume and EN/JA
 reviews plus both documentation lint/link checks precede closure.
+No executable tests run in this design task; future cases are bounded by the owner design matrix; additions require a cited specification clause.
