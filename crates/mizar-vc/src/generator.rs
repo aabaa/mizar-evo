@@ -3058,6 +3058,117 @@ pub fn generate_source_algorithm_direct_return_requests(
     .map_err(|error| error.to_string())
 }
 
+/// Describes an untrusted witness reduction while retaining the whole original request graph.
+/// The binder-to-term pair and child guard grant no checking or existential-introduction credit.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain the authentic source producer inputs and existing untrusted descriptor types"
+)]
+pub fn generate_source_algorithm_e1_inhabitation_witness_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        mizar_core::core_ir::CoreTermId,
+        ContextEntryId,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreTermKind};
+
+    let vcs = generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_inhabitation_witness_request".to_owned();
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    if parent.kind != VcKind::AlgorithmE1ResultInhabitation || parent.status != VcStatus::Open {
+        return Err(invalid());
+    }
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Exists,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [binder] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let ContextEntryKind::BinderDeclaration { var, .. } = parent
+        .local_context
+        .entries()
+        .get(binder.index())
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Err(invalid());
+    };
+    let (_, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let parameter = &algorithm.params[0];
+    let statement = core
+        .algorithm_statements()
+        .get(algorithm.statements[0])
+        .ok_or_else(invalid)?;
+    let CoreAlgorithmStmtKind::Return(Some(witness)) = statement.kind else {
+        return Err(invalid());
+    };
+    let guard = parameter.ty_guard.ok_or_else(invalid)?;
+    let CoreFormulaKind::TypePred { subject, ref ty } =
+        core.formulas().get(guard).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    // Only an atomic object body is substituted. There are no inner binders to capture a.
+    if var == parameter.var
+        || vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+            != (Shape::ProgramTypePredicate {
+                subject: VcProgramValue {
+                    var,
+                    definition: None,
+                },
+                ty: "object".into(),
+            })
+        || ty.as_str() != "object"
+        || [witness, subject].into_iter().any(|term| {
+            core.terms()
+                .get(term)
+                .is_none_or(|term| term.kind != CoreTermKind::Var(parameter.var))
+        })
+    {
+        return Err(invalid());
+    }
+    let binder = *binder;
+    let slices = crate::dependency_slice::try_compute_dependency_slices(
+        crate::dependency_slice::DependencySliceInput {
+            vc_set: &vcs,
+            discharge_output: None,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
+    Ok((vcs, witness, binder, VcFormulaRef::Core(guard), slice))
+}
+
 fn source_program_value(
     core: &mizar_core::core_ir::CoreIr,
     term: mizar_core::core_ir::CoreTermId,
