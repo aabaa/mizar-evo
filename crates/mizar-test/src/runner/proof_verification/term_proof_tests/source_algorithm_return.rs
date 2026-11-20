@@ -3222,3 +3222,533 @@ fn source_algorithm_direct_return_e4_is_independent_and_replays_inputs() {
         }
     });
 }
+
+// Independent oracle for status.md#source-algorithm-direct-return-request-identity.
+use mizar_vc::vc_ir::VcId;
+
+fn source_algorithm_direct_return_reference(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    request: usize,
+) -> (
+    mizar_proof::status::ProofObligationIdentity,
+    mizar_session::Hash,
+    mizar_session::Hash,
+    mizar_session::Hash,
+    mizar_vc::dependency_slice::DependencySlice,
+) {
+    use mizar_artifact::store::{
+        CanonicalHashDomain, CanonicalJson as J, HashClass, SchemaVersion,
+    };
+    use mizar_session::lower_hex;
+    use mizar_vc::dependency_slice::{DependencySliceInput, try_compute_dependency_slices};
+    let generation = "mizar-vc-generation-vc53-direct-return-v1";
+    let schema = "mizar-vc-vcset-vc53-direct-return-v1";
+    let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+    let vcs = mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        &core,
+        snapshot,
+        &GenerationSchemaVersion::new(generation),
+        &VcSchemaVersion::new(schema),
+    )
+    .unwrap();
+    let vc = &vcs.vcs()[request + 1];
+    let role = [
+        "e1-typing",
+        "e1-single-valuedness",
+        "e1-inhabitation",
+        "e4-normal-return",
+    ][request];
+    let semantic =
+        mizar_core::elaborator::source_algorithm_core_semantic_payload(check, &core).unwrap();
+    let parameter = &core.algorithms().iter().next().unwrap().1.params[0];
+    let guard = parameter.ty_guard.unwrap();
+    let formulas =
+        mizar_core::elaborator::source_algorithm_formula_payloads(check, &core, &[guard]).unwrap();
+    let hash = |domain: &str, object: J| {
+        CanonicalHashDomain::new(
+            HashClass::Interface,
+            format!("mizar-proof/source-algorithm-direct-return/{domain}"),
+            SchemaVersion::new(1, 0),
+        )
+        .hash(&object, &[])
+    };
+    let goal = hash(
+        "goal",
+        J::object([
+            ("generation_schema", J::string(generation)),
+            ("vc_schema", J::string(schema)),
+            ("role", J::string(role)),
+            ("core_semantics", J::string(lower_hex(&semantic))),
+            ("terminating", J::string("true")),
+        ])
+        .unwrap(),
+    );
+    let context = hash(
+        "context",
+        J::object([
+            ("generation_schema", J::string(generation)),
+            ("vc_schema", J::string(schema)),
+            ("guard", J::string(lower_hex(&formulas[&guard]))),
+            ("binders", J::string(if request == 1 { "r,s" } else { "r" })),
+            (
+                "policy_inputs",
+                J::array(vc.local_context.policy_inputs().iter().map(|input| {
+                    J::object([
+                        ("sort_key", J::string(input.sort_key.as_str())),
+                        ("key", J::string(input.key.as_str())),
+                        ("value", J::string(input.value.as_str())),
+                    ])
+                    .unwrap()
+                })),
+            ),
+        ])
+        .unwrap(),
+    );
+    let fingerprint = hash(
+        "vc",
+        J::object([
+            ("role", J::string(role)),
+            ("goal", J::string(lower_hex(goal.as_bytes()))),
+            ("context", J::string(lower_hex(context.as_bytes()))),
+        ])
+        .unwrap(),
+    );
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .unwrap();
+    let slice = slices.slice_for(vc.id).unwrap().clone();
+    let syntax =
+        mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(source, symbols)
+            .unwrap();
+    let entry = symbols
+        .symbols()
+        .iter()
+        .find(|entry| entry.symbol() == &check.algorithm().1)
+        .unwrap();
+    let owner = J::object([
+        (
+            "package_id",
+            J::string(entry.symbol().module().package().as_str()),
+        ),
+        (
+            "module_path",
+            J::string(entry.symbol().module().path().as_str()),
+        ),
+        ("namespace", J::string(entry.namespace().as_str())),
+        ("spelling", J::string(entry.primary_spelling())),
+        ("kind", J::string("algorithm")),
+        ("visibility", J::string("public")),
+    ])
+    .unwrap();
+    let candidate = hash(
+        "candidate",
+        J::object([
+            ("owner", owner),
+            (
+                "syntax",
+                J::string(lower_hex(&syntax[&check.algorithm().1])),
+            ),
+            ("core_semantics", J::string(lower_hex(&semantic))),
+            ("vc", J::string(lower_hex(fingerprint.as_bytes()))),
+            ("goal", J::string(lower_hex(goal.as_bytes()))),
+            ("context", J::string(lower_hex(context.as_bytes()))),
+        ])
+        .unwrap(),
+    );
+    let anchor = format!(
+        "source-algorithm-direct-return-candidate-anchor-v1:{}",
+        lower_hex(candidate.as_bytes())
+    );
+    let obligation = hash(
+        "obligation",
+        J::object([
+            ("obligation_anchor", J::string(&anchor)),
+            (
+                "vc_fingerprint",
+                J::string(lower_hex(fingerprint.as_bytes())),
+            ),
+            ("canonical_goal_hash", J::string(lower_hex(goal.as_bytes()))),
+            (
+                "local_context_fingerprint",
+                J::string(lower_hex(context.as_bytes())),
+            ),
+            (
+                "vc_local_dependency_slice_fingerprint",
+                J::string(lower_hex(slice.fingerprint().hash().as_bytes())),
+            ),
+        ])
+        .unwrap(),
+    );
+    let identity = mizar_proof::status::ProofObligationIdentity::new(
+        &anchor,
+        mizar_proof::status::ObligationAnchor::new(&anchor).unwrap(),
+        obligation,
+        fingerprint,
+        context,
+        slice.fingerprint().hash(),
+    )
+    .unwrap();
+    (identity, fingerprint, goal, context, slice)
+}
+
+#[test]
+fn source_algorithm_direct_return_canonical_inputs_match_four_role_oracle() {
+    use mizar_proof::status::source_algorithm_direct_return_canonical_inputs as canonical;
+    use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        assert!(
+            vcs.seed_accounting()
+                .iter()
+                .any(|entry| entry.seed_status
+                    == mizar_core::core_ir::ObligationSeedStatus::Deferred)
+        );
+        for request in 0..4 {
+            let (_, vc, goal, context, slice) = source_algorithm_direct_return_reference(
+                source,
+                check,
+                symbols,
+                snapshot_id(0),
+                request,
+            );
+            let selected = vcs.vcs()[request + 1].id;
+            let expected = (vc, goal, context, slice);
+            assert_eq!(vcs.vcs()[request + 1].status, VcStatus::Open);
+            assert_eq!(expected.3.status(), &VcStatus::Open);
+            assert_eq!(
+                expected.3.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(!expected.3.entries().is_empty());
+            assert!(!expected.3.unknowns().is_empty());
+            assert!(expected.3.requires_cache_miss());
+            assert_eq!(
+                canonical(source, check, symbols, snapshot_id(0), selected).unwrap(),
+                expected
+            );
+            assert_eq!(
+                canonical(source, check, symbols, snapshot_id(0), selected).unwrap(),
+                expected
+            );
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_identity_matches_independent_vectors() {
+    use mizar_proof::status::source_algorithm_direct_return_obligation_identity as identity;
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    // Frozen from the independent reference-only test before API observations.
+    let vectors = [
+        (
+            "1abb18aa8b523d60011cfce3b5ac46127368313ee8f653e65f38fa8456c77421",
+            "13faa4b9de3e918dddf8c1a237adad369641b4329423612a1a4640d95f869ddc",
+        ),
+        (
+            "278b32210a82cf79c4cb1d076fdfa0c6094aa9e8e3498afe4418f462be74854d",
+            "781e7bcc9935734b71d764e2c7495f0acd2264fd4b905227ef6b0549cf700428",
+        ),
+        (
+            "2bf9cf51be1f984735819dc975b146e73d66e967d4fdeb71a2382769f745b61b",
+            "c6c4017ec23460039b504e324d5720a940d958512da5a15e2e87543c3177aa28",
+        ),
+        (
+            "5f0f0d3bde16a1a539b3acda9f5997fc6c9bda946806de691e79f3ceb4c956b4",
+            "159c44e8dabd83809a7b64e4cabfc60038cb5181004b055d2084f6024a54fb7c",
+        ),
+    ];
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "owners",
+        0,
+        |source, typed, symbols, check| {
+            let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+            for (request, (candidate_hex, obligation_hex)) in vectors.into_iter().enumerate() {
+                let (expected, _, _, _, slice) = source_algorithm_direct_return_reference(
+                    source,
+                    check,
+                    symbols,
+                    snapshot_id(0),
+                    request,
+                );
+                assert_eq!(
+                    expected.obligation_anchor().as_str(),
+                    format!("source-algorithm-direct-return-candidate-anchor-v1:{candidate_hex}")
+                );
+                assert_eq!(
+                    mizar_session::lower_hex(expected.obligation_fingerprint().as_bytes()),
+                    obligation_hex
+                );
+                let selected = VcId::new(request + 1);
+                let actual = identity(source, check, symbols, snapshot_id(0), selected).unwrap();
+                assert_eq!(actual, (expected.clone(), slice.clone()));
+                assert_eq!(
+                    identity(source, check, symbols, snapshot_id(0), selected).unwrap(),
+                    actual
+                );
+            }
+            assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_direct_return_identity_preserves_rebuilt_associations() {
+    use mizar_proof::status::{
+        source_algorithm_direct_return_canonical_inputs as canonical,
+        source_algorithm_direct_return_obligation_identity as identity,
+    };
+    let original = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    let parameter = original
+        .replace(" a ", " param ")
+        .replace("(a)", "(param)")
+        .replace(" a;", " param;")
+        .replace("= a\n", "= param\n");
+    let mut baseline = None;
+    for (label, text, package, module, skip) in [
+        ("original", original.clone(), "owner-test", "owners", 0),
+        (
+            "trivia",
+            format!(":: neutral trivia\n\n{original}"),
+            "owner-test",
+            "owners",
+            0,
+        ),
+        ("relocation", original.clone(), "owner-test", "owners", 7),
+        ("package", original.clone(), "other-package", "owners", 0),
+        ("module", original.clone(), "owner-test", "nested.owners", 0),
+        (
+            "owner",
+            original.replace("idalgo", "renamed_algorithm"),
+            "owner-test",
+            "owners",
+            0,
+        ),
+        ("parameter", parameter, "owner-test", "owners", 0),
+    ] {
+        with_source_algorithm_identity_inputs(
+            &text,
+            package,
+            module,
+            skip,
+            |source, typed, symbols, check| {
+                let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                if label == "relocation" {
+                    assert_ne!(source.source_id(), baseline.unwrap());
+                }
+                if label == "original" {
+                    baseline = Some(source.source_id());
+                }
+                for snapshot in [snapshot_id(0), snapshot_id(1)] {
+                    for request in 0..4 {
+                        let (expected, vc, goal, context, slice) =
+                            source_algorithm_direct_return_reference(
+                                source, check, symbols, snapshot, request,
+                            );
+                        let selected = VcId::new(request + 1);
+                        assert_eq!(
+                            canonical(source, check, symbols, snapshot, selected).unwrap(),
+                            (vc, goal, context, slice.clone()),
+                            "{label}"
+                        );
+                        assert_eq!(
+                            identity(source, check, symbols, snapshot, selected).unwrap(),
+                            (expected, slice),
+                            "{label}"
+                        );
+                    }
+                }
+                assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+            },
+        );
+    }
+}
+
+fn source_algorithm_direct_return_assert_error(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    selected: VcId,
+    expected: &str,
+) {
+    use mizar_proof::status::{
+        source_algorithm_direct_return_canonical_inputs as canonical,
+        source_algorithm_direct_return_obligation_identity as identity,
+    };
+    assert_eq!(
+        canonical(source, check, symbols, snapshot_id(0), selected).unwrap_err(),
+        expected
+    );
+    assert_eq!(
+        identity(source, check, symbols, snapshot_id(0), selected).unwrap_err(),
+        expected
+    );
+}
+
+#[test]
+fn source_algorithm_direct_return_identity_preserves_upstream_order_and_inputs() {
+    use mizar_checker::type_checker::check_source_algorithm_types as authenticate;
+    use mizar_proof::status::source_algorithm_direct_return_obligation_identity as identity;
+    with_direct_return_request_fixture(|source, check, symbols, _, _| {
+        let before = format!("{source:?}{check:?}{symbols:?}");
+        let prior = identity(source, check, symbols, snapshot_id(0), VcId::new(1)).unwrap();
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        for text in [
+            original.replace("idalgo", "foreign_algorithm"),
+            format!("{original}\n{original}"),
+        ] {
+            let (_, _, foreign) = super::super::super::tests::source_registration_owner_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+            );
+            let expected = authenticate(source, check.typed(), foreign.env()).unwrap_err();
+            for selected in [VcId::new(1), VcId::new(usize::MAX)] {
+                source_algorithm_direct_return_assert_error(
+                    source,
+                    check,
+                    foreign.env(),
+                    selected,
+                    &expected,
+                );
+            }
+        }
+        with_source_algorithm_identity_inputs(
+            &original.replace("idalgo", "foreign_algorithm"),
+            "owner-test",
+            "owners",
+            7,
+            |other_source, _, other_symbols, other_check| {
+                for (source, check, symbols) in [
+                    (other_source, check, symbols),
+                    (source, other_check, symbols),
+                    (source, other_check, other_symbols),
+                ] {
+                    let expected = authenticate(source, check.typed(), symbols).unwrap_err();
+                    source_algorithm_direct_return_assert_error(
+                        source,
+                        check,
+                        symbols,
+                        VcId::new(usize::MAX),
+                        &expected,
+                    );
+                }
+            },
+        );
+        assert_eq!(
+            identity(source, check, symbols, snapshot_id(0), VcId::new(1)).unwrap(),
+            prior
+        );
+        assert_eq!(format!("{source:?}{check:?}{symbols:?}"), before);
+    });
+    let text = fs::read_to_string(
+        config()
+            .workspace_root
+            .join("tests/miz/pass/algorithms/pass_proof_verification_claim_block_theorem_001.miz"),
+    )
+    .unwrap();
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "owners",
+        0,
+        |source, typed, symbols, check| {
+            let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+            let fresh = authenticate(source, check.typed(), symbols).unwrap();
+            let expected = mizar_core::elaborator::lower_source_algorithms(&fresh).unwrap_err();
+            assert_eq!(expected, "algorithms.core.unsupported_source");
+            source_algorithm_direct_return_assert_error(
+                source,
+                check,
+                symbols,
+                VcId::new(usize::MAX),
+                &expected,
+            );
+            assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_direct_return_identity_refuses_old_absent_and_broader_profiles() {
+    with_direct_return_request_fixture(|source, check, symbols, _, vcs| {
+        for selected in [vcs.vcs()[0].id, VcId::new(usize::MAX)] {
+            source_algorithm_direct_return_assert_error(
+                source,
+                check,
+                symbols,
+                selected,
+                "algorithm.proof.invalid_direct_return_request",
+            );
+        }
+    });
+    let root = config().workspace_root;
+    let original = fs::read_to_string(root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    let broader = fs::read_to_string(root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+    ))
+    .unwrap();
+    for text in [
+        original.replace("terminating algorithm", "algorithm"),
+        broader,
+        original
+            .replace("    ensures result = a\n", "")
+            .replace("return a;", "return a;\n    return a;"),
+    ] {
+        with_source_algorithm_identity_inputs(
+            &text,
+            "owner-test",
+            "owners",
+            0,
+            |source, typed, symbols, check| {
+                let before = format!("{source:?}{typed:?}{symbols:?}{check:?}");
+                let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+                let expected =
+                    mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        &GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1"),
+                        &VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1"),
+                    )
+                    .unwrap_err();
+                source_algorithm_direct_return_assert_error(
+                    source,
+                    check,
+                    symbols,
+                    VcId::new(usize::MAX),
+                    &expected,
+                );
+                assert_eq!(format!("{source:?}{typed:?}{symbols:?}{check:?}"), before);
+            },
+        );
+    }
+}

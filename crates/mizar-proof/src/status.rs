@@ -924,6 +924,262 @@ pub fn source_algorithm_state_obligation_identity(
     .map_err(|error| error.to_string())?;
     Ok((identity, slice))
 }
+/// Returns untrusted direct-return request hashes and the entire raw dependency slice.
+/// Source/snapshot freshness remains caller-owned; these inputs grant no acceptance or reuse.
+pub fn source_algorithm_direct_return_canonical_inputs(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        Hash,
+        Hash,
+        Hash,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        vc_ir::{GenerationSchemaVersion, VcKind, VcSchemaVersion, VcStatus},
+    };
+
+    let fresh =
+        mizar_checker::type_checker::check_source_algorithm_types(source, check.typed(), symbols)?;
+    let invalid = || "algorithm.proof.invalid_direct_return_request".to_owned();
+    if fresh.algorithm() != check.algorithm() {
+        return Err(invalid());
+    }
+    let core = mizar_core::elaborator::lower_source_algorithms(&fresh)?;
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+    let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+    let vcs = mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+        source,
+        &fresh,
+        symbols,
+        &core,
+        snapshot,
+        &generation,
+        &schema,
+    )?;
+    let selected = vcs
+        .vcs()
+        .iter()
+        .find(|vc| vc.id == vc_id)
+        .ok_or_else(invalid)?;
+    if selected.status != VcStatus::Open {
+        return Err(invalid());
+    }
+    let role = match selected.kind {
+        VcKind::AlgorithmE1Typing => "e1-typing",
+        VcKind::AlgorithmE1SingleValuedness => "e1-single-valuedness",
+        VcKind::AlgorithmE1ResultInhabitation => "e1-inhabitation",
+        VcKind::AlgorithmE4NormalReturn => "e4-normal-return",
+        _ => return Err(invalid()),
+    };
+    let semantic = mizar_core::elaborator::source_algorithm_core_semantic_payload(&fresh, &core)?;
+    let (_, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let [parameter] = algorithm.params.as_slice() else {
+        return Err(invalid());
+    };
+    let guard = parameter.ty_guard.ok_or_else(invalid)?;
+    let formulas =
+        mizar_core::elaborator::source_algorithm_formula_payloads(&fresh, &core, &[guard])?;
+    let guard = formulas.get(&guard).ok_or_else(invalid)?;
+    let goal = CanonicalJson::object([
+        (
+            "generation_schema",
+            CanonicalJson::string(generation.as_str()),
+        ),
+        ("vc_schema", CanonicalJson::string(schema.as_str())),
+        ("role", CanonicalJson::string(role)),
+        (
+            "core_semantics",
+            CanonicalJson::string(source_discharge_hex(&semantic)),
+        ),
+        ("terminating", CanonicalJson::string("true")),
+    ])
+    .map_err(|error| error.to_string())?;
+    let goal = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-direct-return/goal",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&goal, &[]);
+    let policy_inputs = selected
+        .local_context
+        .policy_inputs()
+        .iter()
+        .map(|input| {
+            CanonicalJson::object([
+                ("sort_key", CanonicalJson::string(input.sort_key.as_str())),
+                ("key", CanonicalJson::string(input.key.as_str())),
+                ("value", CanonicalJson::string(input.value.as_str())),
+            ])
+            .map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let context = CanonicalJson::object([
+        (
+            "generation_schema",
+            CanonicalJson::string(generation.as_str()),
+        ),
+        ("vc_schema", CanonicalJson::string(schema.as_str())),
+        ("guard", CanonicalJson::string(source_discharge_hex(guard))),
+        (
+            "binders",
+            CanonicalJson::string(if role == "e1-single-valuedness" {
+                "r,s"
+            } else {
+                "r"
+            }),
+        ),
+        ("policy_inputs", CanonicalJson::array(policy_inputs)),
+    ])
+    .map_err(|error| error.to_string())?;
+    let context = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-direct-return/context",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&context, &[]);
+    let vc = CanonicalJson::object(
+        [
+            ("role", role.to_owned()),
+            ("goal", source_discharge_hex(goal.as_bytes())),
+            ("context", source_discharge_hex(context.as_bytes())),
+        ]
+        .map(|(key, value)| (key, CanonicalJson::string(value))),
+    )
+    .map_err(|error| error.to_string())?;
+    let vc = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-direct-return/vc",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&vc, &[]);
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
+    Ok((vc, goal, context, slice))
+}
+
+/// Binds a genuine direct-return request to its source owner and whole raw slice.
+/// This identity carries no proof, acceptance, publication or cache authority.
+pub fn source_algorithm_direct_return_obligation_identity(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
+    use mizar_resolve::env::{SymbolKind, Visibility};
+
+    let (vc, goal, context, slice) =
+        source_algorithm_direct_return_canonical_inputs(source, check, symbols, snapshot, vc_id)?;
+    let invalid = || "algorithm.proof.invalid_direct_return_request".to_owned();
+    let syntax =
+        mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(source, symbols)?;
+    if syntax.len() != 1 {
+        return Err(invalid());
+    }
+    let syntax = syntax.get(&check.algorithm().1).ok_or_else(invalid)?;
+    let fresh =
+        mizar_checker::type_checker::check_source_algorithm_types(source, check.typed(), symbols)?;
+    let core = mizar_core::elaborator::lower_source_algorithms(&fresh)?;
+    let semantic = mizar_core::elaborator::source_algorithm_core_semantic_payload(&fresh, &core)?;
+    let mut entries = symbols.symbols().iter().filter(|entry| {
+        entry.symbol() == &fresh.algorithm().1 && entry.kind() == SymbolKind::Algorithm
+    });
+    let entry = entries.next().ok_or_else(invalid)?;
+    if entries.next().is_some() || entry.visibility() != Visibility::Public {
+        return Err(invalid());
+    }
+    let module = entry.symbol().module();
+    let owner = CanonicalJson::object(
+        [
+            ("package_id", module.package().as_str()),
+            ("module_path", module.path().as_str()),
+            ("namespace", entry.namespace().as_str()),
+            ("spelling", entry.primary_spelling()),
+            ("kind", "algorithm"),
+            ("visibility", "public"),
+        ]
+        .map(|(key, value)| (key, CanonicalJson::string(value))),
+    )
+    .map_err(|error| error.to_string())?;
+    let candidate = CanonicalJson::object(
+        [("owner", owner)].into_iter().chain(
+            [
+                ("syntax", source_discharge_hex(syntax)),
+                ("core_semantics", source_discharge_hex(&semantic)),
+                ("vc", source_discharge_hex(vc.as_bytes())),
+                ("goal", source_discharge_hex(goal.as_bytes())),
+                ("context", source_discharge_hex(context.as_bytes())),
+            ]
+            .map(|(key, value)| (key, CanonicalJson::string(value))),
+        ),
+    )
+    .map_err(|error| error.to_string())?;
+    let candidate = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-direct-return/candidate",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&candidate, &[]);
+    let anchor = ObligationAnchor::new(format!(
+        "source-algorithm-direct-return-candidate-anchor-v1:{}",
+        source_discharge_hex(candidate.as_bytes()),
+    ))
+    .map_err(|error| error.to_string())?;
+    let obligation = CanonicalJson::object(
+        [
+            ("obligation_anchor", anchor.as_str().to_owned()),
+            ("vc_fingerprint", source_discharge_hex(vc.as_bytes())),
+            ("canonical_goal_hash", source_discharge_hex(goal.as_bytes())),
+            (
+                "local_context_fingerprint",
+                source_discharge_hex(context.as_bytes()),
+            ),
+            (
+                "vc_local_dependency_slice_fingerprint",
+                source_discharge_hex(slice.fingerprint().hash().as_bytes()),
+            ),
+        ]
+        .map(|(key, value)| (key, CanonicalJson::string(value))),
+    )
+    .map_err(|error| error.to_string())?;
+    let fingerprint = CanonicalHashDomain::new(
+        HashClass::Interface,
+        "mizar-proof/source-algorithm-direct-return/obligation",
+        SchemaVersion::new(1, 0),
+    )
+    .hash(&obligation, &[]);
+    let identity = ProofObligationIdentity::new(
+        anchor.as_str().to_owned(),
+        anchor,
+        fingerprint,
+        vc,
+        context,
+        slice.fingerprint().hash(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((identity, slice))
+}
+
 /// Binds genuine original algorithm return content to its full raw dependency slice.
 /// Source and snapshot freshness remain caller-owned; this grants no acceptance or reuse.
 pub fn source_algorithm_return_obligation_identity(
