@@ -5075,3 +5075,433 @@ fn source_algorithm_sole_return_var_preserves_authentic_e4_identity_slice_and_op
         );
     });
 }
+
+#[test]
+fn source_algorithm_e4_validator_handoff_preserves_descriptor_and_borrowed_oracle() {
+    use mizar_core::core_ir::CoreAlgorithmStmtKind;
+    use mizar_vc::{
+        generator::{
+            generate_source_algorithm_e4_operational_reduction_request as reduction,
+            generate_source_algorithm_e4_validator_handoff_request as handoff,
+        },
+        vc_ir::{VcGeneratedFormulaShape as Shape, VcProgramValue},
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let CoreAlgorithmStmtKind::Return(Some(term)) =
+            core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("actual return")
+        };
+        // Mutex is neither Clone nor Eq; runtime typing remains a caller premise.
+        let environment = [(
+            algorithm.params[0].var,
+            algorithm.params[0].ty_guard.unwrap(),
+            std::sync::Mutex::new(vec![255_u8, 0, 7]),
+        )];
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        let expected = reduction(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            generation,
+            vcs.schema_version(),
+            VcId::new(4),
+        )
+        .unwrap();
+        let (descriptor, input, output) = handoff(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            generation,
+            vcs.schema_version(),
+            VcId::new(4),
+            &environment,
+        )
+        .unwrap();
+        assert_eq!(descriptor, expected);
+        assert_eq!(descriptor.0, *vcs);
+        assert_eq!(descriptor.1, term);
+        assert_eq!(descriptor.5.vc(), VcId::new(4));
+        let value = VcProgramValue {
+            var: environment[0].0,
+            definition: None,
+        };
+        assert_eq!(
+            descriptor.3,
+            Shape::AlgorithmReturns {
+                algorithm: id,
+                flow: mizar_core::control_flow::build_control_flow_ir(core).flow_map[&id],
+                statement,
+                input: value,
+                result: value,
+            }
+        );
+        assert_eq!(descriptor.4, Shape::True);
+        assert!(std::ptr::eq(input.0, core));
+        assert_eq!(input.1, id);
+        assert!(std::ptr::eq(input.2, environment.as_slice()));
+        assert_eq!((output.0, output.1), (statement, term));
+        assert!(std::ptr::eq(output.2, &environment[0].2));
+        let checked =
+            mizar_kernel::checker::check_sole_return_var(input.0, input.1, input.2).unwrap();
+        assert_eq!((checked.0, checked.1), (output.0, output.1));
+        assert!(std::ptr::eq(checked.2, output.2));
+    });
+}
+
+#[test]
+fn source_algorithm_e4_validator_handoff_uses_relocated_renamed_ids_and_fresh_binder() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
+    use mizar_vc::{
+        generator::generate_source_algorithm_e4_validator_handoff_request as handoff,
+        vc_ir::{ContextEntryKind, VcGeneratedFormulaShape as Shape},
+    };
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap()
+    .replace(" a ", " param ")
+    .replace("(a)", "(param)")
+    .replace(" a;", " param;")
+    .replace("= a\n", "= param\n");
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "nested.owners",
+        7,
+        |source, _, symbols, check| {
+            let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
+            let (id, algorithm) = core.algorithms().iter().next().unwrap();
+            let statement = algorithm.statements[0];
+            let CoreAlgorithmStmtKind::Return(Some(term)) =
+                core.algorithm_statements().get(statement).unwrap().kind
+            else {
+                panic!("actual return")
+            };
+            let environment = [(
+                algorithm.params[0].var,
+                algorithm.params[0].ty_guard.unwrap(),
+                (),
+            )];
+            let (descriptor, input, output) = handoff(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                &GenerationSchemaVersion::new("relocated-generation"),
+                &VcSchemaVersion::new("relocated-vc"),
+                VcId::new(4),
+                &environment,
+            )
+            .unwrap();
+            assert_eq!(
+                core.terms().get(term).unwrap().kind,
+                CoreTermKind::Var(environment[0].0)
+            );
+            assert_eq!(input.1, id);
+            assert!(std::ptr::eq(input.0, &core));
+            assert!(std::ptr::eq(input.2, environment.as_slice()));
+            assert_eq!((output.0, output.1), (statement, term));
+            assert!(std::ptr::eq(output.2, &environment[0].2));
+            let request = &descriptor.0.vcs()[descriptor.5.vc().index()];
+            let Shape::Quantified { binders, .. } =
+                direct_return_request_shape(&descriptor.0, request.goal)
+            else {
+                panic!("E4 existential")
+            };
+            assert_eq!(binders.as_slice(), &[descriptor.2]);
+            let ContextEntryKind::BinderDeclaration { var, .. } =
+                request.local_context.entries()[descriptor.2.index()].kind
+            else {
+                panic!("original fresh declaration")
+            };
+            assert_ne!(var, environment[0].0);
+            assert_ne!(var, algorithm.result.as_ref().unwrap().var);
+            assert!(
+                core.terms()
+                    .iter()
+                    .all(|(_, term)| !matches!(term.kind, CoreTermKind::Var(old) if old == var))
+            );
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_e4_validator_handoff_refuses_malformed_environment_without_output() {
+    use mizar_vc::generator::generate_source_algorithm_e4_validator_handoff_request as handoff;
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let parameter = &algorithm.params[0];
+        let result = algorithm.result.as_ref().unwrap();
+        let input = (parameter.var, parameter.ty_guard.unwrap(), 17);
+        let other = (result.var, result.ty_guard.unwrap(), 23);
+        for environment in [
+            vec![],
+            vec![input, input],
+            vec![input, other],
+            vec![other],
+            vec![(result.var, parameter.ty_guard.unwrap(), 17)],
+            vec![(parameter.var, result.ty_guard.unwrap(), 17)],
+        ] {
+            assert_eq!(
+                handoff(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    VcId::new(4),
+                    &environment,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e4_validator_handoff_request"
+            );
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_precedence() {
+    use mizar_vc::generator::{
+        generate_source_algorithm_e4_operational_reduction_request as reduction,
+        generate_source_algorithm_e4_validator_handoff_request as handoff,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let environment: [(
+            mizar_core::core_ir::CoreVarId,
+            mizar_core::core_ir::CoreFormulaId,
+            (),
+        ); 0] = [];
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        for selected in [0, 1, 2, 3, usize::MAX].map(VcId::new) {
+            assert_eq!(
+                handoff(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    generation,
+                    vcs.schema_version(),
+                    selected,
+                    &environment,
+                )
+                .unwrap_err(),
+                reduction(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    generation,
+                    vcs.schema_version(),
+                    selected,
+                )
+                .unwrap_err()
+            );
+        }
+        let text = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        for foreign in [
+            format!(":: stale placement\n{text}"),
+            text.replace("idalgo", "foreign_algorithm"),
+            text.replace("terminating algorithm", "algorithm"),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &foreign,
+                "owner-test",
+                "owners",
+                7,
+                |other_source, _, other_symbols, other_check| {
+                    let other_core =
+                        mizar_core::elaborator::lower_source_algorithms(other_check).unwrap();
+                    for (source, check, symbols, core) in [
+                        (other_source, check, symbols, core),
+                        (source, other_check, symbols, core),
+                        (source, check, other_symbols, core),
+                        (source, check, symbols, &other_core),
+                    ]
+                    .into_iter()
+                    .chain((!other_check.declared_terminating()).then_some((
+                        other_source,
+                        other_check,
+                        other_symbols,
+                        &other_core,
+                    ))) {
+                        for selected in [VcId::new(4), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                handoff(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                    &environment,
+                                )
+                                .unwrap_err(),
+                                reduction(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                )
+                                .unwrap_err()
+                            );
+                        }
+                    }
+                },
+            );
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_purity() {
+    use mizar_vc::{
+        dependency_slice::{
+            DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+        },
+        generator::generate_source_algorithm_e4_validator_handoff_request as handoff,
+        vc_ir::{VcKind, VcStatus},
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let environment = [(
+            algorithm.params[0].var,
+            algorithm.params[0].ty_guard.unwrap(),
+            vec![1, 4, 9],
+        )];
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{environment:?}");
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        for (snapshot, generation, schema) in [
+            (
+                vcs.snapshot(),
+                generation.clone(),
+                vcs.schema_version().clone(),
+            ),
+            (
+                snapshot_id(1),
+                generation.clone(),
+                vcs.schema_version().clone(),
+            ),
+            (
+                vcs.snapshot(),
+                GenerationSchemaVersion::new("isolated-generation"),
+                vcs.schema_version().clone(),
+            ),
+            (
+                vcs.snapshot(),
+                generation.clone(),
+                VcSchemaVersion::new("isolated-vc"),
+            ),
+        ] {
+            let identity = mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+                source,
+                check,
+                symbols,
+                snapshot,
+                VcId::new(4),
+            )
+            .unwrap();
+            let request = || {
+                handoff(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    snapshot,
+                    &generation,
+                    &schema,
+                    VcId::new(4),
+                    &environment,
+                )
+                .unwrap()
+            };
+            let (descriptor, _, output) = request();
+            assert_eq!(request().0, descriptor);
+            assert!(std::ptr::eq(output.2, &environment[0].2));
+            assert_eq!(descriptor.0.snapshot(), snapshot);
+            assert_eq!(descriptor.0.schema_version(), &schema);
+            assert!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .all(|vc| vc.anchor.generation_schema_version == generation)
+            );
+            let raw = try_compute_dependency_slices(DependencySliceInput {
+                vc_set: &descriptor.0,
+                discharge_output: None,
+            })
+            .unwrap();
+            assert_eq!(&descriptor.5, raw.slice_for(VcId::new(4)).unwrap());
+            // Proof's public identity uses its fixed schemas; the handoff keeps caller schemas.
+            assert_eq!(descriptor.5.vc(), identity.1.vc());
+            assert_eq!(descriptor.5.status(), &VcStatus::Open);
+            assert_eq!(
+                descriptor.5.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(descriptor.5.requires_cache_miss());
+            assert_eq!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .filter(|vc| matches!(
+                        vc.kind,
+                        VcKind::AlgorithmE1Typing
+                            | VcKind::AlgorithmE1SingleValuedness
+                            | VcKind::AlgorithmE1ResultInhabitation
+                            | VcKind::AlgorithmE4NormalReturn
+                    ))
+                    .count(),
+                4
+            );
+            assert!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .all(|vc| vc.status == VcStatus::Open && vc.proof_hint.is_none())
+            );
+            assert_eq!(descriptor.0.seed_accounting(), vcs.seed_accounting());
+            assert!(descriptor.0.seed_accounting().iter().any(
+                |seed| seed.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+            ));
+            assert_eq!(
+                mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+                    source,
+                    check,
+                    symbols,
+                    snapshot,
+                    descriptor.5.vc(),
+                )
+                .unwrap(),
+                identity
+            );
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{environment:?}"),
+            before
+        );
+    });
+}

@@ -3296,6 +3296,87 @@ pub fn generate_source_algorithm_e4_operational_reduction_request(
     Ok((vcs, witness, binder, instantiated, Shape::True, slice))
 }
 
+/// Associates an authentic E4 request with exact conditional Kernel inputs/expected output.
+///
+/// This does not invoke Kernel or check opaque value typing/initialization: those
+/// remain caller premises. The expected output grants no evidence or adoption.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "retain authentic inputs and existing descriptor/environment tuples without a single-use type"
+)]
+pub fn generate_source_algorithm_e4_validator_handoff_request<'c, 'a, T>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'c mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+    environment: &'a [(mizar_core::core_ir::CoreVarId, CoreFormulaId, T)],
+) -> Result<
+    (
+        (
+            VcSet,
+            mizar_core::core_ir::CoreTermId,
+            ContextEntryId,
+            crate::vc_ir::VcGeneratedFormulaShape,
+            crate::vc_ir::VcGeneratedFormulaShape,
+            crate::dependency_slice::DependencySlice,
+        ),
+        (
+            &'c mizar_core::core_ir::CoreIr,
+            CoreAlgorithmId,
+            &'a [(mizar_core::core_ir::CoreVarId, CoreFormulaId, T)],
+        ),
+        (
+            mizar_core::core_ir::CoreAlgorithmStmtId,
+            mizar_core::core_ir::CoreTermId,
+            &'a T,
+        ),
+    ),
+    String,
+> {
+    let descriptor = generate_source_algorithm_e4_operational_reduction_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e4_validator_handoff_request".to_owned();
+    let crate::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns {
+        algorithm,
+        statement,
+        ..
+    } = &descriptor.3
+    else {
+        return Err(invalid());
+    };
+    let [parameter] = core
+        .algorithms()
+        .get(*algorithm)
+        .ok_or_else(invalid)?
+        .params
+        .as_slice()
+    else {
+        return Err(invalid());
+    };
+    let [(variable, guard, value)] = environment else {
+        return Err(invalid());
+    };
+    if *variable != parameter.var || Some(*guard) != parameter.ty_guard {
+        return Err(invalid());
+    }
+    let inputs = (core, *algorithm, environment);
+    let expected_output = (*statement, descriptor.1, value);
+    Ok((descriptor, inputs, expected_output))
+}
+
 fn source_program_value(
     core: &mizar_core::core_ir::CoreIr,
     term: mizar_core::core_ir::CoreTermId,
