@@ -53,3 +53,8 @@ Specify authentic source/type/CFG associations, E1 result typing, single-valuedn
 Exclude calls, loops, Pick, recursion, groups, premise exposure, implementation, executable units and acceptance/coverage credit. Parser failure-message reconciliation and mixed-group E2 prerequisites are outside this design.
 Design acceptance: owner-local obligations and a future five-case matrix cover authentic binding, the three E1 gates, independent E4 and incomplete/stale/cross-binding refusal; no executable acceptance is asserted. Existing regressions and specification semantics remain unchanged.
 Documentation checks: both lint_policy suites, documentation-volume and local link/fragment checks; full regression only on protocol cadence. Full-tier independent reviews apply to the whole unit.
+
+## Bounded Core46 terminating-intent handoff
+Freeze then implement only authentic declared intent for the unchanged idalgo profile through SourceAlgorithmCheck, Core algorithm metadata and its Core52 CFG association; retain source/symbol ownership. This source_drift prerequisite does not implement the producers above.
+Matrix (five cases): authentic header retains true; removing only terminating retains false; missing decreasing/equality ensures never establish intent; stale/cross-source associations refuse; metadata corruption fails fresh replay. Keep PartialTermination Deferred. No execution relation, E1/E4 requests, Proof/Kernel checking/adoption, acceptance/coverage credit or L2-R1 integration.
+Exit: reviewed transport and controls; Core/Checker owner tests, representative source-to-CFG check, both lint_policy suites, fmt, Clippy, links and cadence-triggered full cargo test pass.
