@@ -180,6 +180,11 @@ ids) and include:
 - stable anchor and context hash markers when available, or conservative
   unknown markers when unavailable.
 
+`AlgorithmReturns` contributes only ID-free structure: input/result variable
+alias, each definition’s presence, equality between present definitions and
+equality to the return statement. Algorithm/CFG/body/value semantics remain
+unresolved; retain unknown markers, `IncompleteUncacheable` and cache misses.
+
 Diagnostic entry local keys may contain snapshot-local ids so that a developer
 can inspect the slice, but fingerprint construction must not hash those local
 keys. It must hash stable entry payloads and conservative-unknown family/reason

@@ -139,6 +139,10 @@ unknown coverage を fingerprint から黙って落としてはならない。
 
 ## Fingerprint Contract
 
+`AlgorithmReturns` は数値 ID を含めず、入力/結果の変数の同一性、各定義の有無、
+存在する定義間および return 文との同一性だけを寄与させる。algorithm/CFG/body/value の
+意味は未解決のまま、unknown marker、`IncompleteUncacheable`、cache miss を維持する。
+
 dependency-slice fingerprint は proof certificate ではない。untrusted で deterministic な reuse input である。
 reuse 可能な cross-edit fingerprint は snapshot-local id（`VcId`、context/generated-formula/core/
 definition row id、handoff id、source id/range、candidate sort key、dense owner id）を除外し、
