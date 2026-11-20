@@ -3171,6 +3171,99 @@ pub fn generate_source_algorithm_e1_inhabitation_witness_request(
     Ok((vcs, witness, binder, VcFormulaRef::Core(guard), slice))
 }
 
+/// Checks the original E1 object existential using its complete typed-input context.
+/// Returns the unchanged request descriptor without evidence or proof adoption.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain the authentic source producer inputs and existing descriptor types"
+)]
+pub fn check_source_algorithm_e1_inhabitation_witness(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        mizar_core::core_ir::CoreTermId,
+        ContextEntryId,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+
+    let descriptor = generate_source_algorithm_e1_inhabitation_witness_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e1_inhabitation_witness_check".to_owned();
+    let (vcs, witness, descriptor_binder, child, _) = &descriptor;
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Exists,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [typed, binder] = parent.local_context.entries() else {
+        return Err(invalid());
+    };
+    let ContextEntryKind::BinderDeclaration { var, role } = &binder.kind else {
+        return Err(invalid());
+    };
+    let Shape::ProgramTypePredicate {
+        subject:
+            VcProgramValue {
+                var: body_variable,
+                definition: None,
+            },
+        ty,
+    } = &vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(assumption)) = typed.formula else {
+        return Err(invalid());
+    };
+    let VcFormulaRef::Core(child) = child else {
+        return Err(invalid());
+    };
+    if typed.kind != ContextEntryKind::CheckerFact
+        || binder.formula.is_some()
+        || role.as_str() != "result"
+        || binder.id != *descriptor_binder
+        || binders.as_slice() != [binder.id]
+        || parent.premises.as_slice() != [PremiseRef::LocalContext(typed.id)]
+        || !mizar_kernel::checker::check_object_inhabitation_witness(
+            core,
+            (*var, *body_variable, ty.as_str()),
+            *witness,
+            *child,
+            &[assumption],
+        )
+    {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Proposes the sole-return operational reduction for an authentic Open E4 request.
 /// Detached relation/True shapes grant no execution, checking or existential-introduction credit.
 #[expect(

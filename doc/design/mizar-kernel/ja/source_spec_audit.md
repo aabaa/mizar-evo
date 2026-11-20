@@ -129,6 +129,7 @@ Covered top-level public items:
 - `KernelCheckServiceResult`
 - `check_kernel_evidence`
 - `check_kernel_evidence_batch`
+- `check_object_inhabitation_witness`
 - `check_sole_return_var`
 - `check_kernel_certificate`
 - `check_kernel_batch`

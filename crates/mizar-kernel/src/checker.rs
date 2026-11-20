@@ -34,8 +34,8 @@ use crate::{
     },
 };
 use mizar_core::core_ir::{
-    CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaId, CoreIr, CoreTermId,
-    CoreTermKind, CoreVarId,
+    CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaId, CoreFormulaKind,
+    CoreIr, CoreTermId, CoreTermKind, CoreVarId,
 };
 use mizar_session::{Hash, bridge_fingerprint_hash as stable_bridge_hash, lower_hex as hex};
 
@@ -1236,6 +1236,40 @@ pub fn check_sole_return_var<'a, T>(
         return None;
     }
     Some((*statement_id, term_id, value))
+}
+
+/// Checks atomic object-witness introduction under one typed-input assumption.
+/// The caller authenticates the target projection and original context association.
+/// Success supplies no evidence, request acceptance or proof adoption.
+pub fn check_object_inhabitation_witness(
+    core: &CoreIr,
+    target: (CoreVarId, CoreVarId, &str),
+    witness: CoreTermId,
+    child: CoreFormulaId,
+    context: &[CoreFormulaId],
+) -> bool {
+    let (binder, body_variable, ty) = target;
+    let [assumption] = context else {
+        return false;
+    };
+    let Some(CoreTermKind::Var(variable)) = core.terms().get(witness).map(|term| &term.kind) else {
+        return false;
+    };
+    if body_variable != binder || ty != "object" || *variable == binder {
+        return false;
+    }
+    [child, *assumption].into_iter().all(|formula| {
+        let Some(CoreFormulaKind::TypePred { subject, ty }) =
+            core.formulas().get(formula).map(|formula| &formula.kind)
+        else {
+            return false;
+        };
+        ty.as_str() == "object"
+            && core
+                .terms()
+                .get(*subject)
+                .is_some_and(|term| term.kind == CoreTermKind::Var(*variable))
+    })
 }
 
 pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckResult> {

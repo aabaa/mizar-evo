@@ -87,11 +87,12 @@ fn vc_manifest_dependency_boundary_is_source_authentication_minimal() {
             vec![
                 "mizar-checker = { path = \"../mizar-checker\" }",
                 "mizar-core = { path = \"../mizar-core\" }",
+                "mizar-kernel = { path = \"../mizar-kernel\" }",
                 "mizar-resolve = { path = \"../mizar-resolve\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ]
         )],
-        "{} must keep only Checker/Resolver source authentication and Core/Session dependencies",
+        "{} must keep only Checker/Resolver source authentication, bounded Kernel checking and Core/Session dependencies",
         manifest_path.display()
     );
 }

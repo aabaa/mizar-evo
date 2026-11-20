@@ -3955,10 +3955,14 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind};
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
         },
-        vc_ir::{ContextEntryId, VcFormulaRef},
+        vc_ir::{
+            ContextEntryId, ContextEntryKind, PremiseRef, QuantifierKind, VcFormulaRef,
+            VcGeneratedFormulaShape as Shape, VcProgramValue,
+        },
     };
     let text = fs::read_to_string(config().workspace_root.join(
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
@@ -4000,6 +4004,43 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
                 CoreFormulaKind::TypePred { subject, ty } if ty.as_str() == "object"
                     && core.terms().get(*subject).unwrap().kind
                         == mizar_core::core_ir::CoreTermKind::Var(algorithm.params[0].var)));
+            let request = &parent.vcs()[3];
+            let Shape::Quantified {
+                kind: QuantifierKind::Exists,
+                binders,
+                body,
+            } = direct_return_request_shape(&parent, request.goal)
+            else {
+                panic!("original existential")
+            };
+            assert_eq!(binders, &[ContextEntryId::new(1)]);
+            let entries = request.local_context.entries();
+            assert_eq!(entries.len(), 2);
+            assert_eq!(entries[0].kind, ContextEntryKind::CheckerFact);
+            assert_eq!(entries[0].formula, Some(VcFormulaRef::Core(guard)));
+            assert_eq!(request.premises, [PremiseRef::LocalContext(entries[0].id)]);
+            let ContextEntryKind::BinderDeclaration { var, ref role } = entries[1].kind else {
+                panic!("original result binder")
+            };
+            assert_eq!(role.as_str(), "result");
+            assert_eq!(entries[1].formula, None);
+            assert_eq!(
+                direct_return_request_shape(&parent, *body),
+                &Shape::ProgramTypePredicate {
+                    subject: VcProgramValue {
+                        var,
+                        definition: None
+                    },
+                    ty: "object".into(),
+                }
+            );
+            assert!(mizar_kernel::checker::check_object_inhabitation_witness(
+                &core,
+                (var, var, "object"),
+                term,
+                guard,
+                &[guard],
+            ));
             let expected = (
                 parent,
                 term,
@@ -4007,29 +4048,31 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
                 VcFormulaRef::Core(guard),
                 slice.clone(),
             );
-            let actual = witness(
-                source,
-                check,
-                symbols,
-                &core,
-                snapshot_id(0),
-                &generation,
-                &schema,
-                VcId::new(3),
-            )
-            .unwrap();
-            assert_eq!(actual, expected);
-            assert_eq!(
-                mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+            for witness in [witness, checked] {
+                let actual = witness(
                     source,
                     check,
                     symbols,
-                    actual.0.snapshot(),
-                    actual.0.vcs()[3].id,
+                    &core,
+                    snapshot_id(0),
+                    &generation,
+                    &schema,
+                    VcId::new(3),
                 )
-                .unwrap(),
-                (identity, slice)
-            );
+                .unwrap();
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    mizar_proof::status::source_algorithm_direct_return_obligation_identity(
+                        source,
+                        check,
+                        symbols,
+                        actual.0.snapshot(),
+                        actual.0.vcs()[3].id,
+                    )
+                    .unwrap(),
+                    (identity.clone(), slice.clone())
+                );
+            }
         },
     );
 }
@@ -4040,6 +4083,7 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
     use mizar_vc::{
         dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
         generator::{
+            check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
         },
@@ -4134,27 +4178,32 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
                 VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
                 slice,
             );
-            assert_eq!(
-                witness(
-                    source,
-                    check,
-                    symbols,
-                    &core,
-                    snapshot_id(0),
-                    &generation,
-                    &schema,
-                    VcId::new(3)
-                )
-                .unwrap(),
-                expected
-            );
+            for witness in [witness, checked] {
+                assert_eq!(
+                    witness(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        &generation,
+                        &schema,
+                        VcId::new(3)
+                    )
+                    .unwrap(),
+                    expected
+                );
+            }
         },
     );
 }
 
 #[test]
 fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id() {
-    use mizar_vc::generator::generate_source_algorithm_e1_inhabitation_witness_request as witness;
+    use mizar_vc::generator::{
+        check_source_algorithm_e1_inhabitation_witness as checked,
+        generate_source_algorithm_e1_inhabitation_witness_request as witness,
+    };
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
         for selected in [
             VcId::new(0),
@@ -4163,20 +4212,22 @@ fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id(
             VcId::new(4),
             VcId::new(usize::MAX),
         ] {
-            assert_eq!(
-                witness(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    &vcs.vcs()[0].anchor.generation_schema_version,
-                    vcs.schema_version(),
-                    selected
-                )
-                .unwrap_err(),
-                "algorithms.direct_return.invalid_inhabitation_witness_request"
-            );
+            for witness in [witness, checked] {
+                assert_eq!(
+                    witness(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        &vcs.vcs()[0].anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        selected
+                    )
+                    .unwrap_err(),
+                    "algorithms.direct_return.invalid_inhabitation_witness_request"
+                );
+            }
         }
     });
 }
@@ -4184,6 +4235,7 @@ fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id(
 #[test]
 fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_selection() {
     use mizar_vc::generator::{
+        check_source_algorithm_e1_inhabitation_witness as checked,
         generate_source_algorithm_direct_return_requests as original,
         generate_source_algorithm_e1_inhabitation_witness_request as witness,
     };
@@ -4237,20 +4289,22 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             expected,
                         );
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
-                            assert_eq!(
-                                witness(
-                                    source,
-                                    check,
-                                    symbols,
-                                    core,
-                                    vcs.snapshot(),
-                                    generation,
-                                    vcs.schema_version(),
-                                    selected
-                                )
-                                .unwrap_err(),
-                                expected
-                            );
+                            for witness in [witness, checked] {
+                                assert_eq!(
+                                    witness(
+                                        source,
+                                        check,
+                                        symbols,
+                                        core,
+                                        vcs.snapshot(),
+                                        generation,
+                                        vcs.schema_version(),
+                                        selected
+                                    )
+                                    .unwrap_err(),
+                                    expected
+                                );
+                            }
                         }
                         assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
                     }
@@ -4267,6 +4321,7 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
             DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
         },
         generator::{
+            check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
         },
@@ -4344,7 +4399,8 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
                 VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
                 slice,
             );
-            for _ in 0..2 {
+            assert!(!expected.4.unknowns().is_empty());
+            for witness in [witness, checked] {
                 assert_eq!(
                     witness(
                         source,
@@ -5806,5 +5862,129 @@ fn source_algorithm_direct_return_slices_reject_modified_graph_atomically() {
             format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
             before
         );
+    });
+}
+
+#[test]
+fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substitution() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind, CoreFormulaId, CoreFormulaKind, CoreIr, CoreTermId, CoreTermKind,
+        CoreVarId,
+    };
+    use mizar_kernel::checker::check_object_inhabitation_witness as introduce;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let algorithm = core.algorithms().iter().next().unwrap().1;
+        let CoreAlgorithmStmtKind::Return(Some(witness)) = core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap()
+            .kind
+        else {
+            panic!("actual witness")
+        };
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
+        let fresh = CoreVarId::new(
+            core.terms()
+                .iter()
+                .filter_map(|(_, term)| match term.kind {
+                    CoreTermKind::Var(var) => Some(var.index()),
+                    _ => None,
+                })
+                .max()
+                .unwrap()
+                + 1,
+        );
+        let target = (fresh, fresh, "object");
+        assert!(introduce(core, target, witness, guard, &[guard]));
+        for (target, witness, child, context) in [
+            (target, witness, guard, vec![]),
+            (target, witness, guard, vec![guard, guard]),
+            (target, witness, guard, vec![result_guard]),
+            (target, witness, result_guard, vec![guard]),
+            (
+                target,
+                witness,
+                CoreFormulaId::new(core.formulas().len()),
+                vec![guard],
+            ),
+            (
+                target,
+                CoreTermId::new(core.terms().len()),
+                guard,
+                vec![guard],
+            ),
+            (
+                (fresh, algorithm.params[0].var, "object"),
+                witness,
+                guard,
+                vec![guard],
+            ),
+            ((fresh, fresh, "set"), witness, guard, vec![guard]),
+            (
+                (algorithm.params[0].var, algorithm.params[0].var, "object"),
+                witness,
+                guard,
+                vec![guard],
+            ),
+        ] {
+            assert!(!introduce(core, target, witness, child, &context));
+        }
+        // Equal IDs supply no proof when the resolved assumption/child has changed meaning.
+        for kind in [
+            CoreFormulaKind::False,
+            CoreFormulaKind::True,
+            CoreFormulaKind::TypePred {
+                subject: witness,
+                ty: "set".into(),
+            },
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.formulas.get_mut(guard).unwrap().kind = kind;
+            let changed = CoreIr::try_new(parts).unwrap();
+            assert!(!introduce(&changed, target, witness, guard, &[guard]));
+        }
+        let mut parts = sole_return_core_parts(core);
+        parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Numeral("0".into());
+        assert!(!introduce(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            witness,
+            guard,
+            &[guard]
+        ));
+
+        // Different term/formula IDs retain the assumption rule when their meanings agree.
+        let mut parts = sole_return_core_parts(core);
+        let alias = parts
+            .terms
+            .insert(core.terms().get(witness).unwrap().clone());
+        parts
+            .source_map
+            .term_sources
+            .insert(alias, core.terms().get(witness).unwrap().source.clone());
+        let mut child = core.formulas().get(guard).unwrap().clone();
+        child.kind = CoreFormulaKind::TypePred {
+            subject: alias,
+            ty: "object".into(),
+        };
+        let child = parts.formulas.insert(child);
+        parts
+            .source_map
+            .formula_sources
+            .insert(child, core.formulas().get(guard).unwrap().source.clone());
+        let aliased = CoreIr::try_new(parts).unwrap();
+        assert!(introduce(&aliased, target, alias, child, &[guard]));
+        // A term alias with a different variable cannot instantiate the original body.
+        let mut parts = sole_return_core_parts(&aliased);
+        parts.terms.get_mut(alias).unwrap().kind =
+            CoreTermKind::Var(algorithm.result.as_ref().unwrap().var);
+        assert!(!introduce(
+            &CoreIr::try_new(parts).unwrap(),
+            target,
+            alias,
+            child,
+            &[guard]
+        ));
     });
 }
