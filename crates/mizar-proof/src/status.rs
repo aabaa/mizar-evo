@@ -943,7 +943,7 @@ pub fn source_algorithm_direct_return_canonical_inputs(
 > {
     use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
     use mizar_vc::{
-        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices,
         vc_ir::{GenerationSchemaVersion, VcKind, VcSchemaVersion, VcStatus},
     };
 
@@ -1061,11 +1061,14 @@ pub fn source_algorithm_direct_return_canonical_inputs(
         SchemaVersion::new(1, 0),
     )
     .hash(&vc, &[]);
-    let slices = try_compute_dependency_slices(DependencySliceInput {
-        vc_set: &vcs,
-        discharge_output: None,
-    })
-    .map_err(|error| error.to_string())?;
+    let slices = try_compute_source_algorithm_direct_return_dependency_slices(
+        source,
+        &fresh,
+        symbols,
+        &core,
+        &vcs,
+        &generation,
+    )?;
     let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
     Ok((vc, goal, context, slice))
 }

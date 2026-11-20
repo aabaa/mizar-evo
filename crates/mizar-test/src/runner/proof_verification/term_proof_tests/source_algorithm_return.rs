@@ -3223,6 +3223,158 @@ fn source_algorithm_direct_return_e4_is_independent_and_replays_inputs() {
     });
 }
 
+// Extend the independently collected structural remainder, then replay its hash frame.
+// Debug exposes existing normalized payloads without widening the production API.
+fn source_algorithm_direct_return_slice_oracle(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    vcs: &mizar_vc::vc_ir::VcSet,
+    generation: &GenerationSchemaVersion,
+) -> mizar_vc::dependency_slice::DependencySliceSet {
+    use mizar_vc::{
+        dependency_slice::{
+            DependencyEntryClass, DependencySliceInput, try_compute_dependency_slices,
+            try_compute_source_algorithm_direct_return_dependency_slices,
+        },
+        vc_ir::{ContextEntryKind, VcGeneratedFormulaShape},
+    };
+    use std::fmt::Write as _;
+    let plain = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: vcs,
+        discharge_output: None,
+    })
+    .unwrap();
+    let actual = try_compute_source_algorithm_direct_return_dependency_slices(
+        source, check, symbols, core, vcs, generation,
+    )
+    .unwrap();
+    let content = mizar_session::lower_hex(
+        &mizar_core::elaborator::source_algorithm_core_semantic_payload(check, core).unwrap(),
+    );
+    for vc in vcs.vcs() {
+        let old = plain.slice_for(vc.id).unwrap();
+        let new = actual.slice_for(vc.id).unwrap();
+        let binders = vc
+            .local_context
+            .entries()
+            .iter()
+            .filter_map(|entry| match &entry.kind {
+                ContextEntryKind::BinderDeclaration { var, role } if role.as_str() == "result" => {
+                    Some(*var)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let mut additions = Vec::new();
+        for formula in vcs.generated_formulas() {
+            if !old.entries().iter().any(|entry| {
+                entry.local_key() == format!("generated-formula:{}:payload", formula.id.index())
+            }) {
+                continue;
+            }
+            if let VcGeneratedFormulaShape::AlgorithmReturns { result, .. } = &formula.shape {
+                let ordinal = binders.iter().position(|var| *var == result.var).unwrap();
+                additions.push((
+                    format!("source-direct-return-core:{}", formula.id.index()),
+                    format!("source-direct-return-core-v1; request={:?}; input=parameter; result-binder={ordinal}; content={content}", vc.kind),
+                ));
+            }
+        }
+        let remainder = new
+            .entries()
+            .iter()
+            .filter(|entry| !entry.local_key().starts_with("source-direct-return-core:"))
+            .collect::<Vec<_>>();
+        assert_eq!(remainder, old.entries().iter().collect::<Vec<_>>());
+        assert_eq!(new.unknowns(), old.unknowns());
+        assert_eq!(
+            (new.vc(), new.kind(), new.status(), new.completeness()),
+            (old.vc(), old.kind(), old.status(), old.completeness())
+        );
+        let mut observed = new
+            .entries()
+            .iter()
+            .filter(|entry| entry.local_key().starts_with("source-direct-return-core:"))
+            .map(|entry| {
+                assert_eq!(entry.class(), DependencyEntryClass::GeneratedFormula);
+                (entry.local_key().to_owned(), entry.payload().to_owned())
+            })
+            .collect::<Vec<_>>();
+        observed.sort();
+        additions.sort();
+        assert_eq!(observed, additions);
+        let mut payloads = old
+            .entries()
+            .iter()
+            .map(|entry| {
+                let debug = format!("{entry:#?}");
+                let encoded = debug
+                    .lines()
+                    .find_map(|line| line.trim().strip_prefix("fingerprint_payload: "))
+                    .unwrap()
+                    .trim_end_matches(',');
+                (
+                    entry.class(),
+                    serde_json::from_str::<String>(encoded).unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        payloads.extend(
+            additions
+                .into_iter()
+                .map(|(_, payload)| (DependencyEntryClass::GeneratedFormula, payload)),
+        );
+        payloads.sort();
+        let mut frame = format!(
+            "dependency-slice-fingerprint-v1\nschema-version: mizar-vc-dependency-slice-v1\nkind: {:?}\nstatus: Open\ncompleteness: {:?}\n[entries]\n",
+            vc.kind,
+            old.completeness()
+        );
+        for (class, payload) in payloads {
+            writeln!(frame, "{class:?}\t{payload}").unwrap();
+        }
+        frame.push_str("[unknowns]\n");
+        let mut unknowns = old
+            .unknowns()
+            .iter()
+            .map(|unknown| (unknown.family(), unknown.reason()))
+            .collect::<Vec<_>>();
+        unknowns.sort();
+        for (family, reason) in unknowns {
+            writeln!(frame, "{family:?}\t{reason}").unwrap();
+        }
+        let mut lanes = [
+            0x6d697a61722d7663_u64,
+            0x6465702d736c6963,
+            0x652d66696e676572,
+            0x7072696e742d7631,
+        ];
+        for (index, byte) in frame.bytes().enumerate() {
+            let lane = index % 4;
+            lanes[lane] ^= u64::from(byte)
+                .wrapping_add(0x9e3779b97f4a7c15)
+                .wrapping_add((index as u64).rotate_left(lane as u32 + 1));
+            lanes[lane] = lanes[lane]
+                .rotate_left(11 + lane as u32)
+                .wrapping_mul(0x1000000001b3);
+        }
+        lanes[0] ^= frame.len() as u64;
+        lanes[1] ^= (frame.len() as u64).rotate_left(17);
+        lanes[2] ^= lanes[0].rotate_left(7);
+        lanes[3] ^= lanes[1].rotate_left(13);
+        assert_eq!(
+            mizar_session::lower_hex(new.fingerprint().hash().as_bytes()),
+            lanes
+                .iter()
+                .map(|lane| format!("{lane:016x}"))
+                .collect::<String>()
+        );
+    }
+    actual
+}
+
 // Independent oracle for status.md#source-algorithm-direct-return-request-identity.
 use mizar_vc::vc_ir::VcId;
 
@@ -3243,7 +3395,6 @@ fn source_algorithm_direct_return_reference(
         CanonicalHashDomain, CanonicalJson as J, HashClass, SchemaVersion,
     };
     use mizar_session::lower_hex;
-    use mizar_vc::dependency_slice::{DependencySliceInput, try_compute_dependency_slices};
     let generation = "mizar-vc-generation-vc53-direct-return-v1";
     let schema = "mizar-vc-vcset-vc53-direct-return-v1";
     let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
@@ -3319,11 +3470,14 @@ fn source_algorithm_direct_return_reference(
         ])
         .unwrap(),
     );
-    let slices = try_compute_dependency_slices(DependencySliceInput {
-        vc_set: &vcs,
-        discharge_output: None,
-    })
-    .unwrap();
+    let slices = source_algorithm_direct_return_slice_oracle(
+        source,
+        check,
+        symbols,
+        &core,
+        &vcs,
+        &GenerationSchemaVersion::new(generation),
+    );
     let slice = slices.slice_for(vc.id).unwrap().clone();
     let syntax =
         mizar_resolve::symbols::source_algorithm_syntax_payloads_from_arena(source, symbols)
@@ -3453,16 +3607,16 @@ fn source_algorithm_direct_return_identity_matches_independent_vectors() {
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
     ))
     .unwrap();
-    // Independently replayed from dependency/obligation hash inputs; AlgorithmReturns
-    // adds ID-free aliases. Candidate anchors and inhabitation remain unchanged.
+    // Independently replayed from complete structural frames and existing Core bytes;
+    // original relation roles bind semantic content. Candidates/inhabitation are unchanged.
     let vectors = [
         (
             "1abb18aa8b523d60011cfce3b5ac46127368313ee8f653e65f38fa8456c77421",
-            "c5ef9c7a68331ff789f84793329a91de89e01134f06af4db19d239a0064392fd",
+            "c00daa8bf9aa04b1bc5a7e25d3a0edd66f0d4ecb0e433ee20adcdcff99729623",
         ),
         (
             "278b32210a82cf79c4cb1d076fdfa0c6094aa9e8e3498afe4418f462be74854d",
-            "d853432a217eee35e2501d25a9032aaa482663fd8608b2921c9270c6dbce5a68",
+            "2ce71f491bd4c5f407991749f4b0f729489a255e4581c3debbe0d9c6850564cc",
         ),
         (
             "2bf9cf51be1f984735819dc975b146e73d66e967d4fdeb71a2382769f745b61b",
@@ -3470,7 +3624,7 @@ fn source_algorithm_direct_return_identity_matches_independent_vectors() {
         ),
         (
             "5f0f0d3bde16a1a539b3acda9f5997fc6c9bda946806de691e79f3ceb4c956b4",
-            "9d95f8ed703720e265cf40ecfdbdddf6258723ce4f7fb0e8598072e8b1b477f1",
+            "d55a8f13acd255de8fd10ffd8e59062dd1ff53ee37460f6846fc1e8ebbc63f92",
         ),
     ];
     with_source_algorithm_identity_inputs(
@@ -3525,6 +3679,7 @@ fn source_algorithm_direct_return_identity_preserves_rebuilt_associations() {
         .replace(" a;", " param;")
         .replace("= a\n", "= param\n");
     let mut baseline = None;
+    let mut identities = Vec::new();
     for (label, text, package, module, skip) in [
         ("original", original.clone(), "owner-test", "owners", 0),
         (
@@ -3545,6 +3700,13 @@ fn source_algorithm_direct_return_identity_preserves_rebuilt_associations() {
             0,
         ),
         ("parameter", parameter, "owner-test", "owners", 0),
+        (
+            "semantics",
+            original.replace("ensures result = a", "ensures a = result"),
+            "owner-test",
+            "owners",
+            0,
+        ),
     ] {
         with_source_algorithm_identity_inputs(
             &text,
@@ -3566,6 +3728,40 @@ fn source_algorithm_direct_return_identity_preserves_rebuilt_associations() {
                                 source, check, symbols, snapshot, request,
                             );
                         let selected = VcId::new(request + 1);
+                        if label == "original" && snapshot == snapshot_id(0) {
+                            identities.push(expected.clone());
+                        } else if matches!(label, "original" | "trivia" | "relocation") {
+                            assert_eq!(expected, identities[request], "{label}");
+                        } else {
+                            assert_ne!(expected, identities[request], "{label}");
+                            if label == "parameter" {
+                                assert_eq!(
+                                    slice.fingerprint().hash(),
+                                    identities[request].dependency_slice_fingerprint()
+                                );
+                                assert_eq!(
+                                    expected.vc_fingerprint(),
+                                    identities[request].vc_fingerprint()
+                                );
+                                assert_eq!(
+                                    expected.local_context_fingerprint(),
+                                    identities[request].local_context_fingerprint()
+                                );
+                            }
+                            if label == "semantics" {
+                                if request == 2 {
+                                    assert_eq!(
+                                        slice.fingerprint().hash(),
+                                        identities[request].dependency_slice_fingerprint()
+                                    );
+                                } else {
+                                    assert_ne!(
+                                        slice.fingerprint().hash(),
+                                        identities[request].dependency_slice_fingerprint()
+                                    );
+                                }
+                            }
+                        }
                         assert_eq!(
                             canonical(source, check, symbols, snapshot, selected).unwrap(),
                             (vc, goal, context, slice.clone()),
@@ -4034,6 +4230,12 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             vcs.schema_version(),
                         )
                         .unwrap_err();
+                        assert_eq!(
+                            mizar_vc::dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices(
+                                source, check, symbols, core, vcs, generation,
+                            ).unwrap_err(),
+                            expected,
+                        );
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
                             assert_eq!(
                                 witness(
@@ -4248,7 +4450,6 @@ fn source_algorithm_e4_reduction_preserves_whole_parent_descriptor_and_identity(
 fn source_algorithm_e4_reduction_uses_renamed_relocated_return_and_original_fresh_binder() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
     use mizar_vc::{
-        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
         generator::{
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
@@ -4340,11 +4541,14 @@ fn source_algorithm_e4_reduction_uses_renamed_relocated_return_and_original_fres
                     },
                 }
             );
-            let slice = try_compute_dependency_slices(DependencySliceInput {
-                vc_set: &parent,
-                discharge_output: None,
-            })
-            .unwrap()
+            let slice = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                &core,
+                &parent,
+                &generation,
+            )
             .slice_for(request.id)
             .unwrap()
             .clone();
@@ -4485,9 +4689,7 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
 #[test]
 fn source_algorithm_e4_reduction_isolates_schemas_snapshot_and_preserves_open_purity() {
     use mizar_vc::{
-        dependency_slice::{
-            DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
-        },
+        dependency_slice::DependencySliceCompleteness,
         generator::{
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
@@ -4530,11 +4732,14 @@ fn source_algorithm_e4_reduction_isolates_schemas_snapshot_and_preserves_open_pu
             else {
                 panic!("actual return")
             };
-            let slice = try_compute_dependency_slices(DependencySliceInput {
-                vc_set: &parent,
-                discharge_output: None,
-            })
-            .unwrap()
+            let slice = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                core,
+                &parent,
+                &generation,
+            )
             .slice_for(VcId::new(4))
             .unwrap()
             .clone();
@@ -4969,7 +5174,6 @@ fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() 
 fn source_algorithm_sole_return_var_preserves_authentic_e4_identity_slice_and_open_status() {
     use mizar_kernel::checker::check_sole_return_var;
     use mizar_vc::{
-        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
         generator::{
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e4_operational_reduction_request as reduction,
@@ -5017,11 +5221,9 @@ fn source_algorithm_sole_return_var_preserves_authentic_e4_identity_slice_and_op
         };
         let descriptor_before = descriptor();
         let identity_before = identity();
-        let raw_slice = try_compute_dependency_slices(DependencySliceInput {
-            vc_set: vcs,
-            discharge_output: None,
-        })
-        .unwrap()
+        let raw_slice = source_algorithm_direct_return_slice_oracle(
+            source, check, symbols, core, vcs, generation,
+        )
         .slice_for(VcId::new(4))
         .unwrap()
         .clone();
@@ -5377,9 +5579,7 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
 #[test]
 fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_purity() {
     use mizar_vc::{
-        dependency_slice::{
-            DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
-        },
+        dependency_slice::DependencySliceCompleteness,
         generator::generate_source_algorithm_e4_validator_handoff_request as handoff,
         vc_ir::{VcKind, VcStatus},
     };
@@ -5448,11 +5648,14 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
                     .iter()
                     .all(|vc| vc.anchor.generation_schema_version == generation)
             );
-            let raw = try_compute_dependency_slices(DependencySliceInput {
-                vc_set: &descriptor.0,
-                discharge_output: None,
-            })
-            .unwrap();
+            let raw = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                core,
+                &descriptor.0,
+                &generation,
+            );
             assert_eq!(&descriptor.5, raw.slice_for(VcId::new(4)).unwrap());
             // Proof's public identity uses its fixed schemas; the handoff keeps caller schemas.
             assert_eq!(descriptor.5.vc(), identity.1.vc());
@@ -5502,6 +5705,105 @@ fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_pu
         }
         assert_eq!(
             format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{environment:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_slices_reject_modified_graph_atomically() {
+    use mizar_vc::{
+        dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices as collect,
+        vc_ir::{
+            ContextEntryKind, LocalContext, VcGeneratedFormulaShape as Shape, VcSet, VcSetParts,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = &vcs.vcs()[0].anchor.generation_schema_version;
+        source_algorithm_direct_return_slice_oracle(source, check, symbols, core, vcs, generation);
+        for mutation in 0..9 {
+            let mut parts = VcSetParts {
+                schema_version: vcs.schema_version().clone(),
+                snapshot: vcs.snapshot(),
+                source: vcs.source(),
+                module: vcs.module().clone(),
+                generated_formulas: vcs.generated_formulas().to_vec(),
+                vcs: vcs.vcs().to_vec(),
+                seed_accounting: vcs.seed_accounting().to_vec(),
+            };
+            let relation = parts
+                .generated_formulas
+                .iter_mut()
+                .find(|formula| matches!(formula.shape, Shape::AlgorithmReturns { .. }))
+                .unwrap();
+            let Shape::AlgorithmReturns {
+                algorithm,
+                flow,
+                statement,
+                input,
+                result,
+            } = &mut relation.shape
+            else {
+                panic!("relation")
+            };
+            match mutation {
+                0 => *algorithm = mizar_core::core_ir::CoreAlgorithmId::new(algorithm.index() + 1),
+                1 => *flow = mizar_core::control_flow::ControlFlowId::new(flow.index() + 1),
+                2 => {
+                    *statement =
+                        mizar_core::core_ir::CoreAlgorithmStmtId::new(statement.index() + 1)
+                }
+                3 => input.var = result.var,
+                4 => result.var = input.var,
+                5 => input.definition = Some(*statement),
+                6 => result.definition = Some(*statement),
+                7 | 8 => {
+                    let context = &parts.vcs[1].local_context;
+                    let mut entries = context.entries().to_vec();
+                    let declaration = entries.iter_mut().find(|entry| matches!(
+                        &entry.kind, ContextEntryKind::BinderDeclaration { role, .. } if role.as_str() == "result"
+                    )).unwrap();
+                    if mutation == 7 {
+                        let ContextEntryKind::BinderDeclaration { role, .. } =
+                            &mut declaration.kind
+                        else {
+                            unreachable!()
+                        };
+                        *role = "parameter".into();
+                    } else {
+                        let ContextEntryKind::BinderDeclaration { var, .. } = &mut declaration.kind
+                        else {
+                            unreachable!()
+                        };
+                        *var = input.var;
+                    }
+                    parts.vcs[1].local_context =
+                        LocalContext::try_new(entries, context.policy_inputs().to_vec()).unwrap();
+                }
+                _ => unreachable!(),
+            }
+            let changed = VcSet::try_new(parts).unwrap();
+            assert_eq!(
+                collect(source, check, symbols, core, &changed, generation).unwrap_err(),
+                "algorithms.direct_return.mismatched_dependency_input",
+                "mutation {mutation}"
+            );
+        }
+        assert_eq!(
+            collect(
+                source,
+                check,
+                symbols,
+                core,
+                vcs,
+                &GenerationSchemaVersion::new("other-generation")
+            )
+            .unwrap_err(),
+            "algorithms.direct_return.mismatched_dependency_input"
+        );
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
             before
         );
     });

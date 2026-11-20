@@ -315,6 +315,41 @@ impl fmt::Display for DependencySliceError {
 
 impl Error for DependencySliceError {}
 
+/// Collects existing Core meaning only after whole direct-return request authentication.
+/// Unknown coverage and request status remain unchanged; this grants no reuse or proof.
+pub fn try_compute_source_algorithm_direct_return_dependency_slices(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    vc_set: &VcSet,
+    generation_schema: &crate::vc_ir::GenerationSchemaVersion,
+) -> Result<DependencySliceSet, String> {
+    let regenerated = crate::generator::generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        vc_set.snapshot(),
+        generation_schema,
+        vc_set.schema_version(),
+    )?;
+    if regenerated != *vc_set {
+        return Err("algorithms.direct_return.mismatched_dependency_input".to_owned());
+    }
+    let semantic =
+        hex(&mizar_core::elaborator::source_algorithm_core_semantic_payload(check, core)?);
+    let slices = vc_set
+        .vcs()
+        .iter()
+        .map(|vc| compute_slice(vc_set, vc, &[], &[], None, Some(&semantic)))
+        .collect();
+    Ok(DependencySliceSet {
+        schema_version: DEPENDENCY_SLICE_SCHEMA_VERSION,
+        slices,
+    })
+}
+
 pub fn try_compute_dependency_slices(
     input: DependencySliceInput<'_>,
 ) -> Result<DependencySliceSet, DependencySliceError> {
@@ -353,6 +388,7 @@ pub fn try_compute_dependency_slices_with_kernel_evidence(
                 records,
                 explanations,
                 kernel_evidence_by_vc.get(&vc.id).copied(),
+                None,
             )
         })
         .collect();
@@ -417,8 +453,10 @@ fn compute_slice(
     evidence_records: &[&DischargeEvidenceRecord],
     explanations: &[&crate::discharge::DischargeExplanation],
     kernel_evidence: Option<&VcKernelEvidenceHandoff>,
+    semantic: Option<&str>,
 ) -> DependencySlice {
     let mut builder = SliceBuilder::new(vc_set, vc);
+    builder.semantic = semantic;
     builder.collect_status(&vc.status, evidence_records.is_empty());
     builder.collect_formula(vc.goal);
     builder.collect_anchor(&vc.anchor);
@@ -465,6 +503,7 @@ fn compute_slice(
 struct SliceBuilder<'a> {
     vc_set: &'a VcSet,
     vc: &'a VcIr,
+    semantic: Option<&'a str>,
     entries: BTreeSet<DependencyEntry>,
     unknowns: BTreeSet<DependencyUnknown>,
 }
@@ -474,6 +513,7 @@ impl<'a> SliceBuilder<'a> {
         Self {
             vc_set,
             vc,
+            semantic: None,
             entries: BTreeSet::new(),
             unknowns: BTreeSet::new(),
         }
@@ -662,6 +702,36 @@ impl<'a> SliceBuilder<'a> {
                         _ => "generated-formula:unresolved".to_owned(),
                     }),
                 );
+                if let (Some(semantic), VcGeneratedFormulaShape::AlgorithmReturns { result, .. }) =
+                    (self.semantic, &generated.shape)
+                {
+                    // Whole regenerated graph equality fixes parameter/flow/statement/scope.
+                    // Encode the original result binder's role order, never its numeric ID.
+                    let binder = self
+                        .vc
+                        .local_context
+                        .entries()
+                        .iter()
+                        .filter_map(|entry| match &entry.kind {
+                            crate::vc_ir::ContextEntryKind::BinderDeclaration { var, role }
+                                if role.as_str() == "result" =>
+                            {
+                                Some(*var)
+                            }
+                            _ => None,
+                        })
+                        .position(|var| var == result.var)
+                        .expect("authenticated direct-return result binder");
+                    self.add_entry(
+                        DependencyEntryClass::GeneratedFormula,
+                        format!("source-direct-return-core:{}", id.index()),
+                        format!(
+                            "source-direct-return-core-v1; request={:?}; input=parameter; \
+                             result-binder={binder}; content={semantic}",
+                            self.vc.kind,
+                        ),
+                    );
+                }
                 match &generated.shape {
                     VcGeneratedFormulaShape::True
                     | VcGeneratedFormulaShape::False

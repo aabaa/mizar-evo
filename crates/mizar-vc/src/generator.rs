@@ -3158,13 +3158,15 @@ pub fn generate_source_algorithm_e1_inhabitation_witness_request(
         return Err(invalid());
     }
     let binder = *binder;
-    let slices = crate::dependency_slice::try_compute_dependency_slices(
-        crate::dependency_slice::DependencySliceInput {
-            vc_set: &vcs,
-            discharge_output: None,
-        },
-    )
-    .map_err(|error| error.to_string())?;
+    let slices =
+        crate::dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices(
+            source,
+            check,
+            symbols,
+            core,
+            &vcs,
+            generation_schema,
+        )?;
     let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
     Ok((vcs, witness, binder, VcFormulaRef::Core(guard), slice))
 }
@@ -3285,13 +3287,15 @@ pub fn generate_source_algorithm_e4_operational_reduction_request(
         result: *input,
     };
     let binder = *binder;
-    let slices = crate::dependency_slice::try_compute_dependency_slices(
-        crate::dependency_slice::DependencySliceInput {
-            vc_set: &vcs,
-            discharge_output: None,
-        },
-    )
-    .map_err(|error| error.to_string())?;
+    let slices =
+        crate::dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices(
+            source,
+            check,
+            symbols,
+            core,
+            &vcs,
+            generation_schema,
+        )?;
     let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
     Ok((vcs, witness, binder, instantiated, Shape::True, slice))
 }
