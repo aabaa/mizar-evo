@@ -33,15 +33,18 @@ and value-return/non-ghost Pick/set-versus-sequence loop classifications for
 every closure callee, including private helpers. R6-C consumes these R3
 inputs even for VC58 same-package Open-goal generation. This registration
 does not decide whether the exporter proves and transports uniqueness or
-the importer generates its obligations; that proof-side question stays open.
+the importer generates its obligations; see R3-N1 below.
 
 **Visibility:** only public computable entry points may be imported and
 called across packages. Their validated executable may include private
 helpers, which remain invisible to importers. Cross-package *transitive*
 calls require public targets and validated published artifacts. A public
-signature without a verified executable remains usable through contracts,
-not by computation; missing or invalid runtime data is never repaired from
-dependency source. Preserve module/version/FQN identity at each call edge.
+non-computable algorithm remains usable through contracts. Contract-only
+importers need not load runtime artifacts, but publishing a public computable
+algorithm requires its verified runtime artifact; missing artifacts are an
+error, not a contract-only publication mode (§20.9.1). Missing or invalid
+runtime data is never repaired from dependency source. Preserve
+module/version/FQN identity at each call edge.
 
 **Order:** R2 accepted **definition/body** -> R3 reusable executable generation
 and validated publication; separately typed R2 **invocation** + R3 loader ->
@@ -70,21 +73,43 @@ manifest hash, stale publication, missing dependency, policy incompatibility,
 or local source fallback. Refusal yields no validated handle, E5 report or
 trusted computation status; retain the previous durable manifest on failure.
 
-**Open decisions (no approved format):**
-- **R3-Q1:** versioned executable instruction/serialization model and
-  validation of its exact semantics against checked Core/CFG; code-extraction
-  [RuntimeIr](../../mizar-doc/en/todo.md) is separate and not an implicit
-  MVM runtime format.
-- **R3-Q2:** same-package verification-time evaluation ordering. Determine
+**Open decisions (all undecided; no approved format):**
+R3-Q1/Q3 ownership follows the owner decision of 2026-11-20 11:00 JST.
+- **R3-Q1 — Artifact; blocks R3 implementation freeze and R4 format choice:**
+  versioned executable instruction/serialization model and exact semantics
+  against checked Core/CFG, including whether to share code-extraction
+  [RuntimeIr](../../mizar-doc/en/todo.md) or use a separate format. This is
+  the open question transferred from [R1-Q3](../../mizar-vc/en/mvm_readiness.md#open-questions);
+  neither representation is selected before the future Artifact-owned freeze.
+- **R3-Q2 — RESERVED/undecided owner/specification judgment at the R3 freeze;
+  unassigned in this slice; blocks R3 export and the R4 same-module pilot:**
+  same-package verification-time evaluation ordering. Determine
   whether a separately authenticated, fully verified staged runtime item
   can be loaded before public manifest commit, or whether evaluation must
-  await a published verified dependency. Never accept a self-dependent
+  await a published verified dependency. The same-file computation examples
+  (§20.9.2/§20.13.4) and file-final Artifact emit (§23.4) constrain this
+  choice; defining-file private-entry evaluation also remains undecided.
+  Never accept a self-dependent
   proof/verification/publication cycle or unverified staging token.
-- **R3-Q3:** which producer-owned evidence, complete dependency closure and
-  reader checks demonstrate correspondence; precise format/manifest
-  integration and versioning must be frozen by Artifact/Build/Proof owners.
+- **R3-Q3 — Artifact, with Build/Proof agreement; blocks R3 export:**
+  which producer-owned evidence, complete dependency closure and reader
+  checks demonstrate correspondence, with what format/manifest versioning?
+  **R3-N2:** what authenticates imported verification lineage (exporter-side
+  E1/E2/applicable E4 acceptance)? Relate the [Proof trust-transfer rule](../../mizar-proof/en/policy.md#trust-transfer-rule)
+  and [Artifact transport boundary](./manifest.md#imported-promotion-authority-boundary)
+  ([producer transport design](./manifest.md#producer-transport-design))
+  without deciding whether that authenticated publication is required for
+  runtime artifacts; computation retains separate correspondence checks.
+- **R3-N1 — registered in R3; blocks R3 export inputs for R6-C:** does the
+  exporter prove and transport closure uniqueness, or does the importer
+  generate it, including for private helpers whose contracts are opaque?
+- **R3-N3 — registered in R3; blocks R3 computable-public export eligibility:**
+  which producer determines that an algorithm is computable (§20.9.1)?
+  The producer and its ownership remain undecided. N1–N3 registration follows
+  the same owner decision; it does not settle their implementation ownership.
 
-**Exit for design review:** agree ownership, acyclic lifecycle, version and
-correspondence choices with authentic R2 evidence. Only then freeze a
-new Artifact-owned implementation slice under AST-ARTIFACT. R2 remains
-review-pending/implementation-blocked; R3 and MVM execution are not ready.
+**Exit for design review:** independently review these boundaries and record
+the undecided questions, their dispositions and blocked targets. Implementation
+still requires the version/correspondence decisions and authentic R2 evidence
+before a new Artifact-owned freeze under AST-ARTIFACT. R2 review is closed;
+its implementation, R3 export and MVM execution remain blocked.

@@ -1,7 +1,7 @@
 # Task MVM-R3-ARTIFACT-LOADER-DESIGN: Verified runtime export and loader boundary
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md).
-Status: design draft; independent review and documentation checks pending.
+Status: documentation-only design review closed; implementation remains blocked. Tier: full documentation gates.
 **Documentation only**; not an executable-format freeze or R3 implementation.
 Sole owner: [mizar-artifact](../../mizar-artifact/en/00.crate_plan.md).
 Design: [Artifact owner document](../../mizar-artifact/en/mvm_runtime_export.md).
@@ -51,3 +51,4 @@ trust authority remain unchanged; no Rust, new crate, bytecode, backend,
 new diagnostic codes, extra manifest entry or MVM execution.
 Independent specification, test-sufficiency, boundary, volume, EN/JA
 reviews and required documentation lint/link checks precede completion.
+No executable tests run in this design task; future cases are bounded by the owner design matrix; additions require a cited specification clause.
