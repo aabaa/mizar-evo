@@ -1,16 +1,19 @@
 # Task MVM-R7-CERTIFIED-IMPORT-DESIGN: Certified import and replay
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R7-CERTIFIED-IMPORT-DESIGN.md).
-Status: design draft, independent review and documentation lint pending.
+Status: documentation-only design review closed; implementation remains blocked.
 **Documentation only**; no computed or kernel-verified proof acceptance.
 Sole design owner: [mizar-proof](../../mizar-proof/en/00.crate_plan.md).
 Design: [Proof owner document](../../mizar-proof/en/mvm_computation_import.md).
 Authority: [spec §20.9.2](../../../spec/en/20.algorithm_and_verification.md#2092-by-computation-proof-step),
 [§20.13.7](../../../spec/en/20.algorithm_and_verification.md#20137-certified-computation-import-t1t8),
+[§22.4.8](../../../spec/en/22.error_handling_and_diagnostics.md#2248-reflection-and-computation-diagnostics),
 [AST-COMPUTE](AST-COMPUTE.md),
 [R6 admission](MVM-R6-ADMISSION-DESIGN.md),
 [AST-ARTIFACT](AST-ARTIFACT.md),
-[Build computation policy](BUILD-COMPUTATION-POLICY.md).
+[Build computation policy](BUILD-COMPUTATION-POLICY.md),
+[Proof imported-promotion boundary](../../mizar-proof/en/policy.md#imported-promotion-authority-boundary),
+[Artifact imported-promotion boundary](../../mizar-artifact/en/manifest.md#imported-promotion-authority-boundary).
 Readiness: design review may start; implementation remains blocked on real
 R2–R4/5 body, artifact, execution, accepted R6 admission, formation,
 contract, Proof and policy producers.
@@ -34,6 +37,10 @@ contract, Proof and policy producers.
   Proof acceptance; reject stale or weaker cache reuse.
 
 ## Exclusions and exit
+
+This design task executes no semantic tests. The future test matrix is limited to
+the owner design table's rows; adding a row requires the specification
+clause that requires it.
 
 No new grammar, representation, kernel arithmetic/λ rule, universal
 reflection evaluator, unbounded unfolding, source fallback, status

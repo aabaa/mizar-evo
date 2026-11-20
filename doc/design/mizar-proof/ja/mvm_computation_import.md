@@ -29,6 +29,24 @@ minimum-kernel SAT 検査が必要であり、後から kernel 検査を
 行っただけでは unreplayed `computed` 依存を消せない。
 厳格リリースでは `computed` 依存を拒否する。
 
-R7-Q1 は真正な E5・契約・R6 受理、Q2 は T1〜T8 の証明根拠、
-Q3 は Artifact/Cache の記録・互換性である。
+**未解決（すべて未決）:**
+
+- **R7-Q1 — Proof 担当、R7-A をブロック:** R4/R5、R6、AST-CONTRACT、
+  formation の producer は、真正に受理された E5・契約・R6 と形成入力をどう供給するか。
+- **R7-Q2 — Proof 担当、R7-B と R7-C をブロック:** 一方向 converter／Binder の
+  証明 producer と、[§22.4.8](../../../spec/ja/22.error_handling_and_diagnostics.md)
+  に対応する有限な診断段階の対応付けは何か。
+- **R7-Q3 — Proof が記録内容を担当、R7-D と R7-E をブロック:**
+  runtime／実行内容／Proof の計算記録 schema、replay／定義式証拠、policy identity を
+  Artifact（manifest）と Cache（再利用）にどう供給するか。
+  [R3-Q1/Q3](../../mizar-artifact/ja/mvm_runtime_export.md)および
+  [manifest transport 設計](../../mizar-artifact/ja/manifest.md#producer-transport-design)との関係も未決である。
+
+輸入実行 Artifact に関わる R7-Q1/Q3 は、未決の
+[R3-N2 の信頼根拠の問い](../../mizar-artifact/ja/mvm_runtime_export.md)、
+[Proof の imported promotion 境界](./policy.md#imported-promotion-authority-boundary)、
+[Artifact の imported promotion 境界](../../mizar-artifact/ja/manifest.md#imported-promotion-authority-boundary)を参照する。
+この参照は輸入実行 Artifact に認証済み公開を必須とするかを決めず、
+計算固有の Artifact／対応関係検査を維持する。
+
 R7-A〜E は設計分割に留まり、実装契約や既存テストの成功扱いにはしない。

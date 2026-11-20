@@ -64,10 +64,28 @@ T8 residual inside quantified types/sequences, boolean term/truth,
 transitive replay refusal, strict computed-taint, mode-dependent cache
 and stale executable bytes. No existing oracle is relabeled runnable.
 
-**Open:** R7-Q1 genuine accepted E5/contract/R6 and formation inputs;
-R7-Q2 directed converter/Binder proof producer and bounded diagnostic
-stage mapping; R7-Q3 runtime/executable/Proof computation-record schema,
-replay/equation witnesses, Artifact manifest and Cache policy identities.
+**Open (all undecided):**
+
+- **R7-Q1 — Proof; blocks R7-A:** which genuine accepted E5/contract/R6
+  and formation inputs are supplied by R4/R5, R6, AST-CONTRACT and formation producers?
+- **R7-Q2 — Proof; blocks R7-B and R7-C:** which directed converter/Binder
+  proof producer and bounded diagnostic-stage mapping implement
+  [§22.4.8](../../../spec/en/22.error_handling_and_diagnostics.md#2248-reflection-and-computation-diagnostics)?
+- **R7-Q3 — Proof (record content); blocks R7-D and R7-E:** which
+  runtime/executable/Proof computation-record schema, replay/equation
+  witnesses and policy identities are supplied to Artifact (manifest)
+  and Cache (reuse)? Relate the record to
+  [R3-Q1/Q3](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze)
+  and the [manifest transport design](../../mizar-artifact/en/manifest.md#producer-transport-design).
+
+For imported execution artifacts, R7-Q1/Q3 also refer to the undecided
+[R3-N2 trust-basis question](../../mizar-artifact/en/mvm_runtime_export.md#tests-and-decisions-for-the-next-implementation-freeze),
+the [Proof imported-promotion boundary](./policy.md#imported-promotion-authority-boundary)
+and the [Artifact imported-promotion boundary](../../mizar-artifact/en/manifest.md#imported-promotion-authority-boundary).
+These references do not decide whether imported execution artifacts require
+that authenticated publication; computation retains its separate
+artifact/correspondence checks.
+
 R7-A–E remain non-dispatchable implementation slices until these inputs
 and their owner-specific test-first contracts are frozen. No R7 acceptance,
 Kernel witness or coverage credit follows from this design.
