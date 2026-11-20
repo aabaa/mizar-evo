@@ -182,8 +182,26 @@ ids) and include:
 
 `AlgorithmReturns` contributes only ID-free structure: input/result variable
 alias, each definition’s presence, equality between present definitions and
-equality to the return statement. Algorithm/CFG/body/value semantics remain
+equality to the return statement. Plain collection leaves Algorithm/CFG/body/value semantics
 unresolved; retain unknown markers, `IncompleteUncacheable` and cache misses.
+
+### Authenticated direct-return Core contribution
+
+`try_compute_source_algorithm_direct_return_dependency_slices` accepts genuine
+source/check/symbol/Core inputs, a VcSet and generation schema. First regenerate
+all requests using the supplied set's snapshot/schema; reject any whole-set
+mismatch before collecting. Then obtain Core's existing
+[source semantic payload](../../mizar-core/en/elaborator.md#source-algorithm-core-semantic-payload).
+Append a GeneratedFormula entry per reachable original relation, with versioned
+request role, result-binder ordinal and hex payload, to E1 typing, single-valuedness
+and E4 slices, then
+recompute its fingerprint. Whole-graph equality binds actual relation, flow,
+statement, input/result and binder/witness scope; numeric IDs are not payload.
+Inhabitation/postcondition and the plain collector remain unchanged. Original
+reduction descriptors and Proof identity inputs use this authenticated path.
+Retain all entries/unknowns and incomplete/cache-miss boundaries. Core content
+supplies neither complete raw coverage nor operational proof, terminating
+policy, currentness or adoption; Open4/Deferred and all credit exclusions persist.
 
 Diagnostic entry local keys may contain snapshot-local ids so that a developer
 can inspect the slice, but fingerprint construction must not hash those local

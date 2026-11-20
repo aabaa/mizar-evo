@@ -263,3 +263,7 @@ task 17 は `dependency_slice` の public enum をすべて downstream forward-c
 
 この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
 列挙する `mizar-vc` 内部 match は exhaustive のままでよい。
+
+## 認証済み direct-return Core 寄与
+
+正本の [Authenticated direct-return Core contribution](../en/dependency_slice.md#authenticated-direct-return-core-contribution) を参照。source/check/symbol/Core から要求グラフ全体を再生成し、一致した元の relation を持つ E1 typing・single-valuedness・E4 slice のみへ既存 Core semantic payload を追加する。通常の収集、inhabitation/postcondition、未解決マーカー、cache miss、Open4/Deferred は維持し、証明・採用・credit は与えない。
