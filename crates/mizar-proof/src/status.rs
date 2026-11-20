@@ -1219,6 +1219,37 @@ pub fn check_source_algorithm_e4_existential<'core>(
     Ok((identity, slice, result))
 }
 
+/// Consumes the same-call E4 association under the current policy.
+/// Currentness remains caller-owned; this grants no adoption, status or reuse authority.
+pub fn consume_source_algorithm_e4_existential<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+        PolicyFingerprint,
+    ),
+    String,
+> {
+    let (identity, slice, result) =
+        check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)?;
+    if !policy
+        .kernel_evidence_formats()
+        .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+        || policy.checker_schema_version() != result.checker_schema_version()
+    {
+        return Err("algorithm.proof.native_e4_policy_rejected".to_owned());
+    }
+    Ok((identity, slice, result, policy.policy_fingerprint()))
+}
+
 /// Consumes a genuine positive E1 result with its original identity and current policy.
 /// This grants no selection, adoption, status, evidence or reuse authority.
 pub fn check_source_algorithm_e1_inhabitation<'core>(

@@ -60,6 +60,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Status
 `check_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-request-identity-association).
+`consume_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-current-policy-consumption).
 `source_algorithm_state_transitivity_witness_draft`: [sole API owner](./status.md#source-algorithm-state-transitivity-witness-draft).
 `try_source_algorithm_state_transitivity_witness_draft`: [sole API owner](./status.md#optional-bounded-source-algorithm-state-witness-draft).
 `try_source_algorithm_state_transitivity_witness_file_candidate`: [sole API owner](./status.md#optional-bounded-source-algorithm-state-witness-file).

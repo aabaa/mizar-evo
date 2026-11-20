@@ -564,6 +564,11 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。
 同じ呼出しの真正な結果の関連付けのみを行う。detached result/identity、policy 引数、policy eligibility/消費/adoption、generic evidence 変換はない。currentness は呼出側責務。意味的 environment 解釈、独立 E1 義務、広い credit は延期する。四要求 Open・termination Deferred・raw unknown/incomplete/cache miss を保持し、限定 E1 adoption は独立する。
 
+## Original E4 current-policy consumption
+
+`consume_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [同一呼出しの関連付け](#original-e4-request-identity-association) を先に呼び、エラーを保持する。`BuiltinKernelEvidence` の許可と、`policy.checker_schema_version()` と真正な Kernel 結果の schema の完全一致を inline で要求し、拒否は `algorithm.proof.native_e4_policy_rejected`。
+元 identity、raw slice 全体、借用結果、実 `policy.policy_fingerprint()` を atomic に返す。detached 入力や helper/type/field は追加しない。currentness は呼出側責務で、Open4/Deferred と raw unknown/incomplete/cache miss を保持する。adoption、generic evidence/status 変換、意味的 environment 解釈、独立 E1 義務、広い credit は延期する。
+
 ## Bounded native E1 result consumption
 
 `check_source_algorithm_e1_inhabitation(source, check, symbols, core, snapshot, vc_id, policy)` は元 identity、raw slice 全体、借用 `ObjectInhabitationCheck`、現在の policy fingerprint を返す。先に上記固定 direct-return schema で真正な VC native-result producer を呼び、エラーを保持する。次に同じ入力から既存の元 identity を取得し、slice 全体の一致を要求する。producer が選択された元の存在量化・binder・context と、同じ不変 Core および固定された正の結論を結び付ける。呼出側の detached token/identity は受け取らない。

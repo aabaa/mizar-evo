@@ -6528,6 +6528,132 @@ fn source_algorithm_e4_proof_association_preserves_original_result_raw_slice() {
 }
 
 #[test]
+fn source_algorithm_e4_policy_consumer_preserves_association_and_current_fingerprint() {
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            check_source_algorithm_e4_existential as associate,
+            consume_source_algorithm_e4_existential as consume,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let expected =
+            associate(source, check, symbols, core, vcs.snapshot(), VcId::new(4)).unwrap();
+        let default = VerifierPolicy::default();
+        for policy in [
+            default.clone(),
+            VerifierPolicy::development(),
+            VerifierPolicy::interactive(),
+            default.clone().with_profile_id("changed-e4-policy"),
+            default.clone().with_schema_version(2),
+        ] {
+            let policy_before = policy.clone();
+            for _ in 0..2 {
+                let actual = consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(4),
+                    &policy,
+                )
+                .unwrap();
+                assert_eq!((&actual.0, &actual.1), (&expected.0, &expected.1));
+                assert!(std::ptr::eq(actual.2.core(), expected.2.core()));
+                assert_eq!(actual.2.target(), expected.2.target());
+                assert_eq!(actual.2.witness(), expected.2.witness());
+                assert_eq!(actual.2.context(), expected.2.context());
+                assert_eq!(
+                    actual.2.checker_schema_version(),
+                    expected.2.checker_schema_version()
+                );
+                assert_eq!(actual.3, policy.policy_fingerprint());
+                if policy != default {
+                    assert_ne!(actual.3, default.policy_fingerprint());
+                }
+            }
+            assert_eq!(policy, policy_before);
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_e4_policy_consumer_refuses_policy_after_upstream_errors() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_algorithm_e4_existential as associate,
+            consume_source_algorithm_e4_existential as consume,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let genuine =
+            associate(source, check, symbols, core, vcs.snapshot(), VcId::new(4)).unwrap();
+        let schema = genuine.2.checker_schema_version();
+        let upstream = [VcId::new(3), VcId::new(99)].map(|selected| {
+            let error = associate(source, check, symbols, core, vcs.snapshot(), selected)
+                .err()
+                .unwrap();
+            assert_ne!(error, "algorithm.proof.native_e4_policy_rejected");
+            (selected, error)
+        });
+        let default = VerifierPolicy::default();
+        for policy in [
+            default.clone().with_kernel_evidence_formats([]),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            default.clone().with_checker_schema_version(schema - 1),
+            default.with_checker_schema_version(schema + 1),
+        ] {
+            let policy_before = policy.clone();
+            assert_eq!(
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(4),
+                    &policy,
+                )
+                .err()
+                .unwrap(),
+                "algorithm.proof.native_e4_policy_rejected"
+            );
+            for (selected, error) in &upstream {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        *selected,
+                        &policy,
+                    )
+                    .err()
+                    .unwrap(),
+                    *error
+                );
+            }
+            assert_eq!(policy, policy_before);
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
 fn source_algorithm_e4_validator_handoff_preserves_schema_identity_status_and_purity() {
     use mizar_vc::{
         dependency_slice::DependencySliceCompleteness,
