@@ -32,9 +32,15 @@
 `idalgo`・`swapalgo`・`loopalgo`・`by computation` の
 既存テストは VC 生成までの根拠であり、実行成功例ではない。
 
-R8-Q1：MVM・Proof・公開のランナー／ステージ。
-R8-Q2：真正な型付き ground 呼出しと、独立した肯定例。
-R8-Q3：replay・厳格ポリシーと依存 Artifact の一致条件。
+**すべて未決定：**
+
+R8-Q1：所有者 Test。R8-E〜H の有効化を阻害。MVM・Proof・公開のランナー／ステージ。
+R8-Q2：所有者 Test（入力：Resolver/Checker と R2〜R6）。R8-H と最初の肯定例を阻害。真正な型付き ground 呼出しと、独立した肯定例。
+R8-Q3：所有者 Test（[R7-Q3](../../mizar-proof/en/mvm_computation_import.md#trust-controls-and-next-implementation-freeze) に従う）。R8-G、R8-H を阻害。replay・厳格ポリシーと依存 Artifact の一致条件。
+
+すべての肯定例は、実際の producer chain 全体が揃うまで有効化しない。
+R8-C は R2、R8-D は R2/R3、R8-E〜H は適用される R2〜R7 の
+実 producer と必要なステージランナーを待つ。
 
 R8-A〜H は設計上の分割であり、個別実装契約ではない。
 既存の `.miz`、期待値、trace、coverage、実装を変更しない。

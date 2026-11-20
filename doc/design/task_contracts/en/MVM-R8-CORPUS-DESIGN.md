@@ -1,7 +1,7 @@
 # Task MVM-R8-CORPUS-DESIGN: Stage-gated MVM integration corpus
 
 Canonical language: English; [Japanese pointer](../ja/MVM-R8-CORPUS-DESIGN.md).
-Status: design draft; independent review and documentation lint pending.
+Status: documentation-only design review closed; activation remains blocked.
 **Documentation only**; no corpus activation, passing runtime test or
 coverage credit. Sole owner: [mizar-test](../../mizar-test/en/00.crate_plan.md).
 Design: [test owner matrix](../../mizar-test/en/mvm_corpus_matrix.md).
@@ -35,6 +35,10 @@ stage-specific runner gates for implementation and activation.
   public/private imports, ghost, noncomputability and resource limits.
 
 ## Exit and prohibited changes
+
+Full documentation tier. The future test matrix is capped at the owner
+matrix's existing rows; an additional case requires the exact specification
+clause or `.miz` test that requires it. This task executes no semantic tests.
 
 This task creates only an EN/JA owner design, contract and roadmap indexes.
 No changes to .miz/sidecars/snapshots, test registry, spec_trace, coverage,

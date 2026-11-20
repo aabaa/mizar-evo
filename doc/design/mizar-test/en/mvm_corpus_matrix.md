@@ -64,21 +64,24 @@ stage, but may not pretend later phases were reached.
 
 ## Open questions and dispatch order
 
-- **R8-Q1 — stage and phase admission:** decide the minimal honest
+**Open (all undecided):**
+
+- **R8-Q1 — Test; blocks R8-E–H activation — stage and phase admission:** decide the minimal honest
   runner for actual MVM execution, computation acceptance and manifest
   readback. Current `expected_phase` has no MVM variant. Review any
   additional external stage/phase and its dependency/coverage semantics
   explicitly; do not coerce runtime errors to `vc_generation`.
-- **R8-Q2 — first end-to-end oracle:** obtain the authentic typed ground
+- **R8-Q2 — Test (inputs: Resolver/Checker and R2–R6); blocks R8-H and the first positive case — first end-to-end oracle:** obtain the authentic typed ground
   call (the `idalgo(0)` proposal is not established), complete accepted
   E1/E2/E4 where required, verified export, real evaluation and Proof
   admission. A source snippet is not sufficient.
-- **R8-Q3 — release and reuse:** freeze replay/strict-policy positive
+- **R8-Q3 — Test (follows [R7-Q3](../../mizar-proof/en/mvm_computation_import.md#trust-controls-and-next-implementation-freeze)); blocks R8-G and R8-H — release and reuse:** freeze replay/strict-policy positive
   and rejection results plus exact transitive dependency/cache identities
   and proof/witness/manifest publication order, including failure on
   stale/corrupt inputs.
 
-R8-E–H activation awaits R4–R7
-real producers and required stage runner. No change to existing
+Every positive R8 case awaits its entire actual producer chain:
+R8-C requires R2, R8-D requires R2/R3, and R8-E–H require their
+applicable R2–R7 producers and required stage runner. No change to existing
 `.miz`, expectations, `spec_trace.toml`, acceptance status,
 proof policy or compiler behavior follows from this design.
