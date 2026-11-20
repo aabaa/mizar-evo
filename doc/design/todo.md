@@ -194,11 +194,15 @@ token, unpublished draft, or mock payload is not an accepted proof.
    producer or real-service-equivalence prerequisite; next choose Step 8
    source-input, editor lifecycle, snapshot or native-diagnostic
    transport work using existing outputs; next other dependency-ready
-   tasks. R1-R8 **documentation-review/decision-gate** tasks of the
-   [MVM dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes)
-   are dispatched only by Lane 2 under the
-   [MVM Muse rule](#mvm-readiness-decomposition--), never from this
-   queue and without redispatching drafted inventories. Lane 2 is not
+   tasks. Lane 1 follows this queue's written order without skipping
+   units of the [Lane 2 set](#lane-2-set) — the MVM designs, their
+   implementation owners and the producers the
+   [MVM table](#mvm-readiness-decomposition--) names as prerequisites —
+   and never duplicates a unit Lane 2 has in flight or claimed. Lane 2
+   prioritizes the set under the MVM Muse rule and takes general-queue
+   work only when no set unit is startable; neither lane idles while a
+   startable unit exists anywhere. When set membership is unclear, Muse
+   classifies the unit under that rule before dispatch. Lane 2 is not
    permission to start blocked execution.
    Never advance Artifact 17, accepted-result consumers, semantic LSP
    metadata or MVM execution ahead of actual producers.
@@ -1063,34 +1067,60 @@ of a narrower stage never implies completion of a later stage or the
 [complete processor](#completion-gates). The verified ordinary input path is
 not an exemption from the currently recorded AST/Proof dependencies.
 
-**Muse rule (two lanes, owner decision 2026-11-20):** Lane 1 is the
-existing dispatch queue with M1 priority, unchanged. Lane 2 carries only
-the R1-R8 **documentation reviews** of this table: one paired contract
-per unit, sequentially in dependency order, in its own worktree, never
-redispatching a closed review or a drafted inventory. Lane 2 selects
-nothing outside this table and is not a second global ordering
-authority; Lane 1 does not dispatch these reviews. A Lane 2 unit writes
-only its MVM contract pair, its owner-design pair and the state phrase
-of its own row above. A finding that would change a gate, prerequisite,
-dependency edge, owner or trust/acceptance boundary, or a document
-outside that set, is parked for an owner decision and is not fixed by
-the unit; a parked unit in one lane never blocks the other lane.
+**Muse rule (two lanes, owner decisions 2026-11-20):** Lane 1 is the
+existing dispatch queue with M1 priority; it follows this TODO's written
+order without skipping units of the [Lane 2 set](#lane-2-set), never
+duplicating a unit Lane 2 has in flight or claimed. Lane 2 prioritizes
+every unit of that set — documentation, contract freezes and
+implementation, including the producers this table names as
+prerequisites — one contract per unit, in its own worktree. It takes a
+general-queue unit only when no set unit is startable. It is not a second
+global ordering authority: within the set it follows the
+[R1 dependency inventory](./mizar-vc/en/mvm_readiness.md#dependency-dag-and-ordered-owner-freezes)
+and the milestone order (A) to (D) above, taking the earliest missing
+producer of the lowest open milestone, and an independent branch only
+while that producer is blocked or parked.
+A contract is dispatched by one lane at a time. A unit is in the Lane 2
+set when its contract is listed there, when it writes an MVM contract or
+`mvm_*` owner design, or when this table or an MVM document names its contract as the
+owner or a prerequisite of an R slice; Muse lists the contract before
+dispatch. Any other unit is general-queue work. A unit that spans both
+sides is split; if it cannot be split it joins the Lane 2 set.
+Lane assignment unlocks nothing. Do not dispatch R2-R7
+**implementations** or runtime/proof test activation for R8 before the
+following hold: first verify authentic producers, the actual stage
+runner and oracle, and separately freeze the owning implementation/test
+contract. Missing accepted proofs, formation, executable/loader, VM
+semantics, complete computation admission, certified import or runtime
+stage authority remain blockers. R5-A–F, R6-A–D, R7-A–E and R8-A–H are
+design slices only until so frozen.
+A finding or stop that would change a gate, prerequisite, dependency
+edge, owner or trust/acceptance boundary, or that would answer a
+recorded open question of an R design, is parked for an owner decision
+and is not decided by the unit; a parked unit in one lane never blocks
+the other lane.
 Lane 2 commits enter local `main` only by rebase and fast-forward while
-no Lane 1 run is active, after the documentation checks pass on the
-integrated tree and the authorities the unit reviewed are unchanged
-there. The changed-task count, the ten-task full `cargo test`, the
-pre-push audit and the push stay single and project-wide; a Lane 2 unit
-counts once, when integrated.
-Do not dispatch R2-R7 **implementations** or runtime/proof
-test activation for R8 from this table or from Lane 2: first verify
-authentic producers, the actual stage runner and oracle, and separately
-freeze the owning implementation/test contract. Missing accepted proofs,
-formation, executable/loader, VM semantics, complete computation
-admission, certified import or runtime stage authority remain blockers.
-R5-A–F, R6-A–D, R7-A–E and R8-A–H are design slices only. No active
-Step 6/7 work is preempted and no second orchestrator is implied. When
-every review above is closed Lane 2 is idle; it gains no other work
-without a new owner decision.
+no run is active in the Lane 1 worktree, after the checks every changed
+task owes pass on the integrated tree and after the authorities and the
+producers the unit consumed are unchanged there or re-reviewed. Lane 1
+never rebases. The lanes do not edit one file concurrently: the later
+unit waits until the earlier one has landed. The changed-task count,
+the full `cargo test`, the pre-push audit and the push stay single and
+project-wide; a Lane 2 unit counts once, when integrated. Muse pushes
+only a sealed revision of `main` on whose exact tree full `cargo test`
+passed and which the pre-push audit covered; nothing lands between
+seal and push. No active Step 6/7 work is preempted and no second
+orchestrator is implied. Muse reports blocked set producers or owner
+decisions; neither lane idles while a startable unit exists anywhere.
+
+#### Lane 2 set
+
+Priority set only; each contract keeps its own readiness and gates.
+
+| Class | Contracts | R slices served |
+|---|---|---|
+| MVM | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md) and the R2-R8 design contracts above; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md); [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md); [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md); [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md); [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md); [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md); the R8-A–H families of [AST-CORPUS](./task_contracts/en/AST-CORPUS.md); implementation contracts later frozen from an R design | R1-R8 |
+| Registered producers | [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md); [Core 42-53](./mizar-core/en/todo.md); [AST-TYPE](./task_contracts/en/AST-TYPE.md); [AST-LOWER](./task_contracts/en/AST-LOWER.md); [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md); [AST-FORMATION-PROOFS](./task_contracts/en/AST-FORMATION-PROOFS.md); remaining [ALGDEF-RESOLVE-CALL-EDGES](./task_contracts/en/ALGDEF-RESOLVE-CALL-EDGES.md) slices | R2, R4-R7 |
 
 ### Distribution and playground [ ]
 

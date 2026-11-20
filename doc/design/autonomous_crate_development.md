@@ -608,10 +608,24 @@ test-runner threads and required test coverage.
   including documentation changes; exclude read-only investigation and review
   retries. Task splitting, conversation restarts, and branch changes do not
   reset the outstanding count or discard inherited unverified changes.
+  Under two-lane operation the count is the orchestrator's count of
+  tasks landed on local `main`; a lane-branch unit counts when it lands
+  there. When a landing makes the count ten the orchestrator dispatches
+  no further changing unit to `main` and seals that revision; one unit
+  already awaiting integration may land first, so a sealed batch holds
+  ten or eleven tasks. The full run for the batch must have passed on
+  the sealed tree; the orchestrator runs it when no unit's own full run
+  covers that exact tree.
 - **Integration and exit:** full `cargo test` must pass on the tree being
   integrated before pushing shared branches, merging, release, or crate/
   milestone exit, even when fewer than ten tasks have accumulated. A local
   intermediate task commit may remain pending full regression.
+  Landing a local lane branch on unpushed local `main` by rebase and
+  fast-forward is a task landing, not a merge under this clause: it
+  owes the per-task checks on the integrated tree, and the full run
+  when the unit and the commits it was rebased over changed the same
+  file, when the rebase needed conflict repair, or when a
+  relevant-change trigger applies.
 - **Failure or missing state:** stop adding feature changes after full failure;
   investigate from the last full success, repair, and obtain full success.
   Missing or ambiguous full-success/count evidence requires a full run before

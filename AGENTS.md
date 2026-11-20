@@ -165,7 +165,10 @@ fixtures, `doc/`).
 
 Push only when the dispatch says `push: yes`. Muse requests a push once per
 ten changed tasks, on the task whose full `cargo test` the cadence requires;
-the full run must pass on the pushed tree first. If a requested push is
+the full run must pass on the pushed tree first.
+In two-lane operation Muse may run that full test and push the sealed
+revision itself; a lane-branch dispatch never carries `push: yes` or a
+cadence full-test trigger. If a requested push is
 blocked, report the reason and leave the task incomplete.
 
 ## Final Response
