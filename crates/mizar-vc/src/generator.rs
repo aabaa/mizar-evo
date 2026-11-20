@@ -3169,6 +3169,133 @@ pub fn generate_source_algorithm_e1_inhabitation_witness_request(
     Ok((vcs, witness, binder, VcFormulaRef::Core(guard), slice))
 }
 
+/// Proposes the sole-return operational reduction for an authentic Open E4 request.
+/// Detached relation/True shapes grant no execution, checking or existential-introduction credit.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain authentic source inputs and existing untrusted operational descriptor types"
+)]
+pub fn generate_source_algorithm_e4_operational_reduction_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        mizar_core::core_ir::CoreTermId,
+        ContextEntryId,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::vc_ir::VcGeneratedFormulaShape,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreTermKind};
+
+    let vcs = generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e4_operational_reduction_request".to_owned();
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    if parent.kind != VcKind::AlgorithmE4NormalReturn || parent.status != VcStatus::Open {
+        return Err(invalid());
+    }
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Exists,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [binder] = binders.as_slice() else {
+        return Err(invalid());
+    };
+    let ContextEntryKind::BinderDeclaration { var, .. } = parent
+        .local_context
+        .entries()
+        .get(binder.index())
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Err(invalid());
+    };
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let parameter = &algorithm.params[0];
+    let CoreAlgorithmStmtKind::Return(Some(witness)) = core
+        .algorithm_statements()
+        .get(algorithm.statements[0])
+        .ok_or_else(invalid)?
+        .kind
+    else {
+        return Err(invalid());
+    };
+    let Shape::AlgorithmReturns {
+        algorithm: relation_algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = &vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    if *relation_algorithm != algorithm_id
+        || *statement != algorithm.statements[0]
+        || *input
+            != (VcProgramValue {
+                var: parameter.var,
+                definition: None,
+            })
+        || *result
+            != (VcProgramValue {
+                var,
+                definition: None,
+            })
+        || var == parameter.var
+        || core
+            .terms()
+            .get(witness)
+            .is_none_or(|term| term.kind != CoreTermKind::Var(input.var))
+    {
+        return Err(invalid());
+    }
+    // Substitution is atomic: request evaluation of Var(a) and normal exit of Return(a).
+    // This detached pair is not installed as a relation interpretation or checked fact.
+    let instantiated = Shape::AlgorithmReturns {
+        algorithm: *relation_algorithm,
+        flow: *flow,
+        statement: *statement,
+        input: *input,
+        result: *input,
+    };
+    let binder = *binder;
+    let slices = crate::dependency_slice::try_compute_dependency_slices(
+        crate::dependency_slice::DependencySliceInput {
+            vc_set: &vcs,
+            discharge_output: None,
+        },
+    )
+    .map_err(|error| error.to_string())?;
+    let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
+    Ok((vcs, witness, binder, instantiated, Shape::True, slice))
+}
+
 fn source_program_value(
     core: &mizar_core::core_ir::CoreIr,
     term: mizar_core::core_ir::CoreTermId,
