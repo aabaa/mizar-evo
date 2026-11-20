@@ -1250,6 +1250,74 @@ pub fn consume_source_algorithm_e4_existential<'core>(
     Ok((identity, slice, result, policy.policy_fingerprint()))
 }
 
+/// Native positive evidence for only the original E4 normal-return existential.
+/// It cannot be used as generic proof evidence or a status/reuse authorization.
+pub struct NativeE4NormalReturn<'core> {
+    identity: ProofObligationIdentity,
+    slice: mizar_vc::dependency_slice::DependencySlice,
+    result: mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    snapshot: mizar_session::BuildSnapshotId,
+}
+
+impl<'core> NativeE4NormalReturn<'core> {
+    /// Authenticates and checks the selected original request under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (identity, slice, result, _) = consume_source_algorithm_e4_existential(
+            source, check, symbols, core, snapshot, vc_id, policy,
+        )?;
+        Ok(Self {
+            identity,
+            slice,
+            result,
+            snapshot,
+        })
+    }
+
+    /// True adopts only this genuine original request's normal-return existential.
+    /// Re-evaluates supplied current policy; currentness remains caller-owned.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "authenticates the complete original request"
+    )]
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        let (identity, slice) = source_algorithm_direct_return_obligation_identity(
+            source, check, symbols, snapshot, vc_id,
+        )?;
+        if identity != self.identity
+            || slice != self.slice
+            || snapshot != self.snapshot
+            || !std::ptr::eq(core, self.result.core())
+        {
+            return Ok(false);
+        }
+        if !policy
+            .kernel_evidence_formats()
+            .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+            || policy.checker_schema_version() != self.result.checker_schema_version()
+        {
+            return Err("algorithm.proof.native_e4_policy_rejected".to_owned());
+        }
+        Ok(true)
+    }
+}
+
 /// Consumes a genuine positive E1 result with its original identity and current policy.
 /// This grants no selection, adoption, status, evidence or reuse authority.
 pub fn check_source_algorithm_e1_inhabitation<'core>(

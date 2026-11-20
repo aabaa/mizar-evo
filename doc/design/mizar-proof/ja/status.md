@@ -567,7 +567,13 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 ## Original E4 current-policy consumption
 
 `consume_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [同一呼出しの関連付け](#original-e4-request-identity-association) を先に呼び、エラーを保持する。`BuiltinKernelEvidence` の許可と、`policy.checker_schema_version()` と真正な Kernel 結果の schema の完全一致を inline で要求し、拒否は `algorithm.proof.native_e4_policy_rejected`。
-元 identity、raw slice 全体、借用結果、実 `policy.policy_fingerprint()` を atomic に返す。detached 入力や helper/type/field は追加しない。currentness は呼出側責務で、Open4/Deferred と raw unknown/incomplete/cache miss を保持する。adoption、generic evidence/status 変換、意味的 environment 解釈、独立 E1 義務、広い credit は延期する。
+元 identity、raw slice 全体、借用結果、実 `policy.policy_fingerprint()` を atomic に返す。detached 入力や helper/type/field は追加しない。currentness は呼出側責務で、Open4/Deferred と raw unknown/incomplete/cache miss を保持する。この consumer は adoption を付与せず、generic evidence/status 変換、意味的 environment 解釈、独立 E1 義務、広い credit は延期する。
+
+## Native original-E4 adoption
+
+`NativeE4NormalReturn::from_source` は上記の変更しない current-policy consumer を使い、元 identity・raw slice 全体・snapshot・借用 Kernel 結果を非公開に保持する。generic evidence/status や selection への変換はない。
+`adopt_original_request` は先に元 identity と raw slice 全体を再生成し、上流エラーを保持する。保持した両値と snapshot が一致し、Core が同一の不変 arena でなければ false を返す。その後、保持結果に対して現在の policy の Builtin 許可と checker-schema 完全一致を再評価し、上記と同じ policy 拒否を使う。以前の policy 成功/fingerprint は権限にならず、true は当該元 E4 存在命題だけを採用する。
+boolean は graph/status を変更しない。Open4/Deferred・unknown・incomplete/cache-miss slice を保持し、currentness は呼出側責務。意味的 environment 解釈、独立 E1/E2 義務、symbol、promotion、generic evidence、publication、reuse、広い acceptance/coverage は除外する。formula-cycle/general-cycle 安全性は主張しない。
 
 ## Bounded native E1 result consumption
 

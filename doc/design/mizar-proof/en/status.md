@@ -599,7 +599,13 @@ This associates the same-call genuine result only. No detached result/identity, 
 ## Original E4 current-policy consumption
 
 `consume_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id, policy)` calls the unchanged [same-call association](#original-e4-request-identity-association) first, preserving its errors. Inline require enabled `BuiltinKernelEvidence` and exact agreement between `policy.checker_schema_version()` and the genuine Kernel result's schema; refusal is `algorithm.proof.native_e4_policy_rejected`.
-Return original identity, whole raw slice, borrowed result and actual `policy.policy_fingerprint()` atomically. No detached inputs or helper/type/field are added. Currentness remains caller-owned; Open4/Deferred and raw unknown/incomplete/cache-miss states persist. Adoption, generic evidence/status conversion, semantic environment interpretation, independent E1 duties and broader credit stay deferred.
+Return original identity, whole raw slice, borrowed result and actual `policy.policy_fingerprint()` atomically. No detached inputs or helper/type/field are added. Currentness remains caller-owned; Open4/Deferred and raw unknown/incomplete/cache-miss states persist. This consumer grants no adoption; generic evidence/status conversion, semantic environment interpretation, independent E1 duties and broader credit stay deferred.
+
+## Native original-E4 adoption
+
+`NativeE4NormalReturn::from_source` uses the unchanged current-policy consumer above and privately retains original identity, whole raw slice, snapshot and borrowed Kernel result. No generic evidence/status or selection conversion is provided.
+`adopt_original_request` regenerates complete original identity and raw slice first, preserving upstream errors. Return false unless both retained values and snapshot match and Core is the identical immutable arena. Then re-evaluate enabled Builtin and exact checker-schema agreement against the retained result under current policy, with the same policy refusal as above. Earlier policy success/fingerprints grant no authority; true adopts only that original E4 existential.
+The boolean changes no graph/status: Open4/Deferred, unknowns and incomplete/cache-miss slices persist. Currentness remains caller-owned. Semantic environment interpretation, independent E1/E2 duties, symbols, promotion, generic evidence, publication, reuse and broader acceptance/coverage remain excluded; no formula-cycle/general-cycle safety claim.
 
 ## Bounded native E1 result consumption
 
