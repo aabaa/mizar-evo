@@ -632,6 +632,13 @@ binder と term の組は object(r) の fresh r を実 immutable a に置換す�
 
 単一の fresh existential binder と、元 relation の正確な algorithm・CFG・唯一の return statement・immutable input を要求する。candidate result を、その statement が実際に返す parameter に置換する。atomic relation に nested binder はない。`returns(a,a)` から `True` への組は、immutable variable の評価がその input を返し、唯一の `Return` がその値で正常終了するという具体的な operational step の要求である。未検証の reduction proposal であり、検証済み実行や正常復帰の fact ではない。残余 `True` は operation や existential introduction の証明を与えない。equality alias、premise、relation interpretation、graph rewrite、新たな実行可能 VC、evidence、checking、adoption、symbol introduction、status promotion、publication、acceptance/coverage credit は導入しない。四要求は Open、termination は Deferred、raw slice は incomplete/reuse-ineligible のままとする。call・他の body・任意の candidate result の reduction は対象外とする。
 
+
+### E4 authenticated validator handoff
+
+`generate_source_algorithm_e4_validator_handoff_request` は operational-reduction producer の入力と借用した `[(CoreVarId, CoreFormulaId, T)]` environment を受け取る。environment を調べる前に authentic E4 descriptor を再生成する。認証済み immutable parameter と guard に一致する単一 binding のみを許し、不正な binding には handoff を返さない。既存 tuple だけで `(original_descriptor, (core, algorithm_id, environment), (statement_id, returned_term_id, &value))` を返す。raw slice は選択した target ID を保持する。元の graph・existential binder・raw slice・独立した shape 全体を保持し、渡された Core・environment・opaque value を複製・解釈せずそのまま借用する。
+
+入力 tuple は Kernel の[条件付き validator](../../mizar-kernel/ja/checker.md#bounded-varsole-return-local-validation) への正確な要求であり、出力 tuple は期待する局所的 association であって検証済み結果ではない。この関数は Kernel を呼ばない。初期化と parameter guard の意味的充足は呼出側の明示的前提であり、guard ID は association のみを示す。environment premise は VC context に追加しない。Kernel checking・元の E4 proof・existential introduction・result typing/contracts・Proof identity/currentness/policy binding・adoption は別途必要である。四要求は Open、termination は Deferred のままで、evidence・symbol・status・publication・acceptance/coverage credit を与えない。
+
 ## Reflected Algorithm Obligations
 
 §§20.7/20.13.1 は E1 の型/inhabitation/単一値性と検証済み E2 部分正当性を要求する。E4 正常復帰は terminating/昇格の文脈に適用し、すべての部分定義には要求しない。
