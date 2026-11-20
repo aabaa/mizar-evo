@@ -707,7 +707,7 @@ selected original Exists with one result binder and an atomic, definition-free
 object body. Its original context must contain exactly the sole CheckerFact
 Core guard followed by that binder, with the guard as its sole local premise.
 Project these original entries and body to Kernel's bounded borrowed schema;
-invoke `check_object_inhabitation_witness` with the actual witness, instantiated
+invoke `check_object_inhabitation_result` with the actual witness, instantiated
 child and entire original typed-input context. VC depends on Kernel for this
 rule; Kernel does not depend on VC. Return the unchanged descriptor only after
 the child/guard, substitution and introduction check succeeds. Upstream errors

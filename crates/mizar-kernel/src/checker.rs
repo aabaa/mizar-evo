@@ -1238,6 +1238,31 @@ pub fn check_sole_return_var<'a, T>(
     Some((*statement_id, term_id, value))
 }
 
+/// A checked `exists r.object(r)` under the retained Core context.
+/// Construction is private and performs bounded existential introduction.
+pub struct ObjectInhabitationCheck<'core> {
+    core: &'core CoreIr,
+    binder: CoreVarId,
+    context: [CoreFormulaId; 1],
+}
+
+impl<'core> ObjectInhabitationCheck<'core> {
+    #[must_use]
+    pub const fn core(&self) -> &'core CoreIr {
+        self.core
+    }
+
+    #[must_use]
+    pub const fn binder(&self) -> CoreVarId {
+        self.binder
+    }
+
+    #[must_use]
+    pub const fn context(&self) -> &[CoreFormulaId] {
+        &self.context
+    }
+}
+
 /// Checks atomic object-witness introduction under one typed-input assumption.
 /// The caller authenticates the target projection and original context association.
 /// Success supplies no evidence, request acceptance or proof adoption.
@@ -1248,28 +1273,47 @@ pub fn check_object_inhabitation_witness(
     child: CoreFormulaId,
     context: &[CoreFormulaId],
 ) -> bool {
+    check_object_inhabitation_result(core, target, witness, child, context).is_some()
+}
+
+/// Checks and retains the fixed object existential and its exact Core context.
+/// This native result has no SAT evidence or Proof acceptance/policy meaning.
+pub fn check_object_inhabitation_result<'core>(
+    core: &'core CoreIr,
+    target: (CoreVarId, CoreVarId, &str),
+    witness: CoreTermId,
+    child: CoreFormulaId,
+    context: &[CoreFormulaId],
+) -> Option<ObjectInhabitationCheck<'core>> {
     let (binder, body_variable, ty) = target;
     let [assumption] = context else {
-        return false;
+        return None;
     };
     let Some(CoreTermKind::Var(variable)) = core.terms().get(witness).map(|term| &term.kind) else {
-        return false;
+        return None;
     };
     if body_variable != binder || ty != "object" || *variable == binder {
-        return false;
+        return None;
     }
-    [child, *assumption].into_iter().all(|formula| {
-        let Some(CoreFormulaKind::TypePred { subject, ty }) =
-            core.formulas().get(formula).map(|formula| &formula.kind)
-        else {
-            return false;
-        };
-        ty.as_str() == "object"
-            && core
-                .terms()
-                .get(*subject)
-                .is_some_and(|term| term.kind == CoreTermKind::Var(*variable))
-    })
+    [child, *assumption]
+        .into_iter()
+        .all(|formula| {
+            let Some(CoreFormulaKind::TypePred { subject, ty }) =
+                core.formulas().get(formula).map(|formula| &formula.kind)
+            else {
+                return false;
+            };
+            ty.as_str() == "object"
+                && core
+                    .terms()
+                    .get(*subject)
+                    .is_some_and(|term| term.kind == CoreTermKind::Var(*variable))
+        })
+        .then_some(ObjectInhabitationCheck {
+            core,
+            binder,
+            context: [*assumption],
+        })
 }
 
 pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckResult> {

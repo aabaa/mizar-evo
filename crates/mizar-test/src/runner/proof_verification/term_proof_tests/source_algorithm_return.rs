@@ -3955,6 +3955,7 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind};
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e1_inhabitation_result as native,
             check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
@@ -4048,6 +4049,40 @@ fn source_algorithm_inhabitation_witness_preserves_whole_parent_and_identity() {
                 VcFormulaRef::Core(guard),
                 slice.clone(),
             );
+            let (descriptor, result) = {
+                let generation = generation.clone();
+                let schema = schema.clone();
+                native(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    snapshot_id(0),
+                    &generation,
+                    &schema,
+                    VcId::new(3),
+                )
+                .unwrap()
+            };
+            assert_eq!(descriptor, expected);
+            let result: mizar_kernel::checker::ObjectInhabitationCheck<'_> = result;
+            assert!(std::ptr::eq(result.core(), &core));
+            assert_eq!(result.binder(), var);
+            assert_eq!(result.context(), &[guard]);
+            let (_, repeated) = native(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+                VcId::new(3),
+            )
+            .unwrap();
+            assert!(std::ptr::eq(repeated.core(), result.core()));
+            assert_eq!(repeated.binder(), result.binder());
+            assert_eq!(repeated.context(), result.context());
             for witness in [witness, checked] {
                 let actual = witness(
                     source,
@@ -4083,6 +4118,7 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
     use mizar_vc::{
         dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
         generator::{
+            check_source_algorithm_e1_inhabitation_result as native,
             check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
@@ -4178,6 +4214,21 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
                 VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
                 slice,
             );
+            let (descriptor, result) = native(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                &generation,
+                &schema,
+                VcId::new(3),
+            )
+            .unwrap();
+            assert_eq!(descriptor, expected);
+            assert!(std::ptr::eq(result.core(), &core));
+            assert_eq!(result.binder(), var);
+            assert_eq!(result.context(), &[algorithm.params[0].ty_guard.unwrap()]);
             for witness in [witness, checked] {
                 assert_eq!(
                     witness(
@@ -4201,6 +4252,7 @@ fn source_algorithm_inhabitation_witness_uses_renamed_relocated_return_and_fresh
 #[test]
 fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id() {
     use mizar_vc::generator::{
+        check_source_algorithm_e1_inhabitation_result as native,
         check_source_algorithm_e1_inhabitation_witness as checked,
         generate_source_algorithm_e1_inhabitation_witness_request as witness,
     };
@@ -4212,6 +4264,21 @@ fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id(
             VcId::new(4),
             VcId::new(usize::MAX),
         ] {
+            assert_eq!(
+                native(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    selected,
+                )
+                .map(|_| ())
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_inhabitation_witness_request"
+            );
             for witness in [witness, checked] {
                 assert_eq!(
                     witness(
@@ -4235,6 +4302,7 @@ fn source_algorithm_inhabitation_witness_refuses_every_other_role_and_absent_id(
 #[test]
 fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_selection() {
     use mizar_vc::generator::{
+        check_source_algorithm_e1_inhabitation_result as native,
         check_source_algorithm_e1_inhabitation_witness as checked,
         generate_source_algorithm_direct_return_requests as original,
         generate_source_algorithm_e1_inhabitation_witness_request as witness,
@@ -4289,6 +4357,21 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             expected,
                         );
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                native(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                )
+                                .map(|_| ())
+                                .unwrap_err(),
+                                expected
+                            );
                             for witness in [witness, checked] {
                                 assert_eq!(
                                     witness(
@@ -4321,6 +4404,7 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
             DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
         },
         generator::{
+            check_source_algorithm_e1_inhabitation_result as native,
             check_source_algorithm_e1_inhabitation_witness as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_inhabitation_witness_request as witness,
@@ -4400,6 +4484,26 @@ fn source_algorithm_inhabitation_witness_isolates_schemas_snapshot_and_preserves
                 slice,
             );
             assert!(!expected.4.unknowns().is_empty());
+            let (descriptor, result) = native(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                &generation,
+                &schema,
+                VcId::new(3),
+            )
+            .unwrap();
+            assert_eq!(descriptor, expected);
+            let mizar_vc::vc_ir::ContextEntryKind::BinderDeclaration { var, .. } =
+                expected.0.vcs()[3].local_context.entries()[1].kind
+            else {
+                panic!("original existential binder")
+            };
+            assert!(std::ptr::eq(result.core(), core));
+            assert_eq!(result.binder(), var);
+            assert_eq!(result.context(), &[algorithm.params[0].ty_guard.unwrap()]);
             for witness in [witness, checked] {
                 assert_eq!(
                     witness(
@@ -5871,7 +5975,9 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
         CoreAlgorithmStmtKind, CoreFormulaId, CoreFormulaKind, CoreIr, CoreTermId, CoreTermKind,
         CoreVarId,
     };
-    use mizar_kernel::checker::check_object_inhabitation_witness as introduce;
+    use mizar_kernel::checker::{
+        check_object_inhabitation_result as checked, check_object_inhabitation_witness as introduce,
+    };
     with_direct_return_request_fixture(|_, _, _, core, _| {
         let algorithm = core.algorithms().iter().next().unwrap().1;
         let CoreAlgorithmStmtKind::Return(Some(witness)) = core
@@ -5897,6 +6003,13 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
         );
         let target = (fresh, fresh, "object");
         assert!(introduce(core, target, witness, guard, &[guard]));
+        let result = {
+            let context = vec![guard];
+            checked(core, target, witness, guard, &context).unwrap()
+        };
+        assert!(std::ptr::eq(result.core(), core));
+        assert_eq!(result.binder(), fresh);
+        assert_eq!(result.context(), &[guard]);
         for (target, witness, child, context) in [
             (target, witness, guard, vec![]),
             (target, witness, guard, vec![guard, guard]),
@@ -5929,6 +6042,7 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
             ),
         ] {
             assert!(!introduce(core, target, witness, child, &context));
+            assert!(checked(core, target, witness, child, &context).is_none());
         }
         // Equal IDs supply no proof when the resolved assumption/child has changed meaning.
         for kind in [
@@ -5943,16 +6057,13 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
             parts.formulas.get_mut(guard).unwrap().kind = kind;
             let changed = CoreIr::try_new(parts).unwrap();
             assert!(!introduce(&changed, target, witness, guard, &[guard]));
+            assert!(checked(&changed, target, witness, guard, &[guard]).is_none());
         }
         let mut parts = sole_return_core_parts(core);
         parts.terms.get_mut(witness).unwrap().kind = CoreTermKind::Numeral("0".into());
-        assert!(!introduce(
-            &CoreIr::try_new(parts).unwrap(),
-            target,
-            witness,
-            guard,
-            &[guard]
-        ));
+        let changed = CoreIr::try_new(parts).unwrap();
+        assert!(!introduce(&changed, target, witness, guard, &[guard]));
+        assert!(checked(&changed, target, witness, guard, &[guard]).is_none());
 
         // Different term/formula IDs retain the assumption rule when their meanings agree.
         let mut parts = sole_return_core_parts(core);
@@ -5975,16 +6086,17 @@ fn source_algorithm_object_inhabitation_checks_resolved_child_context_and_substi
             .insert(child, core.formulas().get(guard).unwrap().source.clone());
         let aliased = CoreIr::try_new(parts).unwrap();
         assert!(introduce(&aliased, target, alias, child, &[guard]));
+        let aliased_result = checked(&aliased, target, alias, child, &[guard]).unwrap();
+        assert!(std::ptr::eq(aliased_result.core(), &aliased));
+        assert!(!std::ptr::eq(aliased_result.core(), result.core()));
+        assert_eq!(aliased_result.binder(), fresh);
+        assert_eq!(aliased_result.context(), &[guard]);
         // A term alias with a different variable cannot instantiate the original body.
         let mut parts = sole_return_core_parts(&aliased);
         parts.terms.get_mut(alias).unwrap().kind =
             CoreTermKind::Var(algorithm.result.as_ref().unwrap().var);
-        assert!(!introduce(
-            &CoreIr::try_new(parts).unwrap(),
-            target,
-            alias,
-            child,
-            &[guard]
-        ));
+        let changed = CoreIr::try_new(parts).unwrap();
+        assert!(!introduce(&changed, target, alias, child, &[guard]));
+        assert!(checked(&changed, target, alias, child, &[guard]).is_none());
     });
 }
