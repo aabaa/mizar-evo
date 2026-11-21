@@ -2044,12 +2044,16 @@ pub fn build_source_theorem_discharge_kernel_handoff(
     policy: &crate::discharge::DischargePolicy,
 ) -> Result<VcKernelEvidenceHandoff, String> {
     let original_handoff = build_source_theorem_kernel_handoff(core, original, vc_id)?;
+    let invalid = || "theorem.discharge_handoff.invalid_projection".to_owned();
+    // The configured ATP path retains its singleton acceptance profile.
+    if original.vcs().len() != 1 {
+        return Err(invalid());
+    }
     let expected = crate::discharge::try_discharge(crate::discharge::DischargeInput {
         vc_set: original,
         policy,
     })
     .map_err(|error| error.to_string())?;
-    let invalid = || "theorem.discharge_handoff.invalid_projection".to_owned();
     if &expected != discharge
         || discharge.vc_set().vc(vc_id).ok_or_else(invalid)?.status
             != crate::vc_ir::VcStatus::NeedsAtp
@@ -2119,8 +2123,9 @@ pub fn build_source_theorem_kernel_handoff(
 ) -> Result<VcKernelEvidenceHandoff, String> {
     use crate::vc_ir::{SeedOriginRef, SeedVcMapping, VcStatus};
     use mizar_core::core_ir::{
-        CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreProofNodeKind, CoreProofStatus,
-        CoreTermKind, ObligationSeedKind, ObligationSeedStatus,
+        CoreCitation, CoreFormulaKind, CoreItemKind, CoreItemStatus, CoreNodeRef,
+        CoreProofNodeKind, CoreProofStatus, CoreSourceAnchor, CoreTermKind, ObligationSeedKind,
+        ObligationSeedStatus,
     };
     let invalid = || "theorem.handoff.invalid_projection".to_owned();
     let vc = vc_set.vc(vc_id).ok_or_else(invalid)?;
@@ -2131,14 +2136,13 @@ pub fn build_source_theorem_kernel_handoff(
         vc_set.schema_version(),
     )?;
     if &replay != vc_set
-        || vc.status != VcStatus::Open
-        || vc_set.vcs().len() != 1
+        || core.items().is_empty()
+        || vc_set.vcs().len() != core.items().len()
         || !vc_set.generated_formulas().is_empty()
-        || vc_set.seed_accounting().len() != 1
-        || core.items().len() != 1
-        || core.proofs().len() != 1
-        || core.proof_nodes().len() != 2
-        || core.obligation_seeds().len() != 1
+        || vc_set.seed_accounting().len() != core.items().len()
+        || core.proofs().len() != core.items().len()
+        || core.proof_nodes().len() != 2 * core.items().len()
+        || core.obligation_seeds().len() != core.items().len()
         || !core.definitions().is_empty()
         || !core.algorithms().is_empty()
         || !core.algorithm_statements().is_empty()
@@ -2147,109 +2151,232 @@ pub fn build_source_theorem_kernel_handoff(
     {
         return Err(invalid());
     }
-    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
-    let (_, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
-    let (seed_id, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
-    let accounting = &vc_set.seed_accounting()[0];
-    if item.kind != CoreItemKind::Theorem
-        || item.status != CoreItemStatus::Valid
-        || !item.dependencies.is_empty()
-        || !item.diagnostics.is_empty()
-        || proof.item != item_id
-        || proof.status != CoreProofStatus::PendingAutomaticProof
-        || seed.owner != item_id
-        || seed.kind != ObligationSeedKind::TheoremProof
-        || seed.status != ObligationSeedStatus::Active
-        || seed.label.is_some()
-        || !seed.diagnostics.is_empty()
-        || accounting.handoff != vc.seed.handoff
-        || accounting.origin != (SeedOriginRef::ExistingCore { seed: seed_id })
-        || accounting.seed_status != ObligationSeedStatus::Active
-        || accounting.mapping != (SeedVcMapping::One { vc: vc_id })
-        || vc.kind != VcKind::TheoremProofStep
-    {
-        return Err(invalid());
-    }
-    let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
-    let CoreProofNodeKind::IntroduceBinder {
-        binder: local,
-        child,
-    } = &root.kind
-    else {
-        return Err(invalid());
-    };
-    let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
-    let CoreProofNodeKind::TerminalGoal {
-        obligation,
-        citations,
-    } = &terminal.kind
-    else {
-        return Err(invalid());
-    };
-    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
-    let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
-        return Err(invalid());
-    };
-    let [original] = binders.as_slice() else {
-        return Err(invalid());
-    };
-    let local_guard = local.ty_guard.ok_or_else(invalid)?;
-    let original_guard = original.ty_guard.ok_or_else(invalid)?;
-    let goal = seed.goal.ok_or_else(invalid)?;
-    if original.var == local.var
-        || original.role.as_str() != "quantifier"
-        || local.role.as_str() != "proof-let"
-        || *obligation != seed_id
-        || !citations.is_empty()
-        || !root.diagnostics.is_empty()
-        || !terminal.diagnostics.is_empty()
-        || seed.context != [local_guard]
-        || vc.goal != VcFormulaRef::Core(goal)
-        || vc.local_context.entries().len() != 1
-        || vc.local_context.entries()[0].kind != ContextEntryKind::ProofAssumption
-        || vc.local_context.entries()[0].formula != Some(VcFormulaRef::Core(local_guard))
-        || vc.premises != [PremiseRef::LocalContext(vc.local_context.entries()[0].id)]
-    {
-        return Err(invalid());
-    }
-    let reachable_formulas = [proof.proposition, original_guard, *body, local_guard, goal]
-        .into_iter()
-        .collect::<BTreeSet<_>>();
+    let mut selected = None;
+    let mut reached_vcs = BTreeSet::new();
+    let mut reached_handoffs = BTreeSet::new();
+    let mut reachable_formulas = BTreeSet::new();
     let mut reachable_terms = BTreeSet::new();
-    for (binder, guard, equality) in [
-        (original, original_guard, *body),
-        (local, local_guard, goal),
-    ] {
-        let CoreFormulaKind::TypePred { subject, ty } =
-            &core.formulas().get(guard).ok_or_else(invalid)?.kind
-        else {
+    let mut reachable_nodes = BTreeSet::new();
+    for (item_id, item) in core.items().iter() {
+        let proofs = core
+            .proofs()
+            .iter()
+            .filter(|(_, proof)| proof.item == item_id)
+            .collect::<Vec<_>>();
+        let seeds = core
+            .obligation_seeds()
+            .iter()
+            .filter(|(_, seed)| seed.owner == item_id)
+            .collect::<Vec<_>>();
+        let ([(proof_id, proof)], [(seed_id, seed)]) = (proofs.as_slice(), seeds.as_slice()) else {
             return Err(invalid());
         };
-        let CoreFormulaKind::Equals { left, right } =
-            &core.formulas().get(equality).ok_or_else(invalid)?.kind
-        else {
-            return Err(invalid());
-        };
-        if ty.as_str() != "set" {
+        if item.kind != CoreItemKind::Theorem
+            || item.status != CoreItemStatus::Valid
+            || (core.items().len() > 1 && item.visibility.as_str() != "public")
+            || !item.diagnostics.is_empty()
+            || proof.status != CoreProofStatus::PendingAutomaticProof
+            || seed.kind != ObligationSeedKind::TheoremProof
+            || seed.status != ObligationSeedStatus::Active
+            || seed.label.is_some()
+            || !seed.diagnostics.is_empty()
+        {
             return Err(invalid());
         }
-        for term in [subject, left, right] {
-            if core
-                .terms()
-                .get(*term)
-                .is_none_or(|term| term.kind != CoreTermKind::Var(binder.var))
-            {
+        let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+        let CoreProofNodeKind::IntroduceBinder {
+            binder: local,
+            child,
+        } = &root.kind
+        else {
+            return Err(invalid());
+        };
+        let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
+        let CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } = &terminal.kind
+        else {
+            return Err(invalid());
+        };
+        let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+        let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+            return Err(invalid());
+        };
+        let [original] = binders.as_slice() else {
+            return Err(invalid());
+        };
+        let original_guard = original.ty_guard.ok_or_else(invalid)?;
+        let mut expected_context = vec![local.ty_guard.ok_or_else(invalid)?];
+        match (citations.as_slice(), item.dependencies.as_slice()) {
+            ([], []) => {}
+            ([CoreCitation::Symbol(symbol)], [dependency]) => {
+                let cited = core.items().get(*dependency).ok_or_else(invalid)?;
+                let (
+                    CoreSourceAnchor::SourceRange(earlier),
+                    CoreSourceAnchor::SourceRange(current),
+                ) = (&cited.source.anchor, &item.source.anchor)
+                else {
+                    return Err(invalid());
+                };
+                if *dependency == item_id
+                    || &cited.symbol != symbol
+                    || earlier.source_id != current.source_id
+                    || earlier.start >= earlier.end
+                    || current.start >= current.end
+                    || earlier.end > current.start
+                {
+                    return Err(invalid());
+                }
+                let cited_proofs = core
+                    .proofs()
+                    .iter()
+                    .filter(|(_, proof)| proof.item == *dependency)
+                    .collect::<Vec<_>>();
+                let [(_, cited_proof)] = cited_proofs.as_slice() else {
+                    return Err(invalid());
+                };
+                expected_context.push(cited_proof.proposition);
+            }
+            _ => return Err(invalid()),
+        }
+        expected_context.sort();
+        let guard = local.ty_guard.ok_or_else(invalid)?;
+        let goal = seed.goal.ok_or_else(invalid)?;
+        if original.var == local.var
+            || original.role.as_str() != "quantifier"
+            || local.role.as_str() != "proof-let"
+            || *obligation != *seed_id
+            || !root.diagnostics.is_empty()
+            || !terminal.diagnostics.is_empty()
+            || seed.context != expected_context
+            || guard == goal
+        {
+            return Err(invalid());
+        }
+        if !reachable_nodes.insert(proof.root) || !reachable_nodes.insert(*child) {
+            return Err(invalid());
+        }
+        let owner_formulas = [proof.proposition, original_guard, *body, guard, goal]
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        if owner_formulas.len() != 5 {
+            return Err(invalid());
+        }
+        if owner_formulas
+            .into_iter()
+            .any(|id| !reachable_formulas.insert(id))
+        {
+            return Err(invalid());
+        }
+        let mut refs = vec![
+            CoreNodeRef::Item(item_id),
+            CoreNodeRef::Proof(*proof_id),
+            CoreNodeRef::ProofNode(*child),
+            CoreNodeRef::Formula(goal),
+        ];
+        refs.extend(seed.context.iter().copied().map(CoreNodeRef::Formula));
+        refs.extend(item.dependencies.iter().copied().map(CoreNodeRef::Item));
+        refs.sort();
+        refs.dedup();
+        if seed.core_refs != refs {
+            return Err(invalid());
+        }
+        let mut owner_terms = BTreeSet::new();
+        for (binder, ty_guard, equality) in
+            [(original, original_guard, *body), (local, guard, goal)]
+        {
+            let CoreFormulaKind::TypePred { subject, ty } =
+                &core.formulas().get(ty_guard).ok_or_else(invalid)?.kind
+            else {
+                return Err(invalid());
+            };
+            let CoreFormulaKind::Equals { left, right } =
+                &core.formulas().get(equality).ok_or_else(invalid)?.kind
+            else {
+                return Err(invalid());
+            };
+            if ty.as_str() != "set" {
                 return Err(invalid());
             }
-            reachable_terms.insert(*term);
+            for term in [subject, left, right] {
+                if core
+                    .terms()
+                    .get(*term)
+                    .is_none_or(|row| row.kind != CoreTermKind::Var(binder.var))
+                {
+                    return Err(invalid());
+                }
+                owner_terms.insert(*term);
+            }
+        }
+        if owner_terms.len() != 6
+            || owner_terms
+                .into_iter()
+                .any(|id| !reachable_terms.insert(id))
+        {
+            return Err(invalid());
+        }
+        let accounting = vc_set
+            .seed_accounting()
+            .iter()
+            .filter(|row| row.origin == (SeedOriginRef::ExistingCore { seed: *seed_id }))
+            .collect::<Vec<_>>();
+        let [accounting] = accounting.as_slice() else {
+            return Err(invalid());
+        };
+        let SeedVcMapping::One { vc: owner_vc_id } = accounting.mapping else {
+            return Err(invalid());
+        };
+        let owner_vc = vc_set.vc(owner_vc_id).ok_or_else(invalid)?;
+        if accounting.seed_status != ObligationSeedStatus::Active
+            || accounting.handoff != owner_vc.seed.handoff
+            || !reached_vcs.insert(owner_vc_id)
+            || !reached_handoffs.insert(accounting.handoff)
+            || owner_vc.status != VcStatus::Open
+            || owner_vc.kind != VcKind::TheoremProofStep
+            || owner_vc.goal != VcFormulaRef::Core(goal)
+            || owner_vc.local_context.entries().len() != seed.context.len()
+            || owner_vc
+                .local_context
+                .entries()
+                .iter()
+                .map(|entry| entry.formula)
+                .collect::<BTreeSet<_>>()
+                != seed
+                    .context
+                    .iter()
+                    .map(|id| Some(VcFormulaRef::Core(*id)))
+                    .collect()
+            || owner_vc
+                .local_context
+                .entries()
+                .iter()
+                .any(|entry| entry.kind != ContextEntryKind::ProofAssumption)
+            || owner_vc.premises
+                != owner_vc
+                    .local_context
+                    .entries()
+                    .iter()
+                    .map(|entry| PremiseRef::LocalContext(entry.id))
+                    .collect::<Vec<_>>()
+            || !owner_vc.local_context.policy_inputs().is_empty()
+            || owner_vc.proof_hint.is_some()
+        {
+            return Err(invalid());
+        }
+        if owner_vc_id == vc_id {
+            selected = Some((item, *proof, *seed, guard, goal, citations));
         }
     }
-    if reachable_formulas.len() != 5
-        || core.formulas().len() != reachable_formulas.len()
-        || core.terms().len() != reachable_terms.len()
+    if reachable_formulas != core.formulas().iter().map(|(id, _)| id).collect()
+        || reachable_terms != core.terms().iter().map(|(id, _)| id).collect()
+        || reachable_nodes != core.proof_nodes().iter().map(|(id, _)| id).collect()
+        || reached_vcs.len() != vc_set.vcs().len()
     {
         return Err(invalid());
     }
+    let (item, proof, seed, local_guard, goal, citations) = selected.ok_or_else(invalid)?;
     let symbol_manifest = [
         KernelManifestEntry {
             entry_id: 0,
@@ -2304,6 +2431,58 @@ pub fn build_source_theorem_kernel_handoff(
                 formula_bytes: wire,
                 provenance_payload: provenance.clone(),
             },
+        });
+    }
+    if !citations.is_empty() {
+        // Prove the stronger local sequent; the target still binds original citations.
+        let target_vc = target_fingerprint(vc_set, vc_id).map_err(|error| error.to_string())?;
+        let mut assembly = HandoffAssembly::new(target_vc.clone());
+        let entry = vc
+            .local_context
+            .entries()
+            .iter()
+            .find(|entry| entry.formula == Some(VcFormulaRef::Core(local_guard)))
+            .ok_or_else(invalid)?;
+        assembly
+            .add_formula_ref(
+                VcFormulaRef::Core(local_guard),
+                local_context_source(entry).map_err(|e| e.to_string())?,
+                &formula_payloads[0].projection,
+            )
+            .map_err(|e| e.to_string())?;
+        let payloads = formula_payload_map(&formula_payloads).map_err(|e| e.to_string())?;
+        let final_goal = build_final_goal(
+            &mut assembly,
+            vc.goal,
+            KernelGoalPolarity::AssertFalseForRefutation,
+            &payloads,
+        )
+        .map_err(|e| e.to_string())?;
+        let canonical_evidence = KernelEvidenceEnvelope {
+            schema_version: KERNEL_EVIDENCE_SCHEMA_VERSION,
+            encoding_version: KERNEL_EVIDENCE_ENCODING_VERSION,
+            target_vc,
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: symbol_manifest.to_vec(),
+            variable_manifest: variable_manifest.to_vec(),
+            formula_evidence: assembly.formulas,
+            substitutions: Vec::new(),
+            provenance: assembly.provenance,
+            final_goal,
+        };
+        let canonical_hash_input = canonical_hash_input(&canonical_evidence);
+        let canonical_hash =
+            stable_fingerprint_hash("mizar-vc-kernel-evidence-handoff", &canonical_hash_input);
+        let context_identity = build_context_identity(&canonical_evidence, canonical_hash)
+            .map_err(|e| e.to_string())?;
+        return Ok(VcKernelEvidenceHandoff {
+            canonical_evidence,
+            context_identity,
+            formula_context_requirements: context_requirements(None, &assembly.imported_symbols)
+                .map_err(|e| e.to_string())?,
+            diagnostics: diagnostics(vc_set, vc_id, None).map_err(|e| e.to_string())?,
+            canonical_hash_input,
+            canonical_hash,
         });
     }
     build_kernel_evidence_handoff(KernelEvidenceHandoffInput {

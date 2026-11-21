@@ -251,7 +251,7 @@ fn source_theorem_reflexivity_preserves_upstream_errors_and_inputs() {
         let before = (source.clone(), symbols.clone());
         with_source_theorem_check(ast, &source, symbols, |check| {
             let check_before = format!("{check:?}");
-            if text == original {
+            if text.starts_with(original) {
                 let policy = VerifierPolicy::default();
                 let prior = verify(&source, check, symbols, snapshot, VcId::new(0), &policy)?;
                 let prior_before = prior.clone();
@@ -273,6 +273,9 @@ fn source_theorem_reflexivity_preserves_upstream_errors_and_inputs() {
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -505,7 +508,7 @@ fn source_theorem_reflexivity_selection_preserves_actual_failures() {
             let check_before = format!("{check:?}");
             for (index, policy) in policies.iter().enumerate() {
                 for vc in [VcId::new(0), absent] {
-                    if text == original && index == 0 && vc != absent {
+                    if text.starts_with(original) && index == 0 && vc != absent {
                         continue;
                     }
                     let expected = verify(&s, check, env, snap, vc, policy).unwrap_err();
@@ -515,7 +518,7 @@ fn source_theorem_reflexivity_selection_preserves_actual_failures() {
                     );
                 }
             }
-            if text == original {
+            if text.starts_with(original) {
                 let vc = VcId::new(0);
                 let policy = &policies[0];
                 let prior = (
@@ -533,6 +536,9 @@ fn source_theorem_reflexivity_selection_preserves_actual_failures() {
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == s {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -781,17 +787,11 @@ fn source_theorem_reflexivity_status_preserves_actual_error_order() {
                     let actual_identity = identity(&source, check, env, snap, vc);
                     let expected = match actual_identity {
                         Err(error) => {
-                            let selection_error =
-                                select(&source, check, env, snap, vc, policy).unwrap_err();
-                            if case == 3 {
-                                assert_eq!(error, "unsupported source theorem formula payload");
-                                assert_eq!(selection_error, "theorem.handoff.invalid_projection");
-                                assert_ne!(error, selection_error);
-                            }
+                            select(&source, check, env, snap, vc, policy).unwrap_err();
                             error
                         }
                         Ok(original) => {
-                            assert_eq!(case, 0);
+                            assert!(matches!(case, 0 | 3));
                             assert_eq!(vc, VcId::new(0));
                             assert!(original.1.requires_cache_miss());
                             if policy_index == 0 {
@@ -808,7 +808,7 @@ fn source_theorem_reflexivity_status_preserves_actual_error_order() {
                     );
                 }
             }
-            if case == 0 {
+            if matches!(case, 0 | 3) {
                 let vc = VcId::new(0);
                 let original_identity = identity(&source, check, env, snap, vc)?;
                 let prior = project(&source, check, env, snap, vc, &policies[0])?;
@@ -823,6 +823,9 @@ fn source_theorem_reflexivity_status_preserves_actual_error_order() {
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -1124,7 +1127,7 @@ fn source_theorem_reflexivity_metadata_preserves_compatibility_errors() {
             let check_before = format!("{check:?}");
             for (index, policy) in policies.iter().enumerate() {
                 for vc in [VcId::new(0), absent] {
-                    if text == original && index == 0 && vc != absent {
+                    if text.starts_with(original) && index == 0 && vc != absent {
                         continue;
                     }
                     let expected = verify(&source, check, env, snap, vc, policy).unwrap_err();
@@ -1134,7 +1137,7 @@ fn source_theorem_reflexivity_metadata_preserves_compatibility_errors() {
                     );
                 }
             }
-            if text == original {
+            if text.starts_with(original) {
                 let vc = VcId::new(0);
                 let policy = &policies[0];
                 let prior = (
@@ -1152,6 +1155,9 @@ fn source_theorem_reflexivity_metadata_preserves_compatibility_errors() {
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -1746,7 +1752,7 @@ fn source_theorem_reflexivity_witness_preserves_identity_first_errors() {
             let check_before = format!("{check:?}");
             for (index, policy) in policies.iter().enumerate() {
                 for vc in [VcId::new(0), absent] {
-                    if text == original && index == 0 && vc != absent {
+                    if text.starts_with(original) && index == 0 && vc != absent {
                         continue;
                     }
                     let check_error = metadata(&source, check, env, snap, vc, policy).unwrap_err();
@@ -1760,7 +1766,7 @@ fn source_theorem_reflexivity_witness_preserves_identity_first_errors() {
                     );
                 }
             }
-            if text == original {
+            if text.starts_with(original) {
                 let vc = VcId::new(0);
                 let policy = &policies[0];
                 let prior = (
@@ -1780,6 +1786,9 @@ fn source_theorem_reflexivity_witness_preserves_identity_first_errors() {
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -2075,7 +2084,7 @@ fn source_theorem_reflexivity_used_axioms_status_preserves_identity_first_errors
             let check_before = format!("{check:?}");
             let vc = VcId::new(0);
             let policy = &policies[0];
-            let prior = if case == 0 {
+            let prior = if matches!(case, 0 | 3) {
                 Some((
                     identity(&source, check, env, snap, vc)?,
                     verify(&source, check, env, snap, vc, policy)?,
@@ -2088,25 +2097,20 @@ fn source_theorem_reflexivity_used_axioms_status_preserves_identity_first_errors
             };
             for (index, policy) in policies.iter().enumerate() {
                 for selected in [vc, absent] {
-                    if case == 0 && index == 0 && selected == vc {
+                    if matches!(case, 0 | 3) && index == 0 && selected == vc {
                         continue;
                     }
                     let expected = match identity(&source, check, env, snap, selected) {
                         Err(_) => {
                             let error = identity(&source, check, env, snap, selected).unwrap_err();
-                            let check_error =
-                                verify(&source, check, env, snap, selected, policy).unwrap_err();
-                            if case == 3 {
-                                assert_eq!(error, "unsupported source theorem formula payload");
-                                assert_eq!(check_error, "theorem.handoff.invalid_projection");
-                                assert_ne!(error, check_error);
-                            }
+                            verify(&source, check, env, snap, selected, policy).unwrap_err();
                             error
                         }
                         Ok(original) => {
                             let check_error =
                                 verify(&source, check, env, snap, selected, policy).unwrap_err();
-                            assert_eq!((case, selected), (0, vc));
+                            assert!(matches!(case, 0 | 3));
+                            assert_eq!(selected, vc);
                             assert_eq!(check_error, "theorem.proof.kernel_policy_rejected");
                             assert_eq!(original, identity(&source, check, env, snap, selected)?);
                             check_error
@@ -2129,6 +2133,9 @@ fn source_theorem_reflexivity_used_axioms_status_preserves_identity_first_errors
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -2341,18 +2348,22 @@ fn source_theorem_reflexivity_trusted_witness_metadata_preserves_upstream_errors
         let before = (source.clone(), env.clone());
         with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
             let check_before = format!("{check:?}");
-            let prior = if case == 0 {
+            let prior = if matches!(case, 0 | 3) {
                 Some(trusted(&source, check, env, snap, vc, &policies[0])?)
             } else {
                 None
             };
             for (index, policy) in policies
                 .iter()
-                .take(if case == 0 { 3 } else { 1 })
+                .take(if matches!(case, 0 | 3) { 3 } else { 1 })
                 .enumerate()
             {
-                for selected in [vc, absent].into_iter().take(if case == 0 { 2 } else { 1 }) {
-                    if case == 0 && index == 0 && selected == vc {
+                for selected in
+                    [vc, absent]
+                        .into_iter()
+                        .take(if matches!(case, 0 | 3) { 2 } else { 1 })
+                {
+                    if matches!(case, 0 | 3) && index == 0 && selected == vc {
                         continue;
                     }
                     let expected =
@@ -2374,6 +2385,9 @@ fn source_theorem_reflexivity_trusted_witness_metadata_preserves_upstream_errors
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -2601,7 +2615,7 @@ fn source_theorem_reflexivity_trusted_witness_metadata_with_wire_preserves_error
         let before = (source.clone(), env.clone());
         with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
             let check_before = format!("{check:?}");
-            let prior = if case == 0 {
+            let prior = if matches!(case, 0 | 3) {
                 let raw = metadata(&source, check, env, snap, vc, &policies[0]);
                 raw.as_ref().map_err(Clone::clone)?;
                 Some((
@@ -2614,11 +2628,15 @@ fn source_theorem_reflexivity_trusted_witness_metadata_with_wire_preserves_error
             };
             for (index, policy) in policies
                 .iter()
-                .take(if case == 0 { 3 } else { 1 })
+                .take(if matches!(case, 0 | 3) { 3 } else { 1 })
                 .enumerate()
             {
-                for selected in [vc, absent].into_iter().take(if case == 0 { 2 } else { 1 }) {
-                    if case == 0 && index == 0 && selected == vc {
+                for selected in
+                    [vc, absent]
+                        .into_iter()
+                        .take(if matches!(case, 0 | 3) { 2 } else { 1 })
+                {
+                    if matches!(case, 0 | 3) && index == 0 && selected == vc {
                         continue;
                     }
                     let expected =
@@ -2644,6 +2662,9 @@ fn source_theorem_reflexivity_trusted_witness_metadata_with_wire_preserves_error
                 ] {
                     let (other_frontend, other_source, other) =
                         inputs(&text, "owner-test", "owners", 0);
+                    if other_source == source {
+                        continue;
+                    }
                     assert_eq!(
                         !other_frontend.diagnostics.is_empty(),
                         text.ends_with("= ;")
@@ -3201,7 +3222,7 @@ fn source_theorem_reflexivity_witness_draft_preserves_errors() {
             let absent = VcId::new(usize::MAX);
             for (policy_index, policy) in policies.iter().enumerate() {
                 for selected in [vc, absent] {
-                    if index == 0 && policy_index == 0 && selected == vc {
+                    if matches!(index, 0 | 3) && policy_index == 0 && selected == vc {
                         continue;
                     }
                     // Identity wins even over disabled formats, absent VC and an invalid path.
@@ -3217,7 +3238,7 @@ fn source_theorem_reflexivity_witness_draft_preserves_errors() {
                     );
                 }
             }
-            if index == 0 {
+            if matches!(index, 0 | 3) {
                 let policy = &policies[0];
                 let (original_id, original_slice) = identity(source, check, env, snapshot.id, vc)?;
                 let (projection, _) = status(source, check, env, snapshot.id, vc, policy)?;
@@ -3311,7 +3332,11 @@ fn source_theorem_reflexivity_witness_draft_preserves_errors() {
                     (&prior.0, &prior.1, &prior.2),
                     (&projection, &original_slice, &expected)
                 );
-                for (_, _, _, foreign, symbols) in cases.iter().skip(3) {
+                for (foreign_index, (_, _, _, foreign, symbols)) in cases.iter().enumerate().skip(3)
+                {
+                    if foreign_index == index {
+                        continue;
+                    }
                     let foreign_before = (foreign.clone(), symbols.env().clone());
                     for (current, symbols) in [
                         (foreign, symbols.env()),
@@ -3780,7 +3805,7 @@ fn source_theorem_reflexivity_same_result_preserves_identity_first_errors() {
         with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
             let check_before = format!("{check:?}");
             let vc = VcId::new(0);
-            let successful_prior = if case == 0 {
+            let successful_prior = if matches!(case, 0 | 3) {
                 Some(verify(
                     &source,
                     check,
@@ -3794,7 +3819,7 @@ fn source_theorem_reflexivity_same_result_preserves_identity_first_errors() {
             };
             for (policy_index, policy) in policies.iter().enumerate() {
                 for selected in [vc, absent] {
-                    if case == 0 && policy_index == 0 && selected == vc {
+                    if matches!(case, 0 | 3) && policy_index == 0 && selected == vc {
                         continue;
                     }
                     let expected = match identity(&source, check, env, snapshot_id(777), selected) {

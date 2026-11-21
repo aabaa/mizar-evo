@@ -15399,7 +15399,7 @@ pub fn source_algorithm_formula_payloads(
     Ok(selected)
 }
 
-/// Encodes the actual local guard and goal of a replay-checked single-local theorem.
+/// Encodes the actual local guard and goal of a replay-checked finite local theorem module.
 pub fn source_theorem_formula_payloads(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
     core: &CoreIr,
@@ -15412,10 +15412,10 @@ pub fn source_theorem_formula_payloads(
     let invalid = || "unsupported source theorem formula payload".to_owned();
     let replay = lower_source_theorem_skeletons(check, None)?;
     if &replay != core
-        || core.items().len() != 1
-        || core.proofs().len() != 1
-        || core.proof_nodes().len() != 2
-        || core.obligation_seeds().len() != 1
+        || core.items().is_empty()
+        || core.proofs().len() != core.items().len()
+        || core.proof_nodes().len() != 2 * core.items().len()
+        || core.obligation_seeds().len() != core.items().len()
         || !core.definitions().is_empty()
         || !core.algorithms().is_empty()
         || !core.algorithm_statements().is_empty()
@@ -15424,119 +15424,248 @@ pub fn source_theorem_formula_payloads(
     {
         return Err(invalid());
     }
-    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
-    let (_, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
-    let (seed_id, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
-    if item.kind != CoreItemKind::Theorem
-        || item.status != CoreItemStatus::Valid
-        || !item.dependencies.is_empty()
-        || !item.diagnostics.is_empty()
-        || proof.item != item_id
-        || proof.status != CoreProofStatus::PendingAutomaticProof
-        || seed.owner != item_id
-        || seed.kind != ObligationSeedKind::TheoremProof
-        || seed.status != ObligationSeedStatus::Active
-        || seed.label.is_some()
-        || !seed.diagnostics.is_empty()
-    {
-        return Err(invalid());
-    }
-    let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
-    let CoreProofNodeKind::IntroduceBinder {
-        binder: local,
-        child,
-    } = &root.kind
-    else {
-        return Err(invalid());
-    };
-    let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
-    let CoreProofNodeKind::TerminalGoal {
-        obligation,
-        citations,
-    } = &terminal.kind
-    else {
-        return Err(invalid());
-    };
-    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
-    let CoreFormulaKind::Forall { binders, .. } = &proposition.kind else {
-        return Err(invalid());
-    };
-    let [original] = binders.as_slice() else {
-        return Err(invalid());
-    };
-    let guard = local.ty_guard.ok_or_else(invalid)?;
-    let goal = seed.goal.ok_or_else(invalid)?;
-    if original.var == local.var
-        || original.role.as_str() != "quantifier"
-        || local.role.as_str() != "proof-let"
-        || *obligation != seed_id
-        || !citations.is_empty()
-        || !root.diagnostics.is_empty()
-        || !terminal.diagnostics.is_empty()
-        || seed.context != [guard]
-        || guard == goal
-        || roots.iter().collect::<BTreeSet<_>>().len() != roots.len()
-        || roots.iter().any(|id| *id != guard && *id != goal)
-    {
-        return Err(invalid());
-    }
-    let mut context = BinderContext::new();
-    context.declare_variable(
-        local.var,
-        NormalizedVarClass::Free,
-        local.role.clone(),
-        NormalizedVarSort::Term,
-    );
-    let mut prefix = b"mizar-core/source-theorem-formula/v1\0".to_vec();
-    for value in [
-        core.module_id().package().as_str(),
-        core.module_id().path().as_str(),
-        local.role.as_str(),
-    ] {
-        prefix.extend_from_slice(
-            &u32::try_from(value.len())
-                .map_err(|_| invalid())?
-                .to_be_bytes(),
-        );
-        prefix.extend_from_slice(value.as_bytes());
-    }
     let mut selected = BTreeMap::new();
-    // Validate both actual formulas even when neither root was requested.
-    for (id, is_guard) in [(guard, true), (goal, false)] {
-        let row = core.formulas().get(id).ok_or_else(invalid)?;
-        let normalized =
-            normalize_core_formula(core, id, &context, &row.source).map_err(|_| invalid())?;
-        let canonical =
-            canonical_formula(&normalized, &context, &row.source).map_err(|_| invalid())?;
-        let mut bytes = prefix.clone();
-        match canonical.kind() {
-            F::TypePred { subject, ty } if is_guard && ty.as_str() == "set" => {
-                if subject.kind() != &T::Var(CanonicalVar::Free(local.var)) {
+    let mut allowed = BTreeSet::new();
+    let mut reachable_formulas = BTreeSet::new();
+    let mut reachable_terms = BTreeSet::new();
+    let mut reachable_nodes = BTreeSet::new();
+    for (item_id, item) in core.items().iter() {
+        let proofs = core
+            .proofs()
+            .iter()
+            .filter(|(_, proof)| proof.item == item_id)
+            .collect::<Vec<_>>();
+        let seeds = core
+            .obligation_seeds()
+            .iter()
+            .filter(|(_, seed)| seed.owner == item_id)
+            .collect::<Vec<_>>();
+        let ([(proof_id, proof)], [(seed_id, seed)]) = (proofs.as_slice(), seeds.as_slice()) else {
+            return Err(invalid());
+        };
+        if item.kind != CoreItemKind::Theorem
+            || item.status != CoreItemStatus::Valid
+            || (core.items().len() > 1 && item.visibility.as_str() != "public")
+            || !item.diagnostics.is_empty()
+            || proof.status != CoreProofStatus::PendingAutomaticProof
+            || seed.kind != ObligationSeedKind::TheoremProof
+            || seed.status != ObligationSeedStatus::Active
+            || seed.label.is_some()
+            || !seed.diagnostics.is_empty()
+        {
+            return Err(invalid());
+        }
+        let root = core.proof_nodes().get(proof.root).ok_or_else(invalid)?;
+        let CoreProofNodeKind::IntroduceBinder {
+            binder: local,
+            child,
+        } = &root.kind
+        else {
+            return Err(invalid());
+        };
+        let terminal = core.proof_nodes().get(*child).ok_or_else(invalid)?;
+        let CoreProofNodeKind::TerminalGoal {
+            obligation,
+            citations,
+        } = &terminal.kind
+        else {
+            return Err(invalid());
+        };
+        let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+        let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
+            return Err(invalid());
+        };
+        let [original] = binders.as_slice() else {
+            return Err(invalid());
+        };
+        let original_guard = original.ty_guard.ok_or_else(invalid)?;
+        let mut expected_context = vec![local.ty_guard.ok_or_else(invalid)?];
+        match (citations.as_slice(), item.dependencies.as_slice()) {
+            ([], []) => {}
+            ([CoreCitation::Symbol(symbol)], [dependency]) => {
+                let cited = core.items().get(*dependency).ok_or_else(invalid)?;
+                let (
+                    CoreSourceAnchor::SourceRange(earlier),
+                    CoreSourceAnchor::SourceRange(current),
+                ) = (&cited.source.anchor, &item.source.anchor)
+                else {
+                    return Err(invalid());
+                };
+                if *dependency == item_id
+                    || &cited.symbol != symbol
+                    || earlier.source_id != current.source_id
+                    || earlier.start >= earlier.end
+                    || current.start >= current.end
+                    || earlier.end > current.start
+                {
                     return Err(invalid());
                 }
-                bytes.push(3);
-                bytes.extend_from_slice(
-                    &u32::try_from(ty.as_str().len())
-                        .map_err(|_| invalid())?
-                        .to_be_bytes(),
-                );
-                bytes.extend_from_slice(ty.as_str().as_bytes());
-                bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
-            }
-            F::Equals { left, right } if !is_guard => {
-                bytes.push(2);
-                for term in [left, right] {
-                    if term.kind() != &T::Var(CanonicalVar::Free(local.var)) {
-                        return Err(invalid());
-                    }
-                    bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
-                }
+                let cited_proofs = core
+                    .proofs()
+                    .iter()
+                    .filter(|(_, proof)| proof.item == *dependency)
+                    .collect::<Vec<_>>();
+                let [(_, cited_proof)] = cited_proofs.as_slice() else {
+                    return Err(invalid());
+                };
+                expected_context.push(cited_proof.proposition);
             }
             _ => return Err(invalid()),
         }
-        if roots.contains(&id) {
-            selected.insert(id, bytes);
+        expected_context.sort();
+        let guard = local.ty_guard.ok_or_else(invalid)?;
+        let goal = seed.goal.ok_or_else(invalid)?;
+        if original.var == local.var
+            || original.role.as_str() != "quantifier"
+            || local.role.as_str() != "proof-let"
+            || *obligation != *seed_id
+            || !root.diagnostics.is_empty()
+            || !terminal.diagnostics.is_empty()
+            || seed.context != expected_context
+            || guard == goal
+            || roots.iter().collect::<BTreeSet<_>>().len() != roots.len()
+        {
+            return Err(invalid());
         }
+        allowed.extend(seed.context.iter().copied().chain(seed.goal));
+        if !reachable_nodes.insert(proof.root) || !reachable_nodes.insert(*child) {
+            return Err(invalid());
+        }
+        let owner_formulas = [proof.proposition, original_guard, *body, guard, goal]
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        if owner_formulas.len() != 5 {
+            return Err(invalid());
+        }
+        if owner_formulas
+            .into_iter()
+            .any(|id| !reachable_formulas.insert(id))
+        {
+            return Err(invalid());
+        }
+        let mut refs = vec![
+            CoreNodeRef::Item(item_id),
+            CoreNodeRef::Proof(*proof_id),
+            CoreNodeRef::ProofNode(*child),
+            CoreNodeRef::Formula(goal),
+        ];
+        refs.extend(seed.context.iter().copied().map(CoreNodeRef::Formula));
+        refs.extend(item.dependencies.iter().copied().map(CoreNodeRef::Item));
+        refs.sort();
+        refs.dedup();
+        if seed.core_refs != refs {
+            return Err(invalid());
+        }
+        let mut owner_terms = BTreeSet::new();
+        for (binder, ty_guard, equality) in
+            [(original, original_guard, *body), (local, guard, goal)]
+        {
+            let CoreFormulaKind::TypePred { subject, ty } =
+                &core.formulas().get(ty_guard).ok_or_else(invalid)?.kind
+            else {
+                return Err(invalid());
+            };
+            let CoreFormulaKind::Equals { left, right } =
+                &core.formulas().get(equality).ok_or_else(invalid)?.kind
+            else {
+                return Err(invalid());
+            };
+            if ty.as_str() != "set" {
+                return Err(invalid());
+            }
+            for term in [subject, left, right] {
+                if core
+                    .terms()
+                    .get(*term)
+                    .is_none_or(|row| row.kind != CoreTermKind::Var(binder.var))
+                {
+                    return Err(invalid());
+                }
+                owner_terms.insert(*term);
+            }
+        }
+        if owner_terms.len() != 6
+            || owner_terms
+                .into_iter()
+                .any(|id| !reachable_terms.insert(id))
+        {
+            return Err(invalid());
+        }
+        let mut context = BinderContext::new();
+        context.declare_variable(
+            local.var,
+            NormalizedVarClass::Free,
+            local.role.clone(),
+            NormalizedVarSort::Term,
+        );
+        let mut prefix = b"mizar-core/source-theorem-formula/v1\0".to_vec();
+        for value in [
+            core.module_id().package().as_str(),
+            core.module_id().path().as_str(),
+            local.role.as_str(),
+        ] {
+            prefix.extend_from_slice(
+                &u32::try_from(value.len())
+                    .map_err(|_| invalid())?
+                    .to_be_bytes(),
+            );
+            prefix.extend_from_slice(value.as_bytes());
+        }
+        // Validate both actual formulas even when neither root was requested.
+        for (id, is_guard) in [(guard, true), (goal, false)] {
+            let row = core.formulas().get(id).ok_or_else(invalid)?;
+            let normalized =
+                normalize_core_formula(core, id, &context, &row.source).map_err(|_| invalid())?;
+            let canonical =
+                canonical_formula(&normalized, &context, &row.source).map_err(|_| invalid())?;
+            let mut bytes = prefix.clone();
+            match canonical.kind() {
+                F::TypePred { subject, ty } if is_guard && ty.as_str() == "set" => {
+                    if subject.kind() != &T::Var(CanonicalVar::Free(local.var)) {
+                        return Err(invalid());
+                    }
+                    bytes.push(3);
+                    bytes.extend_from_slice(
+                        &u32::try_from(ty.as_str().len())
+                            .map_err(|_| invalid())?
+                            .to_be_bytes(),
+                    );
+                    bytes.extend_from_slice(ty.as_str().as_bytes());
+                    bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
+                }
+                F::Equals { left, right } if !is_guard => {
+                    bytes.push(2);
+                    for term in [left, right] {
+                        if term.kind() != &T::Var(CanonicalVar::Free(local.var)) {
+                            return Err(invalid());
+                        }
+                        bytes.extend_from_slice(&[2, 0, 0, 0, 0]);
+                    }
+                }
+                _ => return Err(invalid()),
+            }
+            if roots.contains(&id) {
+                selected.insert(id, bytes);
+            }
+        }
+        // Quantified source propositions retain their binder and actual guard/body.
+        if roots.contains(&proof.proposition) {
+            let mut bytes = prefix;
+            bytes.extend([7, 0, 0, 0, 1]);
+            bytes.extend(10u32.to_be_bytes());
+            bytes.extend(b"quantifier");
+            bytes.extend([1, 3, 0, 0, 0, 3]);
+            bytes.extend(b"set");
+            bytes.extend([1, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]);
+            selected.insert(proof.proposition, bytes);
+        }
+    }
+    if roots.iter().any(|id| !allowed.contains(id))
+        || reachable_formulas != core.formulas().iter().map(|(id, _)| id).collect()
+        || reachable_terms != core.terms().iter().map(|(id, _)| id).collect()
+        || reachable_nodes != core.proof_nodes().iter().map(|(id, _)| id).collect()
+    {
+        return Err(invalid());
     }
     Ok(selected)
 }
@@ -15879,7 +16008,7 @@ pub fn source_algorithm_core_semantic_payload(
     Ok(out)
 }
 
-/// Encodes the original and local semantics of a replay-checked single-local theorem.
+/// Encodes the original and local semantics of a replay-checked finite local theorem module.
 pub fn source_theorem_core_semantic_payload(
     check: &mizar_checker::type_checker::SourceTheoremCheck<'_>,
     core: &CoreIr,
@@ -15892,150 +16021,162 @@ pub fn source_theorem_core_semantic_payload(
         .obligation_seeds()
         .iter()
         .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
         .collect::<Vec<_>>();
     let local_payloads = source_theorem_formula_payloads(check, core, &roots)?;
     let invalid = || "unsupported source theorem core semantic payload".to_owned();
-    let (item_id, item) = core.items().iter().next().ok_or_else(invalid)?;
-    let (proof_id, proof) = core.proofs().iter().next().ok_or_else(invalid)?;
-    let (_, seed) = core.obligation_seeds().iter().next().ok_or_else(invalid)?;
-    let CoreProofNodeKind::IntroduceBinder {
-        binder: local,
-        child,
-    } = &core.proof_nodes().get(proof.root).ok_or_else(invalid)?.kind
-    else {
-        return Err(invalid());
-    };
-    let local_guard = local.ty_guard.ok_or_else(invalid)?;
-    let goal = seed.goal.ok_or_else(invalid)?;
-    let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
-    let CoreFormulaKind::Forall { binders, body } = &proposition.kind else {
-        return Err(invalid());
-    };
-    let [original] = binders.as_slice() else {
-        return Err(invalid());
-    };
-    let original_guard = original.ty_guard.ok_or_else(invalid)?;
-    let formula_ids = [proof.proposition, original_guard, *body, local_guard, goal]
-        .into_iter()
-        .collect::<BTreeSet<_>>();
-    if formula_ids.len() != 5 || formula_ids != core.formulas().iter().map(|(id, _)| id).collect() {
-        return Err(invalid());
-    }
-    let mut term_ids = BTreeSet::new();
-    for id in [original_guard, *body, local_guard, goal] {
-        match &core.formulas().get(id).ok_or_else(invalid)?.kind {
-            CoreFormulaKind::TypePred { subject, .. }
-                if id == original_guard || id == local_guard =>
-            {
-                term_ids.insert(*subject);
-            }
-            CoreFormulaKind::Equals { left, right } if id == *body || id == goal => {
-                term_ids.extend([*left, *right]);
-            }
-            _ => return Err(invalid()),
-        }
-    }
-    let mut refs = vec![
-        CoreNodeRef::Item(item_id),
-        CoreNodeRef::Proof(proof_id),
-        CoreNodeRef::ProofNode(*child),
-        CoreNodeRef::Formula(local_guard),
-        CoreNodeRef::Formula(goal),
-    ];
-    refs.sort();
-    if term_ids.len() != 6
-        || term_ids != core.terms().iter().map(|(id, _)| id).collect()
-        || seed.core_refs != refs
-    {
-        return Err(invalid());
-    }
-    let context = BinderContext::new();
-    let normalized = normalize_core_formula(core, proof.proposition, &context, &proposition.source)
-        .map_err(|_| invalid())?;
-    let canonical =
-        canonical_formula(&normalized, &context, &proposition.source).map_err(|_| invalid())?;
-    let F::Forall { binders, body } = canonical.kind() else {
-        return Err(invalid());
-    };
-    let [binder] = binders.as_slice() else {
-        return Err(invalid());
-    };
-    let F::TypePred { subject, ty } = binder.ty_guard.as_ref().ok_or_else(invalid)?.kind() else {
-        return Err(invalid());
-    };
-    let F::Equals { left, right } = body.kind() else {
-        return Err(invalid());
-    };
-    if binder.role.as_str() != "quantifier"
-        || ty.as_str() != "set"
-        || [subject, left, right]
+    let mut module_output = b"mizar-core/source-theorem-core-semantics/module/v1\0".to_vec();
+    for (item_id, item) in core.items().iter() {
+        let (_, proof) = core
+            .proofs()
             .iter()
-            .any(|term| term.kind() != &T::Var(CanonicalVar::Bound(0)))
-    {
-        return Err(invalid());
-    }
-    let append = |out: &mut Vec<u8>, bytes: &[u8]| -> Result<(), String> {
-        if out.len().checked_add(bytes.len()).ok_or_else(invalid)? > 32 * 1024 * 1024 {
-            return Err(invalid());
-        }
-        out.extend_from_slice(bytes);
-        Ok(())
-    };
-    let mut tree = vec![7];
-    append(
-        &mut tree,
-        &u32::try_from(binders.len())
-            .map_err(|_| invalid())?
-            .to_be_bytes(),
-    )?;
-    append(
-        &mut tree,
-        &u32::try_from(binder.role.as_str().len())
-            .map_err(|_| invalid())?
-            .to_be_bytes(),
-    )?;
-    append(&mut tree, binder.role.as_str().as_bytes())?;
-    append(&mut tree, &[1, 3])?;
-    append(
-        &mut tree,
-        &u32::try_from(ty.as_str().len())
-            .map_err(|_| invalid())?
-            .to_be_bytes(),
-    )?;
-    append(&mut tree, ty.as_str().as_bytes())?;
-    for (index, term) in [subject, left, right].into_iter().enumerate() {
-        if index == 1 {
-            append(&mut tree, &[2])?;
-        }
-        let T::Var(CanonicalVar::Bound(bound)) = term.kind() else {
+            .find(|(_, proof)| proof.item == item_id)
+            .ok_or_else(invalid)?;
+        let (_, seed) = core
+            .obligation_seeds()
+            .iter()
+            .find(|(_, seed)| seed.owner == item_id)
+            .ok_or_else(invalid)?;
+        let CoreProofNodeKind::IntroduceBinder {
+            binder: local,
+            child: _,
+        } = &core.proof_nodes().get(proof.root).ok_or_else(invalid)?.kind
+        else {
             return Err(invalid());
         };
-        append(&mut tree, &[1])?;
-        append(&mut tree, &bound.to_be_bytes())?;
+        let local_guard = local.ty_guard.ok_or_else(invalid)?;
+        let goal = seed.goal.ok_or_else(invalid)?;
+        let proposition = core.formulas().get(proof.proposition).ok_or_else(invalid)?;
+        let context = BinderContext::new();
+        let normalized =
+            normalize_core_formula(core, proof.proposition, &context, &proposition.source)
+                .map_err(|_| invalid())?;
+        let canonical =
+            canonical_formula(&normalized, &context, &proposition.source).map_err(|_| invalid())?;
+        let F::Forall { binders, body } = canonical.kind() else {
+            return Err(invalid());
+        };
+        let [binder] = binders.as_slice() else {
+            return Err(invalid());
+        };
+        let F::TypePred { subject, ty } = binder.ty_guard.as_ref().ok_or_else(invalid)?.kind()
+        else {
+            return Err(invalid());
+        };
+        let F::Equals { left, right } = body.kind() else {
+            return Err(invalid());
+        };
+        if binder.role.as_str() != "quantifier"
+            || ty.as_str() != "set"
+            || [subject, left, right]
+                .iter()
+                .any(|term| term.kind() != &T::Var(CanonicalVar::Bound(0)))
+        {
+            return Err(invalid());
+        }
+        let append = |out: &mut Vec<u8>, bytes: &[u8]| -> Result<(), String> {
+            if out.len().checked_add(bytes.len()).ok_or_else(invalid)? > 32 * 1024 * 1024 {
+                return Err(invalid());
+            }
+            out.extend_from_slice(bytes);
+            Ok(())
+        };
+        let mut tree = vec![7];
+        append(
+            &mut tree,
+            &u32::try_from(binders.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        )?;
+        append(
+            &mut tree,
+            &u32::try_from(binder.role.as_str().len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        )?;
+        append(&mut tree, binder.role.as_str().as_bytes())?;
+        append(&mut tree, &[1, 3])?;
+        append(
+            &mut tree,
+            &u32::try_from(ty.as_str().len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        )?;
+        append(&mut tree, ty.as_str().as_bytes())?;
+        for (index, term) in [subject, left, right].into_iter().enumerate() {
+            if index == 1 {
+                append(&mut tree, &[2])?;
+            }
+            let T::Var(CanonicalVar::Bound(bound)) = term.kind() else {
+                return Err(invalid());
+            };
+            append(&mut tree, &[1])?;
+            append(&mut tree, &bound.to_be_bytes())?;
+        }
+        let mut output = b"mizar-core/source-theorem-core-semantics/v1\0".to_vec();
+        for field in [
+            core.module_id().package().as_str().as_bytes(),
+            core.module_id().path().as_str().as_bytes(),
+            item.symbol.module().package().as_str().as_bytes(),
+            item.symbol.module().path().as_str().as_bytes(),
+            item.symbol.local().as_str().as_bytes(),
+            item.symbol.fqn().as_str().as_bytes(),
+            item.visibility.as_str().as_bytes(),
+            tree.as_slice(),
+            local_payloads
+                .get(&local_guard)
+                .ok_or_else(invalid)?
+                .as_slice(),
+            local_payloads.get(&goal).ok_or_else(invalid)?.as_slice(),
+            seed.local_path.as_str().as_bytes(),
+            seed.semantic_origin.as_str().as_bytes(),
+        ] {
+            let length = u64::try_from(field.len()).map_err(|_| invalid())?;
+            append(&mut output, &length.to_le_bytes())?;
+            append(&mut output, field)?;
+        }
+        if core.items().len() == 1 {
+            return Ok(output);
+        }
+        append(
+            &mut output,
+            &u32::try_from(item.dependencies.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        )?;
+        for dependency in &item.dependencies {
+            let cited = core.items().get(*dependency).ok_or_else(invalid)?;
+            let (_, cited_proof) = core
+                .proofs()
+                .iter()
+                .find(|(_, proof)| proof.item == *dependency)
+                .ok_or_else(invalid)?;
+            for field in [
+                cited.symbol.fqn().as_str().as_bytes(),
+                local_payloads
+                    .get(&cited_proof.proposition)
+                    .ok_or_else(invalid)?
+                    .as_slice(),
+            ] {
+                append(
+                    &mut output,
+                    &u64::try_from(field.len())
+                        .map_err(|_| invalid())?
+                        .to_le_bytes(),
+                )?;
+                append(&mut output, field)?;
+            }
+        }
+        append(
+            &mut module_output,
+            &u64::try_from(output.len())
+                .map_err(|_| invalid())?
+                .to_le_bytes(),
+        )?;
+        append(&mut module_output, &output)?;
     }
-    let mut output = b"mizar-core/source-theorem-core-semantics/v1\0".to_vec();
-    for field in [
-        core.module_id().package().as_str().as_bytes(),
-        core.module_id().path().as_str().as_bytes(),
-        item.symbol.module().package().as_str().as_bytes(),
-        item.symbol.module().path().as_str().as_bytes(),
-        item.symbol.local().as_str().as_bytes(),
-        item.symbol.fqn().as_str().as_bytes(),
-        item.visibility.as_str().as_bytes(),
-        tree.as_slice(),
-        local_payloads
-            .get(&local_guard)
-            .ok_or_else(invalid)?
-            .as_slice(),
-        local_payloads.get(&goal).ok_or_else(invalid)?.as_slice(),
-        seed.local_path.as_str().as_bytes(),
-        seed.semantic_origin.as_str().as_bytes(),
-    ] {
-        let length = u64::try_from(field.len()).map_err(|_| invalid())?;
-        append(&mut output, &length.to_le_bytes())?;
-        append(&mut output, field)?;
-    }
-    Ok(output)
+    Ok(module_output)
 }
 
 /// Lowers checked local set/identity functorial and reduction correctness goals.

@@ -826,6 +826,7 @@ fn native_theorem_reflexivity_service_preserves_disabled_policy_refusal() {
             "../../../../tests/miz/pass/theorems/pass_proof_verification_theorem_status_open_assumed_001.miz"
         ),
     ] {
+        let supported = text.starts_with("theorem A:");
         let (fixture, ids, submission, owner) = run_reflexivity_module(text, "main");
         let (inputs, old) = native_disk_lookup_context(&submission, &ids);
         let module = mizar_build::module_index::ModuleId::new(
@@ -845,17 +846,28 @@ fn native_theorem_reflexivity_service_preserves_disabled_policy_refusal() {
             .iter()
             .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremVC"))
         {
-            assert!(
-                independent_reflexivity_status(
-                    &fixture,
-                    inputs,
-                    &old,
-                    &owner,
-                    vc,
-                    &mizar_proof::policy::VerifierPolicy::release()
-                )
-                .is_err()
+            let expected = independent_reflexivity_status(
+                &fixture,
+                inputs,
+                &old,
+                &owner,
+                vc,
+                &mizar_proof::policy::VerifierPolicy::release(),
             );
+            if supported {
+                let expected = expected.unwrap();
+                assert_eq!(expected.1.vcs().len(), 2);
+                assert_eq!(
+                    expected.2.status(),
+                    mizar_kernel::checker::KernelCheckStatus::Accepted
+                );
+                assert_eq!(
+                    expected.4.projected_status(),
+                    mizar_proof::status::ProjectedProofStatus::Accepted
+                );
+            } else {
+                assert!(expected.is_err());
+            }
         } else if let Some(metadata) = outputs
             .iter()
             .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremMetadata"))
@@ -920,17 +932,10 @@ fn native_theorem_reflexivity_service_preserves_disabled_policy_refusal() {
                     .is_none()
             );
         }
-        assert!(
-            submission
-                .scheduler_run
-                .as_ref()
-                .unwrap()
-                .phase_results
-                .values()
-                .flatten()
-                .flat_map(|row| &row.output_refs)
-                .all(|output| output.output_kind()
-                    != &OutputKind::new("SourceTheoremReflexivityKernelStatus"))
+        assert_eq!(
+            outputs.iter().any(|output| output.output_kind()
+                == &OutputKind::new("SourceTheoremReflexivityKernelStatus")),
+            supported,
         );
         let produced = submission
             .scheduler_run

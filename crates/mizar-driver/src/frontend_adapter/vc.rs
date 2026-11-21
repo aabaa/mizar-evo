@@ -781,7 +781,7 @@ impl PhaseService for SourceTheoremVcDischargeService {
         let Ok(vcs) = publisher.storage().get(&handle) else {
             return blocking();
         };
-        let [vc] = vcs.vcs() else {
+        let Some(vc) = vcs.vcs().first() else {
             return blocking();
         };
         let Ok(bundle) = mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
@@ -1143,9 +1143,7 @@ impl PhaseService for SourceTheoremReflexivityKernelCheckService {
                 .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
                 .ok()?;
             let vcs = storage.get(&vcs).ok()?;
-            let [vc] = vcs.vcs() else {
-                return None;
-            };
+            let vc = vcs.vcs().first()?;
             let module_input = PhaseInput::new(
                 WorkUnit::Module {
                     module: module.clone(),

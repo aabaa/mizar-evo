@@ -353,11 +353,17 @@ fn source_theorem_local_handoff_refuses_foreign_and_unsupported_graphs() {
         let actual_vcs = generate_core_vcs(&actual, snapshot_id(777)).unwrap();
         assert!(!actual_vcs.vcs().is_empty(), "{unsupported}");
         for vc in actual_vcs.vcs() {
-            assert_eq!(
-                build_source_theorem_kernel_handoff(&actual, &actual_vcs, vc.id).unwrap_err(),
-                invalid,
-                "{unsupported}"
-            );
+            if actual.items().len() == 2 {
+                let handoff =
+                    build_source_theorem_kernel_handoff(&actual, &actual_vcs, vc.id).unwrap();
+                assert!(handoff.targets_vc(&actual_vcs, vc.id).unwrap());
+            } else {
+                assert_eq!(
+                    build_source_theorem_kernel_handoff(&actual, &actual_vcs, vc.id).unwrap_err(),
+                    invalid,
+                    "{unsupported}"
+                );
+            }
         }
     }
     let computation =
@@ -443,6 +449,89 @@ fn source_theorem_local_handoff_refuses_foreign_and_unsupported_graphs() {
         );
     }
     assert!(build_source_theorem_kernel_handoff(&core, &vcs, selected).is_ok());
+}
+
+#[test]
+fn source_theorem_local_handoff_refuses_self_and_empty_citation_ranges() {
+    use mizar_core::core_ir::*;
+    use mizar_vc::kernel_evidence_handoff::build_source_theorem_kernel_handoff;
+    let source = "theorem Base: for X being set holds X = X proof let X be set; thus X = X; end; theorem Main: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;";
+    let core = step5c14_computation_core(source).unwrap();
+    let owners = core.items().iter().map(|(id, _)| id).collect::<Vec<_>>();
+    let (base, main) = (owners[0], owners[1]);
+    let proofs = core
+        .proofs()
+        .iter()
+        .map(|(_, proof)| proof)
+        .collect::<Vec<_>>();
+    for mutation in 0..3 {
+        let mut parts = CoreIrParts {
+            source_id: core.source_id(),
+            module_id: core.module_id().clone(),
+            items: core.items().clone(),
+            terms: core.terms().clone(),
+            formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(),
+            proofs: core.proofs().clone(),
+            proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(),
+            algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(),
+            obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(),
+            diagnostics: core.diagnostics().clone(),
+        };
+        let empty = if mutation == 1 { base } else { main };
+        let CoreSourceAnchor::SourceRange(range) =
+            &mut parts.items.get_mut(empty).unwrap().source.anchor
+        else {
+            panic!()
+        };
+        range.end = range.start;
+        parts
+            .source_map
+            .item_sources
+            .insert(empty, parts.items.get(empty).unwrap().source.clone());
+        if mutation == 0 {
+            let item = parts.items.get_mut(main).unwrap();
+            item.dependencies = vec![main];
+            let symbol = item.symbol.clone();
+            for (_, node) in parts.proof_nodes.iter_mut() {
+                if let CoreProofNodeKind::TerminalGoal { citations, .. } = &mut node.kind
+                    && !citations.is_empty()
+                {
+                    *citations = vec![CoreCitation::Symbol(symbol.clone())];
+                }
+            }
+            for (_, seed) in parts.obligation_seeds.iter_mut() {
+                if seed.owner != main {
+                    continue;
+                }
+                for formula in &mut seed.context {
+                    if *formula == proofs[0].proposition {
+                        *formula = proofs[1].proposition;
+                    }
+                }
+                for reference in &mut seed.core_refs {
+                    if *reference == CoreNodeRef::Item(base) {
+                        *reference = CoreNodeRef::Item(main);
+                    }
+                    if *reference == CoreNodeRef::Formula(proofs[0].proposition) {
+                        *reference = CoreNodeRef::Formula(proofs[1].proposition);
+                    }
+                }
+            }
+        }
+        let changed = CoreIr::try_new(parts).unwrap();
+        let vcs = generate_core_vcs(&changed, snapshot_id(777)).unwrap();
+        for vc in vcs.vcs() {
+            assert_eq!(
+                build_source_theorem_kernel_handoff(&changed, &vcs, vc.id).unwrap_err(),
+                "theorem.handoff.invalid_projection",
+                "mutation {mutation}"
+            );
+        }
+    }
 }
 
 #[test]

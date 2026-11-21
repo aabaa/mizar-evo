@@ -297,6 +297,18 @@ fn source_theorem_obligation_identity_preserve_upstream_errors_and_inputs() {
                     prior,
                     identity(&source, check, symbols, snapshot, VcId::new(0))?
                 );
+            } else if check.owners().len() == 2 {
+                for selected in [VcId::new(0), VcId::new(1)] {
+                    let expected = canonical(check, snapshot, selected)?;
+                    let actual = identity(&source, check, symbols, snapshot, selected)?;
+                    assert_eq!(actual.0.vc_fingerprint(), expected.0.hash());
+                    assert_eq!(actual.0.local_context_fingerprint(), expected.2.hash());
+                    assert_eq!(actual.1, expected.3);
+                }
+                assert_eq!(
+                    identity(&source, check, symbols, snapshot, absent).unwrap_err(),
+                    canonical(check, snapshot, absent).unwrap_err()
+                );
             } else {
                 for selected in [VcId::new(0), absent] {
                     let expected = canonical(check, snapshot, selected).unwrap_err();
@@ -683,20 +695,27 @@ fn source_theorem_obligation_identity_schemas_preserve_errors() {
                     .iter()
                     .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
                     .collect::<Vec<_>>();
-                let expected = formulas_for(&fresh, &core, &roots).unwrap_err();
+                let formulas = formulas_for(&fresh, &core, &roots)?;
+                let vcs = generate(&core, snapshot, &generation, &schema)?;
                 assert_eq!(syntax_for(&source, env)?.len(), 2);
-                assert_ne!(expected, "theorem.proof.invalid_source_identity");
-                assert_eq!(
+                for vc in vcs.vcs() {
+                    let expected =
+                        vcs.source_theorem_canonical_components(vc.id, &core, &formulas)?;
+                    let actual =
+                        identity(&source, check, env, snapshot, vc.id, (&generation, &schema))?;
+                    assert_eq!(actual.0.vc_fingerprint(), expected.0.hash());
+                    assert_eq!(actual.0.local_context_fingerprint(), expected.2.hash());
+                }
+                assert!(
                     identity(
                         &source,
                         check,
                         env,
                         snapshot,
-                        VcId::new(0),
+                        VcId::new(usize::MAX),
                         (&generation, &schema)
                     )
-                    .unwrap_err(),
-                    expected
+                    .is_err()
                 );
             }
             assert_eq!(format!("{check:?}"), check_before);
@@ -706,4 +725,129 @@ fn source_theorem_obligation_identity_schemas_preserve_errors() {
         assert_eq!((source, env.clone()), before);
     }
     assert_eq!((generation, schema), config_before);
+}
+
+#[test]
+fn source_theorem_citation_chain_and_fanout_bind_each_original_owner() {
+    use super::super::super::tests::source_registration_owner_inputs as inputs;
+    use mizar_core::{
+        core_ir::{CoreFormulaKind, CoreProofNodeKind, CoreTermKind},
+        elaborator::{lower_source_theorem_skeletons as lower, source_theorem_formula_payloads},
+    };
+    use mizar_kernel::checker::KernelCheckStatus;
+    use mizar_proof::{
+        policy::{CandidatePolicyClass, VerifierPolicy},
+        status::{
+            ProjectedProofStatus, check_source_theorem_reflexivity_with_status as verify,
+            source_theorem_canonical_inputs as canonical,
+            source_theorem_obligation_identity as identity,
+        },
+    };
+    use mizar_vc::{
+        generator::generate_source_theorem_vcs as generate,
+        kernel_evidence_handoff::build_source_theorem_kernel_handoff as project, vc_ir::*,
+    };
+    let base = "theorem Base: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let middle =
+        "theorem Middle: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;";
+    let last =
+        "theorem Last: for Z being set holds Z = Z proof let Z be set; thus Z = Z by Middle; end;";
+    let mut variants = Vec::new();
+    for citation in ["Middle", "Base"] {
+        let text = format!(
+            "{base}\n{middle}\n{}",
+            last.replace("by Middle", &format!("by {citation}"))
+        );
+        let (frontend, source, collected) = inputs(&text, "owner-test", "owners", 0);
+        assert!(frontend.diagnostics.is_empty() && collected.diagnostics().is_empty());
+        let env = collected.env();
+        let before = (source.clone(), env.clone());
+        let rows = with_source_theorem_check(frontend.ast.as_ref().unwrap(), &source, env, |check| {
+            let core = lower(check, None)?;
+            let snapshot = snapshot_id(777);
+            let vcs = generate(&core, snapshot, &GenerationSchemaVersion::new("source-theorem-local-v1"), &VcSchemaVersion::new("vc-v1"))?;
+            let syntax = mizar_resolve::symbols::source_theorem_syntax_payloads_from_arena(&source, env)?;
+            assert_eq!(vcs.vcs().len(), 3);
+            assert_eq!(syntax.len(), 3);
+            let mut rows = Vec::new();
+            for (index, vc) in vcs.vcs().iter().enumerate() {
+                let AnchorOwner::Theorem(owner_id) = &vc.anchor.owner else { panic!() };
+                let owner = core.items().get(*owner_id).unwrap();
+                let checked_owner = &check.owners()[index].0;
+                assert_eq!(owner.symbol, checked_owner.symbol);
+                assert_eq!(checked_owner.spelling, ["Base", "Middle", "Last"][index]);
+                let proof = core.proofs().iter().find(|(_, proof)| proof.item == *owner_id).unwrap().1;
+                let CoreProofNodeKind::IntroduceBinder { binder, .. } = &core.proof_nodes().get(proof.root).unwrap().kind else { panic!() };
+                let guard = binder.ty_guard.unwrap();
+                let mut expected_context = vec![VcFormulaRef::Core(guard)];
+                if index > 0 {
+                    let cited_index = if index == 1 || citation == "Base" { 0 } else { 1 };
+                    let cited = core.proofs().iter().nth(cited_index).unwrap().1.proposition;
+                    let CoreFormulaKind::Forall { binders, body } = &core.formulas().get(cited).unwrap().kind else { panic!() };
+                    assert_eq!(binders.len(), 1);
+                    assert_eq!(binders[0].role.as_str(), "quantifier");
+                    let CoreFormulaKind::TypePred { subject, ty } = &core.formulas().get(binders[0].ty_guard.unwrap()).unwrap().kind else { panic!() };
+                    assert_eq!(ty.as_str(), "set");
+                    assert_eq!(core.terms().get(*subject).unwrap().kind, CoreTermKind::Var(binders[0].var));
+                    let CoreFormulaKind::Equals { left, right } = &core.formulas().get(*body).unwrap().kind else { panic!() };
+                    for term in [left, right] {
+                        assert_eq!(core.terms().get(*term).unwrap().kind, CoreTermKind::Var(binders[0].var));
+                    }
+                    expected_context.push(VcFormulaRef::Core(cited));
+                }
+                assert_eq!(vc.local_context.entries().iter().map(|entry| entry.formula.unwrap()).collect::<std::collections::BTreeSet<_>>(), expected_context.iter().copied().collect());
+                let roots = expected_context.iter().chain(std::iter::once(&vc.goal)).map(|formula| {
+                    let VcFormulaRef::Core(root) = formula else { panic!() }; *root
+                }).collect::<Vec<_>>();
+                assert_eq!(source_theorem_formula_payloads(check, &core, &roots)?.len(), roots.len());
+                let old = canonical(check, snapshot, vc.id)?;
+                let actual = identity(&source, check, env, snapshot, vc.id)?;
+                let owner_bytes = format!(concat!(
+                    "{{\"module_path\":\"owners\",\"namespace\":\"owners\",\"package_id\":\"owner-test\",",
+                    "\"role\":\"theorem\",\"spelling\":\"{}\",\"status\":\"unmodified\",\"visibility\":\"public\"}}\n"
+                ), checked_owner.spelling).into_bytes();
+                let anchor = source_theorem_candidate_anchor_hash(&owner_bytes, &syntax[&checked_owner.symbol], old.0, old.1, old.2)?;
+                assert_eq!(actual.0.obligation_anchor().as_str(), format!("source-theorem-candidate-anchor-v1:{}", anchor.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect::<String>()));
+                for (other, _) in check.owners().iter().filter(|(other, _)| other.symbol != owner.symbol) {
+                    assert_ne!(anchor, source_theorem_candidate_anchor_hash(&owner_bytes, &syntax[&other.symbol], old.0, old.1, old.2)?);
+                }
+                assert_eq!(actual.0.vc_fingerprint(), old.0.hash());
+                assert_eq!(actual.0.local_context_fingerprint(), old.2.hash());
+                let handoff = project(&core, &vcs, vc.id)?;
+                assert!(handoff.targets_vc(&vcs, vc.id).map_err(|error| error.to_string())?);
+                let evidence = handoff.canonical_evidence();
+                assert_eq!(evidence.formula_evidence().len(), 1);
+                assert_eq!(evidence.formula_evidence()[0].producer_formula_ref(), Some(VcFormulaRef::Core(guard)));
+                assert_eq!(handoff.context_identity().entries().len(), 1);
+                assert!(evidence.substitutions().is_empty());
+                let (checked_core, checked_vcs, result, decision, status, slice) = verify(&source, check, env, snapshot, vc.id, &VerifierPolicy::release())?;
+                assert_eq!((&checked_core, &checked_vcs), (&core, &vcs));
+                assert_eq!(result.status(), KernelCheckStatus::Accepted);
+                assert!(!result.policy_taint());
+                assert!(result.used_axioms().is_empty());
+                assert_eq!(decision.class, CandidatePolicyClass::DischargedBuiltin);
+                assert_eq!(status.projected_status(), ProjectedProofStatus::Accepted);
+                assert_eq!(status.obligation_id(), actual.0.obligation_id());
+                assert_eq!(slice, actual.1);
+                rows.push((actual.0, evidence.formula_evidence()[0].formula_bytes().to_vec(), evidence.final_goal().formula_bytes.clone()));
+            }
+            for pair in rows.windows(2) {
+                assert_ne!(pair[0].0.obligation_anchor(), pair[1].0.obligation_anchor());
+                assert_ne!(pair[0].0.vc_fingerprint(), pair[1].0.vc_fingerprint());
+            }
+            Ok(rows)
+        }).unwrap();
+        assert_eq!((source, env.clone()), before);
+        variants.push(rows);
+    }
+    assert_ne!(
+        variants[0][2].0.obligation_fingerprint(),
+        variants[1][2].0.obligation_fingerprint()
+    );
+    assert_ne!(
+        variants[0][2].0.local_context_fingerprint(),
+        variants[1][2].0.local_context_fingerprint()
+    );
+    assert_eq!(variants[0][2].1, variants[1][2].1);
+    assert_eq!(variants[0][2].2, variants[1][2].2);
 }

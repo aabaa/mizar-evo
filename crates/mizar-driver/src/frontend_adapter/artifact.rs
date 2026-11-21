@@ -16,8 +16,9 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 PublishedArtifactReadOptions, artifact_hash_domain, read_published_artifact,
             },
             verified_artifact::{
-                VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact_hash_excluded_paths,
-                verified_artifact_json,
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, builtin_verified_artifact_json,
+                read_builtin_verified_artifact, verified_artifact_json,
             },
         };
         let captured = self.captured?;
@@ -135,19 +136,267 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 .validate_output(self.snapshot.id, output, OutputAuthorization::Published)
                 .ok()?;
             let artifact = publisher.storage().get(&handle).ok()?;
-            let value = verified_artifact_json(&artifact).ok()?;
+            let builtin =
+                artifact.schema_version == mizar_artifact::store::SchemaVersion::new(2, 0);
+            let mut bound_frontend = None;
+            if builtin {
+                // This source view is admitted only by the complete opt-in cohort.
+                if artifact.exports.len() < 2
+                    || artifact.obligations.len() != artifact.exports.len()
+                    || artifact.proof_witnesses.len() != artifact.exports.len()
+                    || artifact.provenance.captured_source.is_some()
+                    || graph.tasks().iter().any(|task| {
+                        matches!(
+                            task.kind,
+                            mizar_build::task_graph::TaskKind::AtpSolve
+                                | mizar_build::task_graph::TaskKind::BackendRun
+                        )
+                    })
+                {
+                    return None;
+                }
+                let discharge = unique(graph.tasks().iter().filter(|task| {
+                    task.kind == mizar_build::task_graph::TaskKind::VcDischarge
+                        && matches!(&task.unit, WorkUnit::Vc { module: parent, .. } if parent == &module.module)
+                }))?;
+                let [discharged] = run.phase_results.get(&discharge.id)?.as_slice() else {
+                    return None;
+                };
+                let [discharge_output] = discharged.output_refs.as_slice() else {
+                    return None;
+                };
+                if discharged.status != PhaseStatus::Complete
+                    || discharge_output.output_kind() != &OutputKind::new("SourceTheoremDischarge")
+                {
+                    return None;
+                }
+                publisher
+                    .validate_output(
+                        self.snapshot.id,
+                        discharge_output,
+                        OutputAuthorization::Published,
+                    )
+                    .ok()?;
+                publisher.storage().validate_handle(discharge_output).ok()?;
+                let parent_ids = &output.lineage().parents;
+                if parent_ids.len() != 5 {
+                    return None;
+                }
+                let physical = |id| {
+                    unique(
+                        run.phase_results
+                            .values()
+                            .flatten()
+                            .flat_map(|result| &result.output_refs)
+                            .filter(|parent| parent.output() == id),
+                    )
+                };
+                let mut original = Vec::new();
+                for (phase, kind) in [
+                    (
+                        PipelinePhase::SignatureCollection,
+                        "SourceTheoremModuleSummary",
+                    ),
+                    (PipelinePhase::Elaboration, "SourceTheoremCore"),
+                    (
+                        PipelinePhase::AlgorithmPreparation,
+                        "SourceTheoremPreparation",
+                    ),
+                    (PipelinePhase::VcGenerate, "SourceTheoremVC"),
+                    (
+                        PipelinePhase::KernelCheck,
+                        "SourceTheoremReflexivityKernelStatus",
+                    ),
+                ] {
+                    original.push(unique(
+                        parent_ids
+                            .iter()
+                            .filter_map(|id| physical(*id))
+                            .filter(|parent| {
+                                parent.phase() == &IrPipelinePhase::from(phase)
+                                    && parent.output_kind() == &OutputKind::new(kind)
+                            }),
+                    )?);
+                }
+                let unit = IrWorkUnit::new(module_work_unit_label(
+                    module.package_id.as_str(),
+                    module.module_path.as_str(),
+                ));
+                let named = vec![NamedInputHash {
+                    name: "source".to_owned(),
+                    domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                    digest: source_input_hash(version),
+                }];
+                for parent in &original {
+                    publisher.storage().validate_handle(parent).ok()?;
+                    publisher
+                        .validate_output(self.snapshot.id, parent, OutputAuthorization::Published)
+                        .ok()?;
+                    if parent.snapshot() != self.snapshot.id
+                        || parent.work_unit() != &unit
+                        || parent.schema_version() != SchemaVersion::new(1)
+                        || parent.lineage().named_input_hashes != named
+                    {
+                        return None;
+                    }
+                }
+                let (summary, core, preparation, vcs, kernel) = (
+                    original[0],
+                    original[1],
+                    original[2],
+                    original[3],
+                    original[4],
+                );
+                if preparation.lineage().parents != [core.output()]
+                    || vcs.lineage().parents.len() != 2
+                    || ![core, preparation]
+                        .iter()
+                        .all(|parent| vcs.lineage().parents.contains(&parent.output()))
+                    || kernel.lineage().parents.len() != 3
+                    || ![core, preparation, vcs]
+                        .iter()
+                        .all(|parent| kernel.lineage().parents.contains(&parent.output()))
+                {
+                    return None;
+                }
+                let stored_core = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<mizar_core::core_ir::CoreIr>(
+                                core,
+                                &OutputKind::new("SourceTheoremCore"),
+                            )
+                            .ok()?,
+                    )
+                    .ok()?;
+                let stored_vcs = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                                vcs,
+                                &OutputKind::new("SourceTheoremVC"),
+                            )
+                            .ok()?,
+                    )
+                    .ok()?;
+                let checked = publisher
+                    .storage()
+                    .get(
+                        &publisher
+                            .storage()
+                            .typed_handle::<(
+                                mizar_core::core_ir::CoreIr,
+                                mizar_vc::vc_ir::VcSet,
+                                mizar_kernel::checker::KernelCheckResult,
+                                mizar_proof::policy::PolicyDecision,
+                                mizar_proof::status::ProofStatusProjection,
+                                mizar_vc::dependency_slice::DependencySlice,
+                            )>(
+                                kernel,
+                                &OutputKind::new("SourceTheoremReflexivityKernelStatus"),
+                            )
+                            .ok()?,
+                    )
+                    .ok()?;
+                if checked.0 != *stored_core
+                    || checked.1 != *stored_vcs
+                    || stored_core.source_id() != version.source_id
+                    || stored_core.items().len() != artifact.exports.len()
+                    || stored_vcs.vcs().len() != artifact.obligations.len()
+                {
+                    return None;
+                }
+                // Follow actual producer ids, never a metadata-only source match.
+                let mut ancestry = core.lineage().parents.clone();
+                for (phase, kind) in [
+                    (PipelinePhase::OverloadResolution, "SourceTheoremMetadata"),
+                    (PipelinePhase::TypeChecking, "SourceTheoremTypedAst"),
+                    (
+                        PipelinePhase::SignatureCollection,
+                        "SourceTheoremModuleSummary",
+                    ),
+                    (
+                        PipelinePhase::ModuleResolve,
+                        "SourceTheoremModuleCandidates",
+                    ),
+                    (PipelinePhase::Frontend, "FrontendOutput"),
+                ] {
+                    let ancestor = unique(ancestry.iter().filter_map(|id| physical(*id)).filter(
+                        |parent| {
+                            parent.phase() == &IrPipelinePhase::from(phase)
+                                && parent.output_kind() == &OutputKind::new(kind)
+                        },
+                    ))?;
+                    publisher.storage().validate_handle(ancestor).ok()?;
+                    publisher
+                        .validate_output(self.snapshot.id, ancestor, OutputAuthorization::Published)
+                        .ok()?;
+                    if ancestor.snapshot() != self.snapshot.id
+                        || ancestor.work_unit() != &unit
+                        || (phase != PipelinePhase::Frontend
+                            && ancestor.lineage().named_input_hashes != named)
+                        || (phase == PipelinePhase::SignatureCollection
+                            && ancestor.output() != summary.output())
+                    {
+                        return None;
+                    }
+                    if phase == PipelinePhase::Frontend {
+                        bound_frontend = Some(ancestor.output());
+                    }
+                    ancestry = ancestor.lineage().parents.clone();
+                }
+            }
+            let value = if builtin {
+                builtin_verified_artifact_json(&artifact)
+            } else {
+                verified_artifact_json(&artifact)
+            }
+            .ok()?;
+            if builtin {
+                let main_path = PublishedArtifactPath::new(&entry.artifact_file).ok()?;
+                let domain =
+                    artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+                let read = read_published_artifact(
+                    &root,
+                    &main_path,
+                    PublishedArtifactReadOptions {
+                        artifact_hash_domain: Some(&domain),
+                        hash_excluded_paths: &artifact_hash_excluded_paths(),
+                        expected_artifact_hash: Some(entry.artifact_hash.digest),
+                    },
+                )
+                .ok()?;
+                let original = read_builtin_verified_artifact(
+                    &read.value,
+                    VerifiedArtifactReadOptions {
+                        artifact_path: Some(main_path.as_str()),
+                        expected_module: Some(&entry.module),
+                        expected_interface_hash: Some(entry.interface_hash.digest),
+                        expected_implementation_hash: Some(entry.implementation_hash.digest),
+                    },
+                )
+                .ok()?;
+                if original != *artifact {
+                    return None;
+                }
+            }
             if entry.module != artifact.module
                 || artifact.provenance.lockfile_hash != lockfile_hash
                 || artifact.provenance.verifier_config_hash != verifier_config_hash
                 || artifact.provenance.toolchain != self.snapshot.toolchain.identity()
                 || artifact.module.package_id != version.package_id.as_str()
                 || artifact.module.module_path != version.module_path.as_str()
-                || artifact.provenance.captured_source
-                    != Some((
-                        version.source_id,
-                        version.origin.clone(),
-                        version.source_hash,
-                    ))
+                || (!builtin
+                    && artifact.provenance.captured_source
+                        != Some((
+                            version.source_id,
+                            version.origin.clone(),
+                            version.source_hash,
+                        )))
                 || artifact.source_hash != version.source_hash
                 || artifact.source_file != version.normalized_path.as_str()
                 || artifact.schema_version != entry.artifact_hash.schema_version
@@ -188,7 +437,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             {
                 return None;
             }
-            source_metadata.push((|| {
+            let mapped_source = (|| {
                 use mizar_artifact::module_summary::{
                     MODULE_SUMMARY_SCHEMA_FAMILY, ModuleSummaryReadOptions, read_module_summary,
                 };
@@ -258,7 +507,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     )
                     .ok()?;
                 let source = &frontend.source;
-                if source.source_id != version.source_id
+                if (builtin && bound_frontend != Some(frontend_ref.output()))
+                    || source.normalized_path != version.normalized_path
+                    || source.edition != version.edition
+                    || source.source_id != version.source_id
                     || source.source_hash != version.source_hash
                     || summary.source_hash != version.source_hash
                     || source.package_id != version.package_id
@@ -361,58 +613,76 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                     }))
                     .cloned()
                 };
-                let direct_by = mizar_artifact::direct_by::project_frontend_direct_by(
-                    &frontend,
-                    &artifact,
-                    manifest.artifact_hash,
-                    |node| {
-                        let range = ast.node_view(node)?.range();
-                        let (_, env) = compiler.as_ref()?;
-                        let symbol = unique(env.symbols().iter().filter(|symbol| {
-                            symbol.origin().anchor() == &mizar_session::SourceAnchor::Range(range)
-                                && matches!(
-                                    symbol.kind(),
-                                    mizar_resolve::env::SymbolKind::Theorem
-                                        | mizar_resolve::env::SymbolKind::Lemma
-                                )
-                        }))?;
-                        bound_export(symbol)
-                    },
-                    |_, node| {
-                        use mizar_artifact::direct_by::{DirectByEndpoint, DirectByTarget};
-                        use mizar_resolve::resolved_ast::{LabelKind, LabelResolution};
-                        let mapped = (|| {
-                            let (arena, env) = compiler.as_ref()?;
-                            let mapped = arena.resolved_node_for(node)?;
-                            let labels = labels.as_ref()?;
-                            let reference = unique(
-                                labels
-                                    .table()
-                                    .iter()
-                                    .map(|(_, entry)| entry)
-                                    .filter(|entry| entry.site().node() == mapped),
-                            )?;
-                            let LabelResolution::Resolved(label) = reference.resolution() else {
-                                return None;
-                            };
-                            match label.kind() {
-                                LabelKind::ProofStep => Some(DirectByTarget::NonTheorem),
-                                LabelKind::Theorem => {
-                                    let symbol = unique(env.symbols().iter().filter(|symbol| {
-                                        symbol.symbol().fqn().as_str() == label.origin().as_str()
-                                    }))?;
-                                    Some(DirectByTarget::Theorem(Box::new(DirectByEndpoint {
-                                        module: artifact.module.clone(),
-                                        publication_hash: manifest.artifact_hash,
-                                        export: bound_export(symbol)?,
-                                    })))
+                let direct_by = {
+                    let mut source_view;
+                    let direct_by_artifact = if builtin {
+                        source_view = (*artifact).clone();
+                        source_view.provenance.captured_source = Some((
+                            version.source_id,
+                            version.origin.clone(),
+                            version.source_hash,
+                        ));
+                        &source_view
+                    } else {
+                        &artifact
+                    };
+                    mizar_artifact::direct_by::project_frontend_direct_by(
+                        &frontend,
+                        direct_by_artifact,
+                        manifest.artifact_hash,
+                        |node| {
+                            let range = ast.node_view(node)?.range();
+                            let (_, env) = compiler.as_ref()?;
+                            let symbol = unique(env.symbols().iter().filter(|symbol| {
+                                symbol.origin().anchor()
+                                    == &mizar_session::SourceAnchor::Range(range)
+                                    && matches!(
+                                        symbol.kind(),
+                                        mizar_resolve::env::SymbolKind::Theorem
+                                            | mizar_resolve::env::SymbolKind::Lemma
+                                    )
+                            }))?;
+                            bound_export(symbol)
+                        },
+                        |_, node| {
+                            use mizar_artifact::direct_by::{DirectByEndpoint, DirectByTarget};
+                            use mizar_resolve::resolved_ast::{LabelKind, LabelResolution};
+                            let mapped = (|| {
+                                let (arena, env) = compiler.as_ref()?;
+                                let mapped = arena.resolved_node_for(node)?;
+                                let labels = labels.as_ref()?;
+                                let reference = unique(
+                                    labels
+                                        .table()
+                                        .iter()
+                                        .map(|(_, entry)| entry)
+                                        .filter(|entry| entry.site().node() == mapped),
+                                )?;
+                                let LabelResolution::Resolved(label) = reference.resolution()
+                                else {
+                                    return None;
+                                };
+                                match label.kind() {
+                                    LabelKind::ProofStep => Some(DirectByTarget::NonTheorem),
+                                    LabelKind::Theorem => {
+                                        let symbol =
+                                            unique(env.symbols().iter().filter(|symbol| {
+                                                symbol.symbol().fqn().as_str()
+                                                    == label.origin().as_str()
+                                            }))?;
+                                        Some(DirectByTarget::Theorem(Box::new(DirectByEndpoint {
+                                            module: artifact.module.clone(),
+                                            publication_hash: manifest.artifact_hash,
+                                            export: bound_export(symbol)?,
+                                        })))
+                                    }
+                                    _ => None,
                                 }
-                                _ => None,
-                            }
-                        })();
-                        mapped.unwrap_or(DirectByTarget::Unmapped)
-                    },
-                );
+                            })();
+                            mapped.unwrap_or(DirectByTarget::Unmapped)
+                        },
+                    )
+                };
                 Some(PublishedSourceMetadata {
                     summary,
                     notation: collection.source_notation_view(&frontend),
@@ -424,7 +694,16 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                         manifest.artifact_hash,
                     ),
                 })
-            })());
+            })();
+            if builtin
+                && mapped_source
+                    .as_ref()
+                    .and_then(|metadata| metadata.direct_by.as_ref())
+                    .is_none_or(|projection| !projection.complete())
+            {
+                return None;
+            }
+            source_metadata.push(mapped_source);
             artifacts.push(artifact);
             manifests.push(manifest);
             artifact_roots.push(root);
@@ -482,6 +761,15 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             (Some(policies.0), policies.1),
             (staging.0, staging.1, false),
         )
+        .and_then(|result| {
+            result
+                .map(|(draft, stages)| {
+                    let [stage] = <[_; 1]>::try_from(stages)
+                        .map_err(|_| "normal theorem projection requires one witness".to_owned())?;
+                    Ok((draft, stage))
+                })
+                .transpose()
+        })
     }
 
     fn project_native_theorem_artifact_draft_route(
@@ -501,7 +789,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
     ) -> Result<
         Option<(
             mizar_ir::projection::VerifiedArtifactDraft,
-            mizar_proof::witness_store::ProofWitnessStagedRef,
+            Vec<mizar_proof::witness_store::ProofWitnessStagedRef>,
         )>,
         String,
     > {
@@ -599,7 +887,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .collect::<Result<Vec<_>, _>>()?;
         let (summary_parent, core_parent, vc_parent, kernel_parent) =
             (parents[0], parents[1], parents[2], parents[3]);
-        let normal_payload = if builtin {
+        let mut normal_payload = if builtin {
             None
         } else {
             let original = PhaseInput::new(
@@ -716,7 +1004,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         }
         if !summary.reexports.is_empty()
             || !summary.dependency_interfaces.is_empty()
-            || summary.exported_symbols.len() > 1
+            || (!builtin && summary.exported_symbols.len() > 1)
         {
             return no_draft;
         }
@@ -834,7 +1122,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .map_err(|error| error.to_string())?,
             );
-            let [vc] = sealed.1.vcs() else {
+            let Some(vc) = sealed.1.vcs().first() else {
                 return no_draft;
             };
             if vc.anchor.generation_schema_version.as_str() != "source-theorem-local-v1"
@@ -866,619 +1154,29 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         } else {
             None
         };
-        let (selection, ((projection, slice, mut witness_draft), file, reference)) =
-            if let Some(payload) = normal_payload {
-                (Some(payload.0), payload.1)
-            } else {
-                (
-                    None,
-                    mizar_proof::status::source_theorem_reflexivity_witness_file_candidate(
-                        arena,
-                        env,
-                        self.snapshot,
-                        policies.1,
-                        staging.0,
-                    )?,
-                )
-            };
+        let mut checked_statuses = Vec::new();
         if let Some(sealed) = &sealed {
-            let raw = projection.reuse_metadata();
-            let bound = sealed.4.reuse_metadata();
-            let (trusted, wire) =
-                mizar_proof::status::source_theorem_reflexivity_trusted_witness_metadata_with_wire(
+            if sealed.1.vcs().len() != check.owners().len() || check.owners().is_empty() {
+                return Err(fail("complete owner/VC coverage mismatch"));
+            }
+            for vc in sealed.1.vcs() {
+                let actual = mizar_proof::status::check_source_theorem_reflexivity_with_status(
                     arena,
                     &check,
                     env,
                     input.snapshot,
-                    vc_id,
+                    vc.id,
                     policies.1,
                 )?;
-            let evidence = mizar_proof::selection::TrustedKernelEvidence::from_policy_input(
-                &KernelPolicyInput::from_kernel_result(
-                    &sealed.2,
-                    KernelEvidenceOrigin::BuiltinDischarge,
-                ),
-            )
-            .ok_or_else(|| fail("requires trusted built-in Kernel evidence"))?;
-            if slice != sealed.5
-                || projection.vc() != sealed.4.vc()
-                || projection.obligation_id() != sealed.4.obligation_id()
-                || raw.obligation_anchor() != bound.obligation_anchor()
-                || raw.obligation_fingerprint() != bound.obligation_fingerprint()
-                || raw.vc_fingerprint() != bound.vc_fingerprint()
-                || raw.local_context_fingerprint() != bound.local_context_fingerprint()
-                || raw.dependency_slice_fingerprint() != bound.dependency_slice_fingerprint()
-                || raw.policy_fingerprint() != bound.policy_fingerprint()
-                || witness_draft.payload_bytes() != wire
-                || witness_draft.kernel_acceptance() != trusted.kernel_acceptance()
-                || reference.kernel_acceptance != *trusted.kernel_acceptance()
-                || trusted.trusted_kernel_evidence() != &evidence
-            {
-                return Err(fail("complete FILE and sealed evidence mismatch"));
-            }
-            witness_draft = mizar_proof::witness_store::ProofWitnessDraft::new(
-                witness_draft.obligation_id(),
-                witness_draft.obligation_anchor().clone(),
-                witness_draft.obligation_fingerprint().clone(),
-                &sealed.4,
-                trusted,
-                witness_draft.payload_schema().clone(),
-                witness_draft.payload_bytes().to_vec(),
-                witness_draft.witness_path(),
-                witness_draft
-                    .provenance()
-                    .clone()
-                    .with_trusted_used_axioms_ref(
-                        sealed
-                            .4
-                            .trusted_used_axioms()
-                            .ok_or_else(|| fail("requires sealed trusted axioms"))?,
-                    ),
-            )
-            .map_err(|error| error.to_string())?;
-        }
-        let [(owner, owner_visibility)] = check.owners() else {
-            return no_draft;
-        };
-        if owner.role != SourceTheoremRole::Theorem
-            || owner.status != SourceTheoremStatus::Unmodified
-            || owner.recovery != SourceStatementRecovery::Normal
-            || !env.imports().is_empty()
-            || !env.exports().is_empty()
-            || !typed.diagnostics().is_empty()
-            || !inference.diagnostics().is_empty()
-            || !metadata.diagnostics().is_empty()
-        {
-            return no_draft;
-        }
-        let symbol = env
-            .symbols()
-            .get(&owner.symbol)
-            .ok_or_else(|| fail("checked owner symbol missing"))?;
-        if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem {
-            return no_draft;
-        }
-        let (visibility, export) = match (
-            symbol.visibility(),
-            symbol.export_status(),
-            summary.exported_symbols.as_slice(),
-        ) {
-            (
-                mizar_resolve::env::Visibility::Public,
-                mizar_resolve::env::ExportStatus::Exported,
-                [export],
-            ) => ("public", Some(export)),
-            (
-                mizar_resolve::env::Visibility::Private,
-                mizar_resolve::env::ExportStatus::LocalOnly,
-                [],
-            ) => ("private", None),
-            _ => return no_draft,
-        };
-        if *owner_visibility != visibility {
-            return no_draft;
-        }
-        if owner.symbol.module() != arena.module()
-            || owner.source_range.source_id != version.source_id
-            || arena.source_id() != version.source_id
-            || symbol.origin().source_id() != version.source_id
-            || symbol.origin().module_id() != arena.module()
-            || symbol.origin().is_recovered()
-            || symbol.origin().import_edge().is_some()
-            || summary.source_hash != version.source_hash
-            || export.is_some_and(|export| {
-                export.origin_id != owner.symbol.fqn().as_str()
-                    || export.fully_qualified_name != owner.symbol.fqn().as_str()
-                    || export.namespace_path
-                        != symbol
-                            .namespace()
-                            .as_str()
-                            .split('.')
-                            .map(str::to_owned)
-                            .collect::<Vec<_>>()
-                    || export.visibility != "public"
-                    || export.declaration_kind != "theorem"
-                    || export.proof_status.is_some()
-                    || export.rendered_signature.is_empty()
-                    || export.source_range.start_byte != owner.source_range.start as u64
-                    || export.source_range.end_byte != owner.source_range.end as u64
-            })
-        {
-            return Err(fail("checked owner export mismatch"));
-        }
-        let mizar_checker::typed_ast::TypedSiteRef::Node(owner_node) = owner.site else {
-            return no_draft;
-        };
-        let mut formula = owner_node;
-        let formula_range = loop {
-            let Some(node) = typed.nodes().node(formula) else {
-                return no_draft;
-            };
-            let Some(original) = node.resolved_node.and_then(|id| arena.arena().node(id)) else {
-                return no_draft;
-            };
-            let mizar_session::SourceAnchor::Range(range) = node.anchor else {
-                return no_draft;
-            };
-            let original_kind = format!("{:?}", original.kind());
-            let kind = original_kind.as_str();
-            if (formula == owner_node && kind != "TheoremItem")
-                || (formula != owner_node
-                    && !matches!(
-                        kind,
-                        "Proposition" | "FormulaExpression" | "QuantifiedFormula(Universal)"
-                    ))
-            {
-                return no_draft;
-            }
-            if node.kind.as_str() != kind
-                || node.recovery != NodeRecoveryState::Normal
-                || original.origin().is_recovered()
-                || original.origin().import_edge().is_some()
-                || original.origin().source_id() != version.source_id
-                || original.origin().module_id() != arena.module()
-                || original.origin().anchor() != &node.anchor
-                || range.source_id != version.source_id
-                || range.start >= range.end
-                || range.start < owner.source_range.start
-                || range.end > owner.source_range.end
-                || (formula == owner_node && range != owner.source_range)
-            {
-                return no_draft;
-            }
-            if kind == "QuantifiedFormula(Universal)" {
-                break range;
-            }
-            let mut children = node.children.iter().copied().filter(|child| {
-                typed
-                    .nodes()
-                    .node(*child)
-                    .is_some_and(|child| !child.kind.as_str().starts_with("Token("))
-            });
-            let Some(child) = children.next() else {
-                return no_draft;
-            };
-            if formula != owner_node && children.next().is_some() {
-                return no_draft;
-            }
-            if typed
-                .nodes()
-                .node(child)
-                .and_then(|child| child.resolved_node)
-                .is_none_or(|child| !original.children().contains(&child))
-            {
-                return no_draft;
-            }
-            formula = child;
-        };
-        let Some(elaborated) = source
-            .source_text
-            .get(formula_range.start..formula_range.end)
-        else {
-            return no_draft;
-        };
-        let statements = vec![StatementMetadata {
-            item: owner.symbol.fqn().as_str().to_owned(),
-            source_range: SourceRangeSummary {
-                start_byte: formula_range.start as u64,
-                end_byte: formula_range.end as u64,
-            },
-            elaborated: elaborated.to_owned(),
-            reserve_binders: Vec::new(),
-            resolved_symbols: std::collections::BTreeMap::new(),
-        }];
-        let exports = export
-            .into_iter()
-            .map(|export| VerifiedExport {
-                origin_id: export.origin_id.clone(),
-                fully_qualified_name: export.fully_qualified_name.clone(),
-                namespace_path: export.namespace_path.clone(),
-                visibility: ExportVisibility::Public,
-                export_kind: export.declaration_kind.clone(),
-                source_range: export.source_range,
-                rendered_signature: export.rendered_signature.clone(),
-                interface_fingerprint: ArtifactHashRef::new(
-                    ArtifactHashClass::Interface,
-                    MODULE_SUMMARY_SCHEMA_FAMILY,
-                    summary.schema_version,
-                    export.interface_fingerprint,
-                ),
-                proof_status: None,
-                documentation_ref: None,
-            })
-            .collect();
-        let Some(primary) = typed.source_term() else {
-            return no_draft;
-        };
-        let Some(atomic) = typed.source_atomic_formula() else {
-            return no_draft;
-        };
-        if metadata.expr_metadata().is_empty()
-            || metadata.expr_metadata().len() != primary.terms().len() + atomic.formulas().len()
-            || !metadata.collection_candidates().is_empty()
-            || !metadata.expanded_candidates().is_empty()
-            || !metadata.template_expansions().is_empty()
-            || !metadata.viable_candidates().is_empty()
-            || !metadata.viability_decisions().is_empty()
-            || !metadata.specificity_graphs().is_empty()
-            || !metadata.resolved_overloads().is_empty()
-            || !metadata.inserted_coercions().is_empty()
-            || !atomic.predicate_heads().is_empty()
-            || !atomic.candidates().is_empty()
-        {
-            return no_draft;
-        }
-        let mut sites = std::collections::BTreeSet::new();
-        for (_, term) in primary.terms().iter() {
-            if term.kind() != SourcePrimaryTermKind::VariableReference
-                || term.recovery() != SourcePrimaryTermRecovery::Normal
-                || !sites.insert(term.site().clone())
-                || metadata
-                    .expr_metadata()
-                    .get_by_site(term.site())
-                    .is_none_or(|row| {
-                        row.source_range != term.source_range() || row.final_type.is_none()
-                    })
-            {
-                return no_draft;
-            }
-        }
-        for (_, formula) in atomic.formulas().iter() {
-            if formula.kind() != SourceAtomicFormulaKind::Equality
-                || formula.recovery() != SourceAtomicFormulaRecovery::Normal
-                || !sites.insert(formula.site().clone())
-                || metadata
-                    .expr_metadata()
-                    .get_by_site(formula.site())
-                    .is_none_or(|row| row.source_range != formula.source_range())
-            {
-                return no_draft;
-            }
-        }
-        let mut expressions = Vec::with_capacity(sites.len());
-        for (_, row) in metadata.expr_metadata().canonical_iter() {
-            let range = row.source_range;
-            let Some(node) = typed.nodes().node(row.typed_site.node()) else {
-                return no_draft;
-            };
-            if !sites.remove(&row.typed_site)
-                || range.source_id != version.source_id
-                || node.anchor != mizar_session::SourceAnchor::Range(range)
-                || node.recovery != NodeRecoveryState::Normal
-                || row.overload.is_some()
-                || !row.inserted_views.is_empty()
-                || !row.diagnostics.is_empty()
-                || range.start >= range.end
-            {
-                return no_draft;
-            }
-            let Some(surface) = source.source_text.get(range.start..range.end) else {
-                return no_draft;
-            };
-            let inferred_type = if let Some(id) = row.final_type {
-                let Some(ty) = inference.normalized_types().get(id) else {
-                    return no_draft;
-                };
-                if ty.status != NormalizedTypeStatus::Known
-                    || ty.head != TypeHeadRef::BuiltinSet
-                    || !ty.args.is_empty()
-                    || !ty.attributes.positive().is_empty()
-                    || !ty.attributes.negative().is_empty()
-                {
-                    return no_draft;
+                if actual.0 != sealed.0 || actual.1 != sealed.1 {
+                    return Err(fail("complete owner status graphs mismatch"));
                 }
-                Some("set".to_owned())
-            } else {
-                None
-            };
-            expressions.push(ExpressionMetadata {
-                expression_id: row.expr.as_str().to_owned(),
-                source_range: SourceRangeSummary {
-                    start_byte: range.start as u64,
-                    end_byte: range.end as u64,
-                },
-                expression_kind: node.kind.as_str().to_owned(),
-                rendered_surface: surface.to_owned(),
-                inferred_type,
-                resolved_symbol: None,
-                inserted_coercions: Vec::new(),
-                active_thesis: None,
-                overload_resolution: None,
-            });
-        }
-        if !sites.is_empty() {
-            return no_draft;
-        }
-        let Some(written_types) = typed.source_type() else {
-            return no_draft;
-        };
-        let Some(context) = typed.source_context() else {
-            return no_draft;
-        };
-        if written_types.source_id() != version.source_id
-            || written_types.module_id() != arena.module()
-            || context.source_id() != version.source_id
-            || context.module_id() != arena.module()
-            || written_types.expressions().is_empty()
-            || written_types.applications().len() != context.declarations().len()
-            || !written_types.arguments().is_empty()
-            || !written_types.definition_returns().is_empty()
-            || !written_types.mode_rhs().is_empty()
-            || !written_types.structure_members().is_empty()
-        {
-            return no_draft;
-        }
-        let mut type_sites = std::collections::BTreeSet::new();
-        let mut bindings = std::collections::BTreeSet::new();
-        let mut ordinals = std::collections::BTreeSet::new();
-        for (root_id, root) in written_types.expressions().iter() {
-            let range = root.source_range();
-            let head_range = root.head_range();
-            let Some(node) = typed.nodes().node(root.site().node()) else {
-                return no_draft;
-            };
-            let Some(head) = typed.nodes().node(root.head_site().node()) else {
-                return no_draft;
-            };
-            if root.source_id() != version.source_id
-                || root.module_id() != arena.module()
-                || root.form() != SourceTypeApplicationForm::Bare
-                || root.head() != &SourceTypeHead::BuiltinSet
-                || root.recovery() != NodeRecoveryState::Normal
-                || root.site() != &mizar_checker::typed_ast::TypedSiteRef::Node(root.site().node())
-                || root.head_site()
-                    != &mizar_checker::typed_ast::TypedSiteRef::Node(root.head_site().node())
-                || !type_sites.insert(root.site().clone())
-                || node.kind.as_str() != "TypeExpression"
-                || head.kind.as_str() != "TypeHead"
-                || node.recovery != NodeRecoveryState::Normal
-                || head.recovery != NodeRecoveryState::Normal
-                || node.children != [root.head_site().node()]
-                || node.anchor != mizar_session::SourceAnchor::Range(range)
-                || head.anchor != mizar_session::SourceAnchor::Range(head_range)
-                || range.source_id != version.source_id
-                || head_range.source_id != version.source_id
-                || range.start >= range.end
-                || head_range.start < range.start
-                || head_range.end > range.end
-                || head_range.start >= head_range.end
-            {
-                return no_draft;
+                checked_statuses.push(actual);
             }
-            let Some(surface) = source.source_text.get(range.start..range.end) else {
-                return no_draft;
-            };
-            if surface != root.spelling()
-                || source.source_text.get(head_range.start..head_range.end)
-                    != Some(root.head_spelling())
-            {
-                return no_draft;
-            }
-            let mut first: Option<usize> = None;
-            let mut root_type = None;
-            for (_, application) in written_types
-                .applications()
-                .iter()
-                .filter(|(_, application)| application.root() == root_id)
-            {
-                let Some(declaration) = unique(
-                    context
-                        .declarations()
-                        .iter()
-                        .map(|(_, row)| row)
-                        .filter(|row| {
-                            row.binding == application.binding()
-                                && row.source_ordinal == application.source_ordinal()
-                        }),
-                ) else {
-                    return no_draft;
-                };
-                if !bindings.insert(declaration.binding)
-                    || !ordinals.insert(declaration.source_ordinal)
-                    || declaration.written_type_range != range
-                    || node.links.context != Some(declaration.local_context)
-                    || head.links.context != Some(declaration.local_context)
-                {
-                    return no_draft;
-                }
-                let Some(declared_node) = typed.nodes().node(declaration.site.node()) else {
-                    return no_draft;
-                };
-                if declared_node.typing != TypingState::Successful {
-                    return no_draft;
-                }
-                let Some(entry) = declared_node
-                    .links
-                    .type_entry
-                    .and_then(|id| typed.types().get(id))
-                else {
-                    return no_draft;
-                };
-                let TypeEntryActual::Known(id) = entry.actual else {
-                    return no_draft;
-                };
-                if entry.owner != declaration.site
-                    || entry.status != TypeStatus::Known
-                    || root_type.is_some_and(|previous| previous != id)
-                {
-                    return no_draft;
-                }
-                let Some(ty) = inference.normalized_types().get(id) else {
-                    return no_draft;
-                };
-                if ty.status != NormalizedTypeStatus::Known
-                    || ty.head != TypeHeadRef::BuiltinSet
-                    || !ty.args.is_empty()
-                    || !ty.attributes.positive().is_empty()
-                    || !ty.attributes.negative().is_empty()
-                {
-                    return no_draft;
-                }
-                root_type = Some(id);
-                first = Some(first.map_or(declaration.source_ordinal, |previous| {
-                    previous.min(declaration.source_ordinal)
-                }));
-            }
-            let Some(first) = first else {
-                return no_draft;
-            };
-            expressions.push(ExpressionMetadata {
-                expression_id: format!("source.theorem.type.{first}"),
-                source_range: SourceRangeSummary {
-                    start_byte: range.start as u64,
-                    end_byte: range.end as u64,
-                },
-                expression_kind: node.kind.as_str().to_owned(),
-                rendered_surface: surface.to_owned(),
-                inferred_type: Some("set".to_owned()),
-                resolved_symbol: None,
-                inserted_coercions: Vec::new(),
-                active_thesis: None,
-                overload_resolution: None,
-            });
-        }
-        if bindings.len() != written_types.applications().len() {
+        } else if check.owners().len() != 1 {
             return no_draft;
         }
-        let Some(node) = typed.nodes().node(formula) else {
-            return no_draft;
-        };
-        expressions.push(ExpressionMetadata {
-            expression_id: format!("source.theorem.quantified.{}", owner.symbol.fqn().as_str()),
-            source_range: SourceRangeSummary {
-                start_byte: formula_range.start as u64,
-                end_byte: formula_range.end as u64,
-            },
-            expression_kind: node.kind.as_str().to_owned(),
-            rendered_surface: elaborated.to_owned(),
-            inferred_type: None,
-            resolved_symbol: None,
-            inserted_coercions: Vec::new(),
-            active_thesis: None,
-            overload_resolution: None,
-        });
-        let vcs = storage
-            .typed_handle::<mizar_vc::vc_ir::VcSet>(
-                vc_parent.as_output_ref(),
-                &OutputKind::new("SourceTheoremVC"),
-            )
-            .map_err(|error| error.to_string())?;
-        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
-        if sealed.as_ref().is_some_and(|sealed| sealed.1 != *vcs) {
-            return Err(fail("complete sealed VC mismatch"));
-        }
-        let [vc] = vcs.vcs() else {
-            return no_draft;
-        };
-        if vc.id != vc_id
-            || vc.kind != mizar_vc::vc_ir::VcKind::TheoremProofStep
-            || slice.vc() != vc_id
-            || slice.kind() != &vc.kind
-            || slice.fingerprint().hash()
-                != projection.reuse_metadata().dependency_slice_fingerprint()
-        {
-            return no_draft;
-        }
-        let range = vc
-            .anchor
-            .source_range
-            .ok_or_else(|| fail("requires original VC source range"))?;
-        if range.source_id != version.source_id
-            || range.start >= range.end
-            || range.start < owner.source_range.start
-            || range.end > owner.source_range.end
-        {
-            return Err(fail("original VC source range mismatch"));
-        }
-        let statement = source
-            .source_text
-            .get(range.start..range.end)
-            .ok_or_else(|| fail("original VC source range invalid"))?;
-        let reuse = projection.reuse_metadata();
-        let identity = ProofObligationIdentity::new(
-            projection.obligation_id(),
-            reuse.obligation_anchor().clone(),
-            reuse.obligation_fingerprint(),
-            reuse.vc_fingerprint(),
-            reuse.local_context_fingerprint(),
-            reuse.dependency_slice_fingerprint(),
-        )
-        .map_err(|error| error.to_string())?;
-        let normal_evidence = if builtin {
-            None
-        } else {
-            let kernel = storage
-                .typed_handle::<(
-                    mizar_kernel::checker::KernelCheckResult,
-                    mizar_proof::policy::PolicyDecision,
-                )>(
-                    kernel_parent.as_output_ref(),
-                    &OutputKind::new("SourceTheoremCandidateCheck"),
-                )
-                .map_err(|error| error.to_string())?;
-            let kernel = storage.get(&kernel).map_err(|error| error.to_string())?;
-            let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
-            let kernel_input = KernelPolicyInput::from_kernel_result(&kernel.0, origin);
-            let trusted = TrustedUsedAxiomsRef::from_kernel_result(&kernel.0, origin)
-                .map_err(|error| error.to_string())?;
-            let selection = selection
-                .as_ref()
-                .ok_or_else(|| fail("requires normal selection"))?;
-            let selected = selection.reuse_metadata();
-            let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(
-                selection
-                    .selected_candidate_id()
-                    .cloned()
-                    .ok_or_else(|| fail("requires selected candidate"))?,
-                &kernel_input,
-            )
-            .ok_or_else(|| fail("requires trusted candidate"))?
-            .with_provenance_hash(
-                selected
-                    .selected_candidate_provenance_hash()
-                    .ok_or_else(|| fail("requires candidate provenance"))?,
-            );
-            Some((kernel, trusted, selected.encoded_problem_hash(), candidate))
-        };
-        PublishedArtifactPath::new(version.normalized_path.as_str())
-            .map_err(|_| fail("source path mismatch"))?;
-        let path = PublishedArtifactPath::new(staging.0).map_err(|error| error.to_string())?;
-        if path.as_str() != reference.witness_path {
-            return Err(fail("witness path mismatch"));
-        }
-        let raw_refs = [
-            (
-                "mizar-vc/source-theorem-canonical-vc/v1",
-                reuse.vc_fingerprint(),
-            ),
-            (
-                "mizar-vc/source-theorem-canonical-context/v1",
-                reuse.local_context_fingerprint(),
-            ),
-            (
-                mizar_vc::dependency_slice::DEPENDENCY_SLICE_SCHEMA_VERSION,
-                reuse.dependency_slice_fingerprint(),
-            ),
+        let [lockfile_hash, verifier_config_hash] = [
             (
                 if self.build_plan.lockfile.toolchain_version.is_some() {
                     "mizar-build/parsed-lock-content/v2"
@@ -1496,332 +1194,1088 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             ArtifactHashRef::source_owner_fingerprint(producer, digest)
                 .expect("native owner producers have fixed supported bindings")
         });
-        let [
-            vc_fingerprint,
-            local_context_fingerprint,
-            dependency_slice_fingerprint,
-            lockfile_hash,
-            verifier_config_hash,
-        ] = raw_refs;
-        use mizar_core::core_ir::{
-            CoreFormulaKind, CoreIr, CoreItemKind, CoreItemStatus, CoreNodeRef, CoreProofNodeKind,
-            CoreProofStatus, CoreSourceAnchor, CoreTermKind, ObligationSeedKind,
-            ObligationSeedStatus,
-        };
-        let core = storage
-            .typed_handle::<CoreIr>(
-                core_parent.as_output_ref(),
-                &OutputKind::new("SourceTheoremCore"),
-            )
-            .map_err(|error| error.to_string())?;
-        let core = storage.get(&core).map_err(|error| error.to_string())?;
-        if sealed.as_ref().is_some_and(|sealed| sealed.0 != *core) {
-            return Err(fail("complete sealed Core mismatch"));
-        }
-        let (Some((item_id, item)), Some((_, proof)), Some((seed_id, seed))) = (
-            unique(core.items().iter()),
-            unique(core.proofs().iter()),
-            unique(core.obligation_seeds().iter()),
-        ) else {
-            return no_draft;
-        };
-        if core.source_id() != version.source_id
-            || core.module_id() != arena.module()
-            || item.symbol != owner.symbol
-            || item.kind != CoreItemKind::Theorem
-            || item.status != CoreItemStatus::Valid
-            || item.visibility.as_str() != visibility
-            || proof.item != item_id
-            || proof.status != CoreProofStatus::PendingAutomaticProof
-            || seed.owner != item_id
-            || seed.kind != ObligationSeedKind::TheoremProof
-            || seed.status != ObligationSeedStatus::Active
-            || core.proof_nodes().len() != 2
-            || item.source.anchor != CoreSourceAnchor::SourceRange(owner.source_range)
-            || proof.source.anchor != item.source.anchor
-            || core.source_map().item_sources.get(&item_id) != Some(&item.source)
-        {
-            return no_draft;
-        }
-        let Some(root) = core.proof_nodes().get(proof.root) else {
-            return no_draft;
-        };
-        let CoreProofNodeKind::IntroduceBinder {
-            binder: local,
-            child,
-        } = &root.kind
-        else {
-            return no_draft;
-        };
-        let Some(terminal) = core.proof_nodes().get(*child) else {
-            return no_draft;
-        };
-        let CoreProofNodeKind::TerminalGoal {
-            obligation,
-            citations,
-        } = &terminal.kind
-        else {
-            return no_draft;
-        };
-        let (Some(goal_id), Some(guard), Some(name)) =
-            (seed.goal, local.ty_guard, local.source_name.as_deref())
-        else {
-            return no_draft;
-        };
-        if *obligation != seed_id
-            || !citations.is_empty()
-            || local.role.as_str() != "proof-let"
-            || name.is_empty()
-            || seed.context != [guard]
-            || !seed.core_refs.contains(&CoreNodeRef::Item(item_id))
-            || !seed.core_refs.contains(&CoreNodeRef::Formula(goal_id))
-            || !seed.core_refs.contains(&CoreNodeRef::ProofNode(*child))
-            || core.source_map().proof_sources.get(&proof.root) != Some(&root.source)
-            || core.source_map().proof_sources.get(child) != Some(&terminal.source)
-            || core.source_map().obligation_sources.get(&seed_id) != Some(&seed.source)
-            || terminal.source.anchor != seed.source.anchor
-            || root.source.anchor != local.source.anchor
-        {
-            return no_draft;
-        }
-        let Some(goal) = core.formulas().get(goal_id) else {
-            return no_draft;
-        };
-        let CoreFormulaKind::Equals { left, right } = goal.kind else {
-            return no_draft;
-        };
-        let (Some(left_term), Some(right_term)) = (core.terms().get(left), core.terms().get(right))
-        else {
-            return no_draft;
-        };
-        if left == right
-            || left_term.kind != CoreTermKind::Var(local.var)
-            || right_term.kind != CoreTermKind::Var(local.var)
-            || core.source_map().formula_sources.get(&goal_id) != Some(&goal.source)
-            || core.source_map().term_sources.get(&left) != Some(&left_term.source)
-            || core.source_map().term_sources.get(&right) != Some(&right_term.source)
-        {
-            return no_draft;
-        }
-        let (
-            CoreSourceAnchor::SourceRange(terminal_range),
-            CoreSourceAnchor::SourceRange(goal_range),
-            CoreSourceAnchor::SourceRange(left_range),
-            CoreSourceAnchor::SourceRange(right_range),
-            CoreSourceAnchor::SourceRange(local_range),
-        ) = (
-            &terminal.source.anchor,
-            &goal.source.anchor,
-            &left_term.source.anchor,
-            &right_term.source.anchor,
-            &local.source.anchor,
-        )
-        else {
-            return no_draft;
-        };
-        if [
-            terminal_range,
-            goal_range,
-            left_range,
-            right_range,
-            local_range,
-        ]
-        .iter()
-        .any(|range| {
-            range.source_id != version.source_id
+        let mut all_exports = Vec::new();
+        let mut all_statements = Vec::new();
+        let mut all_expressions: Vec<ExpressionMetadata> = Vec::new();
+        let mut all_obligations = Vec::new();
+        let mut all_references = Vec::new();
+        let mut staged_witnesses = Vec::new();
+        let mut cleanup = None;
+        for (owner_index, (owner, owner_visibility)) in check.owners().iter().enumerate() {
+            let sealed = if builtin {
+                Some(
+                    unique(checked_statuses.iter().filter(|status| {
+                        status.1.vc(status.4.vc()).is_some_and(|vc| {
+                            let mizar_vc::vc_ir::AnchorOwner::Theorem(item) = vc.anchor.owner
+                            else {
+                                return false;
+                            };
+                            status
+                                .0
+                                .items()
+                                .get(item)
+                                .is_some_and(|item| item.symbol == owner.symbol)
+                        })
+                    }))
+                    .ok_or_else(|| fail("requires exact owner status"))?,
+                )
+            } else {
+                None
+            };
+            let vc_id = sealed.map_or(vc_id, |sealed| sealed.4.vc());
+            let witness_path = if check.owners().len() == 1 {
+                staging.0.to_owned()
+            } else {
+                format!(
+                    "{}-{owner_index}.json",
+                    staging.0.strip_suffix(".json").unwrap_or(staging.0)
+                )
+            };
+            if owner.role != SourceTheoremRole::Theorem
+                || owner.status != SourceTheoremStatus::Unmodified
+                || owner.recovery != SourceStatementRecovery::Normal
+                || !env.imports().is_empty()
+                || !env.exports().is_empty()
+                || !typed.diagnostics().is_empty()
+                || !inference.diagnostics().is_empty()
+                || !metadata.diagnostics().is_empty()
+            {
+                return no_draft;
+            }
+            let symbol = env
+                .symbols()
+                .get(&owner.symbol)
+                .ok_or_else(|| fail("checked owner symbol missing"))?;
+            if symbol.kind() != mizar_resolve::env::SymbolKind::Theorem {
+                return no_draft;
+            }
+            let export = unique(
+                summary
+                    .exported_symbols
+                    .iter()
+                    .filter(|export| export.origin_id == owner.symbol.fqn().as_str()),
+            );
+            let (visibility, export) = match (symbol.visibility(), symbol.export_status(), export) {
+                (
+                    mizar_resolve::env::Visibility::Public,
+                    mizar_resolve::env::ExportStatus::Exported,
+                    Some(export),
+                ) => ("public", Some(export)),
+                (
+                    mizar_resolve::env::Visibility::Private,
+                    mizar_resolve::env::ExportStatus::LocalOnly,
+                    None,
+                ) if check.owners().len() == 1 && summary.exported_symbols.is_empty() => {
+                    ("private", None)
+                }
+                _ => return no_draft,
+            };
+            if *owner_visibility != visibility {
+                return no_draft;
+            }
+            if owner.symbol.module() != arena.module()
+                || owner.source_range.source_id != version.source_id
+                || arena.source_id() != version.source_id
+                || symbol.origin().source_id() != version.source_id
+                || symbol.origin().module_id() != arena.module()
+                || symbol.origin().is_recovered()
+                || symbol.origin().import_edge().is_some()
+                || summary.source_hash != version.source_hash
+                || export.is_some_and(|export| {
+                    export.origin_id != owner.symbol.fqn().as_str()
+                        || export.fully_qualified_name != owner.symbol.fqn().as_str()
+                        || export.namespace_path
+                            != symbol
+                                .namespace()
+                                .as_str()
+                                .split('.')
+                                .map(str::to_owned)
+                                .collect::<Vec<_>>()
+                        || export.visibility != "public"
+                        || export.declaration_kind != "theorem"
+                        || export.proof_status.is_some()
+                        || export.rendered_signature.is_empty()
+                        || export.source_range.start_byte != owner.source_range.start as u64
+                        || export.source_range.end_byte != owner.source_range.end as u64
+                })
+            {
+                return Err(fail("checked owner export mismatch"));
+            }
+            let mizar_checker::typed_ast::TypedSiteRef::Node(owner_node) = owner.site else {
+                return no_draft;
+            };
+            let mut formula = owner_node;
+            let formula_range = loop {
+                let Some(node) = typed.nodes().node(formula) else {
+                    return no_draft;
+                };
+                let Some(original) = node.resolved_node.and_then(|id| arena.arena().node(id))
+                else {
+                    return no_draft;
+                };
+                let mizar_session::SourceAnchor::Range(range) = node.anchor else {
+                    return no_draft;
+                };
+                let original_kind = format!("{:?}", original.kind());
+                let kind = original_kind.as_str();
+                if (formula == owner_node && kind != "TheoremItem")
+                    || (formula != owner_node
+                        && !matches!(
+                            kind,
+                            "Proposition" | "FormulaExpression" | "QuantifiedFormula(Universal)"
+                        ))
+                {
+                    return no_draft;
+                }
+                if node.kind.as_str() != kind
+                    || node.recovery != NodeRecoveryState::Normal
+                    || original.origin().is_recovered()
+                    || original.origin().import_edge().is_some()
+                    || original.origin().source_id() != version.source_id
+                    || original.origin().module_id() != arena.module()
+                    || original.origin().anchor() != &node.anchor
+                    || range.source_id != version.source_id
+                    || range.start >= range.end
+                    || range.start < owner.source_range.start
+                    || range.end > owner.source_range.end
+                    || (formula == owner_node && range != owner.source_range)
+                {
+                    return no_draft;
+                }
+                if kind == "QuantifiedFormula(Universal)" {
+                    break range;
+                }
+                let mut children = node.children.iter().copied().filter(|child| {
+                    typed
+                        .nodes()
+                        .node(*child)
+                        .is_some_and(|child| !child.kind.as_str().starts_with("Token("))
+                });
+                let Some(child) = children.next() else {
+                    return no_draft;
+                };
+                if formula != owner_node && children.next().is_some() {
+                    return no_draft;
+                }
+                if typed
+                    .nodes()
+                    .node(child)
+                    .and_then(|child| child.resolved_node)
+                    .is_none_or(|child| !original.children().contains(&child))
+                {
+                    return no_draft;
+                }
+                formula = child;
+            };
+            let Some(elaborated) = source
+                .source_text
+                .get(formula_range.start..formula_range.end)
+            else {
+                return no_draft;
+            };
+            let statements = vec![StatementMetadata {
+                item: owner.symbol.fqn().as_str().to_owned(),
+                source_range: SourceRangeSummary {
+                    start_byte: formula_range.start as u64,
+                    end_byte: formula_range.end as u64,
+                },
+                elaborated: elaborated.to_owned(),
+                reserve_binders: Vec::new(),
+                resolved_symbols: std::collections::BTreeMap::new(),
+            }];
+            let exports: Vec<_> = export
+                .into_iter()
+                .map(|export| VerifiedExport {
+                    origin_id: export.origin_id.clone(),
+                    fully_qualified_name: export.fully_qualified_name.clone(),
+                    namespace_path: export.namespace_path.clone(),
+                    visibility: ExportVisibility::Public,
+                    export_kind: export.declaration_kind.clone(),
+                    source_range: export.source_range,
+                    rendered_signature: export.rendered_signature.clone(),
+                    interface_fingerprint: ArtifactHashRef::new(
+                        ArtifactHashClass::Interface,
+                        MODULE_SUMMARY_SCHEMA_FAMILY,
+                        summary.schema_version,
+                        export.interface_fingerprint,
+                    ),
+                    proof_status: None,
+                    documentation_ref: None,
+                })
+                .collect();
+            let (selection, ((projection, slice, mut witness_draft), file, reference)) =
+                if let Some(payload) = normal_payload.take() {
+                    (Some(payload.0), payload.1)
+                } else if check.owners().len() == 1 {
+                    (
+                        None,
+                        mizar_proof::status::source_theorem_reflexivity_witness_file_candidate(
+                            arena,
+                            env,
+                            self.snapshot,
+                            policies.1,
+                            &witness_path,
+                        )?,
+                    )
+                } else {
+                    let original = mizar_proof::status::source_theorem_reflexivity_witness_draft(
+                        arena,
+                        &check,
+                        env,
+                        self.snapshot,
+                        vc_id,
+                        policies.1,
+                        &witness_path,
+                    )?;
+                    let draft = &original.2;
+                    let file = draft.source_theorem_file_value()?;
+                    let CanonicalJson::Object(fields) = &file else {
+                        return Err(fail("requires FILE object"));
+                    };
+                    let Some(CanonicalJson::String(file_family)) = fields.get("schema_family")
+                    else {
+                        return Err(fail("requires FILE family"));
+                    };
+                    let reference = mizar_artifact::proof_witness::ProofWitnessRef {
+                    schema_version: mizar_artifact::store::SchemaVersion::new(3, 0),
+                    obligation_id: draft.obligation_id().to_owned(),
+                    obligation_fingerprint: draft.obligation_fingerprint().clone(),
+                    proof_status: mizar_artifact::proof_witness::ProofStatus::DischargedBuiltin,
+                    evidence_kind: mizar_artifact::proof_witness::EvidenceKind::FormulaSubstitutionKernelEvidence,
+                    witness_path: draft.witness_path().to_owned(),
+                    witness_artifact_hash: ArtifactHashRef::new(
+                        ArtifactHashClass::Artifact,
+                        file_family.as_str(),
+                        mizar_artifact::store::SchemaVersion::new(1, 0),
+                        artifact_hash_domain(
+                            file_family.as_str(),
+                            mizar_artifact::store::SchemaVersion::new(1, 0),
+                        ).hash(&file, &[]),
+                    ),
+                    kernel_acceptance: draft.kernel_acceptance().clone(),
+                };
+                    mizar_artifact::proof_witness::builtin_proof_witness_ref_json(&reference)
+                        .map_err(|error| error.to_string())?;
+                    (None, (original, file, reference))
+                };
+            if let Some(sealed) = &sealed {
+                let raw = projection.reuse_metadata();
+                let bound = sealed.4.reuse_metadata();
+                let (trusted, wire) =
+                mizar_proof::status::source_theorem_reflexivity_trusted_witness_metadata_with_wire(
+                    arena,
+                    &check,
+                    env,
+                    input.snapshot,
+                    vc_id,
+                    policies.1,
+                )?;
+                let evidence = mizar_proof::selection::TrustedKernelEvidence::from_policy_input(
+                    &KernelPolicyInput::from_kernel_result(
+                        &sealed.2,
+                        KernelEvidenceOrigin::BuiltinDischarge,
+                    ),
+                )
+                .ok_or_else(|| fail("requires trusted built-in Kernel evidence"))?;
+                if slice != sealed.5
+                    || projection.vc() != sealed.4.vc()
+                    || projection.obligation_id() != sealed.4.obligation_id()
+                    || raw.obligation_anchor() != bound.obligation_anchor()
+                    || raw.obligation_fingerprint() != bound.obligation_fingerprint()
+                    || raw.vc_fingerprint() != bound.vc_fingerprint()
+                    || raw.local_context_fingerprint() != bound.local_context_fingerprint()
+                    || raw.dependency_slice_fingerprint() != bound.dependency_slice_fingerprint()
+                    || raw.policy_fingerprint() != bound.policy_fingerprint()
+                    || witness_draft.payload_bytes() != wire
+                    || witness_draft.kernel_acceptance() != trusted.kernel_acceptance()
+                    || reference.kernel_acceptance != *trusted.kernel_acceptance()
+                    || trusted.trusted_kernel_evidence() != &evidence
+                {
+                    return Err(fail("complete FILE and sealed evidence mismatch"));
+                }
+                witness_draft = mizar_proof::witness_store::ProofWitnessDraft::new(
+                    witness_draft.obligation_id(),
+                    witness_draft.obligation_anchor().clone(),
+                    witness_draft.obligation_fingerprint().clone(),
+                    &sealed.4,
+                    trusted,
+                    witness_draft.payload_schema().clone(),
+                    witness_draft.payload_bytes().to_vec(),
+                    witness_draft.witness_path(),
+                    witness_draft
+                        .provenance()
+                        .clone()
+                        .with_trusted_used_axioms_ref(
+                            sealed
+                                .4
+                                .trusted_used_axioms()
+                                .ok_or_else(|| fail("requires sealed trusted axioms"))?,
+                        ),
+                )
+                .map_err(|error| error.to_string())?;
+            }
+            let Some(primary) = typed.source_term() else {
+                return no_draft;
+            };
+            let Some(atomic) = typed.source_atomic_formula() else {
+                return no_draft;
+            };
+            if metadata.expr_metadata().is_empty()
+                || metadata.expr_metadata().len() != primary.terms().len() + atomic.formulas().len()
+                || !metadata.collection_candidates().is_empty()
+                || !metadata.expanded_candidates().is_empty()
+                || !metadata.template_expansions().is_empty()
+                || !metadata.viable_candidates().is_empty()
+                || !metadata.viability_decisions().is_empty()
+                || !metadata.specificity_graphs().is_empty()
+                || !metadata.resolved_overloads().is_empty()
+                || !metadata.inserted_coercions().is_empty()
+                || !atomic.predicate_heads().is_empty()
+                || !atomic.candidates().is_empty()
+            {
+                return no_draft;
+            }
+            let mut sites = std::collections::BTreeSet::new();
+            for (_, term) in primary.terms().iter() {
+                if term.kind() != SourcePrimaryTermKind::VariableReference
+                    || term.recovery() != SourcePrimaryTermRecovery::Normal
+                    || !sites.insert(term.site().clone())
+                    || metadata
+                        .expr_metadata()
+                        .get_by_site(term.site())
+                        .is_none_or(|row| {
+                            row.source_range != term.source_range() || row.final_type.is_none()
+                        })
+                {
+                    return no_draft;
+                }
+            }
+            for (_, formula) in atomic.formulas().iter() {
+                if formula.kind() != SourceAtomicFormulaKind::Equality
+                    || formula.recovery() != SourceAtomicFormulaRecovery::Normal
+                    || !sites.insert(formula.site().clone())
+                    || metadata
+                        .expr_metadata()
+                        .get_by_site(formula.site())
+                        .is_none_or(|row| row.source_range != formula.source_range())
+                {
+                    return no_draft;
+                }
+            }
+            let mut expressions = Vec::with_capacity(sites.len());
+            for (_, row) in metadata.expr_metadata().canonical_iter() {
+                let range = row.source_range;
+                let Some(node) = typed.nodes().node(row.typed_site.node()) else {
+                    return no_draft;
+                };
+                if !sites.remove(&row.typed_site)
+                    || range.source_id != version.source_id
+                    || node.anchor != mizar_session::SourceAnchor::Range(range)
+                    || node.recovery != NodeRecoveryState::Normal
+                    || row.overload.is_some()
+                    || !row.inserted_views.is_empty()
+                    || !row.diagnostics.is_empty()
+                    || range.start >= range.end
+                {
+                    return no_draft;
+                }
+                let Some(surface) = source.source_text.get(range.start..range.end) else {
+                    return no_draft;
+                };
+                let inferred_type = if let Some(id) = row.final_type {
+                    let Some(ty) = inference.normalized_types().get(id) else {
+                        return no_draft;
+                    };
+                    if ty.status != NormalizedTypeStatus::Known
+                        || ty.head != TypeHeadRef::BuiltinSet
+                        || !ty.args.is_empty()
+                        || !ty.attributes.positive().is_empty()
+                        || !ty.attributes.negative().is_empty()
+                    {
+                        return no_draft;
+                    }
+                    Some("set".to_owned())
+                } else {
+                    None
+                };
+                expressions.push(ExpressionMetadata {
+                    expression_id: row.expr.as_str().to_owned(),
+                    source_range: SourceRangeSummary {
+                        start_byte: range.start as u64,
+                        end_byte: range.end as u64,
+                    },
+                    expression_kind: node.kind.as_str().to_owned(),
+                    rendered_surface: surface.to_owned(),
+                    inferred_type,
+                    resolved_symbol: None,
+                    inserted_coercions: Vec::new(),
+                    active_thesis: None,
+                    overload_resolution: None,
+                });
+            }
+            if !sites.is_empty() {
+                return no_draft;
+            }
+            let Some(written_types) = typed.source_type() else {
+                return no_draft;
+            };
+            let Some(context) = typed.source_context() else {
+                return no_draft;
+            };
+            if written_types.source_id() != version.source_id
+                || written_types.module_id() != arena.module()
+                || context.source_id() != version.source_id
+                || context.module_id() != arena.module()
+                || written_types.expressions().is_empty()
+                || written_types.applications().len() != context.declarations().len()
+                || !written_types.arguments().is_empty()
+                || !written_types.definition_returns().is_empty()
+                || !written_types.mode_rhs().is_empty()
+                || !written_types.structure_members().is_empty()
+            {
+                return no_draft;
+            }
+            let mut type_sites = std::collections::BTreeSet::new();
+            let mut bindings = std::collections::BTreeSet::new();
+            let mut ordinals = std::collections::BTreeSet::new();
+            for (root_id, root) in written_types.expressions().iter() {
+                let range = root.source_range();
+                let head_range = root.head_range();
+                let Some(node) = typed.nodes().node(root.site().node()) else {
+                    return no_draft;
+                };
+                let Some(head) = typed.nodes().node(root.head_site().node()) else {
+                    return no_draft;
+                };
+                if root.source_id() != version.source_id
+                    || root.module_id() != arena.module()
+                    || root.form() != SourceTypeApplicationForm::Bare
+                    || root.head() != &SourceTypeHead::BuiltinSet
+                    || root.recovery() != NodeRecoveryState::Normal
+                    || root.site()
+                        != &mizar_checker::typed_ast::TypedSiteRef::Node(root.site().node())
+                    || root.head_site()
+                        != &mizar_checker::typed_ast::TypedSiteRef::Node(root.head_site().node())
+                    || !type_sites.insert(root.site().clone())
+                    || node.kind.as_str() != "TypeExpression"
+                    || head.kind.as_str() != "TypeHead"
+                    || node.recovery != NodeRecoveryState::Normal
+                    || head.recovery != NodeRecoveryState::Normal
+                    || node.children != [root.head_site().node()]
+                    || node.anchor != mizar_session::SourceAnchor::Range(range)
+                    || head.anchor != mizar_session::SourceAnchor::Range(head_range)
+                    || range.source_id != version.source_id
+                    || head_range.source_id != version.source_id
+                    || range.start >= range.end
+                    || head_range.start < range.start
+                    || head_range.end > range.end
+                    || head_range.start >= head_range.end
+                {
+                    return no_draft;
+                }
+                let Some(surface) = source.source_text.get(range.start..range.end) else {
+                    return no_draft;
+                };
+                if surface != root.spelling()
+                    || source.source_text.get(head_range.start..head_range.end)
+                        != Some(root.head_spelling())
+                {
+                    return no_draft;
+                }
+                let mut first: Option<usize> = None;
+                let mut root_type = None;
+                for (_, application) in written_types
+                    .applications()
+                    .iter()
+                    .filter(|(_, application)| application.root() == root_id)
+                {
+                    let Some(declaration) = unique(
+                        context
+                            .declarations()
+                            .iter()
+                            .map(|(_, row)| row)
+                            .filter(|row| {
+                                row.binding == application.binding()
+                                    && row.source_ordinal == application.source_ordinal()
+                            }),
+                    ) else {
+                        return no_draft;
+                    };
+                    if !bindings.insert(declaration.binding)
+                        || !ordinals.insert(declaration.source_ordinal)
+                        || declaration.written_type_range != range
+                        || node.links.context != Some(declaration.local_context)
+                        || head.links.context != Some(declaration.local_context)
+                    {
+                        return no_draft;
+                    }
+                    let Some(declared_node) = typed.nodes().node(declaration.site.node()) else {
+                        return no_draft;
+                    };
+                    if declared_node.typing != TypingState::Successful {
+                        return no_draft;
+                    }
+                    let Some(entry) = declared_node
+                        .links
+                        .type_entry
+                        .and_then(|id| typed.types().get(id))
+                    else {
+                        return no_draft;
+                    };
+                    let TypeEntryActual::Known(id) = entry.actual else {
+                        return no_draft;
+                    };
+                    if entry.owner != declaration.site
+                        || entry.status != TypeStatus::Known
+                        || root_type.is_some_and(|previous| previous != id)
+                    {
+                        return no_draft;
+                    }
+                    let Some(ty) = inference.normalized_types().get(id) else {
+                        return no_draft;
+                    };
+                    if ty.status != NormalizedTypeStatus::Known
+                        || ty.head != TypeHeadRef::BuiltinSet
+                        || !ty.args.is_empty()
+                        || !ty.attributes.positive().is_empty()
+                        || !ty.attributes.negative().is_empty()
+                    {
+                        return no_draft;
+                    }
+                    root_type = Some(id);
+                    first = Some(first.map_or(declaration.source_ordinal, |previous| {
+                        previous.min(declaration.source_ordinal)
+                    }));
+                }
+                let Some(first) = first else {
+                    return no_draft;
+                };
+                expressions.push(ExpressionMetadata {
+                    expression_id: format!("source.theorem.type.{first}"),
+                    source_range: SourceRangeSummary {
+                        start_byte: range.start as u64,
+                        end_byte: range.end as u64,
+                    },
+                    expression_kind: node.kind.as_str().to_owned(),
+                    rendered_surface: surface.to_owned(),
+                    inferred_type: Some("set".to_owned()),
+                    resolved_symbol: None,
+                    inserted_coercions: Vec::new(),
+                    active_thesis: None,
+                    overload_resolution: None,
+                });
+            }
+            if bindings.len() != written_types.applications().len() {
+                return no_draft;
+            }
+            let Some(node) = typed.nodes().node(formula) else {
+                return no_draft;
+            };
+            expressions.push(ExpressionMetadata {
+                expression_id: format!("source.theorem.quantified.{}", owner.symbol.fqn().as_str()),
+                source_range: SourceRangeSummary {
+                    start_byte: formula_range.start as u64,
+                    end_byte: formula_range.end as u64,
+                },
+                expression_kind: node.kind.as_str().to_owned(),
+                rendered_surface: elaborated.to_owned(),
+                inferred_type: None,
+                resolved_symbol: None,
+                inserted_coercions: Vec::new(),
+                active_thesis: None,
+                overload_resolution: None,
+            });
+            let vcs = storage
+                .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                    vc_parent.as_output_ref(),
+                    &OutputKind::new("SourceTheoremVC"),
+                )
+                .map_err(|error| error.to_string())?;
+            let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+            if sealed.as_ref().is_some_and(|sealed| sealed.1 != *vcs) {
+                return Err(fail("complete sealed VC mismatch"));
+            }
+            let Some(vc) = vcs.vc(vc_id) else {
+                return no_draft;
+            };
+            if vc.id != vc_id
+                || vc.kind != mizar_vc::vc_ir::VcKind::TheoremProofStep
+                || slice.vc() != vc_id
+                || slice.kind() != &vc.kind
+                || slice.fingerprint().hash()
+                    != projection.reuse_metadata().dependency_slice_fingerprint()
+            {
+                return no_draft;
+            }
+            let range = vc
+                .anchor
+                .source_range
+                .ok_or_else(|| fail("requires original VC source range"))?;
+            if range.source_id != version.source_id
                 || range.start >= range.end
                 || range.start < owner.source_range.start
                 || range.end > owner.source_range.end
-                || source.source_text.get(range.start..range.end).is_none()
-        }) || local_range.end > terminal_range.start
-            || goal_range.start < terminal_range.start
-            || goal_range.end > terminal_range.end
-            || left_range.start < goal_range.start
-            || right_range.end > goal_range.end
-            || left_range.end > right_range.start
-            || goal_range == left_range
-            || goal_range == right_range
-            || source.source_text.get(local_range.start..local_range.end) != Some(name)
-        {
-            return no_draft;
-        }
-        let Some((_, equality)) = unique(
-            atomic
-                .formulas()
-                .iter()
-                .filter(|(_, row)| row.source_range() == *goal_range),
-        ) else {
-            return no_draft;
-        };
-        let Some(equality_row) = metadata.expr_metadata().get_by_site(equality.site()) else {
-            return no_draft;
-        };
-        let mut thesis_ids =
-            std::collections::BTreeSet::from([equality_row.expr.as_str().to_owned()]);
-        for range in [left_range, right_range] {
-            let Some((_, term)) = unique(
-                primary
-                    .terms()
-                    .iter()
-                    .filter(|(_, row)| row.source_range() == *range),
+            {
+                return Err(fail("original VC source range mismatch"));
+            }
+            let statement = source
+                .source_text
+                .get(range.start..range.end)
+                .ok_or_else(|| fail("original VC source range invalid"))?;
+            let reuse = projection.reuse_metadata();
+            let identity = ProofObligationIdentity::new(
+                projection.obligation_id(),
+                reuse.obligation_anchor().clone(),
+                reuse.obligation_fingerprint(),
+                reuse.vc_fingerprint(),
+                reuse.local_context_fingerprint(),
+                reuse.dependency_slice_fingerprint(),
+            )
+            .map_err(|error| error.to_string())?;
+            let normal_evidence = if builtin {
+                None
+            } else {
+                let kernel = storage
+                    .typed_handle::<(
+                        mizar_kernel::checker::KernelCheckResult,
+                        mizar_proof::policy::PolicyDecision,
+                    )>(
+                        kernel_parent.as_output_ref(),
+                        &OutputKind::new("SourceTheoremCandidateCheck"),
+                    )
+                    .map_err(|error| error.to_string())?;
+                let kernel = storage.get(&kernel).map_err(|error| error.to_string())?;
+                let origin = KernelEvidenceOrigin::AtpFormulaSubstitution;
+                let kernel_input = KernelPolicyInput::from_kernel_result(&kernel.0, origin);
+                let trusted = TrustedUsedAxiomsRef::from_kernel_result(&kernel.0, origin)
+                    .map_err(|error| error.to_string())?;
+                let selection = selection
+                    .as_ref()
+                    .ok_or_else(|| fail("requires normal selection"))?;
+                let selected = selection.reuse_metadata();
+                let candidate = ProofEvidenceCandidate::from_trusted_kernel_input(
+                    selection
+                        .selected_candidate_id()
+                        .cloned()
+                        .ok_or_else(|| fail("requires selected candidate"))?,
+                    &kernel_input,
+                )
+                .ok_or_else(|| fail("requires trusted candidate"))?
+                .with_provenance_hash(
+                    selected
+                        .selected_candidate_provenance_hash()
+                        .ok_or_else(|| fail("requires candidate provenance"))?,
+                );
+                Some((kernel, trusted, selected.encoded_problem_hash(), candidate))
+            };
+            PublishedArtifactPath::new(version.normalized_path.as_str())
+                .map_err(|_| fail("source path mismatch"))?;
+            let path =
+                PublishedArtifactPath::new(&witness_path).map_err(|error| error.to_string())?;
+            if path.as_str() != reference.witness_path {
+                return Err(fail("witness path mismatch"));
+            }
+            let raw_refs = [
+                (
+                    "mizar-vc/source-theorem-canonical-vc/v1",
+                    reuse.vc_fingerprint(),
+                ),
+                (
+                    "mizar-vc/source-theorem-canonical-context/v1",
+                    reuse.local_context_fingerprint(),
+                ),
+                (
+                    mizar_vc::dependency_slice::DEPENDENCY_SLICE_SCHEMA_VERSION,
+                    reuse.dependency_slice_fingerprint(),
+                ),
+            ]
+            .map(|(producer, digest)| {
+                ArtifactHashRef::source_owner_fingerprint(producer, digest)
+                    .expect("native owner producers have fixed supported bindings")
+            });
+            let [
+                vc_fingerprint,
+                local_context_fingerprint,
+                dependency_slice_fingerprint,
+            ] = raw_refs;
+            use mizar_core::core_ir::{
+                CoreFormulaKind, CoreIr, CoreItemKind, CoreItemStatus, CoreNodeRef,
+                CoreProofNodeKind, CoreProofStatus, CoreSourceAnchor, CoreTermKind,
+                ObligationSeedKind, ObligationSeedStatus,
+            };
+            let core = storage
+                .typed_handle::<CoreIr>(
+                    core_parent.as_output_ref(),
+                    &OutputKind::new("SourceTheoremCore"),
+                )
+                .map_err(|error| error.to_string())?;
+            let core = storage.get(&core).map_err(|error| error.to_string())?;
+            if sealed.as_ref().is_some_and(|sealed| sealed.0 != *core) {
+                return Err(fail("complete sealed Core mismatch"));
+            }
+            let (Some((item_id, item)), Some((_, proof)), Some((seed_id, seed))) = (
+                unique(
+                    core.items()
+                        .iter()
+                        .filter(|(_, item)| item.symbol == owner.symbol),
+                ),
+                unique(core.proofs().iter().filter(|(_, proof)| {
+                    core.items()
+                        .get(proof.item)
+                        .is_some_and(|item| item.symbol == owner.symbol)
+                })),
+                unique(core.obligation_seeds().iter().filter(|(_, seed)| {
+                    core.items()
+                        .get(seed.owner)
+                        .is_some_and(|item| item.symbol == owner.symbol)
+                })),
             ) else {
                 return no_draft;
             };
-            let Some(row) = metadata.expr_metadata().get_by_site(term.site()) else {
+            if core.source_id() != version.source_id
+                || core.module_id() != arena.module()
+                || item.symbol != owner.symbol
+                || item.kind != CoreItemKind::Theorem
+                || item.status != CoreItemStatus::Valid
+                || item.visibility.as_str() != visibility
+                || proof.item != item_id
+                || proof.status != CoreProofStatus::PendingAutomaticProof
+                || seed.owner != item_id
+                || seed.kind != ObligationSeedKind::TheoremProof
+                || seed.status != ObligationSeedStatus::Active
+                || vc.anchor.owner != mizar_vc::vc_ir::AnchorOwner::Theorem(item_id)
+                || core.items().len() != check.owners().len()
+                || core.proofs().len() != check.owners().len()
+                || core.obligation_seeds().len() != check.owners().len()
+                || core.proof_nodes().len() != 2 * check.owners().len()
+                || item.source.anchor != CoreSourceAnchor::SourceRange(owner.source_range)
+                || proof.source.anchor != item.source.anchor
+                || core.source_map().item_sources.get(&item_id) != Some(&item.source)
+            {
+                return no_draft;
+            }
+            let Some(root) = core.proof_nodes().get(proof.root) else {
                 return no_draft;
             };
-            if !thesis_ids.insert(row.expr.as_str().to_owned()) {
+            let CoreProofNodeKind::IntroduceBinder {
+                binder: local,
+                child,
+            } = &root.kind
+            else {
+                return no_draft;
+            };
+            let Some(terminal) = core.proof_nodes().get(*child) else {
+                return no_draft;
+            };
+            let CoreProofNodeKind::TerminalGoal {
+                obligation,
+                citations,
+            } = &terminal.kind
+            else {
+                return no_draft;
+            };
+            let (Some(goal_id), Some(guard), Some(name)) =
+                (seed.goal, local.ty_guard, local.source_name.as_deref())
+            else {
+                return no_draft;
+            };
+            if *obligation != seed_id
+                || (!builtin && !citations.is_empty())
+                || citations.len() > 1
+                || local.role.as_str() != "proof-let"
+                || name.is_empty()
+                || !seed.context.contains(&guard)
+                || seed.context.len() != 1 + citations.len()
+                || !seed.core_refs.contains(&CoreNodeRef::Item(item_id))
+                || !seed.core_refs.contains(&CoreNodeRef::Formula(goal_id))
+                || !seed.core_refs.contains(&CoreNodeRef::ProofNode(*child))
+                || core.source_map().proof_sources.get(&proof.root) != Some(&root.source)
+                || core.source_map().proof_sources.get(child) != Some(&terminal.source)
+                || core.source_map().obligation_sources.get(&seed_id) != Some(&seed.source)
+                || terminal.source.anchor != seed.source.anchor
+                || root.source.anchor != local.source.anchor
+            {
                 return no_draft;
             }
-        }
-        if thesis_ids.len() != 3 {
-            return no_draft;
-        }
-        let thesis = format!("{name} = {name}");
-        for expression in &mut expressions {
-            if thesis_ids.remove(&expression.expression_id) {
-                expression.active_thesis = Some(thesis.clone());
+            let Some(goal) = core.formulas().get(goal_id) else {
+                return no_draft;
+            };
+            let CoreFormulaKind::Equals { left, right } = goal.kind else {
+                return no_draft;
+            };
+            let (Some(left_term), Some(right_term)) =
+                (core.terms().get(left), core.terms().get(right))
+            else {
+                return no_draft;
+            };
+            if left == right
+                || left_term.kind != CoreTermKind::Var(local.var)
+                || right_term.kind != CoreTermKind::Var(local.var)
+                || core.source_map().formula_sources.get(&goal_id) != Some(&goal.source)
+                || core.source_map().term_sources.get(&left) != Some(&left_term.source)
+                || core.source_map().term_sources.get(&right) != Some(&right_term.source)
+            {
+                return no_draft;
             }
-        }
-        if !thesis_ids.is_empty() {
-            return no_draft;
-        }
-        for parent in input.parent_outputs() {
-            storage
-                .validate_handle(parent.as_output_ref())
+            let (
+                CoreSourceAnchor::SourceRange(terminal_range),
+                CoreSourceAnchor::SourceRange(goal_range),
+                CoreSourceAnchor::SourceRange(left_range),
+                CoreSourceAnchor::SourceRange(right_range),
+                CoreSourceAnchor::SourceRange(local_range),
+            ) = (
+                &terminal.source.anchor,
+                &goal.source.anchor,
+                &left_term.source.anchor,
+                &right_term.source.anchor,
+                &local.source.anchor,
+            )
+            else {
+                return no_draft;
+            };
+            if [
+                terminal_range,
+                goal_range,
+                left_range,
+                right_range,
+                local_range,
+            ]
+            .iter()
+            .any(|range| {
+                range.source_id != version.source_id
+                    || range.start >= range.end
+                    || range.start < owner.source_range.start
+                    || range.end > owner.source_range.end
+                    || source.source_text.get(range.start..range.end).is_none()
+            }) || local_range.end > terminal_range.start
+                || goal_range.start < terminal_range.start
+                || goal_range.end > terminal_range.end
+                || left_range.start < goal_range.start
+                || right_range.end > goal_range.end
+                || left_range.end > right_range.start
+                || goal_range == left_range
+                || goal_range == right_range
+                || source.source_text.get(local_range.start..local_range.end) != Some(name)
+            {
+                return no_draft;
+            }
+            let Some((_, equality)) = unique(
+                atomic
+                    .formulas()
+                    .iter()
+                    .filter(|(_, row)| row.source_range() == *goal_range),
+            ) else {
+                return no_draft;
+            };
+            let Some(equality_row) = metadata.expr_metadata().get_by_site(equality.site()) else {
+                return no_draft;
+            };
+            let mut thesis_ids =
+                std::collections::BTreeSet::from([equality_row.expr.as_str().to_owned()]);
+            for range in [left_range, right_range] {
+                let Some((_, term)) = unique(
+                    primary
+                        .terms()
+                        .iter()
+                        .filter(|(_, row)| row.source_range() == *range),
+                ) else {
+                    return no_draft;
+                };
+                let Some(row) = metadata.expr_metadata().get_by_site(term.site()) else {
+                    return no_draft;
+                };
+                if !thesis_ids.insert(row.expr.as_str().to_owned()) {
+                    return no_draft;
+                }
+            }
+            if thesis_ids.len() != 3 {
+                return no_draft;
+            }
+            let thesis = format!("{name} = {name}");
+            for expression in &mut expressions {
+                if thesis_ids.remove(&expression.expression_id) {
+                    expression.active_thesis = Some(thesis.clone());
+                }
+            }
+            if !thesis_ids.is_empty() {
+                return no_draft;
+            }
+            for parent in input.parent_outputs() {
+                storage
+                    .validate_handle(parent.as_output_ref())
+                    .map_err(|error| error.to_string())?;
+                publisher
+                    .validate_output(
+                        input.snapshot,
+                        parent.as_output_ref(),
+                        OutputAuthorization::Published,
+                    )
+                    .map_err(|error| error.to_string())?;
+            }
+            if staged_witnesses.is_empty() {
+                std::fs::create_dir(staging.1).map_err(|error| error.to_string())?;
+                cleanup = Some(NativeArtifactStagingCleanup(
+                    matches!(version.origin, SourceOrigin::OpenBuffer { .. })
+                        .then(|| staging.1.to_path_buf()),
+                ));
+            }
+            #[cfg(test)]
+            snapshot_test_support::AFTER_LEGACY_ROOT_CREATION.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook();
+                }
+            });
+            let root_lock = lock_artifact_writes().map_err(|error| error.to_string())?;
+            reserve_native_artifact_path(
+                &std::fs::canonicalize(staging.1).map_err(|error| error.to_string())?,
+                &path,
+                "native theorem witness parent must stay below artifact root",
+            )
+            .map_err(|error| {
+                if error.kind() == std::io::ErrorKind::AlreadyExists {
+                    "native theorem witness requires a fresh witness path".to_owned()
+                } else {
+                    error.to_string()
+                }
+            })?;
+            let domain = artifact_hash_domain(
+                reference.witness_artifact_hash.schema_family.clone(),
+                reference.witness_artifact_hash.schema_version,
+            );
+            let written = write_published_artifact(staging.1, &path, &file, &domain, &[])
                 .map_err(|error| error.to_string())?;
-            publisher
-                .validate_output(
-                    input.snapshot,
-                    parent.as_output_ref(),
-                    OutputAuthorization::Published,
+            if written.artifact_hash != reference.witness_artifact_hash.digest {
+                return Err(fail("witness file hash mismatch"));
+            }
+            let read = read_published_artifact(
+                staging.1,
+                &path,
+                PublishedArtifactReadOptions {
+                    artifact_hash_domain: Some(&domain),
+                    hash_excluded_paths: &[],
+                    expected_artifact_hash: Some(reference.witness_artifact_hash.digest),
+                },
+            )
+            .map_err(|error| error.to_string())?;
+            mizar_proof::witness_store::read_source_theorem_witness_file(&read, &reference)?;
+            let staged = witness_draft.stage_source_theorem_file(&read, &reference)?;
+            drop(root_lock);
+            let accepted = if let Some(sealed) = &sealed {
+                sealed.4.clone().with_source_theorem_witness(&staged)?
+            } else {
+                let (kernel, trusted, encoded_problem_hash, candidate) =
+                    normal_evidence.ok_or_else(|| fail("requires normal evidence"))?;
+                let evidence = ProofEvidenceSet::new(
+                    kernel.0.target_vc_fingerprint().sort_bytes(),
+                    encoded_problem_hash,
+                    policies.1.clone(),
+                )
+                .with_candidates([
+                    candidate.with_selected_proof_witness_hash(staged.staged_payload_hash().digest)
+                ]);
+                let merged = merge_artifact_proof_selections(
+                    [VcProofSelection::new(vc_id, select_winner(&evidence))],
+                    [],
                 )
                 .map_err(|error| error.to_string())?;
+                let [accepted] = <[_; 1]>::try_from(merged)
+                    .map_err(|_| fail("requires one accepted selection"))?;
+                project_status(
+                    ProofStatusProjectionInput::new(accepted, policies.1.clone(), identity)
+                        .with_trusted_used_axioms(trusted),
+                )
+                .map_err(|error| error.to_string())?
+            };
+            if accepted.selected_class()
+                != if builtin {
+                    ProofWinnerClass::DischargedBuiltin
+                } else {
+                    ProofWinnerClass::KernelVerified
+                }
+                || accepted.projected_status() != ProjectedProofStatus::Accepted
+                || accepted.artifact_publication()
+                    != ArtifactStatusPublication::Publishable(
+                        CurrentArtifactObligationStatus::Accepted,
+                    )
+                || accepted.accepted_witness_obligation_id()
+                    != Some(reference.obligation_id.as_str())
+                || !accepted.diagnostic_refs().is_empty()
+                || accepted.explanation_ref().is_some()
+                || staged.artifact_reference_candidate() != Some(&reference)
+            {
+                return Err(fail("witness-bound accepted candidate mismatch"));
+            }
+            let obligations = vec![ObligationMetadata {
+                obligation_id: accepted.obligation_id().to_owned(),
+                obligation_anchor: Some(
+                    accepted
+                        .reuse_metadata()
+                        .obligation_anchor()
+                        .as_str()
+                        .to_owned(),
+                ),
+                owner_origin_id: export.map(|export| export.origin_id.clone()),
+                source_range: SourceRangeSummary {
+                    start_byte: range.start as u64,
+                    end_byte: range.end as u64,
+                },
+                obligation_kind: "theorem-proof-step".to_owned(),
+                statement_summary: statement.to_owned(),
+                obligation_fingerprint: reference.obligation_fingerprint.clone(),
+                vc_fingerprint,
+                local_context_fingerprint,
+                dependency_slice_fingerprint,
+                verifier_policy_fingerprint: reference
+                    .kernel_acceptance
+                    .verifier_policy_fingerprint
+                    .clone(),
+                status: match accepted.artifact_publication() {
+                    ArtifactStatusPublication::Publishable(
+                        CurrentArtifactObligationStatus::Accepted,
+                    ) => ObligationStatus::Accepted,
+                    _ => return Err(fail("accepted status unavailable")),
+                },
+                accepted_witness_obligation_id: accepted
+                    .accepted_witness_obligation_id()
+                    .map(str::to_owned),
+                deterministic_discharge_hash: None,
+                diagnostic_ref: None,
+            }];
+            all_exports.extend(exports);
+            all_statements.extend(statements);
+            for expression in expressions {
+                if let Some(previous) = all_expressions
+                    .iter_mut()
+                    .find(|previous| previous.expression_id == expression.expression_id)
+                {
+                    let mut comparable = expression.clone();
+                    comparable.active_thesis = previous.active_thesis.clone();
+                    if *previous != comparable {
+                        return Err(fail("complete expression metadata mismatch"));
+                    }
+                    if expression.active_thesis.is_some() {
+                        previous.active_thesis = expression.active_thesis;
+                    }
+                } else {
+                    all_expressions.push(expression);
+                }
+            }
+            all_obligations.extend(obligations);
+            all_references.push(reference);
+            staged_witnesses.push(staged);
         }
-        std::fs::create_dir(staging.1).map_err(|error| error.to_string())?;
-        let cleanup = NativeArtifactStagingCleanup(
-            matches!(version.origin, SourceOrigin::OpenBuffer { .. })
-                .then(|| staging.1.to_path_buf()),
-        );
-        #[cfg(test)]
-        snapshot_test_support::AFTER_LEGACY_ROOT_CREATION.with(|hook| {
-            if let Some(hook) = hook.take() {
-                hook();
-            }
-        });
-        let root_lock = lock_artifact_writes().map_err(|error| error.to_string())?;
-        reserve_native_artifact_path(
-            &std::fs::canonicalize(staging.1).map_err(|error| error.to_string())?,
-            &path,
-            "native theorem witness parent must stay below artifact root",
-        )
-        .map_err(|error| {
-            if error.kind() == std::io::ErrorKind::AlreadyExists {
-                "native theorem witness requires a fresh witness path".to_owned()
-            } else {
-                error.to_string()
-            }
-        })?;
-        let domain = artifact_hash_domain(
-            reference.witness_artifact_hash.schema_family.clone(),
-            reference.witness_artifact_hash.schema_version,
-        );
-        let written = write_published_artifact(staging.1, &path, &file, &domain, &[])
-            .map_err(|error| error.to_string())?;
-        if written.artifact_hash != reference.witness_artifact_hash.digest {
-            return Err(fail("witness file hash mismatch"));
-        }
-        let read = read_published_artifact(
-            staging.1,
-            &path,
-            PublishedArtifactReadOptions {
-                artifact_hash_domain: Some(&domain),
-                hash_excluded_paths: &[],
-                expected_artifact_hash: Some(reference.witness_artifact_hash.digest),
-            },
-        )
-        .map_err(|error| error.to_string())?;
-        mizar_proof::witness_store::read_source_theorem_witness_file(&read, &reference)?;
-        let staged = witness_draft.stage_source_theorem_file(&read, &reference)?;
-        drop(root_lock);
-        let accepted = if let Some(sealed) = &sealed {
-            sealed.4.clone().with_source_theorem_witness(&staged)?
-        } else {
-            let (kernel, trusted, encoded_problem_hash, candidate) =
-                normal_evidence.ok_or_else(|| fail("requires normal evidence"))?;
-            let evidence = ProofEvidenceSet::new(
-                kernel.0.target_vc_fingerprint().sort_bytes(),
-                encoded_problem_hash,
-                policies.1.clone(),
-            )
-            .with_candidates([
-                candidate.with_selected_proof_witness_hash(staged.staged_payload_hash().digest)
-            ]);
-            let merged = merge_artifact_proof_selections(
-                [VcProofSelection::new(vc_id, select_winner(&evidence))],
-                [],
-            )
-            .map_err(|error| error.to_string())?;
-            let [accepted] =
-                <[_; 1]>::try_from(merged).map_err(|_| fail("requires one accepted selection"))?;
-            project_status(
-                ProofStatusProjectionInput::new(accepted, policies.1.clone(), identity)
-                    .with_trusted_used_axioms(trusted),
-            )
-            .map_err(|error| error.to_string())?
-        };
-        if accepted.selected_class()
-            != if builtin {
-                ProofWinnerClass::DischargedBuiltin
-            } else {
-                ProofWinnerClass::KernelVerified
-            }
-            || accepted.projected_status() != ProjectedProofStatus::Accepted
-            || accepted.artifact_publication()
-                != ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Accepted)
-            || accepted.accepted_witness_obligation_id() != Some(reference.obligation_id.as_str())
-            || !accepted.diagnostic_refs().is_empty()
-            || accepted.explanation_ref().is_some()
-            || staged.artifact_reference_candidate() != Some(&reference)
+        if all_exports.len() != summary.exported_symbols.len()
+            || all_obligations.len() != check.owners().len()
+            || all_references.len() != check.owners().len()
+            || all_obligations
+                .iter()
+                .map(|row| &row.obligation_id)
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                != check.owners().len()
         {
-            return Err(fail("witness-bound accepted candidate mismatch"));
+            return Err(fail("complete artifact owner coverage mismatch"));
         }
-        let obligations = vec![ObligationMetadata {
-            obligation_id: accepted.obligation_id().to_owned(),
-            obligation_anchor: Some(
-                accepted
-                    .reuse_metadata()
-                    .obligation_anchor()
-                    .as_str()
-                    .to_owned(),
-            ),
-            owner_origin_id: export.map(|export| export.origin_id.clone()),
-            source_range: SourceRangeSummary {
-                start_byte: range.start as u64,
-                end_byte: range.end as u64,
-            },
-            obligation_kind: "theorem-proof-step".to_owned(),
-            statement_summary: statement.to_owned(),
-            obligation_fingerprint: reference.obligation_fingerprint.clone(),
-            vc_fingerprint,
-            local_context_fingerprint,
-            dependency_slice_fingerprint,
-            verifier_policy_fingerprint: reference
-                .kernel_acceptance
-                .verifier_policy_fingerprint
-                .clone(),
-            status: match accepted.artifact_publication() {
-                ArtifactStatusPublication::Publishable(
-                    CurrentArtifactObligationStatus::Accepted,
-                ) => ObligationStatus::Accepted,
-                _ => return Err(fail("accepted status unavailable")),
-            },
-            accepted_witness_obligation_id: accepted
-                .accepted_witness_obligation_id()
-                .map(str::to_owned),
-            deterministic_discharge_hash: None,
-            diagnostic_ref: None,
-        }];
         let projection_input = ProjectVerifiedArtifactInput {
             snapshot: input.snapshot,
             required_outputs: input
@@ -1833,11 +2287,11 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             source_file: version.normalized_path.as_str().to_owned(),
             source_hash: version.source_hash,
             verified_at: None,
-            exports,
-            statements: if builtin { Vec::new() } else { statements },
-            expressions,
-            obligations,
-            proof_witnesses: vec![reference],
+            exports: all_exports,
+            statements: if builtin { Vec::new() } else { all_statements },
+            expressions: all_expressions,
+            obligations: all_obligations,
+            proof_witnesses: all_references,
             diagnostics: Vec::new(),
             provenance: BuildProvenance {
                 captured_source: (!builtin).then(|| {
@@ -1874,8 +2328,10 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 )
                 .map_err(|error| error.to_string())?;
         }
-        cleanup.release();
-        Ok(Some((draft, staged)))
+        cleanup
+            .ok_or_else(|| fail("requires staged witnesses"))?
+            .release();
+        Ok(Some((draft, staged_witnesses)))
     }
 
     /// Writes and reads back a genuine unpublished module draft, retaining its staged witness.
@@ -1909,6 +2365,15 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             (Some(policies.0), policies.1),
             (staging.0, staging.1, staging.2, false),
         )
+        .and_then(|result| {
+            result
+                .map(|(draft, write, stages)| {
+                    let [stage] = <[_; 1]>::try_from(stages)
+                        .map_err(|_| "normal theorem write requires one witness".to_owned())?;
+                    Ok((draft, write, stage))
+                })
+                .transpose()
+        })
     }
 
     fn write_native_theorem_artifact_draft_route(
@@ -1929,7 +2394,7 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         Option<(
             mizar_ir::projection::VerifiedArtifactDraft,
             mizar_artifact::store::PublishedArtifactWrite,
-            mizar_proof::witness_store::ProofWitnessStagedRef,
+            Vec<mizar_proof::witness_store::ProofWitnessStagedRef>,
         )>,
         String,
     > {
@@ -2370,8 +2835,18 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
                 &draft.artifact.module,
                 input.snapshot.fingerprint(),
             )?;
-        let published = mizar_proof::witness_store::publish_ref(&staged, &proof)
-            .map_err(|error| error.to_string())?;
+        if staged.len() != draft.artifact.proof_witnesses.len() {
+            return Err(fail("complete staged witness coverage mismatch"));
+        }
+        let mut published = None;
+        for staged in &staged {
+            let reference = mizar_proof::witness_store::publish_ref(staged, &proof)
+                .map_err(|error| error.to_string())?;
+            if published.is_none() {
+                published = Some(reference);
+            }
+        }
+        let published = published.ok_or_else(|| fail("requires published witnesses"))?;
         if !freshness(Some(guard.as_str())) {
             return Err(fail("currentness validation failed"));
         }
@@ -2932,19 +3407,20 @@ impl SourceTheoremArtifactCommitService {
         let Ok(vcs) = storage.get(&handle) else {
             return blocking();
         };
-        let [vc] = vcs.vcs() else {
+        let Some(vc) = vcs.vcs().first() else {
             return blocking();
         };
-        if (normal.is_some()
-            && storage
-                .typed_handle::<(
-                    mizar_kernel::checker::KernelCheckResult,
-                    mizar_proof::policy::PolicyDecision,
-                )>(
-                    kernel.as_output_ref(),
-                    &OutputKind::new("SourceTheoremCandidateCheck"),
-                )
-                .is_err())
+        if (normal.is_some() && vcs.vcs().len() != 1)
+            || (normal.is_some()
+                && storage
+                    .typed_handle::<(
+                        mizar_kernel::checker::KernelCheckResult,
+                        mizar_proof::policy::PolicyDecision,
+                    )>(
+                        kernel.as_output_ref(),
+                        &OutputKind::new("SourceTheoremCandidateCheck"),
+                    )
+                    .is_err())
             || [vc_parent, kernel].iter().any(|parent| {
                 publisher
                     .validate_output(
@@ -4715,6 +5191,337 @@ mod snapshot_publication_tests {
                 _ => None,
             })
             .collect()
+    }
+
+    #[test]
+    fn mapped_citation_snapshot_requires_original_complete_ancestry_and_files() {
+        use mizar_artifact::{
+            store::{
+                CanonicalJson, artifact_hash_domain, canonical_json_bytes,
+                parse_canonical_json_bytes,
+            },
+            verified_artifact::{
+                VERIFIED_ARTIFACT_SCHEMA_FAMILY, VerifiedArtifact, VerifiedArtifactReadOptions,
+                artifact_hash_excluded_paths, builtin_verified_artifact_json,
+                read_builtin_verified_artifact,
+            },
+        };
+        use mizar_ir::{
+            identity::{OutputKind, PipelinePhase, WorkUnit},
+            publisher::{AllowedWorkUnit, OutputOrigin, PublicationTarget, PublishOutputInput},
+            storage::{BlobDecodeError, BlobDecoder, IrSideTables, SchemaVersion},
+        };
+        use mizar_proof::policy::VerifierPolicy;
+
+        let fixture = Fixture::new();
+        let text = "theorem Base: for X being set holds X = X proof let X be set; thus X = X; end; theorem Main: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;";
+        for module in ["main", "leaf"] {
+            fs::write(fixture.root.join(format!("alpha/src/{module}.miz")), text).unwrap();
+        }
+        let (session, input, owner) = fixture.prepare(1);
+        for module in ["main", "leaf"] {
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                PipelinePhase::new("KernelCheck"),
+                OutputKind::new("SourceTheoremReflexivityKernelStatus"),
+                WorkUnit::new(mizar_session::module_work_unit_label("alpha", module)),
+            ));
+        }
+        let mut builder = PhaseRegistryBuilder::new();
+        builder
+            .register_source_load()
+            .register_frontend(vec![])
+            .register_source_theorem_module_resolver()
+            .register_source_theorem_signature_collection()
+            .register_source_theorem_type_checking()
+            .register_source_theorem_registration_resolution()
+            .register_source_theorem_overload_resolution()
+            .register_source_theorem_elaboration()
+            .register_source_theorem_algorithm_preparation()
+            .register_source_theorem_vc_generation("source-theorem-local-v1".into(), "vc-v1".into())
+            .register_source_theorem_vc_discharge(mizar_vc::discharge::DischargePolicy::default())
+            .register_source_theorem_reflexivity_kernel_check(VerifierPolicy::release())
+            .register_source_theorem_reflexivity_artifact_commit(
+                VerifierPolicy::release(),
+                (
+                    "proof-witnesses".into(),
+                    "main.mizir.json".into(),
+                    "artifacts".into(),
+                ),
+            )
+            .unwrap();
+        let mut driver =
+            CompilerDriver::new(builder.build().unwrap()).with_output_publisher(owner.clone());
+        let submission = driver
+            .submit_captured(
+                session,
+                &fixture.ids,
+                &fixture.snapshots,
+                input,
+                Default::default(),
+            )
+            .unwrap();
+        assert_eq!(snapshot_events(&driver, submission.session.id()).len(), 1);
+        let original = fixture
+            .resolve(&submission, &owner)
+            .expect("genuine mapped publication");
+        for kind in [
+            "SourceTheoremCore",
+            "SourceTheoremPreparation",
+            "SourceTheoremVC",
+            "SourceTheoremReflexivityKernelStatus",
+            "SourceTheoremModuleSummary",
+            "SourceTheoremDischarge",
+            "FrontendOutput",
+        ] {
+            for duplicate in [false, true] {
+                let mut edited = submission.clone();
+                let mut changed = false;
+                for result in edited
+                    .scheduler_run
+                    .as_mut()
+                    .unwrap()
+                    .phase_results
+                    .values_mut()
+                    .flatten()
+                {
+                    if let Some(output) = result
+                        .output_refs
+                        .iter()
+                        .find(|output| output.output_kind() == &OutputKind::new(kind))
+                        .cloned()
+                    {
+                        if duplicate {
+                            result.output_refs.push(output);
+                        } else {
+                            result
+                                .output_refs
+                                .retain(|output| output.output_kind() != &OutputKind::new(kind));
+                        }
+                        changed = true;
+                        break;
+                    }
+                }
+                assert!(changed);
+                assert!(
+                    fixture.resolve(&edited, &owner).is_none(),
+                    "{kind} duplicate={duplicate}"
+                );
+            }
+        }
+        let artifact_output = submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .find(|output| output.output_kind() == &OutputKind::new("SourceTheoremArtifactData"))
+            .unwrap();
+        let artifact = owner
+            .storage()
+            .get(
+                &owner
+                    .storage()
+                    .typed_handle::<VerifiedArtifact>(
+                        artifact_output,
+                        &OutputKind::new("SourceTheoremArtifactData"),
+                    )
+                    .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(artifact.exports.len(), 2);
+        assert_eq!(artifact.obligations.len(), 2);
+        assert_eq!(artifact.proof_witnesses.len(), 2);
+        let original_value = builtin_verified_artifact_json(&artifact).unwrap();
+        let artifact = Arc::new(
+            read_builtin_verified_artifact(&original_value, VerifiedArtifactReadOptions::default())
+                .unwrap(),
+        );
+        let parents = artifact_output
+            .lineage()
+            .parents
+            .iter()
+            .map(|id| {
+                submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|result| &result.output_refs)
+                    .find(|output| output.output() == *id)
+                    .unwrap()
+                    .clone()
+            })
+            .collect::<Vec<_>>();
+        for (projection, mutation) in ["exports", "obligations", "proof_witnesses"]
+            .into_iter()
+            .flat_map(|projection| {
+                ["missing", "extra", "substituted"].map(|mutation| (projection, mutation))
+            })
+            .chain([("exports", "original")])
+        {
+            let mut edited_artifact = artifact.as_ref().clone();
+            let mut value = original_value.clone();
+            let CanonicalJson::Object(fields) = &mut value else {
+                unreachable!()
+            };
+            let CanonicalJson::Array(rows) = fields.get_mut(projection).unwrap() else {
+                unreachable!()
+            };
+            match (projection, mutation) {
+                (_, "missing") => {
+                    rows.pop().unwrap();
+                }
+                (_, "extra") => rows.push(rows[0].clone()),
+                ("obligations", "substituted") => {
+                    let CanonicalJson::Object(row) = &mut rows[0] else {
+                        unreachable!()
+                    };
+                    row.insert("status".into(), CanonicalJson::String("open".into()));
+                    row.insert("accepted_witness_obligation_id".into(), CanonicalJson::Null);
+                }
+                (_, "substituted") => rows[0] = rows[1].clone(),
+                (_, "original") => {}
+                _ => unreachable!(),
+            }
+            match (projection, mutation) {
+                ("exports", "missing") => {
+                    edited_artifact.exports.pop().unwrap();
+                }
+                ("exports", "extra") => edited_artifact.exports.push(artifact.exports[0].clone()),
+                ("exports", "substituted") => {
+                    // Keep this replacement internally valid: the retained disk/source association
+                    // must still reject an export origin absent from the original source owner.
+                    edited_artifact.exports[0].origin_id = "unmapped-owner".into();
+                    edited_artifact.refresh_hashes().unwrap();
+                    value = builtin_verified_artifact_json(&edited_artifact).unwrap();
+                    assert!(
+                        read_builtin_verified_artifact(
+                            &value,
+                            VerifiedArtifactReadOptions::default(),
+                        )
+                        .is_ok()
+                    );
+                }
+                ("obligations", "missing") => {
+                    edited_artifact.obligations.pop().unwrap();
+                }
+                ("obligations", "extra") => edited_artifact
+                    .obligations
+                    .push(artifact.obligations[0].clone()),
+                ("obligations", "substituted") => {
+                    edited_artifact.obligations[0].status =
+                        mizar_artifact::verified_artifact::ObligationStatus::Open;
+                    edited_artifact.obligations[0].accepted_witness_obligation_id = None;
+                }
+                ("proof_witnesses", "missing") => {
+                    edited_artifact.proof_witnesses.pop().unwrap();
+                }
+                ("proof_witnesses", "extra") => edited_artifact
+                    .proof_witnesses
+                    .push(artifact.proof_witnesses[0].clone()),
+                ("proof_witnesses", "substituted") => {
+                    edited_artifact.proof_witnesses[0] = artifact.proof_witnesses[1].clone()
+                }
+                (_, "original") => {}
+                _ => unreachable!(),
+            }
+            let snapshot = artifact_output.snapshot();
+            let domain =
+                artifact_hash_domain(VERIFIED_ARTIFACT_SCHEMA_FAMILY, artifact.schema_version);
+            let bytes = canonical_json_bytes(&value);
+            let work_unit = WorkUnit::new(format!(
+                "{}:coverage:{projection}:{mutation}",
+                artifact_output.work_unit().as_str(),
+            ));
+            owner.allow_work_unit(AllowedWorkUnit::new(
+                artifact_output.phase().clone(),
+                artifact_output.output_kind().clone(),
+                work_unit.clone(),
+            ));
+            let replacement = super::super::publish_native_output(
+                &owner,
+                snapshot,
+                (
+                    artifact_output.phase().clone(),
+                    work_unit,
+                    artifact_output.output_kind().clone(),
+                ),
+                |slot, phase, work_unit, output_kind| PublishOutputInput {
+                    slot,
+                    snapshot,
+                    phase,
+                    work_unit,
+                    output_kind,
+                    schema_version: SchemaVersion::new(1),
+                    payload: edited_artifact,
+                    canonical_payload: Some(
+                        domain
+                            .hash_input(&value, &artifact_hash_excluded_paths())
+                            .into_bytes(),
+                    ),
+                    storage_payload: Some(bytes),
+                    decode: BlobDecoder::new(|bytes| {
+                        let value = parse_canonical_json_bytes(bytes, "coverage-control")
+                            .map_err(|error| BlobDecodeError::new(error.to_string()))?;
+                        read_builtin_verified_artifact(
+                            &value,
+                            VerifiedArtifactReadOptions::default(),
+                        )
+                        .map_err(|error| BlobDecodeError::new(error.to_string()))
+                    }),
+                    parents: parents.clone(),
+                    named_input_hashes: artifact_output.lineage().named_input_hashes.clone(),
+                    side_tables: IrSideTables::default(),
+                    origin: OutputOrigin::PackageSource,
+                    target: PublicationTarget::CurrentPackage,
+                },
+            )
+            .unwrap()
+            .erase();
+            let mut edited = submission.clone();
+            for result in edited
+                .scheduler_run
+                .as_mut()
+                .unwrap()
+                .phase_results
+                .values_mut()
+                .flatten()
+            {
+                for output in &mut result.output_refs {
+                    if output.output() == artifact_output.output() {
+                        *output = replacement.clone();
+                    }
+                }
+            }
+            assert_eq!(
+                fixture.resolve(&edited, &owner).is_some(),
+                mutation == "original",
+                "{projection} {mutation}",
+            );
+        }
+        let manifest = &original.manifests()[0].manifest;
+        let root = fixture.root.join("alpha").join(&manifest.artifact_root);
+        let path = root.join(&manifest.modules[0].artifact_file);
+        let bytes = fs::read(&path).unwrap();
+        fs::write(&path, b"corrupted").unwrap();
+        assert!(fixture.resolve(&submission, &owner).is_none());
+        fs::write(&path, bytes).unwrap();
+        for witness in &manifest.modules[0].proof_witnesses {
+            let path = root.join(&witness.witness_path);
+            let bytes = fs::read(&path).unwrap();
+            fs::remove_file(&path).unwrap();
+            assert!(fixture.resolve(&submission, &owner).is_none());
+            fs::write(&path, bytes).unwrap();
+        }
+        assert!(fixture.resolve(&submission, &owner).is_some());
+        owner
+            .mark_obsolete(submission.session.captured().snapshot().id)
+            .unwrap();
+        assert!(fixture.resolve(&submission, &owner).is_none());
     }
 
     #[test]

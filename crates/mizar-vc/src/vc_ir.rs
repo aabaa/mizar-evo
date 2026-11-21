@@ -512,53 +512,81 @@ impl VcSet {
         crate::kernel_evidence_handoff::build_source_theorem_kernel_handoff(core, self, vc)?;
         let invalid = || "unsupported source theorem canonical components".to_owned();
         let vc = self.vc(vc).ok_or_else(invalid)?;
-        let [entry] = vc.local_context.entries() else {
+        let accounting = self
+            .seed_accounting()
+            .iter()
+            .find(|row| row.handoff == vc.seed.handoff)
+            .ok_or_else(invalid)?;
+        let SeedOriginRef::ExistingCore { seed } = accounting.origin else {
             return Err(invalid());
         };
-        let (Some(VcFormulaRef::Core(guard)), VcFormulaRef::Core(goal)) = (entry.formula, vc.goal)
-        else {
+        let seed = core.obligation_seeds().get(seed).ok_or_else(invalid)?;
+        let item = core.items().get(seed.owner).ok_or_else(invalid)?;
+        let VcFormulaRef::Core(goal) = vc.goal else {
             return Err(invalid());
         };
-        let [provenance] = entry.provenance.as_slice() else {
-            return Err(invalid());
-        };
-        let item = core.items().iter().next().ok_or_else(invalid)?.1;
-        if entry.kind != ContextEntryKind::ProofAssumption
-            || vc.premises != [PremiseRef::LocalContext(entry.id)]
-            || !vc.local_context.policy_inputs().is_empty()
-            || vc.proof_hint.is_some()
-            || entry.sort_key.as_str()
-                != format!(
-                    "core-context-formula-{:08}-source-ordinal-00000000",
-                    guard.index()
-                )
-            || provenance.phase != VcProvenancePhase::CoreHandoff
-            || provenance.key.as_str() != format!("context-formula-{}", guard.index())
-            || provenance.core.as_ref()
-                != Some(&CoreProvenance::new(
-                    mizar_core::core_ir::CoreProvenancePhase::Checker,
-                    format!(
-                        "checker/theorem/{}/skeleton/terminal",
-                        item.symbol.fqn().as_str()
-                    ),
-                ))
-            || guard == goal
-            || formulas.len() != 2
-            || !formulas.contains_key(&guard)
-            || !formulas.contains_key(&goal)
+        let required = core
+            .obligation_seeds()
+            .iter()
+            .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+            .collect::<BTreeSet<_>>();
+        if formulas.keys().copied().collect::<BTreeSet<_>>() != required
             || formulas.values().any(Vec::is_empty)
         {
             return Err(invalid());
         }
-        let mut entry_payload = 0u32.to_be_bytes().to_vec();
-        entry_payload.push(1); // ProofAssumption, with the verified source ordinal normalized.
-        source_registration_frame(&mut entry_payload, &formulas[&guard]).map_err(|_| invalid())?;
-        entry_payload.extend(1u32.to_be_bytes());
-        entry_payload.push(1); // CoreHandoff.
-        source_registration_frame(&mut entry_payload, b"context-formula").map_err(|_| invalid())?;
-        entry_payload.extend([1, 1]); // Some Checker provenance, normalized to its verified role.
-        source_registration_frame(&mut entry_payload, b"source-theorem-local-proof/terminal")
-            .map_err(|_| invalid())?;
+        let mut entry_payloads = Vec::new();
+        for entry in vc.local_context.entries() {
+            let Some(VcFormulaRef::Core(formula)) = entry.formula else {
+                return Err(invalid());
+            };
+            let [provenance] = entry.provenance.as_slice() else {
+                return Err(invalid());
+            };
+            let ordinal = seed
+                .context
+                .iter()
+                .position(|id| *id == formula)
+                .ok_or_else(invalid)?;
+            if entry.kind != ContextEntryKind::ProofAssumption
+                || !vc.local_context.policy_inputs().is_empty()
+                || vc.proof_hint.is_some()
+                || entry.sort_key.as_str()
+                    != format!(
+                        "core-context-formula-{:08}-source-ordinal-{:08}",
+                        formula.index(),
+                        ordinal
+                    )
+                || provenance.phase != VcProvenancePhase::CoreHandoff
+                || provenance.key.as_str() != format!("context-formula-{}", formula.index())
+                || provenance.core.as_ref()
+                    != Some(&CoreProvenance::new(
+                        mizar_core::core_ir::CoreProvenancePhase::Checker,
+                        format!(
+                            "checker/theorem/{}/skeleton/terminal",
+                            item.symbol.fqn().as_str()
+                        ),
+                    ))
+                || formula == goal
+            {
+                return Err(invalid());
+            }
+            let mut entry_payload = u32::try_from(ordinal)
+                .map_err(|_| invalid())?
+                .to_be_bytes()
+                .to_vec();
+            entry_payload.push(1);
+            source_registration_frame(&mut entry_payload, &formulas[&formula])
+                .map_err(|_| invalid())?;
+            entry_payload.extend(1u32.to_be_bytes());
+            entry_payload.push(1);
+            source_registration_frame(&mut entry_payload, b"context-formula")
+                .map_err(|_| invalid())?;
+            entry_payload.extend([1, 1]);
+            source_registration_frame(&mut entry_payload, b"source-theorem-local-proof/terminal")
+                .map_err(|_| invalid())?;
+            entry_payloads.push(entry_payload);
+        }
         let mut vc_payload = b"mizar-vc/source-theorem-canonical-vc/v1\0".to_vec();
         let mut goal_payload = b"mizar-vc/source-theorem-canonical-goal/v1\0".to_vec();
         let mut context_payload = b"mizar-vc/source-theorem-canonical-context/v1\0".to_vec();
@@ -571,15 +599,39 @@ impl VcSet {
             )
             .map_err(|_| invalid())?;
         }
+        if core.items().len() > 1 {
+            for payload in [&mut vc_payload, &mut goal_payload, &mut context_payload] {
+                source_registration_frame(payload, item.symbol.fqn().as_str().as_bytes())
+                    .map_err(|_| invalid())?;
+                payload.extend(
+                    u32::try_from(item.dependencies.len())
+                        .map_err(|_| invalid())?
+                        .to_be_bytes(),
+                );
+                for dependency in &item.dependencies {
+                    let cited = core.items().get(*dependency).ok_or_else(invalid)?;
+                    source_registration_frame(payload, cited.symbol.fqn().as_str().as_bytes())
+                        .map_err(|_| invalid())?;
+                }
+            }
+        }
         source_registration_frame(&mut goal_payload, &formulas[&goal]).map_err(|_| invalid())?;
-        context_payload.extend(1u32.to_be_bytes());
-        source_registration_frame(&mut context_payload, &entry_payload).map_err(|_| invalid())?;
+        let count = u32::try_from(entry_payloads.len())
+            .map_err(|_| invalid())?
+            .to_be_bytes();
+        context_payload.extend(count);
+        for entry_payload in &entry_payloads {
+            source_registration_frame(&mut context_payload, entry_payload)
+                .map_err(|_| invalid())?;
+        }
         context_payload.extend(0u32.to_be_bytes());
         vc_payload.push(1); // TheoremProofStep.
         source_registration_frame(&mut vc_payload, &formulas[&goal]).map_err(|_| invalid())?;
-        vc_payload.extend(1u32.to_be_bytes());
-        vc_payload.push(1); // The actual resolved LocalContext premise.
-        source_registration_frame(&mut vc_payload, &entry_payload).map_err(|_| invalid())?;
+        vc_payload.extend(count);
+        for entry_payload in &entry_payloads {
+            vc_payload.push(1); // The actual resolved LocalContext premise.
+            source_registration_frame(&mut vc_payload, entry_payload).map_err(|_| invalid())?;
+        }
         vc_payload.extend(0u32.to_be_bytes());
         vc_payload.push(0); // Absent proof hint.
         Ok((

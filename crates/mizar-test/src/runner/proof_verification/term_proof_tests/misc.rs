@@ -222,7 +222,13 @@ fn source_theorem_formula_payloads_refuse_foreign_roots_and_profiles() {
                 seed.context.iter().copied().chain(seed.goal)
             }).collect::<Vec<_>>();
             assert!(!roots.is_empty());
-            if source != original {
+            if core.items().len() == 2 && source.starts_with("theorem T:") {
+                let payloads = source_theorem_formula_payloads(check, &core, &roots)?;
+                assert_eq!(payloads.len(), 4);
+                for root in &roots {
+                    assert_eq!(source_theorem_formula_payloads(check, &core, &[*root])?[root], payloads[root]);
+                }
+            } else if source != original {
                 if source.contains("lemma T:") {
                     assert_eq!(core.items().iter().next().unwrap().1.kind, CoreItemKind::Lemma);
                 }

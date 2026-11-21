@@ -401,7 +401,13 @@ fn source_theorem_discharge_handoff_preserves_refusals() {
         })
         .unwrap();
         for record in vcs.vcs() {
-            let expected = original_handoff(&unsupported, &vcs, record.id).unwrap_err();
+            let expected = if source.starts_with(text) {
+                assert_eq!(vcs.vcs().len(), 2);
+                original_handoff(&unsupported, &vcs, record.id).unwrap();
+                invalid.to_owned()
+            } else {
+                original_handoff(&unsupported, &vcs, record.id).unwrap_err()
+            };
             for output in [&actual, &foreign_discharge] {
                 assert_eq!(
                     configured(&unsupported, &vcs, record.id, output, &policy).unwrap_err(),

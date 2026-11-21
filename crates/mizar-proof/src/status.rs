@@ -1732,6 +1732,8 @@ pub fn source_theorem_canonical_inputs(
         .obligation_seeds()
         .iter()
         .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
         .collect::<Vec<_>>();
     let formulas = mizar_core::elaborator::source_theorem_formula_payloads(check, &core, &roots)?;
     let vcs = mizar_vc::generator::generate_source_theorem_vcs(
@@ -3495,6 +3497,8 @@ pub fn source_theorem_obligation_identity_with_schemas(
         .obligation_seeds()
         .iter()
         .flat_map(|(_, seed)| seed.context.iter().copied().chain(seed.goal))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
         .collect::<Vec<_>>();
     let formulas = mizar_core::elaborator::source_theorem_formula_payloads(&fresh, &core, &roots)?;
     let vcs =
@@ -3511,10 +3515,18 @@ pub fn source_theorem_obligation_identity_with_schemas(
         .ok_or_else(|| "theorem.proof.invalid_source_canonical_inputs".to_owned())?;
     let syntax =
         mizar_resolve::symbols::source_theorem_syntax_payloads_from_arena(source, symbols)?;
-    let [(owner, visibility)] = fresh.owners() else {
+    let mizar_vc::vc_ir::AnchorOwner::Theorem(item_id) =
+        &vcs.vc(vc_id).ok_or_else(invalid)?.anchor.owner
+    else {
         return Err(invalid());
     };
-    if syntax.len() != 1
+    let item = core.items().get(*item_id).ok_or_else(invalid)?;
+    let (owner, visibility) = fresh
+        .owners()
+        .iter()
+        .find(|(owner, _)| owner.symbol == item.symbol)
+        .ok_or_else(invalid)?;
+    if syntax.len() != fresh.owners().len()
         || owner.role != SourceTheoremRole::Theorem
         || owner.status != SourceTheoremStatus::Unmodified
         || owner.recovery != SourceStatementRecovery::Normal
@@ -3605,107 +3617,17 @@ pub fn source_theorem_obligation_identity(
     ),
     String,
 > {
-    use mizar_artifact::store::{
-        CanonicalHashDomain, CanonicalJson, HashClass, canonical_json_bytes,
-    };
-    use mizar_checker::source_statement::{
-        SourceStatementRecovery, SourceTheoremRole, SourceTheoremStatus,
-    };
-
-    let fresh =
-        mizar_checker::type_checker::SourceVariableSemanticsChecker::check_theorem_skeletons(
-            source,
-            check.typed_ast(),
-            check.scope(),
-            symbols,
-            check.labels(),
-            check.resolved_labels(),
-            None,
-        )?;
-    let invalid = || "theorem.proof.invalid_source_identity".to_owned();
-    if check.owners() != fresh.owners() {
-        return Err(invalid());
-    }
-    let (vc, goal, context, slice) = source_theorem_canonical_inputs(&fresh, snapshot, vc_id)?;
-    let syntax =
-        mizar_resolve::symbols::source_theorem_syntax_payloads_from_arena(source, symbols)?;
-    let [(owner, visibility)] = fresh.owners() else {
-        return Err(invalid());
-    };
-    if syntax.len() != 1
-        || owner.role != SourceTheoremRole::Theorem
-        || owner.status != SourceTheoremStatus::Unmodified
-        || owner.recovery != SourceStatementRecovery::Normal
-        || !matches!(*visibility, "public" | "private")
-    {
-        return Err(invalid());
-    }
-    let syntax = syntax.get(&owner.symbol).ok_or_else(invalid)?;
-    let module = owner.symbol.module();
-    let owner = CanonicalJson::object([
+    source_theorem_obligation_identity_with_schemas(
+        source,
+        check,
+        symbols,
+        snapshot,
+        vc_id,
         (
-            "package_id",
-            CanonicalJson::string(module.package().as_str()),
+            &mizar_vc::vc_ir::GenerationSchemaVersion::new("source-theorem-local-v1"),
+            &mizar_vc::vc_ir::VcSchemaVersion::new("vc-v1"),
         ),
-        ("module_path", CanonicalJson::string(module.path().as_str())),
-        ("namespace", CanonicalJson::string(module.path().as_str())),
-        ("spelling", CanonicalJson::string(&owner.spelling)),
-        ("role", CanonicalJson::string("theorem")),
-        ("status", CanonicalJson::string("unmodified")),
-        ("visibility", CanonicalJson::string(*visibility)),
-    ])
-    .map_err(|error| error.to_string())?;
-    let candidate = mizar_vc::vc_ir::source_theorem_candidate_anchor_hash(
-        &canonical_json_bytes(&owner),
-        syntax,
-        vc,
-        goal,
-        context,
-    )?;
-    let candidate = ObligationAnchor::new(format!(
-        "source-theorem-candidate-anchor-v1:{}",
-        source_discharge_hex(candidate.as_bytes()),
-    ))
-    .map_err(|error| error.to_string())?;
-    let obligation = CanonicalJson::object([
-        (
-            "obligation_anchor",
-            CanonicalJson::string(candidate.as_str()),
-        ),
-        (
-            "vc_fingerprint",
-            CanonicalJson::string(source_discharge_hex(vc.hash().as_bytes())),
-        ),
-        (
-            "canonical_goal_hash",
-            CanonicalJson::string(source_discharge_hex(goal.as_bytes())),
-        ),
-        (
-            "local_context_fingerprint",
-            CanonicalJson::string(source_discharge_hex(context.hash().as_bytes())),
-        ),
-        (
-            "vc_local_dependency_slice_fingerprint",
-            CanonicalJson::string(source_discharge_hex(slice.fingerprint().hash().as_bytes())),
-        ),
-    ])
-    .map_err(|error| error.to_string())?;
-    let fingerprint = CanonicalHashDomain::new(
-        HashClass::Interface,
-        "mizar-proof/source-theorem-original-obligation",
-        SchemaVersion::new(1, 0),
     )
-    .hash(&obligation, &[]);
-    let identity = ProofObligationIdentity::new(
-        candidate.as_str().to_owned(),
-        candidate,
-        fingerprint,
-        vc.hash(),
-        context.hash(),
-        slice.fingerprint().hash(),
-    )
-    .map_err(|error| error.to_string())?;
-    Ok((identity, slice))
 }
 
 /// Derives raw canonical VC, goal and visible-context content from one source call.

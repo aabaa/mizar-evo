@@ -396,7 +396,7 @@ context identity は全実 envelope と producer entry を結び、provenance �
 ## Source theorem local handoff
 
 `build_source_theorem_kernel_handoff(&CoreIr, &VcSet, VcId) -> Result<VcKernelEvidenceHandoff, String>` は検証済み Core と元の汎用 VC set を消費する。raw Core は偽造不能な Checker seal ではない。既存 API、registration 出力、入力 status/source map を保持する。
-profile は unmodified `CoreItemKind::Theorem`（Lemma 以外）の有限非空集合。各 owner は Valid/PendingAutomaticProof、active TheoremProof seed と IntroduceBinder/TerminalGoal を各一つ持ち、terminal は先行する local owner を最大一つ引用できる。複数 owner は public に限定し、未対応 item/definition/algorithm/generated origin/diagnostic は拒否する。
+profile は unmodified `CoreItemKind::Theorem`（Lemma 以外）の有限非空集合。各 owner は Valid/PendingAutomaticProof、active TheoremProof seed と IntroduceBinder/TerminalGoal を各一つ持ち、terminal は同一 source の非空 theorem 範囲を持つ自身以外の先行 local owner を最大一つ引用できる。複数 owner は public に限定し、未対応 item/definition/algorithm/generated origin/diagnostic は拒否する。
 元 proposition は実 set guard 付き universal binder 1件と、その束縛変数の反射等式 body を持つ。導入した local variable は自身の実 set guard と反射等式 terminal goal を持つ。同じ source 表記でも両 Core variable identity は異なり、実際に到達可能な profile term/formula のみ扱う。
 
 最初に selected VC handle を検索し、supplied snapshot/VC schema と selected anchor generation schema で [raw generation](./generator.md#source-theorem-vc-generation) を呼ぶ。profile validation/evidence 射影より前に、seed accounting、owner、goal、local-context association を含む WHOLE replay equality を要求する。
@@ -457,7 +457,7 @@ UTF-8 metadata は source-algorithm-state-local-handoff-v1;source={:?};module={:
 ## Source theorem configured-discharge handoff
 
 `build_source_theorem_discharge_kernel_handoff(core: &CoreIr, original: &VcSet, vc_id: VcId, discharge: &DischargeOutput, policy: &DischargePolicy) -> Result<VcKernelEvidenceHandoff, String>` は既存の単一 theorem profile と実 configured NeedsAtp output を関連付ける。raw Core と値一致は source-check seal や生成元の証明ではない。
-最初に未変更の build_source_theorem_kernel_handoff(core, original, vc_id) を呼び、元の Open/profile/全 replay と error を保つ。明示 policy で元 set 全体を try_discharge し、Display error を保って DischargeOutput 全体一致と実 selected NeedsAtp record を要求する。以後の関連付け・射影拒否は内部 theorem.discharge_handoff.invalid_projection。異なる policy が同じ真正 output を作る場合は値の関連付けを許す。
+最初に build_source_theorem_kernel_handoff(core, original, vc_id) を呼び、元の Open/profile/全 replay と error を保つ。その後 singleton original set を要求して ATP 境界を保つ。明示 policy で元 set 全体を try_discharge し、Display error を保って DischargeOutput 全体一致と実 selected NeedsAtp record を要求する。以後の関連付け・射影拒否は内部 theorem.discharge_handoff.invalid_projection。異なる policy が同じ真正 output を作る場合は値の関連付けを許す。
 
 その新鮮な元 handoff の実 formula evidence と別 final goal だけを再利用し、producer ref と provenance ID/fingerprint/元 target の一致を要求して opaque formula bytes/fingerprint/provenance payload を保つ。byte 解析、source/profile validator 複製、target/fingerprint writer 複製は禁止。
 実 discharge.vc_set() に対し既存 build_kernel_evidence_handoff を使い、元 manifests/profile/refutation polarity、空 imports/substitutions、formula_context None、discharge_output Some(discharge) を渡す。既存 builder が新しい実 target/context identity/diagnostics/canonical evidence を生成し、旧 target を付け替えない。元 Core PendingAutomaticProof、active seed、元 Open VC と全入力を保つ。

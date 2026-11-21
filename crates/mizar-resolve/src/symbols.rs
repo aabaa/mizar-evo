@@ -2046,7 +2046,10 @@ pub fn source_theorem_syntax_payloads_from_arena(
                 | SurfaceNodeKind::LetStatement
                 | SurfaceNodeKind::QualifiedVariableSegment
                 | SurfaceNodeKind::ConclusionStatement
-                | SurfaceNodeKind::Proposition => {}
+                | SurfaceNodeKind::Proposition
+                | SurfaceNodeKind::JustificationClause
+                | SurfaceNodeKind::ReferenceList
+                | SurfaceNodeKind::Reference => {}
                 _ => return Err(unsupported()),
             }
             payload.extend_from_slice(&(node.syntax_kind() as u16).to_be_bytes());

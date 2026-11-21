@@ -4343,3 +4343,341 @@ fn scheduled_reflexivity_discharge_admission_requires_the_exact_profile() {
         }
     }
 }
+
+#[test]
+fn scheduled_mapped_citation_publishes_genuine_base_main() {
+    use mizar_artifact::direct_by::DirectByTarget;
+    use mizar_build::task_graph::{
+        EvidenceCandidateId, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId,
+    };
+    use mizar_proof::policy::VerifierPolicy;
+
+    // Spec §§16.1/16.5.1: the earlier clean theorem is an actual compiler citation.
+    let base_main = "theorem Base: for X being set holds X = X proof let X be set; thus X = X; end;\ntheorem Main: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;\n";
+    let chain = "\u{feff}:: captured 😀\r\ntheorem ZBase: for X being set holds X = X proof let X be set; thus X = X; end;\r\ntheorem AMiddle: for Y being set holds Y = Y proof let Y be set; thus Y = Y by ZBase; end;\r\ntheorem Main: for Z being set holds Z = Z proof let Z be set; thus Z = Z by AMiddle; end;\r\n";
+    let refused_sources = [
+        "open theorem Base: for X being set holds X = X;",
+        "assumed theorem Base: for X being set holds X = X;",
+        "private theorem Base: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "lemma Base: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "theorem Base: for X being object holds X = X proof let X be object; thus X = X; end;",
+        "theorem Base: for X being set holds X = X proof let X be set; thus X = X by Base; end;",
+        "theorem Base: for X being set holds X = X proof let X be set; thus X = X by Main; end;",
+    ]
+    .into_iter()
+    .flat_map(|base| {
+        [
+            format!("{base}\ntheorem Main: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;\n"),
+            format!("{base}\ntheorem Middle: for Y being set holds Y = Y proof let Y be set; thus Y = Y by Base; end;\ntheorem Main: for Z being set holds Z = Z proof let Z be set; thus Z = Z by Middle; end;\n"),
+        ]
+    })
+    .collect::<Vec<_>>();
+    for (text, open, labels, expected_citations, expected_publication) in [
+        (
+            base_main,
+            false,
+            &["Base", "Main"][..],
+            &[("Main", "Base")][..],
+            true,
+        ),
+        (
+            chain,
+            true,
+            &["ZBase", "AMiddle", "Main"][..],
+            &[("AMiddle", "ZBase"), ("Main", "AMiddle")][..],
+            true,
+        ),
+    ]
+    .into_iter()
+    .chain(
+        refused_sources
+            .iter()
+            .map(|text| (text.as_str(), false, &[][..], &[][..], false)),
+    ) {
+        // Compiler syntax ranges use loaded text: a leading BOM is removed and
+        // each CRLF becomes LF (mizar_session::normalize_source_text).
+        let loaded_text = text
+            .strip_prefix('\u{feff}')
+            .unwrap_or(text)
+            .replace("\r\n", "\n");
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let (mut request, mut submit) = fixture.submit_request(vec![], vec![]);
+        let plan = mizar_build::planner::produce_build_plan(
+            submit.plan_request.clone(),
+            submit.workspace_packages.clone(),
+            submit.lockfile.clone(),
+        )
+        .unwrap();
+        request.dependency_inputs.lockfile_hash =
+            mizar_build::planner::lockfile_content_hash(&plan.lockfile);
+        request.dependency_inputs.toolchain = plan.toolchain.clone();
+        request.verifier_config = mizar_driver::request::VerifierConfigInput::new(
+            mizar_build::planner::workspace_config_content_hash(
+                &plan.verifier_config,
+                &plan.build_config,
+            ),
+        );
+        request.source_inputs.versions.clear();
+        let session = request
+            .capture_sources(
+                &ids,
+                &snapshots,
+                vec![(
+                    DiskSourceLoader::new(fixture.root.join("alpha")),
+                    SourceInput {
+                        package_id: PackageId::new("alpha"),
+                        module_path: ModulePath::new("main"),
+                        normalized_path: fixture.version.normalized_path.clone(),
+                        edition: Edition::new("2025"),
+                        origin: if open {
+                            SourceOriginInput::OpenBuffer {
+                                uri: format!(
+                                    "file://{}",
+                                    fixture.root.join("alpha/src/main.miz").display()
+                                ),
+                                expected_version: 7,
+                                actual_version: 7,
+                                text: std::sync::Arc::from(text),
+                            }
+                        } else {
+                            SourceOriginInput::Disk {
+                                path: "src/main.miz".into(),
+                            }
+                        },
+                    },
+                )],
+            )
+            .unwrap();
+        if open {
+            fixture.write(&[0xff]);
+        }
+        let module = mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        );
+        let unit = WorkUnit::Module {
+            module: module.clone(),
+        };
+        let owner = publisher(session.captured().snapshot().id, 0, &unit);
+        allow_reflexivity_artifact_outputs(&owner, &unit, true);
+        fs::create_dir_all(fixture.root.join("alpha/mapped-artifacts")).unwrap();
+        submit.vc_descriptors = vec![VcTaskDescriptor::new(
+            VcTaskDescriptorId::new("mapped-reflexivity"),
+            module,
+            VcOrderKey::new("mapped-reflexivity"),
+            vec![],
+            vec![EvidenceCandidateId::new("mapped-reflexivity")],
+        )];
+        let mut driver = CompilerDriver::new(reflexivity_artifact_registry(
+            VerifierPolicy::release(),
+            VerifierPolicy::release(),
+            "mapped-artifacts",
+            true,
+        ))
+        .with_output_publisher(owner);
+        let submission = driver
+            .submit_captured(session, &ids, &snapshots, submit, Default::default())
+            .unwrap();
+        let stream = driver.events(submission.session.id());
+        let publications = stream
+            .events()
+            .iter()
+            .filter_map(|event| match &event.kind {
+                mizar_driver::events::BuildEventKind::SnapshotPublished { snapshot } => {
+                    Some(snapshot)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        if !expected_publication {
+            assert!(publications.is_empty(), "refused cited owner: {text}");
+            let run = submission.scheduler_run.as_ref().unwrap();
+            assert!(run.phase_results.values().flatten().all(|result| {
+                result.artifact_commit.is_none()
+                    && result.output_refs.iter().all(|output| {
+                        output.output_kind() != &OutputKind::new("SourceTheoremArtifactData")
+                    })
+            }));
+            assert_eq!(
+                fs::read_dir(fixture.root.join("alpha/mapped-artifacts"))
+                    .unwrap()
+                    .count(),
+                0,
+                "refused direct or transitive cited owner leaves no staged artifacts: {text}"
+            );
+            continue;
+        }
+        assert_eq!(
+            publications.len(),
+            1,
+            "{:?}",
+            submission.scheduler_run.as_ref().unwrap().task_states
+        );
+        let published = publications[0];
+        let [artifact] = published.artifacts() else {
+            panic!("one genuine module artifact")
+        };
+        assert_eq!(artifact.exports.len(), labels.len());
+        assert_eq!(artifact.obligations.len(), labels.len());
+        assert_eq!(artifact.proof_witnesses.len(), labels.len());
+        assert!(
+            artifact
+                .obligations
+                .iter()
+                .all(|row| row.status
+                    == mizar_artifact::verified_artifact::ObligationStatus::Accepted)
+        );
+        assert!(
+            artifact.proof_witnesses.iter().all(|row| row.proof_status
+                == mizar_artifact::proof_witness::ProofStatus::DischargedBuiltin)
+        );
+        let json =
+            mizar_artifact::verified_artifact::builtin_verified_artifact_json(artifact).unwrap();
+        assert_eq!(
+            mizar_artifact::verified_artifact::read_builtin_verified_artifact(
+                &json,
+                Default::default()
+            )
+            .unwrap(),
+            **artifact
+        );
+        for owner in 0..labels.len() {
+            for case in [
+                "missing-witness",
+                "missing-status",
+                "substituted-status",
+                "open-status",
+            ] {
+                let mut changed = json.clone();
+                let mizar_artifact::store::CanonicalJson::Object(fields) = &mut changed else {
+                    unreachable!()
+                };
+                let field = if case == "missing-witness" {
+                    "proof_witnesses"
+                } else {
+                    "obligations"
+                };
+                let mizar_artifact::store::CanonicalJson::Array(rows) =
+                    fields.get_mut(field).unwrap()
+                else {
+                    unreachable!()
+                };
+                match case {
+                    "missing-witness" | "missing-status" => {
+                        rows.remove(owner);
+                    }
+                    "substituted-status" => {
+                        let mizar_artifact::store::CanonicalJson::Object(other) =
+                            &rows[(owner + 1) % labels.len()]
+                        else {
+                            unreachable!()
+                        };
+                        let fingerprint = other["obligation_fingerprint"].clone();
+                        let mizar_artifact::store::CanonicalJson::Object(row) = &mut rows[owner]
+                        else {
+                            unreachable!()
+                        };
+                        row.insert("obligation_fingerprint".to_owned(), fingerprint);
+                    }
+                    _ => {
+                        let mizar_artifact::store::CanonicalJson::Object(row) = &mut rows[owner]
+                        else {
+                            unreachable!()
+                        };
+                        row.insert(
+                            "status".to_owned(),
+                            mizar_artifact::store::CanonicalJson::string("open"),
+                        );
+                        row.insert(
+                            "accepted_witness_obligation_id".to_owned(),
+                            mizar_artifact::store::CanonicalJson::Null,
+                        );
+                    }
+                }
+                assert!(matches!(
+                    mizar_artifact::verified_artifact::read_builtin_verified_artifact(
+                        &changed,
+                        Default::default()
+                    ),
+                    Err(mizar_artifact::verified_artifact::VerifiedArtifactError::WitnessReferenceMismatch { .. })
+                ), "{case}: owner {owner} must fail witness/status binding before hash validation");
+            }
+        }
+        assert!(artifact.provenance.captured_source.is_none());
+        let metadata = published.source_metadata()[0].as_ref().unwrap();
+        assert!(metadata.identity().is_none());
+        let citations = metadata.direct_by().expect("genuine mapped citation");
+        assert!(citations.complete());
+        assert_eq!(citations.examinations().len(), labels.len());
+        assert_eq!(citations.occurrences().len(), expected_citations.len());
+        let captured = &published.captured().snapshot().source_versions[0];
+        assert_eq!(
+            citations.captured_source(),
+            &(
+                captured.source_id,
+                captured.origin.clone(),
+                captured.source_hash
+            )
+        );
+        for (occurrence, (citing, target_name)) in
+            citations.occurrences().iter().zip(expected_citations)
+        {
+            let DirectByTarget::Theorem(target) = &occurrence.target else {
+                panic!("compiler-bound theorem target")
+            };
+            for (actual, name) in [
+                (&target.export, *target_name),
+                (&occurrence.citing.as_ref().unwrap().export, *citing),
+            ] {
+                let expected = artifact
+                    .exports
+                    .iter()
+                    .find(|export| {
+                        export.source_range.start_byte
+                            == loaded_text.find(&format!("theorem {name}:")).unwrap() as u64
+                    })
+                    .unwrap();
+                assert_eq!(actual, expected);
+            }
+            assert_eq!(
+                &loaded_text[occurrence.target_range.start..occurrence.target_range.end],
+                *target_name
+            );
+            assert_eq!(
+                target.publication_hash,
+                published.manifests()[0].artifact_hash
+            );
+        }
+        let commit = &published.manifests()[0];
+        assert_eq!(
+            commit.manifest.modules[0].proof_witnesses.len(),
+            labels.len()
+        );
+        if open {
+            assert!(
+                !fixture
+                    .root
+                    .join("alpha")
+                    .join(&commit.manifest.artifact_root)
+                    .exists()
+            );
+            continue;
+        }
+        let read = mizar_artifact::manifest::read_manifest_file(
+            fixture
+                .root
+                .join("alpha")
+                .join(&commit.manifest.artifact_root),
+            mizar_artifact::manifest::ManifestFileReadOptions {
+                validate_references: true,
+                validate_witness_files: true,
+                validate_development_artifacts: true,
+                expected_manifest_hash: Some(commit.artifact_hash),
+            },
+        )
+        .unwrap();
+        assert_eq!(read, *commit);
+    }
+}
