@@ -490,6 +490,17 @@ shadows in its own guard and in later binders and the body, while earlier
 binders shadow in later guards and the body. Unresolved/external variables are
 ignored instead of guessed from source spelling.
 
+CFG use collection tracks formula and term IDs on the active recursion path.
+A back edge fails closed with `cyclic CoreIr formula id` or `cyclic CoreIr term id`
+invariant panic, like existing validated-ID failures; no partial collection is returned.
+Removing IDs on return preserves shared DAG occurrences and binder-dependent free uses.
+This guard covers use collection only, not deep acyclic inputs or statement graphs.
+Sibling inventory: `core_ir::{validate_term, validate_formula}` checks immediate
+reference bounds; `elaborator::{validate_algorithm_term, validate_algorithm_formula}`
+checks root existence. Neither detects cycles. `binder_normalization` raw normalizers
+and `core_{formula,term}_mentions_vars` recurse without cycle guards; missing-ID
+errors there do not establish general formula or arena cycle safety.
+
 Earlier phase-10 tasks already emit structural diagnostics for illegal `break`
 or `continue` outside a loop, unsupported local-declaration metadata, and
 malformed or missing algorithm statements carried from phase 9. The broader

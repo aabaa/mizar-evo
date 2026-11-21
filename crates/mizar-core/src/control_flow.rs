@@ -1462,7 +1462,12 @@ impl<'a> FlowBuilder<'a> {
                 }
                 if !ghost {
                     let mut uses = Vec::new();
-                    self.collect_term_uses(*value, &BTreeSet::new(), &mut uses);
+                    self.collect_term_uses(
+                        *value,
+                        &BTreeSet::new(),
+                        &mut uses,
+                        &mut BTreeSet::new(),
+                    );
                     for usage in uses {
                         if self
                             .flow
@@ -1587,7 +1592,12 @@ impl<'a> FlowBuilder<'a> {
             CoreAlgorithmStmtKind::Return(value) => {
                 if let Some(value) = value {
                     let mut uses = Vec::new();
-                    self.collect_term_uses(*value, &BTreeSet::new(), &mut uses);
+                    self.collect_term_uses(
+                        *value,
+                        &BTreeSet::new(),
+                        &mut uses,
+                        &mut BTreeSet::new(),
+                    );
                     for usage in uses {
                         if self
                             .flow
@@ -1728,7 +1738,7 @@ impl<'a> FlowBuilder<'a> {
         }
         if !local_ghost && let Some(value) = value {
             let mut uses = Vec::new();
-            self.collect_term_uses(value, &BTreeSet::new(), &mut uses);
+            self.collect_term_uses(value, &BTreeSet::new(), &mut uses, &mut BTreeSet::new());
             for usage in uses {
                 if self
                     .flow
@@ -2736,7 +2746,7 @@ impl<'a> FlowBuilder<'a> {
         bound_vars: BTreeSet<CoreVarId>,
     ) {
         let mut uses = Vec::new();
-        self.collect_term_uses(term, &bound_vars, &mut uses);
+        self.collect_term_uses(term, &bound_vars, &mut uses, &mut BTreeSet::new());
         self.emit_use_before_assignment_diagnostics(uses, context, statement);
     }
 
@@ -2757,7 +2767,7 @@ impl<'a> FlowBuilder<'a> {
         bound_vars: BTreeSet<CoreVarId>,
     ) {
         let mut uses = Vec::new();
-        self.collect_formula_uses(formula, &bound_vars, &mut uses);
+        self.collect_formula_uses(formula, &bound_vars, &mut uses, &mut BTreeSet::new());
         self.emit_use_before_assignment_diagnostics(uses, context, statement);
     }
 
@@ -2791,20 +2801,22 @@ impl<'a> FlowBuilder<'a> {
 
     fn collect_formula_uses(
         &self,
-        formula: CoreFormulaId,
+        formula_id: CoreFormulaId,
         bound_vars: &BTreeSet<CoreVarId>,
         uses: &mut Vec<LocalUse>,
+        active: &mut BTreeSet<CoreFormulaId>,
     ) {
+        assert!(active.insert(formula_id), "cyclic CoreIr formula id");
         let formula = self
             .core
             .formulas()
-            .get(formula)
+            .get(formula_id)
             .expect("validated CoreIr formula id");
         match &formula.kind {
             CoreFormulaKind::True | CoreFormulaKind::False | CoreFormulaKind::Error(_) => {}
             CoreFormulaKind::Atom { args, .. } => {
                 for arg in args {
-                    self.collect_term_uses(*arg, bound_vars, uses);
+                    self.collect_term_uses(*arg, bound_vars, uses, &mut BTreeSet::new());
                 }
             }
             CoreFormulaKind::Equals { left, right }
@@ -2812,28 +2824,30 @@ impl<'a> FlowBuilder<'a> {
                 element: left,
                 set: right,
             } => {
-                self.collect_term_uses(*left, bound_vars, uses);
-                self.collect_term_uses(*right, bound_vars, uses);
+                self.collect_term_uses(*left, bound_vars, uses, &mut BTreeSet::new());
+                self.collect_term_uses(*right, bound_vars, uses, &mut BTreeSet::new());
             }
             CoreFormulaKind::TypePred { subject, .. } => {
-                self.collect_term_uses(*subject, bound_vars, uses);
+                self.collect_term_uses(*subject, bound_vars, uses, &mut BTreeSet::new());
             }
-            CoreFormulaKind::Not(inner) => self.collect_formula_uses(*inner, bound_vars, uses),
+            CoreFormulaKind::Not(inner) => {
+                self.collect_formula_uses(*inner, bound_vars, uses, active)
+            }
             CoreFormulaKind::And(items) | CoreFormulaKind::Or(items) => {
                 for item in items {
-                    self.collect_formula_uses(*item, bound_vars, uses);
+                    self.collect_formula_uses(*item, bound_vars, uses, active);
                 }
             }
             CoreFormulaKind::Implies {
                 premise,
                 conclusion,
             } => {
-                self.collect_formula_uses(*premise, bound_vars, uses);
-                self.collect_formula_uses(*conclusion, bound_vars, uses);
+                self.collect_formula_uses(*premise, bound_vars, uses, active);
+                self.collect_formula_uses(*conclusion, bound_vars, uses, active);
             }
             CoreFormulaKind::Iff { left, right } => {
-                self.collect_formula_uses(*left, bound_vars, uses);
-                self.collect_formula_uses(*right, bound_vars, uses);
+                self.collect_formula_uses(*left, bound_vars, uses, active);
+                self.collect_formula_uses(*right, bound_vars, uses, active);
             }
             CoreFormulaKind::Forall { binders, body }
             | CoreFormulaKind::Exists { binders, body } => {
@@ -2841,12 +2855,13 @@ impl<'a> FlowBuilder<'a> {
                 for binder in binders {
                     scoped.insert(binder.var);
                     if let Some(guard) = binder.ty_guard {
-                        self.collect_formula_uses(guard, &scoped, uses);
+                        self.collect_formula_uses(guard, &scoped, uses, active);
                     }
                 }
-                self.collect_formula_uses(*body, &scoped, uses);
+                self.collect_formula_uses(*body, &scoped, uses, active);
             }
         }
+        active.remove(&formula_id);
     }
 
     fn collect_term_uses(
@@ -2854,7 +2869,9 @@ impl<'a> FlowBuilder<'a> {
         term: CoreTermId,
         bound_vars: &BTreeSet<CoreVarId>,
         uses: &mut Vec<LocalUse>,
+        active: &mut BTreeSet<CoreTermId>,
     ) {
+        assert!(active.insert(term), "cyclic CoreIr term id");
         let term_record = self
             .core
             .terms()
@@ -2878,11 +2895,14 @@ impl<'a> FlowBuilder<'a> {
             | CoreTermKind::SetEnum(args)
             | CoreTermKind::Generated { args, .. } => {
                 for arg in args {
-                    self.collect_term_uses(*arg, bound_vars, uses);
+                    self.collect_term_uses(*arg, bound_vars, uses, active);
                 }
             }
-            CoreTermKind::Select { base, .. } => self.collect_term_uses(*base, bound_vars, uses),
+            CoreTermKind::Select { base, .. } => {
+                self.collect_term_uses(*base, bound_vars, uses, active)
+            }
         }
+        active.remove(&term);
     }
 
     fn local_for_var(&self, var: CoreVarId) -> Option<LocalId> {
@@ -6605,6 +6625,178 @@ mod tests {
         let output = build_control_flow_ir(&core);
         assert!(only_flow(&output).diagnostics.is_empty());
         assert!(core.obligation_seeds().is_empty());
+    }
+
+    fn assert_control_flow_cycle(core: &CoreIr, expected: &str) {
+        let panic = std::panic::catch_unwind(|| build_control_flow_ir(core))
+            .expect_err("cyclic CoreIr must not produce a flow");
+        let message = panic
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| panic.downcast_ref::<&str>().copied())
+            .expect("cycle panic message");
+        assert!(message.contains(expected), "unexpected panic: {message}");
+    }
+
+    #[test]
+    fn control_flow_rejects_term_cycles() {
+        for two_nodes in [false, true] {
+            let mut fixture = CoreFixture::new();
+            let first = fixture.term(CoreTermKind::Tuple(Vec::new()), 10);
+            let next = if two_nodes {
+                fixture.term(CoreTermKind::Tuple(vec![first]), 11)
+            } else {
+                first
+            };
+            fixture.parts.terms.get_mut(first).unwrap().kind = CoreTermKind::Tuple(vec![next]);
+            let statement = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(first)), 20);
+            let core = fixture.finish(Vec::new(), None, vec![statement]);
+            assert_control_flow_cycle(&core, "cyclic CoreIr term id");
+        }
+    }
+
+    #[test]
+    fn control_flow_rejects_connective_formula_cycles() {
+        for two_nodes in [false, true] {
+            let mut fixture = CoreFixture::new();
+            let first = fixture.formula(CoreFormulaKind::True, 10);
+            let next = if two_nodes {
+                fixture.formula(CoreFormulaKind::And(vec![first]), 11)
+            } else {
+                first
+            };
+            fixture.parts.formulas.get_mut(first).unwrap().kind = CoreFormulaKind::Not(next);
+            let statement = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula: first }, 20);
+            let core = fixture.finish(Vec::new(), None, vec![statement]);
+            assert_control_flow_cycle(&core, "cyclic CoreIr formula id");
+        }
+    }
+
+    #[test]
+    fn control_flow_rejects_quantified_guard_and_body_cycles() {
+        for existential in [false, true] {
+            for guard_cycle in [false, true] {
+                let mut fixture = CoreFixture::new();
+                let quantified = fixture.formula(CoreFormulaKind::True, 10);
+                let truth = fixture.formula(CoreFormulaKind::True, 11);
+                let back_edge = fixture.formula(CoreFormulaKind::Not(quantified), 12);
+                let mut binder = fixture.binder(0, "local:const", 13);
+                binder.ty_guard = guard_cycle.then_some(back_edge);
+                let binders = vec![binder];
+                let body = if guard_cycle { truth } else { back_edge };
+                fixture.parts.formulas.get_mut(quantified).unwrap().kind = if existential {
+                    CoreFormulaKind::Exists { binders, body }
+                } else {
+                    CoreFormulaKind::Forall { binders, body }
+                };
+                let statement = fixture.stmt(
+                    CoreAlgorithmStmtKind::Assert {
+                        formula: quantified,
+                    },
+                    20,
+                );
+                let core = fixture.finish(Vec::new(), None, vec![statement]);
+                assert_control_flow_cycle(&core, "cyclic CoreIr formula id");
+            }
+        }
+    }
+
+    #[test]
+    fn control_flow_rejects_formula_to_term_cycles() {
+        let mut fixture = CoreFixture::new();
+        let term = fixture.term(CoreTermKind::Tuple(Vec::new()), 10);
+        fixture.parts.terms.get_mut(term).unwrap().kind = CoreTermKind::Tuple(vec![term]);
+        let formula = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: term,
+                right: term,
+            },
+            11,
+        );
+        let statement = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula }, 20);
+        let core = fixture.finish(Vec::new(), None, vec![statement]);
+        assert_control_flow_cycle(&core, "cyclic CoreIr term id");
+    }
+
+    #[test]
+    fn control_flow_shared_term_dag_preserves_occurrence_provenance() {
+        let mut fixture = CoreFixture::new();
+        let declaration = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(0, "local:var", 10),
+                value: None,
+                ghost: false,
+            },
+            11,
+        );
+        let first = fixture.term_var(0, 20);
+        let second = fixture.term_var(0, 21);
+        let shared = fixture.term(CoreTermKind::Tuple(vec![first, second, first]), 22);
+        let root = fixture.term(CoreTermKind::Tuple(vec![shared, shared]), 23);
+        let statement = fixture.stmt(CoreAlgorithmStmtKind::Return(Some(root)), 24);
+        let core = fixture.finish(Vec::new(), None, vec![declaration, statement]);
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.diagnostics.len(), 2);
+        for ((id, diagnostic), term) in flow.diagnostics.iter().zip([first, second]) {
+            assert_eq!(
+                diagnostic.kind,
+                ControlFlowDiagnosticKind::UseBeforeAssignment {
+                    local: LocalId::new(0),
+                    var: CoreVarId::new(0),
+                }
+            );
+            assert_eq!(diagnostic.statement, Some(statement));
+            assert_eq!(diagnostic.source, core.source_map().term_sources[&term]);
+            assert_eq!(flow.source_map.diagnostic_sources[&id], diagnostic.source);
+        }
+    }
+
+    #[test]
+    fn control_flow_shared_formula_dag_preserves_free_uses_after_bound_visit() {
+        let mut fixture = CoreFixture::new();
+        let declaration = fixture.stmt(
+            CoreAlgorithmStmtKind::Let {
+                binder: fixture.binder(0, "local:var", 10),
+                value: None,
+                ghost: false,
+            },
+            11,
+        );
+        let term = fixture.term_var(0, 20);
+        let shared = fixture.formula(
+            CoreFormulaKind::Equals {
+                left: term,
+                right: term,
+            },
+            21,
+        );
+        let mut binder = fixture.binder(0, "local:const", 22);
+        binder.ty_guard = Some(shared);
+        let bound = fixture.formula(
+            CoreFormulaKind::Forall {
+                binders: vec![binder],
+                body: shared,
+            },
+            23,
+        );
+        let root = fixture.formula(CoreFormulaKind::And(vec![bound, shared, shared]), 24);
+        let statement = fixture.stmt(CoreAlgorithmStmtKind::Assert { formula: root }, 25);
+        let core = fixture.finish(Vec::new(), None, vec![declaration, statement]);
+        let output = build_control_flow_ir(&core);
+        let flow = only_flow(&output);
+        assert_eq!(flow.diagnostics.len(), 1);
+        let (id, diagnostic) = flow.diagnostics.iter().next().unwrap();
+        assert_eq!(
+            diagnostic.kind,
+            ControlFlowDiagnosticKind::UseBeforeAssignment {
+                local: LocalId::new(0),
+                var: CoreVarId::new(0),
+            }
+        );
+        assert_eq!(diagnostic.statement, Some(statement));
+        assert_eq!(diagnostic.source, core.source_map().term_sources[&term]);
+        assert_eq!(flow.source_map.diagnostic_sources[&id], diagnostic.source);
     }
 
     #[test]

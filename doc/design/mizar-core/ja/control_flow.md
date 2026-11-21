@@ -446,6 +446,16 @@ unreachable block id を使う。formula traversal は quantifier scope を尊�
 処理し、binder は自分自身の guard、後続 binder、body の中で shadow する。先行 binder は後続 guard と
 body で shadow する。unresolved / external variable は source spelling から推測せず無視する。
 
+CFG use collection は再帰経路上の formula / term ID を追跡する。循環は既存の
+validated-ID 検査と同様に `cyclic CoreIr formula id` / `cyclic CoreIr term id`
+の invariant panic で停止し、部分的な収集結果を返さない。復帰時に ID を除くため、
+共有 DAG の occurrence と binder scope に依存する free use は保持される。
+対象は use collection のみで、深い非循環入力や statement graph は対象外。
+兄弟 walker: `core_ir::{validate_term, validate_formula}` は直近の参照範囲、
+`elaborator::{validate_algorithm_term, validate_algorithm_formula}` は root の存在のみを検査する。
+`binder_normalization` の raw normalizer と `core_{formula,term}_mentions_vars`
+にも循環ガードはない。missing-ID error は一般的な formula / arena の循環安全性を保証しない。
+
 これ以前の phase-10 task は、loop 外の illegal `break` / `continue`、unsupported
 local-declaration metadata、phase 9 から持ち越された malformed / missing algorithm statement の
 structural diagnostic をすでに emit している。より広い diagnostic catalog は次の通りである。

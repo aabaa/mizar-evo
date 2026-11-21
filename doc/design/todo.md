@@ -264,7 +264,7 @@ Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P
   reconcile landed Doc 5–13 work without credit denied by contracts.
   Scope: `D/mizar-lsp/en/todo.md`, `D/mizar-doc/en/todo.md`; roadmap
   completion row through P1 while both are open. Dependencies: none.
-- [ ] **P5 — Cycle-safe Core CFG use collection; A; L2-set, either lane.**
+- [x] **P5 — Cycle-safe Core CFG use collection; A; L2-set, either lane.**
   Make `collect_formula_uses`/`collect_term_uses` fail closed on cyclic IDs;
   inventory sibling arena walkers and existing guards. Scope: Core 48,
   `C/mizar-core/src/control_flow.rs`, crate tests,
