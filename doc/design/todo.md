@@ -152,7 +152,7 @@ steps 4-8 are the implementation waves re-paced around them.
 Owner standing rule 2026-11-21: development-process improvement tasks take
 priority over all other tasks, including the M1 and adopted-wave queues.
 
-- [ ] **CI-RECEIPT-DESIGN — mizar CI receipt-model adoption design; Lane 1;
+- [x] **CI-RECEIPT-DESIGN — mizar CI receipt-model adoption design; Lane 1;
   design only.** Authority: owner CI policy recorded in the orchestrator
   ledger 2026-11-21 13:07 JST. Mirror oeis D9 / FCL D1: unit tests run locally;
   the receipt generator stays in orchestrator custody and binds the signed
@@ -161,7 +161,9 @@ priority over all other tasks, including the M1 and adopted-wave queues.
   `cargo test` on push; trust-touching exceptions retain full CI. Dependencies:
   none to start design. Exit: a reviewed adoption design and frozen scope for
   a separate implementation unit; design precedes any implementation unit.
-  Registration grants no completion credit and performs no design or CI changes.
+  [Adoption design](./ci_receipt_model.md) and [frozen successor scope](./task_contracts/en/CI-RECEIPT-DESIGN.md)
+  own the handoff. CI-RECEIPT-IMPLEMENTATION needs a separate dispatch; current
+  CI and verification policy remain effective, with no implementation credit.
 
 ### M1 Dispatch Policy
 
