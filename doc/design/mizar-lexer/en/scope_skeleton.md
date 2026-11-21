@@ -80,6 +80,7 @@ Lexical lifetimes are conservative:
   scope frame and no binder statement range;
 - `for`, `ex`, and `given` bind only for the recovered statement range;
 - `algorithm ... do ... end` is one lexical algorithm block; the header `do` does not open a separate `Do` frame.
+- Algorithm `if` branches use separate `Do` frames ending at `else` or the shared `end`; `else if` replaces the preceding branch frame, so branch bindings do not escape into sibling branches or following statements.
 - algorithm `for ... do` binders, including optional `processed name`, bind in the following `Do` block. Other non-header `do` tokens open a conservative `Do` block except the adjacent `do not` predicate pair, which opens no block; the algorithm header `do` remains attached to its `Algorithm` block.
 - In an open algorithm block, an `otherwise` immediately after `end` or `end;` uses a conservative match-branch heuristic and opens a `Do` block so branch-local `end;` and the final match `end;` can both pair. Definition-side `otherwise` clauses and non-algorithm `end; otherwise` shapes do not open blocks.
 

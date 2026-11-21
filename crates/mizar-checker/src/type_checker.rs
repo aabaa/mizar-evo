@@ -739,7 +739,10 @@ pub fn check_source_algorithm_types<'a>(
     if ensures.is_some() && identifier(*binder)? == "result" {
         return Err(invalid());
     }
-    if contract_profile {
+    let if_fail_profile = body_statements.iter().any(|statement| {
+        node(*statement).is_ok_and(|node| matches!(node.kind(), K::IfStatement | K::FailStatement))
+    });
+    if contract_profile && !if_fail_profile {
         let Some((last, preceding)) = body_statements.split_last() else {
             return Err(invalid());
         };
@@ -886,8 +889,58 @@ pub fn check_source_algorithm_types<'a>(
         equality_sites.extend([(*condition, body_context), (*formula, body_context)]);
         statement_order = vec![*initial, *assignment, *returned];
     }
+    let mut pending = statement_order.into_iter().rev().collect::<Vec<_>>();
+    let mut statement_order = Vec::new();
+    while let Some(statement) = pending.pop() {
+        statement_order.push(statement);
+        if node(statement)?.kind() != &K::IfStatement {
+            continue;
+        }
+        let [if_kw, condition, do_kw, then_body, tail @ ..] = parts(statement, &K::IfStatement)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*if_kw, "if"), (*do_kw, "do")])?;
+        equality_sites.push((*condition, body_context));
+        let then_body = parts(*then_body, &K::AlgorithmStatementList)?;
+        let else_body = match tail {
+            [else_kw, nested] if node(*nested)?.kind() == &K::IfStatement => {
+                tokens(&[(*else_kw, "else")])?;
+                std::slice::from_ref(nested)
+            }
+            [end, semi] => {
+                tokens(&[(*end, "end"), (*semi, ";")])?;
+                &[][..]
+            }
+            [else_kw, nested, end, semi] => {
+                tokens(&[(*else_kw, "else"), (*end, "end"), (*semi, ";")])?;
+                parts(*nested, &K::AlgorithmStatementList)?
+            }
+            _ => return Err(invalid()),
+        };
+        for child in then_body.iter().chain(else_body) {
+            if !matches!(
+                node(*child)?.kind(),
+                K::IfStatement | K::ReturnStatement | K::FailStatement
+            ) {
+                return Err(invalid());
+            }
+        }
+        pending.extend(else_body.iter().rev().copied());
+        pending.extend(then_body.iter().rev().copied());
+    }
     for statement in &statement_order {
         match node(*statement)?.kind() {
+            K::IfStatement => {}
+            K::FailStatement => {
+                let [fail_kw, semi] = node(*statement)?.children() else {
+                    return Err(invalid());
+                };
+                tokens(&[(*fail_kw, "fail"), (*semi, ";")])?;
+                if declared_terminating {
+                    return Err(invalid());
+                }
+            }
             K::VariableDeclaration => {
                 let declaration = node(*statement)?.children();
                 let declaration = if let [ghost, rest @ ..] = declaration
@@ -994,6 +1047,7 @@ pub fn check_source_algorithm_types<'a>(
                         ),
                     ])?;
                     if body_statements.len() != 1
+                        || if_fail_profile
                         || ensures.is_none()
                         || runtime_choice.replace((term, *target)).is_some()
                     {

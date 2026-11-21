@@ -931,6 +931,8 @@ obligation/definition/route/acceptance/fact/coverage creditなし。
 
 `lower_source_algorithms(&SourceAlgorithmCheck) -> Result<CoreIr, String>` は封印された静的 profile または平坦な object 状態 profile を消費する。実際の仮引数・局所変数・result 同一性、記述された return 型、var/const/ghost role、初期化子、文順序と checker 由来を既存 lowering で保持する。直接変数への書込みは検査済み代入先 BindingId から型付き AssignLocal seed にし、同じ algorithm の束縛を要求する。opaque CorePlace 文字列に束縛同一性を符号化しない。ソース所有の式 map は header 等式だけを CoreContractSet.ensures に、本文 assertion を各 Assert seed に渡し、契約 result 束縛を既存の独立した暗黙 result slot に対応させる。prefix 否定等式は既存 Equals と Not(child) に下げ、両 checked formula の同一性・親子辺・範囲・由来を保持し、Assert は外側を参照する。source map と空の Core obligation 表の境界を維持し、配置と静的代入診断は CFG、値の世代と具体的な式は VC が所有する。生の resolver 権限、algorithm 承認、terminating 昇格を導入しない。
 
+有界な入れ子 `If` 分岐は return・裸の fail・さらに入れ子の if 文を受け入れ、検査済み equality/Not の条件 ID と入れ子文の所有者を保持する。resolver は推論前に algorithm 内の参照を認証する。分岐内の宣言・snapshot、message/value fail、terminating/ghost fail、loop profile との混在拡張は source profile の拒否を維持する。`Fail` は明示的 seed と Core shell を持ち、条件分岐・失敗 profile は VC consumer で拒否し、証明 credit を与えない。
+
 ## Source existential-registration proof
 
 `lower_source_existential_registration(&SourceRegistrationCheck) -> Result<CoreIr, String>` は

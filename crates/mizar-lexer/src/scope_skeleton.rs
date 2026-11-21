@@ -143,6 +143,7 @@ struct OpenScopeFrame {
     start: SourcePos,
     bindings: Vec<ScopedBindingShape>,
     algorithm_header_do_attached: bool,
+    is_if_branch: bool,
 }
 
 struct ScopeSkeletonBuilder {
@@ -169,6 +170,7 @@ impl ScopeSkeletonBuilder {
                 start: 0,
                 bindings: Vec::new(),
                 algorithm_header_do_attached: false,
+                is_if_branch: false,
             },
             stack: Vec::new(),
             pending_do_bindings: Vec::new(),
@@ -181,6 +183,7 @@ impl ScopeSkeletonBuilder {
     }
 
     fn build(mut self) -> ScopeSkeleton {
+        let mut pending_if_do = false;
         while let Some(token) = self.peek().cloned() {
             if token.kind == ScopeSkeletonTokenKind::Word {
                 match token.lexeme.as_str() {
@@ -246,6 +249,30 @@ impl ScopeSkeletonBuilder {
                         self.open_frame(LexicalBlockKind::Hereby, token.span.start);
                         continue;
                     }
+                    "if" if self
+                        .stack
+                        .iter()
+                        .any(|frame| frame.kind == LexicalBlockKind::Algorithm) =>
+                    {
+                        pending_if_do = true;
+                    }
+                    "else" if self.stack.last().is_some_and(|frame| frame.is_if_branch) => {
+                        self.advance();
+                        self.close_frame(SourceSpan {
+                            start: token.span.start,
+                            end: token.span.start,
+                        });
+                        if !self.peek().is_some_and(|next| {
+                            next.kind == ScopeSkeletonTokenKind::Word && next.lexeme == "if"
+                        }) {
+                            self.open_frame(LexicalBlockKind::Do, token.span.start);
+                            self.stack
+                                .last_mut()
+                                .expect("opened branch exists")
+                                .is_if_branch = true;
+                        }
+                        continue;
+                    }
                     "do" => {
                         self.advance();
                         if self.peek().is_some_and(|next| {
@@ -255,7 +282,12 @@ impl ScopeSkeletonBuilder {
                         }
                         if !self.attach_algorithm_header_do() {
                             self.open_frame(LexicalBlockKind::Do, token.span.start);
+                            self.stack
+                                .last_mut()
+                                .expect("opened do exists")
+                                .is_if_branch = pending_if_do;
                         }
+                        pending_if_do = false;
                         continue;
                     }
                     "end" => {
@@ -415,6 +447,7 @@ impl ScopeSkeletonBuilder {
             start,
             bindings,
             algorithm_header_do_attached: false,
+            is_if_branch: false,
         });
     }
 

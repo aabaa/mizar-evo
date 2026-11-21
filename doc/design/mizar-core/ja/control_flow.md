@@ -127,6 +127,7 @@ enum ControlFlowTerminator {
         join: Option<BasicBlockId>,
     },
     Return(Option<CoreTermId>),
+    Fail,
     Break { loop_id: LoopId, target: BasicBlockId },
     Continue { loop_id: LoopId, target: BasicBlockId },
     Unreachable,
@@ -226,6 +227,7 @@ struct ProgramContext {
     assignment_effects: Vec<AssignmentEffectId>,
     call_effects: Vec<CallSiteId>,
     path_conditions: Vec<CoreFormulaId>,
+    negated_path_conditions: Vec<CoreFormulaId>,
     active_invariants: Vec<CoreFormulaId>,
     loop_stack: Vec<LoopId>,
     ghost_visible: Vec<LocalId>,
@@ -267,7 +269,7 @@ struct ControlFlowContractSet {
 ```
 
 `requires` clause は entry assumption と、後続 `mizar-vc` generation 用の caller-side
-obligation になる。`ensures` clause はすべての `Return` terminator に付く。`Assert`
+obligation になる。`ensures` clause は到達可能な `Return` terminator に付く。`Assert`
 statement は checkpoint site になり、normal successor context の fact になる。
 loop invariant は仕様 20.5.1 の要求通り、loop header、normal back edge、`break`、`continue`
 exit に付く。
@@ -420,7 +422,9 @@ composition は `Normal` からだけ継続する。
 - `Error` statement は phase 9 diagnostic を保持し、error terminator または error statement site を作り、
   executable flow を仮造しない。
 
-terminating `Return`、`Break`、`Continue`、`Error` の後にある unreachable statement は silently drop
+`Fail` は block を閉じ、後続文脈も事後条件も持たない failure exit を記録する。ensures site は到達可能な return だけに付く。分岐文脈は元の条件 ID を `path_conditions` または `negated_path_conditions` に保持し、join は normal exit 間で各極性の共通部分を取り、唯一の生存経路を保持する。値を返す algorithm の到達可能な末尾通過は内部 `MissingReturnOrFail` と error terminal を作り、void の末尾通過は暗黙 return を維持する。公開 E0501/E0503 は発行しない。
+
+terminating `Return`、`Fail`、`Break`、`Continue`、`Error` の後にある unreachable statement は silently drop
 せず、unreachable block と diagnostic として表現する。
 
 ## diagnostic

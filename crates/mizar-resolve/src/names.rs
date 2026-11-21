@@ -5596,9 +5596,46 @@ impl SourceVariableScopeResolver {
             statement_order = vec![*initial, assignment, *returned];
         }
         let mut snapshot_names = BTreeSet::new();
-        for statement in statement_order {
+        let mut pending = statement_order.into_iter().rev().collect::<Vec<_>>();
+        while let Some(statement) = pending.pop() {
             let current = view(statement)?;
             match current.kind() {
+                K::IfStatement => {
+                    let [_, condition, _, then_body, tail @ ..] = current.children() else {
+                        return Err(invalid());
+                    };
+                    let layout = match tail {
+                        [_, _] if view(tail[1])?.kind() == &K::IfStatement => {
+                            vec!["if", "", "do", "", "else", ""]
+                        }
+                        [_, _] => vec!["if", "", "do", "", "end", ";"],
+                        [_, _, _, _] => vec!["if", "", "do", "", "else", "", "end", ";"],
+                        _ => return Err(invalid()),
+                    };
+                    shape(statement, &K::IfStatement, &layout)?;
+                    let then_body = parts(*then_body, &K::AlgorithmStatementList)?;
+                    let else_body = match tail {
+                        [_, nested] if view(*nested)?.kind() == &K::IfStatement => {
+                            std::slice::from_ref(nested)
+                        }
+                        [_, body, _, _] => parts(*body, &K::AlgorithmStatementList)?,
+                        _ => &[],
+                    };
+                    for child in then_body.iter().chain(else_body) {
+                        if !matches!(
+                            view(*child)?.kind(),
+                            K::IfStatement | K::ReturnStatement | K::FailStatement
+                        ) {
+                            return Err(invalid());
+                        }
+                    }
+                    formulas.push((*condition, false));
+                    pending.extend(else_body.iter().rev().copied());
+                    pending.extend(then_body.iter().rev().copied());
+                }
+                K::FailStatement => {
+                    shape(statement, &K::FailStatement, &["fail", ";"])?;
+                }
                 K::VariableDeclaration => {
                     let offset = usize::from(current.children().len() == 4);
                     let keyword = view(*current.children().get(offset).ok_or_else(invalid)?)?

@@ -79,6 +79,7 @@ pub fn build_scope_skeleton(raw: &RawTokenStream) -> ScopeSkeleton;
   binder statement range のいずれも追加しません。
 - `for`, `ex`, `given` は、復元した文範囲にだけ束縛します。
 - `algorithm ... do ... end` は 1 つの algorithm lexical block です。header の `do` は別の `Do` frame を開きません。
+- Algorithm の `if` branch は `else` または共有の `end` で終わる個別の `Do` frame を使います。`else if` は直前の branch frame を置き換え、branch の束縛を兄弟 branch や後続文に漏らしません。
 - アルゴリズムの `for ... do` の束縛子と、省略可能な `processed name` は、後続の `Do` ブロックに束縛します。それ以外の header ではない `do` token は、隣接する `do not` predicate pair を除き、保守的な `Do` block を開きます。algorithm header の `do` は従来通り `Algorithm` frame に付きます。
 - open algorithm block 内では、`end` または `end;` の直後に現れる `otherwise` が conservative な match-branch heuristic として `Do` block を開きます。これにより branch-local `end;` と final match `end;` の両方が対応できます。definition 側の `otherwise` clause と non-algorithm の `end; otherwise` 形は block を開きません。
 

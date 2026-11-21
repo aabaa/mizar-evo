@@ -1,6 +1,175 @@
 use super::*;
 
 #[test]
+fn p8_if_fail_authentic_source_formulas_ownership_and_terminal_paths() {
+    use mizar_core::{
+        control_flow::{
+            ContractSitePlacement, ControlFlowExitKind as E, ControlFlowTerminator as T,
+            Reachability, build_control_flow_ir,
+        },
+        core_ir::{
+            CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreSourceAnchor, CoreTermKind,
+        },
+    };
+    let case = step5c14_return_case();
+    let fixture = std::fs::read_to_string(
+        step5c11_config()
+            .workspace_root
+            .join("tests/fixtures/core/p8_if_fail.miz"),
+    )
+    .unwrap();
+    for text in [
+        fixture.clone(),
+        fixture
+            .replace("branch", "renamed")
+            .replace("let a be", "let parameter be")
+            .replace("(a)", "(parameter)")
+            .replace("a = a", "parameter = parameter")
+            .replace("result = a", "result = parameter")
+            .replace("return a;", "return parameter;"),
+        fixture.replace("if a = a", "if not a = a"),
+        fixture.replace(
+            "else\n      fail;",
+            "else if not a = a do return a; else fail;",
+        ),
+    ] {
+        let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+        assert!(
+            frontend.diagnostics.is_empty(),
+            "{:?}: {text}",
+            frontend.diagnostics
+        );
+        let (source, typed, symbols) = super::super::source_registration_inputs(
+            &step5c11_config().workspace_root,
+            &case,
+            frontend,
+        )
+        .unwrap_or_else(|error| panic!("{error}: {text}"));
+        let checked =
+            mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols)
+                .unwrap();
+        assert_eq!(checked.bindings().bindings().len(), 2);
+        for (_, term) in checked.inference().terms().iter() {
+            let Some(mizar_checker::type_checker::TermReference::Binding(binding)) = term.reference
+            else {
+                panic!("binding omitted")
+            };
+            assert!(checked.bindings().bindings().get(binding).is_some());
+        }
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        assert_eq!(core, step5c14_static_core(&case, &text).unwrap());
+        let (owner, algorithm) = core.algorithms().iter().next().unwrap();
+        assert_eq!(algorithm.statements.len(), 1);
+        let S::If {
+            condition,
+            then_body,
+            else_body,
+        } = &core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap()
+            .kind
+        else {
+            panic!("if omitted")
+        };
+        assert_eq!(then_body.len(), 1);
+        assert_eq!(else_body.len(), 1);
+        let nested = text.contains("else if");
+        assert_eq!(
+            core.algorithm_statements().len(),
+            if nested { 5 } else { 3 }
+        );
+        for (_, statement) in core.algorithm_statements().iter() {
+            assert_eq!(statement.owner, owner);
+            let CoreSourceAnchor::SourceRange(range) = statement.source.anchor else {
+                panic!("source omitted")
+            };
+            assert!(source.arena().iter().any(|(_, node)| node.origin().anchor()
+                == &mizar_session::SourceAnchor::Range(range)
+                && matches!(
+                    node.kind(),
+                    mizar_syntax::ast::SurfaceNodeKind::IfStatement
+                        | mizar_syntax::ast::SurfaceNodeKind::ReturnStatement
+                        | mizar_syntax::ast::SurfaceNodeKind::FailStatement
+                )));
+            match &statement.kind {
+                S::If {
+                    condition,
+                    then_body,
+                    else_body,
+                } => {
+                    assert!(
+                        then_body
+                            .iter()
+                            .chain(else_body)
+                            .all(|id| !algorithm.statements.contains(id))
+                    );
+                    let equality = match core.formulas().get(*condition).unwrap().kind {
+                        F::Not(inner) => inner,
+                        _ => *condition,
+                    };
+                    let F::Equals { left, right } = core.formulas().get(equality).unwrap().kind
+                    else {
+                        panic!("actual equality omitted")
+                    };
+                    for term in [left, right] {
+                        assert_eq!(
+                            core.terms().get(term).unwrap().kind,
+                            CoreTermKind::Var(algorithm.params[0].var)
+                        );
+                    }
+                }
+                S::Return(Some(value)) => assert_eq!(
+                    core.terms().get(*value).unwrap().kind,
+                    CoreTermKind::Var(algorithm.params[0].var)
+                ),
+                S::Fail => {}
+                _ => panic!("unexpected source statement"),
+            }
+        }
+        assert_eq!(
+            matches!(core.formulas().get(*condition).unwrap().kind, F::Not(_)),
+            text.contains("if not") && !nested
+        );
+        if nested {
+            assert!(matches!(
+                core.algorithm_statements().get(else_body[0]).unwrap().kind,
+                S::If { .. }
+            ));
+        }
+        let flow = build_control_flow_ir(&core);
+        assert_eq!(flow, build_control_flow_ir(&core));
+        let cfg = flow.flows.get(flow.flow_map[&owner]).unwrap();
+        assert!(cfg.diagnostics.is_empty());
+        assert_eq!(cfg.exits.len(), if nested { 3 } else { 2 });
+        assert_eq!(cfg.contracts.ensures.len(), if nested { 2 } else { 1 });
+        for (_, exit) in cfg.exits.iter() {
+            let block = cfg.blocks.get(exit.from).unwrap();
+            assert_eq!(block.reachable, Reachability::Reachable);
+            assert_eq!(block.context_out.is_empty(), exit.kind == E::Fail);
+            assert!(exit.target.is_none());
+            assert!(matches!(
+                (&exit.kind, &block.terminator),
+                (E::Return, T::Return(_)) | (E::Fail, T::Fail)
+            ));
+        }
+        for site in &cfg.contracts.ensures {
+            let ContractSitePlacement::Return { exit, .. } = site.placement else {
+                panic!("ensures outside return")
+            };
+            assert_eq!(cfg.exits.get(exit).unwrap().kind, E::Return);
+        }
+        assert!(step5c14_return_vcs(&core).is_err());
+        assert!(step5c14_state_vcs(&core).is_err());
+        assert!(
+            core.proofs().is_empty()
+                && core.generated().is_empty()
+                && core.obligation_seeds().is_empty()
+        );
+    }
+}
+
+#[test]
 fn step5c14_static_real_sources_preserve_checked_bindings_and_actual_cfg_errors() {
     use mizar_checker::type_checker::{
         TermReference, TermStatus, TypeHeadRef, check_source_algorithm_types,
@@ -4439,5 +4608,176 @@ fn step5c14_pick_rejects_core_forgery_and_replays_complete_vcs() {
         }
         let changed = VcSet::try_new(p).unwrap_or_else(|e| panic!("vc mutation {mutation}: {e}"));
         assert!(failed_source_algorithm_assertion(&core, &changed).is_err(), "vc mutation {mutation}");
+    }
+}
+
+#[test]
+fn p8_if_fail_join_conditions_and_unreachable_failure_shells() {
+    use mizar_core::{
+        control_flow::{
+            ControlFlowDiagnosticKind as D, ControlFlowExitKind as E, ControlFlowTerminator as T,
+            Reachability, build_control_flow_ir,
+        },
+        core_ir::CoreAlgorithmStmtKind as S,
+    };
+    let case = step5c14_return_case();
+    for (body, positive, negative) in [
+        ("if a = a do return a; end; return a;", false, true),
+        ("if a = a do return a; else end; return a;", false, true),
+        ("if a = a do else fail; end; return a;", true, false),
+        ("if a = a do else end; return a;", false, false),
+    ] {
+        let text = format!(
+            "definition let a be object; algorithm branch(a) -> object ensures result = a do {body} end; end;"
+        );
+        let core = step5c14_static_core(&case, &text).unwrap();
+        assert!(step5c14_return_vcs(&core).is_err());
+        assert!(step5c14_state_vcs(&core).is_err());
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let S::If { condition, .. } = core
+            .algorithm_statements()
+            .get(algorithm.statements[0])
+            .unwrap()
+            .kind
+        else {
+            panic!()
+        };
+        let returned = *algorithm.statements.last().unwrap();
+        let flow = build_control_flow_ir(&core);
+        let cfg = flow.flows.iter().next().unwrap().1;
+        assert!(cfg.diagnostics.is_empty());
+        let exit = cfg
+            .exits
+            .iter()
+            .find(|(_, e)| e.statement == Some(returned))
+            .unwrap()
+            .1;
+        let block = cfg.blocks.get(exit.from).unwrap();
+        let context = cfg.contexts.get(block.context_in).unwrap();
+        assert_eq!(
+            context.path_conditions.contains(&condition),
+            positive,
+            "{body}"
+        );
+        assert_eq!(
+            context.negated_path_conditions.contains(&condition),
+            negative,
+            "{body}"
+        );
+        assert_eq!(block.reachable, Reachability::Reachable);
+    }
+    for body in [
+        "fail;",
+        "fail; return a; assert a = a;",
+        "if a = a do fail; else fail; end;",
+    ] {
+        let text = format!(
+            "definition let a be object; algorithm branch(a) -> object ensures result = a do {body} end; end;"
+        );
+        let core = step5c14_static_core(&case, &text).unwrap();
+        assert!(step5c14_return_vcs(&core).is_err());
+        assert!(step5c14_state_vcs(&core).is_err());
+        let flow = build_control_flow_ir(&core);
+        let cfg = flow.flows.iter().next().unwrap().1;
+        assert!(cfg.contracts.ensures.is_empty());
+        assert!(
+            cfg.exits
+                .iter()
+                .filter(
+                    |(_, e)| cfg.blocks.get(e.from).unwrap().reachable == Reachability::Reachable
+                )
+                .all(|(_, e)| e.kind == E::Fail)
+        );
+        assert_eq!(
+            cfg.exits.iter().filter(|(_, e)| e.kind == E::Fail).count(),
+            if body.starts_with("fail;") { 1 } else { 2 }
+        );
+        assert!(
+            !cfg.blocks
+                .iter()
+                .any(|(_, b)| b.reachable == Reachability::Reachable
+                    && matches!(b.terminator, T::Return(_)))
+        );
+        let unreachable = cfg
+            .diagnostics
+            .iter()
+            .filter(|(_, d)| matches!(d.kind, D::UnreachableStatement { .. }))
+            .count();
+        assert_eq!(unreachable, if body.contains("assert") { 2 } else { 0 });
+        assert!(cfg.contracts.assertions.iter().all(|site| matches!(site.placement, mizar_core::control_flow::AssertionPlacement::Statement { block, .. } if cfg.blocks.get(block).unwrap().reachable == Reachability::Unreachable)));
+        for (_, block) in cfg
+            .blocks
+            .iter()
+            .filter(|(_, b)| matches!(b.terminator, T::Fail))
+        {
+            assert!(block.context_out.is_empty());
+        }
+    }
+}
+
+#[test]
+fn p8_if_fail_source_profile_and_authentication_refusals() {
+    use mizar_checker::{
+        type_checker::check_source_algorithm_types,
+        typed_ast::{NodeRecoveryState, TypedArena},
+    };
+    let case = step5c14_return_case();
+    let text = std::fs::read_to_string(
+        step5c11_config()
+            .workspace_root
+            .join("tests/fixtures/core/p8_if_fail.miz"),
+    )
+    .unwrap();
+    for changed in [
+        text.replace("fail;", "fail \"message\";"),
+        text.replace("fail;", "fail \"message\", a;"),
+        text.replace("fail;", "fail a;"),
+        text.replace("algorithm branch", "terminating algorithm branch"),
+        text.replace("fail;", "ghost fail;"),
+        text.replace("return a;", "const x := a; return x;"),
+        text.replace("if a = a", "if missing = a"),
+        text.replace("if a = a", "if a = missing"),
+    ] {
+        assert!(step5c14_static_core(&case, &changed).is_err(), "{changed}");
+    }
+    let (source, typed, symbols) = super::super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &case,
+        super::super::formula_statement::step5c8_test_frontend(&text),
+    )
+    .unwrap();
+    let (other_source, _, other_symbols) = super::super::source_registration_inputs(
+        &step5c11_config().workspace_root,
+        &case,
+        super::super::formula_statement::step5c8_test_frontend(&text.replace("branch", "foreign")),
+    )
+    .unwrap();
+    assert!(check_source_algorithm_types(&other_source, &typed, &symbols).is_err());
+    assert!(check_source_algorithm_types(&source, &typed, &other_symbols).is_err());
+    for kind in [
+        "IfStatement",
+        "FailStatement",
+        "BuiltinPredicateApplication",
+    ] {
+        let target = typed
+            .iter()
+            .find(|(_, n)| n.kind.as_str() == kind)
+            .unwrap()
+            .0;
+        for mutation in 0..4 {
+            let mut rows = typed.iter().map(|(_, n)| n.clone()).collect::<Vec<_>>();
+            match mutation {
+                0 => rows[target.index()].kind = "TermReference".into(),
+                1 => rows[target.index()].children.reverse(),
+                2 => rows[target.index()].anchor = rows[0].anchor.clone(),
+                3 => rows[target.index()].recovery = NodeRecoveryState::Recovered,
+                _ => unreachable!(),
+            }
+            let changed = TypedArena::try_new(typed.root(), rows).unwrap();
+            assert!(
+                check_source_algorithm_types(&source, &changed, &symbols).is_err(),
+                "{kind}, mutation {mutation}"
+            );
+        }
     }
 }

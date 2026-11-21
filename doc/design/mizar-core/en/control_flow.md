@@ -138,6 +138,7 @@ enum ControlFlowTerminator {
         join: Option<BasicBlockId>,
     },
     Return(Option<CoreTermId>),
+    Fail,
     Break { loop_id: LoopId, target: BasicBlockId },
     Continue { loop_id: LoopId, target: BasicBlockId },
     Unreachable,
@@ -241,6 +242,7 @@ struct ProgramContext {
     assignment_effects: Vec<AssignmentEffectId>,
     call_effects: Vec<CallSiteId>,
     path_conditions: Vec<CoreFormulaId>,
+    negated_path_conditions: Vec<CoreFormulaId>,
     active_invariants: Vec<CoreFormulaId>,
     loop_stack: Vec<LoopId>,
     ghost_visible: Vec<LocalId>,
@@ -287,7 +289,7 @@ struct ControlFlowContractSet {
 ```
 
 `requires` clauses become entry assumptions and caller-side obligations for
-later `mizar-vc` generation. `ensures` clauses attach to every `Return`
+later `mizar-vc` generation. `ensures` clauses attach to every reachable `Return`
 terminator. `Assert` statements become checkpoint sites and then facts in the
 normal successor context. Loop invariants attach to loop headers, normal back
 edges, `break`, and `continue` exits as required by specification 20.5.1.
@@ -458,7 +460,9 @@ Rules:
 - `Error` statements preserve the phase-9 diagnostic, create an error
   terminator or error statement site, and do not fabricate executable flow.
 
-Unreachable statements after a terminating `Return`, `Break`, `Continue`, or
+`Fail` closes its block and records a failure exit with no successor context or postcondition. Only reachable returns receive ensures sites. Branch contexts retain the original condition IDs in `path_conditions` or `negated_path_conditions`; joins intersect each polarity over normal exits, preserving a sole survivor. Reachable value-result fallthrough emits internal `MissingReturnOrFail` and an error terminal; void fallthrough remains an implicit return. No public E0501/E0503 is emitted.
+
+Unreachable statements after a terminating `Return`, `Fail`, `Break`, `Continue`, or
 `Error` are represented with unreachable blocks and diagnostics rather than
 being silently dropped.
 

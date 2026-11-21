@@ -521,6 +521,7 @@ enum CoreAlgorithmStmtKind {
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },
     Match { scrutinee: CoreTermId, arms: Vec<CoreAlgorithmMatchArm> },
     Return(Option<CoreTermId>),
+    Fail,
     Break,
     Continue,
     Pick { binder: CoreBinder, witness_ty: Option<CoreFormulaId>, ghost: bool },

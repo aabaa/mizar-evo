@@ -16923,6 +16923,7 @@ pub fn lower_source_algorithms(
     let mut ensures = Vec::new();
     let mut assertion_formulas = BTreeMap::new();
     let mut loop_formulas = BTreeMap::new();
+    let mut if_formulas = BTreeMap::new();
     let mut formula_ids = BTreeMap::new();
     for (_, formula) in checked.formulas().iter() {
         if formula.kind == mizar_checker::type_checker::FormulaKind::Negation {
@@ -16981,6 +16982,9 @@ pub fn lower_source_algorithms(
             }
             "WhileStatement" | "LoopInvariantClause" => {
                 loop_formulas.insert(owner, *id);
+            }
+            "IfStatement" => {
+                if_formulas.insert(owner, *id);
             }
             _ => return Err(invalid()),
         }
@@ -17079,9 +17083,24 @@ pub fn lower_source_algorithms(
         only(*algorithm_node, "AlgorithmBody")?,
         "AlgorithmStatementList",
     )?;
-    let mut statements = Vec::new();
+    let mut statement_order = Vec::new();
+    let mut pending = node(statement_list)?.children.clone();
+    while let Some(statement) = pending.pop() {
+        statement_order.push(statement);
+        if node(statement)?.kind.as_str() == "IfStatement" {
+            for child in &node(statement)?.children {
+                match node(*child)?.kind.as_str() {
+                    "AlgorithmStatementList" => pending.extend(&node(*child)?.children),
+                    "IfStatement" => pending.push(*child),
+                    _ => {}
+                }
+            }
+        }
+    }
+    let mut statement_seeds = BTreeMap::new();
     let mut snapshots = check.snapshots().clone();
-    for statement in &node(statement_list)?.children {
+    for statement in statement_order.iter().rev() {
+        let mut statements = Vec::new();
         let source = CoreSourceRef::direct(range(*statement)?);
         if node(*statement)?.kind.as_str() == "ReturnStatement"
             && let Some((site, guard, _)) = choice
@@ -17163,6 +17182,43 @@ pub fn lower_source_algorithms(
                 source,
                 provenance,
             },
+            "FailStatement" => AlgorithmStmtSeed::Fail { source, provenance },
+            "IfStatement" => {
+                let [_, _, _, then_list, tail @ ..] = node(*statement)?.children.as_slice() else {
+                    return Err(invalid());
+                };
+                let then_body = node(*then_list)?
+                    .children
+                    .iter()
+                    .map(|id| statement_seeds.remove(id).ok_or_else(invalid))
+                    .collect::<Result<Vec<Vec<AlgorithmStmtSeed>>, String>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                let else_statements = match tail {
+                    [_, nested] if node(*nested)?.kind.as_str() == "IfStatement" => {
+                        std::slice::from_ref(nested)
+                    }
+                    [_, else_list, _, _] => node(*else_list)?.children.as_slice(),
+                    [_, _] => &[],
+                    _ => return Err(invalid()),
+                };
+                let else_body = else_statements
+                    .iter()
+                    .map(|id| statement_seeds.remove(id).ok_or_else(invalid))
+                    .collect::<Result<Vec<Vec<AlgorithmStmtSeed>>, String>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                AlgorithmStmtSeed::If {
+                    condition: lowered.formula_map
+                        [&if_formulas.remove(statement).ok_or_else(invalid)?],
+                    then_body,
+                    else_body,
+                    source,
+                    provenance,
+                }
+            }
             "WhileStatement" => {
                 let annotation = only(*statement, "LoopInvariantClause")?;
                 let body = only(*statement, "AlgorithmStatementList")?;
@@ -17202,8 +17258,19 @@ pub fn lower_source_algorithms(
             "BreakStatement" => AlgorithmStmtSeed::Break { source, provenance },
             _ => return Err(invalid()),
         });
+        statement_seeds.insert(*statement, statements);
     }
+    let statements = node(statement_list)?
+        .children
+        .iter()
+        .map(|id| statement_seeds.remove(id).ok_or_else(invalid))
+        .collect::<Result<Vec<Vec<AlgorithmStmtSeed>>, String>>()?
+        .into_iter()
+        .flatten()
+        .collect();
     if !loop_formulas.is_empty()
+        || !if_formulas.is_empty()
+        || !statement_seeds.is_empty()
         || !destinations.is_empty()
         || !assertion_formulas.is_empty()
         || !local_binders.is_empty()
@@ -19983,6 +20050,10 @@ pub enum AlgorithmStmtSeed {
         source: CoreSourceRef,
         provenance: CheckerOwnedProvenance,
     },
+    Fail {
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
     Break {
         source: CoreSourceRef,
         provenance: CheckerOwnedProvenance,
@@ -20350,6 +20421,9 @@ fn validate_algorithm_statement_seed(
                 validate_algorithm_term(term_formula, *value)?;
             }
         }
+        AlgorithmStmtSeed::Fail { provenance, .. } => {
+            validate_checker_owned_provenance("algorithm fail", provenance.as_slice())?;
+        }
         AlgorithmStmtSeed::Break { provenance, .. } => {
             validate_checker_owned_provenance("algorithm break", provenance.as_slice())?;
         }
@@ -20591,6 +20665,12 @@ fn lower_algorithm_statement(
             source_with_provenance(source.clone(), provenance),
             Vec::new(),
         )),
+        AlgorithmStmtSeed::Fail { source, provenance } => Ok(state.insert_statement(
+            owner,
+            CoreAlgorithmStmtKind::Fail,
+            source_with_provenance(source.clone(), provenance),
+            Vec::new(),
+        )),
         AlgorithmStmtSeed::Break { source, provenance } => Ok(state.insert_statement(
             owner,
             CoreAlgorithmStmtKind::Break,
@@ -20679,6 +20759,7 @@ fn collect_algorithm_statement_diagnostics_into(
             | CoreAlgorithmStmtKind::AssignLocal { .. }
             | CoreAlgorithmStmtKind::Assert { .. }
             | CoreAlgorithmStmtKind::Return(_)
+            | CoreAlgorithmStmtKind::Fail
             | CoreAlgorithmStmtKind::Break
             | CoreAlgorithmStmtKind::Continue
             | CoreAlgorithmStmtKind::Pick { .. }

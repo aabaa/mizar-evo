@@ -696,6 +696,7 @@ pub enum CoreAlgorithmStmtKind {
         arms: Vec<CoreAlgorithmMatchArm>,
     },
     Return(Option<CoreTermId>),
+    Fail,
     Break,
     Continue,
     Pick {
@@ -1496,6 +1497,7 @@ fn normalize_algorithm_statement(kind: &mut CoreAlgorithmStmtKind) {
         | CoreAlgorithmStmtKind::While { .. }
         | CoreAlgorithmStmtKind::Match { .. }
         | CoreAlgorithmStmtKind::Return(_)
+        | CoreAlgorithmStmtKind::Fail
         | CoreAlgorithmStmtKind::Break
         | CoreAlgorithmStmtKind::Continue
         | CoreAlgorithmStmtKind::Error(_) => {}
@@ -2118,7 +2120,9 @@ fn validate_algorithm_statement(
                 validate_index("term", term.index(), parts.terms.len())?;
             }
         }
-        CoreAlgorithmStmtKind::Break | CoreAlgorithmStmtKind::Continue => {}
+        CoreAlgorithmStmtKind::Fail
+        | CoreAlgorithmStmtKind::Break
+        | CoreAlgorithmStmtKind::Continue => {}
         CoreAlgorithmStmtKind::Pick {
             binder, witness_ty, ..
         } => {

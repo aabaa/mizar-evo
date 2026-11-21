@@ -251,6 +251,7 @@ pub enum ControlFlowTerminator {
         join: Option<BasicBlockId>,
     },
     Return(Option<CoreTermId>),
+    Fail,
     Break {
         loop_id: LoopId,
         target: BasicBlockId,
@@ -330,6 +331,7 @@ pub struct ProgramContext {
     pub assignment_effects: Vec<AssignmentEffectId>,
     pub call_effects: Vec<CallSiteId>,
     pub path_conditions: Vec<CoreFormulaId>,
+    pub negated_path_conditions: Vec<CoreFormulaId>,
     pub active_invariants: Vec<CoreFormulaId>,
     pub loop_stack: Vec<LoopId>,
     pub ghost_visible: Vec<LocalId>,
@@ -514,6 +516,7 @@ pub struct ControlFlowExit {
 #[non_exhaustive]
 pub enum ControlFlowExitKind {
     Return,
+    Fail,
     Break { loop_id: LoopId },
     Continue { loop_id: LoopId },
     Error { diagnostic: ControlFlowDiagnosticId },
@@ -639,6 +642,7 @@ pub enum ControlFlowDiagnosticKind {
     UseBeforeAssignment { local: LocalId, var: CoreVarId },
     GhostIsolationViolation { local: LocalId, var: CoreVarId },
     ImmutableAssignment { local: LocalId, var: CoreVarId },
+    MissingReturnOrFail,
     FlowDiagnostic,
 }
 
@@ -1252,6 +1256,7 @@ impl<'a> FlowBuilder<'a> {
             assignment_effects: Vec::new(),
             call_effects: Vec::new(),
             path_conditions: Vec::new(),
+            negated_path_conditions: Vec::new(),
             active_invariants: Vec::new(),
             loop_stack: Vec::new(),
             ghost_visible,
@@ -1276,25 +1281,49 @@ impl<'a> FlowBuilder<'a> {
             && exit.reachable == Reachability::Reachable
             && self.block_is_open(exit.block)
         {
-            self.terminate(
-                exit.block,
-                ControlFlowTerminator::Return(None),
-                vec![exit.context],
-            );
-            self.add_exit(ControlFlowExit {
-                algorithm: self.algorithm_id,
-                statement: None,
-                from: exit.block,
-                target: None,
-                kind: ControlFlowExitKind::Return,
-                source: self
-                    .flow
-                    .blocks
-                    .get(exit.block)
-                    .expect("fallthrough block")
-                    .source
-                    .clone(),
-            });
+            if self.algorithm.result.is_some() {
+                let source = self.algorithm.source.clone();
+                let diagnostic = self.add_diagnostic(ControlFlowDiagnostic {
+                    kind: ControlFlowDiagnosticKind::MissingReturnOrFail,
+                    algorithm: self.algorithm_id,
+                    statement: None,
+                    source: source.clone(),
+                    carried_core_diagnostic: None,
+                });
+                self.terminate(
+                    exit.block,
+                    ControlFlowTerminator::Error(diagnostic),
+                    Vec::new(),
+                );
+                self.add_exit(ControlFlowExit {
+                    algorithm: self.algorithm_id,
+                    statement: None,
+                    from: exit.block,
+                    target: None,
+                    kind: ControlFlowExitKind::Error { diagnostic },
+                    source,
+                });
+            } else {
+                self.terminate(
+                    exit.block,
+                    ControlFlowTerminator::Return(None),
+                    vec![exit.context],
+                );
+                self.add_exit(ControlFlowExit {
+                    algorithm: self.algorithm_id,
+                    statement: None,
+                    from: exit.block,
+                    target: None,
+                    kind: ControlFlowExitKind::Return,
+                    source: self
+                        .flow
+                        .blocks
+                        .get(exit.block)
+                        .expect("fallthrough block")
+                        .source
+                        .clone(),
+                });
+            }
         }
         self.attach_return_ensures();
         self.sort_diagnostics();
@@ -1644,6 +1673,24 @@ impl<'a> FlowBuilder<'a> {
                 });
                 None
             }
+            CoreAlgorithmStmtKind::Fail => {
+                self.flow.source_map.statement_placements.insert(
+                    statement_id,
+                    ControlFlowStatementPlacement::Terminator {
+                        block: cursor.block,
+                    },
+                );
+                self.terminate(cursor.block, ControlFlowTerminator::Fail, Vec::new());
+                self.add_exit(ControlFlowExit {
+                    algorithm: self.algorithm_id,
+                    statement: Some(statement_id),
+                    from: cursor.block,
+                    target: None,
+                    kind: ControlFlowExitKind::Fail,
+                    source: statement.source,
+                });
+                None
+            }
             CoreAlgorithmStmtKind::Break => {
                 self.build_break_or_continue(cursor, statement_id, &statement, loop_stack, true)
             }
@@ -1852,7 +1899,9 @@ impl<'a> FlowBuilder<'a> {
         let mut then_context = self.context(cursor.context).clone();
         push_unique(&mut then_context.path_conditions, condition);
         let then_context = self.add_context(then_context);
-        let else_context = self.add_context(self.context(cursor.context).clone());
+        let mut else_context = self.context(cursor.context).clone();
+        push_unique(&mut else_context.negated_path_conditions, condition);
+        let else_context = self.add_context(else_context);
         let then_block = self.add_block(
             synthetic_source(&statement.source, "if-then"),
             cursor.reachable,
@@ -2682,7 +2731,13 @@ impl<'a> FlowBuilder<'a> {
             .exits
             .iter()
             .filter_map(|(exit_id, exit)| {
-                matches!(exit.kind, ControlFlowExitKind::Return).then_some((exit_id, exit.from))
+                (matches!(exit.kind, ControlFlowExitKind::Return)
+                    && self
+                        .flow
+                        .blocks
+                        .get(exit.from)
+                        .is_some_and(|block| block.reachable == Reachability::Reachable))
+                .then_some((exit_id, exit.from))
             })
             .collect::<Vec<_>>();
         for (exit, block) in returns {
@@ -2927,7 +2982,8 @@ impl<'a> FlowBuilder<'a> {
             available_facts: first.available_facts,
             assignment_effects: first.assignment_effects,
             call_effects: first.call_effects,
-            path_conditions: Vec::new(),
+            path_conditions: first.path_conditions,
+            negated_path_conditions: first.negated_path_conditions,
             active_invariants: first.active_invariants,
             loop_stack: first.loop_stack,
             ghost_visible: first.ghost_visible,
@@ -2940,6 +2996,12 @@ impl<'a> FlowBuilder<'a> {
             );
             joined.available_facts =
                 intersection(&joined.available_facts, &context.available_facts);
+            joined.path_conditions =
+                intersection(&joined.path_conditions, &context.path_conditions);
+            joined.negated_path_conditions = intersection(
+                &joined.negated_path_conditions,
+                &context.negated_path_conditions,
+            );
             joined.active_invariants =
                 intersection(&joined.active_invariants, &context.active_invariants);
             joined.loop_stack = intersection(&joined.loop_stack, &context.loop_stack);
@@ -3083,6 +3145,7 @@ const fn diagnostic_class_rank(kind: &ControlFlowDiagnosticKind) -> u8 {
         ControlFlowDiagnosticKind::GhostIsolationViolation { .. } => 6,
         ControlFlowDiagnosticKind::FlowDiagnostic => 7,
         ControlFlowDiagnosticKind::ImmutableAssignment { .. } => 8,
+        ControlFlowDiagnosticKind::MissingReturnOrFail => 9,
     }
 }
 
@@ -7481,5 +7544,163 @@ mod tests {
             .filter(|(_, block)| matches!(block.terminator, ControlFlowTerminator::Error(_)))
             .count();
         assert_eq!(error_terminators, 3);
+    }
+
+    #[test]
+    fn control_flow_requires_return_or_fail_only_for_value_result_fallthrough() {
+        for shape in [
+            "empty",
+            "empty-if",
+            "partial-return",
+            "partial-fail",
+            "loop-normal",
+            "loop-break",
+            "return",
+            "fail",
+            "return-fail",
+            "return-return",
+        ] {
+            for value_result in [false, true] {
+                let mut fixture = CoreFixture::new();
+                let term = fixture.term_var(0, 10);
+                let condition = fixture.formula(CoreFormulaKind::True, 11);
+                let ensures = fixture.formula(CoreFormulaKind::True, 12);
+                let return_kind = CoreAlgorithmStmtKind::Return(value_result.then_some(term));
+                let statements = match shape {
+                    "empty" => Vec::new(),
+                    "return" => vec![fixture.stmt(return_kind, 20)],
+                    "fail" => vec![fixture.stmt(CoreAlgorithmStmtKind::Fail, 20)],
+                    "loop-normal" | "loop-break" => {
+                        let body = if shape == "loop-break" {
+                            vec![fixture.stmt(CoreAlgorithmStmtKind::Break, 20)]
+                        } else {
+                            Vec::new()
+                        };
+                        vec![fixture.stmt(
+                            CoreAlgorithmStmtKind::While {
+                                condition,
+                                invariants: Vec::new(),
+                                decreasing: Vec::new(),
+                                body,
+                            },
+                            21,
+                        )]
+                    }
+                    _ => {
+                        let then_body = match shape {
+                            "empty-if" => Vec::new(),
+                            "partial-fail" => vec![fixture.stmt(CoreAlgorithmStmtKind::Fail, 20)],
+                            _ => vec![fixture.stmt(return_kind.clone(), 20)],
+                        };
+                        let else_body = match shape {
+                            "return-fail" => vec![fixture.stmt(CoreAlgorithmStmtKind::Fail, 21)],
+                            "return-return" => vec![fixture.stmt(return_kind, 21)],
+                            _ => Vec::new(),
+                        };
+                        vec![fixture.stmt(
+                            CoreAlgorithmStmtKind::If {
+                                condition,
+                                then_body,
+                                else_body,
+                            },
+                            22,
+                        )]
+                    }
+                };
+                let falls_through = matches!(
+                    shape,
+                    "empty"
+                        | "empty-if"
+                        | "partial-return"
+                        | "partial-fail"
+                        | "loop-normal"
+                        | "loop-break"
+                );
+                let params = vec![fixture.binder(0, "parameter", 2)];
+                let result = value_result.then(|| fixture.binder(1, "result", 3));
+                let core = fixture.finish_with_contracts(
+                    params,
+                    result,
+                    statements,
+                    CoreContractSet {
+                        ensures: vec![ensures],
+                        ..CoreContractSet::default()
+                    },
+                );
+                let output = build_control_flow_ir(&core);
+                let flow = only_flow(&output);
+                let missing = flow
+                    .diagnostics
+                    .iter()
+                    .filter(|(_, diagnostic)| {
+                        diagnostic.kind == ControlFlowDiagnosticKind::MissingReturnOrFail
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    missing.len(),
+                    usize::from(value_result && falls_through),
+                    "{shape}"
+                );
+                let implicit_exits = flow
+                    .exits
+                    .iter()
+                    .filter(|(_, exit)| exit.statement.is_none())
+                    .collect::<Vec<_>>();
+                assert_eq!(implicit_exits.len(), usize::from(falls_through), "{shape}");
+                if let Some((exit_id, exit)) = implicit_exits.first() {
+                    let block = flow.blocks.get(exit.from).expect("fallthrough block");
+                    assert_eq!(block.reachable, Reachability::Reachable);
+                    assert_eq!(exit.target, None);
+                    if value_result {
+                        let (diagnostic_id, diagnostic) = missing[0];
+                        assert_eq!(diagnostic.statement, None);
+                        assert_eq!(
+                            diagnostic.source,
+                            core.algorithms()
+                                .get(flow.algorithm)
+                                .expect("algorithm")
+                                .source
+                        );
+                        assert_eq!(
+                            exit.kind,
+                            ControlFlowExitKind::Error {
+                                diagnostic: diagnostic_id
+                            }
+                        );
+                        assert_eq!(
+                            block.terminator,
+                            ControlFlowTerminator::Error(diagnostic_id)
+                        );
+                        assert!(block.context_out.is_empty());
+                        assert!(!flow.contracts.ensures.iter().any(|site| {
+                            matches!(site.placement, ContractSitePlacement::Return { exit, .. } if exit == *exit_id)
+                        }));
+                    } else {
+                        assert_eq!(exit.kind, ControlFlowExitKind::Return);
+                        assert_eq!(block.terminator, ControlFlowTerminator::Return(None));
+                        assert_eq!(block.context_out.len(), 1);
+                        assert!(flow.contracts.ensures.iter().any(|site| {
+                            matches!(site.placement, ContractSitePlacement::Return { exit, .. } if exit == *exit_id)
+                        }));
+                    }
+                }
+                let return_exits = flow
+                    .exits
+                    .iter()
+                    .filter(|(_, exit)| exit.kind == ControlFlowExitKind::Return)
+                    .count();
+                assert_eq!(flow.contracts.ensures.len(), return_exits, "{shape}");
+                for site in &flow.contracts.ensures {
+                    assert_eq!(site.formula, ensures);
+                    let ContractSitePlacement::Return { exit, .. } = site.placement else {
+                        panic!("ensures must attach to return exits");
+                    };
+                    assert_eq!(
+                        flow.exits.get(exit).expect("ensures exit").kind,
+                        ControlFlowExitKind::Return
+                    );
+                }
+            }
+        }
     }
 }

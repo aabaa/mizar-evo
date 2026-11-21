@@ -744,7 +744,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
       forbidden.
 48. **Basic source-derived ControlFlowIr.** [~]
     - [P5: cycle-safe CFG use collection](../../task_contracts/en/P5-CORE-CFG-CYCLE-USES.md).
-    - [P8: conditional and bare-failure shells](../../task_contracts/en/P8-CORE-IF-FAIL.md).
+    - [P8: conditional and bare-failure shells](../../task_contracts/en/P8-CORE-IF-FAIL.md) — bounded source If/Fail, signed normal joins and internal return-or-fail checking; broader Tasks 43/48/53 remain partial.
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
 51. **Snapshot and claim flow state.** [~] — bounded empty-interface claim CFG and flat snapshot capture implemented; nested snapshots and claim links deferred.

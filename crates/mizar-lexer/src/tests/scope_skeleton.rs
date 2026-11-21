@@ -442,6 +442,109 @@ end;";
 }
 
 #[test]
+fn scope_skeleton_pairs_shared_end_else_if_chain_without_binding_leaks() {
+    let source = "\
+algorithm choose(n: set) -> set
+do
+if n = 0 do
+var first := n;
+return first;
+else if n = 1 do
+var second := n;
+return second;
+else if n = 2 do
+var third := n;
+return third;
+else
+var last := n;
+return last;
+end;
+return n;
+end;";
+    let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+
+    assert!(
+        skeleton.diagnostics.is_empty(),
+        "{:?}",
+        skeleton.diagnostics
+    );
+    assert_eq!(skeleton.blocks.len(), 5);
+    for (name, use_text, boundary) in [
+        ("first", "return first", "else if n = 1"),
+        ("second", "return second", "else if n = 2"),
+        ("third", "return third", "else\n"),
+        ("last", "return last", "return n"),
+    ] {
+        assert!(skeleton.binding_overrides_symbol(name, nth_index(source, use_text, 0)));
+        assert!(!skeleton.binding_overrides_symbol(name, nth_index(source, boundary, 0)));
+    }
+    for name in ["first", "second", "third"] {
+        assert!(!skeleton.binding_overrides_symbol(name, nth_index(source, "return n", 0)));
+    }
+    assert_eq!(skeleton.blocks[0].range.end, source.len() - 1);
+}
+
+#[test]
+fn scope_skeleton_keeps_independent_nested_if_and_while_end_scopes() {
+    let source = "\
+algorithm choose(n: set) -> set
+do
+if n = 0 do
+if n = 1 do
+var nested := n;
+return nested;
+end;
+while n = 2 do
+var loop_local := n;
+end;
+var outer := n;
+return outer;
+else if n = 3 do
+return n;
+end;
+return n;
+end;";
+    let skeleton = build_scope_skeleton(&scan_raw(source).unwrap());
+
+    assert!(
+        skeleton.diagnostics.is_empty(),
+        "{:?}",
+        skeleton.diagnostics
+    );
+    assert_eq!(skeleton.blocks.len(), 5);
+    assert!(skeleton.binding_overrides_symbol("nested", nth_index(source, "return nested", 0)));
+    assert!(!skeleton.binding_overrides_symbol("nested", nth_index(source, "while", 0)));
+    assert!(skeleton.binding_overrides_symbol("loop_local", nth_index(source, "end;", 1)));
+    assert!(!skeleton.binding_overrides_symbol("loop_local", nth_index(source, "var outer", 0)));
+    assert!(skeleton.binding_overrides_symbol("outer", nth_index(source, "return outer", 0)));
+    assert!(!skeleton.binding_overrides_symbol("outer", nth_index(source, "else if", 0)));
+    assert_eq!(skeleton.blocks[0].range.end, source.len() - 1);
+}
+
+#[test]
+fn scope_skeleton_reports_one_missing_end_for_shared_end_else_if_chain() {
+    let source = "algorithm choose()\ndo\nif x = 0 do\nreturn x;\nelse if x = 1 do\nreturn x;";
+    let raw = scan_raw(source).unwrap();
+    let skeleton = build_scope_skeleton(&raw);
+
+    assert_eq!(skeleton, build_scope_skeleton(&raw));
+    assert_eq!(
+        skeleton
+            .diagnostics
+            .iter()
+            .map(|diagnostic| (diagnostic.code, diagnostic.span.start))
+            .collect::<Vec<_>>(),
+        vec![
+            (ScopeSkeletonDiagnosticCode::MissingEnd, 0),
+            (
+                ScopeSkeletonDiagnosticCode::MissingEnd,
+                nth_index(source, "do", 2)
+            ),
+        ]
+    );
+}
+
+#[test]
 fn scope_skeleton_distinguishes_unnamed_and_named_take_shapes() {
     const NUMERAL_SOURCE: &str = "proof\ntake 101;\nend;\n";
     let raw = scan_raw(NUMERAL_SOURCE).expect("unnamed numeral witness should raw scan");
