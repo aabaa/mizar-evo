@@ -37,7 +37,7 @@ use mizar_resolve::{
 };
 use mizar_session::{SourceAnchor, SourceId, SourceRange};
 use mizar_syntax::ast::{
-    SurfaceAstBuilder, SurfaceFormulaConnective, SurfaceFormulaPrefixOperator,
+    SurfaceAstBuilder, SurfaceFormulaConnective, SurfaceFormulaPrefixOperator, SurfaceNodeId,
     SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,
 };
 use std::{
@@ -212,6 +212,33 @@ pub(crate) fn source_nodes(
         return Err(invalid());
     }
     Ok(rows)
+}
+
+/// Selects bounded direct-call identities without granting algorithm acceptance.
+// reason: Preserve the three existing Resolver maps without a single-use public type.
+#[allow(clippy::type_complexity)]
+pub fn check_source_algorithm_call_targets(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &crate::typed_ast::TypedAst,
+) -> Result<
+    (
+        BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+        BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+        BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+    ),
+    String,
+> {
+    let (mut definiens, mut body, mut originals) = Default::default();
+    crate::source_overload::select_algorithm_calls(
+        source,
+        symbols,
+        typed,
+        &mut definiens,
+        &mut body,
+        &mut originals,
+    )?;
+    Ok((definiens, body, originals))
 }
 
 /// Returns the real registration closure for authenticated original theorem typing.

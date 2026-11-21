@@ -270,7 +270,7 @@ Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P
   `C/mizar-core/src/control_flow.rs`, crate tests,
   `D/mizar-core/en/control_flow.md`. No dependencies; file-disjoint from VC53.
   No formula/general cycle-safety claim until this lands.
-- [ ] **P7 — Automatic selected algorithm call targets; A; L2-set, either lane.**
+- [x] **P7 — Automatic selected algorithm call targets; A; L2-set, either lane.**
   First produce checked-source same-module non-overloaded direct-call node →
   selected `SymbolRef`/original synonym maps, feeding
   `source_definiens_dependencies` and `source_algorithm_recursive_groups`.
@@ -278,6 +278,7 @@ Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P
   `mizar-test` consumer, `D/mizar-checker/en/type_checker.md`. Dependencies:
   none; file-disjoint from VC53. Freeze Checker ownership against architecture
   03/overload boundaries; unresolved ownership parks at G19.
+  [Contract](task_contracts/en/CHECKER-P7-SELECTED-CALLS.md).
 - [ ] **P11 — Accepted-definition design/contract freeze; A; urgent Lane 2 gap.**
   Freeze only the bounded direct-return obligation set (E1 typing,
   single-valuedness, inhabitation; E2 postcondition; E4), same-identity

@@ -16,7 +16,7 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, NameResolution, ReferenceSite, ResolvedNodeId, SurfaceResolvedArena},
 };
 use mizar_session::{SourceAnchor, SourceId};
-use mizar_syntax::SurfaceNodeKind as K;
+use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind as K};
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
@@ -49,6 +49,510 @@ fn invalid() -> String {
 }
 fn site(id: ResolvedNodeId) -> TypedSiteRef {
     TypedSiteRef::Node(TypedNodeId::new(id.index()))
+}
+
+pub(crate) fn select_algorithm_calls(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &TypedAst,
+    definiens: &mut BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+    body: &mut BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+    originals: &mut BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+) -> Result<(), String> {
+    use crate::typed_ast::{TypedAstParts, TypedNode};
+    use mizar_resolve::{env::SymbolEntry, resolved_ast::SymbolRef};
+    let ast = mizar_resolve::symbols::validated_source_symbol_ast(source, symbols)?;
+    let surface_ids: Vec<_> = ast.node_views().map(|node| node.id()).collect();
+    let surface = |id: ResolvedNodeId| surface_ids[id.index()];
+    let rows = crate::type_checker::source_nodes(source, typed)?;
+    let mut neutral = TypedAst::try_new(TypedAstParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        resolved_root: Some(source.arena().root()),
+        nodes: typed.nodes().clone(),
+        source_context: None,
+        source_type: None,
+        source_attribute: None,
+        contexts: Default::default(),
+        types: Default::default(),
+        facts: Default::default(),
+        coercions: Default::default(),
+        initial_obligations: Default::default(),
+        diagnostics: Default::default(),
+    })
+    .map_err(|_| invalid())?;
+    if typed.source_node_entries().is_some() {
+        neutral
+            .install_source_nodes(source)
+            .map_err(|_| invalid())?;
+    }
+    if &neutral != typed {
+        return Err(invalid());
+    }
+    for (id, current) in source.arena().iter() {
+        let expected = TypedNode::new(
+            format!("{:?}", current.kind()),
+            current.origin().anchor().clone(),
+        )
+        .with_resolved_node(id)
+        .with_children(
+            current
+                .children()
+                .iter()
+                .map(|id| TypedNodeId::new(id.index()))
+                .collect(),
+        );
+        if current.origin().is_recovered()
+            || matches!(current.kind(), K::ErrorRecovery(_))
+            || typed.nodes().node(TypedNodeId::new(id.index())) != Some(&expected)
+        {
+            return Err(invalid());
+        }
+    }
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(r) => Ok(*r),
+        _ => Err(invalid()),
+    };
+    let text = |id| match node(id).ok()?.kind() {
+        K::Token(t) => Some(t.text.as_ref()),
+        _ => None,
+    };
+    let leaves = |id| -> Result<Vec<ResolvedNodeId>, String> {
+        let span = range(id)?;
+        let mut tokens: Vec<_> = rows
+            .iter()
+            .filter(|row| {
+                matches!(row.kind, K::Token(_))
+                    && span.start <= row.range.start
+                    && row.range.end <= span.end
+            })
+            .collect();
+        tokens.sort_by_key(|row| row.range.start);
+        Ok(tokens.into_iter().map(|row| row.site).collect())
+    };
+    let direct = |mut id| -> Option<ResolvedNodeId> {
+        loop {
+            match node(id).ok()?.kind() {
+                K::Token(_) => return Some(id),
+                K::TermExpression
+                | K::TermReference
+                | K::QualifiedSymbol
+                | K::PathSegment
+                | K::TermList => {
+                    let [child] = node(id).ok()?.children() else {
+                        return None;
+                    };
+                    id = *child;
+                }
+                _ => return None,
+            }
+        }
+    };
+    let parents: BTreeMap<_, _> = rows
+        .iter()
+        .filter_map(|r| r.parent.map(|p| (r.site, p)))
+        .collect();
+    let ancestor = |mut id, kind: &K| -> Option<ResolvedNodeId> {
+        loop {
+            if node(id).ok()?.kind() == kind {
+                return Some(id);
+            }
+            id = *parents.get(&id)?;
+        }
+    };
+    let mut expressions = Vec::new();
+    for (id, _) in source
+        .arena()
+        .iter()
+        .filter(|(_, n)| n.kind() == &K::TypeExpression)
+    {
+        let tokens = leaves(id)?;
+        if let [token] = tokens.as_slice() {
+            let head = match text(*token) {
+                Some("set") => TypeHeadInput::BuiltinSet,
+                Some("object") => TypeHeadInput::BuiltinObject,
+                _ => continue,
+            };
+            expressions.push(TypeExpressionInput::new(
+                site(id),
+                range(id)?,
+                text(*token).unwrap_or_default(),
+                head,
+            ));
+        }
+    }
+    let normalization = TypeNormalizer::default().normalize(symbols, expressions);
+    if !normalization.diagnostics().is_empty() {
+        return Err(invalid());
+    }
+    let normalized = |id| {
+        normalization.type_entries().iter().find_map(|(_, e)| {
+            if e.owner == site(id)
+                && let TypeEntryActual::Known(ty) = e.actual
+            {
+                Some(ty)
+            } else {
+                None
+            }
+        })
+    };
+    let bindings = |owner, formal| -> Vec<ResolvedNodeId> {
+        let Some(block) = ancestor(owner, &K::DefinitionBlockItem) else {
+            return Vec::new();
+        };
+        node(block)
+            .into_iter()
+            .flat_map(|block| block.children())
+            .filter(|child| {
+                node(**child).is_ok_and(|n| n.kind() == &K::DefinitionParameter)
+                    && range(**child)
+                        .is_ok_and(|r| range(owner).is_ok_and(|owner| r.end <= owner.start))
+            })
+            .flat_map(|child| node(*child).into_iter().flat_map(|n| n.children()))
+            .filter(|segment| {
+                node(**segment).is_ok_and(|n| n.kind() == &K::QualifiedVariableSegment)
+            })
+            .filter_map(|segment| {
+                node(*segment)
+                    .ok()?
+                    .children()
+                    .iter()
+                    .take_while(|id| !matches!(text(**id), Some("be" | "being")))
+                    .any(|id| text(*id) == text(formal))
+                    .then_some(*segment)
+            })
+            .collect()
+    };
+    let parameter = |owner, formal| -> Option<_> {
+        let block = ancestor(owner, &K::DefinitionBlockItem)?;
+        if node(block)
+            .ok()?
+            .children()
+            .iter()
+            .any(|child| node(*child).is_ok_and(|n| n.kind() == &K::TemplateParameter))
+        {
+            return None;
+        }
+        let matching = bindings(owner, formal);
+        let [segment] = matching.as_slice() else {
+            return None;
+        };
+        let [_, _, ty] = node(*segment).ok()?.children() else {
+            return None;
+        };
+        Some(*ty)
+    };
+    let mut declarations = Vec::new();
+    for entry in symbols.symbols().iter() {
+        let Some((id, current)) = source
+            .arena()
+            .iter()
+            .find(|(_, n)| n.origin().anchor() == entry.origin().anchor())
+        else {
+            return Err(invalid());
+        };
+        let pattern = current.children().iter().find(|id| {
+            node(**id).is_ok_and(|n| matches!(n.kind(), K::FunctorPattern | K::NotationPattern))
+        });
+        let name = if let Some(pattern) = pattern {
+            leaves(*pattern)?.first().copied()
+        } else {
+            leaves(id)?
+                .into_iter()
+                .find(|id| text(*id) == Some(entry.primary_spelling()))
+        };
+        if let Some(name) = name {
+            declarations.push((id, entry, name));
+        }
+    }
+    declarations.sort_by_key(|(id, ..)| range(*id).map(|r| r.start).unwrap_or_default());
+    let projections: Vec<_> = declarations
+        .iter()
+        .map(|(id, e, name)| {
+            Ok(NameSymbolProjection::current_module(
+                e.symbol().clone(),
+                e.namespace().clone(),
+                text(*name).unwrap_or_default(),
+                e.kind(),
+                e.visibility(),
+                range(*id)?,
+                range(*id)?.end,
+            ))
+        })
+        .collect::<Result<_, String>>()?;
+    let resolve = |token, namespace| -> Result<Vec<&SymbolEntry>, String> {
+        if rows.iter().any(|row| {
+            matches!(
+                row.kind,
+                K::ReserveSegment | K::ImportAliasDecl | K::ModuleBranchImport
+            )
+        }) {
+            return Ok(Vec::new());
+        }
+        let candidate = NameReferenceCandidate::unqualified(
+            ReferenceSite::new(token, range(token)?, text(token).ok_or_else(invalid)?),
+            node(token)?.origin().clone(),
+            range(token)?.start,
+        );
+        let resolved = SymbolNameResolver::new(&projections, &[]).resolve(
+            source.module(),
+            namespace,
+            &[candidate],
+        );
+        let targets = match resolved.table().iter().next().map(|(_, r)| r.resolution()) {
+            Some(NameResolution::Resolved(r)) => vec![r.symbol()],
+            Some(NameResolution::Ambiguous(r)) => {
+                r.candidates().iter().map(|r| r.symbol()).collect()
+            }
+            _ => Vec::new(),
+        };
+        Ok(targets
+            .into_iter()
+            .filter_map(|s| symbols.symbols().get(s))
+            .collect())
+    };
+    let select = |id: ResolvedNodeId,
+                  argument: ResolvedNodeId,
+                  entry: &SymbolEntry,
+                  parameter,
+                  result,
+                  actual|
+     -> Result<Option<SymbolRef>, String> {
+        let key = OverloadSiteKey::new(format!("source-call:{}", id.index()));
+        let collection = OverloadCollectionOutput::collect(
+            vec![OverloadSiteInput {
+                key: key.clone(),
+                owner: site(id),
+                source_range: range(id)?,
+                kind: OverloadSiteKind::FunctorApplication,
+                name: OverloadNameKey::new(entry.primary_spelling()),
+                arguments: vec![site(argument)],
+                expected: None,
+                source_qua: Vec::new(),
+                recovery: OverloadSiteRecovery::Normal,
+            }],
+            vec![OverloadCandidateInput {
+                site: key,
+                symbol: entry.symbol().clone(),
+                ordinary_root: entry.symbol().clone(),
+                // Callable engine role only; this does not lower or promote an algorithm.
+                declaration_kind: CandidateDeclarationKind::Functor,
+                parameters: vec![parameter],
+                result: Some(result),
+                origin: CandidateOrigin::Ordinary,
+                template: None,
+                coherence: None,
+                provenance: CandidateProvenance {
+                    stable_key: CandidateProvenanceKey::new(entry.symbol().fqn().as_str()),
+                    source_range: match entry.origin().anchor() {
+                        SourceAnchor::Range(range) => Some(*range),
+                        _ => None,
+                    },
+                    scope: CandidateScope::Local,
+                    declaration_order: 0,
+                },
+            }],
+        );
+        let expansion = TemplateExpansionOutput::expand(&collection);
+        let viability = CandidateViabilityOutput::filter(
+            &expansion,
+            vec![CandidateViabilityInput {
+                candidate: OverloadCandidateId::new(0),
+                arguments: vec![ArgumentViabilityEvidence::Exact { actual }],
+            }],
+        );
+        let graph = SpecificityGraphOutput::build(&viability, Vec::new());
+        let selected = OverloadSelectionOutput::resolve(
+            &graph,
+            vec![OverloadSiteResolutionInput {
+                site: OverloadSiteId::new(0),
+                refinements: Vec::new(),
+                refinement_join: RefinementJoinPayload {
+                    status: RefinementJoinStatus::Compatible,
+                    exposed_result: None,
+                },
+                inserted_views: Vec::new(),
+            }],
+        );
+        Ok(selected.results().iter().find_map(|(_, r)| match r.status {
+            OverloadResultStatus::Resolved { root, .. } => graph
+                .candidates()
+                .get(root)
+                .map(|c| SymbolRef::new(c.symbol.clone(), range(id).expect("authenticated site"))),
+            _ => None,
+        }))
+    };
+    let mut signatures = BTreeMap::new();
+    for (id, entry, _) in &declarations {
+        if !matches!(entry.kind(), SymbolKind::Algorithm | SymbolKind::Functor) {
+            continue;
+        }
+        let kind = if entry.kind() == SymbolKind::Algorithm {
+            K::AlgorithmParameters
+        } else {
+            K::FunctorPattern
+        };
+        let Some(pattern) = node(*id)?
+            .children()
+            .iter()
+            .find(|p| node(**p).is_ok_and(|n| n.kind() == &kind))
+        else {
+            continue;
+        };
+        let tokens = leaves(*pattern)?;
+        let formal = match (entry.kind(), tokens.as_slice()) {
+            (SymbolKind::Algorithm, [open, formal, close])
+            | (SymbolKind::Functor, [_, open, formal, close])
+                if text(*open) == Some("(") && text(*close) == Some(")") =>
+            {
+                *formal
+            }
+            _ => continue,
+        };
+        let Some(result) = node(*id)?
+            .children()
+            .iter()
+            .find(|p| node(**p).is_ok_and(|n| n.kind() == &K::TypeExpression))
+            .and_then(|id| normalized(*id))
+        else {
+            continue;
+        };
+        if let Some(ty) = parameter(*id, formal).and_then(normalized) {
+            signatures.insert(entry.symbol().clone(), (ty, result));
+        }
+    }
+    for (id, entry, _) in &declarations {
+        if entry.kind() != SymbolKind::Synonym {
+            continue;
+        }
+        let [synonym, alternate, _, original, _] = node(*id)?.children() else {
+            continue;
+        };
+        let left = leaves(*alternate)?;
+        let right = leaves(*original)?;
+        let ([_, lo, formal, lc], [target, ro, actual, rc]) = (left.as_slice(), right.as_slice())
+        else {
+            continue;
+        };
+        if text(*synonym) != Some("synonym")
+            || text(*lo) != Some("(")
+            || text(*ro) != Some("(")
+            || text(*lc) != Some(")")
+            || text(*rc) != Some(")")
+            || text(*formal) != text(*actual)
+            || !bindings(*id, *target).is_empty()
+        {
+            continue;
+        }
+        let targets = resolve(*target, entry.namespace())?;
+        let [target] = targets.as_slice() else {
+            continue;
+        };
+        let Some((ty, result)) = signatures.get(target.symbol()).copied() else {
+            continue;
+        };
+        if parameter(*id, *formal).and_then(normalized) != Some(ty) {
+            continue;
+        }
+        if let Some(original) = select(*id, *actual, target, ty, result, ty)? {
+            originals.insert(surface(*id), original);
+            signatures.insert(entry.symbol().clone(), (ty, result));
+        }
+    }
+    let (inventory, candidates) =
+        mizar_resolve::symbols::source_algorithm_call_candidates(source, symbols)?;
+    for (id, current) in source
+        .arena()
+        .iter()
+        .filter(|(_, n)| n.kind() == &K::ApplicationTerm)
+    {
+        let [reference, _, actual, _] = current.children() else {
+            continue;
+        };
+        let argument = *actual;
+        let (Some(callee), Some(actual)) = (direct(*reference), direct(argument)) else {
+            continue;
+        };
+        let (owner, anchor, is_body, targets) = if let Some(owner) = inventory.iter().find(|o| {
+            o.calls()
+                .iter()
+                .any(|c| c.application() == surface(id) && c.region() == o.body())
+        }) {
+            (
+                source
+                    .resolved_node_for(owner.declaration())
+                    .ok_or_else(invalid)?,
+                id,
+                true,
+                candidates.get(&surface(id)).cloned().unwrap_or_default(),
+            )
+        } else if ancestor(id, &K::TermDefiniens).is_some()
+            && let Some(owner) = ancestor(id, &K::FunctorDefinition)
+        {
+            let Some((_, entry, _)) = declarations.iter().find(|(decl, ..)| *decl == owner) else {
+                continue;
+            };
+            (
+                owner,
+                *reference,
+                false,
+                resolve(callee, entry.namespace())?,
+            )
+        } else {
+            continue;
+        };
+        if !bindings(owner, callee).is_empty() {
+            continue;
+        }
+        let owner_range = range(owner)?;
+        if rows.iter().any(|r| {
+            owner_range.start <= r.range.start
+                && r.range.end <= owner_range.end
+                && matches!(
+                    r.kind,
+                    K::VariableDeclaration
+                        | K::BinderExpression
+                        | K::LetStatement
+                        | K::GivenStatement
+                        | K::ConsiderStatement
+                        | K::SetStatement
+                        | K::ReconsiderStatement
+                        | K::ReconsiderItem
+                        | K::Equating
+                        | K::Witness
+                        | K::InlineFunctorDefinition
+                        | K::InlinePredicateDefinition
+                        | K::TypedParameter
+                        | K::ComprehensionVariableSegment
+                        | K::QuantifierVariableSegment
+                        | K::ProofBlock
+                        | K::ForRangeStatement
+                        | K::ForCollectionStatement
+                        | K::MatchStatement
+                        | K::QuantifiedFormula(_)
+                )
+        }) {
+            continue;
+        }
+        let [target] = targets.as_slice() else {
+            continue;
+        };
+        let Some((ty, result)) = signatures.get(target.symbol()).copied() else {
+            continue;
+        };
+        let Some(actual_type) = parameter(owner, actual).and_then(normalized) else {
+            continue;
+        };
+        if let Some(selected) = select(anchor, argument, target, ty, result, actual_type)? {
+            if is_body {
+                body.insert(surface(anchor), selected);
+            } else {
+                definiens.insert(surface(anchor), selected);
+            }
+        }
+    }
+    Ok(())
 }
 
 impl SourceOverloadHandoff {

@@ -1,6 +1,70 @@
 use super::*;
 
 #[test]
+fn checked_source_algorithm_targets_feed_real_dependency_and_group_consumers() {
+    use mizar_checker::type_checker::check_source_algorithm_call_targets as select;
+    use mizar_resolve::{
+        env::DependencyEndpoint,
+        symbols::{source_algorithm_recursive_groups, source_definiens_dependencies},
+    };
+    for (first, second, alias, parameter) in [
+        ("first", "second", "alias", "n"),
+        ("renamed", "middle", "shortcut", "input"),
+    ] {
+        let text = format!(
+            "definition let {parameter} be object; algorithm {first}({parameter}) -> object do return {second}({parameter}); end; synonym {alias}({parameter}) for {first}({parameter}); algorithm {second}({parameter}) -> object do return {alias}({parameter}); end; end; definition let x be object; func Wrapper: wrap(x) -> object equals {first}(x); end;"
+        );
+        let (source, nodes, collected, _) =
+            source_registration_formula_inputs(&text, "pkg", "selected_calls", 0);
+        let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+        let symbols = collected.env();
+        let before = (source.clone(), typed.clone(), symbols.clone());
+        let (references, applications, originals) = select(&source, symbols, &typed).unwrap();
+        assert_eq!(
+            (references.len(), applications.len(), originals.len()),
+            (1, 2, 1)
+        );
+        let dependencies =
+            source_definiens_dependencies(&source, symbols, &references, &originals).unwrap();
+        let groups = source_algorithm_recursive_groups(&source, symbols, &applications, &originals)
+            .unwrap()
+            .unwrap();
+        let find = |name| {
+            symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.primary_spelling() == name)
+                .unwrap()
+        };
+        assert_eq!(groups, vec![vec![find(first), find(second)]]);
+        let edges: Vec<_> = dependencies.iter().collect();
+        assert_eq!(edges.len(), 1);
+        let wrapper = symbols
+            .symbols()
+            .iter()
+            .find(|entry| entry.kind() == mizar_resolve::env::SymbolKind::Functor)
+            .unwrap();
+        assert_eq!(
+            edges[0].source(),
+            &DependencyEndpoint::Symbol(wrapper.symbol().clone())
+        );
+        assert_eq!(
+            edges[0].target(),
+            &DependencyEndpoint::Symbol(find(first).symbol().clone())
+        );
+        assert_eq!(
+            edges[0].anchor(),
+            &mizar_session::SourceAnchor::Range(references.values().next().unwrap().range())
+        );
+        assert_eq!(
+            select(&source, symbols, &typed).unwrap(),
+            (references, applications, originals)
+        );
+        assert_eq!((source, typed, symbols.clone()), before);
+    }
+}
+
+#[test]
 fn source_public_algorithm_export_candidates_preserve_original_rows() {
     use mizar_artifact::{
         module_summary::{

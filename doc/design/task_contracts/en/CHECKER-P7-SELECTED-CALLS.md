@@ -1,6 +1,6 @@
 # Task CHECKER-P7-SELECTED-CALLS: checked source direct-call targets
 Canonical language: English; [Japanese pointer](../ja/CHECKER-P7-SELECTED-CALLS.md).
-Status: frozen. Tier: full (new checked selection seam).
+Status: implemented for the initial profile. Tier: full (new checked selection seam).
 Owner: [Checker plan](../../mizar-checker/en/00.crate_plan.md); consumer: [test runner](../../mizar-test/en/00.crate_plan.md).
 Dependencies: authenticated source symbols and explicit selected-edge Resolver APIs; no acceptance prerequisite is discharged.
 Authority: [module/symbol ownership](../../architecture/en/03.module_and_symbol_resolution.md), [selection ownership](../../architecture/en/05.overload_resolution.md#overload-resolution-finalizes-surface-semantics), [viability](../../../spec/en/19.overload_resolution.md#1942-viable-candidates), [synonyms](../../../spec/en/11.symbol_management.md#1112-functor-synonyms), [definition cycles](../../../spec/en/10.functors.md#1033-non-recursive-definitional-layer), [recursive groups](../../../spec/en/20.algorithm_and_verification.md#208-recursive-definitions).

@@ -1,6 +1,7 @@
 #[path = "support/source_overload.rs"]
 mod support;
 
+use mizar_checker::type_checker::check_source_algorithm_call_targets;
 use mizar_checker::{
     overload_resolution::{
         ArgumentViabilityEvidence, CandidateDeclarationKind, InsertedViewInput, InsertedViewKind,
@@ -11,7 +12,70 @@ use mizar_checker::{
     source_overload::{SourceOverloadHandoff, SourceOverloadInput},
     typed_ast::TypedSiteRef,
 };
+use mizar_resolve::{
+    env::SymbolEntry,
+    resolved_ast::SymbolRef,
+    symbols::{source_algorithm_recursive_groups, source_definiens_dependencies},
+};
+use mizar_session::{SourceAnchor, SourceRange};
+use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind};
+use std::collections::BTreeMap;
 use support::{SourceFixture, ordinary_overloads, single_ordinary, source_view, template_overload};
+
+fn checked_site(
+    fixture: &SourceFixture,
+    kind: SurfaceNodeKind,
+    start: usize,
+    len: usize,
+) -> (SurfaceNodeId, SourceRange) {
+    let range = SourceRange {
+        source_id: fixture.native.source_id(),
+        start,
+        end: start + len,
+    };
+    let (id, _) = fixture
+        .native
+        .arena()
+        .iter()
+        .find(|(_, node)| {
+            node.kind() == &kind && node.origin().anchor() == &SourceAnchor::Range(range)
+        })
+        .expect("exact source occurrence");
+    let ast =
+        mizar_resolve::symbols::validated_source_symbol_ast(&fixture.native, &fixture.symbols)
+            .unwrap();
+    let surface = ast
+        .node_views()
+        .find(|node| node.id().index() == id.index())
+        .unwrap()
+        .id();
+    (surface, range)
+}
+
+fn checked_symbol<'a>(fixture: &'a SourceFixture, text: &str, marker: &str) -> &'a SymbolEntry {
+    fixture.symbols.symbols().iter().find(|entry| matches!(entry.origin().anchor(), SourceAnchor::Range(range) if range.start == text.find(marker).unwrap())).expect("real declaration identity")
+}
+
+fn checked_selection(
+    fixture: &SourceFixture,
+    text: &str,
+    kind: SurfaceNodeKind,
+    sites: &[(usize, &str, &str)],
+) -> BTreeMap<SurfaceNodeId, SymbolRef> {
+    sites
+        .iter()
+        .map(|&(start, spelling, declaration)| {
+            let (id, range) = checked_site(fixture, kind.clone(), start, spelling.len());
+            (
+                id,
+                SymbolRef::new(
+                    checked_symbol(fixture, text, declaration).symbol().clone(),
+                    range,
+                ),
+            )
+        })
+        .collect()
+}
 
 fn contest(input: &mut SourceOverloadInput, left: usize, right: usize, reason: &str) {
     input.comparisons.push(SpecificityComparisonInput {
@@ -20,6 +84,508 @@ fn contest(input: &mut SourceOverloadInput, left: usize, right: usize, reason: &
         status: SpecificityComparisonStatus::LeftAtLeastRight,
         reasons: vec![SpecificityReasonKey::new(reason)],
     });
+}
+
+#[test]
+fn checked_algorithm_calls_preserve_exact_self_mutual_and_repeated_sites() {
+    for text in [
+        "",
+        "definition let n be object; algorithm quiet(n) -> object do return n; end; end;",
+        "definition let n be object; algorithm recur(n) -> object do return recur(n); end; end;",
+    ] {
+        let fixture = SourceFixture::parse(text, "checked_algorithm_calls");
+        let before = (
+            fixture.native.clone(),
+            fixture.symbols.clone(),
+            fixture.typed.clone(),
+        );
+        let selected =
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap();
+        let (expected, groups) = if text.contains("return recur(n)") {
+            (
+                checked_selection(
+                    &fixture,
+                    text,
+                    SurfaceNodeKind::ApplicationTerm,
+                    &[(
+                        text.rfind("recur(n)").unwrap(),
+                        "recur(n)",
+                        "algorithm recur",
+                    )],
+                ),
+                vec![vec![checked_symbol(&fixture, text, "algorithm recur")]],
+            )
+        } else {
+            (BTreeMap::new(), Vec::new())
+        };
+        assert_eq!(selected, (BTreeMap::new(), expected, BTreeMap::new()));
+        assert_eq!(
+            source_algorithm_recursive_groups(
+                &fixture.native,
+                &fixture.symbols,
+                &selected.1,
+                &selected.2
+            )
+            .unwrap(),
+            Some(groups)
+        );
+        assert_eq!(
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap(),
+            selected
+        );
+        assert_eq!((fixture.native, fixture.symbols, fixture.typed), before);
+    }
+    for (a, b, c) in [("alpha", "gamma", "beta"), ("renamed", "middle", "last")] {
+        let text = format!(
+            "definition let n be object; algorithm tail(n) -> object do return {a}(n); end; algorithm {a}(n) -> object do return {b}(n); return {b}(n); end; algorithm {b}(n) -> object do return {c}(n); end; algorithm {c}(n) -> object do return {a}(n); end; algorithm quiet(n) -> object do return n; end; end;"
+        );
+        let fixture = SourceFixture::parse(&text, "checked_algorithm_mutual");
+        let mut expected = BTreeMap::new();
+        for target in [a, b, c] {
+            let call = format!("{target}(n)");
+            for (start, _) in text.match_indices(&format!("return {call}")) {
+                expected.extend(checked_selection(
+                    &fixture,
+                    &text,
+                    SurfaceNodeKind::ApplicationTerm,
+                    &[(start + 7, &call, &format!("algorithm {target}"))],
+                ));
+            }
+        }
+        let selected =
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap();
+        assert_eq!(selected, (BTreeMap::new(), expected, BTreeMap::new()));
+        assert_eq!(
+            source_algorithm_recursive_groups(
+                &fixture.native,
+                &fixture.symbols,
+                &selected.1,
+                &selected.2
+            )
+            .unwrap(),
+            Some(vec![vec![
+                checked_symbol(&fixture, &text, &format!("algorithm {a}")),
+                checked_symbol(&fixture, &text, &format!("algorithm {b}")),
+                checked_symbol(&fixture, &text, &format!("algorithm {c}"))
+            ]])
+        );
+    }
+}
+
+#[test]
+fn checked_algorithm_synonyms_keep_alias_occurrences_and_original_declarations() {
+    for body in ["return chain(n);", "return n;"] {
+        let text = format!(
+            "definition let n be object; algorithm run(n) -> object do return n; end; synonym alias(n) for run(n); synonym chain(n) for alias(n); algorithm caller(n) -> object do {body} end; end;"
+        );
+        let fixture = SourceFixture::parse(&text, "checked_algorithm_synonyms");
+        let mut originals = BTreeMap::new();
+        for (marker, target) in [
+            ("synonym alias", "algorithm run"),
+            ("synonym chain", "synonym alias"),
+        ] {
+            let SourceAnchor::Range(range) =
+                checked_symbol(&fixture, &text, marker).origin().anchor()
+            else {
+                panic!("source declaration range")
+            };
+            let (id, range) = checked_site(
+                &fixture,
+                SurfaceNodeKind::NotationAlias,
+                range.start,
+                range.end - range.start,
+            );
+            originals.insert(
+                id,
+                SymbolRef::new(
+                    checked_symbol(&fixture, &text, target).symbol().clone(),
+                    range,
+                ),
+            );
+        }
+        let applications = if body.contains("chain") {
+            checked_selection(
+                &fixture,
+                &text,
+                SurfaceNodeKind::ApplicationTerm,
+                &[(
+                    text.find("return chain(n)").unwrap() + 7,
+                    "chain(n)",
+                    "synonym chain",
+                )],
+            )
+        } else {
+            BTreeMap::new()
+        };
+        let selected =
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap();
+        assert_eq!(selected, (BTreeMap::new(), applications, originals));
+        assert_eq!(
+            source_algorithm_recursive_groups(
+                &fixture.native,
+                &fixture.symbols,
+                &selected.1,
+                &selected.2
+            )
+            .unwrap(),
+            Some(Vec::new())
+        );
+        let dependencies = source_definiens_dependencies(
+            &fixture.native,
+            &fixture.symbols,
+            &selected.0,
+            &selected.2,
+        )
+        .unwrap();
+        assert!(dependencies.is_empty());
+    }
+}
+
+#[test]
+fn checked_definiens_references_feed_dependencies_without_body_application_leaks() {
+    use mizar_resolve::env::{DeclarationDependencyKind, DependencyEndpoint};
+    let text = "definition let n be object; func Base: base(n) -> object equals n; func Caller: caller(n) -> object equals base(n); algorithm run(n) -> object do return base(n); end; end;";
+    let fixture = SourceFixture::parse(text, "checked_definiens");
+    let start = text.find("equals base(n)").unwrap() + 7;
+    let references = checked_selection(
+        &fixture,
+        text,
+        SurfaceNodeKind::TermReference,
+        &[(start, "base", "func Base:")],
+    );
+    let applications = checked_selection(
+        &fixture,
+        text,
+        SurfaceNodeKind::ApplicationTerm,
+        &[(
+            text.find("return base(n)").unwrap() + 7,
+            "base(n)",
+            "func Base:",
+        )],
+    );
+    let selected =
+        check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+            .unwrap();
+    assert_eq!(selected, (references, applications, BTreeMap::new()));
+    let dependencies =
+        source_definiens_dependencies(&fixture.native, &fixture.symbols, &selected.0, &selected.2)
+            .unwrap();
+    assert_eq!(
+        dependencies
+            .iter()
+            .map(|edge| (
+                edge.kind(),
+                edge.source().clone(),
+                edge.target().clone(),
+                edge.anchor().clone()
+            ))
+            .collect::<Vec<_>>(),
+        vec![(
+            DeclarationDependencyKind::DefiniensMention,
+            DependencyEndpoint::Symbol(
+                checked_symbol(&fixture, text, "func Caller:")
+                    .symbol()
+                    .clone()
+            ),
+            DependencyEndpoint::Symbol(
+                checked_symbol(&fixture, text, "func Base:")
+                    .symbol()
+                    .clone()
+            ),
+            SourceAnchor::Range(
+                checked_site(
+                    &fixture,
+                    SurfaceNodeKind::TermReference,
+                    start,
+                    "base".len()
+                )
+                .1
+            )
+        )]
+    );
+    assert_eq!(
+        source_algorithm_recursive_groups(
+            &fixture.native,
+            &fixture.symbols,
+            &selected.1,
+            &selected.2
+        )
+        .unwrap(),
+        Some(Vec::new())
+    );
+    assert!(
+        source_definiens_dependencies(&fixture.native, &fixture.symbols, &selected.1, &selected.2)
+            .is_err()
+    );
+}
+
+#[test]
+fn checked_algorithm_unsupported_calls_never_fabricate_selected_edges() {
+    for text in [
+        "definition let s be set; func Pick: pick(s) -> set equals s; end; definition let n be object; algorithm run(n) -> object do return pick(n); end; end;",
+        "definition let n be object; algorithm run(n) -> object do return run(0); end; end;",
+        "definition let n be object; algorithm run(n) -> object do var x := n; return run(x); end; end;",
+        "definition let n be object; algorithm run(n) -> object do var n := n; return run(n); end; end;",
+        "definition let n be object; func Target: target(n) -> object equals n; end; definition let n be object; algorithm run(n) -> object do return Missing.target(n); end; end;",
+        "definition let T be type; let n be T; func Pick: pick[T](n) -> T equals n; end; definition let n be object; algorithm run(n) -> object do return pick[object](n); end; end;",
+        "definition let s be set; func PickSet: pick(s) -> set equals s; end; definition let n be object; func PickObject: pick(n) -> object equals n; algorithm run(n) -> object do return pick(n); end; end;",
+        "definition let n be object; algorithm run(n) -> object do return bad(n); end; synonym bad(n) for run(0); end;",
+    ] {
+        let fixture = SourceFixture::parse(text, "checked_unsupported_calls");
+        let before = (
+            fixture.native.clone(),
+            fixture.symbols.clone(),
+            fixture.typed.clone(),
+        );
+        if text.starts_with("definition let s be set; func Pick:") {
+            let (_, candidates) = mizar_resolve::symbols::source_algorithm_call_candidates(
+                &fixture.native,
+                &fixture.symbols,
+            )
+            .unwrap();
+            let site = checked_site(
+                &fixture,
+                SurfaceNodeKind::ApplicationTerm,
+                text.find("return pick(n)").unwrap() + 7,
+                "pick(n)".len(),
+            )
+            .0;
+            assert_eq!(
+                candidates[&site],
+                vec![checked_symbol(&fixture, text, "func Pick:")]
+            );
+        }
+        let selected =
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap();
+        assert_eq!(
+            selected,
+            (BTreeMap::new(), BTreeMap::new(), BTreeMap::new()),
+            "{text}"
+        );
+        assert_eq!(
+            source_algorithm_recursive_groups(
+                &fixture.native,
+                &fixture.symbols,
+                &selected.1,
+                &selected.2
+            )
+            .unwrap(),
+            None,
+            "{text}"
+        );
+        assert_eq!((fixture.native, fixture.symbols, fixture.typed), before);
+    }
+    for text in [
+        "definition let n be object; func Base: f(n) -> object equals n; redefine func Changed: f(n) -> object equals n; coherence by Proof; func Caller: caller(n) -> object equals f(n); end;",
+        "definition let n be object; algorithm run(n) -> object do return n; end; end; definition let n be object; let run be object; synonym alias(n) for run(n); end;",
+        "definition let n be object; algorithm run(n) -> object do return n; end; end; definition let n be object; let run,m be object; synonym alias(n) for run(n); end;",
+        "definition let n be object; algorithm run(n) -> object do return n; end; end; definition let n be object; let run,m be object; func Caller: caller(n) -> object equals run(n); end;",
+        "definition let n be object; algorithm run(n) -> object do return n; end; end; definition let n be object; let run be object, m be object; synonym alias(n) for run(n); end;",
+        "definition let n be object; algorithm run(n) -> object do return n; end; end; definition let n be object; let run be object, m be object; func Caller: caller(n) -> object equals run(n); end;",
+        "definition let n be object; func Base: f(n) -> object equals n; end; reserve unused for object; definition let n be object; func Caller: caller(n) -> object equals f(n); synonym alias(n) for f(n); end;",
+    ] {
+        let fixture = SourceFixture::parse(text, "checked_scope_exclusions");
+        let selected =
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+                .unwrap();
+        assert_eq!(
+            selected,
+            (BTreeMap::new(), BTreeMap::new(), BTreeMap::new()),
+            "{text}"
+        );
+    }
+    let text = "definition let n be object; algorithm run(n) -> object do return run(n); return run(0); end; end;";
+    let fixture = SourceFixture::parse(text, "checked_mixed_calls");
+    let selected =
+        check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+            .unwrap();
+    let expected = checked_selection(
+        &fixture,
+        text,
+        SurfaceNodeKind::ApplicationTerm,
+        &[(
+            text.find("return run(n)").unwrap() + 7,
+            "run(n)",
+            "algorithm run",
+        )],
+    );
+    assert_eq!(selected, (BTreeMap::new(), expected, BTreeMap::new()));
+    assert_eq!(
+        source_algorithm_recursive_groups(
+            &fixture.native,
+            &fixture.symbols,
+            &selected.1,
+            &selected.2
+        )
+        .unwrap(),
+        None
+    );
+}
+
+#[test]
+fn checked_algorithm_call_selection_refuses_foreign_and_forged_inputs_atomically() {
+    use mizar_checker::typed_ast::{
+        NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNodeId, TypedNodeKind,
+    };
+    use mizar_resolve::{
+        env::{SymbolEnv, SymbolEnvIndexes},
+        resolved_ast::SurfaceResolvedArena,
+    };
+    use mizar_syntax::SurfaceAstBuilder;
+    let text = "definition let n be object; algorithm run(n) -> object do return run(n); end; end;";
+    let fixture = SourceFixture::parse(text, "checked_associations");
+    let foreign = SourceFixture::parse(text, "checked_foreign");
+    let stale = SourceFixture::parse(
+        "definition let n be set; algorithm run(n) -> set do return run(n); end; end;",
+        "checked_associations",
+    );
+    let before = (
+        fixture.native.clone(),
+        fixture.symbols.clone(),
+        fixture.typed.clone(),
+    );
+    let expected =
+        check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+            .unwrap();
+    assert!(!expected.1.is_empty());
+    for other in [&foreign, &stale] {
+        assert!(
+            check_source_algorithm_call_targets(&other.native, &fixture.symbols, &fixture.typed)
+                .is_err()
+        );
+        assert!(
+            check_source_algorithm_call_targets(&fixture.native, &other.symbols, &fixture.typed)
+                .is_err()
+        );
+        assert!(
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &other.typed)
+                .is_err()
+        );
+    }
+    let mut indexes = SymbolEnvIndexes {
+        imports: fixture.symbols.imports().clone(),
+        exports: fixture.symbols.exports().clone(),
+        symbols: fixture.symbols.symbols().clone(),
+        labels: fixture.symbols.labels().clone(),
+        definitions: fixture.symbols.definitions().clone(),
+        overloads: fixture.symbols.overloads().clone(),
+        registrations: fixture.symbols.registrations().clone(),
+        lexical_summaries: fixture.symbols.lexical_summaries().clone(),
+        namespace_graph: fixture.symbols.namespace_graph().clone(),
+        declaration_dependencies: fixture.symbols.declaration_dependencies().clone(),
+        contributions: fixture.symbols.contributions().clone(),
+        module_summaries: fixture.symbols.module_summaries().clone(),
+    };
+    indexes
+        .symbols
+        .insert(foreign.symbols.symbols().iter().next().unwrap().clone());
+    let augmented_env = SymbolEnv::new(fixture.native.module().clone(), indexes);
+    assert!(
+        check_source_algorithm_call_targets(&fixture.native, &augmented_env, &fixture.typed)
+            .is_err()
+    );
+    let call = checked_site(
+        &fixture,
+        SurfaceNodeKind::ApplicationTerm,
+        text.rfind("run(n)").unwrap(),
+        "run(n)".len(),
+    )
+    .0;
+    for mutation in 0..7 {
+        let mut nodes: Vec<_> = fixture
+            .typed
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect();
+        let original = nodes[call.index()].clone();
+        match mutation {
+            0 => nodes[call.index()].kind = TypedNodeKind::new("ForgedApplication"),
+            1 => nodes[call.index()].resolved_node = fixture.typed.resolved_root(),
+            2 => {
+                nodes[call.index()].anchor = fixture
+                    .typed
+                    .nodes()
+                    .node(fixture.typed.nodes().root().unwrap())
+                    .unwrap()
+                    .anchor
+                    .clone()
+            }
+            3 => nodes[call.index()].children.clear(),
+            4 => nodes[call.index()].recovery = NodeRecoveryState::Recovered,
+            5 => nodes.push(original),
+            6 => {
+                nodes[call.index()].children.reverse();
+            }
+            _ => unreachable!(),
+        }
+        let mut typed = TypedAst::try_new(TypedAstParts {
+            source_id: fixture.typed.source_id(),
+            module_id: fixture.typed.module_id().clone(),
+            resolved_root: fixture.typed.resolved_root(),
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: TypedArena::try_new(
+                Some(TypedNodeId::new(fixture.native.arena().root().index())),
+                nodes,
+            )
+            .unwrap(),
+            contexts: Default::default(),
+            types: Default::default(),
+            facts: Default::default(),
+            coercions: Default::default(),
+            initial_obligations: Default::default(),
+            diagnostics: Default::default(),
+        })
+        .expect("structurally valid forged typed AST");
+        let _ = typed.install_source_nodes(&fixture.native);
+        assert!(
+            check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &typed).is_err(),
+            "mutation {mutation}"
+        );
+    }
+    let mut builder = SurfaceAstBuilder::new(fixture.native.source_id());
+    let mut rebuilt = Vec::new();
+    let mut marked_recovered = false;
+    for (_, node) in fixture.native.arena().iter() {
+        let SourceAnchor::Range(range) = node.origin().anchor() else {
+            panic!("source range")
+        };
+        let children = node
+            .children()
+            .iter()
+            .map(|child| rebuilt[child.index()])
+            .collect();
+        let id = match node.kind() {
+            SurfaceNodeKind::Token(token) if !marked_recovered => {
+                marked_recovered = true;
+                builder.add_recovered_token(token.kind, token.text.clone(), *range)
+            }
+            SurfaceNodeKind::Token(token) => {
+                builder.add_token(token.kind, token.text.clone(), *range)
+            }
+            kind => builder.add_node(kind.clone(), *range, children),
+        };
+        rebuilt.push(id);
+    }
+    assert!(marked_recovered);
+    let recovered = builder.finish(Some(rebuilt[fixture.native.arena().root().index()]), None);
+    let source = SurfaceResolvedArena::lower(&recovered, fixture.native.module()).unwrap();
+    assert!(
+        check_source_algorithm_call_targets(&source, &fixture.symbols, &fixture.typed).is_err()
+    );
+    assert_eq!(
+        check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+            .unwrap(),
+        expected
+    );
+    assert_eq!((fixture.native, fixture.symbols, fixture.typed), before);
 }
 
 fn resolved_root(handoff: &SourceOverloadHandoff) -> OverloadCandidateId {

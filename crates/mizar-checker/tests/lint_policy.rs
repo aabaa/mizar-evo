@@ -96,14 +96,14 @@ fn checker_source_syntax_import_is_limited_to_registration_intake() {
     for path in checker_src_files(&root) {
         let source = read_to_string(&path);
         let source = if path == root.join("src/source_overload.rs") {
-            let permitted = "use mizar_syntax::SurfaceNodeKind as K;";
+            let permitted = "use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind as K};";
             assert_eq!(source.matches(permitted).count(), 1);
             source.replace(permitted, "")
         } else if path == root.join("src/registration_resolution.rs")
             || path == root.join("src/type_checker.rs")
         {
             let permitted = if path == root.join("src/type_checker.rs") {
-                "use mizar_syntax::ast::{\n    SurfaceAstBuilder, SurfaceFormulaConnective, SurfaceFormulaPrefixOperator,\n    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
+                "use mizar_syntax::ast::{\n    SurfaceAstBuilder, SurfaceFormulaConnective, SurfaceFormulaPrefixOperator, SurfaceNodeId,\n    SurfaceNodeKind as K, SurfaceOperatorAssociativity, SurfaceQuantifierKind, SurfaceTokenKind,\n};"
             } else {
                 "use mizar_syntax::ast::{SurfaceNodeKind as K, SurfaceTokenKind};"
             };

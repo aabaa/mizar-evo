@@ -3028,6 +3028,12 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 ## Static source algorithm checking
 
+### Selected direct-call dependencies
+`check_source_algorithm_call_targets(source, symbols, typed)` は中立ソース射影の完全な対応を認証し、通常 definiens の参照、algorithm 本体の application、元 synonym 宣言の map を別々に返す。`SymbolRef` は実際の使用位置または宣言の range を保持する。
+名前・scope・宣言同一性・依存および group graph は Resolver が所有する。private `source_overload` 処理は既存の normalization、collection、expansion、viability、specificity、selection 段階で検査済み選択を行う。候補一つでも実引数の型 evidence を必要とする。
+初期 profile は builtin set/object signature と definition parameter の実引数を持つ同一 module の単項直接呼出しであり、locus の全単射を検査した直接 synonym chain を含む。overload、local binder、reserve/import-alias lookup、template、属性型、変換、修飾・import callee は未選択のままとし、不正な source/environment/typed 対応は原子的に拒否する。
+test consumer は参照・application の各 map と元 target link を既存 Resolver の依存・再帰 group API に渡す。本体の選択が不足すれば group は未確定のままである。map が示すのは依存同一性だけであり、以下の algorithm 型 seal、一般的な呼出し lower、証明・停止性・昇格・循環の受理とは独立する。
+
 `check_source_algorithm_types(&SurfaceResolvedArena, &TypedArena, &SymbolEnv)` はソース・環境・中立 typed 表と algorithm 所有者の完全な対応を認証し、借用型の opaque `SourceAlgorithmCheck` を返す。既存 BindingEnv と項・式推論で object 仮引数、順序付き初期化 var/const/ghost-var、宣言・使用同一性、推論型と期待 return 型を保持する。平坦な契約 profile は直接変数への代入、等式または prefix not 一つで否定した等式 assert、末尾 return も受理し、代入先には値を読み出さず実際の BindingId を渡す。result は任意の等式 ensures だけに可視とし、宣言順序で shadowing・前方参照を判定し、assert と ensures の所有者を区別してどちらも仮定しない。prefix 否定は assert と限定 while guard に対応し、実 node・等式の子・個別に検査した項出現を保持する。否定した ensures/requires や式の置換による近道は認めない。封印は不変の typed・binding・inference・owner データだけを公開し、生の resolver 権限を渡さない。field 代入先、限定 while invariant 以外の注釈、justification、他の契約、限定 while 以外の制御、入れ子 snapshot、呼出し、リテラルは未対応とする。別の空 interface profile は、仮引数なし・bare return の先行 void algorithm と後続 claim target を実 local algorithm symbol により認証し、空 binding/inference table はその algorithm のみを表す。入れ子 theorem は `check_theorem_skeletons` が所有し、証明・全域性・登録承認を与えない。
 
 ### Algorithm ordinary occurrence intake
