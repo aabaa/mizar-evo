@@ -2,6 +2,7 @@
 
 P19 source correspondence: [RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE](../../task_contracts/en/RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
 P19 pattern intake: [RESOLVE-P19-BINDER-PATTERN-INTAKE](../../task_contracts/en/RESOLVE-P19-BINDER-PATTERN-INTAKE.md).
+P19 computation scope evidence: [RESOLVE-P19-COMPUTATION-SCOPE-EVIDENCE](../../task_contracts/en/RESOLVE-P19-COMPUTATION-SCOPE-EVIDENCE.md).
 
 - [x] Task 257C prerequisite: [reserved bracket mapper leaves](../../task_contracts/en/RESOLVE257-BRACKET-MAPPER-REFERENCES.md).
 
