@@ -267,9 +267,10 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md),
       [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
       [spec_coverage_audit.md](../../spec_coverage_audit.md).
-25. **Code completion.** [ ]
+25. **Code completion.** [x]
     - Deps: 6-7 and 12-15. Contract: [EDITOR-LSP-COMPLETION](../../task_contracts/en/EDITOR-LSP-COMPLETION.md).
-    - Producer prerequisite: [LSP-PRODUCER-METADATA-PUBLICATION-DESIGN](../../task_contracts/en/LSP-PRODUCER-METADATA-PUBLICATION-DESIGN.md), [proposal](producer_metadata_publication.md) awaiting owner approval; producer implementation and Task25 redispatch follow approval.
+    - [Approved producer publication](producer_metadata_publication.md) and [snapshot-backed completion](completion.md) are implemented for bounded syntax and retained published symbol/notation/namespace/citation candidates.
+    - Unsupported products and unpublished private/proof-local labels remain unavailable; native eligibility, tasks 39–41 and general SCA-003 coverage are unchanged.
 26. **`mizar lsp` stdio entry (with mizar-driver).** [ ]
     - Deps: 4-5. Contract: [EDITOR-LSP-ENTRY](../../task_contracts/en/EDITOR-LSP-ENTRY.md).
 27. **Statement review aids (consumer).** [ ]

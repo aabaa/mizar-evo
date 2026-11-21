@@ -259,7 +259,7 @@ Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P
   Scope: this roadmap, `D/mizar-driver/en/registry.md`,
   `D/mizar-build/en/00.crate_plan.md`, JA companions. Dependencies: sealed
   push (satisfied at adoption); serialize with NT6 if files overlap. No extra credit.
-- [ ] **P4 — LSP 25 close-out and Doc TODO sync; M; Lane 1.** Run the
+- [x] **P4 — LSP 25 close-out and Doc TODO sync; M; Lane 1.** Run the
   outstanding final T2 read-only completion audit and count the task;
   reconcile landed Doc 5–13 work without credit denied by contracts.
   Scope: `D/mizar-lsp/en/todo.md`, `D/mizar-doc/en/todo.md`; roadmap
@@ -1141,9 +1141,10 @@ outputs; do not fabricate metadata to unblock these consumers.
    (SCA-004; see
    [consumer_adoption_decision.md](./mizar-diagnostics/en/consumer_adoption_decision.md)).
    The SSA-018 `of`/`over` scope-sensitivity lint is recorded for this wave.
-2. [~] [mizar-lsp tasks 1-24](./mizar-lsp/en/todo.md) — server, snapshots,
+2. [~] [mizar-lsp tasks 1-25](./mizar-lsp/en/todo.md) — server, snapshots,
    diagnostics, build bridge, metadata, navigation, actions, explanations,
-   and the `@show_*`/`@eval` projection audit (SCA-003).
+   bounded snapshot-backed completion and the `@show_*`/`@eval` projection
+   audit; broader semantic consumers and general SCA-003 coverage remain open.
 3. [~] [mizar-doc tasks 1-34](./mizar-doc/en/todo.md) — published-input reading and
    indexing, native inputs and validated published comment attachment are implemented. CommonMark/tag parsing and authenticated link/render prerequisites are available; coherent planning, full HTML/phase-16 rendering and extraction remain open (SCA-002). `mizar-doc` must not re-run semantic analysis.
    [Optional published module summaries](./task_contracts/en/DOC-PUBLISHED-MODULE-SUMMARIES.md) are implemented as preserved label inputs; full index/link planning remains open.

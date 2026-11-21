@@ -22,10 +22,10 @@ crate refines architecture 13 and internal 05.
 |---|---|---|---|
 | artifact_reader | `artifact_reader.md` (task 2) | `src/artifact_reader.rs` | [x] |
 | doc_build | `doc_build.md` (task 4) | `src/doc_build.rs` | [~] |
-| comments | [comments.md](./comments.md) (approved choices; remaining definitions) | `src/comments.rs` | [~] |
-| links | [links.md](./links.md) (adopted model; implementation gated) | `src/links.rs` | [ ] |
-| math | [math.md](./math.md) (unadopted proposal) | `src/math.rs` | [ ] |
-| render | `render.md` (task 13) | `src/render.rs` | [ ] |
+| comments | [comments.md](./comments.md) (adopted attachment/parsing definitions) | `src/comments.rs` | [x] |
+| links | [links.md](./links.md) (adopted resolver handoff) | `src/links.rs` | [~] |
+| math | [math.md](./math.md) (bounded opaque-client runtime adopted) | `src/math.rs` | [~] |
+| render | [render.md](./render.md) (bounded handoffs/compositions adopted) | `src/render.rs` | [~] |
 | extract_select | `extract_select.md` (task 16) | `src/extract_select.rs` | [ ] |
 | runtime_ir | `runtime_ir.md` (task 18) | `src/runtime_ir.rs` | [ ] |
 | extract_backend | `extract_backend.md` (task 21) | `src/extract_backend.rs` | [ ] |
@@ -107,7 +107,7 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
      [internal 05](../../internal/en/05.documentation_extraction.md).
 
 5. **Documentation build planning and index.** [~]
-   - [Bounded planning/index contract](../../task_contracts/en/DOC5-DOC-BUILD-PLANNING-INDEX.md) covers selected published inputs and snapshot binding; downstream completion remains separate.
+   - [Bounded planning/index](../../task_contracts/en/DOC5-DOC-BUILD-PLANNING-INDEX.md) over selected published inputs and snapshot binding is implemented; broader Doc4/5 integration remains open.
    - Implement build planning and the documentation index over reader
      output.
    - Tests: plan fixtures over multi-package inputs; deterministic index
@@ -116,8 +116,8 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
 
 ### Documentation strand
 
-6. **Spec: `comments.md`.** [~]
-   - [DOC6-COMMENTS-DEFINITION](../../task_contracts/en/DOC6-COMMENTS-DEFINITION.md): paired definitions; Q1–Q4 choices approved, remaining definitions required, with no implementation.
+6. **Spec: `comments.md`.** [x]
+   - [DOC6-COMMENTS-DEFINITION](../../task_contracts/en/DOC6-COMMENTS-DEFINITION.md): paired residual definitions completed; Q1–Q8 approved. Parsing and diagnostic adoption follow in Doc8.
    - Write the doc-comment spec (English and Japanese, no code):
      attachment targets, Markdown surface, diagnostics policy (degrade
      gracefully), and owner Q-decisions including the preserved doc-comment-source choice.
@@ -130,44 +130,44 @@ Tasks 1–3 form [DOC-PUBLISHED-ARTIFACT-READER](../../task_contracts/en/DOC-PUB
      diagnosed, not dropped silently.
    - Deps: 5, 6. Spec: `comments.md`.
 
-8. **Markdown parsing.** [ ]
-   - After Doc7 and completed tag-validation/CommonMark definitions, parse Markdown with graceful degradation and
-     presentation diagnostics.
-   - Tests: subset fixtures; malformed Markdown degrades without aborting
+8. **Markdown parsing.** [x]
+   - [DOC8-PARSING-CONFORMANCE](../../task_contracts/en/DOC8-PARSING-CONFORMANCE.md) implements pinned CommonMark/tag parsing over Doc7 attachments, retaining raw maps, graceful degradation and adopted presentation diagnostics.
+   - Tests: pinned CommonMark conformance fixtures; malformed Markdown degrades without aborting
      the build.
    - Deps: 7. Spec: `comments.md`.
 
 9. **Spec: `links.md`.** [x]
-   - [Coherent adoption](../../task_contracts/en/DOC9-COHERENT-ADOPTION.md) fixes Doc9 Q1–Q10 ① and the Doc13 Q3 href interface in spec24.2; producer/allocation/diagnostic gates remain.
+   - [Coherent adoption](../../task_contracts/en/DOC9-COHERENT-ADOPTION.md) fixes Doc9 Q1–Q10 ① and the Doc13 Q3 href interface in spec24.2; implemented handoffs are tracked in the [prerequisite gates](./link_prerequisites.md#ordered-readiness-gates-and-decisions).
    - Deps: 4. Spec: architecture 13 "Step 3"/"Documentation and Extraction
      Share Symbol Identity".
 
-10. **Cross-reference resolution.** [ ]
-    - Gated on producer/authentication/validation work for the adopted [prerequisite interfaces](./link_prerequisites.md) and separate adoption/allocation of [exact shared diagnostics](../../mizar-diagnostics/en/documentation_links.md); interface adoption alone grants no readiness.
+10. **Cross-reference resolution.** [x]
+    - [DOC10-RESOLVER-INTEGRATION](../../task_contracts/en/DOC10-RESOLVER-INTEGRATION.md) integrates authenticated gates 1–4 for exact lookup, direct-by reversal and shared diagnostics from parser-neutral classified occurrences; rendering/publication and later gates remain open.
     - Resolve doc links against artifact symbol identity with deterministic
       unresolved-link diagnostics.
     - Tests: intra- and inter-package link fixtures; unresolved links
       diagnosed with positions.
     - Deps: 8, 9. Spec: `links.md`.
 
-11. **Spec: `math.md`.** [ ]
-    - [Math-model definition proposal](../../task_contracts/en/DOC11-MATH-DEFINITION.md); new owner choices remain unselected.
+11. **Spec: `math.md`.** [~]
+    - [Math-model definition proposal](../../task_contracts/en/DOC11-MATH-DEFINITION.md): bounded opaque-client Q6/Q7/Q12 portions are adopted; other owner choices remain unselected.
     - Write the math-rendering spec (English and Japanese, no code): LaTeX
       subset, formula rendering strategy, and determinism rules.
     - Deps: 4. Spec: architecture 13 "Step 3".
 
-12. **Math rendering.** [ ]
+12. **Math rendering.** [~]
+    - [Opaque-client prerequisites](../../task_contracts/en/DOC13-G4-OPAQUE-MATH-CLIENT-PREREQUISITES.md) implement only Doc8 math transport and local KaTeX execution; symbolic generation, annotations, numbering/references and remaining diagnostics stay open.
     - Implement deterministic LaTeX/formula rendering with graceful
       degradation.
     - Tests: formula fixtures; identical output across runs; malformed
       math degrades with diagnostics.
     - Deps: 8, 11. Spec: `math.md`.
 
-13. **Spec: `render.md`.** [ ]
+13. **Spec: `render.md`.** [~]
     - [Auxiliary composition](../../task_contracts/en/DOC13-AUXILIARY-COMPOSITION.md): authenticated representable in-memory JSON only; owner gates remain.
     - [Reference encounter ordinals](../../task_contracts/en/DOC13-REFERENCE-ENCOUNTER-ORDINAL.md): authenticated traversal/results; auxiliary composition is separately bounded.
     - [Isolated search composition](../../task_contracts/en/DOC13-SEARCH-COMPOSITION.md) returns canonical in-memory JSON only; emission and coherent readiness remain gated.
-    - [Render definition proposal](../../task_contracts/en/DOC13-RENDER-DEFINITION.md); new owner choices remain unselected.
+    - [Render definition proposal](../../task_contracts/en/DOC13-RENDER-DEFINITION.md): bounded [fragment/Source/Modules expansion](./render.md) is implemented; remaining owner choices, full HTML/phase-16 rendering and coherent G4/G5 readiness stay gated.
     - [Prerequisite completion definitions](../../task_contracts/en/DOC13-PREREQUISITES-DEFINITION.md) have [bounded interface adoption](../../task_contracts/en/DOC13-PREREQUISITE-INTERFACE-ADOPTION.md); complete producers and coherent Doc13 readiness remain gated.
     - Write the rendering spec (English and Japanese, no code): static
       HTML site layout, search index format, and deterministic output
