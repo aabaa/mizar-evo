@@ -1,0 +1,13 @@
+:: Structural Core fixture: spec 20.2.3 and 20.13.3.
+:: Object operands retain unverified range/step inputs; no Nat or proof credit.
+definition
+  let a be object;
+  algorithm range_shell(a) -> object
+  do
+    for i = a to a do
+      invariant i = a;
+      assert i = i;
+    end;
+    return a;
+  end;
+end;

@@ -689,6 +689,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
 42. **Algorithm header/local/assignment/`Pick` CoreIr。** [~]
 43. **Algorithm conditional/while/jump CoreIr。** [~]
 44. **Range/collection loop CoreIr。** [ ]
+    - [P10 有界 source shell](../../task_contracts/ja/P10-CORE-FOR-SHELL.md)。
 45. **Match pattern/capture/exhaustiveness CoreIr。** [ ]
 46. **Algorithm contract/call-request/recursion/termination metadata。** [~]
 47. **Snapshot/claim CoreIr。** [~] — 限定 void-claim profile は実装済み。広範な capture state は延期。
