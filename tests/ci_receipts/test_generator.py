@@ -187,19 +187,30 @@ class GeneratorTests(unittest.TestCase):
         self.source = self.oid()
         self.assertIn(b"empty", self.assert_refused().stderr)
 
-    def test_ignored_drift_and_missing_baseline_has_no_receipt(self):
-        self.replace_test("", "#[ignore]")
-        self.assert_refused()
+    def test_ignored_drift_has_no_receipt(self):
+        source = self.repo / "src/lib.rs"
+        source.write_text(source.read_text() + "\n#[test]\n#[ignore]\nfn ignored_gate() {}\n")
+        self.git("commit", "-am", "add ignored fixture test")
+        self.source = self.oid()
+        self.policy["expected_inventory"].append("unittests src/lib.rs (receipt_fixture)|ignored_gate")
+        self.policy["inventory_sha256"] = self.generator.digest(self.generator.canonical(self.policy["expected_inventory"]))
+        self.save()
+        self.assertIn(b"test inventory or ignored baseline drift", self.assert_refused().stderr)
+
+    def test_missing_baseline_has_no_receipt(self):
         self.policy["expected_inventory"] = []
         self.policy["inventory_sha256"] = self.generator.digest(self.generator.canonical([]))
         self.save()
-        self.assert_refused()
+        self.assertIn(b"test inventory or ignored baseline drift", self.assert_refused().stderr)
 
     def test_filters_and_synthetic_empty_output_cannot_select_gate(self):
         result = subprocess.run(["python3", str(self.generator_path), self.source, self.base, "complete_gate"], capture_output=True)
         self.assert_refused(result)
-        for log in (b"", b"test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.0s\n"):
-            with self.subTest(log=log), self.assertRaises(ValueError):
+        filtered = (b"     Running unittests src/lib.rs (/target/receipt_fixture-aabb)\n"
+                    b"running 1 test\ntest complete_gate ... ok\n"
+                    b"test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.0s\n")
+        for log, reason in ((b"", "empty or incomplete inventory"), (filtered, "partial or failed test summary")):
+            with self.subTest(log=log), self.assertRaisesRegex(ValueError, reason):
                 self.generator.parse_log(log)
         fake = self.custody / "fake-cargo"
         fake.write_text("#!/bin/sh\nprintf 'synthetic success\\n'\n")

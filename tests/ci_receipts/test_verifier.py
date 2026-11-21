@@ -4,9 +4,12 @@ import hashlib
 import importlib.util
 import datetime as dt
 import copy
+import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from unittest import mock
 
@@ -104,6 +107,7 @@ class ReceiptTests(unittest.TestCase):
                                             self.event if event is None else event, now=now)
 
     def test_01_signed_docs_roundtrip(self):
+        self.assert_full(reason="missing receipt")
         self.publish()
         result = self.verify()
         self.assertTrue(result["eligible"])
@@ -120,13 +124,13 @@ class ReceiptTests(unittest.TestCase):
         self.assertTrue(result["eligible"])
         self.assertEqual(run("git", "-C", str(isolated), "tag", "--list").decode().strip(), "ci-receipts/" + self.source)
 
-    def assert_refused(self, operation=None):
-        try:
-            result = (operation or self.verify)()
-        except self.verifier.ReceiptError:
-            return
-        self.assertEqual(result["decision"], "full")
-        self.assertFalse(result["eligible"])
+    def assert_invalid(self, operation=None):
+        with self.assertRaises(self.verifier.ReceiptError):
+            (operation or self.verify)()
+
+    def assert_full(self, operation=None, reason="delta requires full CI"):
+        self.assertEqual((operation or self.verify)(),
+                         {"decision": "full", "eligible": False, "reason": reason})
 
     def test_03_exact_revision_and_comparison(self):
         original = copy.deepcopy(self.manifest)
@@ -135,14 +139,14 @@ class ReceiptTests(unittest.TestCase):
             with self.subTest(identity=field):
                 self.manifest = {**original, field: value}
                 self.publish()
-                self.assert_refused()
+                self.assert_invalid()
         self.manifest = original
         self.publish()
         for ref in ("refs/heads/topic", "refs/heads/main"):
             with self.subTest(moved=ref):
                 old = self.oid(ref)
                 self.git("update-ref", ref, self.base if old == self.source else self.source)
-                self.assert_refused()
+                self.assert_invalid()
                 self.git("update-ref", ref, old)
         calls = 0
         real_refs = self.verifier.live_refs
@@ -153,22 +157,23 @@ class ReceiptTests(unittest.TestCase):
                 self.git("update-ref", "refs/heads/topic", self.base)
             return real_refs(*args)
         with mock.patch.object(self.verifier, "live_refs", side_effect=moved_during_verification):
-            self.assert_refused()
+            self.assert_invalid()
         self.git("update-ref", "refs/heads/topic", self.source)
         (self.repo / "README.md").write_text("later docs\n")
         self.git("commit", "-am", "later docs")
         later = self.oid("HEAD")
         self.git("update-ref", "refs/heads/topic", later)
+        self.git("update-ref", "refs/heads/main", self.base)
         old_tag = "refs/tags/ci-receipts/" + self.source
         self.git("update-ref", "refs/tags/ci-receipts/" + later, self.oid(old_tag))
         with self.subTest(replay=True):
-            self.assert_refused(lambda: self.verify(event={**self.event, "source": later}))
+            self.assert_invalid(lambda: self.verify(event={**self.event, "source": later}))
         with self.subTest(partial_branch_delta=True):
             earlier = self.source
             self.source = later
             self.manifest = {**original, "source": later, "tree": self.oid(later + "^{tree}"), "base": earlier}
             self.publish()
-            self.assert_refused(lambda: self.verify(event={**self.event, "source": later, "base": earlier}))
+            self.assert_full(lambda: self.verify(event={**self.event, "source": later, "base": earlier}))
         self.git("reset", "--hard", self.base)
         (self.repo / "code.rs").write_text("code\n")
         self.git("add", ".")
@@ -177,13 +182,14 @@ class ReceiptTests(unittest.TestCase):
         self.git("commit", "-am", "docs after code")
         self.source = self.oid("HEAD")
         self.git("update-ref", "refs/heads/topic", self.source)
-        self.manifest = {**original, "source": self.source, "tree": self.oid("HEAD^{tree}")}
+        self.git("update-ref", "refs/heads/main", self.base)
+        self.manifest = {**original, "source": self.source, "tree": self.oid(self.source + "^{tree}")}
         self.publish()
         with self.subTest(entire_branch_delta=True):
-            self.assert_refused(lambda: self.verify(event={**self.event, "source": self.source}))
+            self.assert_full(lambda: self.verify(event={**self.event, "source": self.source}))
         self.git("update-ref", "refs/heads/main", self.source)
         with self.subTest(entire_main_push_delta=True):
-            self.assert_refused(lambda: self.verify(event={**self.event, "source": self.source,
+            self.assert_full(lambda: self.verify(event={**self.event, "source": self.source,
                 "source_ref": "refs/heads/main", "default_source": self.source}))
         # Two independently merged tips have two best common ancestors.
         tree = self.oid(self.base + "^{tree}")
@@ -200,7 +206,7 @@ class ReceiptTests(unittest.TestCase):
         self.publish()
         with self.subTest(ambiguous_merge_base=True):
             self.assertTrue(self.verifier.classify_delta(self.repo, left, first))
-            self.assert_refused(lambda: self.verify(event={**self.event, "source": first,
+            self.assert_full(lambda: self.verify(event={**self.event, "source": first,
                 "base": left, "default_source": second}))
 
     def test_04_signature_pins_and_time(self):
@@ -213,30 +219,30 @@ class ReceiptTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 self.manifest = {**original, field: value}
                 self.publish()
-                self.assert_refused()
+                self.assert_invalid()
         self.manifest = original
         for signature in (b"forgery", b""):
             with self.subTest(signature=signature):
                 self.publish(signature=signature)
-                self.assert_refused()
+                self.assert_invalid()
         other_key = self.home / "unknown-signer"
         run("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(other_key))
         self.publish(signer=other_key)
         with self.subTest(unknown_signer=True):
-            self.assert_refused()
+            self.assert_invalid()
         self.publish()
         signed = (self.home / "manifest.json.sig").read_bytes()
         self.manifest = {**original, "duration_ms": 999}
         self.publish(signature=signed)
         with self.subTest(tampered_after_signature=True):
-            self.assert_refused()
+            self.assert_invalid()
         self.manifest = original
         self.publish()
         with self.subTest(revoked_signer=True):
-            self.assert_refused(lambda: self.verify(policy={**self.policy, "signer_public_key": None}))
+            self.assert_invalid(lambda: self.verify(policy={**self.policy, "signer_public_key": None}))
         for field in ("plan_sha256", "generator_sha256", "environment_sha256"):
             with self.subTest(changed_trust_pin=field):
-                self.assert_refused(lambda: self.verify(policy={**self.policy, field: "e" * 64}))
+                self.assert_invalid(lambda: self.verify(policy={**self.policy, field: "e" * 64}))
 
     def test_05_strict_schema_and_evidence(self):
         valid = self.verifier.canonical(self.manifest)
@@ -248,22 +254,22 @@ class ReceiptTests(unittest.TestCase):
         for number, manifest in enumerate(malformed):
             with self.subTest(malformed=number):
                 self.publish(manifest_bytes=manifest)
-                self.assert_refused()
+                self.assert_invalid()
         for name in ("manifest.json", "manifest.sig", "cargo-test.log"):
             with self.subTest(missing=name):
                 self.publish(omit=(name,))
-                self.assert_refused()
+                self.assert_invalid()
         for mode in ("100755", "120000"):
             with self.subTest(mode=mode):
                 self.publish(mode=mode)
-                self.assert_refused()
+                self.assert_invalid()
         for log in (b"", self.log + b"tampered"):
             with self.subTest(log=log):
                 self.publish(log=log)
-                self.assert_refused()
+                self.assert_invalid()
         self.publish(signature=b"x" * 16385)
         with self.subTest(oversized_signature=True):
-            self.assert_refused()
+            self.assert_invalid()
 
     def test_06_literal_delta_routing(self):
         paths = {"README.md": True, "doc/guide.md": True, "doc/nested/guide.md": True,
@@ -332,42 +338,52 @@ class ReceiptTests(unittest.TestCase):
             self.assertFalse(self.verifier.classify_delta(self.repo, code_base, self.oid("HEAD")))
 
     def test_07_untrusted_candidates_and_events(self):
-        original_source = self.source
-        original_manifest = copy.deepcopy(self.manifest)
         self.publish()
-        for changes in ({"kind": "pull_request"}, {"fork": True}, {"synthetic_merge": True},
-                        {"default_source": "0" * 40}, {"default_ref": "refs/heads/unavailable"}):
+        for changes in ({"kind": "pull_request"}, {"fork": True}, {"synthetic_merge": True}):
             with self.subTest(event=changes):
-                self.assert_refused(lambda: self.verify(event={**self.event, **changes}))
+                self.assert_full(lambda: self.verify(event={**self.event, **changes}),
+                                 reason="event requires full CI")
+        for changes in ({"default_source": "0" * 40}, {"default_ref": "refs/heads/unavailable"}):
+            with self.subTest(event=changes):
+                self.assert_invalid(lambda: self.verify(event={**self.event, **changes}))
+        self.git("reset", "--hard", self.base)
+        controls = self.repo / ".github/ci-receipts"
+        controls.mkdir(parents=True)
+        (controls / "verify.py").write_bytes((ROOT / ".github/ci-receipts/verify.py").read_bytes())
+        (controls / "policy.json").write_bytes(self.verifier.canonical(self.policy))
+        self.git("add", ".")
+        self.git("commit", "-m", "trusted controls")
+        trusted = self.oid("HEAD")
+        self.git("config", "uploadpack.allowFilter", "true")
+        self.git("config", "uploadpack.allowAnySHA1InWant", "true")
+        finished = dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=1)
+        self.manifest.update(started=(finished - dt.timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                             finished=finished.strftime("%Y-%m-%dT%H:%M:%SZ"))
         for path in (".github/ci-receipts/verify.py", ".github/ci-receipts/policy.json", ".github/workflows/ci.yml"):
             with self.subTest(candidate_substitution=path):
-                self.git("reset", "--hard", original_source)
+                self.git("checkout", "--detach", trusted)
                 candidate = self.repo / path
                 candidate.parent.mkdir(parents=True, exist_ok=True)
-                candidate.write_text("raise RuntimeError('candidate must not execute')\n")
+                candidate.write_text("raise RuntimeError('candidate must not execute')\n" if path.endswith(".py")
+                                     else "untrusted candidate controls\n")
                 self.git("add", ".")
                 self.git("commit", "-m", "candidate trust substitution")
-                source = self.oid("HEAD")
-                self.source = source
-                self.manifest = {**original_manifest, "source": source, "tree": self.oid("HEAD^{tree}")}
+                self.source = self.oid("HEAD")
+                self.git("update-ref", "refs/heads/topic", self.source)
+                self.manifest.update(source=self.source, base=trusted, tree=self.oid("HEAD^{tree}"))
                 self.publish()
-                self.git("update-ref", "refs/heads/topic", source)
-                self.assert_refused(lambda: self.verify(event={**self.event, "source": source}))
+                output, sanity = self.run_shadow("refs/heads/topic", trusted)
+                self.assertEqual(json.loads(output.splitlines()[-1]),
+                                 {"decision": "full", "eligible": False, "reason": "delta requires full CI"})
+                for name in ("verify.py", "policy.json"):
+                    self.assertEqual((sanity / name).read_bytes(),
+                                     self.git("show", trusted + ":.github/ci-receipts/" + name))
 
     def test_08_shadow_deployment_boundary(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         shadow, candidate = workflow.split("  mizar-test:\n", 1)
         self.assertIn("  receipt-shadow:\n", shadow)
         self.assertIn("permissions:\n  contents: read\n", shadow)
-        self.assertIn('git init --bare "$sanity/repo"', shadow)
-        self.assertIn('default_source=$(git -C "$sanity/repo" rev-parse "$default_ref")', shadow)
-        self.assertIn('trusted="$BEFORE"', shadow)
-        self.assertIn('[ "$trusted" = "$SOURCE" ]', shadow)
-        self.assertIn('merge-base --is-ancestor "$trusted" "$default_source"', shadow)
-        self.assertIn('--default-source "$default_source"', shadow)
-        for path in ("verify.py", "policy.json"):
-            self.assertIn('"$trusted:.github/ci-receipts/' + path + '"', shadow)
-        self.assertIn('python3 -I "$sanity/verify.py"', shadow)
         self.assertNotIn("actions/checkout", shadow)
         self.assertNotIn("secrets.", shadow)
         self.assertNotIn("needs:", candidate)
@@ -381,7 +397,64 @@ class ReceiptTests(unittest.TestCase):
         self.assertFalse(bootstrap["enabled"])
         for field in ("signer_public_key", "plan_sha256", "generator_sha256", "environment_sha256", "inventory_sha256"):
             self.assertIsNone(bootstrap[field])
-        self.assert_refused(lambda: self.verify(policy={**self.policy, "enabled": True}))
+        self.assert_invalid(lambda: self.verify(policy={**self.policy, "enabled": True}))
+
+        self.git("reset", "--hard", self.base)
+        controls = self.repo / ".github/ci-receipts"
+        controls.mkdir(parents=True)
+        (controls / "verify.py").write_bytes((ROOT / ".github/ci-receipts/verify.py").read_bytes())
+        (controls / "policy.json").write_bytes(self.verifier.canonical(self.policy))
+        self.git("add", ".")
+        self.git("commit", "-m", "prior default controls")
+        trusted = self.oid("HEAD")
+        (controls / "verify.py").write_text("raise RuntimeError('candidate must not execute')\n")
+        (controls / "policy.json").write_text("untrusted candidate policy\n")
+        self.git("commit", "-am", "candidate controls")
+        self.source = self.oid("HEAD")
+        output, sanity = self.run_shadow("refs/heads/main", trusted)
+        self.assertEqual(json.loads(output.splitlines()[-1]),
+                         {"decision": "full", "eligible": False, "reason": "missing receipt"})
+        for name in ("verify.py", "policy.json"):
+            self.assertEqual((sanity / name).read_bytes(),
+                             self.git("show", trusted + ":.github/ci-receipts/" + name))
+        for before, reason in (("0" * 40, "no independent prior default-branch anchor"),
+                               (self.source, "no independent prior default-branch anchor"),
+                               (self.base, "bootstrap anchor has no verifier")):
+            with self.subTest(unavailable_anchor=before):
+                output, sanity = self.run_shadow("refs/heads/main", before)
+                self.assertIn("full CI: " + reason, output.decode())
+                self.assertFalse((sanity / "verify.py").exists())
+        output, sanity = self.run_shadow("refs/pull/1/merge", trusted, event_kind="pull_request")
+        self.assertIn("pull requests and merge revisions are ineligible", output.decode())
+        self.assertFalse(sanity.exists())
+
+        self.git("branch", "candidate", self.source)
+        self.git("reset", "--hard", trusted)
+        live_policy = {**self.policy, "signer_identity": "live-default"}
+        with (controls / "verify.py").open("a") as verifier:
+            verifier.write("\n# Live default fixture revision.\n")
+        (controls / "policy.json").write_bytes(self.verifier.canonical(live_policy))
+        self.git("commit", "-am", "advance live default")
+        live_default = self.oid("HEAD")
+        output, sanity = self.run_shadow("refs/heads/candidate", trusted)
+        self.assertEqual(json.loads(output.splitlines()[-1]),
+                         {"decision": "full", "eligible": False, "reason": "missing receipt"})
+        for name in ("verify.py", "policy.json"):
+            self.assertEqual((sanity / name).read_bytes(),
+                             self.git("show", live_default + ":.github/ci-receipts/" + name))
+
+    def run_shadow(self, source_ref, before, event_kind="push"):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        script = textwrap.dedent(workflow.split("        run: |\n", 1)[1].split("\n  mizar-test:\n", 1)[0])
+        runner = Path(tempfile.mkdtemp(dir=self.home))
+        env = {**os.environ, "RUNNER_TEMP": str(runner), "REPOSITORY": "fixture/repo",
+               "EVENT_KIND": event_kind, "SOURCE": self.source, "SOURCE_REF": source_ref,
+               "BEFORE": before, "DEFAULT_BRANCH": "main", "GIT_CONFIG_COUNT": "1",
+               "GIT_CONFIG_KEY_0": "url." + str(self.repo) + ".insteadOf",
+               "GIT_CONFIG_VALUE_0": "https://github.com/fixture/repo.git"}
+        result = subprocess.run(["bash", "-c", script], env=env, check=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        return result.stdout, runner / "receipt-sanity"
 
     def git(self, *args, data=None):
         return run("git", "-C", str(self.repo), *args, data=data)
