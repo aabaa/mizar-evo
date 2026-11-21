@@ -3058,6 +3058,23 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                     expected,
                     "Core/CFG mutation {mutation} must precede Proof selection {selected:?}"
                 );
+                assert_eq!(
+                    mizar_proof::status::check_source_algorithm_e1_single_valuedness(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        if selected == request.id {
+                            VcId::new(2)
+                        } else {
+                            selected
+                        },
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core/CFG mutation {mutation} must precede single-valuedness Proof selection"
+                );
             }
         }
     });
@@ -5882,6 +5899,20 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                                 expected
                             );
                         }
+                        for selected in [VcId::new(2), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                mizar_proof::status::check_source_algorithm_e1_single_valuedness(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    selected,
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                        }
                         assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
                     }
                 },
@@ -7122,6 +7153,72 @@ fn source_algorithm_e1_typing_proof_association_preserves_original_identity_and_
             for _ in 0..2 {
                 let (identity, slice) =
                     associate(source, check, symbols, core, snapshot, VcId::new(1)).unwrap();
+                assert_eq!((&identity, &slice), (&expected.0, &expected.4));
+                assert_eq!(slice, descriptor.5);
+                assert_eq!(slice.status(), &VcStatus::Open);
+                assert_eq!(
+                    slice.completeness(),
+                    DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(!slice.unknowns().is_empty());
+                assert!(slice.requires_cache_miss());
+            }
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_e1_single_valuedness_proof_association_preserves_original_identity_and_raw_slice()
+ {
+    use mizar_proof::status::check_source_algorithm_e1_single_valuedness as associate;
+    use mizar_vc::{
+        dependency_slice::DependencySliceCompleteness,
+        generator::check_source_algorithm_e1_single_valuedness_request as checked, vc_ir::VcStatus,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+        for snapshot in [vcs.snapshot(), snapshot_id(1)] {
+            let expected =
+                source_algorithm_direct_return_reference(source, check, symbols, snapshot, 1);
+            let descriptor = checked(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                &generation,
+                &schema,
+                VcId::new(2),
+            )
+            .unwrap();
+            let raw = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                core,
+                &descriptor.0,
+                &generation,
+            );
+            assert_eq!(&expected.4, raw.slice_for(VcId::new(2)).unwrap());
+            assert!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .all(|vc| vc.status == VcStatus::Open)
+            );
+            assert!(descriptor.0.seed_accounting().iter().any(|entry| {
+                entry.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+            }));
+            for _ in 0..2 {
+                let (identity, slice) =
+                    associate(source, check, symbols, core, snapshot, VcId::new(2)).unwrap();
                 assert_eq!((&identity, &slice), (&expected.0, &expected.4));
                 assert_eq!(slice, descriptor.5);
                 assert_eq!(slice.status(), &VcStatus::Open);
@@ -8931,6 +9028,18 @@ fn source_algorithm_single_valuedness_descriptor_refuses_other_roles_and_absent_
             .map(|vc| vc.id)
             .chain([VcId::new(vcs.vcs().len()), VcId::new(usize::MAX)])
         {
+            assert_eq!(
+                mizar_proof::status::check_source_algorithm_e1_single_valuedness(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    selected,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e1_single_valuedness_request"
+            );
             for consume in [
                 mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
                 mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
@@ -8981,6 +9090,22 @@ fn source_algorithm_single_valuedness_descriptor_regenerates_source_and_schema_i
         |source, _, symbols, check| {
             let core = mizar_core::elaborator::lower_source_algorithms(check).unwrap();
             let before = format!("{source:?}{check:?}{symbols:?}{core:?}");
+            for snapshot in [snapshot_id(0), snapshot_id(1)] {
+                let expected =
+                    source_algorithm_direct_return_reference(source, check, symbols, snapshot, 1);
+                assert_eq!(
+                    mizar_proof::status::check_source_algorithm_e1_single_valuedness(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot,
+                        VcId::new(2),
+                    )
+                    .unwrap(),
+                    (expected.0, expected.4)
+                );
+            }
             let generation = GenerationSchemaVersion::new("direct-return-test-generation");
             let schema = VcSchemaVersion::new("direct-return-test-vc");
             for (snapshot, generation, schema) in [
