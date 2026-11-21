@@ -694,6 +694,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
       `MT10-CIR-ALG`と対にする。actual call/result substitution、VC、promotion、
       MVM、extraction、guessed parser/resolver identityは禁止。
 48. **Basic source-derived ControlFlowIr。** [ ]
+    - [P5: CFG use collection の循環検出](../../task_contracts/ja/P5-CORE-CFG-CYCLE-USES.md)。
 49. **Range/collection-loop CFG attachment。** [ ]
 50. **Match CFG attachment。** [ ]
 51. **Snapshot/claim flow state。** [ ]

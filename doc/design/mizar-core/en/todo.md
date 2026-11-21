@@ -740,6 +740,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
       promotion, MVM, extraction, and guessed parser/resolver identities are
       forbidden.
 48. **Basic source-derived ControlFlowIr.** [~]
+    - [P5: cycle-safe CFG use collection](../../task_contracts/en/P5-CORE-CFG-CYCLE-USES.md).
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
 51. **Snapshot and claim flow state.** [~] — bounded empty-interface claim CFG implemented; snapshot capture deferred.

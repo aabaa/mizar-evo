@@ -1,0 +1,15 @@
+# Task P5-CORE-CFG-CYCLE-USES: cycle-safe CFG use collection
+Canonical language: English; [Japanese pointer](../ja/P5-CORE-CFG-CYCLE-USES.md).
+
+- Status: frozen; full tier. Owner: [Core plan](../../mizar-core/en/00.crate_plan.md#task-index), [Core Task 48](../../mizar-core/en/todo.md).
+- Purpose: reject cyclic arena IDs during CFG local-use collection; consumers are existing use-before-assignment and ghost-flow checks. No dependency.
+- Authority: registered [P5](../../todo.md), specification [20.1.3–20.1.4](../../../spec/en/20.algorithm_and_verification.md#2013-variable-declarations-var-const), and the owner [diagnostics](../../mizar-core/en/control_flow.md#diagnostics) and [tests](../../mizar-core/en/control_flow.md#validation-and-tests).
+- Gap: `collect_formula_uses` and `collect_term_uses` recurse without detecting back edges; CoreIr reference validation permits in-range cyclic IDs.
+- Scope: `crates/mizar-core/src/control_flow.rs`, its existing crate-test fixture, paired control-flow owner documents, and the Core Task 48/P5 sequencing links.
+- Internal decision: track active IDs per recursion path. A back edge panics with an explicit cyclic formula/term invariant message, following existing validated-ID invariant failures; it must never return a partial successful collection. Shared DAG nodes are revisited, including under different binder scopes. No public API or diagnostic class is added.
+- Inventory sibling arena walkers and guards in the owner document; no general formula, binder, CoreIr-validation, deep-acyclic-stack, or statement-graph cycle-safety claim.
+- Forbidden: language/spec changes, altered existing test intent, owner-gated/G-class work, P8–P10 work, VC/proof acceptance, trace/audit coverage promotion. Existing binder ordering, occurrence provenance, diagnostic ordering and valid-input results remain unchanged.
+- Test matrix (six cases; variants remain within each case): term self/two-node cycles reject; formula self/two-node connective cycles reject; quantified guard/body back edges reject; formula-to-cyclic-term rejects; shared term DAG preserves occurrence provenance; shared formula DAG in bound/free scopes preserves free uses. Use existing `CoreFixture`, normal `CoreIr::try_new`, and public CFG construction; assert specific panic messages for corruption cases.
+- Reviews: independent specification/test intent before freeze; test sufficiency, implementation precision, volume/scope, final source/documentation consistency and scoped quality assessment after implementation.
+- Verification: `CARGO_BUILD_JOBS=4`; both `lint_policy` suites and local link/fragment checks for freeze; implementation additionally runs `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, `cargo test -p mizar-core`, and a short existing source-to-CFG consumer check selected from the crate tests. Full regression follows protocol cadence; no push.
+- Exit: matrix and focused checks pass, required reviews resolved, sibling inventory documented, and implementation committed. Core Task 48 remains partial beyond this bounded corruption fix.
