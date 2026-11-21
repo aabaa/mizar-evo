@@ -118,6 +118,7 @@ Covered top-level public items:
 - `CheckedImportedFact`
 - `ImportedFactCheckResult`
 - `check_imported_facts`
+- `check_algorithm_return_typing_schema`
 - `check_algorithm_return_typing`
 - `check_algorithm_return_single_valuedness`
 - `check_instantiated_algorithm_returns`

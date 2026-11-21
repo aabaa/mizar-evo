@@ -108,7 +108,7 @@ conclusion. Both Core guards must be object predicates on their own variables.
 Reuse the symbolic child's exact immutable-parameter/sole-Return profile and CFG
 validation; typing follows from returning that parameter (§20.1.2, §20.2.6),
 independently of E4 existence. VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor).
-Return only a boolean. No opaque value/environment interpretation, native evidence,
+The boolean API remains unchanged. `check_algorithm_return_typing_schema` takes identical inputs and invokes that check; return `Some(1_u16)` only on success, otherwise `None`. This is the Kernel-owned typing rule schema. No opaque value/environment interpretation, native evidence,
 Proof identity/policy/adoption, single-valuedness or broader credit follows.
 
 ## Bounded Original E1 Single-Valuedness

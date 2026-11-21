@@ -114,6 +114,7 @@ literal top-level public item:
 - `generate_source_algorithm_e1_typing_request`
 - `check_source_algorithm_e1_single_valuedness_request`
 - `generate_source_algorithm_e1_single_valuedness_request`: [元の E1 single-valuedness descriptor](generator.md#元の-e1-single-valuedness-descriptor).
+- `check_source_algorithm_e1_typing_request_with_schema`
 - `check_source_algorithm_e1_typing_request`: [元の E1 typing descriptor](generator.md#元の-e1-typing-descriptor)。
 
 Correspondence:

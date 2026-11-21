@@ -1418,6 +1418,29 @@ pub fn check_algorithm_return_typing(
         )
 }
 
+/// Reports the Kernel-owned typing rule schema only after checking these inputs.
+/// The scalar grants no Proof policy eligibility or adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original typing projections without a single-use representation"
+)]
+pub fn check_algorithm_return_typing_schema(
+    core: &CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: ((CoreVarId, Option<CoreAlgorithmStmtId>), &str),
+    context: &[CoreFormulaId],
+) -> Option<u16> {
+    check_algorithm_return_typing(core, target, binder, conclusion, context).then_some(1)
+}
+
 /// Checks original `forall r,s. (returns(a,r) & returns(a,s)) implies r=s`.
 /// Immutable parameter/sole-Return semantics fix both results under `object(a)`.
 /// This boolean supplies no native typing prerequisite, evidence or Proof adoption.

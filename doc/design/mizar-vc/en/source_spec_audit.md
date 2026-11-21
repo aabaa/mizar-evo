@@ -117,6 +117,7 @@ Literal top-level public items:
 - `generate_source_algorithm_e1_typing_request`
 - `check_source_algorithm_e1_single_valuedness_request`
 - `generate_source_algorithm_e1_single_valuedness_request`: [Original E1 single-valuedness descriptor](generator.md#original-e1-single-valuedness-descriptor).
+- `check_source_algorithm_e1_typing_request_with_schema`
 - `check_source_algorithm_e1_typing_request`: [original E1 typing descriptor](generator.md#original-e1-typing-descriptor).
 
 Correspondence:

@@ -2881,6 +2881,16 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
             ((var, None), "object"),
             &[parameter.ty_guard.unwrap()],
         ));
+        assert_eq!(
+            mizar_kernel::checker::check_algorithm_return_typing_schema(
+                core,
+                target,
+                var,
+                ((var, None), "object"),
+                &[parameter.ty_guard.unwrap()],
+            ),
+            Some(1)
+        );
         let generation = &request.anchor.generation_schema_version;
         let slices = source_algorithm_direct_return_slice_oracle(
             source, check, symbols, core, vcs, generation,
@@ -2993,6 +3003,19 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                 }
             }
             let changed = CoreIr::try_new(parts).unwrap();
+            if mutation != 4 {
+                assert_eq!(
+                    mizar_kernel::checker::check_algorithm_return_typing_schema(
+                        &changed,
+                        target,
+                        var,
+                        ((var, None), "object"),
+                        &[parameter.ty_guard.unwrap()],
+                    ),
+                    None,
+                    "Core/CFG mutation {mutation}"
+                );
+            }
             let expected = generate_source_algorithm_direct_return_requests(
                 source,
                 check,
@@ -3021,6 +3044,21 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                         "Core mutation {mutation} must precede selection {selected:?}"
                     );
                 }
+                assert_eq!(
+                    mizar_vc::generator::check_source_algorithm_e1_typing_request_with_schema(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        &request.anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        selected,
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core mutation {mutation} must precede schema selection {selected:?}"
+                );
                 for consume in [
                     mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
                     mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
@@ -3088,7 +3126,9 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
             CoreAlgorithmId, CoreAlgorithmStmtId, CoreFormulaId, CoreFormulaKind, CoreIr, CoreVarId,
         },
     };
-    use mizar_kernel::checker::check_algorithm_return_typing as checked;
+    use mizar_kernel::checker::{
+        check_algorithm_return_typing as checked, check_algorithm_return_typing_schema as schema,
+    };
     with_direct_return_request_fixture(|_, _, _, core, _| {
         let (id, algorithm) = core.algorithms().iter().next().unwrap();
         let statement = algorithm.statements[0];
@@ -3102,6 +3142,7 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
         let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
         let conclusion = (result, "object");
         assert!(checked(core, target, binder, conclusion, &[guard]));
+        assert_eq!(schema(core, target, binder, conclusion, &[guard]), Some(1));
         for (target, binder) in [
             (
                 (
@@ -3144,6 +3185,7 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
                 !checked(core, target, binder, conclusion, &[guard]),
                 "{target:?}, {binder:?}"
             );
+            assert_eq!(schema(core, target, binder, conclusion, &[guard]), None);
         }
         assert!(!checked(
             core,
@@ -3152,6 +3194,16 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
             (input, "object"),
             &[guard]
         ));
+        assert_eq!(
+            schema(
+                core,
+                (id, flow, statement, input, input),
+                input.0,
+                (input, "object"),
+                &[guard]
+            ),
+            None
+        );
         for conclusion in [
             (input, "object"),
             (old_result, "object"),
@@ -3160,6 +3212,7 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
             (result, ""),
         ] {
             assert!(!checked(core, target, binder, conclusion, &[guard]));
+            assert_eq!(schema(core, target, binder, conclusion, &[guard]), None);
         }
         for context in [
             vec![],
@@ -3169,6 +3222,7 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
             vec![CoreFormulaId::new(core.formulas().len())],
         ] {
             assert!(!checked(core, target, binder, conclusion, &context));
+            assert_eq!(schema(core, target, binder, conclusion, &context), None);
         }
         for (guard_id, other_guard) in [(guard, result_guard), (result_guard, guard)] {
             let CoreFormulaKind::TypePred { subject, .. } =
@@ -3202,6 +3256,7 @@ fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_
                     !checked(&changed, target, binder, conclusion, &[guard]),
                     "guard {guard_id:?}"
                 );
+                assert_eq!(schema(&changed, target, binder, conclusion, &[guard]), None);
             }
         }
     });
@@ -4317,6 +4372,20 @@ fn source_algorithm_typing_descriptor_refuses_every_other_role_and_absent_id() {
                     "algorithms.direct_return.invalid_e1_typing_request"
                 );
             }
+            assert_eq!(
+                mizar_vc::generator::check_source_algorithm_e1_typing_request_with_schema(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    selected,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e1_typing_request"
+            );
             assert_eq!(
                 mizar_proof::status::check_source_algorithm_e1_typing(
                     source,
@@ -5887,6 +5956,20 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                         }
                         for selected in [VcId::new(1), VcId::new(usize::MAX)] {
                             assert_eq!(
+                                mizar_vc::generator::check_source_algorithm_e1_typing_request_with_schema(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                            assert_eq!(
                                 mizar_proof::status::check_source_algorithm_e1_typing(
                                     source,
                                     check,
@@ -7111,13 +7194,30 @@ fn source_algorithm_e1_typing_proof_association_preserves_original_identity_and_
     use mizar_proof::status::check_source_algorithm_e1_typing as associate;
     use mizar_vc::{
         dependency_slice::DependencySliceCompleteness,
-        generator::check_source_algorithm_e1_typing_request as checked, vc_ir::VcStatus,
+        generator::{
+            check_source_algorithm_e1_typing_request as checked,
+            check_source_algorithm_e1_typing_request_with_schema as with_schema,
+        },
+        vc_ir::{VcKind, VcStatus},
     };
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
         let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
         let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
         let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
-        for snapshot in [vcs.snapshot(), snapshot_id(1)] {
+        for (snapshot, generation, schema) in [
+            (vcs.snapshot(), generation.clone(), schema.clone()),
+            (snapshot_id(1), generation.clone(), schema.clone()),
+            (
+                vcs.snapshot(),
+                GenerationSchemaVersion::new("isolated-generation"),
+                schema.clone(),
+            ),
+            (
+                vcs.snapshot(),
+                generation.clone(),
+                VcSchemaVersion::new("isolated-vc"),
+            ),
+        ] {
             let expected =
                 source_algorithm_direct_return_reference(source, check, symbols, snapshot, 0);
             let descriptor = checked(
@@ -7139,22 +7239,72 @@ fn source_algorithm_e1_typing_proof_association_preserves_original_identity_and_
                 &descriptor.0,
                 &generation,
             );
-            assert_eq!(&expected.4, raw.slice_for(VcId::new(1)).unwrap());
+            assert_eq!(&descriptor.5, raw.slice_for(VcId::new(1)).unwrap());
+            assert_eq!(descriptor.0.snapshot(), snapshot);
+            assert_eq!(descriptor.0.schema_version(), &schema);
             assert!(
                 descriptor
                     .0
                     .vcs()
                     .iter()
-                    .all(|vc| vc.status == VcStatus::Open)
+                    .all(|vc| vc.anchor.generation_schema_version == generation)
             );
+            assert_eq!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .filter(|vc| matches!(
+                        vc.kind,
+                        VcKind::AlgorithmE1Typing
+                            | VcKind::AlgorithmE1SingleValuedness
+                            | VcKind::AlgorithmE1ResultInhabitation
+                            | VcKind::AlgorithmE4NormalReturn
+                    ))
+                    .count(),
+                4
+            );
+            assert!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .all(|vc| vc.status == VcStatus::Open && vc.proof_hint.is_none())
+            );
+            assert_eq!(descriptor.0.seed_accounting(), vcs.seed_accounting());
+            assert_eq!(descriptor.5.status(), &VcStatus::Open);
+            assert_eq!(
+                descriptor.5.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(descriptor.5.requires_cache_miss());
             assert!(descriptor.0.seed_accounting().iter().any(|entry| {
                 entry.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
             }));
             for _ in 0..2 {
+                assert_eq!(
+                    with_schema(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        snapshot,
+                        &generation,
+                        &schema,
+                        VcId::new(1),
+                    )
+                    .unwrap(),
+                    (descriptor.clone(), 1)
+                );
                 let (identity, slice) =
                     associate(source, check, symbols, core, snapshot, VcId::new(1)).unwrap();
                 assert_eq!((&identity, &slice), (&expected.0, &expected.4));
-                assert_eq!(slice, descriptor.5);
+                if generation.as_str() == "mizar-vc-generation-vc53-direct-return-v1"
+                    && schema.as_str() == "mizar-vc-vcset-vc53-direct-return-v1"
+                {
+                    assert_eq!(slice, descriptor.5);
+                }
+                assert_eq!(slice.vc(), descriptor.5.vc());
                 assert_eq!(slice.status(), &VcStatus::Open);
                 assert_eq!(
                     slice.completeness(),

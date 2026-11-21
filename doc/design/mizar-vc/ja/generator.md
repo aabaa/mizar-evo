@@ -628,6 +628,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_algorithm_e1_typing_request` は先にその記述子を再生成し、上流 error と選択拒否を保つ。元の binder、returns 前件、object 結論、Core guard のみを Kernel の[限定型付け規則](../../mizar-kernel/ja/checker.md#bounded-original-e1-typing)へ射影し、成功時には変更しない六要素 tuple 全体を返し、失敗時は拒否する。E4 converse、native evidence、Proof adoption、status 変更は与えず、記述子の Open4/Deferred とその他の除外事項を保つ。
 
+`check_source_algorithm_e1_typing_request_with_schema` は同じ記述子を先に認証し、その呼出しの検査成功時だけ Kernel 所有の `u16` スキーマを取得し、`(変更しない六要素 tuple, schema)` を一体で返す。検査失敗は `algorithms.direct_return.invalid_e1_typing_check` を保つ。記述子のみの API はこれに委譲してスキーマだけを除く。この scalar は Proof policy eligibility/adoption を与えない。
+
 ### 元の E1 single-valuedness descriptor
 
 `generate_source_algorithm_e1_single_valuedness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` は authentic direct-return graph を再生成してから Open single-valuedness のみを選ぶ。元の順序付き相異なる二つの Forall result 宣言、同一 algorithm/CFG/return/input を共有するちょうど二つの AlgorithmReturns atom を前件とする含意、対応する ProgramEquals 結論、唯一の CheckerFact 入力 guard/premise を要求する。producer error は選択拒否 (`algorithms.direct_return.invalid_e1_single_valuedness_request`) に先行する。

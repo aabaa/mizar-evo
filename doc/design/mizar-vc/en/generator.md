@@ -701,6 +701,8 @@ Return `(VcSet, ContextEntryId, VcFormulaRef, VcFormulaRef, VcFormulaRef, Depend
 
 `check_source_algorithm_e1_typing_request` regenerates that descriptor first, preserving upstream errors and selection refusals. Project only its original binder, returns antecedent, object conclusion and Core guard to Kernel's [bounded typing rule](../../mizar-kernel/en/checker.md#bounded-original-e1-typing); return the complete unchanged six-tuple on success, otherwise refuse. No E4 converse, native evidence, Proof adoption or status change follows; the descriptor's Open4/Deferred and other exclusions remain unchanged.
 
+`check_source_algorithm_e1_typing_request_with_schema` authenticates the same descriptor first and obtains the Kernel-owned `u16` schema through successful checking in that call; return `(unchanged six-tuple, schema)` atomically. Failure preserves `algorithms.direct_return.invalid_e1_typing_check`. The descriptor-only API delegates and discards only the schema. This scalar supplies no Proof policy eligibility or adoption.
+
 ### Original E1 single-valuedness descriptor
 
 `generate_source_algorithm_e1_single_valuedness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` regenerates the authentic direct-return graph before selecting only Open single-valuedness. Require the original two ordered distinct Forall result declarations, implication over exactly two AlgorithmReturns atoms sharing algorithm/CFG/return/input, matching ProgramEquals conclusion, and sole CheckerFact input guard/premise. Producer errors precede selection refusal (`algorithms.direct_return.invalid_e1_single_valuedness_request`).

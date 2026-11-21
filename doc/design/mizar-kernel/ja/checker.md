@@ -53,7 +53,7 @@ Core の両 guard はそれぞれの変数の object 述語でなければなら
 symbolic child の immutable parameter・sole Return・CFG 検証を再利用する。
 型付けはその parameter を返す意味論（§20.1.2、§20.2.6）に従い、E4 の存在とは独立する。
 VC が[元の記述子](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor)を認証する。
-返すのは boolean のみ。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
+boolean API は維持する。`check_algorithm_return_typing_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の型付け規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
 single-valuedness や広範な credit は与えない。
 
 ## Bounded Original E1 Single-Valuedness
