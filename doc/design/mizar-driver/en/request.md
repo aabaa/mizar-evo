@@ -197,6 +197,31 @@ newer current session. A superseded session may still have stale diagnostic
 data or retained explanation handles, but it must not publish those outputs as
 current.
 
+## Native runtime-context definition
+
+P25 defines inputs for a later native producer and LSP host; **G14 approval is pending and required before code**. These are internal design recommendations, not active defaults or host/API implementation. Existing explicit callers and approved active-run cache binding retain their contracts.
+
+### Identity and same-request association
+
+Driver obtains runtime identity at the real bootstrap, using the existing [running-image acquisition](frontend_adapter.md#native-disk-cache-preparation): Linux executed-image bytes plus participating-code mapping evidence and the existing BLAKE3 derive-key domain. For the bounded native profile, recommend `ToolchainInfo` containing `mizar-driver/running-native-image/v1:` followed by that producer's lowercase hex digest. Use the same value in the produced plan and captured dependency inputs; never derive it from package version, lock metadata, environment claims or a caller label. Unsupported platform/linkage or missing evidence leaves this profile unavailable.
+This identifies the running workspace rlib closure only. Recorded release SemVer, package constraints, selected pin, external backend builds and release authentication remain distinct under Build's [toolchain boundary](../../mizar-build/en/planner.md#toolchain-constraint-boundary). Equal runtime identities prove none of those facts and cannot satisfy a pin or select W0306 behavior. The existing cache compatibility operands remain unchanged; no new cross-image equivalence is defined.
+
+The later producer uses the actual validated plan's verifier/build aggregates with [workspace_config_content_hash](../../mizar-build/en/planner.md#current-package-configuration-content-fingerprint) for `VerifierConfigInput.hash`. This explicitly selects the package-content profile, not a universal effective-verifier digest. Preserve the existing encoding and package-local defaults/computation_replay; do not substitute a Proof fingerprint or hash raw TOML. Runtime policy, invocation overrides, backend selection, seeds and budgets remain separate owner inputs. A later profile consuming them needs their complete association before admission; no config-to-policy mapping is introduced here.
+Acquire inputs once for one immutable request: explicit native root acquisition, validated plan, its produced lock/config identities, actual runtime identity and original captured source tuples must correspond. The planner owns the [workspace-only projection](../../mizar-build/en/planner.md#native-workspace-only-context-inputs). Reconstruct after configuration/runtime/dependency selection changes; reject foreign plan/capture association under existing guards. Digests do not prove fresh files, atomic acquisition, live session/publication permission or complete later footprints.
+
+### Default LSP profile recommendation
+
+Recommend `BuildProfile.name = "lsp"`, normal dependency selection and the existing `StageConfig::frontend` composition through Frontend only, with no external artifact roots. Use all discovered workspace members and their genuine source inputs; OpenBuffer overlays retain existing capture/version/currentness rules. The profile name is routing metadata, never authority to synthesize phase inputs.
+This default observes source/frontend diagnostics; it does not claim a fully verified build or enable Proof/replay, artifact emission, persistent cache preparation or external backends. Existing explicit richer profiles remain separate. No new diagnostic or fallback success is defined: unavailable runtime/workspace input must stay unavailable to this profile and must not be replaced by placeholders or an empty context. Later producer/host contracts must freeze their existing unavailable/error transport and lifecycle tests.
+
+### G14 decisions and staged handoff
+
+- **Q1 — snapshot runtime identity:** recommend the existing image producer's versioned string above; alternative: wait for authenticated distribution/release identity. The recommendation adapts approved running-image provenance to snapshot input; neither option authenticates a release or changes Cache compatibility.
+- **Q2 — LSP default:** recommend frontend-only `lsp` with normal dependencies and optional cache disabled; alternative: require explicit profile selection until a broader effective-policy/dependency producer exists. No full-verification default is selected here.
+- **Q3 — initial dependency scope:** recommend the strict Build-owned workspace-only projection; alternative: delay bootstrap until authenticated registry manifests/artifacts exist. No registry default metadata or unknown footprint can stand in for those producers.
+
+G14 records owner choices before Muse dispatches Wave 4. Freeze the staged producer first with genuine positive/refusal inputs, exact same-request associations and reuse of existing identity/config/lock matrices; native executable-host activation is a separate later unit with real stdio and lifecycle evidence. This definition supplies no code, host activation, policy integration, semantic coverage or build-completion credit.
+
 ## Snapshot Capture
 
 The driver builds a `mizar-session::SnapshotInput` from already-loaded source

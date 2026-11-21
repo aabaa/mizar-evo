@@ -287,6 +287,18 @@ downstream code は package-scoped phase では package-local setting を使う�
 厳密な UTF-8 preimage は `mizar-build/package-config-content/v1`、一つの LF、末尾が一つの LF の canonical root JSON text であり、既存 Session `hash_text` の source-text-domain/length/BLAKE3 構成へ渡す。これは Build content profile であり、raw hash primitive・Artifact hash class・Cache key domain・完全な verifier_config_hash producer・Proof policy fingerprint ではない。現在の全 field が参加し、将来の field/solver variant は profile 拡張の review を要する。既存 parser による省略 default と明示 default の実効内容は等しい。
 独立した literal golden が format/frame を固定する。test は各 scalar・solver・u32 全値・曖昧 string・package 対応・独立リスト順・重複数・不一致/空リストを扱う。実 native manifest と clean parsed plan から得る metadata digest を genuine snapshot/config cache carrier に渡し、config-only 変更と実 protected output/NoKey を確認する。他の fixture context に真正性を認めず、registry default metadata は認証済 dependency 設定ではない。完全な active config/context、caller plan/capture の完全な出所・currentness 対応、policy/invocation/replay、toolchain/pin、runtime/cache/Proof 受理、native editor bootstrap は保留する。
 
+## Native workspace-only context inputs
+
+P25 の後続 native producer は G14 承認後に限りこの projection を使う。ここでは planner/host の挙動を変えない。[runtime/profile selection](../../mizar-driver/en/request.md#native-runtime-context-definition) は Driver、取得・検証と既存 hash profiles は Build が所有する。
+
+実際の `read_native_workspace_inputs` と normal dependency selection による成功した `produce_build_plan` を必要とする。使用 plan の全 package row は取得・検証済み workspace member と、その正確な workspace-source lock assignment に対応し、既存の相対 path 検査も満たす。registry 由来 row は edge が inactive でも当初 profile を利用不能にする。合成された default configuration は認証済み manifest 内容ではない。未使用 registry lock entry だけでは plan row や artifact を供給しない。
+推移的なものを含む全 active normal edges はその member set 内に解決する。dev records と normal selection での inactivity を維持し、plan の書換え、settings の破棄、LSP 用 dev edge 有効化は行わない。workspace dev dependencies は metadata として許すが、registry row は上記の全 plan 条件を満たさない。既存の検証失敗と順序を再利用し、registry fetch、lock 書換え、package semantics、公開 diagnostic を追加しない。
+
+`DependencyInputSet.lockfile_hash` は実際の完全な typed lock（記録された toolchain metadata を含む）への既存 `lockfile_content_hash` で生成する。configuration identity は plan の独立した 2 aggregates 全体への既存 `workspace_config_content_hash` とし、filter/merge や意味の並替えはしない。Driver は真正な running identity を別途 plan と snapshot に渡す。これらの hash は保持された内容の識別であり、現在の file、pin 充足、実効 Proof policy を証明しない。
+この閉じた source-workspace profile の `DependencyInputSet.artifacts` は実際に空である。全依存は外部 artifact reference ではなく取得した workspace configuration/lock と captured sources によって表現される。これは profile admission の事実であり、空 list からの推論ではない。member 不足、registry row、必要な外部 artifact、source capture 不足は context を利用不能にする。依存を落として eligibility を作らない。phase ごとの import index、summary、footprint は各 producer が所有し、空 snapshot artifacts は zero-import/cache/proof/acceptance 権限を与えない。
+
+後続実装 tests は実 multi-member/transitive workspace positive、独立した parsed-plan/hash oracle、config-only change、dev-only metadata、妥当な未使用 lock record を組み合わせる。registry/foreign/missing-input の妥当な対照は artifact を捏造せず当該 profile を拒否する。既存 parser/planner diagnostics を維持する。registry/release/runtime policy integration は延期のままとし、package-local computation_replay をそのまま運び、replay の承認とはしない。
+
 ## Planning Algorithm
 
 1. `mizar.workspace` または `mizar.pkg` から workspace mode を発見する。
