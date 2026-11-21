@@ -9782,7 +9782,16 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
         SourceVariableTypeRadix as T,
     };
     use crate::symbols::{source_proof_scope_maps, validate_source_proof_occurrences};
-    for (text, declarations, targets, captures, binding_paths, reference_paths, body_positions) in [
+    for (
+        text,
+        declarations,
+        targets,
+        captures,
+        binding_paths,
+        reference_paths,
+        body_positions,
+        origins,
+    ) in [
         (
             "reserve x for set; reserve y,z for object; theorem B: x = x proof let x be object; thus x = x; thus (x,y) |-> x = y |-> x |-> y; thus (x |-> x) = (x |-> y); thus x = y; end;",
             vec![
@@ -9826,6 +9835,7 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                 vec![4],
             ],
             vec![6, 2, 2, 2, 2],
+            vec![(3, 2), (1, 1), (1, 1), (3, 2), (3, 2), (3, 2)],
         ),
         (
             "reserve x,y for set; theorem B: x = y proof deffunc F(n be object) -> set equals x |-> {x,y}; thus x = y; end;",
@@ -9849,6 +9859,7 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                 vec![4],
             ],
             vec![2],
+            vec![(0, 0)],
         ),
         (
             "reserve x,y for set; reserve z for object; lemma B: (z,x,y) |-> {x,y,z} = x;",
@@ -9866,6 +9877,7 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
             vec![vec![], vec![], vec![], vec![8], vec![8], vec![8]],
             vec![vec![8], vec![8], vec![8], vec![]],
             vec![8],
+            vec![(2, 1), (0, 0), (1, 0)],
         ),
     ] {
         for text in [
@@ -9926,6 +9938,11 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                     .collect::<Vec<_>>(),
                 body_positions
             );
+            let mut type_nodes = ast
+                .node_views()
+                .filter(|node| node.kind() == &SurfaceNodeKind::TypeExpression)
+                .collect::<Vec<_>>();
+            type_nodes.sort_by_key(|node| node.range().start);
             if let Some(proof) = ast
                 .node_views()
                 .find(|node| matches!(node.kind(), SurfaceNodeKind::ProofBlock))
@@ -9959,6 +9976,35 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                 assert!(actual.statements().is_empty());
                 validate_source_proof_occurrences(&arena, &env, &actual).unwrap();
                 let (scopes, _) = source_proof_scope_maps(&arena, &env, &actual).unwrap();
+                assert_eq!(actual.function_binders().len(), binders.len());
+                for (candidate, binder) in actual.function_binders().iter().zip(&binders) {
+                    let heads = binder.children()[..binder.children().len() - 1]
+                        .iter()
+                        .copied()
+                        .filter(|id| {
+                            ast.node_view(*id)
+                                .unwrap()
+                                .as_token()
+                                .is_some_and(|token| token.kind == SurfaceTokenKind::Identifier)
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(candidate.node(), binder.id());
+                    assert_eq!(candidate.heads(), heads);
+                    let head_ordinal = expected_nodes
+                        .iter()
+                        .position(|node| *node == heads[0])
+                        .unwrap();
+                    let mut incoming_path = binding_paths[head_ordinal].clone();
+                    incoming_path.pop();
+                    assert_eq!(candidate.incoming_scope().path(), incoming_path);
+                    assert_eq!(candidate.body(), *binder.children().last().unwrap());
+                    assert_eq!(candidate.incoming_scope(), &scopes[&binder.id()]);
+                    assert_eq!(
+                        scopes[&candidate.body()].path().len(),
+                        candidate.incoming_scope().path().len() + 1
+                    );
+                }
+                let mut fresh_origins = origins.iter();
                 for (ordinal, (binding, (_, _, kind, radix))) in
                     actual.bindings().iter().zip(&declarations).enumerate()
                 {
@@ -9969,6 +10015,23 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                     assert_eq!(binding.range(), token.range());
                     assert_eq!(binding.spelling(), token.as_token().unwrap().text.as_ref());
                     assert_eq!(binding.kind(), *kind);
+                    if *kind == B::FunctionBinder {
+                        let (outer, physical) = *fresh_origins.next().unwrap();
+                        let physical = type_nodes[physical];
+                        assert_eq!(
+                            binding.function_binder_source(),
+                            Some((actual.bindings()[outer].id(), physical.id()))
+                        );
+                        assert_eq!(
+                            &text[physical.range().start..physical.range().end],
+                            match radix {
+                                T::Set => "set",
+                                T::Object => "object",
+                            }
+                        );
+                    } else {
+                        assert!(binding.function_binder_source().is_none());
+                    }
                     assert_eq!(binding.scope().path(), binding_paths[ordinal]);
                     let mut token_path = binding_paths[ordinal].clone();
                     if *kind == B::FunctionBinder {
@@ -10139,6 +10202,11 @@ fn fresh_function_binders_inherit_prior_defaults_and_nested_head_types() {
             vec![0, 0, 3, 1],
         ),
         (
+            "reserve x for set; theorem B: x = x proof let x be set; thus x |-> x |-> x = x; end;",
+            vec![T::Set, T::Set, T::Set],
+            vec![0, 0, 3, 1],
+        ),
+        (
             "reserve x for set; theorem B: x = x proof let x be object; thus x |-> x |-> x = x; end;",
             vec![T::Object, T::Object, T::Object],
             vec![0, 0, 3, 1],
@@ -10152,6 +10220,29 @@ fn fresh_function_binders_inherit_prior_defaults_and_nested_head_types() {
         ] {
             let actual = resolve(SourceVariableScopeInput::new(&ast, &module, &env)).unwrap();
             assert_eq!(actual.bindings().len(), 4);
+            let mut physical_types = ast
+                .node_views()
+                .filter(|node| node.kind() == &SurfaceNodeKind::TypeExpression)
+                .collect::<Vec<_>>();
+            physical_types.sort_by_key(|node| node.range().start);
+            let physical = physical_types[usize::from(!text.contains("let x;"))];
+            assert_eq!(
+                actual.bindings()[2].function_binder_source(),
+                Some((actual.bindings()[1].id(), physical.id()))
+            );
+            assert_eq!(
+                actual.bindings()[3].function_binder_source(),
+                Some((actual.bindings()[2].id(), physical.id()))
+            );
+            assert!(actual.bindings()[1].function_binder_source().is_none());
+            if text.contains("let x be set") {
+                assert_ne!(physical_types[0].id(), physical_types[1].id());
+                assert_ne!(physical_types[0].range(), physical_types[1].range());
+                assert_eq!(
+                    &text[physical_types[0].range().start..physical_types[0].range().end],
+                    &text[physical_types[1].range().start..physical_types[1].range().end]
+                );
+            }
             assert_eq!(
                 actual.bindings()[0].declared_type().unwrap().radix(),
                 T::Set

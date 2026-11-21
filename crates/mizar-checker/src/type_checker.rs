@@ -21359,22 +21359,22 @@ impl SourceVariableSemanticsChecker {
                     BindingContextLayer::Expression,
                 ),
                 K::TermExpression if function_metadata => {
-                    let binder = source
-                        .arena()
-                        .node(source.resolved_node_for(*parent).ok_or_else(invalid)?)
+                    let candidate = scope
+                        .function_binders()
+                        .iter()
+                        .find(|candidate| candidate.body() == *node)
                         .ok_or_else(invalid)?;
-                    if binder.kind() != &K::BinderExpression
-                        || binder.children().last() != Some(&resolved)
-                        || binder.children().len() < 3
-                    {
+                    if candidate.node() != *parent || candidate.incoming_scope() != parent_scope {
                         return Err(invalid());
                     }
-                    let heads = binder.children()[..binder.children().len() - 2]
-                        .iter()
-                        .filter(|head| {
-                            matches!(source.arena().node(**head).map(|node| node.kind()),
-                                Some(K::Token(token)) if token.kind == SurfaceTokenKind::Identifier)
-                        });
+                    let binder = source
+                        .arena()
+                        .node(
+                            source
+                                .resolved_node_for(candidate.node())
+                                .ok_or_else(invalid)?,
+                        )
+                        .ok_or_else(invalid)?;
                     let declarations = scope
                         .bindings()
                         .iter()
@@ -21383,13 +21383,27 @@ impl SourceVariableSemanticsChecker {
                                 && binding.scope() == local
                         })
                         .collect::<Vec<_>>();
-                    if heads.copied().map(Some).ne(declarations
+                    if candidate
+                        .heads()
                         .iter()
-                        .map(|binding| source.resolved_node_for(binding.node())))
+                        .copied()
+                        .ne(declarations.iter().map(|binding| binding.node()))
                     {
                         return Err(invalid());
                     }
-                    function_heads.extend(declarations.iter().map(|binding| binding.node()));
+                    for declaration in declarations {
+                        let (outer, type_node) =
+                            declaration.function_binder_source().ok_or_else(invalid)?;
+                        scope.bindings().get(outer.index()).ok_or_else(invalid)?;
+                        let physical_type = source
+                            .arena()
+                            .node(source.resolved_node_for(type_node).ok_or_else(invalid)?)
+                            .ok_or_else(invalid)?;
+                        if physical_type.kind() != &K::TypeExpression {
+                            return Err(invalid());
+                        }
+                        function_heads.insert(declaration.node());
+                    }
                     let SourceAnchor::Range(source_range) = binder.origin().anchor() else {
                         return Err(invalid());
                     };

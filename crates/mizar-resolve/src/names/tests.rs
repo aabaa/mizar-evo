@@ -7640,7 +7640,7 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
     };
     let source = source_id();
     let module = module_id("pkg", "fresh_replay");
-    let text = "reserve x,y for set; theorem B: (x,y) |-> {x,y} = x;";
+    let text = "reserve x for set; reserve y for set; theorem B: (x,y) |-> {x,y} = x;";
     let ast = proof_binding_source_ast(source, text);
     let arena = SurfaceResolvedArena::lower(&ast, &module).unwrap();
     let shells = DeclarationShellCollector::new(&ast, &module).collect();
@@ -7658,7 +7658,22 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
         "fresh source declarations precede mutation probes"
     );
     validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
-    for mutation in 0..9 {
+    let mut type_nodes = ast
+        .node_views()
+        .filter(|node| node.kind() == &SurfaceNodeKind::TypeExpression)
+        .collect::<Vec<_>>();
+    type_nodes.sort_by_key(|node| node.range().start);
+    assert_eq!(type_nodes.len(), 2);
+    assert_ne!(type_nodes[0].id(), type_nodes[1].id());
+    assert_eq!(
+        &text[type_nodes[0].range().start..type_nodes[0].range().end],
+        &text[type_nodes[1].range().start..type_nodes[1].range().end]
+    );
+    assert_eq!(
+        actual.bindings[2].function_binder_source(),
+        Some((actual.bindings[0].id, type_nodes[0].id()))
+    );
+    for mutation in 0..18 {
         let mut changed = actual.clone();
         match mutation {
             0 => changed.references[0].binding = changed.bindings[0].id,
@@ -7673,6 +7688,27 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
             6 => changed.bindings.swap(2, 3),
             7 => changed.bindings[2].range.start += 1,
             8 => changed.module_id = module_id("pkg", "foreign"),
+            9 => changed.function_binders[0].node = changed.function_binders[0].body,
+            10 => changed.function_binders[0].body = changed.function_binders[0].node,
+            11 => changed.function_binders[0].heads.swap(0, 1),
+            12 => changed.function_binders[0].incoming_scope = changed.bindings[2].scope.clone(),
+            13 => {
+                changed.bindings[2]
+                    .function_binder_source
+                    .as_mut()
+                    .unwrap()
+                    .0 = changed.bindings[1].id
+            }
+            14 => {
+                changed.bindings[2]
+                    .function_binder_source
+                    .as_mut()
+                    .unwrap()
+                    .1 = type_nodes[1].id()
+            }
+            15 => changed.bindings[2].function_binder_source = None,
+            16 => changed.function_binders.clear(),
+            17 => changed.source_id = distinct_source_ids().1,
             _ => unreachable!(),
         }
         assert!(
@@ -7687,6 +7723,10 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
         text.replace("for set", "for object"),
         text.replace("(x,y) |-> {x,y}", "x |-> y |-> {x,y}"),
         text.replace('x', "z"),
+        text.replace(
+            "reserve x for set; reserve y for set",
+            "reserve y for set; reserve x for set",
+        ),
     ] {
         let changed_ast = proof_binding_source_ast(source, &text);
         let changed_arena = SurfaceResolvedArena::lower(&changed_ast, &module).unwrap();
@@ -7710,6 +7750,54 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
         assert!(
             validate_source_proof_occurrences(&changed_arena, &changed_symbols, &actual).is_err()
         );
+    }
+    // Equal copied payloads cannot authenticate either the immediate lexical
+    // declaration or the physical type source selected through it.
+    for declaration in ["let x;", "let x be set;"] {
+        let text = format!(
+            "reserve x for set; theorem B: x = x proof {declaration} thus x |-> x |-> x = x; end;"
+        );
+        let ast = proof_binding_source_ast(source, &text);
+        let arena = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let symbols =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("fresh_replay"))
+                .collect(&module)
+                .into_env();
+        let actual = SourceVariableScopeResolver::resolve_proof_occurrences(
+            SourceVariableScopeInput::new(&ast, &module, &symbols),
+        )
+        .unwrap();
+        validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
+        assert_eq!(actual.bindings.len(), 4);
+        let physical = actual.bindings[3].function_binder_source.unwrap().1;
+        assert_eq!(
+            actual.bindings[3].function_binder_source,
+            Some((actual.bindings[2].id, physical))
+        );
+        let mut changed = actual.clone();
+        changed.bindings[3]
+            .function_binder_source
+            .as_mut()
+            .unwrap()
+            .0 = actual.bindings[1].id;
+        assert!(source_proof_scope_maps(&arena, &symbols, &changed).is_err());
+        if declaration == "let x be set;" {
+            let reserve_type = ast
+                .node_views()
+                .filter(|node| node.kind() == &SurfaceNodeKind::TypeExpression)
+                .min_by_key(|node| node.range().start)
+                .unwrap();
+            assert_ne!(physical, reserve_type.id());
+            changed = actual.clone();
+            changed.bindings[3]
+                .function_binder_source
+                .as_mut()
+                .unwrap()
+                .1 = reserve_type.id();
+            assert!(source_proof_scope_maps(&arena, &symbols, &changed).is_err());
+        }
+        validate_source_proof_occurrences(&arena, &symbols, &actual).unwrap();
     }
     for mutation in 0..3 {
         let mut builder = SurfaceAstBuilder::new(source);

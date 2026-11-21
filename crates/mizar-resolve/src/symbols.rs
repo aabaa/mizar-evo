@@ -191,6 +191,7 @@ pub fn validate_source_proof_occurrences(
         scope.source_id() == actual.source_id()
             && scope.module_id() == actual.module_id()
             && scope.bindings() == actual.bindings()
+            && scope.function_binders() == actual.function_binders()
             && scope.references() == actual.references()
     };
     if crate::names::SourceVariableScopeResolver::resolve_proof_occurrences(

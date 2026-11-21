@@ -4941,6 +4941,7 @@ pub struct SourceVariableBinding {
     declared_type: Option<SourceVariableType>,
     arity: Option<usize>,
     captures: Vec<SourceVariableBindingId>,
+    function_binder_source: Option<(SourceVariableBindingId, SurfaceNodeId)>,
 }
 
 impl SourceVariableBinding {
@@ -4990,6 +4991,12 @@ impl SourceVariableBinding {
     #[must_use]
     pub fn declared_type(&self) -> Option<&SourceVariableType> {
         self.declared_type.as_ref()
+    }
+
+    /// Returns a fresh function head's selected outer binding and physical type node.
+    #[must_use]
+    pub const fn function_binder_source(&self) -> Option<(SourceVariableBindingId, SurfaceNodeId)> {
+        self.function_binder_source
     }
 
     /// Returns the optional inline arity.
@@ -5363,12 +5370,48 @@ impl<'a> SourceVariableScopeInput<'a> {
     }
 }
 
+/// Source-only function Binder shape collected before fresh head introduction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceFunctionBinderCandidate {
+    node: SurfaceNodeId,
+    body: SurfaceNodeId,
+    heads: Vec<SurfaceNodeId>,
+    incoming_scope: LocalTermScope,
+}
+
+impl SourceFunctionBinderCandidate {
+    /// Returns the actual Binder root.
+    #[must_use]
+    pub const fn node(&self) -> SurfaceNodeId {
+        self.node
+    }
+
+    /// Returns the final body term node.
+    #[must_use]
+    pub const fn body(&self) -> SurfaceNodeId {
+        self.body
+    }
+
+    /// Returns the actual identifier heads in source order.
+    #[must_use]
+    pub fn heads(&self) -> &[SurfaceNodeId] {
+        &self.heads
+    }
+
+    /// Returns the construction scope before the fresh heads are introduced.
+    #[must_use]
+    pub const fn incoming_scope(&self) -> &LocalTermScope {
+        &self.incoming_scope
+    }
+}
+
 /// Source-derived, authenticated variable scope and payload output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedVariableScope {
     source_id: SourceId,
     module_id: ModuleId,
     bindings: Vec<SourceVariableBinding>,
+    function_binders: Vec<SourceFunctionBinderCandidate>,
     references: Vec<SourceVariableReference>,
     thesis: Option<SourceVariableFormula>,
     statements: Vec<SourceVariableStatement>,
@@ -5391,6 +5434,12 @@ impl ResolvedVariableScope {
     #[must_use]
     pub fn bindings(&self) -> &[SourceVariableBinding] {
         &self.bindings
+    }
+
+    /// Returns source-only function Binder candidates in root source order.
+    #[must_use]
+    pub fn function_binders(&self) -> &[SourceFunctionBinderCandidate] {
+        &self.function_binders
     }
 
     /// Returns references in deterministic source order.
@@ -5826,6 +5875,7 @@ impl SourceVariableScopeResolver {
                 }),
                 arity: None,
                 captures: Vec::new(),
+                function_binder_source: None,
             });
             visibility.push(visible_after);
         }
@@ -5869,6 +5919,7 @@ impl SourceVariableScopeResolver {
             source_id: source.source_id(),
             module_id: source.module().clone(),
             bindings,
+            function_binders: Vec::new(),
             references,
             thesis: None,
             statements: Vec::new(),
@@ -5927,6 +5978,7 @@ impl SourceVariableScopeResolver {
             source_id: input.ast.source_id,
             module_id: input.module_id.clone(),
             bindings: state.bindings,
+            function_binders: state.function_binders,
             references: state.resolved_references,
             thesis: None,
             statements: Vec::new(),
@@ -5955,6 +6007,7 @@ impl SourceVariableScopeResolver {
             source_id: input.ast.source_id,
             module_id: input.module_id.clone(),
             bindings: state.bindings,
+            function_binders: state.function_binders,
             references: state.resolved_references,
             thesis: None,
             statements: Vec::new(),
@@ -5980,6 +6033,7 @@ impl SourceVariableScopeResolver {
             source_id: input.ast.source_id,
             module_id: input.module_id.clone(),
             bindings: state.bindings,
+            function_binders: state.function_binders,
             references: state.resolved_references,
             thesis: None,
             statements: Vec::new(),
@@ -6015,6 +6069,7 @@ struct VariableResolveState<'a> {
     parents: BTreeMap<SurfaceNodeId, SurfaceNodeId>,
     declarations: Vec<VariableDeclSite>,
     bindings: Vec<SourceVariableBinding>,
+    function_binders: Vec<SourceFunctionBinderCandidate>,
     binding_by_binder: BTreeMap<SurfaceNodeId, SourceVariableBindingId>,
     binding_by_owner: BTreeMap<SurfaceNodeId, SourceVariableBindingId>,
     binding_ids_by_owner: BTreeMap<SurfaceNodeId, Vec<SourceVariableBindingId>>,
@@ -6045,6 +6100,7 @@ impl<'a> VariableResolveState<'a> {
             parents: scopes.1,
             declarations: Vec::new(),
             bindings: Vec::new(),
+            function_binders: Vec::new(),
             binding_by_binder: BTreeMap::new(),
             binding_by_owner: BTreeMap::new(),
             binding_ids_by_owner: BTreeMap::new(),
@@ -6122,9 +6178,11 @@ impl<'a> VariableResolveState<'a> {
                     {
                         return Err(SourceVariableScopeError::InvalidShape);
                     }
-                    let body_scope = self.scope_of(body.id());
+                    let body = body.id();
+                    let body_scope = self.scope_of(body);
                     let head = &children[..children.len() - 2];
                     let mut names = BTreeSet::new();
+                    let mut heads = Vec::new();
                     for (index, child) in head.iter().enumerate() {
                         let binder = self.view(*child)?;
                         let token = binder
@@ -6154,6 +6212,7 @@ impl<'a> VariableResolveState<'a> {
                         {
                             return Err(SourceVariableScopeError::InvalidShape);
                         }
+                        heads.push(binder.id());
                         self.push_decl(VariableDeclSite {
                             kind: SourceVariableBindingKind::FunctionBinder,
                             owner: id,
@@ -6165,6 +6224,12 @@ impl<'a> VariableResolveState<'a> {
                             arity: None,
                         });
                     }
+                    self.function_binders.push(SourceFunctionBinderCandidate {
+                        node: id,
+                        body,
+                        heads,
+                        incoming_scope: self.scope_of(id),
+                    });
                 }
                 SurfaceNodeKind::ReserveItem => {
                     if !self
@@ -6431,7 +6496,16 @@ impl<'a> VariableResolveState<'a> {
                 binding_kind_key(decl.kind),
             )
         });
+        self.function_binders.sort_by_key(|candidate| {
+            let range = self
+                .ast
+                .node_view(candidate.node)
+                .expect("collected Binder")
+                .range();
+            (range.start, range.end, candidate.node.index())
+        });
         for (ordinal, decl) in self.declarations.iter().enumerate() {
+            let mut function_binder_source = None;
             let declared_type = if decl.kind == SourceVariableBindingKind::FunctionBinder {
                 if self
                     .declarations
@@ -6464,18 +6538,30 @@ impl<'a> VariableResolveState<'a> {
                     return Err(SourceVariableScopeError::InvalidShape);
                 }
                 let outer = &self.bindings[outer.index()];
-                Some(
+                let typed =
+                    if kind == SourceVariableBindingKind::Let && outer.declared_type.is_none() {
+                        self.candidate_reservation(&decl.spelling, outer.range.start)
+                            .ok_or(SourceVariableScopeError::InvalidShape)?
+                    } else {
+                        outer
+                    };
+                let origin = if kind == SourceVariableBindingKind::FunctionBinder {
                     outer
+                        .function_binder_source
+                        .map(|(_, origin)| origin)
+                        .ok_or(SourceVariableScopeError::InvalidShape)?
+                } else {
+                    self.parents
+                        .get(&typed.node)
+                        .and_then(|segment| direct_type_expression(self.ast, *segment))
+                        .map(|ty| ty.id())
+                        .ok_or(SourceVariableScopeError::InvalidShape)?
+                };
+                function_binder_source = Some((outer.id, origin));
+                Some(
+                    typed
                         .declared_type
                         .clone()
-                        .or_else(|| {
-                            (kind == SourceVariableBindingKind::Let)
-                                .then(|| {
-                                    self.candidate_reservation(&decl.spelling, outer.range.start)
-                                        .and_then(|reservation| reservation.declared_type.clone())
-                                })
-                                .flatten()
-                        })
                         .ok_or(SourceVariableScopeError::InvalidShape)?,
                 )
             } else {
@@ -6493,6 +6579,7 @@ impl<'a> VariableResolveState<'a> {
                 declared_type,
                 arity: decl.arity,
                 captures: Vec::new(),
+                function_binder_source,
             });
             self.binding_by_binder.insert(decl.binder, id);
             self.binding_by_owner.entry(decl.owner).or_insert(id);
@@ -7149,6 +7236,7 @@ impl<'a> VariableResolveState<'a> {
             source_id: self.ast.source_id,
             module_id: self.module.clone(),
             bindings: self.bindings,
+            function_binders: self.function_binders,
             references: self.resolved_references,
             thesis,
             statements,

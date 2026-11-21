@@ -18,6 +18,7 @@ Given/Consider の束縛と条件・子ブロック内の参照を所属ブロ�
 参照の取得のみで、tuple の型検査や内包表記の形成判定は行わない。
 
 occurrence 専用の theorem/lemma 範囲にある数学的 Binder head は、末尾追加した `SourceVariableBindingKind::FunctionBinder` と body 内だけの lexical boundary を使う。head token 自体は入力側の source scope を保ち、宣言と body は新しい body scope を使う。実 head token の順序と fresh 宣言 identity を保ち、全 head の型を一意な先行する外側 let/reserve から取得してから同時に導入する。入れ子では fresh head の型を引き継ぎ、body 参照は最も近い head、自由参照は実際の外側 binding を選ぶ。
+`ResolvedVariableScope::function_binders()` は source 順の `SourceFunctionBinderCandidate` の root・順序付き head token・入力 scope・最終 body を保持する。`SourceVariableBinding::function_binder_source()` は fresh head が選んだ外側 binding と最終的な物理 TypeExpression を返す。暗黙 Let の Reserve 型と入れ子 head は元の Let/Reserve 型 node を保ち、この対応から carrier や関数形成の根拠は得ない。
 DefinitionBlock 除外と既存 Inline capture profile を保つ。未対応の algorithm capture/reconstruction と reflection 位置を fresh mode へ切り替えない。occurrence receipt の thesis/statements は空のままとし、従来の `resolve` は所有範囲の Binder を body に平坦化せず拒否する。carrier の認証・期待型だけからの推論・関数形成・checker の意味上の credit は別段階とする。
 
 > 正本は英語です。英語版: [../en/names.md](../en/names.md)。

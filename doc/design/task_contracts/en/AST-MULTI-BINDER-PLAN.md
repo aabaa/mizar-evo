@@ -12,7 +12,7 @@ Classification: source_drift/test_gap for Binder syntax, source identities, cert
 
 MBP-01 has a bounded set/grouped/body-root syntax increment; remaining host/pattern preparation stays open. MBP-03 can inventory pinned library inputs and MBP-08 can prepare descriptors independently; their acceptance/emission still waits for authentic producers.
 Before implementing a row, freeze its source forms, real producer/consumer route and stage-specific tests under the named existing task; these are slices, not replacement owners or new public APIs.
-MBP-02 includes [metadata](CHECKER257-FRESH-FUNCTION-BINDING-CONTEXTS.md) and [references](CHECKER257-SCOPED-FUNCTION-REFERENCES.md); next: [source correspondence](RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
+MBP-02 includes [metadata](CHECKER257-FRESH-FUNCTION-BINDING-CONTEXTS.md) and [references](CHECKER257-SCOPED-FUNCTION-REFERENCES.md) and [source correspondence](RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
 Generic AST-TYPE declarations and RESOLVE33 citations do not supply Binder scope records.
 
 | Slice | Owner / existing task | Required predecessor or external input | Deliverable / exit and test mapping |

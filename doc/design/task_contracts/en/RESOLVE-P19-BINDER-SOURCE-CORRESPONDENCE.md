@@ -1,6 +1,6 @@
 # Task RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE: fresh Binder source correspondence
 Canonical language: English; [Japanese pointer](../ja/RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
-Status: frozen bounded unit; MBP-02 remains partial. Tier: full.
+Status: bounded implementation; MBP-02 remains partial. Tier: full.
 Owners: [Resolver plan](../../mizar-resolve/en/00.crate_plan.md), [Checker plan](../../mizar-checker/en/00.crate_plan.md); consumer: existing lexical BindingEnv projection.
 Purpose: retain authenticated ordered head/body candidates and exact outer declaration/type-source correspondence in the existing admitted mathematical profile.
 Dependencies: completed [fresh resolution](RESOLVE257-FRESH-FUNCTION-BINDERS.md), [BindingEnv metadata](CHECKER257-FRESH-FUNCTION-BINDING-CONTEXTS.md), and [scoped references](CHECKER257-SCOPED-FUNCTION-REFERENCES.md); these partially implement [MBP-02](AST-MULTI-BINDER-PLAN.md), without formation.

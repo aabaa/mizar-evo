@@ -728,6 +728,7 @@ labels/tests.rs に source_theorem_module_summary_candidate_preserves_real_rows_
 負例では実 import/reexport/definition/local lexical/operator/notation、未対応 formula/proof、duplicate declaration、recovered frontend、実 foreign collection の既存下位結果を先に確認する。augmented env は既存下位 API の実拒否だけを検査する。SymbolCollectionResult には呼出可能な augmented-env constructor がないため捏造せず、wrapper の動的 coverage と主張しない。実 retained input の missing AST/diagnostics/stale source/map/locals/preprocessing/省略 import stub 改変は負例専用で拒否を要求する。supported/unsupported 混在の全体拒否と private lexical 省略が不在根拠にならないことを検査する。正例 AST/env/row/summary/Accepted/Hit/Complete を捏造せず、到達不能 guard の動的検査を主張しない。
 
 ## Original source proof occurrences validation
+認証対象は順序付き Binder candidate と、各 fresh head の外側宣言・物理的な型 source の対応も含む。元 source からの全行比較で一つでも異なれば拒否し、型や形成の根拠へ昇格させない。
 `validate_source_proof_occurrences(&SurfaceResolvedArena, &SymbolEnv, &ResolvedVariableScope) -> Result<(), String>` は元ソース・環境と証明出現の全対象行を認証し、Syntax を呼出側へ公開しない。
 変更しない validated_source_symbol_ast を先に呼び、その既存 String をそのまま返す。同じ非公開 AST・module・元環境から実際の proof occurrences を解決し、再解決失敗または source/module/順序付き束縛・参照全行の不一致には内部 String `source proof occurrences do not match the original source` を返す。既存行の等値で全フィールドと未使用宣言を比較し、行の選別・代替生成をしない。
 認証はこの対象行だけであり、legacy thesis/statements、過去の実行・解析取得、currentness、完全フェーズ、証明・型・受理は扱わない。既存 resolver profile、エラー、生成器は変更しない。
