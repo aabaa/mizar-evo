@@ -1,6 +1,254 @@
 use super::*;
 
 #[test]
+fn p10_for_authentic_range_preserves_inputs_binding_and_ownership() {
+    use mizar_core::core_ir::{
+        CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreSourceAnchor, CoreTermKind as T,
+    };
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    let text = std::fs::read_to_string(
+        config.workspace_root.join("tests/fixtures/core/p10_for_shell.miz"),
+    ).unwrap();
+    let frontend = super::super::formula_statement::step5c8_test_frontend(&text);
+    assert!(frontend.diagnostics.is_empty(), "{:?}", frontend.diagnostics);
+    let (source, typed, symbols) =
+        super::super::source_registration_inputs(&config.workspace_root, &case, frontend).unwrap();
+    let checked =
+        mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+    let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+    let (owner, algorithm) = core.algorithms().iter().next().unwrap();
+    let [loop_id, return_id] = algorithm.statements.as_slice() else { panic!("source statement order") };
+    let loop_row = core.algorithm_statements().get(*loop_id).unwrap();
+    let S::ForRange { binder, descending, start, end, step, invariants, body } = &loop_row.kind else { panic!("range shell") };
+    assert!(!descending);
+    assert!(step.is_none(), "default step must not fabricate a source term");
+    assert_ne!(binder.var, algorithm.params[0].var);
+    assert_eq!(binder.source_name.as_deref(), Some("i"));
+    assert_eq!(binder.role.as_str(), "loop");
+    assert!(binder.ty_guard.is_none(), "implicit binder has no written type guard");
+    assert_ne!(start, end, "distinct source occurrences retain distinct input identities");
+    for input in [*start, *end] {
+        assert_eq!(core.terms().get(input).unwrap().kind, T::Var(algorithm.params[0].var));
+    }
+    let [invariant] = invariants.as_slice() else { panic!("source invariant") };
+    let F::Equals { left, right } = core.formulas().get(*invariant).unwrap().kind else { panic!("actual invariant equality") };
+    assert_eq!(core.terms().get(left).unwrap().kind, T::Var(binder.var));
+    assert_eq!(core.terms().get(right).unwrap().kind, T::Var(algorithm.params[0].var));
+    let [assertion] = body.as_slice() else { panic!("source body") };
+    assert!(!algorithm.statements.contains(assertion));
+    let S::Assert { formula } = core.algorithm_statements().get(*assertion).unwrap().kind else { panic!("source assertion") };
+    let F::Equals { left, right } = core.formulas().get(formula).unwrap().kind else { panic!("actual body equality") };
+    for term in [left, right] {
+        assert_eq!(core.terms().get(term).unwrap().kind, T::Var(binder.var));
+    }
+    let S::Return(Some(value)) = core.algorithm_statements().get(*return_id).unwrap().kind else { panic!("outside return") };
+    assert_eq!(core.terms().get(value).unwrap().kind, T::Var(algorithm.params[0].var));
+    assert_eq!(core.algorithm_statements().len(), 3);
+    for (_, statement) in core.algorithm_statements().iter() {
+        assert_eq!(statement.owner, owner);
+        let CoreSourceAnchor::SourceRange(range) = statement.source.anchor else { panic!("source anchor") };
+        assert!(source.arena().iter().any(|(_, node)| node.origin().anchor() == &mizar_session::SourceAnchor::Range(range)));
+    }
+    assert!(core.obligation_seeds().is_empty() && core.generated().is_empty() && core.proofs().is_empty());
+}
+
+#[test]
+fn p10_for_range_direction_step_and_shadowed_operands_are_actual_inputs() {
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreSourceAnchor, CoreTermKind as T};
+    let case = step5c14_return_case();
+    let original = std::fs::read_to_string(step5c11_config().workspace_root.join("tests/fixtures/core/p10_for_shell.miz")).unwrap();
+    for (header, descending, explicit, shadow) in [
+        ("for i = a downto a do", true, false, false),
+        ("for i = a to a step a do", false, true, false),
+        ("for a = a downto a step a do", true, true, true),
+    ] {
+        let text = original.replace("for i = a to a do", header);
+        let text = if shadow { text.replace("invariant i = a", "invariant a = a").replace("assert i = i", "assert a = a") } else { text };
+        let core = step5c14_static_core(&case, &text).unwrap();
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let S::ForRange { binder, descending: actual, start, end, step, invariants, body } = &core.algorithm_statements().get(algorithm.statements[0]).unwrap().kind else { panic!("range shell") };
+        assert_eq!(*actual, descending);
+        assert_eq!(step.is_some(), explicit);
+        assert_ne!(binder.var, algorithm.params[0].var);
+        let mut previous = None;
+        for input in [Some(*start), Some(*end), *step].into_iter().flatten() {
+            let term = core.terms().get(input).unwrap();
+            assert_eq!(term.kind, T::Var(algorithm.params[0].var));
+            let CoreSourceAnchor::SourceRange(range) = term.source.anchor else { panic!("actual operand range") };
+            assert!(previous.is_none_or(|end| end <= range.start));
+            previous = Some(range.end);
+        }
+        assert_eq!(body.len(), 1);
+        let F::Equals { left, right } = core.formulas().get(invariants[0]).unwrap().kind else { panic!("invariant") };
+        assert_eq!(core.terms().get(left).unwrap().kind, T::Var(binder.var));
+        assert_eq!(core.terms().get(right).unwrap().kind, T::Var(if shadow { binder.var } else { algorithm.params[0].var }));
+    }
+}
+
+#[test]
+fn p10_for_collection_preserves_unclassified_domain_and_loop_scope() {
+    use mizar_checker::type_checker::TypeHeadRef;
+    use mizar_checker::typed_ast::TypeEntryActual;
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreTermKind as T};
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    let original = std::fs::read_to_string(config.workspace_root.join("tests/fixtures/core/p10_for_shell.miz")).unwrap().replace("for i = a to a do", "for i in a do");
+    for (text, shadow, invariant_count, body_count) in [
+        (original.clone(), false, 1, 1),
+        (original.replace("for i in", "for a in").replace("invariant i = a", "invariant a = a").replace("assert i = i", "assert a = a"), true, 1, 1),
+        (original.replace("      invariant i = a;\n      assert i = i;\n", ""), false, 0, 0),
+        (original.replace("invariant i = a;", "invariant i = a; invariant i = i;").replace("assert i = i;", "assert i = i; assert i = a;"), false, 2, 2),
+    ] {
+        let (source, typed, symbols) = super::super::source_registration_inputs(&config.workspace_root, &case, super::super::formula_statement::step5c8_test_frontend(&text)).unwrap();
+        let checked = mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        for (_, term) in checked.inference().terms().iter() {
+            let TypeEntryActual::Known(actual) = checked.inference().type_entries().get(term.type_entry).unwrap().actual else { panic!("object shell") };
+            assert_eq!(checked.inference().normalized_types().get(actual).unwrap().head, TypeHeadRef::BuiltinObject);
+        }
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        let (owner, algorithm) = core.algorithms().iter().next().unwrap();
+        let S::ForCollection { binder, domain, invariants, body } = &core.algorithm_statements().get(algorithm.statements[0]).unwrap().kind else { panic!("unclassified collection shell") };
+        assert_ne!(binder.var, algorithm.params[0].var);
+        assert!(binder.ty_guard.is_none());
+        assert_eq!(core.terms().get(*domain).unwrap().kind, T::Var(algorithm.params[0].var));
+        assert_eq!(invariants.len(), invariant_count);
+        assert_eq!(body.len(), body_count);
+        for invariant in invariants {
+            let F::Equals { left, .. } = core.formulas().get(*invariant).unwrap().kind else { panic!("invariant") };
+            assert_eq!(core.terms().get(left).unwrap().kind, T::Var(binder.var));
+        }
+        for id in body {
+            assert_eq!(core.algorithm_statements().get(*id).unwrap().owner, owner);
+            assert!(!algorithm.statements.contains(id));
+        }
+        let S::Return(Some(value)) = core.algorithm_statements().get(algorithm.statements[1]).unwrap().kind else { panic!("outside return") };
+        assert_eq!(core.terms().get(value).unwrap().kind, T::Var(algorithm.params[0].var));
+        if shadow {
+            let bindings = checked.bindings().bindings().iter().filter(|(_, binding)| binding.spelling == "a").map(|(_, binding)| binding).collect::<Vec<_>>();
+            assert_eq!(bindings.len(), 2);
+            assert_ne!(bindings[0].owner_context, bindings[1].owner_context);
+            assert_ne!(bindings[0].identity, bindings[1].identity);
+        }
+        assert!(core.generated().is_empty() && core.obligation_seeds().is_empty());
+    }
+}
+
+#[test]
+fn p10_for_rejects_scope_mutation_unsupported_bodies_and_processed() {
+    let case = step5c14_return_case();
+    let original = std::fs::read_to_string(step5c11_config().workspace_root.join("tests/fixtures/core/p10_for_shell.miz")).unwrap();
+    for source in [original.clone(), original.replace("for i = a to a do", "for i in a do")] {
+        for (from, to) in [
+            ("return a;", "return i;"),
+            ("assert i = i;", "i := a;"),
+            ("assert i = i;", "var x := a;"),
+            ("assert i = i;", "for j in a do assert j = j; end;"),
+            ("assert i = i;", "while a = a do assert i = i; end;"),
+            ("assert i = i;", "if i = a do assert i = i; end;"),
+            ("assert i = i;", "return a;"),
+            ("assert i = i;", "break;"),
+            ("assert i = i;", "continue;"),
+            ("assert i = i;", "snapshot s0;"),
+            ("invariant i = a;", "invariant unknown = a;"),
+            ("assert i = i;", "assert unknown = i;"),
+        ] {
+            let text = source.replace(from, to);
+            assert!(step5c14_static_core(&case, &text).is_err(), "{text}");
+        }
+    }
+    for header in ["for i = i to a do", "for i = a to i do", "for i = a to a step i do", "for i = unknown to a do", "for i = a to unknown do", "for i = a to a step unknown do", "for i in i do", "for i in unknown do", "for i in a processed seen do"] {
+        let text = original.replace("for i = a to a do", header);
+        assert!(step5c14_static_core(&case, &text).is_err(), "{text}");
+    }
+}
+
+#[test]
+fn p10_for_authenticates_projection_source_environment_and_replays_deterministically() {
+    use mizar_checker::{type_checker::check_source_algorithm_types, typed_ast::{NodeRecoveryState, TypedArena}};
+    use mizar_core::core_ir::{CoreAlgorithmStmtKind as S, CoreProvenancePhase, CoreSourceAnchor};
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    let original = std::fs::read_to_string(config.workspace_root.join("tests/fixtures/core/p10_for_shell.miz")).unwrap();
+    for text in [original.clone(), original.replace("for i = a to a do", "for i in a do"), original.replace("range_shell", "renamed_shell").replace("let a be", "let parameter be").replace("(a)", "(parameter)").replace("= a", "= parameter").replace("to a", "to parameter").replace("return a;", "return parameter;").replace("for i", "for cursor").replace("invariant i", "invariant cursor").replace("assert i = i", "assert cursor = cursor")] {
+        let (source, typed, symbols) = super::super::source_registration_inputs(&config.workspace_root, &case, super::super::formula_statement::step5c8_test_frontend(&text)).unwrap();
+        let checked = check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        assert_eq!(core, step5c14_static_core(&case, &text).unwrap());
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = core.algorithm_statements().get(algorithm.statements[0]).unwrap();
+        let (binder, inputs) = match &statement.kind {
+            S::ForRange { binder, start, end, step, .. } => (binder, [Some(*start), Some(*end), *step].into_iter().flatten().collect::<Vec<_>>()),
+            S::ForCollection { binder, domain, .. } => (binder, vec![*domain]),
+            _ => panic!("loop shell"),
+        };
+        for provenance in std::iter::once(&statement.source).chain(std::iter::once(&binder.source)).chain(inputs.iter().map(|id| &core.terms().get(*id).unwrap().source)) {
+            let CoreSourceAnchor::SourceRange(range) = provenance.anchor else { panic!("source range") };
+            assert!(source.arena().iter().any(|(_, node)| node.origin().anchor() == &mizar_session::SourceAnchor::Range(range)));
+            assert!(provenance.provenance.iter().any(|entry| entry.phase == CoreProvenancePhase::Checker && entry.key.as_str().starts_with("algorithm/source-node#")));
+        }
+        let foreign_text = text.replace("range_shell", "foreign_shell").replace("renamed_shell", "foreign_shell");
+        let (foreign_source, _, foreign_symbols) = super::super::source_registration_inputs(&config.workspace_root, &case, super::super::formula_statement::step5c8_test_frontend(&foreign_text)).unwrap();
+        assert!(check_source_algorithm_types(&foreign_source, &typed, &symbols).is_err());
+        assert!(check_source_algorithm_types(&source, &typed, &foreign_symbols).is_err());
+        for kind in [if text.contains(" in a ") { "ForCollectionStatement" } else { "ForRangeStatement" }, "LoopInvariantClause", "AssertStatement"] {
+            let target = typed.iter().find(|(_, node)| node.kind.as_str() == kind).unwrap().0;
+            for mutation in 0..4 {
+                let mut nodes = typed.iter().map(|(_, node)| node.clone()).collect::<Vec<_>>();
+                match mutation {
+                    0 => nodes[target.index()].kind = "TermReference".into(),
+                    1 => nodes[target.index()].children.reverse(),
+                    2 => nodes[target.index()].anchor = nodes[0].anchor.clone(),
+                    3 => nodes[target.index()].recovery = NodeRecoveryState::Recovered,
+                    _ => unreachable!(),
+                }
+                let forged = TypedArena::try_new(typed.root(), nodes).unwrap();
+                assert!(check_source_algorithm_types(&source, &forged, &symbols).is_err(), "{kind}, mutation {mutation}");
+            }
+        }
+    }
+}
+
+#[test]
+fn p10_for_cfg_semantic_and_vc_consumers_refuse_unclassified_shells() {
+    use mizar_core::{control_flow::{build_control_flow_ir, ControlFlowDiagnosticKind as D, ControlFlowTerminator as T, LocalKind, Reachability}, elaborator::{source_algorithm_core_semantic_payload, source_algorithm_formula_payloads}};
+    let config = step5c11_config();
+    let case = step5c14_return_case();
+    let original = std::fs::read_to_string(config.workspace_root.join("tests/fixtures/core/p10_for_shell.miz")).unwrap();
+    for text in [original.clone(), original.replace("for i = a to a do", "for i in a do")] {
+        let (source, typed, symbols) = super::super::source_registration_inputs(&config.workspace_root, &case, super::super::formula_statement::step5c8_test_frontend(&text)).unwrap();
+        let checked = mizar_checker::type_checker::check_source_algorithm_types(&source, &typed, &symbols).unwrap();
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let flow = build_control_flow_ir(&core);
+        assert_eq!(flow, build_control_flow_ir(&core));
+        let (_, cfg) = flow.flows.iter().next().unwrap();
+        let (diagnostic_id, diagnostic) = cfg.diagnostics.iter().find(|(_, row)| row.kind == D::FlowDiagnostic).unwrap();
+        assert_eq!(diagnostic.statement, Some(algorithm.statements[0]));
+        assert_eq!(cfg.blocks.get(cfg.entry).unwrap().terminator, T::Error(diagnostic_id));
+        assert!(cfg.blocks.get(cfg.entry).unwrap().context_out.is_empty());
+        assert!(cfg.blocks.iter().filter(|(_, block)| block.reachable == Reachability::Reachable).all(|(_, block)| !matches!(block.terminator, T::Branch { .. } | T::Return(_))));
+        assert!(cfg.loops.is_empty() && cfg.assignment_effects.is_empty());
+        assert!(cfg.locals.iter().all(|(_, local)| matches!(local.kind, LocalKind::Parameter | LocalKind::Result)));
+        assert!(cfg.contracts.assertions.is_empty() && cfg.contracts.loop_invariants.is_empty() && cfg.contracts.decreasing.is_empty());
+        assert!(cfg.termination.loop_decreasing.is_empty());
+        assert!(source_algorithm_core_semantic_payload(&checked, &core).is_err());
+        assert!(source_algorithm_formula_payloads(&checked, &core, &[]).is_err());
+        assert!(step5c14_return_vcs(&core).is_err());
+    }
+    for (body, vc_supported) in [("return a;", true), ("if a = a do return a; else return a; end;", false)] {
+        let text = format!("definition let a be object; algorithm prior(a) -> object do {body} end; end;");
+        let core = step5c14_static_core(&case, &text).unwrap();
+        assert!(build_control_flow_ir(&core).flows.iter().all(|(_, cfg)| cfg.diagnostics.is_empty()));
+        assert_eq!(step5c14_return_vcs(&core).is_ok(), vc_supported);
+    }
+    let while_case = build_test_plan(&config).unwrap().cases.into_iter().find(|case| case.id.0 == "pass_proof_verification_algorithm_while_invariant_001").unwrap();
+    let core = step5c14_static_core(&while_case, &std::fs::read_to_string(&while_case.source_path).unwrap()).unwrap();
+    assert!(build_control_flow_ir(&core).flows.iter().all(|(_, cfg)| cfg.diagnostics.is_empty()));
+    assert!(step5c14_return_vcs(&core).is_ok());
+}
+
+#[test]
 fn p8_if_fail_authentic_source_formulas_ownership_and_terminal_paths() {
     use mizar_core::{
         control_flow::{

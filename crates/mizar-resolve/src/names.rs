@@ -5560,6 +5560,82 @@ impl SourceVariableScopeResolver {
         let mut terms = Vec::new();
         let body_statements = parts(statements, &K::AlgorithmStatementList)?;
         let mut statement_order = body_statements.to_vec();
+        let mut loop_binding = None;
+        if body_statements.iter().any(|id| {
+            view(*id)
+                .is_ok_and(|v| matches!(v.kind(), K::ForRangeStatement | K::ForCollectionStatement))
+        }) {
+            let [loop_site, returned] = body_statements else {
+                return Err(invalid());
+            };
+            if view(*returned)?.kind() != &K::ReturnStatement {
+                return Err(invalid());
+            }
+            let current = view(*loop_site)?;
+            let p = current.children();
+            let range_loop = current.kind() == &K::ForRangeStatement;
+            let do_index = if range_loop {
+                let direction = match view(*p.get(4).ok_or_else(invalid)?)?.kind() {
+                    K::Token(t) if matches!(t.text.as_ref(), "to" | "downto") => t.text.as_ref(),
+                    _ => return Err(invalid()),
+                };
+                let explicit_step = p.get(6).is_some_and(|id| matches!(view(*id).map(|v| v.kind()), Ok(K::Token(t)) if t.text.as_ref() == "step"));
+                let mut layout = vec!["for", "", "=", "", direction, ""];
+                if explicit_step {
+                    layout.extend(["step", ""]);
+                }
+                let do_index = layout.len();
+                layout.push("do");
+                layout.extend(std::iter::repeat_n(
+                    "",
+                    p.len().checked_sub(layout.len() + 3).ok_or_else(invalid)?,
+                ));
+                layout.extend(["", "end", ";"]);
+                shape(*loop_site, current.kind(), &layout)?;
+                terms.extend([(p[3], false), (p[5], false)]);
+                if explicit_step {
+                    terms.push((p[7], false));
+                }
+                do_index
+            } else {
+                let mut layout = vec!["for", "", "in", "", "do"];
+                layout.extend(std::iter::repeat_n(
+                    "",
+                    p.len().checked_sub(8).ok_or_else(invalid)?,
+                ));
+                layout.extend(["", "end", ";"]);
+                shape(*loop_site, current.kind(), &layout)?;
+                terms.push((p[3], false));
+                4
+            };
+            let nested = p[p.len() - 3];
+            for annotation in &p[do_index + 1..p.len() - 3] {
+                formulas.push((
+                    shape(
+                        *annotation,
+                        &K::LoopInvariantClause,
+                        &["invariant", "", ";"],
+                    )?[1],
+                    false,
+                ));
+            }
+            let children = parts(nested, &K::AlgorithmStatementList)?;
+            if children
+                .iter()
+                .any(|id| view(*id).is_ok_and(|v| v.kind() != &K::AssertStatement))
+            {
+                return Err(invalid());
+            }
+            let scope = LocalTermScope::new(vec![
+                body_scope.path()[0],
+                body_scope.path()[1],
+                u32::try_from(loop_site.index()).map_err(|_| invalid())?,
+            ]);
+            let visible_after = view(p[do_index])?.range().end;
+            declarations.push((p[1], visible_after, B::AlgorithmLocal));
+            loop_binding = Some((p[1], scope, visible_after, current.range().end));
+            statement_order = children.iter().copied().chain([*returned]).collect();
+        }
         if body_statements
             .iter()
             .any(|id| view(*id).is_ok_and(|v| v.kind() == &K::WhileStatement))
@@ -5720,7 +5796,11 @@ impl SourceVariableScopeResolver {
         let mut bindings = Vec::<SourceVariableBinding>::new();
         let mut visibility = Vec::new();
         for (node, visible_after, kind) in declarations {
-            let scope = if kind == B::DefinitionParameter {
+            let scope = if let Some((binder, scope, ..)) = &loop_binding
+                && node == *binder
+            {
+                scope
+            } else if kind == B::DefinitionParameter {
                 &definition_scope
             } else {
                 &body_scope
@@ -5752,9 +5832,18 @@ impl SourceVariableScopeResolver {
         uses.sort_by_key(|(_, token, ..)| ast.node_view(*token).map(|v| v.range().start));
         let mut references = Vec::new();
         for (node, token, body, kind) in uses {
-            let scope = if body { &body_scope } else { &definition_scope };
-            let spelling = identifier(token)?;
             let range = view(token)?.range();
+            let scope = if let Some((_, scope, start, end)) = &loop_binding
+                && range.start >= *start
+                && range.end <= *end
+            {
+                scope
+            } else if body {
+                &body_scope
+            } else {
+                &definition_scope
+            };
+            let spelling = identifier(token)?;
             let binding = bindings
                 .iter()
                 .filter(|binding| {

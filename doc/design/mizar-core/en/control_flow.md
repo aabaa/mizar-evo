@@ -441,17 +441,7 @@ Rules:
   source-order arm, and a join for normal arm exits. Pattern exhaustiveness and
   capture-variable binding metadata are external until checker payloads provide
   explicit pattern semantics; unsupported arms are diagnostics.
-- `For` forms from specification chapter 20 are not present in the task-13
-  `CoreAlgorithmStmtKind` surface. Until checker payload extraction provides
-  explicit range/collection loop shells, phase 10 must not synthesize `for`
-  semantics from source text. If a checker-owned fixture supplies a future
-  `ForRange` or `ForEach` shell, it is represented as a loop record with hidden
-  immutable range, step, collection, and exit values, a processed-set ghost
-  local when present, finiteness or order-independence contract sites, and the
-  same `Break`/`Continue` exit discipline as `While`. `ForRange` metadata must
-  include the direction (`to` or `downto`), the hidden positive-`Nat` step value
-  obligation, direction-specific `next(i)` expression, and `past_end(i_exit)`
-  exit predicate required by specification 20.13.3.
+- `ForRange` and `ForCollection` retain unclassified source inputs in Core, but CFG construction refuses them with the existing flow diagnostic and error terminal. Core49 owns hidden immutable bound/step/domain and exit values, set-only processed state, guards, next/past-end expressions and loop sites. No condition or semantic fact is synthesized from these shells.
 - [Flat snapshots](#flat-snapshot-flow) retain explicit checker-owned shells; nested/claim capture must not be reconstructed from source text or silently erased.
 - `Return` closes the current block with a return terminator and attaches
   postcondition sites.
@@ -627,11 +617,7 @@ Task 15 tests must cover:
   phase-9 diagnostic refs when present, and deterministic diagnostic ordering;
 - source-map preservation for blocks, locals, and statement placements.
 
-The current `CoreAlgorithmStmtKind` surface has no checker-owned payload that
-requires a source-derived hidden loop local. Task 15 therefore keeps
-`HiddenLoopValue` as an explicit representation, tests that current `While`
-construction does not fabricate hidden locals, and defers source-derived hidden
-locals for future `for`, snapshot, and termination payloads.
+`HiddenLoopValue` remains reserved for Core49; Core range/collection input shells do not allocate hidden locals. Existing `While` construction also does not fabricate them.
 
 Task 16 tests must cover:
 

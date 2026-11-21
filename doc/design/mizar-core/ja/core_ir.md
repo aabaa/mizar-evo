@@ -498,7 +498,7 @@ generated VC は含めない。
 
 `CoreAlgorithmStmtTable` は `CoreAlgorithm.statements` が参照する source-ordered
 statement-shell row を所有する。
-直接列挙された statement と `If`、`While`、`Match` arm からネストして参照される
+直接列挙された statement と `If`、`While`、`ForRange`、`ForCollection`、`Match` arm からネストして参照される
 statement は、すべて containing `CoreAlgorithmId` と同じ `owner` を持たなければならない。
 phase 10 は `ControlFlowIr` 構築時にこの owner 関係を信頼してよい。
 
@@ -519,6 +519,8 @@ enum CoreAlgorithmStmtKind {
     Snapshot { name: String, captures: Vec<CoreVarId> },
     If { condition: CoreFormulaId, then_body: Vec<CoreAlgorithmStmtId>, else_body: Vec<CoreAlgorithmStmtId> },
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },
+    ForRange { binder: CoreBinder, descending: bool, start: CoreTermId, end: CoreTermId, step: Option<CoreTermId>, invariants: Vec<CoreFormulaId>, body: Vec<CoreAlgorithmStmtId> },
+    ForCollection { binder: CoreBinder, domain: CoreTermId, invariants: Vec<CoreFormulaId>, body: Vec<CoreAlgorithmStmtId> },
     Match { scrutinee: CoreTermId, arms: Vec<CoreAlgorithmMatchArm> },
     Return(Option<CoreTermId>),
     Fail,

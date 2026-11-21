@@ -839,6 +839,77 @@ pub fn check_source_algorithm_types<'a>(
     let mut snapshots = BTreeMap::new();
     let mut snapshot_names = BTreeSet::new();
     let mut statement_order = body_statements.to_vec();
+    let loop_context = BindingContextId::new(if ensures.is_some() { 4 } else { 3 });
+    let mut loop_binding = None;
+    if body_statements.iter().any(|id| {
+        node(*id)
+            .is_ok_and(|n| matches!(n.kind(), K::ForRangeStatement | K::ForCollectionStatement))
+    }) {
+        let [loop_site, returned] = body_statements else {
+            return Err(invalid());
+        };
+        let current = node(*loop_site)?;
+        let p = current.children();
+        let do_index = if current.kind() == &K::ForRangeStatement {
+            let explicit_step =
+                matches!(node(p[6])?.kind(), K::Token(t) if t.text.as_ref() == "step");
+            for expression in [p[3], p[5]]
+                .into_iter()
+                .chain(explicit_step.then_some(p[7]))
+            {
+                let term = only(expression, &K::TermExpression)?;
+                uses.push((
+                    term,
+                    only(term, &K::TermReference)?,
+                    body_context,
+                    None,
+                    false,
+                ));
+            }
+            if explicit_step { 8 } else { 6 }
+        } else {
+            let term = only(p[3], &K::TermExpression)?;
+            uses.push((
+                term,
+                only(term, &K::TermReference)?,
+                body_context,
+                None,
+                false,
+            ));
+            4
+        };
+        let scope = LocalTermScope::new(vec![
+            body_scope.path()[0],
+            body_scope.path()[1],
+            u32::try_from(loop_site.index()).map_err(|_| invalid())?,
+        ]);
+        let local = LocalTermBinding::new(
+            identifier(p[1])?,
+            scope.clone(),
+            range(p[1])?,
+            range(p[do_index])?.end,
+        );
+        let binding = bindings.insert(BindingDraft::from_local_term(
+            loop_context,
+            BindingKind::LetBinding,
+            &local,
+        ));
+        source_binding_sites.push((
+            p[1],
+            binding,
+            SourceVariableBindingKind::AlgorithmLocal,
+            scope.clone(),
+        ));
+        for annotation in &p[do_index + 1..p.len() - 3] {
+            let [_, formula, _] = parts(*annotation, &K::LoopInvariantClause)? else {
+                return Err(invalid());
+            };
+            equality_sites.push((*formula, loop_context));
+        }
+        let nested = parts(p[p.len() - 3], &K::AlgorithmStatementList)?;
+        loop_binding = Some((*loop_site, binding, scope));
+        statement_order = nested.iter().copied().chain([*returned]).collect();
+    }
     if body_statements
         .iter()
         .any(|id| node(*id).is_ok_and(|node| node.kind() == &K::WhileStatement))
@@ -1027,7 +1098,14 @@ pub fn check_source_algorithm_types<'a>(
                     return Err(invalid());
                 };
                 tokens(&[(*assert, "assert"), (*semi, ";")])?;
-                equality_sites.push((*expression, body_context));
+                let context = if let Some((loop_site, ..)) = loop_binding
+                    && range(*statement)?.end <= range(loop_site)?.end
+                {
+                    loop_context
+                } else {
+                    body_context
+                };
+                equality_sites.push((*expression, context));
             }
             K::ReturnStatement => {
                 let [return_kw, value, semi] = node(*statement)?.children() else {
@@ -1166,7 +1244,13 @@ pub fn check_source_algorithm_types<'a>(
     }
     let all_bindings = bindings
         .iter()
-        .filter_map(|(id, entry)| (entry.kind != BindingKind::Generated).then_some(id))
+        .filter_map(|(id, entry)| {
+            (entry.kind != BindingKind::Generated
+                && loop_binding
+                    .as_ref()
+                    .is_none_or(|(_, binding, _)| id != *binding))
+            .then_some(id)
+        })
         .collect::<Vec<_>>();
     let mut contexts = BindingContextTable::new();
     for (index, source_owner, scope, owned, visible) in [
@@ -1223,6 +1307,19 @@ pub fn check_source_algorithm_types<'a>(
             recovery: BindingContextRecovery::Normal,
         });
     }
+    if let Some((loop_site, binding, scope)) = &loop_binding {
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(*loop_site)?,
+            },
+            parent: Some(body_context),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(scope.clone()),
+            bindings: vec![*binding],
+            visible_bindings: vec![parameter_binding, *binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+    }
     let bindings = BindingEnv::try_new(BindingEnvParts {
         source_id: source.source_id(),
         module_id: source.module().clone(),
@@ -1254,13 +1351,19 @@ pub fn check_source_algorithm_types<'a>(
         }
     }
     let mut binding_types = BTreeMap::from([(parameter_binding, *parameter_type)]);
+    if let Some((_, binding, _)) = &loop_binding {
+        // Only the universal object top type is inferred; the loop has no written guard.
+        binding_types.insert(*binding, *parameter_type);
+    }
     if let Some(result) = result_binding {
         binding_types.insert(result, *return_type);
     }
     let mut terms = Vec::new();
     let mut lvalue_types = BTreeMap::new();
     for (_, (term, token, context, initialized_binding, is_return)) in uses {
-        let scope = if context != body_context {
+        let scope = if context == loop_context {
+            &loop_binding.as_ref().ok_or_else(invalid)?.2
+        } else if context != body_context {
             &definition_scope
         } else {
             &body_scope

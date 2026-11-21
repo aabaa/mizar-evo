@@ -691,6 +691,21 @@ pub enum CoreAlgorithmStmtKind {
         decreasing: Vec<CoreTermId>,
         body: Vec<CoreAlgorithmStmtId>,
     },
+    ForRange {
+        binder: CoreBinder,
+        descending: bool,
+        start: CoreTermId,
+        end: CoreTermId,
+        step: Option<CoreTermId>,
+        invariants: Vec<CoreFormulaId>,
+        body: Vec<CoreAlgorithmStmtId>,
+    },
+    ForCollection {
+        binder: CoreBinder,
+        domain: CoreTermId,
+        invariants: Vec<CoreFormulaId>,
+        body: Vec<CoreAlgorithmStmtId>,
+    },
     Match {
         scrutinee: CoreTermId,
         arms: Vec<CoreAlgorithmMatchArm>,
@@ -1486,7 +1501,10 @@ fn normalize_proof_node(kind: &mut CoreProofNodeKind) {
 
 fn normalize_algorithm_statement(kind: &mut CoreAlgorithmStmtKind) {
     match kind {
-        CoreAlgorithmStmtKind::Let { binder, .. } | CoreAlgorithmStmtKind::Pick { binder, .. } => {
+        CoreAlgorithmStmtKind::Let { binder, .. }
+        | CoreAlgorithmStmtKind::Pick { binder, .. }
+        | CoreAlgorithmStmtKind::ForRange { binder, .. }
+        | CoreAlgorithmStmtKind::ForCollection { binder, .. } => {
             normalize_binder(binder);
         }
         CoreAlgorithmStmtKind::Snapshot { .. }
@@ -2108,6 +2126,32 @@ fn validate_algorithm_statement(
             validate_formulas(invariants, parts)?;
             validate_terms(decreasing, parts)?;
             validate_statements_owned(body, owner, parts)?;
+        }
+        CoreAlgorithmStmtKind::ForRange {
+            binder,
+            invariants,
+            body,
+            ..
+        }
+        | CoreAlgorithmStmtKind::ForCollection {
+            binder,
+            invariants,
+            body,
+            ..
+        } => {
+            validate_binder(binder, parts)?;
+            validate_formulas(invariants, parts)?;
+            validate_statements_owned(body, owner, parts)?;
+            let operands = match statement {
+                CoreAlgorithmStmtKind::ForRange {
+                    start, end, step, ..
+                } => [Some(*start), Some(*end), *step],
+                CoreAlgorithmStmtKind::ForCollection { domain, .. } => [Some(*domain), None, None],
+                _ => unreachable!(),
+            };
+            for term in operands.into_iter().flatten() {
+                validate_index("term", term.index(), parts.terms.len())?;
+            }
         }
         CoreAlgorithmStmtKind::Match { scrutinee, arms } => {
             validate_index("term", scrutinee.index(), parts.terms.len())?;

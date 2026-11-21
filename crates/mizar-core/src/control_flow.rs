@@ -1709,13 +1709,24 @@ impl<'a> FlowBuilder<'a> {
                 *witness_ty,
                 *ghost,
             )),
-            CoreAlgorithmStmtKind::Error(diagnostic) => {
+            CoreAlgorithmStmtKind::ForRange { .. }
+            | CoreAlgorithmStmtKind::ForCollection { .. }
+            | CoreAlgorithmStmtKind::Error(_) => {
+                // Core49 owns executable loop lowering; these retain inputs only.
+                let diagnostic = match statement.kind {
+                    CoreAlgorithmStmtKind::Error(diagnostic) => Some(diagnostic),
+                    _ => None,
+                };
                 let flow_diagnostic = self.add_diagnostic(ControlFlowDiagnostic {
-                    kind: ControlFlowDiagnosticKind::Phase9Error,
+                    kind: if diagnostic.is_some() {
+                        ControlFlowDiagnosticKind::Phase9Error
+                    } else {
+                        ControlFlowDiagnosticKind::FlowDiagnostic
+                    },
                     algorithm: self.algorithm_id,
                     statement: Some(statement_id),
                     source: statement.source.clone(),
-                    carried_core_diagnostic: Some(*diagnostic),
+                    carried_core_diagnostic: diagnostic,
                 });
                 self.flow.source_map.statement_placements.insert(
                     statement_id,

@@ -406,15 +406,7 @@ composition は `Normal` からだけ継続する。
 - `Match` は scrutinee 上の deterministic switch、source-order arm entry、normal arm exit 用の
   join を作る。pattern exhaustiveness と capture-variable binding metadata は、checker payload が
   explicit pattern semantics を提供するまで external であり、unsupported arm は diagnostic である。
-- 仕様 20 章の `For` form は task 13 の `CoreAlgorithmStmtKind` surface にはまだ存在しない。
-  checker payload extraction が explicit range / collection loop shell を提供するまで、phase 10 は
-  source text から `for` semantics を合成してはならない。checker-owned fixture が将来の
-  `ForRange` または `ForEach` shell を提供する場合、それは hidden immutable range、step、
-  collection、exit value、必要なら processed-set ghost local、finiteness または
-  order-independence contract site、`While` と同じ `Break` / `Continue` exit discipline を持つ
-  loop record として表現する。`ForRange` metadata は、direction (`to` または `downto`)、
-  hidden positive-`Nat` step value obligation、direction-specific `next(i)` expression、
-  仕様 20.13.3 が要求する `past_end(i_exit)` exit predicate を含めなければならない。
+- `ForRange` と `ForCollection` は未分類の source 入力を Core に保持するが、CFG 構築は既存 flow diagnostic と error terminal で拒否する。Core49 は hidden immutable bound/step/domain・exit 値、set 専用 processed 状態、guard、next/past-end 式、loop site を所有する。shell から条件や意味上の事実を合成しない。
 - [平坦 snapshot](#flat-snapshot-flow) は明示的な checker-owned shell を保持する。入れ子・claim 捕捉を source text から再構築したり黙って消したりしない。
 - `Return` は現在 block を return terminator で閉じ、postcondition site を取り付ける。
 - `Break` と `Continue` は innermost active loop に解決する。loop の外では diagnostic になり、
@@ -573,10 +565,7 @@ task 15 の test は次を覆う。
   diagnostic ordering を含む。
 - block、local、statement placement の source-map preservation。
 
-現在の `CoreAlgorithmStmtKind` surface には、source-derived hidden loop local を必要とする
-checker-owned payload がない。そのため Task 15 は `HiddenLoopValue` を明示的な表現として保持し、
-現在の `While` construction が hidden local を仮造しないことを test し、将来の `for`、snapshot、
-termination payload から導出される hidden local は deferred とする。
+`HiddenLoopValue` は Core49 用の予約であり、Core range/collection 入力 shell は hidden local を割り当てない。既存 `While` 構築も hidden local を仮造しない。
 
 task 16 の test は次を覆う。
 

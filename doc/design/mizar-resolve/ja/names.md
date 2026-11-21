@@ -530,6 +530,8 @@ source 由来負例は実 AST/arena/env/collector を再構築し、継承 label
 intrinsic 型 use metadata だけを供給する。他の通常名/attribute/constructor/operator/import・独立 local-variable binding receipt・完全 semantic attachment/ResolvedAst/SymbolEnv/summary producer・parser/capture/current-runtime 認証・公開診断・service/phase15/publication・証明受理/witness/footprint/reuse/cache/Doc と Steps6–8 は別 owner の作業に保つ。型適合・prelude activation・数学的動作は変更しない。
 
 ## Algorithm ordinary variable occurrences
+
+有界 range/collection profile は記述された bound/domain/step を loop 外、暗黙 binder・等式 invariant・assert 本体を独立 loop scope で解決する。element/Nat 宣言型を付けず元 binder 同一性を保持し、loop 外参照は認めない。最上位 loop 一つと後続 return のみを扱い、processed・入れ子 loop・本体宣言は拒否する。型と collection 分類は別の権限である。
 `SourceVariableScopeResolver::resolve_algorithm_occurrences(&SurfaceResolvedArena, &SymbolEnv) -> Result<ResolvedVariableScope, SourceVariableScopeError>` は既存symbol-source validatorで元sourceと未拡張環境の全体を認証し、構造・recovery・親子関係を検証する。rootのflat tokenだけはmetadataであり、他の共有は拒否する。既存proof occurrence APIとdefinition除外は変えない。
 対象は既存のobject定義引数1個・object結果algorithmの通常宣言／参照だけである。型・契約・制御フロー・snapshot captureはChecker所有。optional terminating/ensures、flat初期化var/const/ghost、代入・assert・return・break、flat snapshot、既存bounded while・入れ子ifの参照、bare fail、runtime bare-set choiceを扱う。if分岐はreturn・bare-fail・ifに限り、分岐内の宣言・snapshotは拒否する。後段CFG/ghost/termination判断や構文拡張は行わない。
 既存sealed scope/binding/reference型を使用する。binding kindは`DefinitionParameter`/`AlgorithmLocal`、reference kindはheader lookupの`AlgorithmParameter`と書込みlookupの`AlgorithmAssignmentTarget`を追加し、通常読出しは`Term`を使う。いずれもarityなし。bindingは元binder token/range、宣言順dense id/ordinalを持ち、capture/arityなし、引数型object、local型なし。thesisはNone、statementsは空。

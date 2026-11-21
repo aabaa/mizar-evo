@@ -523,7 +523,7 @@ facts, reachability diagnostics, or generated VCs.
 
 `CoreAlgorithmStmtTable` owns source-ordered statement-shell rows referenced by
 `CoreAlgorithm.statements`.
-Every statement listed directly or nested through `If`, `While`, or `Match`
+Every statement listed directly or nested through `If`, `While`, `ForRange`, `ForCollection`, or `Match`
 arms must have `owner` equal to the containing `CoreAlgorithmId`; phase 10 may
 trust this owner relation when constructing `ControlFlowIr`.
 
@@ -544,6 +544,8 @@ enum CoreAlgorithmStmtKind {
     Snapshot { name: String, captures: Vec<CoreVarId> },
     If { condition: CoreFormulaId, then_body: Vec<CoreAlgorithmStmtId>, else_body: Vec<CoreAlgorithmStmtId> },
     While { condition: CoreFormulaId, invariants: Vec<CoreFormulaId>, decreasing: Vec<CoreTermId>, body: Vec<CoreAlgorithmStmtId> },
+    ForRange { binder: CoreBinder, descending: bool, start: CoreTermId, end: CoreTermId, step: Option<CoreTermId>, invariants: Vec<CoreFormulaId>, body: Vec<CoreAlgorithmStmtId> },
+    ForCollection { binder: CoreBinder, domain: CoreTermId, invariants: Vec<CoreFormulaId>, body: Vec<CoreAlgorithmStmtId> },
     Match { scrutinee: CoreTermId, arms: Vec<CoreAlgorithmMatchArm> },
     Return(Option<CoreTermId>),
     Fail,

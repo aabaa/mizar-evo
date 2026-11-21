@@ -733,7 +733,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
       names the roles; checker 277/Core 38 do not synthesize them.
 42. **Algorithm header, locals, assignment, and `Pick` CoreIr.** [~]
 43. **Algorithm structured conditional, while, and jump CoreIr.** [~]
-44. **Range and collection loop CoreIr.** [ ]
+44. **Range and collection loop CoreIr.** [~]
     - [P10 bounded source shell](../../task_contracts/en/P10-CORE-FOR-SHELL.md).
 45. **Match pattern, capture, and exhaustiveness CoreIr.** [ ]
 46. **Algorithm contract, call-request, recursion, and termination metadata.** [~]

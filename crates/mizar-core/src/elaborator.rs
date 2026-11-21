@@ -16806,6 +16806,42 @@ pub fn lower_source_algorithms(
                 ("parameter", site)
             }
             BindingKind::LetBinding => {
+                if typed.iter().any(|(_, node)| {
+                    matches!(
+                        node.kind.as_str(),
+                        "ForRangeStatement" | "ForCollectionStatement"
+                    ) && node.children.get(1) == Some(declaration)
+                }) {
+                    let var = CoreVarId::new(binding.index());
+                    let source = source_with_provenance(
+                        CoreSourceRef::direct(entry.declaration_range),
+                        &provenance(*declaration),
+                    );
+                    input.variable_seeds.push(CoreVariableSeed::new(
+                        var,
+                        NormalizedVarClass::Free,
+                        "loop",
+                        NormalizedVarSort::Term,
+                        provenance(*declaration),
+                    ));
+                    input.binder_seeds.push(CoreBinderSeed::new(
+                        var,
+                        source.clone(),
+                        provenance(*declaration),
+                    ));
+                    binders.push((
+                        *declaration,
+                        None,
+                        CoreBinder {
+                            var,
+                            role: "loop".into(),
+                            ty_guard: None,
+                            source_name: Some(entry.spelling.clone()),
+                            source,
+                        },
+                    ));
+                    continue;
+                }
                 let variable = typed
                     .iter()
                     .find_map(|(id, node)| {
@@ -16866,7 +16902,7 @@ pub fn lower_source_algorithms(
         ));
         binders.push((
             *declaration,
-            guard,
+            Some(guard),
             CoreBinder {
                 var,
                 role: role.into(),
@@ -17072,7 +17108,7 @@ pub fn lower_source_algorithms(
     let mut params = Vec::new();
     let mut local_binders = BTreeMap::new();
     for (declaration, guard, mut binder) in binders {
-        binder.ty_guard = Some(lowered.formula_map[&guard]);
+        binder.ty_guard = guard.map(|id| lowered.formula_map[&id]);
         if binder.role.as_str() == "parameter" {
             params.push(binder);
         } else {
@@ -17087,7 +17123,10 @@ pub fn lower_source_algorithms(
     let mut pending = node(statement_list)?.children.clone();
     while let Some(statement) = pending.pop() {
         statement_order.push(statement);
-        if node(statement)?.kind.as_str() == "IfStatement" {
+        if matches!(
+            node(statement)?.kind.as_str(),
+            "IfStatement" | "ForRangeStatement" | "ForCollectionStatement"
+        ) {
             for child in &node(statement)?.children {
                 match node(*child)?.kind.as_str() {
                     "AlgorithmStatementList" => pending.extend(&node(*child)?.children),
@@ -17217,6 +17256,70 @@ pub fn lower_source_algorithms(
                     else_body,
                     source,
                     provenance,
+                }
+            }
+            "ForRangeStatement" | "ForCollectionStatement" => {
+                let current = node(*statement)?;
+                let children = &current.children;
+                let binder = local_binders.remove(&children[1]).ok_or_else(invalid)?;
+                let list = only(*statement, "AlgorithmStatementList")?;
+                let body = node(list)?
+                    .children
+                    .iter()
+                    .map(|id| statement_seeds.remove(id).ok_or_else(invalid))
+                    .collect::<Result<Vec<Vec<AlgorithmStmtSeed>>, String>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                let invariants = children
+                    .iter()
+                    .filter(|id| {
+                        typed
+                            .node(**id)
+                            .is_some_and(|n| n.kind.as_str() == "LoopInvariantClause")
+                    })
+                    .map(|id| {
+                        loop_formulas
+                            .remove(id)
+                            .map(|id| lowered.formula_map[&id])
+                            .ok_or_else(invalid)
+                    })
+                    .collect::<Result<Vec<_>, String>>()?;
+                let operand = |id| {
+                    let [term] = node(id)?.children.as_slice() else {
+                        return Err(invalid());
+                    };
+                    Ok::<_, String>(lowered.term_map[term_ids.get(term).ok_or_else(invalid)?])
+                };
+                if current.kind.as_str() == "ForRangeStatement" {
+                    let descending = node(children[4])?.kind.as_str()
+                        == "Token(SurfaceToken { kind: ReservedWord, text: \"downto\" })";
+                    let explicit_step = node(children[6])?.kind.as_str()
+                        == "Token(SurfaceToken { kind: ReservedWord, text: \"step\" })";
+                    AlgorithmStmtSeed::ForRange {
+                        binder,
+                        descending,
+                        start: operand(children[3])?,
+                        end: operand(children[5])?,
+                        step: if explicit_step {
+                            Some(operand(children[7])?)
+                        } else {
+                            None
+                        },
+                        invariants,
+                        body,
+                        source,
+                        provenance,
+                    }
+                } else {
+                    AlgorithmStmtSeed::ForCollection {
+                        binder,
+                        domain: operand(children[3])?,
+                        invariants,
+                        body,
+                        source,
+                        provenance,
+                    }
                 }
             }
             "WhileStatement" => {
@@ -20039,6 +20142,25 @@ pub enum AlgorithmStmtSeed {
         source: CoreSourceRef,
         provenance: CheckerOwnedProvenance,
     },
+    ForRange {
+        binder: CoreBinder,
+        descending: bool,
+        start: CoreTermId,
+        end: CoreTermId,
+        step: Option<CoreTermId>,
+        invariants: Vec<CoreFormulaId>,
+        body: Vec<AlgorithmStmtSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
+    ForCollection {
+        binder: CoreBinder,
+        domain: CoreTermId,
+        invariants: Vec<CoreFormulaId>,
+        body: Vec<AlgorithmStmtSeed>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    },
     Match {
         scrutinee: CoreTermId,
         arms: Vec<AlgorithmMatchArmSeed>,
@@ -20397,6 +20519,42 @@ fn validate_algorithm_statement_seed(
             }
             validate_algorithm_statements(context, term_formula, body)?;
         }
+        AlgorithmStmtSeed::ForRange {
+            binder,
+            start,
+            end,
+            step,
+            invariants,
+            body,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm range shell", provenance.as_slice())?;
+            validate_algorithm_binder(context, term_formula, binder)?;
+            for term in [Some(*start), Some(*end), *step].into_iter().flatten() {
+                validate_algorithm_term(term_formula, term)?;
+            }
+            for invariant in invariants {
+                validate_algorithm_formula(term_formula, *invariant)?;
+            }
+            validate_algorithm_statements(context, term_formula, body)?;
+        }
+        AlgorithmStmtSeed::ForCollection {
+            binder,
+            domain,
+            invariants,
+            body,
+            provenance,
+            ..
+        } => {
+            validate_checker_owned_provenance("algorithm collection shell", provenance.as_slice())?;
+            validate_algorithm_binder(context, term_formula, binder)?;
+            validate_algorithm_term(term_formula, *domain)?;
+            for invariant in invariants {
+                validate_algorithm_formula(term_formula, *invariant)?;
+            }
+            validate_algorithm_statements(context, term_formula, body)?;
+        }
         AlgorithmStmtSeed::Match {
             scrutinee,
             arms,
@@ -20632,6 +20790,54 @@ fn lower_algorithm_statement(
                 Vec::new(),
             ))
         }
+        AlgorithmStmtSeed::ForRange {
+            binder,
+            descending,
+            start,
+            end,
+            step,
+            invariants,
+            body,
+            source,
+            provenance,
+        } => {
+            let body = lower_algorithm_statement_block(state, owner, body)?;
+            Ok(state.insert_statement(
+                owner,
+                CoreAlgorithmStmtKind::ForRange {
+                    binder: binder.clone(),
+                    descending: *descending,
+                    start: *start,
+                    end: *end,
+                    step: *step,
+                    invariants: invariants.clone(),
+                    body,
+                },
+                source_with_provenance(source.clone(), provenance),
+                Vec::new(),
+            ))
+        }
+        AlgorithmStmtSeed::ForCollection {
+            binder,
+            domain,
+            invariants,
+            body,
+            source,
+            provenance,
+        } => {
+            let body = lower_algorithm_statement_block(state, owner, body)?;
+            Ok(state.insert_statement(
+                owner,
+                CoreAlgorithmStmtKind::ForCollection {
+                    binder: binder.clone(),
+                    domain: *domain,
+                    invariants: invariants.clone(),
+                    body,
+                },
+                source_with_provenance(source.clone(), provenance),
+                Vec::new(),
+            ))
+        }
         AlgorithmStmtSeed::Match {
             scrutinee,
             arms,
@@ -20740,7 +20946,9 @@ fn collect_algorithm_statement_diagnostics_into(
                 collect_algorithm_statement_diagnostics_into(table, then_body, diagnostics, seen);
                 collect_algorithm_statement_diagnostics_into(table, else_body, diagnostics, seen);
             }
-            CoreAlgorithmStmtKind::While { body, .. } => {
+            CoreAlgorithmStmtKind::While { body, .. }
+            | CoreAlgorithmStmtKind::ForRange { body, .. }
+            | CoreAlgorithmStmtKind::ForCollection { body, .. } => {
                 collect_algorithm_statement_diagnostics_into(table, body, diagnostics, seen);
             }
             CoreAlgorithmStmtKind::Match { arms, .. } => {

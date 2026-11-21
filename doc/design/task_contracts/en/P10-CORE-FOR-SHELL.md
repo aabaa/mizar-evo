@@ -2,7 +2,7 @@
 
 Canonical language: English; [Japanese pointer](../ja/P10-CORE-FOR-SHELL.md).
 
-- Status: frozen; full tier (new public Core statement variants, outside P8's pattern criteria).
+- Status: implemented bounded slice; full tier (new public Core statement variants, outside P8's pattern criteria).
 - Purpose: retain authentic range/collection loop inputs for later R6-B classification and VC58 loop sites without granting executable or proof credit.
 - Primary owner: [Core plan](../../mizar-core/en/00.crate_plan.md#task-index), [Core TODO](../../mizar-core/en/todo.md). Consumers: R6-B and VC58; dependencies P8 and serialized P9 are available.
 - Authority: specification [20.2.3](../../../spec/en/20.algorithm_and_verification.md#2023-range-loop-for--to), [20.2.4](../../../spec/en/20.algorithm_and_verification.md#2024-collection-loop-for--in), [20.13.3](../../../spec/en/20.algorithm_and_verification.md#20133-verification-condition-schema); existing parser loop tests and test-first `tests/fixtures/core/p10_for_shell.miz`.
