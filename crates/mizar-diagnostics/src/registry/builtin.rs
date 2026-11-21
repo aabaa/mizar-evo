@@ -563,6 +563,14 @@ pub const BUILTIN_DESCRIPTORS: &[DiagnosticDescriptor] = &[
     ),
     builtin_descriptor!(
         Error,
+        225,
+        "resolve.import.cycle",
+        Resolution,
+        "Canonical import cycle, including a self-cycle",
+        IMPORT_SINCE
+    ),
+    builtin_descriptor!(
+        Error,
         301,
         "proof.by.search_exhausted",
         Proof,

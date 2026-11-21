@@ -290,7 +290,7 @@ Registry lookup and shared draft/record construction are enabled; no frontend pr
 
 ## Import allocations
 
-E0220–E0224 follow the exact names and summaries in specification 22.7, with `meaning_key = semantic_name`, Resolution family, Error severity, Active status and `since = spec-22-import-v1`; all other metadata uses the initial defaults. Allocation enables shared draft/record construction only. Source-bound emission follows the [driver continuation boundary](../../mizar-driver/en/frontend_adapter.md#diagnostic-only-import-continuation-design); E0225 is unallocated.
+E0220–E0225 follow the exact names and summaries in specification 22.7, with `meaning_key = semantic_name`, Resolution family, Error severity, Active status and `since = spec-22-import-v1`; all other metadata uses the initial defaults. Allocation enables shared draft/record construction only. E0220–E0224 source-bound emission follows the [driver continuation boundary](../../mizar-driver/en/frontend_adapter.md#diagnostic-only-import-continuation-design); E0225 emission remains deferred until complete graph-wide input and authenticated source-bound cycle reporting are available.
 
 ## Reflection Diagnostic Adoption
 

@@ -19,13 +19,13 @@ const EXPECTED_BUILTIN_CODES: &[&str] = &[
     "E0037", "E0038", "E0039", "E0040", "E0041", "E0042", "E0043", "E0044", "E0045", "E0046",
     "E0047", "E0048", "E0049", "E0050", "E0051", "E0052", "E0101", "E0102", "E0103", "E0104",
     "E0110", "E0111", "E0112", "E0120", "E0121", "E0122", "E0201", "E0202", "E0203", "E0204",
-    "E0206", "E0220", "E0221", "E0222", "E0223", "E0224", "E0301", "E0302", "E0303", "E0310",
-    "E0320", "E0321", "E0332", "E0333", "E0350", "E0351", "E0352", "E0353", "E0401", "E0410",
-    "E0411", "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430", "E0600",
-    "E0601", "E0602", "E0603", "W0001", "W0002", "W0003", "W0010", "W0101", "W0102", "W0103",
-    "W0201", "W0202", "W0210", "W0301", "W0302", "W0303", "W0304", "W0305", "W0400", "W0401",
-    "W0402", "W0403", "W0404", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410", "W0411",
-    "W0412", "W0413", "W0414", "W0415",
+    "E0206", "E0220", "E0221", "E0222", "E0223", "E0224", "E0225", "E0301", "E0302", "E0303",
+    "E0310", "E0320", "E0321", "E0332", "E0333", "E0350", "E0351", "E0352", "E0353", "E0401",
+    "E0410", "E0411", "E0420", "E0421", "E0422", "E0423", "E0424", "E0425", "E0426", "E0430",
+    "E0600", "E0601", "E0602", "E0603", "W0001", "W0002", "W0003", "W0010", "W0101", "W0102",
+    "W0103", "W0201", "W0202", "W0210", "W0301", "W0302", "W0303", "W0304", "W0305", "W0400",
+    "W0401", "W0402", "W0403", "W0404", "W0405", "W0406", "W0407", "W0408", "W0409", "W0410",
+    "W0411", "W0412", "W0413", "W0414", "W0415",
 ];
 
 const E0002: DiagnosticCode = match DiagnosticCode::from_parts(DiagnosticSeverity::Error, 2) {
@@ -396,25 +396,19 @@ fn import_allocations_match_spec_and_construct_shared_records() {
     let spec = include_str!("../../../doc/spec/en/22.error_handling_and_diagnostics.md");
     let rows = spec
         .lines()
-        .filter(|line| {
-            line.starts_with("| E022")
-                && line.contains("| §22.3.5 |")
-                && !line.starts_with("| E0225")
-        })
+        .filter(|line| line.starts_with("| E022") && line.contains("| §22.3.5 |"))
         .map(|line| {
             let columns = line.split('|').map(str::trim).collect::<Vec<_>>();
             (columns[1], columns[2].trim_matches('`'), columns[4])
         })
         .collect::<Vec<_>>();
-    assert_eq!(rows.len(), 5);
+    assert_eq!(rows.len(), 6);
     let registry = DiagnosticRegistry::builtin();
-    for unallocated in ["E0205", "E0225"] {
-        assert!(
-            registry
-                .lookup(DiagnosticCode::from_str(unallocated).unwrap())
-                .is_none()
-        );
-    }
+    assert!(
+        registry
+            .lookup(DiagnosticCode::from_str("E0205").unwrap())
+            .is_none()
+    );
     let snapshot = BuildSnapshotId::from_published_schema_str(&format!(
         "mizar-session-build-snapshot-v1:{}",
         "40".repeat(32)
