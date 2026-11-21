@@ -15,7 +15,8 @@ and the crate ownership map in
 ## How To Read This Document
 
 - The [Sequential Execution Plan](#sequential-execution-plan) is the single
-  ordering authority. Apply its [M1 Dispatch Policy](#m1-dispatch-policy) first
+  ordering authority. Apply [development-process improvement priority](#development-process-improvement-priority)
+  first, then its [M1 Dispatch Policy](#m1-dispatch-policy)
   for dependency-ready source-to-artifact integration slices; otherwise select
   the first unfinished owner task in step/item order whose contract permits
   the slice. Completed, dependency-blocked, and parked slices are skipped,
@@ -145,6 +146,22 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 `mizar-test` task-20 reserve-bridge closeout. Steps 1-3 close audited
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
+
+### Development-process improvement priority
+
+Owner standing rule 2026-11-21: development-process improvement tasks take
+priority over all other tasks, including the M1 and adopted-wave queues.
+
+- [ ] **CI-RECEIPT-DESIGN — mizar CI receipt-model adoption design; Lane 1;
+  design only.** Authority: owner CI policy recorded in the orchestrator
+  ledger 2026-11-21 13:07 JST. Mirror oeis D9 / FCL D1: unit tests run locally;
+  the receipt generator stays in orchestrator custody and binds the signed
+  local-execution receipt to the sealed local full test. Design signing and
+  a CI sanity job that verifies the receipt instead of re-running
+  `cargo test` on push; trust-touching exceptions retain full CI. Dependencies:
+  none to start design. Exit: a reviewed adoption design and frozen scope for
+  a separate implementation unit; design precedes any implementation unit.
+  Registration grants no completion credit and performs no design or CI changes.
 
 ### M1 Dispatch Policy
 
