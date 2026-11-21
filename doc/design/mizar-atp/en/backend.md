@@ -387,6 +387,11 @@ translator/VC-handoff evidence required by the kernel contract remain
 non-candidates until a real extractor can produce explicit formula/substitution
 payloads.
 
+## Explicit local candidate production
+
+`build_local_candidate_inputs(problem, handoff, format, goal_polarity, formula_sources)` encodes the actual structured problem and validates its original local handoff through finder validation with search disabled. It then uses the VC candidate writer to frame explicit untrusted polarity/source claims, without changing the original problem or handoff. Unsupported original profiles/bindings fail before emission.
+The existing transport carries the genuine encoding's target, input/provenance hashes, labels and symbols. Candidate identity hashes the encoded input, metadata and fresh evidence wire. This route consumes typed claims, not backend proof material or emitted candidate bytes. Normal translation, finder and guarded extraction retain their existing rules.
+
 ## Failure Semantics
 
 - `Timeout`: the timeout budget elapsed and the child process was terminated or

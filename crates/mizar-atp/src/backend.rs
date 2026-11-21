@@ -200,6 +200,35 @@ pub fn source_registration_ground_term_correspondence(
     )]))
 }
 
+/// Binds explicit untrusted local claims to a genuine problem encoding. Acceptance
+/// requires independent Kernel checking against the original handoff context.
+pub fn build_local_candidate_inputs(
+    problem: &crate::problem::AtpProblem,
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    format: ConcreteFormat,
+    goal_polarity: mizar_vc::kernel_evidence_handoff::KernelGoalPolarity,
+    formula_sources: &[(u32, mizar_vc::kernel_evidence_handoff::KernelFormulaSource)],
+) -> Result<(EncodedBackendProblem, BackendCandidateEvidence), String> {
+    let encoded = EncodedBackendProblem::encode(problem, format)?;
+    crate::instance_finder::find_instance_evidence(problem, &encoded, handoff, None, None)?;
+    let bytes = handoff.encode_local_candidate_evidence(goal_polarity, formula_sources, None)?;
+    let mut hash = StableHasher::new("mizar-atp/local-candidate/v1");
+    hash.field_bytes("encoded-input-hash", encoded.input_hash().as_bytes());
+    hash.field_bytes("encoded-metadata-hash", encoded.metadata_hash().as_bytes());
+    hash.field_bytes("formula-substitution-bytes", &bytes);
+    let candidate = BackendCandidateEvidence::new(
+        format!("local-candidate-v1:{}", hex(hash.finalize().as_bytes())),
+        BackendCandidatePayload::FormulaSubstitutionBytes(bytes),
+        encoded.target_binding().clone(),
+        encoded.input_hash(),
+        encoded.provenance_hash(),
+        encoded.formula_labels().to_vec(),
+        encoded.symbol_bindings().to_vec(),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok((encoded, candidate))
+}
+
 /// Builds unchecked theorem candidates from actual scoped problems and local evidence.
 pub fn build_source_theorem_candidate_inputs(
     core: &mizar_core::core_ir::CoreIr,

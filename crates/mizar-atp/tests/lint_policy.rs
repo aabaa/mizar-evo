@@ -545,6 +545,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "EncodedBackendProblem::provenance_hash",
             "EncodedBackendProblem::symbol_bindings",
             "EncodedBackendProblem::target_binding",
+            "build_local_candidate_inputs",
             "build_source_registration_candidate_inputs",
             "build_source_theorem_candidate_inputs",
             "classify_backend_observation",
@@ -560,7 +561,8 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
         "{} public functions and methods must stay limited to task-14 generic \
          runner, task-19 run metadata projection, and mock-classification \
          construction/accessors, task-34 genuine encoded input production, and \
-         task-35 untrusted reflexivity names and task-36/task-46 source candidate transport",
+         task-35 untrusted reflexivity names, task-36/task-46 source candidate transport, \
+         and explicit local candidate claims",
         source_path.display()
     );
 }

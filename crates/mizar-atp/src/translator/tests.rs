@@ -2860,6 +2860,18 @@ pub(crate) fn assert_kernel_accepts_instance_candidate(
     candidate: &crate::instance_finder::CandidateKernelEvidence,
     handoff: &VcKernelEvidenceHandoff,
 ) {
+    let checked = check_local_candidate(candidate.payload(), handoff);
+    assert_eq!(
+        checked.status(),
+        mizar_kernel::checker::KernelCheckStatus::Accepted,
+        "{checked:?}"
+    );
+}
+
+fn check_local_candidate(
+    payload: &crate::backend::BackendCandidatePayload,
+    handoff: &VcKernelEvidenceHandoff,
+) -> mizar_kernel::checker::KernelCheckResult {
     use crate::backend::BackendCandidatePayload;
     use mizar_kernel::{
         checker::{
@@ -2875,7 +2887,7 @@ pub(crate) fn assert_kernel_accepts_instance_candidate(
         kernel_evidence_handoff::KernelContextIdentitySource as VcSource, vc_ir::VcFormulaRef,
     };
 
-    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+    let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = payload else {
         panic!("candidate payload is not formula substitution evidence")
     };
     let parsed =
@@ -2933,19 +2945,261 @@ pub(crate) fn assert_kernel_accepts_instance_candidate(
         ImportedFactContextLimits::default(),
     )
     .expect("formula context");
-    let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+    check_kernel_evidence(KernelEvidenceCheckInput {
         target_vc_fingerprint: &target,
         evidence: &parsed,
         formula_context: Some(&context),
         check_kind: KernelEvidenceCheckKind::ProofObligation,
         policy: KernelCheckPolicy::default(),
         limits: KernelEvidenceCheckLimits::default(),
-    });
+    })
+}
+
+fn local_candidate_fixture() -> (
+    AtpProblem,
+    VcKernelEvidenceHandoff,
+    Vec<(u32, KernelFormulaSource)>,
+) {
+    let p = AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new()));
+    let (problem, handoff) = finder_problem(
+        (p.clone(), kernel_atom(1, Vec::new())),
+        Some((
+            AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new())),
+            kernel_atom(2, Vec::new()),
+        )),
+        (p, kernel_atom(1, Vec::new())),
+        vec![finder_symbol(0, 1, 1), finder_symbol(1, 1, 2)],
+        Vec::new(),
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 0),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 0),
+        ],
+    );
+    let claims = handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .map(|entry| (entry.formula_id(), entry.source().clone()))
+        .collect();
+    (problem, handoff, claims)
+}
+
+#[test]
+fn local_candidate_canonical_claims_preserve_wire_and_kernel_acceptance() {
+    use crate::backend::{BackendCandidatePayload, build_local_candidate_inputs};
+
+    let (problem, handoff, claims) = local_candidate_fixture();
+    let original = handoff.encode_local_evidence(None).expect("original wire");
+    let (_, candidate) = build_local_candidate_inputs(
+        &problem,
+        &handoff,
+        ConcreteFormat::Tptp,
+        KernelGoalPolarity::AssertFalseForRefutation,
+        &claims,
+    )
+    .expect("fresh local candidate");
+    assert_eq!(
+        candidate.payload(),
+        &BackendCandidatePayload::FormulaSubstitutionBytes(original)
+    );
+    assert_kernel_accepts_instance_candidate(&candidate, &handoff);
+}
+
+#[test]
+fn local_candidate_consistency_claim_parses_but_kernel_rejects_original_context() {
+    let (problem, handoff, claims) = local_candidate_fixture();
+    let original = handoff.clone();
+    let (_, candidate) = crate::backend::build_local_candidate_inputs(
+        &problem,
+        &handoff,
+        ConcreteFormat::Tptp,
+        KernelGoalPolarity::AssertTrueForConsistency,
+        &claims,
+    )
+    .expect("fresh consistency candidate");
+    let checked = check_local_candidate(candidate.payload(), &handoff);
     assert_eq!(
         checked.status(),
-        mizar_kernel::checker::KernelCheckStatus::Accepted,
+        mizar_kernel::checker::KernelCheckStatus::Rejected,
         "{checked:?}"
     );
+    assert_eq!(
+        checked.rejections()[0].detail(),
+        mizar_kernel::rejection::RejectionDetail::ContextMismatch
+    );
+    assert_eq!(handoff, original);
+}
+
+#[test]
+fn local_candidate_unverifiable_source_parses_but_kernel_rejects_original_context() {
+    let (problem, handoff, mut claims) = local_candidate_fixture();
+    let original = handoff.clone();
+    claims[0].1 = KernelFormulaSource::LocalHypothesis {
+        local_context_id: 99,
+    };
+    let (_, candidate) = crate::backend::build_local_candidate_inputs(
+        &problem,
+        &handoff,
+        ConcreteFormat::Tptp,
+        KernelGoalPolarity::AssertFalseForRefutation,
+        &claims,
+    )
+    .expect("fresh source candidate");
+    let checked = check_local_candidate(candidate.payload(), &handoff);
+    assert_eq!(
+        checked.status(),
+        mizar_kernel::checker::KernelCheckStatus::Rejected,
+        "{checked:?}"
+    );
+    assert_eq!(
+        checked.rejections()[0].detail(),
+        mizar_kernel::rejection::RejectionDetail::MissingProvenance
+    );
+    assert_eq!(handoff, original);
+}
+
+#[test]
+fn local_candidate_encoder_rejects_incomplete_duplicate_unknown_and_unsupported_claims() {
+    let (_, handoff, claims) = local_candidate_fixture();
+    let imported = KernelImportedFactRequirement {
+        imported_fact_id: 1,
+        package_id: b"package".to_vec(),
+        module_path: b"module".to_vec(),
+        exported_item_id: b"item".to_vec(),
+        statement_fingerprint: KernelEvidenceFingerprint::new(
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+            b"statement".to_vec(),
+        )
+        .expect("statement fingerprint"),
+        required_proof_status: KernelRequiredProofStatus::KernelVerified,
+    };
+    let mut duplicate = claims.clone();
+    duplicate[1] = claims[0].clone();
+    let mut unknown = claims.clone();
+    unknown[0].0 = u32::MAX;
+    let mut invalid_claims = vec![claims[1..].to_vec(), duplicate, unknown];
+    for source in [
+        KernelFormulaSource::AcceptedImportedAxiom(imported.clone()),
+        KernelFormulaSource::AcceptedImportedTheorem(imported),
+        KernelFormulaSource::PolicyBoundedBuiltin {
+            built_in_id: b"builtin".to_vec(),
+        },
+    ] {
+        let mut unsupported = claims.clone();
+        unsupported[0].1 = source;
+        invalid_claims.push(unsupported);
+    }
+    for invalid in invalid_claims {
+        assert!(
+            handoff
+                .encode_local_candidate_evidence(
+                    KernelGoalPolarity::AssertFalseForRefutation,
+                    &invalid,
+                    None,
+                )
+                .is_err(),
+            "unexpectedly encoded {invalid:?}"
+        );
+    }
+}
+
+#[test]
+fn local_candidate_factory_rejects_original_target_and_producer_binding_mismatches() {
+    use crate::backend::build_local_candidate_inputs;
+
+    let (problem, handoff, claims) = local_candidate_fixture();
+    let other_set = fixture_set(VcStatus::NeedsAtp, "other-local-candidate-target");
+    let other_handoff = self::handoff(&other_set);
+    assert!(
+        build_local_candidate_inputs(
+            &problem,
+            &other_handoff,
+            ConcreteFormat::Tptp,
+            KernelGoalPolarity::AssertFalseForRefutation,
+            &claims,
+        )
+        .is_err()
+    );
+    let target = problem.target_binding();
+    for mismatched_target in [
+        AtpTargetBinding::new(
+            AtpFingerprint::new(
+                target.fingerprint().algorithm_id(),
+                b"different-target".to_vec(),
+            )
+            .expect("fingerprint"),
+            target.producer_binding().clone(),
+        )
+        .expect("target mismatch"),
+        AtpTargetBinding::new(target.fingerprint().clone(), "different-producer")
+            .expect("producer mismatch"),
+    ] {
+        let other_problem = AtpProblem::try_new(AtpProblemParts {
+            vc_id: problem.vc_id(),
+            target_binding: mismatched_target,
+            logic_profile: problem.logic_profile().clone(),
+            expected_result: problem.expected_result(),
+            declarations: problem.declarations().to_vec(),
+            axioms: problem.axioms().to_vec(),
+            conjecture: problem.conjecture().clone(),
+            type_context: problem.type_context().clone(),
+            properties: problem.properties().to_vec(),
+            symbol_map: problem.symbol_map().to_vec(),
+            provenance: problem.provenance().to_vec(),
+            diagnostics: problem.diagnostics().to_vec(),
+        })
+        .expect("well-formed mismatched original problem");
+        assert!(
+            build_local_candidate_inputs(
+                &other_problem,
+                &handoff,
+                ConcreteFormat::Tptp,
+                KernelGoalPolarity::AssertFalseForRefutation,
+                &claims,
+            )
+            .is_err()
+        );
+    }
+}
+
+#[test]
+fn local_candidate_identity_and_metadata_are_deterministic_in_both_formats() {
+    use crate::backend::build_local_candidate_inputs;
+
+    let (problem, handoff, claims) = local_candidate_fixture();
+    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+        let problem = reprofile_finder_problem(&problem, format);
+        let build = |claims: &[(u32, KernelFormulaSource)], polarity| {
+            build_local_candidate_inputs(&problem, &handoff, format, polarity, claims)
+                .expect("fresh candidate")
+        };
+        let (encoded, candidate) = build(&claims, KernelGoalPolarity::AssertFalseForRefutation);
+        let mut reversed = claims.clone();
+        reversed.reverse();
+        for repeated in [&claims, &reversed] {
+            let (again_encoded, again) =
+                build(repeated, KernelGoalPolarity::AssertFalseForRefutation);
+            assert_eq!(encoded.metadata_hash(), again_encoded.metadata_hash());
+            assert_eq!(candidate, again);
+        }
+        assert_eq!(candidate.target_binding(), encoded.target_binding());
+        assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+        assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+        assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+        assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+        let mut changed = claims.clone();
+        changed[0].1 = KernelFormulaSource::LocalHypothesis {
+            local_context_id: 99,
+        };
+        for (claims, polarity) in [
+            (&changed, KernelGoalPolarity::AssertFalseForRefutation),
+            (&claims, KernelGoalPolarity::AssertTrueForConsistency),
+        ] {
+            let (changed_encoded, changed_candidate) = build(claims, polarity);
+            assert_eq!(encoded.metadata_hash(), changed_encoded.metadata_hash());
+            assert_ne!(candidate.candidate_id(), changed_candidate.candidate_id());
+        }
+    }
 }
 
 #[test]

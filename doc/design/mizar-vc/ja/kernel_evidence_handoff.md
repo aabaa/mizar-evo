@@ -461,3 +461,8 @@ UTF-8 metadata は source-algorithm-state-local-handoff-v1;source={:?};module={:
 
 equality name、Kernel/SAT/ATP/Proof policy 実行、受理、source currentness、公開、cache、完全 anchor、service authority は加えない。旧 original-only API と NeedsAtp 拒否を保ち、一般 theorem ATP 射影・共有 parameter 表現と下流実行は別の未完了範囲とする。
 既存 runner/proof_verification.rs private term_proof_tests に真正 source の二 family だけを追記する。独立 normal 射影と汎用 handoff 全体、実 status/provenance/selected target/context、反復・入力不変、実 source/owner/alpha/snapshot/schema/policy variant を比較する。normal v1 parse、既存 ATP local-variable name、normal v2、実 target/context に束縛した新鮮な Kernel check で consumer を検証し、本体に受理は加えない。真正 unsupported/absent/foreign/cross-output/全 graph 拒否・旧 error 順序と等出力 policy の許可を検査する。旧 tests/helpers と下位 framing matrix を保つ。
+
+## Explicit local candidate claims
+
+`encode_local_candidate_evidence(goal_polarity, formula_sources, equality_instances)` は `encode_local_evidence` と local wire writer を共有する。元 handoff は既存 local profile・context 整合・import 無しの制約を満たす。元 formula ごとに `(formula_id, KernelFormulaSource)` を一つ渡す。重複・不足・未知 id・非対応 source class は拒否し、正規 formula 順で符号化する。
+明示 polarity と local/cited/generated source claim は未検証であり、元 context と不一致でもよい。他の全フィールドは不変の元 handoff に由来する。Kernel は fresh candidate を元 target/context に対して検査し、claim から trusted context を構築しない。旧 local encoder の refutation 検査と正規 claim、handoff 構築・hash は維持する。

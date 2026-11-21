@@ -186,6 +186,27 @@ impl VcKernelEvidenceHandoff {
         &self,
         equality_instances: Option<&[Vec<u8>]>,
     ) -> Result<Vec<u8>, String> {
+        let envelope = self.canonical_evidence();
+        let sources = envelope
+            .formula_evidence()
+            .iter()
+            .map(|formula| (formula.formula_id(), formula.source().clone()))
+            .collect::<Vec<_>>();
+        self.encode_local_candidate_evidence(
+            envelope.final_goal().polarity,
+            &sources,
+            equality_instances,
+        )
+    }
+
+    /// Frames explicit untrusted claims for independent Kernel checking against
+    /// the original context; source membership and claimed polarity are unchecked.
+    pub fn encode_local_candidate_evidence(
+        &self,
+        goal_polarity: KernelGoalPolarity,
+        formula_sources: &[(u32, KernelFormulaSource)],
+        equality_instances: Option<&[Vec<u8>]>,
+    ) -> Result<Vec<u8>, String> {
         let invalid = || "kernel_evidence.local_wire.unsupported".to_owned();
         let envelope = self.canonical_evidence();
         let profile = envelope.kernel_profile();
@@ -200,6 +221,15 @@ impl VcKernelEvidenceHandoff {
             || self.formula_context_requirements().is_some_and(|context| {
                 !context.imported_axioms.is_empty() || !context.imported_theorems.is_empty()
             })
+        {
+            return Err(invalid());
+        }
+        let sources = formula_sources
+            .iter()
+            .map(|(id, source)| (*id, source))
+            .collect::<BTreeMap<_, _>>();
+        if sources.len() != formula_sources.len()
+            || sources.len() != envelope.formula_evidence().len()
         {
             return Err(invalid());
         }
@@ -233,7 +263,15 @@ impl VcKernelEvidenceHandoff {
             .map(|entry| entry.payload.clone())
             .collect();
         for formula in envelope.formula_evidence() {
-            let (tag, context) = match formula.source() {
+            if !matches!(
+                formula.source(),
+                KernelFormulaSource::LocalHypothesis { .. }
+                    | KernelFormulaSource::CitedPremise { .. }
+                    | KernelFormulaSource::GeneratedVcFact { .. }
+            ) {
+                return Err(invalid());
+            }
+            let (tag, context) = match sources.get(&formula.formula_id()).ok_or_else(invalid)? {
                 KernelFormulaSource::LocalHypothesis { local_context_id } => (1, *local_context_id),
                 KernelFormulaSource::CitedPremise { local_context_id } => (2, *local_context_id),
                 KernelFormulaSource::GeneratedVcFact { vc_fact_id } => (3, *vc_fact_id),
@@ -271,7 +309,10 @@ impl VcKernelEvidenceHandoff {
             sections[4].push(item);
         }
         let goal = envelope.final_goal();
-        let mut item = vec![1];
+        let mut item = vec![match goal_polarity {
+            KernelGoalPolarity::AssertFalseForRefutation => 1,
+            KernelGoalPolarity::AssertTrueForConsistency => 2,
+        }];
         put_fingerprint(&goal.formula_fingerprint, &mut item)?;
         item.extend_from_slice(&goal.provenance_id.to_be_bytes());
         item.extend_from_slice(&goal.formula_bytes);
