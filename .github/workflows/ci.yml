@@ -2,9 +2,71 @@ name: CI
 
 on:
   push:
+    branches: ["**"]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
+  receipt-shadow:
+    name: receipt-shadow
+    runs-on: ubuntu-latest
+    steps:
+      # Bootstrap/shadow only. Required-check source enforcement and activation
+      # belong to the owner; this job cannot authorize skipping mizar-test.
+      - name: Observe receipts using the trusted default branch
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+          EVENT_KIND: ${{ github.event_name }}
+          SOURCE: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_KIND" != push ]; then
+            echo 'full CI: pull requests and merge revisions are ineligible'
+            exit 0
+          fi
+          sanity="$RUNNER_TEMP/receipt-sanity"
+          mkdir -p "$sanity"
+          git init --bare "$sanity/repo"
+          git -C "$sanity/repo" remote add origin "https://github.com/$REPOSITORY.git"
+          default_ref="refs/heads/$DEFAULT_BRANCH"
+          git -C "$sanity/repo" fetch --no-tags origin "$default_ref:$default_ref"
+          default_source=$(git -C "$sanity/repo" rev-parse "$default_ref")
+          trusted="$default_source"
+          if [ "$SOURCE_REF" = "$default_ref" ]; then
+            trusted="$BEFORE"
+          fi
+          if [ "$trusted" = "$SOURCE" ] || \
+             ! [[ "$trusted" =~ ^[0-9a-f]{40}$ ]] || \
+             ! git -C "$sanity/repo" merge-base --is-ancestor "$trusted" "$default_source"; then
+            echo 'full CI: no independent prior default-branch anchor'
+            exit 0
+          fi
+          # Never import the candidate verifier, policy, or evidence as code.
+          if ! git -C "$sanity/repo" cat-file -e "$trusted:.github/ci-receipts/verify.py"; then
+            echo 'full CI: bootstrap anchor has no verifier'
+            exit 0
+          fi
+          git -C "$sanity/repo" show "$trusted:.github/ci-receipts/verify.py" > "$sanity/verify.py"
+          git -C "$sanity/repo" show "$trusted:.github/ci-receipts/policy.json" > "$sanity/policy.json"
+          if [ "$SOURCE_REF" != "$default_ref" ]; then
+            git -C "$sanity/repo" fetch --no-tags origin "$SOURCE_REF:$SOURCE_REF"
+            base=$(git -C "$sanity/repo" merge-base --all "$default_source" "$SOURCE")
+            [ "$(printf '%s\n' "$base" | wc -l)" -eq 1 ]
+          else
+            base="$BEFORE"
+          fi
+          python3 -I "$sanity/verify.py" --repository "$sanity/repo" \
+            --policy "$sanity/policy.json" --event-kind "$EVENT_KIND" \
+            --repository-id "$REPOSITORY" --source "$SOURCE" --base "$base" \
+            --source-ref "$SOURCE_REF" --default-ref "$default_ref" \
+            --default-source "$default_source" --remote origin
+
   mizar-test:
     name: mizar-test
     runs-on: ubuntu-latest
@@ -47,6 +109,9 @@ jobs:
 
       - name: Run tests
         run: cargo test
+
+      - name: Test receipt verifier with disposable keys
+        run: python3 -m unittest discover -s tests/ci_receipts -p test_verifier.py -v
 
       - name: Run clippy
         run: cargo clippy --all-targets -- -D warnings

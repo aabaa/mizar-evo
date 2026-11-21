@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Proposed adoption only; current CI and verification policy remain effective.
+Implemented for bootstrap/shadow only; current full CI and verification policy remain effective.
 Owner authority is the CI policy recorded by the orchestrator on 2026-11-21
 13:07 JST, supplied through the CI-RECEIPT-DESIGN dispatch and registration.
 This design neither changes language intent nor settles Open Questions or G-class items.
@@ -95,3 +95,30 @@ Until these pass, full CI remains the default. Rollback restores unconditional h
 and revokes shortcut authorization without changing local exhaustive tests or acceptance policy.
 Receipts attest a trusted signer's observation, not proof certificates or independent execution;
 host/signer compromise and unobserved inputs remain outside their assurance.
+
+## Bootstrap operation
+
+The orchestrator stores `generate.py` and its unprovisioned `custody.json` at
+`~/orchestration/ci-receipts/` on dev-linux; keys and the publication ledger stay there.
+Only the owner provisions custody and reviewed tool, environment and inventory pins.
+The fixed generator requires Linux namespaces, read-only Git metadata and toolchain,
+an isolated writable checkout/cache, offline dependencies, and a parent-owned bounded log pipe.
+It rejects source mutations through inotify as well as pre/postflight checks. Harness-qualified
+names and ignored names must match the reviewed baseline, including individual summary counts.
+The owner-only publication mode atomically pushes the sealed source and create-only evidence
+tag, then appends its publication observation; bootstrap never invokes publication.
+Repository policy starts disabled with no signer or baseline; it cannot grant a shortcut.
+The [verifier](../../.github/ci-receipts/verify.py) consumes only exact Git blobs and
+the [trusted policy](../../.github/ci-receipts/policy.json); no candidate modules are imported.
+The `receipt-shadow` job extracts them from a fixed default-branch commit into isolated
+storage: the event's prior default head for a default-branch push, otherwise the live default
+head, always distinct from the candidate. Missing prior code stays bootstrap/full.
+It checks live refs and reports observations while `mizar-test` runs unconditionally.
+Remote evidence is fetched as commit metadata, one root tree, and three fixed blobs; reads
+have size limits and Git operations time out. Native Git cannot prebound a single object's
+wire transfer before its size is available; shadow failure always retains full execution.
+Receipt tags trigger no source workflow; branch pushes and PRs retain their checks.
+Run the disposable attack matrix with `python3 -m unittest discover -s tests/ci_receipts -v`;
+generator tests use the external custody source, or `CI_RECEIPT_CUSTODY` for a disposable copy.
+Required-check source enforcement, live canaries, baseline approval and production custody
+deployment remain owner work. Rollback removes shadow observation and preserves full testing.

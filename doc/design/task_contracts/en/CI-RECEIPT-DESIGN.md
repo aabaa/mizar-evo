@@ -1,6 +1,6 @@
 # Task CI-RECEIPT-DESIGN: Design signed local-full receipt adoption
 Canonical language: English; [Japanese pointer](../ja/CI-RECEIPT-DESIGN.md).
-Status: design specified; successor scope frozen, implementation not started. Tier: light, design/docs only.
+Status: design frozen; successor implemented for bootstrap/shadow only. Design tier: light; implementation: full.
 Owner: orchestrator via [process priority](../../todo.md#development-process-improvement-priority).
 Test-gate owner: [mizar-test plan](../../mizar-test/en/00.crate_plan.md).
 Consumers: local integration and CI maintainers. Dependencies: none for design; activation prerequisites below.
