@@ -3272,6 +3272,28 @@ fn source_theorem_reflexivity_witness_draft_preserves_errors() {
                     expected
                 );
                 let path = "proof-witnesses/errors/prior.bin";
+                for (family, version, canonical) in [
+                    ("unsupported/theorem-wire", SchemaVersion::new(2, 0), true),
+                    (schema.family(), SchemaVersion::new(1, 0), true),
+                    (schema.family(), SchemaVersion::new(2, 0), false),
+                ] {
+                    let unsupported = ProofWitnessDraft::new(
+                        original_id.obligation_id(),
+                        original_id.obligation_anchor().clone(),
+                        obligation.clone(),
+                        &projection,
+                        trusted.clone(),
+                        ProofWitnessPayloadSchema::with_canonical_bytes_required(
+                            family, version, canonical,
+                        )
+                        .unwrap(),
+                        wire.clone(),
+                        path,
+                        provenance.clone(),
+                    )
+                    .unwrap();
+                    assert!(unsupported.source_theorem_file_value().is_err());
+                }
                 let expected = ProofWitnessDraft::new(
                     original_id.obligation_id(),
                     original_id.obligation_anchor().clone(),

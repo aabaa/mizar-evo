@@ -210,7 +210,7 @@ The explicit version 3.0 profile uses the existing ProofWitnessRef/KernelAccepta
 `builtin_proof_witness_ref_json(&ProofWitnessRef)` returns validated CanonicalJson; `read_builtin_proof_witness_ref(&CanonicalJson, ProofWitnessReadOptions)` validates the same profile. Use the existing canonical_json_bytes for bytes; add no single-use byte wrapper or public type/field/adapter.
 Require major 3/minor 0 with UpToSupported, before field interpretation. Reject every other major/newer minor, missing/malformed version, unknown/legacy fields and status/evidence pair; retain all existing hash-class/family/path/metadata checks and optional expected payload-hash equality. Never rewrite supplied versions or relabel a built-in as kernel_verified to invoke the normal reader.
 Normal current_schema_version/schema_version_support and existing writer/reader APIs remain 2.0/KernelVerified with their exact rejection and canonical-byte behavior. [Explicit enclosing support](verified_artifact.md#explicit-built-in-enclosing-profile) owns the separate 2.0 container and declared manifest binding; normal enclosing 1.0 still rejects 3.0 references. Normal Proof staging/publication and Cache rules remain unchanged.
-The [source projection owner](../../mizar-proof/en/status.md#source-discharge-witness-projection) supplies genuine same-call metadata and checked payloads. A typed reference or successful structural read alone grants no trusted token, current-source authority, committed reachability or publication; full source-produced artifact assembly and Proof witness staging/publication integration remain deferred.
+The [source projection owner](../../mizar-proof/en/status.md#source-discharge-witness-projection) supplies genuine same-call metadata and checked payloads. A typed reference or successful structural read alone grants no trusted token, current-source authority, committed reachability or publication; bounded theorem/state FILE publication is owned by [Proof](../../mizar-proof/en/witness_store.md#publication-references); general producer integration remains deferred.
 Tests cover genuine source reference round-trip through these explicit APIs, deterministic canonical bytes and the complete version/status/evidence/field/hash/path rejection matrix while preserving every normal-codec test. Synthetic shape mutations are structural tests only.
 
 ## Reader And Writer Requirements
@@ -278,8 +278,7 @@ references remain readable under the same reader policy because the corrected
 goal-polarity and context-identity binding is carried by owner-produced hashes,
 not by new artifact-owned fields.
 
-Concrete witness payload publication, complete producer integration, and full phase
-15 emission remain `external_dependency_gap` items until real producer outputs
-exist. Compatibility with schema version `1.0` legacy certificate references is
+General producer integration and full phase 15 emission remain
+`external_dependency_gap` items; bounded FILE publication follows the Proof owner. Compatibility with schema version `1.0` legacy certificate references is
 not retained in the normal trusted reader; any migration reader must be
 explicitly audit-only and outside trusted proof acceptance.

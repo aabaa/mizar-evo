@@ -141,6 +141,9 @@ fn source_theorem_witness_file_matches_genuine_artifact_transport() -> Result<()
                 let actual = candidate(&source, &symbols, &snapshot, &policy, &witness_path)?;
                 assert_eq!(actual.0, expected);
                 let draft = &expected.2;
+                let draft_file = draft.source_theorem_file_value()?;
+                assert_eq!(draft_file, actual.1);
+                let legacy_hash_value = draft.payload_hash_value();
                 let metadata = draft.kernel_acceptance();
                 let mut acceptance = std::collections::BTreeMap::from([
                     (
@@ -243,6 +246,14 @@ fn source_theorem_witness_file_matches_genuine_artifact_transport() -> Result<()
                 assert!(draft.provenance().trusted_used_axioms_ref().is_none());
                 assert!(draft.provenance().advisory_backend_ref().is_none());
                 let staged = stage(draft.clone()).unwrap();
+                assert_eq!(
+                    staged.staged_payload_hash().digest,
+                    artifact_hash_domain(
+                        draft.payload_schema().family(),
+                        draft.payload_schema().version()
+                    )
+                    .hash(&legacy_hash_value, &[]),
+                );
                 assert!(staged.artifact_reference_candidate().is_none());
                 assert_ne!(staged.staged_payload_hash(), &hash);
                 assert!(!root.join(&witness_path).exists());
@@ -251,7 +262,7 @@ fn source_theorem_witness_file_matches_genuine_artifact_transport() -> Result<()
                 let written = write_published_artifact(
                     &transport_root,
                     &transport_path,
-                    &actual.1,
+                    &draft_file,
                     &domain,
                     &[],
                 )
@@ -666,6 +677,7 @@ fn source_theorem_witness_file_matches_genuine_artifact_transport() -> Result<()
                             let staged_state = product
                                 .0
                                 .2
+                                .clone()
                                 .stage_source_algorithm_state_file(&state_read, reference)
                                 .unwrap();
                             assert!(
@@ -680,6 +692,150 @@ fn source_theorem_witness_file_matches_genuine_artifact_transport() -> Result<()
                                 mizar_proof::witness_store::publish_ref(&staged_state, &token)
                                     .is_err()
                             );
+                            assert!(product.0.2.source_theorem_file_value().is_err());
+                            assert_eq!(staged_state.provenance(), product.0.2.provenance());
+                            assert_eq!(
+                                staged_state.artifact_reference_candidate(),
+                                Some(reference)
+                            );
+                            let reuse = product.0.0.reuse_metadata();
+                            assert!(product.0.1.requires_cache_miss());
+                            assert_eq!(
+                                product.0.1.completeness(),
+                                DependencySliceCompleteness::IncompleteUncacheable
+                            );
+                            assert!(reuse.selected_proof_witness_hash().is_none());
+                            assert!(!reuse.cache_reuse_predicate_complete());
+
+                            let mut state_artifact = artifact.clone();
+                            state_artifact.module.package_id = "mizar-test-corpus".to_owned();
+                            state_artifact.module.module_path = "tests.miz.pass.algorithms.pass_proof_verification_algorithm_var_const_assert_001".to_owned();
+                            state_artifact.source_file = "src/tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz".to_owned();
+                            state_artifact.source_hash = build.source_versions[0].source_hash;
+                            let obligation = &mut state_artifact.obligations[0];
+                            obligation.obligation_id = reference.obligation_id.clone();
+                            obligation.obligation_anchor =
+                                Some(reuse.obligation_anchor().as_str().to_owned());
+                            obligation.source_range.end_byte = algorithm_text.len() as u64;
+                            obligation.obligation_kind =
+                                "source_algorithm_state_transitivity".to_owned();
+                            obligation.statement_summary = algorithm_text.clone();
+                            obligation.obligation_fingerprint =
+                                reference.obligation_fingerprint.clone();
+                            obligation.vc_fingerprint.digest = reuse.vc_fingerprint();
+                            obligation.local_context_fingerprint.digest =
+                                reuse.local_context_fingerprint();
+                            obligation.dependency_slice_fingerprint.digest =
+                                reuse.dependency_slice_fingerprint();
+                            obligation.verifier_policy_fingerprint = reference
+                                .kernel_acceptance
+                                .verifier_policy_fingerprint
+                                .clone();
+                            obligation.accepted_witness_obligation_id =
+                                Some(reference.obligation_id.clone());
+                            state_artifact.proof_witnesses = vec![reference.clone()];
+                            state_artifact.provenance.verifier_config_hash = reference
+                                .kernel_acceptance
+                                .verifier_policy_fingerprint
+                                .clone();
+                            let (state_interface, state_implementation) =
+                                state_artifact.refresh_hashes().unwrap();
+                            let state_json =
+                                builtin_verified_artifact_json(&state_artifact).unwrap();
+                            assert_eq!(
+                                read_builtin_verified_artifact(
+                                    &state_json,
+                                    VerifiedArtifactReadOptions::default()
+                                )
+                                .unwrap(),
+                                state_artifact
+                            );
+                            let state_main = write_published_artifact(
+                                &state_root,
+                                &PublishedArtifactPath::new(main_path).unwrap(),
+                                &state_json,
+                                &main_domain,
+                                &artifact_hash_excluded_paths(),
+                            )
+                            .unwrap();
+                            let mut state_entry = module_entry.clone();
+                            state_entry.module = state_artifact.module.clone();
+                            state_entry.source_file = state_artifact.source_file.clone();
+                            state_entry.source_hash = state_artifact.source_hash;
+                            state_entry.artifact_hash.digest = state_main.artifact_hash;
+                            state_entry.interface_hash.digest = state_interface;
+                            state_entry.implementation_hash.digest = state_implementation;
+                            state_entry.proof_witnesses = vec![ManifestProofWitnessEntry {
+                                obligation_id: reference.obligation_id.clone(),
+                                obligation_fingerprint: reference.obligation_fingerprint.clone(),
+                                witness_path: reference.witness_path.clone(),
+                                witness_artifact_hash: reference.witness_artifact_hash.clone(),
+                            }];
+                            let mut state_manifest = commit.manifest().clone();
+                            state_manifest.package.package_id =
+                                state_artifact.module.package_id.clone();
+                            state_manifest.modules.clear();
+                            state_manifest.verifier_config_hash =
+                                state_artifact.provenance.verifier_config_hash.clone();
+                            let mut transaction =
+                                ManifestTransaction::begin(&state_root, state_manifest, None)
+                                    .unwrap();
+                            transaction.stage_module(state_entry).unwrap();
+                            let state_commit = transaction
+                                .commit(ManifestCommitOptions::default())
+                                .unwrap();
+                            let committed_state = read_manifest_file(
+                                &state_root,
+                                ManifestFileReadOptions {
+                                    validate_references: true,
+                                    validate_witness_files: true,
+                                    validate_development_artifacts: true,
+                                    expected_manifest_hash: Some(
+                                        state_commit.write().artifact_hash,
+                                    ),
+                                },
+                            )
+                            .unwrap();
+                            assert_eq!(committed_state.manifest, *state_commit.manifest());
+                            let state_token = mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                                &state_commit, &state_root, &state_artifact.module, build.id.fingerprint(),
+                            ).unwrap();
+                            let published = mizar_proof::witness_store::publish_ref(
+                                &staged_state,
+                                &state_token,
+                            )
+                            .unwrap();
+                            assert_eq!(published.reference(), reference);
+                            assert_eq!(
+                                published.reference().kernel_acceptance,
+                                *product.0.2.kernel_acceptance()
+                            );
+                            assert_eq!(published.provenance(), product.0.2.provenance());
+                            let stale = mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                                &state_commit, &state_root, &state_artifact.module, hash_text("stale state snapshot"),
+                            ).unwrap();
+                            assert_eq!(mizar_proof::witness_store::publish_ref(&staged_state, &stale), Err(mizar_proof::witness_store::ProofWitnessStoreError::StaleBuildSnapshot));
+                            let state_file = state_root.join(&reference.witness_path);
+                            let original_bytes = fs::read(&state_file).unwrap();
+                            for changed in [None, Some([original_bytes.as_slice(), b" "].concat())]
+                            {
+                                if let Some(bytes) = changed {
+                                    fs::write(&state_file, bytes).unwrap();
+                                } else {
+                                    fs::remove_file(&state_file).unwrap();
+                                }
+                                assert!(mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
+                                    &state_commit, &state_root, &state_artifact.module, build.id.fingerprint(),
+                                ).is_err());
+                                assert!(
+                                    mizar_proof::witness_store::publish_ref(
+                                        &staged_state,
+                                        &state_token
+                                    )
+                                    .is_ok()
+                                );
+                            }
+                            fs::write(&state_file, original_bytes).unwrap();
                         },
                     );
                     let stale = mizar_proof::witness_store::CommittedWitnessPublicationProof::from_source_theorem_manifest_commit(
@@ -1014,6 +1170,26 @@ fn source_theorem_witness_file_rejects_invalid_schema_and_associations() -> Resu
     assert_eq!(
         recover(&changed, &actual.2).unwrap_err(),
         "source theorem witness file read hash mismatch"
+    );
+    let written = write_published_artifact(
+        &transport_root,
+        &transport_path,
+        &changed.value,
+        &domain,
+        &[],
+    )
+    .unwrap();
+    let coherent_changed =
+        read_published_artifact(&transport_root, &transport_path, read_options).unwrap();
+    let mut changed_reference = actual.2.clone();
+    changed_reference.witness_artifact_hash.digest = written.artifact_hash;
+    assert_eq!(recover(&coherent_changed, &changed_reference)?, vec![0]);
+    assert!(
+        expected
+            .2
+            .clone()
+            .stage_source_theorem_file(&coherent_changed, &changed_reference)
+            .is_err()
     );
     for hash in [None, Some(hash_text("wrong-read-hash"))] {
         let mut wrong = read.clone();

@@ -822,6 +822,70 @@ impl ProofWitnessDraft {
         )
     }
 
+    /// Exports a bounded built-in theorem draft using the existing FILE profile.
+    ///
+    /// Transport this value through Artifact, then associate the readback with
+    /// this draft using `stage_source_theorem_file`; export alone is not publication.
+    pub fn source_theorem_file_value(&self) -> Result<CanonicalJson, String> {
+        if self.selected_class != ProofWinnerClass::DischargedBuiltin
+            || self.payload_schema.family() != "mizar-proof/source-theorem-reflexivity-checked-wire"
+            || self.payload_schema.version() != SchemaVersion::new(2, 0)
+            || !self.payload_schema.canonical_bytes_required()
+            || self.obligation_fingerprint.schema_family
+                != "mizar-proof/source-theorem-original-obligation"
+            || self.obligation_fingerprint.schema_version != SchemaVersion::new(1, 0)
+            || self.kernel_acceptance.evidence_schema_version != SchemaVersion::new(2, 0)
+            || self.expected_selected_proof_witness_hash.is_some()
+        {
+            return Err("unsupported source theorem draft FILE profile".to_owned());
+        }
+        let reference = ProofWitnessRef {
+            schema_version: SchemaVersion::new(3, 0),
+            obligation_id: self.obligation_id.clone(),
+            obligation_fingerprint: self.obligation_fingerprint.clone(),
+            proof_status: ArtifactProofStatus::DischargedBuiltin,
+            evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
+            witness_path: self.witness_path.clone(),
+            witness_artifact_hash: witness_payload_hash_ref(self),
+            kernel_acceptance: self.kernel_acceptance.clone(),
+        };
+        let CanonicalJson::Object(reference_fields) =
+            mizar_artifact::proof_witness::builtin_proof_witness_ref_json(&reference)
+                .map_err(|error| error.to_string())?
+        else {
+            return Err("source theorem reference must be an object".to_owned());
+        };
+        CanonicalJson::object([
+            ("schema_version", CanonicalJson::string("1.0")),
+            (
+                "schema_family",
+                CanonicalJson::string(SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY),
+            ),
+            ("obligation_id", CanonicalJson::string(&self.obligation_id)),
+            (
+                "obligation_fingerprint",
+                CanonicalJson::string(self.obligation_fingerprint.to_artifact_hash_string()),
+            ),
+            (
+                "payload_schema_family",
+                CanonicalJson::string(self.payload_schema.family()),
+            ),
+            (
+                "payload_schema_version",
+                CanonicalJson::string(self.payload_schema.version().to_string()),
+            ),
+            (
+                "payload_bytes_hex",
+                CanonicalJson::string(lower_hex(&self.payload_bytes)),
+            ),
+            (
+                "kernel_acceptance",
+                reference_fields["kernel_acceptance"].clone(),
+            ),
+        ])
+        .map_err(|error| error.to_string())
+    }
+
     #[must_use]
     pub fn witness_path(&self) -> &str {
         &self.witness_path
@@ -916,7 +980,7 @@ pub struct CommittedWitnessPublicationProof {
 }
 
 impl CommittedWitnessPublicationProof {
-    /// Validates committed reachability for source-theorem witnesses.
+    /// Validates committed reachability for theorem and algorithm-state FILE witnesses.
     ///
     /// Fresh reads must match the opaque commit and every selected witness file.
     /// `expected_snapshot` is the coordinator's publication expectation, checked
@@ -1007,11 +1071,18 @@ impl CommittedWitnessPublicationProof {
         {
             return Err("committed source theorem requires supported trusted witnesses".to_owned());
         }
-        let domain = artifact_hash_domain(
-            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY,
-            SchemaVersion::new(1, 0),
-        );
         for witness in &artifact.proof_witnesses {
+            let family = witness.witness_artifact_hash.schema_family.as_str();
+            if witness.witness_artifact_hash.schema_version != SchemaVersion::new(1, 0)
+                || !matches!(
+                    family,
+                    SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY
+                        | SOURCE_ALGORITHM_STATE_WITNESS_FILE_SCHEMA_FAMILY
+                )
+            {
+                return Err("unsupported committed witness FILE profile".to_owned());
+            }
+            let domain = artifact_hash_domain(family, SchemaVersion::new(1, 0));
             let path = PublishedArtifactPath::new(&witness.witness_path)
                 .map_err(|error| error.to_string())?;
             let read = read_published_artifact(
@@ -1024,7 +1095,11 @@ impl CommittedWitnessPublicationProof {
                 },
             )
             .map_err(|error| error.to_string())?;
-            read_source_theorem_witness_file(&read, witness)?;
+            if family == SOURCE_ALGORITHM_STATE_WITNESS_FILE_SCHEMA_FAMILY {
+                read_source_algorithm_state_witness_file(&read, witness)?;
+            } else {
+                read_source_theorem_witness_file(&read, witness)?;
+            }
         }
         Ok(Self {
             committed_main_artifact_hash: entry.artifact_hash.clone(),
@@ -1368,8 +1443,11 @@ pub fn publish_ref(
     proof: &CommittedWitnessPublicationProof,
 ) -> Result<ProofWitnessPublishedRef, ProofWitnessStoreError> {
     if staged.selected_class == ProofWinnerClass::DischargedBuiltin
-        && !(staged.payload_schema.family() == SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY
-            && staged.payload_schema.version() == SchemaVersion::new(1, 0)
+        && !(matches!(
+            staged.payload_schema.family(),
+            SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY
+                | SOURCE_ALGORITHM_STATE_WITNESS_FILE_SCHEMA_FAMILY
+        ) && staged.payload_schema.version() == SchemaVersion::new(1, 0)
             && staged
                 .artifact_reference_candidate
                 .as_ref()
@@ -1382,7 +1460,7 @@ pub fn publish_ref(
     {
         return Err(ProofWitnessStoreError::UnsupportedWitnessPublication {
             selected_class: staged.selected_class,
-            gap: "WITNESS10-G001: DischargedBuiltin publication requires validated source-theorem FILE staging",
+            gap: "WITNESS10-G001: DischargedBuiltin publication requires validated theorem or state FILE staging",
         });
     }
     if staged.provenance.build_snapshot_fingerprint() != proof.build_snapshot_fingerprint {

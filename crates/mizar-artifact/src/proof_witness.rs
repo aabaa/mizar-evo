@@ -68,7 +68,7 @@ pub struct KernelAcceptanceMetadata {
 pub enum ProofStatus {
     /// Formula/substitution evidence was accepted by the kernel.
     KernelVerified,
-    /// Legacy schema-1.x built-in discharge status retained for source compatibility.
+    /// Kernel-accepted built-in discharge, represented by the explicit schema-3.0 profile.
     ///
     /// Normal schema-2.0 readers and writers reject this status; the explicit
     /// schema-3.0 built-in reference profile supports it.

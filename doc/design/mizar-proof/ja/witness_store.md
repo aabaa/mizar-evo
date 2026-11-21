@@ -20,7 +20,7 @@ selection に対する `ProofWitnessDraft` だけを消費する:
 
 - 対応する accepted proof-obligation kernel result を持つ `KernelVerified`
   formula/substitution kernel evidence;
-- `DischargedBuiltin` は internal staged outcome とし、検証済み source-theorem FILE staging のみが限定 committed publication を可能にする。
+- `DischargedBuiltin` は internal staged outcome とし、検証済み theorem/state FILE staging が限定 committed publication を可能にする。
 
 draft は次を持つ:
 
@@ -68,8 +68,8 @@ origin evidence とする。committed publication evidence なしの `publish_re
 `ManifestCommit`、root、完全な module identity、coordinator が期待する snapshot を受け取る。
 全 flag を有効にした fresh manifest validation で commit hash と manifest 全体を照合し、
 normal1.1/1.2 または明示的 Builtin2.0 main と exact witness coverage の検証後、
-具体的な source-theorem FILE hash/reference を検証する。KernelVerified candidate
-または DischargedBuiltin reflexivity FILE witness の空でない集合を要求する。
+正確な theorem/state FILE1.0 hash family/version で既存 reader に振り分け、他の profile を拒否する。
+KernelVerified candidate または DischargedBuiltin FILE witness の空でない集合を要求する。
 期待 snapshot は既存の `publish_ref` が staged provenance と比較する値であり、commit 時の
 snapshot receipt、現在の root/source の認証、lease ではない。token は検証時の過去の到達性を
 保持し、新規構築では file を再検証する。後の変更は既存 token を変えず、reuse を認証しない。
@@ -114,7 +114,7 @@ Statusの[生成](./status.md#optional-bounded-source-algorithm-state-witness-fi
 `read_source_algorithm_state_witness_file(&PublishedArtifactRead, &ProofWitnessRef) -> Result<Vec<u8>, String>`を完全なtheorem-reader doccomment前に一つinline追加する。OBJECTを要求し、最初にpath付きSchemaVersionSupport(family,1,0,UpToSupported)で、missing/non-string headerを旧theorem reader同様に扱う。その後family完全一致、厳密key/型、唯一payload組合せ、安全な全hex復元を検査する。byte-offset sliceより前に空/奇数長/大文字/非hex/非ASCIIを拒否し、migration/forward-minorを宣言しない。
 state FILE全体のhashを除外なしに再計算し、callerがcopy可能なread.artifact_hashへSome(実再計算値)を要求する。固定3.0/discharged_builtin/formula_substitution_kernel_evidence、実FILE id/fingerprint/metadata/read.path/再計算typed hashから非信頼RefJSONを組む。実pathとexpected.witness_artifact_hashで不変read_builtin_proof_witness_refを呼び、返る参照全体=expected、元Interface/state family1.0、evidence2.0を要求する。全decoded bytesだけを返し下位Stringを保つ。expectedからclassを選ばずmetadataを手動parseしない。
 固有errorはsource algorithm state witness file must be an object、invalid source algorithm state witness file fields、source algorithm state witness file {key} must be a string、source algorithm state witness file kernel_acceptance must be an object、invalid source algorithm state witness file payload profile、invalid source algorithm state witness file payload hex、source algorithm state witness file read hash mismatch、source algorithm state witness file reference mismatch。family不互換は旧theorem形式でfamily/実version/対応範囲/artifact pathを示す。この順序と下位schema/codec Stringを保つ。
-非信頼データの構造的対応だけを検査し、Kernel evidence/source受理/snapshot・filesystem currentness/publicationを検査しない。profile field/metadata/hash/referenceの整合した編集・relabelは任意bytesを復元し得る。既存codec/profile guardを越えて任意metadata digest/checker version/contextを制限し認証を捏造しない。別の[state staging対応付け](#source-algorithm-state-file-staging)だけが供給実Draftを照合し、reader成功だけでは対応付けを与えない。enclosing Artifact/commit/token/publication/reuse/Hit/Driver/登録/SAME/一般finder/Steps6–8は保留し、theorem reader/stager、generic stage refNone、Builtin publish拒否、raw Open/Deferred/incomplete/MISSを保つ。
+非信頼データの構造的対応だけを検査し、Kernel evidence/source受理/snapshot・filesystem currentness/publicationを検査しない。profile field/metadata/hash/referenceの整合した編集・relabelは任意bytesを復元し得る。既存codec/profile guardを越えて任意metadata digest/checker version/contextを制限し認証を捏造しない。別の[state staging対応付け](#source-algorithm-state-file-staging)だけが供給実Draftを照合し、reader成功だけでは対応付けを与えない。committed 公開は [Publication References](#publication-references) に従い、reader 単独では得られない。reuse/Hit/Driver/登録/SAME/一般finder/Steps6–8は保留し、generic stage refNone、raw Open/Deferred/incomplete/MISSを保つ。
 ### Source algorithm state witness file reader tests
 最終term_proof_tests brace前にsource_algorithm_state_witness_file_reader_matches_genuine_transportとsource_algorithm_state_witness_file_reader_rejects_profiles_and_associationsだけを追記し、不変native Disk helperを使う。reader Rust前に真正72全triple/file/ref、実canonical Artifact transportの全bytes/LF/domain/digest、FILE field由来の独立非信頼RefJSONによる旧Builtin readerを示す。期待する全wire bytesは真正Draftから直接得て、72の独立FILE hex符号化を継承しreaderのhex decoderをテストへ複製しない。最終必須の既存72回帰familyが実71全tuple対応/全FILE・metadata直列化/theorem拒否/generic stage refNone/raw/publicationを保持し、71意味論/Kernel matrixを継承する。新familyは小さな真正source/path/policy変化とreader・read/referenceの反復/入力不変を確認し、新module helperやcheck/snapshot/Accepted/token偽造を加えない。負例familyでは三つ以上の異なる実呼出し箇所の既存Artifact write/readだけを共有するlocal I/O専用closure一つを許す。decode/profile検査/hash再解釈/error oracleを含めない。
 負例は実72生成物由来で実canonical transportを使い、深いguardへ到達するためだけにexpected read digest省略または通常FILE/ref hashの整合更新をする。実SchemaVersionSupportで不正内容より先の互換性、OBJECT/family/missing/unknown/型/profile/空・奇数・大文字・非hex・非ASCII hex、代表nested metadata下位拒否、read hash不在/別domain/読後value編集、別safe・非proof path、参照全体/id/policy/metadata/path/hash/class/version/kind不一致を扱う。整合した誤original family/version/evidence versionは先に下位成功を示してprofile拒否を確認する。Artifact全malformed metadata/codec/I/Oと72 optional source errorを継承しreader adapter複製をしない。
@@ -135,7 +135,7 @@ canonical parse・duplicate key/UTF-8/path/I/O integrity・ref/metadata 検証�
 最初に不変read_source_algorithm_state_witness_file(read, expected)を呼び、Draft不一致検査より先に実Stringを保つ。reader成功は下位検証と参照全体一致によりexpectedがproof_status DischargedBuiltinを含む固定Builtin Ref3であることを保証するので委譲する。selfの(selected_class,payload family)は厳密に(DischargedBuiltin,mizar-proof/source-algorithm-state-transitivity-checked-wire)だけを許しwildcard/theorem代替を作らない。不変の二profile theorem stagerは独自class/profile/status照合を保つ。
 obligation id、typed fingerprint全体、witness path、全kernel_acceptance、payload version2.0/canonical_bytes_required=true、復元全bytes=self.payload_bytes、expected_selected_proof_witness_hash=Noneを要求する。固有不一致はsource algorithm state witness file staging mismatch。anchor field/hashの発明、evidence/metadataのparse/replayはせず、実anchorとchecked-wire authorityはproducer所有のままとする。
 続けて不変stage(self)を一回呼びerrorをString化する。staged.payload_schemaを共有state FILE family1.0/canonical=true、staged.staged_payload_hashをexpected.witness_artifact_hash.clone()、staged.artifact_reference_candidateをSome(expected.clone())にだけ変更し、他のgeneric staged全field/全provenanceをmoveで保持する。generic七key hash/profileとcanonical FILE hash/profileを区別しsource projection/selected witness hashを変えない。
-供給Draftとの未公開の構造的対応であり、任意public Draft payloadがKernel受理済みという認証ではない。Source/Kernel replay、I/O、source/snapshot/filesystem currentness、enclosing Artifact/manifest/commit/token/publication/cache Hit/Driver/登録/SAME/一般finder/Steps6–8を行わない。classはBuiltinを保ち、committed proof検証より先の無条件publish_ref拒否とprivate token構築を保持する。raw不完全/MISS/publication gapを継承する。
+供給Draftとの未公開の構造的対応であり、任意public Draft payloadがKernel受理済みという認証ではない。Source/Kernel replay、I/O、source/snapshot/filesystem currentness、enclosing Artifact/manifest/commit/token/publication/cache Hit/Driver/登録/SAME/一般finder/Steps6–8を行わない。classはBuiltinを保ち、committed 公開は [Publication References](#publication-references) が所有する。raw 不完全/MISS を保持する。
 ### Source algorithm state file staging tests
 最終term_proof_tests brace前にsource_algorithm_state_witness_file_staging_matches_genuine_associationとsource_algorithm_state_witness_file_staging_preserves_reader_errors_and_rejects_mismatchだけを追記する。不変native Disk state helper、実72生成物、実canonical Artifact write/read後の実73 reader成功、実generic stage基準を新method Rust前に得る。保持する全staged getter/全provenanceと変更するschema/hash/全参照の三fieldだけを比較し、小さな真正source/policy/path変化、新method反復とread/reference/product不変を確認する。負例familyに三つ以上の実呼出し箇所のwrite/readだけを共有するlocal I/O専用closure一つを許し、decoder/profile/hash再解釈/error oracleを含めない。新module helper/type/fixture/偽Accepted/check/snapshot/tokenを作らない。
 真正source/policy/path間の対応違いは、先に実reader成功と関連する実差異を示してから固有不一致を比較し、snapshot間hash安定を仮定しない。通常の非信頼wirehex00/id/fingerprint/policyまたはaccepted metadata編集は実transport/再hash/整合参照を使い、reader成功（全元bytesまたは[0]）の後に真正検査済Draftとの対応拒否を示す。代表的なread hash/schemaと不正内容/expected ref/pathは実foreign Draftと組み、reader-FIRSTと実下位Stringを比較する。73の全reader matrixを継承する。
@@ -146,7 +146,7 @@ obligation id、typed fingerprint全体、witness path、全kernel_acceptance、
 `ProofWitnessDraft::stage_source_theorem_file(self, read: &PublishedArtifactRead, expected: &ProofWitnessRef) -> Result<ProofWitnessStagedRef, String>` は既存 draft を消費し、bytes/metadata と別 file profile を構造的に対応付ける。draft 最初の getter 直前に inline method 一つを加える。
 最初にread_source_theorem_witness_file(read, expected)を呼びerror Stringを保つ。実draft class・実payload family・検証済expected.proof_statusの三者を、(DischargedBuiltin, reflexivity-checked-wire, DischargedBuiltin)または(KernelVerified, candidate-checked-wire, KernelVerified)に厳密限定する。familyは上記完全mizar-proof/source-theorem-名を使う。元obligation id/fingerprint/path/全metadata一致、payload version2.0/canonical=true、復元bytesと全draft payload一致、expected selectedhash不在も保持する。draft/fileのprofileを独立に認めるだけでは整合profile relabelを許すため、検証済ref statusも照合する。不一致は内部 source theorem witness file staging mismatch とする。
 既存 stage(self) を呼び error String を保つ。payload_schema を SOURCE_THEOREM_WITNESS_FILE_SCHEMA_FAMILY1.0/canonical=true、staged_payload_hash を expected.witness_artifact_hash、artifact_reference_candidate を Some(expected.clone()) にだけ置き換え、他の staged field は全て保つ。旧 generic hash/wire profile と別 canonical-file hash/profile を同一視せず、元 draft の再 hash/再解釈/上書きをしない。
-これは unpublished structural association であり任意の caller draft bytes が Kernel 検査済みという認証ではない。checked-wire authority は実 source producer に残す。evidence の parse/replay、Kernel、I/O、filesystem/snapshot currentness 認証は行わない。generic stage、builtin publish_ref 拒否、status/reuse gap、raw 不完全 slice/MISS を保ち、committed token/witness publication/受理/enclosing gate credit を与えない。
+これは unpublished structural association であり任意の caller draft bytes が Kernel 検査済みという認証ではない。checked-wire authority は実 source producer に残す。evidence の parse/replay、Kernel、I/O、filesystem/snapshot currentness 認証は行わない。generic stage、status/reuse gap、raw 不完全 slice/MISS を保ち、対応付け単独では committed token/witness publication/受理/enclosing gate credit を与えない。
 ### Explicit source theorem file staging tests
 既存 term_proof_tests 最後に source_theorem_file_staging_matches_genuine_file_and_legacy_boundaries、source_theorem_file_staging_rejects_genuine_cross_associations、source_theorem_file_staging_preserves_reader_refusals_and_inputs と、それら三つの実 family が使う private with_source_theorem_file_staging_inputs 一つだけを追記する。全 old bytes/helper/fixture を保つ。
 新 API 前に実 native Disk/OpenBuffer capture、元 unaugmented Resolver inputs、既存 source file-candidate tuple 全体、generic stage、実 Artifact write/read/recovery を得る。保持する staged 全 field、別 file schema/hash/reference、反復/不変、元 status/slice 全体/publication/MISS を比較する。実 old 値を使い、新 hash grammar や編集間安定性を仮定しない。
@@ -171,9 +171,12 @@ reference を publication-reachable として返す。
 store は non-trusted status の `ProofWitnessRef` を publish してはならない。unsupported
 trusted status を `kernel_verified` に書き換えてもならない。
 
-`DischargedBuiltin` は検証済み source-theorem FILE1.0 Ref3.0 candidate と対応する
-committed reachability がある場合のみ公開する。generic `stage` は internal hash と
-reference 不在を保持し、algorithm-state FILE publication は拒否する。
+`DischargedBuiltin` は検証済み theorem/state FILE1.0 Ref3.0 candidate と対応する
+committed reachability がある場合のみ公開する。generic `stage` は internal hash と reference 不在を保持する。
+`ProofWitnessDraft::source_theorem_file_value(&self) -> Result<CanonicalJson, String>` は
+限定 Builtin reflexivity-checked-wire2.0 draft を既存 theorem FILE1.0 として出力する。
+実 identity、全 payload と Artifact reference codec による全 metadata を使い、他 profile を拒否する。
+Artifact transport と元 draft の `stage_source_theorem_file` 対応付け後に committed 公開を行う。出力単独では権限を得ない。
 [status binding](./status.md#artifact-projection) は対応する projection の publication
 field のみを変更する。`selected_proof_witness_hash` の供給、deterministic-discharge
 reuse input の代替、cache/currentness authority の確立は行わない。
@@ -249,7 +252,7 @@ publish できず、non-trusted status を昇格させられず、trusted `used_
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `WITNESS10-G001` | `external_dependency_gap` | 検証済み source-theorem reflexivity FILE staging 以外の `DischargedBuiltin` publication は未対応であり、collapse してはならない。 |
+| `WITNESS10-G001` | `external_dependency_gap` | 検証済み theorem/state FILE staging 以外の `DischargedBuiltin` publication は未対応であり、collapse してはならない。 |
 | `WITNESS10-G002` | `deferred` | [State Machine](#state-machine) の限定 source-theorem candidate 経路が committed exact coverage を供給する。汎用 publication integration は deferred であり、この module は manifest を書かない。 |
 | `WITNESS10-G003` | `deferred` | formula/substitution witness bytes 以外の concrete payload schema は producer-owned のままである。store は schema identity と bytes を hash するが backend proof payload は解釈しない。 |
 | `WITNESS11-G001` | `external_dependency_gap` | opaque Artifact commit は [限定 source-theorem constructor](#state-machine) だけを可能にする。他の production token profile は未提供であり、一致する公開 tuple は commit origin を証明しない。 |

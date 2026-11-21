@@ -3831,6 +3831,7 @@ fn source_theorem_candidate_witness_file_matches_transport() {
                 actual,
                 (baseline.clone(), file.clone(), expected_ref.clone())
             );
+            assert!(actual.0.2.source_theorem_file_value().is_err());
             let transport = root.join("unpublished-files");
             let published_path = PublishedArtifactPath::new(&witness_path).unwrap();
             let written =
