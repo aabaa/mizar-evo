@@ -54,9 +54,9 @@ R2 emits no E5: only later actual MVM normal execution may do so.
 
 | Definition-side obligation | Genuine current producer and its limit | Missing acceptance for R3 |
 |---|---|---|
-| E1 | Checker [`check_source_algorithm_types`](../../../../crates/mizar-checker/src/type_checker.rs) checks a bounded one-parameter `object`-result profile; Core [`lower_source_algorithms`](../../../../crates/mizar-core/src/elaborator.rs) consumes that source-authenticated check. VC produces Open contract/inhabitation obligations. | Local return typing and Open goals are not full E1: justify result typing, single-valuedness and all-input inhabitation wherever the result type is asserted. |
+| E1 | Checker [`check_source_algorithm_types`](../../../../crates/mizar-checker/src/type_checker.rs) and Core [`lower_source_algorithms`](../../../../crates/mizar-core/src/elaborator.rs) authenticate the bounded profile. Proof associates checked original typing/single-valuedness schemas and separately adopts original inhabitation under native policy. | Schema association or single-obligation adoption is not complete E1 or definition acceptance. |
 | E2 | VC [`generate_source_algorithm_postconditions`](../../../../crates/mizar-vc/src/generator.rs) produces actual return goals/context. Proof [`check_source_algorithm_return_reflexivity`](../../../../crates/mizar-proof/src/status.rs) checks one selected return VC through Kernel/policy. | A checked return step does not establish complete body correctness or acceptance of every applicable obligation under the same body/contracts/CFG and policy. Its [projection test](../../../../crates/mizar-test/src/runner/proof_verification/term_proof_tests/source_algorithm_return.rs) retains an Open, incomplete dependency slice and an Artifact publication gap. |
-| Applicable E4 | The [pilot snapshot](../../../../tests/snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap) has a deferred termination seed without a concrete VC. ALGDEF-VC53-NORMAL-RETURN owns the remaining normal-return prerequisites. | For `terminating`, including `idalgo`, require accepted normal return covering explicit/implicit failure, child calls and iteration ranges; a declaration, local `return`, equality or continuation assumption is insufficient. |
+| Applicable E4 | Proof can adopt the original bounded E4 existential under native policy; the [pilot snapshot](../../../../tests/snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap) still has a Deferred termination seed without a concrete VC. | Local E4 adoption leaves that seed and independent E1/E2 duties unchanged. Broader normal return still covers failure, child calls and iteration ranges. |
 
 AST-CONTRACT retains reflected E1/E2/E4 guards and formation dependencies.
 Neither the bounded producers nor their planning contracts are complete
@@ -65,6 +65,61 @@ and their authentic association to the immutable definition. Independently,
 R4 needs resolved original call/target identity, signature-checked ordered
 actuals, complete supported values and source/context provenance; those
 invocation inputs cannot repair missing definition evidence or gate R3 export.
+
+## Bounded accepted-definition boundary
+
+The [existing VC profile](../../mizar-vc/en/generator.md#bounded-direct-return-e1e4-producer-design)
+is exact: one immutable `object` parameter, `object` result, equality ensures,
+sole return of that parameter and authenticated `terminating` intent.
+Calls, loops, Pick, recursion, groups, reflected/opaque types, recovered nodes
+and ghost flow remain outside this profile; no ordinary-only dependency bypass follows.
+
+The bounded set contains five distinct original obligations: E1 result typing,
+single-valuedness, all-typed-input inhabitation, the E2 substituted postcondition
+and independent E4 normal-return existence. Inhabitation retains typed-input
+guards without assuming return or restricting it to `requires`; E4 retains
+the operational return relation. E2 must cover the whole supported body with
+its exact preconditions/continuation context; equality ensures or a selected
+return proof is insufficient without that complete-body association.
+E3 supplies no missing E1 premise; E5, symbol introduction and promotion are excluded.
+
+**Binding and atomicity.** Regenerate/authenticate source, Checker result,
+symbols, original declaration/module/signature, immutable Core body/contracts,
+CFG/exits and all five original goals/contexts under their owning schemas.
+The E2 return identity retains its own generation/VC schemas; it is not
+retargeted to a four-role direct-return identity. Keep each role's entire raw
+slice and original identity, associated to the same definition and snapshot.
+Canonical hashes omit snapshot identity, so separately require exact snapshot
+agreement and the identical immutable Core arena. Caller-owned captured-source,
+module/dependency and snapshot currentness must be established at the boundary;
+a supplied snapshot ID or unchanged name/hash alone is insufficient.
+
+Use genuine same-call lower-owner results and re-evaluate each actual rule,
+checker/evidence schema, origin and polarity under the current effective policy.
+Typing/single-valuedness schema scalars alone are not policy-accepted evidence.
+The existing [inhabitation](../../mizar-proof/en/status.md#native-e1-inhabitation-adoption),
+[E4](../../mizar-proof/en/status.md#native-original-e4-adoption) and
+[E2](../../mizar-proof/en/status.md#source-algorithm-return-reflexivity) paths
+retain their limits; no detached token, earlier policy fingerprint or fabricated
+generic receipt can substitute. Expose the bounded adopted set only after all
+five roles and bindings succeed under that policy; any refusal/error exposes
+no partial set, symbol, promotion or export. Raw Open/Deferred graphs are unchanged.
+
+| Bounded refusal | Required result |
+|---|---|
+| Missing/duplicate/swapped role, wrong original goal/context/owner/schema, Open-only or tainted evidence | Refuse whole set; raw Open requests require independent genuine adoption, not status relabeling. |
+| E1 omitted, E2 selected-step success without whole-body coverage, or E4 replaced by declaration/equality/continuation/stopping evidence | Refuse; no role repairs another. |
+| Changed source/check/symbols/Core/CFG/contracts, foreign snapshot or stale dependencies; policy disabled or incompatible | Refuse whole set after authentic upstream checks; preserve producer errors. |
+| Unsupported profile or unresolved required provenance/policy input | Refuse; no synthetic guards, complete slices or eligibility. |
+
+**R3 input, not export.** A future consumer receives the matched definition,
+all five original identities and current-policy adoption decisions, entire raw
+slices, snapshot/provenance bindings and explicit unresolved dependencies.
+Unknown/incomplete slices remain reuse-ineligible. Independent bounded adoption
+does not erase Open4 or the goal-free Deferred termination seed. G10 remains
+parked/unregistered here and gates P13; this freeze neither discharges it nor
+claims complete definition/R3 readiness while required residuals remain.
+R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
 
 ## Pilot, rejection and successors
 

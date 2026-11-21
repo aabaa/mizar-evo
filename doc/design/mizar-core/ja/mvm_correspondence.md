@@ -46,9 +46,9 @@ E5 は将来の MVM 正常実行からのみ生成される。
 
 | 定義側の義務 | 現在の真正な producer と限界 | R3 に不足する受理 |
 |---|---|---|
-| E1 | Checker の [`check_source_algorithm_types`](../../../../crates/mizar-checker/src/type_checker.rs) は単一引数・`object` 戻り値の限定形を検査し、Core の [`lower_source_algorithms`](../../../../crates/mizar-core/src/elaborator.rs) が真正な検査結果を消費する。VC は Open な契約・居住性義務を生成する。 | 局所の戻り値型付けと Open 目標は完全な E1 ではない。型が主張される全入力で型・一意性・居住性を正当化する。 |
+| E1 | Checker の [`check_source_algorithm_types`](../../../../crates/mizar-checker/src/type_checker.rs) と Core の [`lower_source_algorithms`](../../../../crates/mizar-core/src/elaborator.rs) が限定形を認証する。Proof は検査済みの元の型・一意性 schema を対応付け、別途 native 方針の下で元の居住性を採用する。 | schema 対応や単独義務の採用は完全な E1・定義受理ではない。 |
 | E2 | VC の [`generate_source_algorithm_postconditions`](../../../../crates/mizar-vc/src/generator.rs) が実際の戻り値目標・文脈を生成し、Proof の [`check_source_algorithm_return_reflexivity`](../../../../crates/mizar-proof/src/status.rs) が選択された一つの VC を Kernel・方針で検査する。 | 単一の戻り値証明は、同一本体・契約・CFG・方針に対応する全義務の受理ではない。[投影試験](../../../../crates/mizar-test/src/runner/proof_verification/term_proof_tests/source_algorithm_return.rs) でも依存 slice は Open・不完全で、Artifact 公開の不足が残る。 |
-| 適用される E4 | [最小ケースの snapshot](../../../../tests/snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap) の停止性 seed は具体的 VC のない deferred 状態。残る正常復帰前提は ALGDEF-VC53-NORMAL-RETURN が所有する。 | `idalgo` を含む `terminating` には明示・暗黙の失敗、子呼出し、反復範囲を含めた正常復帰の受理が必要。宣言・局所 `return`・等式・継続の仮定では不足。 |
+| 適用される E4 | Proof は native 方針の下で限定形の元の E4 存在命題を採用できる。[最小ケースの snapshot](../../../../tests/snapshots/vc/pass_proof_verification_algorithm_ensures_return_001.vc_ir.snap) の停止性 seed は具体的 VC のない Deferred 状態。 | 局所 E4 採用は seed と独立の E1/E2 義務を変更しない。一般の正常復帰は失敗・子呼出し・反復範囲も含む。 |
 
 AST-CONTRACT の反射 E1/E2/E4 ガードと形成依存も維持する。
 限定 producer や計画契約は完全な定義の受理証拠ではない。
@@ -56,6 +56,53 @@ R3 は不足する受理済み義務と不変の定義への真正な対応付�
 独立に R4 は元の呼出し・対象の解決済み識別、シグネチャに対して型検査された
 順序付き実引数、完全な対応値とソース・文脈由来情報を必要とする。
 呼出し入力で定義の証拠不足を補ったり、R3 の公開を制限したりしない。
+
+## 限定された定義受理の境界
+
+[既存 VC profile](../../mizar-vc/ja/generator.md#bounded-direct-return-e1e4-producer-design)
+は、不変の `object` 引数一つ、`object` 戻り値、等式 ensures、
+その引数だけを返す唯一の return、認証された `terminating` 意図に限る。
+呼出し・ループ・Pick・再帰・group・反射型・不透明型・回復ノード・ghost 流出は
+対象外であり、通常値だけを理由に依存ゲートを省略しない。
+
+限定集合は五つの異なる元の義務からなる。E1 の戻り値型・一意性・全型付き入力の
+居住性、E2 の代入後の事後条件、独立した E4 正常復帰の存在である。
+居住性には型付き入力ガードを残し、復帰を仮定したり `requires` 内に制限したりしない。
+E4 は操作的復帰関係を保つ。E2 は正確な事前条件・継続文脈とともに対応本体全体を
+覆う必要があり、等式 ensures や選択した return の証明だけでは不足する。
+E3 は E1 の不足前提を補わず、E5・記号導入・昇格は対象外とする。
+
+**対応と原子性。** ソース、Checker 結果、symbols、元宣言・module・signature、
+不変 Core 本体・契約、CFG・出口、五義務の元の目標・文脈を所有 schema の下で
+再生成・認証する。E2 return identity は自身の generation/VC schema を保ち、
+四役割 direct-return identity に付け替えない。各役割の raw slice 全体と元 identity を
+同一定義・snapshot に結び付ける。正規ハッシュは snapshot identity を含まないため、
+snapshot の一致と同一の不変 Core arena を別途要求する。捕捉ソース・module・依存・
+snapshot の現在性は呼出し側の責任であり、受理境界で確立する。
+供給された snapshot ID や同名・同ハッシュだけでは不足する。
+
+同一呼出しで得た真正な下位所有者の結果を用い、現在の有効方針の下で実際の rule、
+checker/evidence schema、origin、polarity を再評価する。型・一意性の schema 値だけは
+方針受理済み証拠ではない。既存の[居住性](../../mizar-proof/ja/status.md#native-e1-inhabitation-adoption)・
+[E4](../../mizar-proof/ja/status.md#native-original-e4-adoption)・
+[E2](../../mizar-proof/ja/status.md#source-algorithm-return-reflexivity) 経路の限界を保つ。
+切り離した token、過去の方針 fingerprint、捏造 generic receipt は代替にならない。
+五役割と対応が同じ現在方針で全て成功して初めて限定採用集合を返す。
+拒否・エラー時には部分集合・記号・昇格・export を出さず、raw Open/Deferred graph を変更しない。
+
+| 限定形の拒否条件 | 必須結果 |
+|---|---|
+| 役割の欠落・重複・交換、元の目標・文脈・所有者・schema 違い、Open だけまたは汚染された証拠 | 集合全体を拒否。raw Open 義務には独立した真正な採用が必要であり、状態の付け替えは不可。 |
+| E1 の省略、本体全体を覆わない E2 単独ステップ、宣言・等式・継続・停止だけによる E4 代替 | 拒否。一つの役割で他を補わない。 |
+| ソース・check・symbols・Core・CFG・契約の変更、異なる snapshot、古い依存、方針無効・非互換 | 真正な上流検査後に全体を拒否し、producer エラーを保持する。 |
+| 対応外 profile、必要な provenance・方針入力の未解決 | 拒否。ガード・完全 slice・適格性を捏造しない。 |
+
+**R3 の入力であり export ではない。** 将来の消費側へ、対応する定義、五つの元 identity と
+現在方針での採用判断、raw slice 全体、snapshot/provenance の対応、明示した未解決依存を渡す。
+unknown/incomplete slice は再利用不可のまま。独立した限定採用で Open4 や目標のない
+Deferred termination seed を消さない。G10 はここで登録せず保留し、P13 を制約する。
+この凍結は G10 を証明せず、必要な残余条件がある間は定義全体・R3 の準備完了を主張しない。
+R3-Q2/R5-Q2 は G/RESERVED/unassigned のままとする。
 
 ## 最小ケースと未完了事項
 
