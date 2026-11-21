@@ -35,9 +35,9 @@ metadata reader は生の AST/IR を読み込まず、compiler storage reference
 
 current hover は元の map で変換した LSP range を含む。stale hover は metadata を保持し、`stale_artifact` と元 source の URI/version、検索座標が保持された元 source に属することを明記して、current-buffer の LSP range を省く。不正な source association/range は明示的に失敗し、metadata がなければ hover を返さない。
 
-`Server::handle_message_with_metadata` が hover request に Driver/registry の freshness を供給し、build bridge はこの経路を使う。通常の handler は request を検証し、metadata host がなければ hover を返さない。実行ファイルの host/build 統合と navigation は別作業のままである。
+`Server::handle_message_with_metadata` が hover request に Driver/registry の freshness を供給し、build bridge はこの経路を使う。通常の handler は request を検証し、metadata host がなければ hover を返さない。実行ファイルの host/build 統合は別作業のままである。
 
-同じ metadata-host 経路が[補完](completion.md)へ公開済み候補を追加する。通常経路は現在のバッファによる構文フォールバックを保つ。
+同じ metadata-host 経路が[補完](completion.md)へ公開済み候補と、[定義移動](navigation.md#implementation-boundary)へ compiler-bound theorem の対象を渡す。通常経路は構文補完を保ち、公開結果のない定義には null を返す。
 
 read は公開済み入力と snapshot owner の既存 association を使う。この仕様は OpenBuffer provenance carrier と未保存 artifact の保存/公開を選択せず、build scheduling は [build bridge](build_bridge.md) が所有する。
 

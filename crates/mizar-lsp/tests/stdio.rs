@@ -183,7 +183,7 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"definitionProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     for message in [
         json!({"jsonrpc":"2.0","method":"initialized","params":{}}),
@@ -191,6 +191,9 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
         json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":1},"contentChanges":[{"text":"\u{feff}:: 雪😀 edited\r\ndefinition\r\nend;\r\n"}]}}),
         json!({"jsonrpc":"2.0","id":4,"method":"textDocument/semanticTokens/full","params":{"textDocument":{"uri":uri}}}),
         json!({"jsonrpc":"2.0","id":3,"method":"textDocument/hover","params":{"textDocument":{"uri":uri},"position":{"line":1,"character":0}}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/definition","params":{"textDocument":{"uri":uri},"position":{"line":1,"character":0}}}),
+        json!({"jsonrpc":"2.0","id":5,"method":"textDocument/definition","params":{"textDocument":{"uri":uri},"position":{"line":1,"character":0}}}),
+        json!({"jsonrpc":"2.0","id":6,"method":"textDocument/definition","params":{"textDocument":{"uri":uri},"position":{"line":1,"character":-1}}}),
         json!({"jsonrpc":"2.0","method":"$/cancelRequest","params":{"id":99}}),
         json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{"textDocument":{"uri":uri}}}),
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),
@@ -207,6 +210,14 @@ fn interactive_stdio_preserves_lifecycle_and_silent_unicode_document_notificatio
     assert_eq!(
         process.response(),
         json!({"jsonrpc":"2.0","id":3,"result":null})
+    );
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":5,"result":null})
+    );
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","id":6,"error":{"code":-32602,"message":"Invalid params"}})
     );
     assert_eq!(
         process.response(),
@@ -414,7 +425,7 @@ fn complete_bad_json_responds_and_continues_to_exit() {
     process.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":null,"capabilities":{}}})));
     assert_eq!(
         process.response(),
-        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
+        json!({"jsonrpc":"2.0","id":1,"result":{"capabilities":{"positionEncoding":"utf-16","experimental":{"mizarNonRangeDiagnostics":{"version":1}},"hoverProvider":true,"definitionProvider":true,"completionProvider":{"triggerCharacters":["."]},"codeActionProvider":{"codeActionKinds":["quickfix"],"resolveProvider":true},"semanticTokensProvider":{"legend":{"tokenTypes":["keyword","operator","number","comment"],"tokenModifiers":[]},"full":true},"textDocumentSync":{"openClose":true,"change":1}}}})
     );
     process.send(&frame(
         json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),

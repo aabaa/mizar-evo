@@ -913,7 +913,7 @@ fn selected_snapshot_completion_keeps_stale_source_identity_and_current_syntax_f
 
 // These fixtures exercise the consumer against genuine resolver publication;
 // artifact-only definition-label rows below do not claim native producer coverage.
-fn import_fixture(
+pub(in crate::server) fn import_fixture(
     text: &str,
     module_path: &str,
     summaries: &[mizar_artifact::module_summary::ModuleSummary],

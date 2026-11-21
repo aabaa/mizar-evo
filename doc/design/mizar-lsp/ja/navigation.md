@@ -33,9 +33,11 @@ schema、summary の形、format、validating reader は Artifact が引き続�
 
 task14 が固定した read の境界に従い、task15 は metadata producer の着地に合わせて navigation を増分で実装する。registry/atomic activation、診断公開、hover はそれぞれ別の owner が引き続き所有する。
 
-task15 の syntax-only token 増分 は、現在の open-buffer の正確な text を既存 lexer の前処理と shell 分類へ渡し、`textDocument/semanticTokens/full` を提供する。legend は `keyword`、`operator`、`number`、`comment`、modifier は空で、役割が不明な identifier は省略する。raw LF、CRLF、単独 CR で区切った各行の UTF-16 token を返す。artifact class による補強は行わず、保持された stale metadata は現在の構文 token に影響しない。定義、参照、document symbol、resolved token の補強は保留し、task15 は未完了のままとする。
+task15 の syntax-only token 増分 は、現在の open-buffer の正確な text を既存 lexer の前処理と shell 分類へ渡し、`textDocument/semanticTokens/full` を提供する。legend は `keyword`、`operator`、`number`、`comment`、modifier は空で、役割が不明な identifier は省略する。raw LF、CRLF、単独 CR で区切った各行の UTF-16 token を返す。artifact class による補強は行わず、保持された stale metadata は現在の構文 token に影響しない。参照、document symbol、resolved token の補強は保留し、task15 は未完了のままとする。
 
 navigation は公開済み入力と既存の snapshot association を使い、未決の OpenBuffer artifact provenance/storage と Session SourceId encoding を前提としない。ここではそれらを決定しない。
+
+定義移動の増分は、選択した公開結果の compiler-bound theorem `by` occurrence から `textDocument/definition` を提供する。完全な endpoint/module/publication/export identity を ModuleSummary と照合し、他モジュールの対象では PublishedImportView の正確な可視 summary も要求する。対象には捕捉済み OpenBuffer と元 export range の変換が必要。欠落・曖昧・未対応・stale 入力は null とし、標準 Location では保持した stale provenance を表示できないため現在の位置として返さない。現在の producer はローカル公開 theorem の参照のみを供給し、一般の式と import occurrence の解決は保留する。
 
 ## Test design
 

@@ -528,4 +528,4 @@ impl Server {
 
 #[cfg(test)]
 #[path = "completion_tests.rs"]
-mod tests;
+pub(super) mod tests;

@@ -35,9 +35,9 @@ The metadata reader does not load raw AST/IR, follow compiler storage references
 
 Current hover includes the original mapped LSP range. Stale hover preserves metadata, identifies `stale_artifact` and the original source URI/version, states that lookup coordinates belong to that retained source, and omits the current-buffer LSP range. Invalid source associations/ranges fail explicitly; absent metadata yields no hover.
 
-`Server::handle_message_with_metadata` supplies Driver/registry freshness to hover requests; the build bridge uses this route. The ordinary handler validates requests and returns no hover without a metadata host. Executable host/build integration and navigation remain separate.
+`Server::handle_message_with_metadata` supplies Driver/registry freshness to hover requests; the build bridge uses this route. The ordinary handler validates requests and returns no hover without a metadata host. Executable host/build integration remains separate.
 
-The same metadata-host route adds published candidates to [completion](completion.md); its ordinary route retains current-buffer syntax fallback.
+The same metadata-host route adds published candidates to [completion](completion.md) and compiler-bound theorem targets to [definition navigation](navigation.md#implementation-boundary); the ordinary route retains syntax completion and returns null for definitions without a publication.
 
 Reads use already-published inputs and the snapshot owner's established association. This specification does not choose OpenBuffer provenance carriers or unsaved-artifact storage/publication; build scheduling is owned by [build bridge](build_bridge.md).
 

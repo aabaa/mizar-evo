@@ -23,7 +23,7 @@ task 2 retrofits `range`, where code predates its spec. The crate follows
 | diagnostics | `diagnostics.md` (task 8) | `src/diagnostics.rs` | [x] |
 | build_bridge | `build_bridge.md` (task 10) | `src/build_bridge.rs` | [x] |
 | metadata | `metadata.md` (task 12) | `src/metadata.rs` | [x] |
-| navigation | `navigation.md` (task 14) | `src/server.rs` (syntax tokens only) | [ ] |
+| navigation | `navigation.md` (task 14) | `src/server.rs`, `src/metadata.rs` (syntax tokens and bounded definitions) | [ ] |
 | code_action | `code_action.md` (task 16) | `src/diagnostics.rs` (local fixes) | [x] |
 | explain | `explain.md` (task 18) | `src/explain.rs` | [x] |
 
@@ -184,7 +184,7 @@ Tasks 1–5: [LSP-LIFECYCLE-FOUNDATION](../../task_contracts/en/LSP-LIFECYCLE-FO
       [English specification](navigation.md), [Japanese specification](../ja/navigation.md).
 
 15. **Navigation features.** [ ] — paced by metadata producers.
-    - Landed increment: [syntax-only semantic tokens](../../task_contracts/en/LSP-NAVIGATION-TOKENS.md); definitions, references, document symbols and resolved token enrichment remain.
+    - Landed increment: [syntax-only semantic tokens](../../task_contracts/en/LSP-NAVIGATION-TOKENS.md); published theorem definitions; references, document symbols and resolved token enrichment remain.
     - Implement definitions, references, document symbols, and semantic
       tokens incrementally as the producing layers land (resolver
       metadata, checker expression metadata); one feature increment per
