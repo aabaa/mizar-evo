@@ -1,5 +1,7 @@
 # mizar-resolve TODO
 
+P19 source correspondence: [RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE](../../task_contracts/ja/RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
+
 - [x] Task 257C prerequisite: [reserved bracket mapper leaves](../../task_contracts/ja/RESOLVE257-BRACKET-MAPPER-REFERENCES.md).
 
 - [x] Task 257B prerequisite: [fresh mathematical Binder occurrences](../../task_contracts/ja/RESOLVE257-FRESH-FUNCTION-BINDERS.md).
