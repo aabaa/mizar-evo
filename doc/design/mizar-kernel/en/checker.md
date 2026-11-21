@@ -116,8 +116,8 @@ invokes that exact rule in its producing call; only success constructs the opaqu
 original relation tuple (including the binder in its result), witness and sole
 context; `core()`, `target()`, `witness()` and `context()` expose only those inputs.
 `checker_schema_version()` reports Kernel-owned schema `1` of this positive original-existential rule; it supplies no policy eligibility or adoption.
-Semantic environment association, Proof policy consumption/adoption, separate
-E1 duties and broader bodies remain deferred.
+Proof owns bounded [current-policy consumption](../../mizar-proof/en/status.md#original-e4-current-policy-consumption) and [native original-E4 adoption](../../mizar-proof/en/status.md#native-original-e4-adoption).
+Semantic environment association, separate E1 duties and broader bodies remain deferred.
 No evidence, acceptance, status, symbol, publication or broader credit follows.
 
 ## Bounded E1-inhabitation Witness Introduction

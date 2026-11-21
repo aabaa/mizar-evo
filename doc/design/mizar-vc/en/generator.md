@@ -779,8 +779,8 @@ Success pairs the unchanged descriptor with the genuine Kernel
 `check_source_algorithm_e4_existential_request` delegates and drops only the result,
 preserving its descriptor-only behavior. No earlier boolean or detached
 child/residual supplies proof; the instantiated-child consumer remains independent.
-[Proof original identity association](../../mizar-proof/en/status.md#original-e4-request-identity-association) is separate. Semantic environment association, current-policy consumption/adoption,
-separate E1 duties and broader body interpretation remain deferred. Whole raw
+[Proof original identity association](../../mizar-proof/en/status.md#original-e4-request-identity-association) is separate. Proof owns bounded [current-policy consumption](../../mizar-proof/en/status.md#original-e4-current-policy-consumption) and [native original-E4 adoption](../../mizar-proof/en/status.md#native-original-e4-adoption).
+Semantic environment association, separate E1 duties and broader body interpretation remain deferred. Whole raw
 unknowns, incomplete/cache-ineligible slices and cache misses, Open4/Deferred and
 all evidence, symbol, promotion, publication and acceptance/coverage exclusions persist.
 
