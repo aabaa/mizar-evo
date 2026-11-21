@@ -698,6 +698,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
       MVM、extraction、guessed parser/resolver identityは禁止。
 48. **Basic source-derived ControlFlowIr。** [~]
     - [P5: CFG use collection の循環検出](../../task_contracts/ja/P5-CORE-CFG-CYCLE-USES.md)。
+    - [P8: conditional と bare fail shell](../../task_contracts/ja/P8-CORE-IF-FAIL.md)。
 49. **Range/collection-loop CFG attachment。** [ ]
 50. **Match CFG attachment。** [ ]
 51. **Snapshot/claim flow state。** [~] — 限定 empty-interface claim CFG と flat snapshot capture は実装済み。nested snapshots と claim links は延期。

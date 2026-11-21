@@ -1,0 +1,14 @@
+:: Core/CFG fixture: spec 20.2.1, 20.2.6, 20.13.3.
+:: Failure has no normal exit context or postcondition obligation.
+definition
+  let a be object;
+  algorithm branch(a) -> object
+    ensures result = a
+  do
+    if a = a do
+      return a;
+    else
+      fail;
+    end;
+  end;
+end;
