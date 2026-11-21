@@ -1,7 +1,7 @@
 # Task ALGDEF-VC53-NORMAL-RETURN: Normal-return and function-graph prerequisites
 Canonical language: English; [Japanese pointer](../ja/ALGDEF-VC53-NORMAL-RETURN.md).
 Status: bounded requests/adoption; broader proof blocked. Tier: full gates. Owners: [Core plan](../../mizar-core/en/00.crate_plan.md), [VC plan](../../mizar-vc/en/00.crate_plan.md), [proof plan](../../mizar-proof/en/00.crate_plan.md), [Kernel plan](../../mizar-kernel/en/00.crate_plan.md).
-Consumers: mizar-test/promotion.
+Consumers: mizar-test.
 Dependencies: ALGDEF-PARSER-FAIL; Core42–53/CFG, VC formulas, proof/kernel results; producer Core46.
 Authority: [§20.2.6, §20.3, §20.7.2, E1–E5 and VC schema](../../../spec/en/20.algorithm_and_verification.md); [algorithm graph](../../mizar-vc/en/source_vc_decomposition.md#accepted-algorithm-vc-task-graph).
 Classification: source_drift/test_gap.
@@ -32,22 +32,23 @@ VC [witness reduction](../../mizar-vc/en/generator.md#e1-inhabitation-witness-re
 VC [structural/authenticated collector](../../mizar-vc/en/dependency_slice.md#authenticated-direct-return-core-contribution) retains ID-free alias structure, authenticated reachable Core contributions and every unknown/raw remainder. Plain collection remains structural; slices stay incomplete/reuse-ineligible.
 
 ## Original E4 Proof request-identity association
-[Existing existential rule](../../mizar-kernel/en/checker.md#original-algorithmreturns-existential) and [VC result producer](../../mizar-vc/en/generator.md#e4-checked-original-existential) retain exact tuple, binder, witness, context and rebuilt CFG checks. [Native E1 adoption](../../mizar-proof/en/status.md#native-e1-inhabitation-adoption) stays separate.
-Proof [same-call association](../../mizar-proof/en/status.md#original-e4-request-identity-association) authenticates the VC result before regenerating identity on identical inputs and requiring whole raw-slice equality; errors remain producer-first, with no partial association.
-Association supplies no policy authority; currentness remains caller-owned. Preserve Open4/Deferred, raw unknowns, IncompleteUncacheable/cache misses and exclusions. Formula-cycle hardening remains separate PRODUCER-MISSING; no formula-cycle/general-cycle safety claim. R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
+[Proof same-call association](../../mizar-proof/en/status.md#original-e4-request-identity-association) owns authenticated E4 checking, identity regeneration and whole raw-slice equality without policy authority.
+Preserve Open4/Deferred, caller currentness, raw unknowns, IncompleteUncacheable/cache misses. Formula-cycle hardening remains PRODUCER-MISSING; no formula/general-cycle safety claim. R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
 
 ## Original E1 typing descriptor
-The [VC descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) retains the authentic original Forall result binder, returns antecedent, object conclusion, sole typed-input guard and whole graph/raw slice.
+The [VC descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) owns original typing projections and raw slice.
 
 ## Bounded E1 typing check
-[Kernel](../../mizar-kernel/en/checker.md#bounded-original-e1-typing) checks immutable-parameter/sole-Return object typing independently of E4; [VC](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) authenticates the original descriptor first and returns it unchanged only on success. Both Core object guards, original context, binder, relation and CFG remain checked; opaque types stay excluded.
+[Kernel](../../mizar-kernel/en/checker.md#bounded-original-e1-typing) checks immutable-parameter/sole-Return object typing independently of E4; [VC](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) authenticates the original descriptor first and returns it unchanged only on success. Both Core object guards and original projections remain checked.
 
 ## Original E1 typing Proof request-identity association
 Proof [same-call typing association](../../mizar-proof/en/status.md#original-e1-typing-request-identity-association) retains authenticated VC checking, fixed-schema identity regeneration and whole raw-slice equality without policy/adoption.
 
-## Original E1 single-valuedness descriptor
-Authority: §20.1.2, §20.2.6, E1/E3 §20.13.1.
-VC `generate_source_algorithm_e1_single_valuedness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` regenerates the authentic direct-return graph before selecting only Open single-valuedness; producer errors precede selection refusal (`algorithms.direct_return.invalid_e1_single_valuedness_request`). Return `(VcSet, [ContextEntryId; 2], [VcFormulaRef; 2], VcFormulaRef, VcFormulaRef, DependencySlice)`: whole graph, ordered distinct Forall binders, original AlgorithmReturns atoms sharing algorithm/CFG/return/input, matching equality conclusion, sole typed-input guard and whole raw slice. Require exact original context/premise and capture-free binders.
-Scope: VC generator, tests and paired VC documents. No native typing prerequisite, new type, checking, policy/adoption or credit. Preserve Open4/Deferred, caller currentness, raw unknown/incomplete/cache misses and registered/cycle exclusions above; no lower producer, spec, fixture/expectation, trace or coverage changes.
-Tests, cap four groups: exact projections, whole graph/raw slice, purity/repeatability and Open4/Deferred; other roles/unknown ID refused; source/check/Core/CFG mismatches preserve producer-first errors; renamed/relocated source and changed snapshot/schemas regenerate authentic descriptors. Reuse lower authentication/slice controls.
-Exit: specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, VC owner, source_algorithm, proof-verification E2E and links/fragments; full tests follow lane cadence.
+## Original E1 single-valuedness checking
+Authority: §20.1.2 immutable parameters, §20.2.6 sole return, E1/E3 §20.13.1.
+The [existing descriptor](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor) owns original projections and whole graph/raw slice.
+Kernel `check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context) -> bool` takes relation tuples, binder variables and equality operands. Require distinct capture-free original result binders without definitions, matching ordered equality, common algorithm/CFG/statement/input, and exact immutable-parameter/sole-Return under the original object-input guard. Reuse structural profile/CFG validation independently of typing or E4 existence; no new type.
+VC `check_source_algorithm_e1_single_valuedness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` authenticates the existing descriptor first, preserves producer/selection errors, checks original projections through Kernel, and returns the whole unchanged six-tuple/raw slice only on success; local refusal is `algorithms.direct_return.invalid_e1_single_valuedness_check`.
+Scope: Kernel/VC APIs, source_algorithm tests and paired owner documents. No native typing prerequisite, Proof association, policy/adoption, symbol introduction or acceptance credit. Preserve Open4/Deferred, caller currentness, raw unknown/incomplete/cache misses and registered/cycle exclusions above. No lower producer, spec, fixture/expectation, trace or coverage changes; R2 acceptance, R3 export and MVM execution stay blocked.
+Tests, cap four groups: original projections/whole tuple/raw slice, repeatability and Open4/Deferred; Kernel binder/equality/relation/context mismatches refuse; Core guard/body/CFG mismatches refuse; VC other roles/unknown IDs and source/check/Core/CFG mismatches preserve descriptor-first errors, while renamed/relocated source and snapshot/schema changes regenerate checks. Reuse lower authentication/slice controls.
+Exit: specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Kernel/VC owners, source_algorithm, proof-verification E2E and links/fragments; full tests follow lane cadence.
