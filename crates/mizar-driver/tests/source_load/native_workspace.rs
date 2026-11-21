@@ -595,3 +595,563 @@ fn native_workspace_inputs_fail_closed_and_leave_validation_to_existing_owners()
     fs::remove_file(directory.join("mizar.workspace")).unwrap();
     assert_eq!(read_native_workspace_inputs(&root).unwrap(), clean);
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_lsp_producer_captures_transitive_workspace_and_runs_frontend() {
+    use mizar_build::planner::{lockfile_content_hash, workspace_config_content_hash};
+    use mizar_driver::request::{BuildSession, LspPriority, LspRequest};
+
+    let fixture = Fixture::new(b"definition\nend;\n");
+    let mut packages = Vec::new();
+    let mut lock = String::from("schema_version = 1\n");
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\", \"beta\", \"gamma\"]\n",
+    )
+    .unwrap();
+    for (name, dependency) in [
+        ("alpha", Some("beta")),
+        ("beta", Some("gamma")),
+        ("gamma", None),
+    ] {
+        fs::create_dir_all(fixture.root.join(name).join("src")).unwrap();
+        fs::write(
+            fixture.root.join(name).join("src/main.miz"),
+            b"definition\nend;\n",
+        )
+        .unwrap();
+        let mut manifest = format!("[package]\nname = {name:?}\nversion = \"0.1.0\"\n");
+        if let Some(dependency) = dependency {
+            manifest.push_str(&format!("[dependencies]\n{dependency} = \"0.1.0\"\n"));
+        }
+        fs::write(fixture.root.join(name).join("mizar.pkg"), &manifest).unwrap();
+        packages.push(WorkspacePackage {
+            member_path: name.into(),
+            manifest: parse_package_manifest(&manifest).unwrap(),
+        });
+        let dependencies = dependency.map_or_else(String::new, |name| {
+            format!("{{ name = {name:?}, version = \"0.1.0\" }}")
+        });
+        lock.push_str(&format!("[[package]]\nname = {name:?}\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = {name:?} }}\ndependencies = [{dependencies}]\n"));
+    }
+    fs::write(fixture.root.join("mizar.lock"), &lock).unwrap();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let (session, input) = BuildSession::capture_native_lsp(
+        WorkspaceRoot::new(fixture.root.to_str().unwrap()),
+        BuildLaneId::new(71),
+        BuildRequestGeneration::new(3),
+        LspRequest {
+            focus: None,
+            priority: LspPriority::Normal,
+        },
+        &ids,
+        &snapshots,
+    )
+    .unwrap();
+    let plan = produce_build_plan(
+        input.plan_request.clone(),
+        packages.clone(),
+        parse_lockfile(&lock).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(input.workspace_packages, packages);
+    assert_eq!(input.lockfile, parse_lockfile(&lock).unwrap());
+    assert_eq!(
+        input.plan_request.dependency_selection,
+        DependencySelection::Normal
+    );
+    assert_eq!(plan.dependency_graph.edges.len(), 2);
+    let snapshot = session.captured().snapshot();
+    assert_eq!(snapshot.toolchain, plan.toolchain);
+    let mut image = blake3::Hasher::new_derive_key("mizar-driver/running-native-image/v1");
+    image.update(&fs::read("/proc/self/exe").unwrap());
+    assert_eq!(
+        snapshot.toolchain.identity(),
+        format!(
+            "mizar-driver/running-native-image/v1:{}",
+            image.finalize().to_hex()
+        )
+    );
+    assert_eq!(
+        snapshot.lockfile_hash,
+        lockfile_content_hash(&parse_lockfile(&lock).unwrap())
+    );
+    assert_eq!(
+        snapshot.verifier_config_hash,
+        workspace_config_content_hash(&plan.verifier_config, &plan.build_config)
+    );
+    assert!(snapshot.dependency_artifacts.is_empty());
+    assert!(input.dependency_artifacts.is_empty());
+    assert_eq!(session.request().profile.name, "lsp");
+    let mut targets = session.request().targets.packages.clone();
+    targets.sort_by(|left, right| left.as_str().cmp(right.as_str()));
+    assert_eq!(targets, ["alpha", "beta", "gamma"].map(PackageId::new));
+    assert_eq!(session.request().lane, BuildLaneId::new(71));
+    assert_eq!(session.request().generation, BuildRequestGeneration::new(3));
+    let captured = session.captured().native_sources().unwrap();
+    assert_eq!(captured.len(), 3);
+    assert_eq!(snapshot.source_versions.len(), 3);
+    for name in ["alpha", "beta", "gamma"] {
+        let root = fixture.root.join(name);
+        let descriptor = SourceInput {
+            package_id: PackageId::new(name),
+            module_path: ModulePath::new("main"),
+            normalized_path: normalize_path(&root, Path::new("src/main.miz")).unwrap(),
+            edition: Edition::new("2025"),
+            origin: SourceOriginInput::Disk {
+                path: "src/main.miz".into(),
+            },
+        };
+        let oracle = mizar_session::SourceLoader::load(
+            &DiskSourceLoader::new(&root),
+            snapshot.id,
+            descriptor.clone(),
+            &ids,
+        )
+        .unwrap();
+        let (_, loaded, actual) = captured
+            .iter()
+            .find(|(_, _, source)| source.package_id == PackageId::new(name))
+            .unwrap();
+        assert_eq!(actual, &descriptor);
+        assert_eq!(loaded.source_hash, oracle.source_hash);
+        assert_eq!(loaded.text, oracle.text);
+        assert_eq!(
+            snapshot
+                .source_versions
+                .iter()
+                .find(|version| version.package_id == PackageId::new(name))
+                .unwrap()
+                .source_id,
+            loaded.source_id
+        );
+    }
+    let units = ["alpha", "beta", "gamma"].map(|name| WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new(name),
+            ModulePath::new("main"),
+        ),
+    });
+    let owner = publisher(snapshot.id, usize::MAX, &units[0]);
+    for (name, unit) in ["alpha", "beta", "gamma"].into_iter().zip(&units) {
+        owner.allow_work_unit(AllowedWorkUnit::new(
+            IrPipelinePhase::new("SourceLoad"),
+            OutputKind::new("SourceUnit"),
+            IrWorkUnit::new(format!("{name:?}:{:?}", "main")),
+        ));
+        allow_frontend(&owner, unit);
+    }
+    let mut driver =
+        CompilerDriver::new(assemble_registry(&StageConfig::frontend(vec![])).unwrap())
+            .with_output_publisher(owner.clone());
+    let submission = driver
+        .submit_captured(
+            session,
+            &ids,
+            &snapshots,
+            input,
+            SubmitOptions {
+                discover_imports: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let run = submission.scheduler_run.as_ref().unwrap();
+    for kind in ["SourceUnit", "FrontendOutput"] {
+        let outputs = run
+            .phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .filter(|output| output.output_kind() == &OutputKind::new(kind))
+            .count();
+        assert_eq!(outputs, 3, "{kind}");
+    }
+    assert!(
+        run.phase_results
+            .values()
+            .flatten()
+            .all(|result| result.diagnostics.is_empty())
+    );
+    let (_, phase_input) = native_disk_lookup_context(&submission, &ids);
+    for phase in [PipelinePhase::SourceLoad, PipelinePhase::Frontend] {
+        assert!(matches!(
+            driver
+                .registry()
+                .cache_key_for_phase(phase, &phase_input)
+                .unwrap()
+                .intent,
+            PhaseCacheIntent::NoKey { .. }
+        ));
+    }
+}
+
+fn native_lsp_producer_fixture() -> Fixture {
+    let fixture = Fixture::new(b"definition\nend;\n");
+    fs::write(
+        fixture.root.join("alpha/mizar.pkg"),
+        "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    fs::write(fixture.root.join("alpha/mizar.lock"), "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \".\" }\ndependencies = []\n").unwrap();
+    fixture
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_lsp_producer_reconstructs_config_and_retains_guarded_capture() {
+    use mizar_driver::request::{BuildSession, LspPriority, LspRequest};
+    let fixture = native_lsp_producer_fixture();
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let capture = || {
+        BuildSession::capture_native_lsp(
+            WorkspaceRoot::new(fixture.root.join("alpha").to_str().unwrap()),
+            BuildLaneId::new(72),
+            BuildRequestGeneration::new(0),
+            LspRequest {
+                focus: None,
+                priority: LspPriority::Normal,
+            },
+            &ids,
+            &snapshots,
+        )
+        .unwrap()
+    };
+    let (session, input) = capture();
+    let original = session.captured().snapshot().clone();
+    fs::write(fixture.root.join("alpha/mizar.pkg"), "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n[verifier]\ncomputation_replay = true\n[build]\ncache_dir = \"local-cache\"\n").unwrap();
+    let (changed, changed_input) = capture();
+    let changed_plan = produce_build_plan(
+        changed_input.plan_request,
+        changed_input.workspace_packages,
+        changed_input.lockfile,
+    )
+    .unwrap();
+    assert_eq!(
+        original.lockfile_hash,
+        changed.captured().snapshot().lockfile_hash
+    );
+    assert_eq!(
+        original.source_versions[0].source_hash,
+        changed.captured().snapshot().source_versions[0].source_hash
+    );
+    assert_ne!(
+        original.verifier_config_hash,
+        changed.captured().snapshot().verifier_config_hash
+    );
+    assert_ne!(original.id, changed.captured().snapshot().id);
+    let config = &changed_plan.packages[0].verifier_config;
+    assert!(config.computation_replay);
+    assert_eq!(
+        config.max_axioms,
+        mizar_build::planner::VerifierConfig::default().max_axioms
+    );
+    assert_eq!(
+        changed_plan.packages[0].build_config.cache_dir,
+        "local-cache"
+    );
+    assert_eq!(
+        changed.captured().snapshot().verifier_config_hash,
+        mizar_build::planner::workspace_config_content_hash(
+            &changed_plan.verifier_config,
+            &changed_plan.build_config
+        )
+    );
+    fixture.write(b"definition\nlet x be set;\nend;\n");
+    assert_eq!(session.captured().snapshot(), &original);
+    assert_eq!(
+        session.captured().native_sources().unwrap()[0]
+            .1
+            .text
+            .as_ref(),
+        "definition\nend;\n"
+    );
+    let unit = WorkUnit::Module {
+        module: mizar_build::module_index::ModuleId::new(
+            PackageId::new("alpha"),
+            ModulePath::new("main"),
+        ),
+    };
+    let owner = publisher(original.id, usize::MAX, &unit);
+    allow_frontend(&owner, &unit);
+    let mut driver =
+        CompilerDriver::new(assemble_registry(&StageConfig::frontend(vec![])).unwrap())
+            .with_output_publisher(owner.clone());
+    let submission = driver
+        .submit_captured(
+            session,
+            &ids,
+            &snapshots,
+            input,
+            SubmitOptions {
+                discover_imports: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let (inputs, dispatch) = native_disk_lookup_context(&submission, &ids);
+    assert_eq!(inputs.validate_native_config_content(), Ok(()));
+    assert_eq!(inputs.validate_native_lock_content(), Ok(()));
+    let result =
+        &submission.scheduler_run.as_ref().unwrap().phase_results[&source_task(&submission).id][0];
+    let handle = owner
+        .storage()
+        .typed_handle::<SourceUnit>(&result.output_refs[0], &OutputKind::new("SourceUnit"))
+        .unwrap();
+    assert_eq!(
+        owner.storage().get(&handle).unwrap().source_text.as_ref(),
+        "definition\nend;\n"
+    );
+    for mismatch in ["plan", "runtime", "config", "lock"] {
+        let mut foreign = inputs.build_plan.clone();
+        match mismatch {
+            "plan" => foreign.workspace_root = WorkspaceRoot::new("/foreign"),
+            "runtime" => foreign.toolchain = ToolchainInfo::new("foreign-runtime"),
+            "config" => {
+                foreign.verifier_config.packages[0]
+                    .config
+                    .computation_replay = true
+            }
+            "lock" => foreign.lockfile.packages[0].name = "foreign-lock-package".into(),
+            _ => unreachable!(),
+        }
+        let tested = SourceLoadInputs {
+            build_plan: &foreign,
+            ..inputs
+        };
+        if mismatch == "config" {
+            assert!(tested.validate_native_config_content().is_err());
+        }
+        if mismatch == "lock" {
+            assert!(tested.validate_native_lock_content().is_err());
+        }
+        if matches!(mismatch, "plan" | "runtime") {
+            let result = driver
+                .registry()
+                .execute_phase_with_resources(
+                    PipelinePhase::SourceLoad,
+                    dispatch.clone(),
+                    PhaseExecutionResources {
+                        output_publisher: Some(publisher(original.id, usize::MAX, &unit)),
+                        source_load: Some(tested),
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .result;
+            assert_ne!(result.status, PhaseStatus::Complete);
+            assert!(result.output_refs.is_empty());
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_lsp_producer_preserves_dev_metadata_and_unused_registry_lock() {
+    use mizar_driver::request::{BuildSession, LspPriority, LspRequest};
+    let fixture = native_lsp_producer_fixture();
+    fs::create_dir_all(fixture.root.join("beta/src")).unwrap();
+    fs::write(
+        fixture.root.join("beta/src/main.miz"),
+        b"definition\nend;\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\", \"beta\"]\n",
+    )
+    .unwrap();
+    let alpha = "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n[dev-dependencies]\nbeta = \"0.1.0\"\n[verifier]\ncomputation_replay = true\n";
+    let beta = "[package]\nname = \"beta\"\nversion = \"0.1.0\"\n";
+    fs::write(fixture.root.join("alpha/mizar.pkg"), alpha).unwrap();
+    fs::write(fixture.root.join("beta/mizar.pkg"), beta).unwrap();
+    let lock = "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"alpha\" }\ndependencies = [{ name = \"beta\", version = \"0.1.0\" }]\n[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \"beta\" }\ndependencies = []\n[[package]]\nname = \"unused\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:unused\" }\ndependencies = []\n";
+    fs::write(fixture.root.join("mizar.lock"), lock).unwrap();
+    let (session, input) = BuildSession::capture_native_lsp(
+        WorkspaceRoot::new(fixture.root.to_str().unwrap()),
+        BuildLaneId::new(73),
+        BuildRequestGeneration::new(0),
+        LspRequest {
+            focus: None,
+            priority: LspPriority::Normal,
+        },
+        &InMemorySessionIdAllocator::new(),
+        &SnapshotRegistry::new(),
+    )
+    .unwrap();
+    let packages = vec![
+        WorkspacePackage {
+            member_path: "alpha".into(),
+            manifest: parse_package_manifest(alpha).unwrap(),
+        },
+        WorkspacePackage {
+            member_path: "beta".into(),
+            manifest: parse_package_manifest(beta).unwrap(),
+        },
+    ];
+    assert_eq!(input.workspace_packages, packages);
+    assert_eq!(input.lockfile, parse_lockfile(lock).unwrap());
+    let plan =
+        produce_build_plan(input.plan_request, input.workspace_packages, input.lockfile).unwrap();
+    assert_eq!(plan.packages.len(), 2);
+    assert!(plan.dependency_graph.edges.is_empty());
+    let alpha = plan
+        .packages
+        .iter()
+        .find(|package| package.package_id == PackageId::new("alpha"))
+        .unwrap();
+    assert_eq!(
+        alpha.dependencies[0].kind,
+        mizar_build::planner::DependencyKind::Dev
+    );
+    assert!(alpha.verifier_config.computation_replay);
+    assert_eq!(
+        plan.packages
+            .iter()
+            .find(|package| package.package_id == PackageId::new("beta"))
+            .unwrap()
+            .verifier_config,
+        mizar_build::planner::VerifierConfig::default()
+    );
+    assert_eq!(session.captured().native_sources().unwrap().len(), 2);
+    assert_eq!(
+        session.captured().snapshot().lockfile_hash,
+        mizar_build::planner::lockfile_content_hash(&parse_lockfile(lock).unwrap())
+    );
+    let mut reduced = parse_lockfile(lock).unwrap();
+    reduced.packages.retain(|package| package.name != "unused");
+    assert_ne!(
+        session.captured().snapshot().lockfile_hash,
+        mizar_build::planner::lockfile_content_hash(&reduced)
+    );
+    assert!(
+        session
+            .captured()
+            .snapshot()
+            .dependency_artifacts
+            .is_empty()
+    );
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_lsp_producer_refuses_viable_registry_plans() {
+    use mizar_driver::request::{BuildSession, LspPriority, LspRequest};
+    let fixture = native_lsp_producer_fixture();
+    let lock = "schema_version = 1\n[[package]]\nname = \"alpha\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \".\" }\ndependencies = [{ name = \"dep\", version = \"1.0.0\" }]\n[[package]]\nname = \"dep\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:dep\" }\ndependencies = []\n";
+    fs::write(fixture.root.join("alpha/mizar.lock"), lock).unwrap();
+    for dev in [false, true] {
+        if dev {
+            fs::create_dir_all(fixture.root.join("alpha/beta/src")).unwrap();
+            fs::write(
+                fixture.root.join("alpha/beta/src/main.miz"),
+                b"definition\nend;\n",
+            )
+            .unwrap();
+            fs::write(
+                fixture.root.join("alpha/mizar.workspace"),
+                "[workspace]\nmembers = [\".\", \"beta\"]\n",
+            )
+            .unwrap();
+            fs::write(fixture.root.join("alpha/beta/mizar.pkg"), "[package]\nname = \"beta\"\nversion = \"0.1.0\"\n[dependencies]\ndep = \"1.0.0\"\n").unwrap();
+            fs::write(fixture.root.join("alpha/mizar.lock"), format!("{lock}[[package]]\nname = \"beta\"\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = \"beta\" }}\ndependencies = [{{ name = \"dep\", version = \"1.0.0\" }}]\n")).unwrap();
+        }
+        let manifest = format!(
+            "[package]\nname = \"alpha\"\nversion = \"0.1.0\"\n[{}]\ndep = \"1.0.0\"\n",
+            if dev {
+                "dev-dependencies"
+            } else {
+                "dependencies"
+            }
+        );
+        fs::write(fixture.root.join("alpha/mizar.pkg"), &manifest).unwrap();
+        let root = WorkspaceRoot::new(fixture.root.join("alpha").to_str().unwrap());
+        let (packages, lockfile) =
+            mizar_build::planner::read_native_workspace_inputs(&root).unwrap();
+        let plan = produce_build_plan(
+            PlanRequest {
+                workspace_root: root.clone(),
+                dependency_selection: DependencySelection::Normal,
+                toolchain: ToolchainInfo::new("independent-registry-control"),
+            },
+            packages,
+            lockfile,
+        )
+        .unwrap();
+        assert!(plan.packages.iter().any(|package| matches!(
+            package.source,
+            mizar_build::planner::PackagePlanSource::Registry { .. }
+        )));
+        if dev {
+            assert!(
+                plan.packages
+                    .iter()
+                    .find(|package| package.package_id == PackageId::new("alpha"))
+                    .unwrap()
+                    .dependencies
+                    .iter()
+                    .any(|dependency| dependency.kind == mizar_build::planner::DependencyKind::Dev)
+            );
+        }
+        let result = BuildSession::capture_native_lsp(
+            root,
+            BuildLaneId::new(74),
+            BuildRequestGeneration::new(0),
+            LspRequest {
+                focus: None,
+                priority: LspPriority::Normal,
+            },
+            &InMemorySessionIdAllocator::new(),
+            &SnapshotRegistry::new(),
+        );
+        assert!(
+            matches!(result, Err(error) if error == "native LSP context requires workspace-only plan rows")
+        );
+    }
+}
+
+#[test]
+fn native_lsp_producer_keeps_acquisition_failures_unavailable() {
+    use mizar_driver::request::{BuildSession, LspPriority, LspRequest};
+    let fixture = native_lsp_producer_fixture();
+    let capture = || {
+        BuildSession::capture_native_lsp(
+            WorkspaceRoot::new(fixture.root.join("alpha").to_str().unwrap()),
+            BuildLaneId::new(75),
+            BuildRequestGeneration::new(0),
+            LspRequest {
+                focus: None,
+                priority: LspPriority::Normal,
+            },
+            &InMemorySessionIdAllocator::new(),
+            &SnapshotRegistry::new(),
+        )
+    };
+    #[cfg(not(target_os = "linux"))]
+    assert!(
+        matches!(capture(), Err(error) if error == "running native image provenance is unsupported on this platform")
+    );
+    #[cfg(target_os = "linux")]
+    {
+        for path in ["mizar.pkg", "mizar.lock"] {
+            let path = fixture.root.join("alpha").join(path);
+            let original = fs::read(&path).unwrap();
+            fs::remove_file(&path).unwrap();
+            assert!(capture().is_err());
+            fs::write(&path, "invalid TOML = [").unwrap();
+            assert!(capture().is_err());
+            fs::write(&path, original).unwrap();
+        }
+        let workspace = fixture.root.join("alpha/mizar.workspace");
+        fs::write(&workspace, "[workspace]\nmembers = [\"missing\"]\n").unwrap();
+        assert!(capture().is_err());
+        fs::remove_file(workspace).unwrap();
+        fixture.write(&[0xff]);
+        assert!(capture().is_err());
+        fs::remove_dir_all(fixture.root.join("alpha/src")).unwrap();
+        assert!(capture().is_err());
+    }
+}

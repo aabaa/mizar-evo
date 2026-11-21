@@ -194,28 +194,28 @@ state である。superseded session は stale diagnostic data や retained expl
 
 ## Native runtime-context definition
 
-P25 は後続の native producer と LSP host の入力を定義する。**G14 承認は未取得であり、コード着手前に必要**。以下は内部設計の推奨であり、稼働中の既定値や host/API 実装ではない。既存の明示的呼出しと承認済み active-run cache binding の契約を維持する。
+G14 は限定 producer に以下の Q1–Q3 を選択する。native LSP host 有効化は後続とする。`BuildSession::capture_native_lsp` は runtime identity と workspace metadata を内部取得し、既存 captured session と native `DriverSubmitInput` を返す。root と request lifecycle 入力だけを受け、plan/hash/source list は受け取らない。取得・検証・capture の失敗は新しい diagnostic を加えず `Result<_, String>` とする。既存の明示的呼出しと承認済み active-run cache binding の契約を維持する。
 
 ### Identity and same-request association
 
-Driver は実際の bootstrap で既存の [running-image acquisition](../en/frontend_adapter.md#native-disk-cache-preparation) を使う。Linux の実行イメージ全体、参加コードの mapping evidence、既存の BLAKE3 derive-key domain が根拠となる。限定 native profile の `ToolchainInfo` は `mizar-driver/running-native-image/v1:` と当該 producer の小文字 hex digest の連結を推奨する。同じ値を生成 plan と capture の dependency inputs に渡す。package version、lock metadata、環境の主張、呼出し側の label からは作らない。未対応 platform/linkage や evidence 不足では当該 profile を利用できない。
+Driver は producer 内で既存の [running-image acquisition](../en/frontend_adapter.md#native-disk-cache-preparation) を使う。Linux の実行イメージ全体、参加コードの mapping evidence、既存の BLAKE3 derive-key domain が根拠となる。限定 native profile の `ToolchainInfo` は `mizar-driver/running-native-image/v1:` と当該 producer の小文字 hex digest の連結とする。同じ値を生成 plan と capture の dependency inputs に渡す。package version、lock metadata、環境の主張、呼出し側の label からは作らない。未対応 platform/linkage や evidence 不足では当該 profile を利用できない。
 これは稼働中の workspace rlib closure の識別のみである。記録された release SemVer、package constraint、選択 pin、外部 backend build、release authentication は Build の [toolchain boundary](../../mizar-build/en/planner.md#toolchain-constraint-boundary) に従う別の事実である。runtime identity の一致は pin の充足や W0306 の選択を意味しない。既存の cache compatibility operands を変更せず、異なる image の互換性も定義しない。
 
-後続 producer は実際に検証された plan の verifier/build aggregates に既存の [workspace_config_content_hash](../../mizar-build/en/planner.md#current-package-configuration-content-fingerprint) を適用し、`VerifierConfigInput.hash` とする。これは package-content profile の明示的選択であり、万能な実効 verifier digest ではない。既存 encoding と package ごとの defaults/computation_replay を維持し、Proof fingerprint や raw TOML hash で代用しない。runtime policy、invocation override、backend、seed、budget は別の owner 入力であり、それらを使う後続 profile は完全な association を必要とする。config-to-policy mapping は追加しない。
+producer は実際に検証された plan の verifier/build aggregates に既存の [workspace_config_content_hash](../../mizar-build/en/planner.md#current-package-configuration-content-fingerprint) を適用し、`VerifierConfigInput.hash` とする。これは package-content profile の明示的選択であり、万能な実効 verifier digest ではない。既存 encoding と package ごとの defaults/computation_replay を維持し、Proof fingerprint や raw TOML hash で代用しない。runtime policy、invocation override、backend、seed、budget は別の owner 入力であり、それらを使う後続 profile は完全な association を必要とする。config-to-policy mapping は追加しない。
 明示的 native root の取得、検証済み plan、そこから生成した lock/config identity、実際の runtime identity、元の source capture tuples を 1 つの不変 request に対応させる。[workspace-only projection](../../mizar-build/en/planner.md#native-workspace-only-context-inputs) は planner が所有する。configuration/runtime/dependency selection の変更後は再構築し、foreign plan/capture は既存 guard で拒否する。digest は現在の file、原子的取得、live session/publication permission、後段 footprint の完全性を証明しない。
 
-### Default LSP profile recommendation
+### Default LSP profile
 
-`BuildProfile.name = "lsp"`、normal dependency selection、Frontend までの既存 `StageConfig::frontend` composition、外部 artifact roots なしを推奨する。発見した全 workspace members と実際の source inputs を使う。OpenBuffer overlay の capture/version/currentness 規則は維持する。profile 名は routing metadata であり、phase input を捏造する権限ではない。
-既定 profile は source/frontend diagnostics を観測し、完全な検証済み build を主張しない。Proof/replay、artifact emission、persistent cache preparation、外部 backend は有効化しない。明示的な豊富な profile は別扱いとする。新しい diagnostic や成功扱いの fallback は定義しない。runtime/workspace input が取得不能なら当該 profile は利用不能のままとし、placeholder や空 context で置き換えない。後続 producer/host 契約で既存 unavailable/error transport と lifecycle tests を凍結する。
+`BuildProfile.name = "lsp"`、normal dependency selection、Frontend までの既存 `StageConfig::frontend` composition、外部 artifact roots なしを選択する。発見した全 workspace members と実際の source inputs を使う。OpenBuffer overlay の capture/version/currentness 規則は維持する。profile 名は routing metadata であり、phase input を捏造する権限ではない。
+既定 profile は source/frontend diagnostics を観測し、完全な検証済み build を主張しない。Proof/replay、artifact emission、persistent cache preparation、外部 backend は有効化しない。明示的な豊富な profile は別扱いとする。新しい diagnostic や成功扱いの fallback は定義しない。runtime/workspace input が取得不能なら当該 profile は利用不能のままとし、placeholder や空 context で置き換えない。producer は全 indexed Disk sources を一度 capture する。OpenBuffer 対応と host lifecycle 統合は後続とする。返す submit input は normal dependencies と既存 unavailable cache defaults を使い、caller は `StageConfig::frontend(vec![])` を別途 compose する。
 
 ### G14 decisions and staged handoff
 
-- **Q1 — snapshot runtime identity:** 上記の既存 image producer による versioned string を推奨する。代替は authenticated distribution/release identity を待つこと。推奨は承認済み running-image provenance の snapshot input への適用であり、どちらも release を認証せず Cache compatibility を変更しない。
-- **Q2 — LSP default:** frontend-only `lsp`、normal dependencies、optional cache 無効を推奨する。代替は広い effective-policy/dependency producer が揃うまで profile の明示選択を要求すること。完全検証を既定には選ばない。
-- **Q3 — initial dependency scope:** Build 所有の厳密な workspace-only projection を推奨する。代替は authenticated registry manifests/artifacts まで bootstrap を待つこと。registry の default metadata や未知の footprint は producer の代わりにならない。
+- **Q1 — snapshot runtime identity:** authenticated distribution/release identity を待つ代わりに上記 image producer の versioned string を選択する。release 認証や Cache compatibility 変更は行わない。
+- **Q2 — LSP default:** 広い effective-policy/dependency 入力を待つ代わりに frontend-only `lsp`、normal dependencies、optional cache 無効を選択する。完全検証は別扱いとする。
+- **Q3 — initial dependency scope:** authenticated registry manifests/artifacts を待つ代わりに Build 所有の厳密な workspace-only projection を選択する。未知の metadata は producer の代わりにならない。
 
-G14 で owner 選択を記録した後に Muse が Wave 4 を dispatch する。先に staged producer の genuine positive/refusal inputs、厳密な同一 request association、既存 identity/config/lock matrix 再利用を凍結する。native executable-host activation は実 stdio/lifecycle evidence を伴う別の後続 unit とする。この定義はコード、host activation、policy integration、semantic coverage、build 完了の credit を与えない。
+stage は実行しない。native executable host、overlay、stdio/lifecycle 有効化は別の後続 unit とし、この入力 profile に policy integration、semantic coverage、build 完了の credit は与えない。
 
 ## Snapshot Capture
 

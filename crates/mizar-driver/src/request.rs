@@ -398,6 +398,118 @@ impl CapturedSnapshot {
 }
 
 impl BuildSession {
+    /// Acquires and captures the bounded workspace-only native LSP context.
+    /// The caller composes `StageConfig::frontend(vec![])`; this does not run stages.
+    pub fn capture_native_lsp<A: SessionIdAllocator>(
+        workspace_root: WorkspaceRoot,
+        lane: BuildLaneId,
+        generation: BuildRequestGeneration,
+        request: LspRequest,
+        allocator: &A,
+        registry: &SnapshotRegistry<A>,
+    ) -> Result<
+        (
+            Self,
+            crate::driver::DriverSubmitInput<mizar_build::module_index::StaticSourceLayout>,
+        ),
+        String,
+    > {
+        use mizar_build::{
+            module_index::{ModuleIndexLocation, StaticSourceLayout, build_module_index},
+            planner::{
+                DependencySelection, PackagePlanSource, PlanRequest, lockfile_content_hash,
+                produce_build_plan, read_native_workspace_inputs, workspace_config_content_hash,
+            },
+        };
+
+        let image = crate::frontend_adapter::SourceLoadService::running_native_image()?;
+        let toolchain = ToolchainInfo::new(format!("{}:{}", image.family, image.value));
+        let (packages, lockfile) = read_native_workspace_inputs(&workspace_root)?;
+        let plan_request = PlanRequest {
+            workspace_root: workspace_root.clone(),
+            dependency_selection: DependencySelection::Normal,
+            toolchain: toolchain.clone(),
+        };
+        let plan = produce_build_plan(plan_request.clone(), packages.clone(), lockfile.clone())
+            .map_err(|error| error.to_string())?;
+        if plan
+            .packages
+            .iter()
+            .any(|package| !matches!(package.source, PackagePlanSource::Workspace { .. }))
+        {
+            return Err("native LSP context requires workspace-only plan rows".into());
+        }
+        let layout = StaticSourceLayout::from_native_disk(&plan)?;
+        let index =
+            build_module_index(&plan, &layout, &[]).map_err(|error| format!("{error:?}"))?;
+        let mut sources = Vec::new();
+        for package in &plan.packages {
+            let PackagePlanSource::Workspace { root, .. } = &package.source else {
+                return Err("native LSP context requires workspace-only plan rows".into());
+            };
+            let package_root = std::path::Path::new(workspace_root.as_str()).join(root);
+            let loader = DiskSourceLoader::new(&package_root);
+            for module in index
+                .modules
+                .iter()
+                .filter(|module| module.package_id == package.package_id)
+            {
+                let ModuleIndexLocation::WorkspaceFile {
+                    normalized_path, ..
+                } = &module.location
+                else {
+                    return Err("native LSP context requires workspace source inputs".into());
+                };
+                let input = SourceInput {
+                    package_id: package.package_id.clone(),
+                    module_path: module.module_path.clone(),
+                    normalized_path: mizar_session::normalize_path(
+                        &package_root,
+                        std::path::Path::new(normalized_path),
+                    )
+                    .map_err(|error| error.to_string())?,
+                    edition: module.edition.clone(),
+                    origin: SourceOriginInput::Disk {
+                        path: normalized_path.clone().into(),
+                    },
+                };
+                sources.push((loader.clone(), input));
+            }
+        }
+        let draft = BuildRequestDraft {
+            lane,
+            origin: BuildRequestOrigin::Lsp(request),
+            generation,
+            workspace_root,
+            profile: BuildProfile::new("lsp"),
+            targets: BuildTargets {
+                packages: plan
+                    .packages
+                    .iter()
+                    .map(|package| package.package_id.clone())
+                    .collect(),
+                modules: Vec::new(),
+            },
+            source_inputs: SourceInputSet::default(),
+            dependency_inputs: DependencyInputSet::new(
+                Vec::new(),
+                lockfile_content_hash(&lockfile),
+                toolchain,
+            ),
+            verifier_config: VerifierConfigInput::new(workspace_config_content_hash(
+                &plan.verifier_config,
+                &plan.build_config,
+            )),
+        };
+        let session = draft
+            .capture_sources(allocator, registry, sources)
+            .map_err(|error| format!("{error:?}"))?;
+        Ok((
+            session,
+            crate::driver::DriverSubmitInput::new(plan_request, packages, lockfile, layout),
+        ))
+    }
+
     /// Retains an unpublished comment draft bound to this session's native capture.
     pub fn capture_commented_module<A: SessionIdAllocator>(
         &mut self,
