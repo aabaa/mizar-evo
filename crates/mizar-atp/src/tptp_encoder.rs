@@ -337,7 +337,23 @@ fn encode_fof(problem: &AtpProblem) -> Result<TptpEncodingOutput, TptpEncodingEr
         .ok_or(TptpEncodingError::MissingFormulaPayload {
             formula_id: conjecture.id(),
         })?;
-    let rendered = render_formula(formula, &mut context, &mut Scope::default())?;
+    let binders = formula
+        .free_variables()
+        .into_iter()
+        .map(|variable| crate::problem::AtpBinder::new(variable, None))
+        .collect::<Vec<_>>();
+    let rendered = if binders.is_empty() {
+        render_formula(formula, &mut context, &mut Scope::default())?
+    } else {
+        render_quantifier(
+            "forall",
+            "!",
+            &binders,
+            formula,
+            &mut context,
+            &mut Scope::default(),
+        )?
+    };
     write_entry(&mut text, &label, "conjecture", &rendered);
     formula_labels.push(TptpFormulaLabel {
         label,

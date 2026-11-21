@@ -170,7 +170,8 @@ term は function または generated-binder declaration を matching arity で�
 
 encoder は active quantifier scope を追跡しなければならない。`AtpTerm::Variable` は、その
 variable が現在の formula の active `Forall` / `Exists` binder stack によって束縛されている場合だけ
-render できる。free variable は reject する。1 つの emitted formula 内では、quantifier 内の
+render できる。conjecture の自由変数だけを symbol 順に明示的に全称閉包し、既存の unsorted generated-binder 検査を使う。
+SMT-LIB は閉包全体を否定し、元 problem/handoff は変更しない。他の自由変数は拒否し、backend の暗黙量化は使わない。1 つの emitted formula 内では、quantifier 内の
 duplicate binder variable と nested binder shadowing は unsupported で fail closed する。binder
 variable は `GeneratedBinder` declaration と、対応する
 `AtpSymbolSource::GeneratedBinder` symbol-map row に resolve しなければならない。declaration が
@@ -291,7 +292,7 @@ Task 12 は次の focused Rust coverage を追加しなければならない:
 - support される guard-predicate profile では、未使用の `AtpDeclarationKind::Sort` row を
   accept し、rendering では無視し、SMT-LIB output に含めないこと。
 - native-property declaration rejection。
-- free-variable、duplicate-binder、shadowing、missing-declaration、missing-symbol-map、
+- goal 外の free-variable、duplicate-binder、shadowing、missing-declaration、missing-symbol-map、
   invalid-declaration、invalid-arity、invalid-binder source failure。
 - function、predicate、constant、generated-binder spelling の raw-name injection avoidance。
 - duplicate/illegal/reserved SMT-LIB symbol と assertion-label rejection。

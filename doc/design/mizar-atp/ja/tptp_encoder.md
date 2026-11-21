@@ -145,8 +145,8 @@ declaration を matching arity で参照しなければならない。通常は 
 
 encoder は active quantifier scope を追跡しなければならない。`AtpTerm::Variable` は、その
 variable が現在の formula の active `Forall` / `Exists` binder stack によって束縛されている場合だけ
-render できる。free variable は reject し、TPTP の implicit universal quantification に任せては
-ならない。1 つの emitted formula 内では、quantifier 内の duplicate binder variable と nested
+render できる。conjecture の自由変数だけを symbol 順に明示的に全称閉包し、既存の unsorted generated-binder 検査を使う。
+元 problem/handoff は変更しない。他の自由変数は拒否し、backend の暗黙量化は使わない。1 つの emitted formula 内では、quantifier 内の duplicate binder variable と nested
 binder shadowing は unsupported で fail closed する。binder variable は
 `GeneratedBinder` declaration と、対応する `AtpSymbolSource::GeneratedBinder` symbol-map row に
 resolve しなければならない。declaration が存在するだけでは不十分である。
@@ -251,7 +251,7 @@ Task 10 は focused Rust coverage として次を追加しなければならな�
   unsupported quantifier、sorted binder に対する profile rejection。
 - native property declaration、empty `And`/`Or`、empty quantifier binder list の fail-closed
   rejection。
-- free variable、duplicate binder、nested binder shadowing、declaration/symbol-map/kind/arity
+- goal 外の free variable、duplicate binder、nested binder shadowing、declaration/symbol-map/kind/arity
   mismatch、name-mangling collision の fail-closed rejection。
 - TPTP keyword、reserved `$` name、uppercase/lowercase edge case、punctuation、whitespace、
   newline-like payload のように見える source/backend-neutral spelling を用いた raw-name

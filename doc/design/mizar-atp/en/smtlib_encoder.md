@@ -184,8 +184,12 @@ encoder error even if `AtpProblem::try_new` would normally prevent it.
 
 The encoder must track active quantifier scope. `AtpTerm::Variable` may be
 rendered only when the variable is bound by the current formula's active
-`Forall` or `Exists` binder stack. Free variables are rejected. Within one
-emitted formula, duplicate binder variables in a quantifier and nested binder
+`Forall` or `Exists` binder stack. Free conjecture variables are explicitly
+universally closed in deterministic symbol order before rendering, using
+existing unsorted generated-binder checks.
+SMT-LIB negates the entire closure; the original problem and handoff stay unchanged.
+Other free variables are rejected; implicit backend quantification is never
+used. Within one emitted formula, duplicate binder variables in a quantifier and nested binder
 shadowing are unsupported and fail closed. A binder variable must resolve to a
 `GeneratedBinder` declaration and to a matching
 `AtpSymbolSource::GeneratedBinder` symbol-map row; declaration presence alone
@@ -321,7 +325,7 @@ Task 12 must add focused Rust coverage for:
 - unused `AtpDeclarationKind::Sort` rows are accepted, ignored for rendering,
   and absent from the SMT-LIB output in the supported guard-predicate profile;
 - native-property declaration rejection;
-- free-variable, duplicate-binder, shadowing, missing-declaration,
+- non-goal free-variable, duplicate-binder, shadowing, missing-declaration,
   missing-symbol-map, invalid-declaration, invalid-arity, and invalid-binder
   source failures;
 - raw-name injection avoidance for function, predicate, constant, and

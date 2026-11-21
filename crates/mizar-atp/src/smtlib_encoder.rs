@@ -381,7 +381,23 @@ fn encode_uninterpreted(problem: &AtpProblem) -> Result<SmtLibEncodingOutput, Sm
         .ok_or(SmtLibEncodingError::MissingFormulaPayload {
             formula_id: conjecture.id(),
         })?;
-    let rendered = render_formula(formula, &mut context, &mut Scope::default())?;
+    let binders = formula
+        .free_variables()
+        .into_iter()
+        .map(|variable| crate::problem::AtpBinder::new(variable, None))
+        .collect::<Vec<_>>();
+    let rendered = if binders.is_empty() {
+        render_formula(formula, &mut context, &mut Scope::default())?
+    } else {
+        render_quantifier(
+            "forall",
+            "forall",
+            &binders,
+            formula,
+            &mut context,
+            &mut Scope::default(),
+        )?
+    };
     write_assertion(&mut text, &label, &format!("(not {rendered})"));
     assertion_labels.push(SmtLibAssertionLabel {
         label,

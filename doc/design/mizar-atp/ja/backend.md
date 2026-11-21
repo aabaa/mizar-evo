@@ -332,6 +332,7 @@ explicit formula/substitution payload を生成できるまで non-candidate の
 ## Explicit local candidate production
 
 `build_local_candidate_inputs(problem, handoff, format, goal_polarity, formula_sources)` は実 structured problem を符号化し、探索を無効にした finder validation で元 local handoff を検証する。次に VC candidate writer で明示的な未検証 polarity/source claim を frame し、元 problem/handoff は変更しない。非対応の元 profile/binding は候補生成前に拒否する。
+変数を含む goal は concrete encoder の明示的 conjecture 閉包と finder の元変数対応を使う。探索上限が無い場合も探索せずに対応を検証する。
 既存 transport は実 encoding の target、input/provenance hash、label、symbol を保持する。候補 identity は encoded input・metadata・fresh evidence wire を hash する。typed claim を入力とし backend proof material や生成済み candidate bytes は入力にしない。通常 translation・finder・guarded extraction の規則は維持する。
 
 ## failure semantics

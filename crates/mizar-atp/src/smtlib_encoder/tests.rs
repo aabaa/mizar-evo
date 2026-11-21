@@ -324,15 +324,80 @@ fn rejects_unsupported_profiles_and_native_properties() {
 }
 
 #[test]
+fn free_goal_variables_are_closed_once_in_symbol_order() {
+    let mut parts = base_parts();
+    parts.logic_profile = first_order_profile();
+    for (id, name) in [(5, "z"), (6, "y"), (7, "x")] {
+        add_binder(&mut parts, id, name, &format!("binder:{name}"));
+    }
+    parts
+        .declarations
+        .push(declaration(8, AtpDeclarationKind::Function, "f", 2));
+    parts.symbol_map.push(symbol("f", "function:f"));
+    let body = AtpFormulaTree::And(vec![
+        AtpFormulaTree::Equality {
+            left: AtpTerm::Function {
+                function: "f".into(),
+                arguments: vec![variable("z"), variable("x")],
+            },
+            right: variable("z"),
+        },
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("y", None)],
+            body: Box::new(AtpFormulaTree::Equality {
+                left: variable("x"),
+                right: variable("y"),
+            }),
+        },
+    ]);
+    parts.conjecture = AtpFormula::new(AtpFormulaId::new(2), body.clone(), AtpProvenanceId::new(3));
+    let implicit = AtpProblem::try_new(parts.clone()).expect("free goal");
+    let output = encode_smtlib(&implicit, SmtLibDialect::Uninterpreted).expect("implicit closure");
+    assert_eq!(
+        output,
+        encode_smtlib(&implicit, SmtLibDialect::Uninterpreted).expect("repeat")
+    );
+    parts.conjecture = AtpFormula::new(
+        AtpFormulaId::new(2),
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("x", None), AtpBinder::new("z", None)],
+            body: Box::new(body),
+        },
+        AtpProvenanceId::new(3),
+    );
+    let explicit = AtpProblem::try_new(parts.clone()).expect("explicit closure");
+    assert_eq!(
+        output,
+        encode_smtlib(&explicit, SmtLibDialect::Uninterpreted).expect("explicit output")
+    );
+    parts.conjecture = AtpFormula::new(
+        AtpFormulaId::new(2),
+        AtpFormulaTree::Equality {
+            left: variable("x"),
+            right: variable("z"),
+        },
+        AtpProvenanceId::new(3),
+    );
+    parts.logic_profile = base_parts().logic_profile;
+    let propositional = AtpProblem::try_new(parts).expect("propositional profile");
+    assert_eq!(
+        encode_smtlib(&propositional, SmtLibDialect::Uninterpreted),
+        Err(SmtLibEncodingError::UnsupportedProfile {
+            feature: "quantifier"
+        })
+    );
+}
+
+#[test]
 fn rejects_scope_and_sorted_binder_errors() {
     let mut free = base_parts();
     free.declarations
         .push(declaration(5, AtpDeclarationKind::GeneratedBinder, "x", 0));
     free.symbol_map.push(generated_binder("x", "binder:x"));
-    free.conjecture = AtpFormula::new(
-        AtpFormulaId::new(2),
+    free.axioms[0] = AtpFormula::new(
+        AtpFormulaId::new(1),
         atom("P", vec![variable("x")]),
-        AtpProvenanceId::new(3),
+        AtpProvenanceId::new(2),
     );
     let problem = AtpProblem::try_new(free).expect("free variable problem");
     assert_eq!(
@@ -606,8 +671,21 @@ fn rejects_rendering_and_validation_failures_fail_closed() {
         },
         AtpProvenanceId::new(3),
     );
-    let problem = AtpProblem::try_new(invalid_binder_source)
+    let problem = AtpProblem::try_new(invalid_binder_source.clone())
         .expect("problem with non-generated binder source");
+    assert_eq!(
+        encode_smtlib(&problem, SmtLibDialect::Uninterpreted),
+        Err(SmtLibEncodingError::InvalidBinderSource {
+            variable: AtpSymbolName::new("x")
+        })
+    );
+    let mut free_source = invalid_binder_source;
+    free_source.conjecture = AtpFormula::new(
+        AtpFormulaId::new(2),
+        atom("P", vec![variable("x")]),
+        AtpProvenanceId::new(3),
+    );
+    let problem = AtpProblem::try_new(free_source).expect("free goal with invalid binder source");
     assert_eq!(
         encode_smtlib(&problem, SmtLibDialect::Uninterpreted),
         Err(SmtLibEncodingError::InvalidBinderSource {

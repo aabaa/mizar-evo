@@ -151,8 +151,12 @@ would normally prevent it.
 
 The encoder must track active quantifier scope. `AtpTerm::Variable` may be
 rendered only when the variable is bound by the current formula's active
-`Forall` or `Exists` binder stack. Free variables are rejected and must not be
-left for TPTP implicit universal quantification. Within one emitted formula,
+`Forall` or `Exists` binder stack. Free conjecture variables are explicitly
+universally closed in deterministic symbol order before rendering, using
+existing unsorted generated-binder checks.
+The original problem and handoff stay unchanged.
+Other free variables are rejected; implicit backend quantification is never
+used. Within one emitted formula,
 duplicate binder variables in a quantifier and nested binder shadowing are
 unsupported and fail closed. A binder variable must resolve to a
 `GeneratedBinder` declaration and to a matching `AtpSymbolSource::GeneratedBinder`
@@ -271,7 +275,7 @@ Task 10 must add focused Rust coverage for:
   sorted binders;
 - fail-closed rejection of native property declarations, empty `And`/`Or`, and
   empty quantifier binder lists;
-- fail-closed rejection of free variables, duplicate binders, nested binder
+- fail-closed rejection of non-goal free variables, duplicate binders, nested binder
   shadowing, declaration/symbol-map/kind/arity mismatches, and name-mangling
   collisions;
 - raw-name injection coverage using source/backend-neutral spellings that look

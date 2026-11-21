@@ -39,7 +39,7 @@ use crate::{
 
 type WireSections = Vec<Vec<Vec<u8>>>;
 
-/// Search limits count terms (including the scoped rigid variable), premise
+/// Search limits count terms (including rigid goal variables), premise
 /// substitutions (including zero-variable premises), equality names, and
 /// kernel/SAT queries, respectively.
 /// Missing limits disable search; zero limits are literal. Reports may only
@@ -325,7 +325,7 @@ pub fn find_instance_evidence(
         // Keep the authenticated guard local without charging it as a premise
         // instantiation or placing its variable in the substitution domain.
         selected.insert(entry.formula_id);
-        Some(term)
+        vec![term]
     } else {
         if parsed.formulas().len() != problem.axioms().len() {
             return Err(invalid());
@@ -378,10 +378,20 @@ pub fn find_instance_evidence(
             &mut variables,
             &mut equalities,
         )?;
-        if !variables.is_empty() || equalities.len() > 1 {
+        if variables.keys().cloned().collect::<BTreeSet<_>>()
+            != goal
+                .formula()
+                .ok_or_else(invalid)?
+                .free_variables()
+                .into_iter()
+                .map(|variable| variable.as_str().to_owned())
+                .collect()
+            || variables.values().collect::<BTreeSet<_>>().len() != variables.len()
+            || equalities.len() > 1
+        {
             return Err(invalid());
         }
-        None
+        variables.into_values().map(Term::Variable).collect()
     };
     for (name, symbol) in &symbols {
         let declaration = problem
@@ -431,7 +441,7 @@ pub fn find_instance_evidence(
         .iter()
         .map(|term| (term.render(), term.clone()))
         .collect::<BTreeMap<_, _>>();
-    if let Some(term) = rigid {
+    for term in rigid {
         counted_terms.insert(term.render(), term);
     }
     if counted_terms.len() as u64 > limits[0] {

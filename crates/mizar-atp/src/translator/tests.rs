@@ -2955,6 +2955,272 @@ fn check_local_candidate(
     })
 }
 
+fn variable_goal_fixture(
+    goal: (AtpFormulaTree, mizar_kernel::formula_evidence::Formula),
+) -> (AtpProblem, VcKernelEvidenceHandoff) {
+    finder_problem(
+        (
+            AtpFormulaTree::Atom(AtpAtom::new(
+                "p",
+                vec![AtpTerm::Function {
+                    function: "a".into(),
+                    arguments: Vec::new(),
+                }],
+            )),
+            kernel_atom(1, vec![kernel_const(4)]),
+        ),
+        None,
+        goal,
+        vec![
+            finder_symbol(0, 1, 1),
+            finder_symbol(1, 1, 2),
+            finder_symbol(2, 2, 4),
+            finder_symbol(3, 3, 3),
+        ],
+        vec![1],
+        vec![
+            declaration_projection("p", "p", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("a", "a", AtpDeclarationKind::Function, 0),
+            declaration_projection("x", "x", AtpDeclarationKind::GeneratedBinder, 0),
+        ],
+    )
+}
+
+#[test]
+fn variable_goal_factory_setup_preserves_canonical_bytes_in_both_formats() {
+    use crate::{
+        backend::{BackendCandidatePayload, build_local_candidate_inputs},
+        instance_finder::find_instance_evidence,
+    };
+    let (problem, handoff) = variable_goal_fixture((
+        AtpFormulaTree::Atom(AtpAtom::new("q", vec![AtpTerm::Variable("x".into())])),
+        kernel_atom(2, vec![kernel_var(1)]),
+    ));
+    let claims = handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .map(|entry| (entry.formula_id(), entry.source().clone()))
+        .collect::<Vec<_>>();
+    let original = handoff.encode_local_evidence(None).expect("canonical wire");
+    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+        let problem = reprofile_finder_problem(&problem, format);
+        let (encoded, candidate) = build_local_candidate_inputs(
+            &problem,
+            &handoff,
+            format,
+            KernelGoalPolarity::AssertFalseForRefutation,
+            &claims,
+        )
+        .expect("variable-goal factory");
+        assert_eq!(
+            candidate.payload(),
+            &BackendCandidatePayload::FormulaSubstitutionBytes(original.clone())
+        );
+        assert!(
+            find_instance_evidence(&problem, &encoded, &handoff, None, None)
+                .expect("search-disabled correspondence validation")
+                .is_none()
+        );
+        assert!(
+            find_instance_evidence(&problem, &encoded, &handoff, Some([2, 1, 2, 3]), None)
+                .expect("a ground p(a) premise cannot prove q(x)")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn variable_goal_search_charges_rigid_terms_and_kernel_checks_equality() {
+    use crate::{backend::EncodedBackendProblem, instance_finder::find_instance_evidence};
+    let x = AtpTerm::Variable("x".into());
+    let (problem, handoff) = variable_goal_fixture((
+        AtpFormulaTree::Equality {
+            left: x.clone(),
+            right: x,
+        },
+        mizar_kernel::formula_evidence::Formula::Atom(mizar_kernel::clause::Atom::new(
+            mizar_kernel::clause::SymbolKey::new(mizar_kernel::clause::SymbolKind::Equality, 3),
+            vec![kernel_var(1), kernel_var(1)],
+        )),
+    ));
+    let original = handoff.clone();
+    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+        let problem = reprofile_finder_problem(&problem, format);
+        let encoded =
+            EncodedBackendProblem::encode(&problem, format).expect("variable equality goal");
+        for limits in [
+            [0, 0, 0, 0],
+            [0, 1, 2, 3],
+            [1, 1, 2, 3],
+            [2, 0, 2, 3],
+            [2, 1, 0, 3],
+            [2, 1, 2, 0],
+        ] {
+            assert!(
+                find_instance_evidence(&problem, &encoded, &handoff, Some(limits), None)
+                    .expect("literal insufficient limits")
+                    .is_none(),
+                "{limits:?}"
+            );
+        }
+        let candidate =
+            find_instance_evidence(&problem, &encoded, &handoff, Some([2, 1, 2, 3]), None)
+                .expect("bounded rigid equality search")
+                .expect("reflexivity proves the goal");
+        assert_kernel_accepts_instance_candidate(&candidate, &handoff);
+        assert_eq!(
+            candidate,
+            find_instance_evidence(&problem, &encoded, &handoff, Some([2, 1, 2, 3]), None)
+                .expect("repeat search")
+                .expect("repeat candidate")
+        );
+    }
+    assert_eq!(handoff, original);
+}
+
+#[test]
+fn variable_goal_rigid_terms_do_not_extend_premise_substitution_domain() {
+    use crate::{backend::EncodedBackendProblem, instance_finder::find_instance_evidence};
+
+    let (problem, handoff) = finder_problem(
+        (
+            AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new("y", None)],
+                body: Box::new(AtpFormulaTree::Atom(AtpAtom::new(
+                    "q",
+                    vec![AtpTerm::Variable("y".into())],
+                ))),
+            },
+            kernel_atom(2, vec![kernel_var(2)]),
+        ),
+        None,
+        (
+            AtpFormulaTree::Atom(AtpAtom::new("q", vec![AtpTerm::Variable("x".into())])),
+            kernel_atom(2, vec![kernel_var(1)]),
+        ),
+        vec![finder_symbol(0, 1, 2)],
+        vec![1, 2],
+        vec![
+            declaration_projection("q", "q", AtpDeclarationKind::Predicate, 1),
+            declaration_projection("x", "x", AtpDeclarationKind::GeneratedBinder, 0),
+            declaration_projection("y", "y", AtpDeclarationKind::GeneratedBinder, 0),
+        ],
+    );
+    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+        let problem = reprofile_finder_problem(&problem, format);
+        let encoded = EncodedBackendProblem::encode(&problem, format).expect("variable goal");
+        assert!(
+            find_instance_evidence(&problem, &encoded, &handoff, Some([1, 1, 0, 2]), None)
+                .expect("rigid goal stays outside the substitution domain")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn variable_goal_wrong_claims_parse_but_kernel_rejects_original_context() {
+    let (problem, handoff) = variable_goal_fixture((
+        AtpFormulaTree::Atom(AtpAtom::new("q", vec![AtpTerm::Variable("x".into())])),
+        kernel_atom(2, vec![kernel_var(1)]),
+    ));
+    let original = handoff.clone();
+    let claims = handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .map(|entry| (entry.formula_id(), entry.source().clone()))
+        .collect::<Vec<_>>();
+    let mut forged = claims.clone();
+    forged[0].1 = KernelFormulaSource::LocalHypothesis {
+        local_context_id: 99,
+    };
+    for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+        let problem = reprofile_finder_problem(&problem, format);
+        for (claims, polarity, rejection) in [
+            (
+                &claims,
+                KernelGoalPolarity::AssertTrueForConsistency,
+                mizar_kernel::rejection::RejectionDetail::ContextMismatch,
+            ),
+            (
+                &forged,
+                KernelGoalPolarity::AssertFalseForRefutation,
+                mizar_kernel::rejection::RejectionDetail::MissingProvenance,
+            ),
+        ] {
+            let (_, candidate) = crate::backend::build_local_candidate_inputs(
+                &problem, &handoff, format, polarity, claims,
+            )
+            .expect("fresh variable-goal candidate");
+            let checked = check_local_candidate(candidate.payload(), &handoff);
+            assert_eq!(
+                checked.status(),
+                mizar_kernel::checker::KernelCheckStatus::Rejected,
+                "{checked:?}"
+            );
+            assert_eq!(checked.rejections()[0].detail(), rejection);
+        }
+    }
+    assert_eq!(handoff, original);
+}
+
+#[test]
+fn variable_goal_correspondence_shapes_and_stale_encoding_fail_before_emission() {
+    use crate::{
+        backend::{EncodedBackendProblem, build_local_candidate_inputs},
+        instance_finder::find_instance_evidence,
+    };
+    let q_x = AtpFormulaTree::Atom(AtpAtom::new("q", vec![AtpTerm::Variable("x".into())]));
+    let (problem, handoff) =
+        variable_goal_fixture((q_x.clone(), kernel_atom(2, vec![kernel_var(1)])));
+    let encoded =
+        EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).expect("matching encoding");
+    let claims = handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .map(|entry| (entry.formula_id(), entry.source().clone()))
+        .collect::<Vec<_>>();
+    for goal in [
+        // A variable in concrete ATP text cannot correspond to a Kernel constant.
+        (q_x.clone(), kernel_atom(2, vec![kernel_const(4)])),
+        // General quantified local goals remain outside this finder boundary.
+        (
+            AtpFormulaTree::Forall {
+                binders: vec![AtpBinder::new("x", None)],
+                body: Box::new(q_x),
+            },
+            kernel_atom(2, vec![kernel_var(1)]),
+        ),
+    ] {
+        let (unsupported, other_handoff) = variable_goal_fixture(goal);
+        let other_encoded = EncodedBackendProblem::encode(&unsupported, ConcreteFormat::Tptp)
+            .expect("encodable refused goal");
+        assert!(
+            find_instance_evidence(&unsupported, &other_encoded, &other_handoff, None, None)
+                .is_err()
+        );
+        assert!(
+            build_local_candidate_inputs(
+                &unsupported,
+                &other_handoff,
+                ConcreteFormat::Tptp,
+                KernelGoalPolarity::AssertFalseForRefutation,
+                &claims
+            )
+            .is_err()
+        );
+        assert!(find_instance_evidence(&problem, &other_encoded, &handoff, None, None).is_err());
+        if other_handoff != handoff {
+            assert!(
+                find_instance_evidence(&problem, &encoded, &other_handoff, None, None).is_err()
+            );
+        }
+    }
+}
+
 fn local_candidate_fixture() -> (
     AtpProblem,
     VcKernelEvidenceHandoff,
@@ -3107,7 +3373,16 @@ fn local_candidate_encoder_rejects_incomplete_duplicate_unknown_and_unsupported_
 fn local_candidate_factory_rejects_original_target_and_producer_binding_mismatches() {
     use crate::backend::build_local_candidate_inputs;
 
-    let (problem, handoff, claims) = local_candidate_fixture();
+    let (problem, handoff) = variable_goal_fixture((
+        AtpFormulaTree::Atom(AtpAtom::new("q", vec![AtpTerm::Variable("x".into())])),
+        kernel_atom(2, vec![kernel_var(1)]),
+    ));
+    let claims = handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .map(|entry| (entry.formula_id(), entry.source().clone()))
+        .collect::<Vec<_>>();
     let other_set = fixture_set(VcStatus::NeedsAtp, "other-local-candidate-target");
     let other_handoff = self::handoff(&other_set);
     assert!(

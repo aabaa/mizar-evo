@@ -803,6 +803,51 @@ pub enum AtpFormulaTree {
 }
 
 impl AtpFormulaTree {
+    pub(crate) fn free_variables(&self) -> BTreeSet<AtpSymbolName> {
+        fn terms(term: &AtpTerm, variables: &mut BTreeSet<AtpSymbolName>) {
+            match term {
+                AtpTerm::Variable(variable) => {
+                    variables.insert(variable.clone());
+                }
+                AtpTerm::Function { arguments, .. } => {
+                    for argument in arguments {
+                        terms(argument, variables);
+                    }
+                }
+            }
+        }
+        let mut variables = BTreeSet::new();
+        match self {
+            Self::True | Self::False => {}
+            Self::Atom(atom) => {
+                for argument in atom.arguments() {
+                    terms(argument, &mut variables);
+                }
+            }
+            Self::Equality { left, right } => {
+                terms(left, &mut variables);
+                terms(right, &mut variables);
+            }
+            Self::Not(inner) => variables = inner.free_variables(),
+            Self::And(children) | Self::Or(children) => {
+                for child in children {
+                    variables.extend(child.free_variables());
+                }
+            }
+            Self::Implies(left, right) => {
+                variables = left.free_variables();
+                variables.extend(right.free_variables());
+            }
+            Self::Forall { binders, body } | Self::Exists { binders, body } => {
+                variables = body.free_variables();
+                for binder in binders {
+                    variables.remove(binder.variable());
+                }
+            }
+        }
+        variables
+    }
+
     fn render(&self) -> String {
         match self {
             Self::True => "true".to_owned(),
