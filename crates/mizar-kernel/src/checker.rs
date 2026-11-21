@@ -1488,6 +1488,30 @@ pub fn check_algorithm_return_single_valuedness(
         )
 }
 
+/// Reports the Kernel-owned single-valuedness rule schema only after checking these inputs.
+/// The scalar grants no native typing prerequisite, Proof policy eligibility or adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original single-valuedness projections without a single-use representation"
+)]
+pub fn check_algorithm_return_single_valuedness_schema(
+    core: &CoreIr,
+    targets: [(
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ); 2],
+    binders: [CoreVarId; 2],
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> Option<u16> {
+    check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)
+        .then_some(1)
+}
+
 /// Checks `exists r.returns(a,r)` by deriving and checking its exact child.
 /// The child rule fixes the witness to `Var(a)` and the context to `object(a)`;
 /// requiring `r != a` therefore also excludes free occurrence in that context.

@@ -3059,6 +3059,25 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                     expected,
                     "Core mutation {mutation} must precede schema selection {selected:?}"
                 );
+                assert_eq!(
+                    mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request_with_schema(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        &request.anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        if selected == request.id {
+                            VcId::new(2)
+                        } else {
+                            selected
+                        },
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core/CFG mutation {mutation} must precede single-valuedness schema selection"
+                );
                 for consume in [
                     mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
                     mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
@@ -3408,6 +3427,20 @@ fn source_algorithm_direct_return_uniqueness_binds_distinct_results() {
                     expected
                 );
             }
+            assert_eq!(
+                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request_with_schema(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    generation,
+                    vcs.schema_version(),
+                    request.id,
+                )
+                .unwrap(),
+                (expected.clone(), 1)
+            );
         }
         assert_eq!(slice.status(), &VcStatus::Open);
         assert_eq!(
@@ -6022,6 +6055,20 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                             );
                         }
                         for selected in [VcId::new(2), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request_with_schema(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    generation,
+                                    vcs.schema_version(),
+                                    selected,
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
                             assert_eq!(
                                 mizar_proof::status::check_source_algorithm_e1_single_valuedness(
                                     source,
@@ -8788,6 +8835,16 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
                 ),
                 expected,
             );
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_return_single_valuedness_schema(
+                    &two,
+                    single_results.map(|result| (id, selected_flow, statement, value, result)),
+                    single_binders,
+                    single_results,
+                    &[guard],
+                ),
+                expected.then_some(1),
+            );
         }
         assert!(checked(&two, target, witness, &[guard]));
         assert!(!checked(
@@ -9031,7 +9088,18 @@ fn source_algorithm_single_valuedness_kernel_requires_matching_relations_and_gua
             CoreFormulaKind, CoreIr, CoreTermKind, CoreVarId,
         },
     };
-    use mizar_kernel::checker::check_algorithm_return_single_valuedness as checked;
+    use mizar_kernel::checker::{
+        check_algorithm_return_single_valuedness as checked,
+        check_algorithm_return_single_valuedness_schema as schema,
+    };
+    let checked = |core: &CoreIr, targets, binders, results, context: &[_]| {
+        let accepted = checked(core, targets, binders, results, context);
+        assert_eq!(
+            schema(core, targets, binders, results, context),
+            accepted.then_some(1)
+        );
+        accepted
+    };
     with_direct_return_request_fixture(|_, _, _, core, _| {
         let (id, algorithm) = core.algorithms().iter().next().unwrap();
         let statement = algorithm.statements[0];
@@ -9235,6 +9303,20 @@ fn source_algorithm_single_valuedness_descriptor_refuses_other_roles_and_absent_
                 .unwrap_err(),
                 "algorithms.direct_return.invalid_e1_single_valuedness_request"
             );
+            assert_eq!(
+                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request_with_schema(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    &vcs.vcs()[0].anchor.generation_schema_version,
+                    vcs.schema_version(),
+                    selected,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e1_single_valuedness_request"
+            );
             for consume in [
                 mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
                 mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
@@ -9383,6 +9465,33 @@ fn source_algorithm_single_valuedness_descriptor_regenerates_source_and_schema_i
                         expected,
                     );
                 }
+                assert_eq!(
+                    mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request_with_schema(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot,
+                        &generation,
+                        &schema,
+                        request.id,
+                    )
+                    .unwrap(),
+                    (expected.clone(), 1)
+                );
+                assert!(!expected.5.unknowns().is_empty());
+                assert!(expected.5.requires_cache_miss());
+                assert_eq!(
+                    expected.5.completeness(),
+                    mizar_vc::dependency_slice::DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(parent.vcs().iter().all(|vc| {
+                    vc.status == mizar_vc::vc_ir::VcStatus::Open && vc.proof_hint.is_none()
+                }));
+                assert_eq!(expected.5.status(), &mizar_vc::vc_ir::VcStatus::Open);
+                assert!(parent.seed_accounting().iter().any(|seed| {
+                    seed.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+                }));
                 assert_eq!(parent.snapshot(), snapshot);
                 assert_eq!(parent.schema_version(), &schema);
                 assert!(

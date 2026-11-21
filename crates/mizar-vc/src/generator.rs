@@ -3498,6 +3498,49 @@ pub fn check_source_algorithm_e1_single_valuedness_request(
     ),
     String,
 > {
+    check_source_algorithm_e1_single_valuedness_request_with_schema(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )
+    .map(|(descriptor, _)| descriptor)
+}
+
+/// Authenticates and checks the original single-valuedness request before reporting its schema.
+/// Returns the unchanged descriptor with the Kernel-owned version, without adoption.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "retain authenticated producer inputs and existing descriptor types"
+)]
+pub fn check_source_algorithm_e1_single_valuedness_request_with_schema(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        (
+            VcSet,
+            [ContextEntryId; 2],
+            [VcFormulaRef; 2],
+            VcFormulaRef,
+            VcFormulaRef,
+            crate::dependency_slice::DependencySlice,
+        ),
+        u16,
+    ),
+    String,
+> {
     use crate::vc_ir::VcGeneratedFormulaShape as Shape;
 
     let descriptor = generate_source_algorithm_e1_single_valuedness_request(
@@ -3560,16 +3603,15 @@ pub fn check_source_algorithm_e1_single_valuedness_request(
     else {
         return Err(invalid());
     };
-    if !mizar_kernel::checker::check_algorithm_return_single_valuedness(
+    let checker_schema = mizar_kernel::checker::check_algorithm_return_single_valuedness_schema(
         core,
         [first, second],
         [left, right],
         [*equality_left, *equality_right].map(|value| (value.var, value.definition)),
         &[*guard],
-    ) {
-        return Err(invalid());
-    }
-    Ok(descriptor)
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checker_schema))
 }
 
 /// Describes an untrusted witness reduction while retaining the whole original request graph.

@@ -65,7 +65,7 @@ algorithm/CFG/statement/input が一致することを要求する。唯一の�
 既存の immutable-parameter/sole-Return profile と再構築 CFG 検証を再利用し、両実行が同じ
 parameter を返すことによる (§20.1.2, §20.2.6)。typing、ensures、E4 existence に依存しない。
 VC が[元の descriptor](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor)を認証する。
-boolean のみを返し、native evidence、Proof association/adoption、symbol、credit は与えない。
+boolean API は維持する。`check_algorithm_return_single_valuedness_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。native typing prerequisite、evidence、Proof association/policy/adoption、symbol、credit は与えない。
 
 ## Original AlgorithmReturns Existential
 

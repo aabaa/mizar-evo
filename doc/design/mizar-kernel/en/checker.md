@@ -121,7 +121,7 @@ guard makes those binders capture-free. Reuse the exact immutable-parameter/sole
 profile and rebuilt CFG validation: both executions return the same parameter
 (§20.1.2, §20.2.6), independently of typing, ensures or E4 existence.
 VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor).
-Return only a boolean; no native evidence, Proof association/adoption, symbols or credit.
+The boolean API remains unchanged. `check_algorithm_return_single_valuedness_schema` takes identical inputs and invokes that check; return the Kernel-owned rule schema `Some(1_u16)` only on success, otherwise `None`. No native typing prerequisite, evidence, Proof association/policy/adoption, symbols or credit follows.
 
 ## Original AlgorithmReturns Existential
 
