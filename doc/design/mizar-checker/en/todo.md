@@ -508,6 +508,11 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 
 ## Tasks 248-264 And 269-279 STEP 5 Source-Payload Producer Queue
 
+[P21 umbrella reconciliation](../../task_contracts/en/CHECKER-P21-UMBRELLA-INVENTORY.md):
+historically completed child queues close below; R5 retirement does not imply
+current native coverage. Partial umbrellas retain the
+[indexed residuals](payload_family_decomposition.md#umbrella-residual-index).
+
 The full authority slice, dependencies, consumers, gates, negative scope, and
 exit criteria are canonical in
 [payload_family_decomposition.md](./payload_family_decomposition.md). Each
@@ -652,8 +657,8 @@ unchecked row below is one future nonempty logical task and one commit.
         logical task and commit.
     - [x] Extend Task 255 with condition-bearing comprehension transport in a
       separately frozen documentation/implementation pair.
-    - [ ] Add predicate-chain and conditioned-comprehension formula
-      composition only in later separately frozen Task-257C slices.
+    - [x] Add the separately frozen predicate-chain and conditioned-comprehension
+      formula composition slices below; broader profiles remain residuals.
       - [x] **Task 257C2 prerequisite:** freeze the exact independent
         condition-to-atomic-formula association without semantics.
       - [x] **Task 257C2 implementation:** implement only the frozen
@@ -725,12 +730,10 @@ unchecked row below is one future nonempty logical task and one commit.
       witness transport after its documentation commit and fresh preflight.
       Four checker and five runner tests close bounded `source_drift` and
       `test_gap`; no semantics or corpus activation was added.
-    - [ ] **Tasks 258B3N/M:** after B3, separately freeze named-witness
-      transport and multiple/other witness-term transport before B4. Do not
-      infer abbreviation, substitution, type-obligation, or goal semantics.
-    - [ ] **Tasks 258B4-B5:** separately freeze composite theorem roots and
-      broader imported/outer/inner visibility profiles. Do not absorb Tasks
-      269-272 semantics.
+    - [x] **Tasks 258B3N/M:** historical bounded named/multiple/other
+      witness-term transport queue closed; abbreviation and proof effects retain Tasks 269-272 ownership.
+    - [x] **Tasks 258B4-B5:** historical bounded composite-root and visibility
+      queues closed; current native transport retains the indexed residuals.
 - [x] **Task 259:** predicate-definition and initial-obligation intake producer.
 - [x] **Task 260:** functor-definition and initial-obligation intake producer.
   Ordinary functor declaration eligibility comes from its original-row rule.
@@ -762,7 +765,7 @@ unchecked row below is one future nonempty logical task and one commit.
   Producer and actual FS/AS classification complete; the omitted seed stays
   inactive and final proof-state consumption remains with Task 272.
 - [~] **Task 272:** non-Task-180 proof-skeleton/justification producer.
-  Native source intents and bounded Set/Object goal/type/substitution replay
+  Native source intents and bounded goal/type/substitution replay through B19
   ship below. Broader goals, proof effects and remaining alias forms stay open;
   Task49 retains activation.
   - [x] **Task 272A:** [native source intents](../../task_contracts/en/CHECKER272A-NATIVE-PROOF-INTENTS.md); typed witness/goal replay remains 272B.
@@ -794,6 +797,8 @@ unchecked row below is one future nonempty logical task and one commit.
 - [ ] **Task 277:** direct template role/actual/guard producer. Missing
   scheme/theorem roles remain outside this executable task under external Gate
   S1, and Task 49 remains gated on S1.
+  - [ ] **Task 277B:** not-ready/zero-credit semantic residual; completed
+    neutral association/composition prerequisites do not open this gate.
 - [x] **Task 278:** [ordinary/template overload input-to-selection producer](../../task_contracts/en/CHECKER278-OVERLOAD-SELECTION.md).
 - [x] **Task 279:** [redefinition/notation target/coherence/refinement producer](../../task_contracts/en/CHECKER279-REDEFINITION-REMAINDER.md);
   consumes Task 278 ordinary-root results without a dependency cycle. Ships
@@ -940,7 +945,7 @@ Details archived: [checker_todo_sections.md](../../archive/checker_todo_sections
 - [x] Freeze only Task 258B3M2B2A; keep implementation separate.
 - [x] Implement frozen Task 258B3M2B2A after its documentation commit and
   fresh parser/resolver/lower/count/hash preflight.
-- [ ] Freeze and implement Task 258B3M2B2B before selecting Task 258B4.
+- [x] Freeze and implement the bounded Task 258B3M2B2B branches before Task 258B4.
 
 Completion evidence: [central Task-258B3N historical contract](../../task_contracts/en/258B3N.md#completion-evidence).
 
