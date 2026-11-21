@@ -1,0 +1,45 @@
+snapshot_record = "mizar-test-snapshot"
+schema_version = 1
+test_id.len = 52
+test_id = pass_proof_verification_algorithm_ensures_return_001
+kind = control_flow_ir
+profile.toolchain.name.len = 10
+profile.toolchain.name = mizar-test
+profile.toolchain.version.len = 5
+profile.toolchain.version = 0.1.0
+profile.toolchain.metadata.count = 0
+profile.verifier_config_hash = cbb3b53969359b09c94d3976ffa86e907a562db79e282c7f6129e26dd414fdc0
+profile.parallelism = sequential
+profile.normalize_paths = true
+profile.allow_local_paths = false
+body.len = 5796
+body = <<SNAPSHOT
+control-flow-output-debug-v1
+flow-map: {CoreAlgorithmId(0): ControlFlowId(0)}
+[flow ControlFlowId(0)]
+control-flow-ir-debug-v1
+algorithm: CoreAlgorithmId(0)
+item: CoreItemId(0)
+symbol: SymbolId { module: ModuleId { package: PackageId("cfg-snapshot"), path: ModulePath("algorithms.idalgo") }, local: LocalSymbolId("contribution=0:namespace=algorithms.idalgo:owner=definition-block#0/algorithm-definition#0:shell=algorithm-definition:kind=algorithm:name=idalgo:notation=_:arity=_:definition=algorithm:registration=_:policy=non-overloadable:slot=non-overloadable:_:algorithm:_"), fqn: FullyQualifiedName("cfg-snapshot::algorithms.idalgo::contribution=0:namespace=algorithms.idalgo:owner=definition-block#0/algorithm-definition#0:shell=algorithm-definition:kind=algorithm:name=idalgo:notation=_:arity=_:definition=algorithm:registration=_:policy=non-overloadable:slot=non-overloadable:_:algorithm:_") }
+entry: BasicBlockId(0)
+[blocks]
+BasicBlockId(0): ControlFlowBlock { algorithm: CoreAlgorithmId(0), statements: [], terminator: Return(Some(CoreTermId(3))), context_in: ProgramContextId(0), context_out: [ProgramContextId(0)], reachable: Reachable, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 32, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#46") }] } }
+[locals]
+LocalId(0): ControlFlowLocal { algorithm: CoreAlgorithmId(0), binder: CoreBinder { var: CoreVarId(0), role: CoreVarRole("parameter"), ty_guard: Some(CoreFormulaId(0)), source_name: Some("a"), source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 17, end: 18 }), provenance: [] } }, kind: Parameter, declaration: Parameter, mutability: Immutable, ghost: false, initialized_at: None, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 17, end: 18 }), provenance: [] } }
+LocalId(1): ControlFlowLocal { algorithm: CoreAlgorithmId(0), binder: CoreBinder { var: CoreVarId(1), role: CoreVarRole("result"), ty_guard: Some(CoreFormulaId(1)), source_name: None, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 67, end: 73 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#33") }] } }, kind: Result, declaration: Result, mutability: Immutable, ghost: false, initialized_at: None, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 67, end: 73 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#33") }] } }
+[contexts]
+ProgramContextId(0): ProgramContext { definitely_initialized: [LocalId(0)], maybe_assigned: [], available_facts: [], assignment_effects: [], call_effects: [], path_conditions: [], negated_path_conditions: [], active_invariants: [], loop_stack: [], ghost_visible: [] }
+[context-facts]
+[assignment-effects]
+[call-sites]
+[loops]
+[exits]
+ControlFlowExitId(0): ControlFlowExit { algorithm: CoreAlgorithmId(0), statement: Some(CoreAlgorithmStmtId(0)), from: BasicBlockId(0), target: None, kind: Return, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 106, end: 115 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#43") }] } }
+[diagnostics]
+contracts: ControlFlowContractSet { requires: [], ensures: [ContractSite { kind: Ensures, formula: CoreFormulaId(2), placement: Return { block: BasicBlockId(0), exit: ControlFlowExitId(0) }, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 86, end: 96 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#38") }] } }], calls: [], assertions: [], loop_invariants: [], decreasing: [] }
+ghost-effects: ControlFlowGhostTable { declared_algorithm_effects: [], local_visibility: {LocalId(0): Runtime, LocalId(1): Runtime}, runtime_assignment_effects: [], ghost_assignment_effects: [], runtime_pick_locals: [], ghost_pick_locals: [] }
+termination: ControlFlowTerminationPlan { declared_terminating: true, algorithm_decreasing: [], loop_decreasing: {}, partial_sites: [TerminationSite { kind: Algorithm, source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 32, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#46") }] } }] }
+source-map: ControlFlowSourceMap { algorithm_sources: {CoreAlgorithmId(0): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 32, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#46") }] }}, block_sources: {BasicBlockId(0): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 32, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#46") }] }}, statement_placements: {CoreAlgorithmStmtId(0): Terminator { block: BasicBlockId(0) }}, local_sources: {LocalId(0): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 17, end: 18 }), provenance: [] }, LocalId(1): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 67, end: 73 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#33") }] }}, loop_sources: {}, exit_sources: {ControlFlowExitId(0): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 106, end: 115 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("algorithm/source-node#43") }] }}, diagnostic_sources: {} }
+
+SNAPSHOT
+content_hash = 884b6c15d44763472364b200f91de74eda4a3b25c4ec0e5b406328b6d14cba80

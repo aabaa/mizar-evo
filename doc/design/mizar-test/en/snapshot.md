@@ -15,6 +15,7 @@ Required snapshot kinds:
 - `SurfaceAst`;
 - `TypedAst`;
 - `CoreIr`;
+- `ControlFlowIr`;
 - `VcIr`;
 - SAT clauses;
 - `ProofCertificate`;
@@ -41,6 +42,7 @@ pub enum SnapshotKind {
     SurfaceAst,
     TypedAst,
     CoreIr,
+    ControlFlowIr,
     VcIr,
     SatClauses,
     ProofCertificate,
@@ -307,6 +309,11 @@ compares the complete bytes with the baseline. Missing, unreadable, mismatched,
 or absent output fails the case. No automatic update path, general CoreIr
 registry, other CoreIr/ControlFlowIr family, or proof-verification snapshot is
 activated.
+
+`ControlFlowIr` uses canonical kind `control_flow_ir` under schema version 1.
+The real `idalgo` baseline under `snapshots/cfg/` stores the complete source-derived
+`ControlFlowOutput::debug_text()` module body through `SnapshotRecord`; it grants
+no elaboration-stage runner activation or VC/proof/runtime credit.
 
 Current general snapshot API slice: tasks 4 and 5 provide canonical in-memory
 `SnapshotRecord` construction, hashing, validation, comparison, explicit

@@ -22,6 +22,7 @@ pub enum SnapshotKind {
     SurfaceAst,
     TypedAst,
     CoreIr,
+    ControlFlowIr,
     VcIr,
     SatClauses,
     ProofCertificate,
@@ -680,6 +681,7 @@ impl SnapshotKind {
             Self::SurfaceAst => "surface_ast",
             Self::TypedAst => "typed_ast",
             Self::CoreIr => "core_ir",
+            Self::ControlFlowIr => "control_flow_ir",
             Self::VcIr => "vc_ir",
             Self::SatClauses => "sat_clauses",
             Self::ProofCertificate => "proof_certificate",
@@ -745,3 +747,295 @@ impl fmt::Display for SnapshotBaselineError {
 }
 
 impl std::error::Error for SnapshotBaselineError {}
+
+#[cfg(test)]
+mod control_flow_tests {
+    use super::*;
+    use mizar_core::control_flow::{ControlFlowOutput, build_control_flow_ir};
+    use mizar_frontend::{
+        lexical_env::{
+            FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+            ResolvedImports,
+        },
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_session::{
+        BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath,
+        PackageId, SourceInput, SourceOriginInput,
+    };
+
+    const SOURCE: &str = include_str!(
+        "../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz"
+    );
+    const BASELINE: &str =
+        "snapshots/cfg/pass_proof_verification_algorithm_ensures_return_001.control_flow_ir.snap";
+
+    static NEXT_ROOT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+    struct NoImports;
+
+    impl LexicalSummaryProvider for NoImports {
+        fn resolve_imports(
+            &self,
+            request: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+            assert!(
+                request.import_stubs.is_empty(),
+                "fixture must not need import summaries"
+            );
+            Ok(ResolvedImports {
+                imports: Vec::new(),
+                summaries: Vec::new(),
+                diagnostics: Vec::new(),
+            })
+        }
+    }
+
+    fn source_flow(text: &str) -> ControlFlowOutput {
+        use mizar_checker::typed_ast::{TypedArena, TypedNode, TypedNodeId};
+        use mizar_resolve::{
+            declarations::DeclarationShellCollector,
+            env::NamespacePath,
+            resolved_ast::{ModuleId, SurfaceResolvedArena},
+            symbols::SignatureProjectionExtractor,
+        };
+        let ordinal = NEXT_ROOT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let root =
+            std::env::temp_dir().join(format!("mizar-cfg-source-{}-{ordinal}", std::process::id()));
+        fs::create_dir_all(root.join("src/algorithms")).unwrap();
+        let path = root.join("src/algorithms/idalgo.miz");
+        fs::write(&path, text).unwrap();
+        let package = PackageId::new("cfg-snapshot");
+        let module_path = ModulePath::new("algorithms.idalgo");
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            NoImports,
+            MizarParserSeam,
+        )
+        .run(
+            SourceUnitRequest {
+                snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                    "mizar-session-build-snapshot-v1:{:064x}",
+                    9
+                ))
+                .unwrap(),
+                input: SourceInput {
+                    package_id: package.clone(),
+                    module_path: module_path.clone(),
+                    normalized_path: mizar_session::normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2026"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
+        fs::remove_dir_all(root).unwrap();
+        assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+        let ast = output.ast.unwrap();
+        let module = ModuleId::new(package, module_path);
+        let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let symbols = SignatureProjectionExtractor::new(
+            &ast,
+            &shells,
+            NamespacePath::new(module.path().as_str()),
+        )
+        .collect(&module);
+        assert!(symbols.diagnostics().is_empty());
+        let typed = TypedArena::try_new(
+            Some(TypedNodeId::new(source.arena().root().index())),
+            source
+                .arena()
+                .iter()
+                .map(|(id, node)| {
+                    TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                        .with_resolved_node(id)
+                        .with_children(
+                            node.children()
+                                .iter()
+                                .map(|child| TypedNodeId::new(child.index()))
+                                .collect(),
+                        )
+                })
+                .collect(),
+        )
+        .unwrap();
+        let checked = mizar_checker::type_checker::check_source_algorithm_types(
+            &source,
+            &typed,
+            symbols.env(),
+        )
+        .unwrap();
+        let core = mizar_core::elaborator::lower_source_algorithms(&checked).unwrap();
+        assert!(core.diagnostics().is_empty());
+        build_control_flow_ir(&core)
+    }
+
+    fn flow_record(output: &ControlFlowOutput, kind: SnapshotKind) -> SnapshotRecord {
+        SnapshotRecord::new(
+            TestCaseId("pass_proof_verification_algorithm_ensures_return_001".into()),
+            kind,
+            SnapshotProfile {
+                toolchain: ToolchainInfo::new("mizar-test", "0.1.0"),
+                verifier_config_hash: hash_text("p9-cfg-snapshot-v1"),
+                parallelism: ParallelismProfile::Sequential,
+                normalize_paths: true,
+                allow_local_paths: false,
+            },
+            SnapshotBody::text(output.debug_text()),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn control_flow_source_baseline() {
+        let output = source_flow(SOURCE);
+        assert_eq!(output.flows.len(), 1);
+        assert_eq!(output.flow_map.len(), 1);
+        let (_, flow) = output.flows.iter().next().unwrap();
+        assert!(flow.diagnostics.is_empty());
+        use mizar_core::control_flow::{ContractSitePlacement, ControlFlowTerminator, LocalKind};
+        use mizar_core::core_ir::CoreSourceAnchor;
+        let source_text = |source: &mizar_core::core_ir::CoreSourceRef| {
+            let CoreSourceAnchor::SourceRange(range) = source.anchor else {
+                panic!("expected real source range: {source:?}");
+            };
+            &SOURCE[range.start..range.end]
+        };
+        let (local_id, parameter) = flow
+            .locals
+            .iter()
+            .find(|(_, local)| matches!(local.kind, LocalKind::Parameter))
+            .unwrap();
+        assert_eq!(source_text(&parameter.source), "a");
+        assert_eq!(
+            flow.source_map.local_sources.get(&local_id),
+            Some(&parameter.source)
+        );
+        assert!(
+            flow.contexts
+                .get(flow.blocks.get(flow.entry).unwrap().context_in)
+                .unwrap()
+                .definitely_initialized
+                .contains(&local_id)
+        );
+        assert_eq!(flow.contracts.ensures.len(), 1);
+        let ensures = &flow.contracts.ensures[0];
+        assert_eq!(source_text(&ensures.source), "result = a");
+        let ContractSitePlacement::Return { block, exit } = ensures.placement else {
+            panic!("ensures must be attached to the actual return");
+        };
+        assert!(matches!(
+            flow.blocks.get(block).unwrap().terminator,
+            ControlFlowTerminator::Return(Some(_))
+        ));
+        let returned = flow.exits.get(exit).unwrap();
+        assert_eq!(returned.from, block);
+        assert_eq!(source_text(&returned.source), "return a;");
+        assert_eq!(
+            flow.source_map.exit_sources.get(&exit),
+            Some(&returned.source)
+        );
+        let record = flow_record(&output, SnapshotKind::ControlFlowIr);
+        assert_eq!(record.schema_version, SchemaVersion(1));
+        assert_eq!(record.kind.as_str(), "control_flow_ir");
+        let tests_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests");
+        let report = verify_or_update_snapshot_baseline(
+            &tests_root,
+            Path::new(BASELINE),
+            &record,
+            SnapshotUpdateMode::VerifyOnly,
+        )
+        .unwrap();
+        assert_eq!(report.status, SnapshotBaselineStatus::Matched);
+        assert_eq!(report.update_reason, None);
+    }
+
+    #[test]
+    fn control_flow_source_pipeline_is_repeatable() {
+        let first = source_flow(SOURCE);
+        let fresh = source_flow(SOURCE);
+        assert_eq!(first, fresh);
+        assert_eq!(
+            flow_record(&first, SnapshotKind::ControlFlowIr),
+            flow_record(&fresh, SnapshotKind::ControlFlowIr)
+        );
+    }
+
+    #[test]
+    fn control_flow_algorithm_rename_changes_snapshot_identity() {
+        let original = source_flow(SOURCE);
+        let renamed = source_flow(&SOURCE.replace("idalgo", "renamed"));
+        assert_ne!(
+            original.flows.iter().next().unwrap().1.symbol,
+            renamed.flows.iter().next().unwrap().1.symbol
+        );
+        assert_ne!(original, renamed);
+        assert_ne!(original.debug_text(), renamed.debug_text());
+        let original = flow_record(&original, SnapshotKind::ControlFlowIr);
+        let renamed = flow_record(&renamed, SnapshotKind::ControlFlowIr);
+        assert_ne!(original.content_hash, renamed.content_hash);
+    }
+
+    #[test]
+    fn control_flow_snapshot_rejects_wrong_kind_stale_hash_and_bad_baselines() {
+        let output = source_flow(SOURCE);
+        let record = flow_record(&output, SnapshotKind::ControlFlowIr);
+        let core = flow_record(&output, SnapshotKind::CoreIr);
+        assert_eq!(record.body, core.body);
+        assert_ne!(record.content_hash, core.content_hash);
+        assert!(compare_snapshot_records(&record, &core).is_err());
+        let tests_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests");
+        assert!(matches!(
+            verify_or_update_snapshot_baseline(
+                &tests_root,
+                Path::new(BASELINE),
+                &core,
+                SnapshotUpdateMode::VerifyOnly
+            ),
+            Err(SnapshotBaselineError::Mismatch { .. })
+        ));
+        let mut stale = record.clone();
+        stale.body.text.push_str("changed");
+        assert!(matches!(
+            verify_or_update_snapshot_baseline(
+                &tests_root,
+                Path::new(BASELINE),
+                &stale,
+                SnapshotUpdateMode::VerifyOnly
+            ),
+            Err(SnapshotBaselineError::Snapshot(
+                SnapshotError::StaleContentHash { .. }
+            ))
+        ));
+        let ordinal = NEXT_ROOT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "mizar-cfg-baseline-{}-{ordinal}",
+            std::process::id()
+        ));
+        fs::create_dir_all(root.join("snapshots/cfg")).unwrap();
+        assert!(matches!(
+            verify_or_update_snapshot_baseline(
+                &root,
+                Path::new(BASELINE),
+                &record,
+                SnapshotUpdateMode::VerifyOnly
+            ),
+            Err(SnapshotBaselineError::MissingBaseline { .. })
+        ));
+        fs::write(root.join(BASELINE), "corrupt snapshot\n").unwrap();
+        assert!(matches!(
+            verify_or_update_snapshot_baseline(
+                &root,
+                Path::new(BASELINE),
+                &record,
+                SnapshotUpdateMode::VerifyOnly
+            ),
+            Err(SnapshotBaselineError::Mismatch { .. })
+        ));
+        fs::remove_dir_all(root).unwrap();
+    }
+}

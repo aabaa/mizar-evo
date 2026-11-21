@@ -32,6 +32,10 @@ fn public_enum_consumers_match_with_wildcards() {
     );
     assert_eq!(snapshot_kind(SnapshotKind::SurfaceAst), "surface_ast");
     assert_eq!(
+        snapshot_kind(SnapshotKind::ControlFlowIr),
+        "control_flow_ir"
+    );
+    assert_eq!(
         parallelism(ParallelismProfile::Parallel { workers: 2 }),
         "parallel"
     );
@@ -174,6 +178,7 @@ fn snapshot_kind(value: SnapshotKind) -> &'static str {
         SnapshotKind::SurfaceAst => "surface_ast",
         SnapshotKind::TypedAst => "typed_ast",
         SnapshotKind::CoreIr => "core_ir",
+        SnapshotKind::ControlFlowIr => "control_flow_ir",
         SnapshotKind::VcIr => "vc_ir",
         SnapshotKind::SatClauses => "sat_clauses",
         SnapshotKind::ProofCertificate => "proof_certificate",

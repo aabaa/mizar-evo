@@ -15,6 +15,7 @@ required snapshot kinds:
 - `SurfaceAst`
 - `TypedAst`
 - `CoreIr`
+- `ControlFlowIr`
 - `VcIr`
 - SAT clauses
 - `ProofCertificate`
@@ -41,6 +42,7 @@ pub enum SnapshotKind {
     SurfaceAst,
     TypedAst,
     CoreIr,
+    ControlFlowIr,
     VcIr,
     SatClauses,
     ProofCertificate,
@@ -310,6 +312,11 @@ proof-verification snapshotはactive化しない。
 verify/update baseline IO、repeat-render determinism comparison を提供する。
 General `[[snapshots]]` sidecar parsing と runner integration は future harness
 work として残る。
+
+`ControlFlowIr` は schema version 1 の canonical kind `control_flow_ir` を使う。
+`snapshots/cfg/` の実ソース `idalgo` baseline は、モジュール全体の
+`ControlFlowOutput::debug_text()` を `SnapshotRecord` の body として保持する。
+elaboration-stage runner の有効化や VC・証明・実行の credit は与えない。
 
 ## Determinism Checks
 
