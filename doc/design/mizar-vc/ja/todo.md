@@ -479,8 +479,8 @@ kernel 受理境界の監査
       を追加する。existing type-elaboration Task-180 sidecar と broad deferred row は
       すべて不変。
 
-32. **General theorem/proof VC。** [ ] — Specs 04.5/14-16; Core 33-35/37;
-    `MT10-VC-PV/VC32`。
+32. **General theorem/proof VC。** [~] — Specs 04.5/14-16; Core 33-35/37;
+    `MT10-VC-PV/VC32`。[限定 source theorem](./generator.md#source-theorem-vc-generation) と [computation request](./generator.md#bounded-computation-request-generation) は active。一般 proof VC は未完。
 33. **Functor `equals`/`means` definition-correctness VC。** [ ] — Specs
     10.3-10.6/10.12.2-10.12.6/16.6.1/16.6.4; Core 33-36;
     `MT10-VC-PV/VC33`。result-type/type-correctness、guarded consistency、
@@ -497,8 +497,8 @@ kernel 受理境界の監査
 38. **Redefinition compatibility/coherence VC。** [ ] — Specs
     06.7/09.6-9.7/10.7-10.8/11.1/16.6/19.5; Core 38;
     `MT10-VC-PV/VC38`。
-39. **Reduction `reducibility` equality VC。** [ ] — Specs 17.6/17.9.4;
-    Core 39; `MT10-VC-PV/VC39`。simplification-order rejection は決して VC ではない。
+39. **Reduction `reducibility` equality VC。** [~] — Specs 17.6/17.9.4;
+    Core 39; `MT10-VC-PV/VC39`。[限定 source correctness failure](../../task_contracts/ja/STEP5C11-CLUSTER-REGISTRATIONS.md) は active。一般 reducibility は未完。simplification-order rejection は決して VC ではない。
 40. **Authenticated registration/cluster/reduction trace-context/fingerprint
     integration。** [blocked] — complete 済み VC 37/39 output、Core 40、Gate
     A1/MC-G004。全 dependency が揃った後、authenticated trace data を real VC-37
@@ -511,7 +511,7 @@ kernel 受理境界の監査
 42. **Algorithm narrowing/field-update type VC。** [ ] — Specs
     05.7-05.8/08.2/13.3/19.3/20.1; Core 42/46/48/52-53;
     `MT10-VC-PV/VC42`。
-43. **Algorithm body-contract/return/assertion VC。** [ ] — Specs
+43. **Algorithm body-contract/return/assertion VC。** [~] — [限定 flat-state contract と assertion failure](../../task_contracts/ja/STEP5C14-ALGORITHM-SEMANTICS.md) は active。Specs
     20.4-20.5/20.13; Core 42-43/46/48/52-53; `MT10-VC-PV/VC43`。
 44. **Call-precondition/concrete substitution VC。** [ ] — Specs
     20.4.1/20.8/20.13.1; Core 46/48/52-53; `MT10-VC-PV/VC44`。
@@ -519,23 +519,22 @@ kernel 受理境界の監査
     Core 43/48/52-53; `MT10-VC-PV/VC45`。
 46. **Match context/explicit-exhaustiveness VC。** [ ] — Specs
     20.2.5/20.13.3; Core 45/50/52-53; `MT10-VC-PV/VC46`。
-47. **While invariant/jump-context VC。** [ ] — Specs
-    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`。
+47. **While invariant/jump-context VC。** [~] — Specs
+    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`。[限定 while 事後条件](./generator.md#限定-while-事後条件) は active。広範な loop/jump は未完。
 48. **Range-loop VC。** [ ] — Specs 20.2.3/20.5/20.13.3; Core
     44/46/49/52-53; `MT10-VC-PV/VC48`。
 49. **Collection-loop VC。** [ ] — Specs 20.2.4/20.5/20.13.3; Core
     44/46/49/52-53; `MT10-VC-PV/VC49`。
-50. **Pick non-emptiness VC。** [ ] — Specs 20.3/20.13.3; Core
-    42/46/48/52-53; `MT10-VC-PV/VC50`。
+50. **Pick non-emptiness VC。** [~] — Specs 20.3/20.13.3; Core
+    42/46/48/52-53; `MT10-VC-PV/VC50`。[限定 runtime Pick](./generator.md#限定-runtime-pick-事後条件) は active。広範な Pick は未完。
 51. **Term-derived loop-measure VC。** [ ] — Specs 20.5/20.7/20.13.3; Core
     46/48-49/52-53; `MT10-VC-PV/VC51`。
 52. **Recursive/mutual-recursion decrease VC。** [ ] — Specs
     20.7-20.8/20.13.4; Core 46/52-53; `MT10-VC-PV/VC52`。
-53. **Terminating-body normal-return evidence admission。** [blocked] — Specs
-    20.7.2/20.13.1; Core 46/52-53; `MT10-VC-PV/VC53`。authentic call/input と
-    verified evidence producer は未実装。VC 44 は partial body-call の継続 fact
+53. **Terminating-body normal-return evidence admission。** [~] — Specs
+    20.7.2/20.13.1; Core 46/52-53; `MT10-VC-PV/VC53`。[active な限定 direct-return unit](../../task_contracts/ja/ALGDEF-VC53-NORMAL-RETURN.md) が E1/E4 checking と request association を所有する。完全な E1/E2/E4 admission、authentic call/input producer と imported evidence は延期。VC 44 は partial body-call の継続 fact
     を所有するが、その仮定から E4 は証明しない。`PartialTermination` VC は作らない。
-54. **Snapshot/claim theorem VC。** [ ] — Specs 20.6/20.13; Core 47/51-53;
+54. **Snapshot/claim theorem VC。** [~] — 限定 void-claim VC は active。Specs 20.6/20.13; Core 47/51-53;
     `MT10-VC-PV/VC54`。
 55. **Ghost-isolation zero-VC integration。** [ ] — Specs
     20.1.3/20.3/20.13.5; Core 46/52-53; `MT10-VC-PV/VC55`。no-VC accounting と

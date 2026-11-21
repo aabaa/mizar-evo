@@ -109,7 +109,7 @@ Reuse the symbolic child's exact immutable-parameter/sole-Return profile and CFG
 validation; typing follows from returning that parameter (§20.1.2, §20.2.6),
 independently of E4 existence. VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor).
 The boolean API remains unchanged. `check_algorithm_return_typing_schema` takes identical inputs and invokes that check; return `Some(1_u16)` only on success, otherwise `None`. This is the Kernel-owned typing rule schema. No opaque value/environment interpretation, native evidence,
-Proof identity/policy/adoption, single-valuedness or broader credit follows.
+Proof identity/policy/adoption, single-valuedness or broader credit follows from this API; Proof owns the separate [typing request association](../../mizar-proof/en/status.md#original-e1-typing-request-identity-association).
 
 ## Bounded Original E1 Single-Valuedness
 
@@ -121,7 +121,7 @@ guard makes those binders capture-free. Reuse the exact immutable-parameter/sole
 profile and rebuilt CFG validation: both executions return the same parameter
 (§20.1.2, §20.2.6), independently of typing, ensures or E4 existence.
 VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor).
-The boolean API remains unchanged. `check_algorithm_return_single_valuedness_schema` takes identical inputs and invokes that check; return the Kernel-owned rule schema `Some(1_u16)` only on success, otherwise `None`. No native typing prerequisite, evidence, Proof association/policy/adoption, symbols or credit follows.
+The boolean API remains unchanged. `check_algorithm_return_single_valuedness_schema` takes identical inputs and invokes that check; return the Kernel-owned rule schema `Some(1_u16)` only on success, otherwise `None`. No native typing prerequisite, evidence, Proof association/policy/adoption, symbols or credit follows from this API; Proof owns the separate [single-valuedness request association](../../mizar-proof/en/status.md#original-e1-single-valuedness-request-identity-association).
 
 ## Original AlgorithmReturns Existential
 
@@ -169,7 +169,7 @@ encodes the fixed conclusion `exists r.object(r)` and Kernel rule origin. It has
 caller target hash, generic Accepted state, axioms, SAT report or proof-policy
 meaning. VC retains original-request/witness association. The bool API remains available.
 
-`ObjectInhabitationCheck::checker_schema_version()` reports the Kernel-owned schema of this positive rule; Proof must compare it with the actual current policy rather than stamp a requested version.
+`ObjectInhabitationCheck::checker_schema_version()` reports the Kernel-owned schema of this positive rule. Proof owns the implemented [bounded native E1 result consumption](../../mizar-proof/en/status.md#bounded-native-e1-result-consumption), comparing that schema with the actual current policy rather than stamping a requested version.
 
 ## Trust Statement
 

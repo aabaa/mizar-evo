@@ -606,19 +606,19 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 **独立した四つの Open goal。** object(a) だけを前提とし、capture のない明示的な result binder を使う。E1 typing は `forall r. returns(a,r) -> object(r)`、E1 single-valuedness は `forall r,s. (returns(a,r) & returns(a,s)) -> r=s`、E1 全 typed input inhabitation は `exists r. object(r)`、独立した E4 は `exists r. returns(a,r)`。実 return a は将来の witness 候補であり、生成済み証明ではない。inhabitation は return/P を、単一値性は E1/E3/ensures を、E4 は宣言意図・関数等式・E2 continuation・受理済み postcondition を仮定しない。
 
-新 VcSet は元 postcondition を保持し、その source seed を四要求へ個別に展開する。goal のない PartialTermination 行は Deferred のまま。真正な再生成で source/type/body/return/CFG association、snapshot、generation/VC schema を保持する。binder declaration は premise ではない。意味認証には結果全体の再生成が必要であり、独立した VcSet 構築は認証を与えない。未完成 dependency footprint は conservative/reuse-ineligible のまま。proof policy や checker-schema receipt を捏造せず、将来の adoption は実 checker/policy も束縛する。
+新 VcSet は元 postcondition を保持し、その source seed を四要求へ個別に展開する。goal のない PartialTermination 行は Deferred のまま。真正な再生成で source/type/body/return/CFG association、snapshot、generation/VC schema を保持する。binder declaration は premise ではない。意味認証には結果全体の再生成が必要であり、独立した VcSet 構築は認証を与えない。未完成 dependency footprint は conservative/reuse-ineligible のまま。proof policy や checker-schema receipt を捏造せず、adoption は実 checker/policy も束縛する。
 
-**未実装の Proof 境界。** 真正 Kernel check、policy、義務別 identity、原子的 replay/adoption は Proof が所有する。[既存 source identity](../../mizar-proof/ja/status.md#source-algorithm-return-obligation-identity) と [return reflexivity result](../../mizar-proof/ja/status.md#source-algorithm-return-reflexivity-status) は旧 postcondition だけを扱う。Open/missing/rejected/stale/cross-bound E1 は記号導入を block し、E4 は独立検証まで未取得。E1 は E4 を、E4 は E1/E2 を補わない。status promotion、aggregate receipt、acceptance、coverage、E5 execution、import を与えない。
+**Proof 境界。** 真正 Kernel check、policy、義務別 identity、原子的 replay/adoption は Proof が所有する。[既存 source identity](../../mizar-proof/ja/status.md#source-algorithm-return-obligation-identity) と [return reflexivity result](../../mizar-proof/ja/status.md#source-algorithm-return-reflexivity-status) は旧 postcondition だけを扱う。Open/missing/rejected/stale/cross-bound E1 は記号導入を block し、E4 は独立検証まで未取得。E1 は E4 を、E4 は E1/E2 を補わない。status promotion、aggregate receipt、acceptance、coverage、E5 execution、import を与えない。
 
-**Producer 行列（五ケース）。** 真正 source/check/Core/CFG を使い、全 formula/context/seed accounting/provenance を比較する。証明依存の対照例は将来の前提に留める。
+**Producer 行列（五ケース）。** 真正 source/check/Core/CFG を使い、全 formula/context/seed accounting/provenance を比較する。
 
-| Case | Producer の結果と未実装の proof control |
+| Case | Producer の結果と独立した proof control |
 |---|---|
 | 変更しない fixture | 全出力を実 upstream data と比較し、元 postcondition、Deferred termination、別々の四 Open goal を保持する。 |
 | E1 typing | parameter/result typing の欠落・cross-binding を拒否し、typing 自体は証明を要する Open goal。 |
 | E1 single-valuedness | 別々の量化 result が同じ relation/input を共有し、ensures/E3 は premise/proof にならない。 |
 | E1 inhabitation | 全 typed input で object result が存在する goal。return/P 仮定や precondition 下だけの witness 一般化はない。 |
-| E4 と isolation | 独立 return existential。stale/cross-source/check/Core/CFG、schema 変更は拒否または異なる再生成結果となる。欠落・差替え proof、宣言、旧 postcondition、continuation、stopping-only evidence は adoption を許可せず、consumer は未実装。 |
+| E4 と isolation | 独立 return existential。stale/cross-source/check/Core/CFG、schema 変更は拒否または異なる再生成結果となる。欠落・差替え proof、宣言、旧 postcondition、continuation、stopping-only evidence は adoption を許可せず、この producer は adoption を行わない。 |
 
 ### 元の E1 typing descriptor
 
@@ -753,11 +753,11 @@ build_control_flow_ir、build_obligation_seed_handoff、SeedIntakeTable::try_fro
 existential・result binder・原子 object 本体・単一 CheckerFact とその premise を照合する。
 元の型付き context と child を Kernel の限定規則へ渡し、成功時のみ未変更の記述子を返す。
 上流 error の優先順序、raw slice/unknown、Open4/Deferred は保持する。
-証拠、Proof binding/adoption、状態変更、symbol、promotion、publication、acceptance/coverage credit はない。
-詳細は [英語版](../en/generator.md#e1-inhabitation-witness-introduction-check) を参照。
+証拠、Proof binding/adoption、状態変更、symbol、promotion、publication、acceptance/coverage credit はこの API から与えない。
+[元 E4 checking](#e4-checked-original-existential) は独立する。詳細は [英語版](../en/generator.md#e1-inhabitation-witness-introduction-check) を参照。
 
 `check_source_algorithm_e1_inhabitation_result` は同じ再認証を行い、未変更の記述子と
 Kernel の不透明な借用結果を組にして返す。元 binder/body/context を結果生成時に検査する。
 既存 API はこの経路へ委譲する。Core のみ借用し、元の全要求・選択 ID・witness/child・
-raw slice が元要求との対応を保持する。Proof identity/policy 消費と adoption は行わず、
-currentness は caller 所有のまま。詳細は同じ英語節を参照。
+raw slice が元要求との対応を保持する。この API は Proof identity/policy 消費と adoption を行わない。
+実装済みの [限定 native E1 consumption](../../mizar-proof/ja/status.md#bounded-native-e1-result-consumption) と [inhabitation adoption](../../mizar-proof/ja/status.md#native-e1-inhabitation-adoption) は Proof 所有。currentness は caller 所有のまま。詳細は同じ英語節を参照。

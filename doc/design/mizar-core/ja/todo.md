@@ -683,23 +683,24 @@ IR264. **Authenticated structure-property definition owner。** [x]
 41. **Missing scheme/theorem-role-dependent Core slice。** [blocked]
     - Gate S1がcanonical parser/syntax/resolver role ownerを命名するまで予約し、
       checker 277/Core 38はroleを合成しない。
-42. **Algorithm header/local/assignment/`Pick` CoreIr。** [ ]
-43. **Algorithm conditional/while/jump CoreIr。** [ ]
+42. **Algorithm header/local/assignment/`Pick` CoreIr。** [~]
+43. **Algorithm conditional/while/jump CoreIr。** [~]
 44. **Range/collection loop CoreIr。** [ ]
 45. **Match pattern/capture/exhaustiveness CoreIr。** [ ]
-46. **Algorithm contract/call-request/recursion/termination metadata。** [ ]
-47. **Snapshot/claim CoreIr。** [ ]
+46. **Algorithm contract/call-request/recursion/termination metadata。** [~]
+47. **Snapshot/claim CoreIr。** [~] — 限定 void-claim profile は実装済み。広範な capture state は延期。
     - Tasks 42-47はmizar-test AST extractionからsyntax-free checker projection、
       Core loweringまでを1 taskにした別々のChapter-20 joint vertical taskで、各々
       `MT10-CIR-ALG`と対にする。actual call/result substitution、VC、promotion、
       MVM、extraction、guessed parser/resolver identityは禁止。
-48. **Basic source-derived ControlFlowIr。** [ ]
+48. **Basic source-derived ControlFlowIr。** [~]
     - [P5: CFG use collection の循環検出](../../task_contracts/ja/P5-CORE-CFG-CYCLE-USES.md)。
 49. **Range/collection-loop CFG attachment。** [ ]
 50. **Match CFG attachment。** [ ]
-51. **Snapshot/claim flow state。** [ ]
-52. **Contract/call/ghost/termination CFG attachment。** [ ]
-53. **Complete source-derived flow diagnostics。** [ ]
+51. **Snapshot/claim flow state。** [~] — 限定 empty-interface claim CFG は実装済み。snapshot capture は延期。
+52. **Contract/call/ghost/termination CFG attachment。** [~]
+53. **Complete source-derived flow diagnostics。** [~]
+    - [Step 5C.14](../../task_contracts/ja/STEP5C14-ALGORITHM-SEMANTICS.md) は限定 header/local/typed-assignment/assert/return/break lowering、static break/ghost/immutable-write 観測と contract placement を所有する。完全な family と CFG snapshot baseline は延期。
     - Tasks 48-53は`MT10-CFG-PV`と対になる別々のphase-10 task。Task 48は
       `SnapshotKind::ControlFlowIr`を最初のreal baselineと同時にだけ追加する。
       concrete substitution/VC、public code、proof/artifact status、MVM、extraction、

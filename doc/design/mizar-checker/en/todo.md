@@ -592,7 +592,7 @@ unchecked row below is one future nonempty logical task and one commit.
   immutable handoff, reciprocal trace increment, and reviewed real/synthetic/
   exclusion/corruption/install matrix are complete. Existing semantic routes
   and all outcome/detail fields remain unchanged.
-- [ ] **Task 257:** composite/quantified formula, binder, predicate-chain, and
+- [~] **Task 257:** composite/quantified formula, binder, predicate-chain, and
   conditioned-comprehension umbrella.
   - [x] **Task 257A:** exact implication/universal/negation/contradiction tree
     and one explicit unused binder. The public seven-table transaction,
@@ -600,7 +600,7 @@ unchecked row below is one future nonempty logical task and one commit.
     reciprocal trace row, and reviewed real/synthetic/corruption/isolation
     matrix are complete. The preflight-corrected real ranges are retained
     without changing the canonical `.miz` or its semantic detail vector.
-  - [ ] **Task 257B:** broader connective/quantifier shapes, implicit binders,
+  - [~] **Task 257B:** broader connective/quantifier shapes, implicit binders,
     bound use, and capture. Ships the Task 285 element rules blocked on it
     (BinderExpression, TermCase) with the producer.
     - [x] **Task 257B1:** explicit universal-to-atomic composition and two
@@ -629,7 +629,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] [Native Object types](../../task_contracts/en/CHECKER257-NATIVE-OBJECT-TYPES.md); actual bare annotations through canonical typed declarations and metadata.
     - [x] [Native primitive composition](../../task_contracts/en/CHECKER257-NATIVE-PRIMITIVE-COMPOSITION.md); actual written quantifier heads through original pair, statement and final replay.
     - [x] [Native primitive defaults](../../task_contracts/en/CHECKER257-NATIVE-PRIMITIVE-DEFAULTS.md); prior Reserve types for omitted quantifiers and proof Lets.
-  - [ ] **Task 257C:** predicate-chain and conditioned-comprehension
+  - [~] **Task 257C:** predicate-chain and conditioned-comprehension
     composition after separately frozen Task-256/255 extensions.
     - [x] [Native predicate-chain atomic prerequisite](../../task_contracts/en/CHECKER257C-NATIVE-PREDICATE-ATOMS.md); variable-width local binary source intake through existing final metadata, before native C composition.
     - [x] [Native chain composition](../../task_contracts/en/CHECKER257C-NATIVE-CHAIN-COMPOSITION.md); complete adjacency and chain-negative associations over validated variable-reference atoms.
@@ -672,7 +672,7 @@ unchecked row below is one future nonempty logical task and one commit.
       - [x] Freeze [native C2/C3 co-installation](../../task_contracts/en/CHECKER257C-NATIVE-C2-C3-COINSTALLATION.md).
       - [x] Implement the frozen native C2/C3 co-installation.
       - [x] Freeze and implement [transparent predicate-condition parentheses](../../task_contracts/en/CHECKER257C-GROUPED-PREDICATE-CONDITIONS.md); singleton/whole-chain wrappers only, no compound conditions or semantic credit.
-- [ ] **Task 258:** general theorem-owner, statement-semantic, assumption, and
+- [~] **Task 258:** general theorem-owner, statement-semantic, assumption, and
   visibility-scoped input-fact producer; never publish accepted theorem facts.
   - [x] [Native quantified statements and Let guards](../../task_contracts/en/CHECKER258-NATIVE-LET-STATEMENTS.md); consumes the genuine B5 source/context/type pair.
   - [x] **Task 258A:** exact reserved-variable equality theorem owner,
@@ -687,7 +687,7 @@ unchecked row below is one future nonempty logical task and one commit.
     - [x] Implement only the frozen Task-258A transport after the dedicated
       documentation commit and fresh parser/resolver/lower-API/count/hash
       preflight.
-  - [ ] **Task 258B:** explicit assumptions, conclusions, witnesses, local
+  - [~] **Task 258B:** explicit assumptions, conclusions, witnesses, local
     label/citation inputs, composite theorem roots, nested statement contexts,
     and broader visibility. Tasks 269-272 retain proof-local bindings,
     closures, reconsider intent, proof skeletons, and justification
@@ -761,7 +761,7 @@ unchecked row below is one future nonempty logical task and one commit.
   Contract: [native conversions](../../task_contracts/en/CHECKER271-NATIVE-CONVERSIONS.md).
   Producer and actual FS/AS classification complete; the omitted seed stays
   inactive and final proof-state consumption remains with Task 272.
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer.
+- [~] **Task 272:** non-Task-180 proof-skeleton/justification producer.
   Native source intents and bounded Set/Object goal/type/substitution replay
   ship below. Broader goals, proof effects and remaining alias forms stay open;
   Task49 retains activation.
@@ -786,7 +786,7 @@ unchecked row below is one future nonempty logical task and one commit.
   - [x] **Task 272B18:** [empty enumeration goals](../../task_contracts/en/CHECKER272B18-EMPTY-ENUMERATION-GOALS.md); inactive test-first constant source and authentic zero-leaf replay.
   - [x] **Task 272B19:** [Iff direction goals](../../task_contracts/en/CHECKER272B19-IFF-DIRECTION-GOALS.md); authentic local directional Proof owners and saved unproved parent.
 - [x] **Task 273:** [registration-item/correctness/initial-obligation intake producer](../../task_contracts/en/CHECKER273-REGISTRATION-INTAKE.md).
-- [ ] **Task 274:** bounded module-local source-proof association is implemented in
+- [~] **Task 274:** bounded module-local source-proof association is implemented in
   [proof status](../../mizar-proof/en/status.md#source-existential-registration-proof);
   general accepted verifier/artifact import and activation remain deferred.
 - [ ] **Task 275:** source-derived cluster-closure trace producer.

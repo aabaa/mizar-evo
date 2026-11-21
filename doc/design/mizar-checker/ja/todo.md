@@ -576,7 +576,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   handoff、reciprocal trace increment、review済みreal/synthetic/exclusion/
   corruption/install matrixは完了した。既存semantic routeと全outcome/detail
   fieldは不変である。
-- [ ] **Task 257:** composite/quantified formula、binder、predicate-chain、
+- [~] **Task 257:** composite/quantified formula、binder、predicate-chain、
   conditioned-comprehension umbrella。
   - [x] **Task 257A:** exact implication/universal/negation/contradiction treeと
     explicit unused binder 1件。public seven-table transaction、`2/1/4`
@@ -584,7 +584,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
     trace row、review済みreal/synthetic/corruption/isolation matrixは完了した。
     preflight-corrected real rangeをcanonical `.miz`/semantic detail vector
     不変のまま保持する。
-  - [ ] **Task 257B:** broader connective/quantifier shape、implicit binder、
+  - [~] **Task 257B:** broader connective/quantifier shape、implicit binder、
     bound use/capture。この task で blocked の Task 285 要素規則
     (BinderExpression, TermCase) を producer と同時に出荷する。
     - [x] **Task 257B1:** explicit universal-to-atomic compositionとbinderが
@@ -599,7 +599,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       nested quantification、implicit reserved-binder shadowing、scoped use
       6件。semantic truth/closure/capture result/theorem creditなしでfrozen
       source-to-final-handoff transportを実装済み。
-  - [ ] **Task 257C:** separately frozen Task-256/255 extension後の
+  - [~] **Task 257C:** separately frozen Task-256/255 extension後の
     predicate-chain/conditioned-comprehension composition。
     - [x] **Task 257C1:** Task 256をpredicate-chain segment、polarity token、
       shared-boundary transportで拡張する。
@@ -625,7 +625,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       - [x] Freeze [native C2/C3 co-installation](../../task_contracts/ja/CHECKER257C-NATIVE-C2-C3-COINSTALLATION.md).
       - [x] Implement the frozen native C2/C3 co-installation.
       - [x] Freeze and implement [transparent predicate-condition parentheses](../../task_contracts/ja/CHECKER257C-GROUPED-PREDICATE-CONDITIONS.md); singleton/whole-chain wrappers only, no compound conditions or semantic credit.
-- [ ] **Task 258:** general theorem-owner/statement-semantic/assumption/
+- [~] **Task 258:** general theorem-owner/statement-semantic/assumption/
   visibility-scoped input-fact producer。accepted theorem factをpublishしない。
   - [x] **Task 258A:** exact reserved-variable equality theorem owner、
     statement shell、implicit reserved-type-guard input、unverified
@@ -637,7 +637,7 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
       exclusion、tests、trace non-activation、exit criteriaをfreeze。
     - [x] dedicated documentation commitとfresh parser/resolver/lower-API/
       count/hash preflight後にfrozen Task-258A transportだけを実装。
-  - [ ] **Task 258B:** explicit assumption/conclusion/witness、local
+  - [~] **Task 258B:** explicit assumption/conclusion/witness、local
     label/citation input、composite theorem root、nested statement context、
     broader visibility。Tasks 269-272はproof-local binding/closure/
     reconsider intent/proof skeleton/justification semanticsを保持する。
@@ -708,14 +708,15 @@ criteriaは[payload_family_decomposition.md](./payload_family_decomposition.md)
   Contract: [native conversions](../../task_contracts/ja/CHECKER271-NATIVE-CONVERSIONS.md).
   producer と実 FS/AS 分類は完了。omitted seed は非 active のまま、
   最終的な証明状態の消費は Task 272 に残す。
-- [ ] **Task 272:** non-Task-180 proof-skeleton/justification producer。
-  native source intent と元の要素規則は A で出荷し、型付き witness 照合・
-  goal/置換の replay と結果は B に残す。
+- [~] **Task 272:** non-Task-180 proof-skeleton/justification producer。
+  native source intent と限定 Set/Object goal/type/置換 replay は実装済み。
+  広範な goal、proof effect と残る alias form は未完。Task49 が activation を所有する。
+  完了した B slice は [英語正本](../en/todo.md) を参照。
   - [x] **Task 272A:** [native source intents](../../task_contracts/ja/CHECKER272A-NATIVE-PROOF-INTENTS.md)。型付き witness/goal replay は 272B に残す。
-- [ ] **Task 273:** registration-item/correctness/initial-obligation intake producer。
-- [ ] **Task 274 (blocked-reserved):** accepted verifier/artifact-status import/
-  activation adapter。canonical authorityがupstream owner/schema/authentication
-  rule/testsを命名するまで実行不能。
+- [x] **Task 273:** [registration-item/correctness/initial-obligation intake producer](../../task_contracts/ja/CHECKER273-REGISTRATION-INTAKE.md)。
+- [~] **Task 274:** 限定 module-local source-proof association は
+  [proof status](../../mizar-proof/ja/status.md#source-existential-registration-proof) に実装済み。
+  一般 accepted verifier/artifact import と activation は延期。
 - [ ] **Task 275:** source-derived cluster-closure trace producer。
 - [ ] **Task 276:** source-derived reduction/normalization trace producer。
 - [ ] **Task 277:** direct template role/actual/guard producer。missing

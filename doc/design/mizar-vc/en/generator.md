@@ -679,19 +679,19 @@ Preserve every handoff row: ghost initialization retains its existing GhostErasu
 
 **Four separate Open goals.** Under only object(a), use capture-free, explicitly declared result binders: E1 typing is `forall r. returns(a,r) -> object(r)`; E1 single-valuedness is `forall r,s. (returns(a,r) & returns(a,s)) -> r=s`; E1 all-input inhabitation is `exists r. object(r)`; E4 is independently `exists r. returns(a,r)`. The actual returned a is available as a future inhabitation witness, not an emitted proof. Inhabitation assumes neither a return nor P. Uniqueness assumes neither E1/E3 nor ensures. E4 assumes neither declaration intent, the function equation, E2 continuation nor an accepted postcondition.
 
-The new VcSet retains the original postcondition and expands its source seed to account separately for the four requests. Its goal-free PartialTermination row stays Deferred. Each request retains source/type/body/return/CFG associations, snapshot and generation/VC schemas through authentic regeneration; binders are declarations, never premises. Whole-result regeneration is required for semantic authentication; detached VcSet construction grants none. Incomplete dependency footprints remain conservative and reuse-ineligible. No proof policy or checker-schema receipt is invented; future adoption must bind the actual checker and policy as well.
+The new VcSet retains the original postcondition and expands its source seed to account separately for the four requests. Its goal-free PartialTermination row stays Deferred. Each request retains source/type/body/return/CFG associations, snapshot and generation/VC schemas through authentic regeneration; binders are declarations, never premises. Whole-result regeneration is required for semantic authentication; detached VcSet construction grants none. Incomplete dependency footprints remain conservative and reuse-ineligible. No proof policy or checker-schema receipt is invented; adoption must bind the actual checker and policy as well.
 
-**Deferred Proof boundary.** Proof owns genuine Kernel checking, policy, per-obligation identity and atomic replay/adoption. The [existing source identity route](../../mizar-proof/en/status.md#source-algorithm-return-obligation-identity) and [return reflexivity result](../../mizar-proof/en/status.md#source-algorithm-return-reflexivity-status) cover only the old substituted postcondition. Open/missing/rejected/stale/cross-bound E1 blocks symbol introduction; E4 remains unavailable until independently checked. Accepted E1 cannot supply E4, and E4 cannot supply E1/E2. No status promotion, aggregate receipt, acceptance, coverage, E5 execution or import follows.
+**Proof boundary.** Proof owns genuine Kernel checking, policy, per-obligation identity and atomic replay/adoption. The [existing source identity route](../../mizar-proof/en/status.md#source-algorithm-return-obligation-identity) and [return reflexivity result](../../mizar-proof/en/status.md#source-algorithm-return-reflexivity-status) cover only the old substituted postcondition. Open/missing/rejected/stale/cross-bound E1 blocks symbol introduction; E4 remains unavailable until independently checked. Accepted E1 cannot supply E4, and E4 cannot supply E1/E2. No status promotion, aggregate receipt, acceptance, coverage, E5 execution or import follows.
 
-**Producer matrix (five cases).** Use authentic source/check/Core/CFG; compare whole formulas, contexts, seed accounting and provenance. Proof-dependent controls remain future prerequisites.
+**Producer matrix (five cases).** Use authentic source/check/Core/CFG; compare whole formulas, contexts, seed accounting and provenance.
 
-| Case | Producer outcome and deferred proof control |
+| Case | Producer outcome and separate proof control |
 |---|---|
 | Exact unchanged fixture | Compare complete output against actual upstream data; preserve old postcondition and Deferred termination, with four separate Open goals. |
 | E1 typing | Reject missing/cross-bound parameter/result typing; return typing remains an Open goal requiring actual proof. |
 | E1 single-valuedness | Two distinct quantified results share exactly the same execution relation/input; ensures/E3 never supply a premise or proof. |
 | E1 inhabitation | Existential object result on all typed inputs, with no return/P assumption; no precondition-only witness generalization. |
-| E4 and isolation | Independent return existential; stale/cross-source/check/Core/CFG and changed schema controls regenerate differently or refuse. Missing/swapped proof, declaration, old postcondition, continuation or stopping-only evidence cannot authorize adoption; that consumer is deferred. |
+| E4 and isolation | Independent return existential; stale/cross-source/check/Core/CFG and changed schema controls regenerate differently or refuse. Missing/swapped proof, declaration, old postcondition, continuation or stopping-only evidence cannot authorize adoption; this producer supplies no adoption. |
 
 ### Original E1 typing descriptor
 
@@ -736,7 +736,7 @@ retain precedence; association/check failures produce no descriptor.
 This is a fresh local check. Raw unknowns and incomplete/cache-ineligible slices,
 all four Open requests and Deferred termination persist. No evidence, Proof
 identity/checker-policy binding, adoption, status, symbol, promotion, publication
-or acceptance/coverage credit follows. E4 checking remains deferred.
+or acceptance/coverage credit follows from this API. [Original E4 checking](#e4-checked-original-existential) is separate.
 
 `check_source_algorithm_e1_inhabitation_result` uses that same fresh association
 and returns the unchanged descriptor paired with Kernel's opaque borrowed
@@ -744,8 +744,8 @@ and returns the unchanged descriptor paired with Kernel's opaque borrowed
 result-producing check, rather than a target attached to earlier bool success.
 The descriptor-only API delegates to this route. The result borrows only Core;
 the whole returned set, selected ID, witness/child and raw slice retain authentic
-original-request association. No Proof identity/policy consumption or adoption is
-performed; currentness remains caller-owned.
+original-request association. This API performs no Proof identity/policy consumption
+or adoption; Proof owns the implemented [bounded native E1 consumption](../../mizar-proof/en/status.md#bounded-native-e1-result-consumption) and [inhabitation adoption](../../mizar-proof/en/status.md#native-e1-inhabitation-adoption). Currentness remains caller-owned.
 
 ### E4 operational-reduction request
 

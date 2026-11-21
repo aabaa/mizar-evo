@@ -506,8 +506,8 @@ the paired producer tasks.
       type-elaboration Task-180 sidecar and all broader deferred rows are
       unchanged.
 
-32. **General theorem and proof VCs.** [ ] — Specs 04.5/14-16; Core
-    33-35/37; `MT10-VC-PV/VC32`.
+32. **General theorem and proof VCs.** [~] — Specs 04.5/14-16; Core
+    33-35/37; `MT10-VC-PV/VC32`. Bounded [source theorem](./generator.md#source-theorem-vc-generation) and [computation-request](./generator.md#bounded-computation-request-generation) slices are active; general proof VCs remain open.
 33. **Functor `equals`/`means` definition-correctness VCs.** [ ] — Specs
     10.3-10.6/10.12.2-10.12.6/16.6.1/16.6.4; Core 33-36;
     `MT10-VC-PV/VC33`. Result-type/type-correctness, guarded consistency, and
@@ -525,8 +525,8 @@ the paired producer tasks.
 38. **Redefinition compatibility/coherence VCs.** [ ] — Specs
     06.7/09.6-9.7/10.7-10.8/11.1/16.6/19.5; Core 38;
     `MT10-VC-PV/VC38`.
-39. **Reduction `reducibility` equality VCs.** [ ] — Specs 17.6/17.9.4;
-    Core 39; `MT10-VC-PV/VC39`. Simplification-order rejection is never a VC.
+39. **Reduction `reducibility` equality VCs.** [~] — Specs 17.6/17.9.4;
+    Core 39; `MT10-VC-PV/VC39`. [Bounded source correctness failures](../../task_contracts/en/STEP5C11-CLUSTER-REGISTRATIONS.md) are active; general reducibility remains open. Simplification-order rejection is never a VC.
 40. **Authenticated registration/cluster/reduction trace-context and fingerprint
     integration.** [blocked] — completed VC 37/39 outputs, Core 40, and Gate
     A1/MC-G004. When all dependencies exist, attach authenticated trace data to
@@ -547,21 +547,20 @@ the paired producer tasks.
     Core 43/48/52-53; `MT10-VC-PV/VC45`.
 46. **Match context and explicit-exhaustiveness VCs.** [ ] — Specs
     20.2.5/20.13.3; Core 45/50/52-53; `MT10-VC-PV/VC46`.
-47. **While invariant and jump-context VCs.** [ ] — Specs
-    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`.
+47. **While invariant and jump-context VCs.** [~] — Specs
+    20.2.2/20.5/20.13.3; Core 43/46/48/52-53; `MT10-VC-PV/VC47`. [Bounded while postconditions](./generator.md#bounded-while-postconditions) are active; broader loops/jumps remain open.
 48. **Range-loop VCs.** [ ] — Specs 20.2.3/20.5/20.13.3; Core
     44/46/49/52-53; `MT10-VC-PV/VC48`.
 49. **Collection-loop VCs.** [ ] — Specs 20.2.4/20.5/20.13.3; Core
     44/46/49/52-53; `MT10-VC-PV/VC49`.
-50. **Pick non-emptiness VCs.** [ ] — Specs 20.3/20.13.3; Core
-    42/46/48/52-53; `MT10-VC-PV/VC50`.
+50. **Pick non-emptiness VCs.** [~] — Specs 20.3/20.13.3; Core
+    42/46/48/52-53; `MT10-VC-PV/VC50`. [Bounded runtime Pick](./generator.md#bounded-runtime-pick-postconditions) is active; broader Pick remains open.
 51. **Term-derived loop-measure VCs.** [ ] — Specs 20.5/20.7/20.13.3; Core
     46/48-49/52-53; `MT10-VC-PV/VC51`.
 52. **Recursive and mutual-recursion decrease VCs.** [ ] — Specs
     20.7-20.8/20.13.4; Core 46/52-53; `MT10-VC-PV/VC52`.
-53. **Terminating-body normal-return evidence admission.** [blocked] — Specs
-    20.7.2/20.13.1; Core 46/52-53; `MT10-VC-PV/VC53`. Authentic call/input and
-    verified evidence producers remain unavailable. VC 44 owns partial body-call
+53. **Terminating-body normal-return evidence admission.** [~] — Specs
+    20.7.2/20.13.1; Core 46/52-53; `MT10-VC-PV/VC53`. The [active bounded direct-return unit](../../task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) owns E1/E4 checking and request association; full E1/E2/E4 admission, authentic call/input producers and imported evidence remain deferred. VC 44 owns partial body-call
     continuation facts; those assumptions never prove E4. No `PartialTermination` VC.
 54. **Snapshot/claim theorem VCs.** [~] — bounded void-claim VCs active; Specs 20.6/20.13; Core 47/51-53;
     `MT10-VC-PV/VC54`.

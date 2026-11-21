@@ -54,7 +54,7 @@ symbolic child の immutable parameter・sole Return・CFG 検証を再利用す
 型付けはその parameter を返す意味論（§20.1.2、§20.2.6）に従い、E4 の存在とは独立する。
 VC が[元の記述子](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor)を認証する。
 boolean API は維持する。`check_algorithm_return_typing_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の型付け規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
-single-valuedness や広範な credit は与えない。
+single-valuedness や広範な credit はこの API から与えない。別の [typing request association](../../mizar-proof/ja/status.md#original-e1-typing-request-identity-association) は Proof が所有する。
 
 ## Bounded Original E1 Single-Valuedness
 
@@ -65,7 +65,7 @@ algorithm/CFG/statement/input が一致することを要求する。唯一の�
 既存の immutable-parameter/sole-Return profile と再構築 CFG 検証を再利用し、両実行が同じ
 parameter を返すことによる (§20.1.2, §20.2.6)。typing、ensures、E4 existence に依存しない。
 VC が[元の descriptor](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor)を認証する。
-boolean API は維持する。`check_algorithm_return_single_valuedness_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。native typing prerequisite、evidence、Proof association/policy/adoption、symbol、credit は与えない。
+boolean API は維持する。`check_algorithm_return_single_valuedness_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。native typing prerequisite、evidence、Proof association/policy/adoption、symbol、credit はこの API から与えない。別の [single-valuedness request association](../../mizar-proof/ja/status.md#original-e1-single-valuedness-request-identity-association) は Proof が所有する。
 
 ## Original AlgorithmReturns Existential
 
@@ -143,7 +143,7 @@ status promotion・symbol introduction・publication・acceptance/coverage credi
 意味を持たない。VC が元要求と witness の対応を保持し、bool API は維持。
 詳細は [英語版](../en/checker.md#bounded-e1-inhabitation-witness-introduction) を参照。
 
-`ObjectInhabitationCheck::checker_schema_version()` はこの正の rule の Kernel 所有 schema を返す。Proof は要求された版を実 checker の版として記録せず、実際の現在 policy と照合する。
+`ObjectInhabitationCheck::checker_schema_version()` はこの正の rule の Kernel 所有 schema を返す。実装済みの [限定 native E1 result consumption](../../mizar-proof/ja/status.md#bounded-native-e1-result-consumption) は Proof 所有であり、要求された版を記録せず実際の現在 policy と照合する。
 
 ## Trust Statement
 
