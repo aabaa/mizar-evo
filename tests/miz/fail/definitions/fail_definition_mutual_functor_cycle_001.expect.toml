@@ -1,0 +1,14 @@
+schema_version = 1
+id = "fail_definition_mutual_functor_cycle_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "functors.definitions"
+source = "fail_definition_mutual_functor_cycle_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "logic_error"
+stable_detail_key = "logic.circular_definition"
+diagnostic_codes = []
+tags = []
+spec_refs = ["spec.en.10.functors.definition.equals"]
+notes = "Inactive source oracle for mutual func definiens cycles (spec 10.3.3 and 22.5.2). Checker unit tests supply explicit occurrence selections; public diagnostic/runner adoption and trace credit remain deferred."

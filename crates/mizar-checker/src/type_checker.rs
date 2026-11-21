@@ -241,6 +241,55 @@ pub fn check_source_algorithm_call_targets(
     Ok((definiens, body, originals))
 }
 
+/// Rejects cycles in explicitly selected func definiens dependencies.
+///
+/// Resolver authenticates all associations before graph inspection. Callers own
+/// selection correctness/currentness; success grants no completeness or acceptance.
+pub fn check_source_functor_definition_cycles(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    selected: &BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+    originals: &BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+) -> Result<(), String> {
+    use mizar_resolve::env::DependencyEndpoint;
+
+    let dependencies = mizar_resolve::symbols::source_definiens_dependencies(
+        source, symbols, selected, originals,
+    )?;
+    let mut graph: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
+    for edge in dependencies.iter() {
+        let (DependencyEndpoint::Symbol(from), DependencyEndpoint::Symbol(to)) =
+            (edge.source(), edge.target())
+        else {
+            continue;
+        };
+        if [from, to].iter().all(|symbol| {
+            symbols
+                .symbols()
+                .get(symbol)
+                .is_some_and(|entry| entry.kind() == SymbolKind::Functor)
+        }) {
+            graph.entry(from).or_default().insert(to);
+        }
+    }
+    for &root in graph.keys() {
+        let mut visited = BTreeSet::new();
+        let mut pending = vec![root];
+        while let Some(current) = pending.pop() {
+            if !visited.insert(current) {
+                continue;
+            }
+            for &target in graph.get(current).into_iter().flatten() {
+                if target == root {
+                    return Err("logic.circular_definition".to_owned());
+                }
+                pending.push(target);
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Returns the real registration closure for authenticated original theorem typing.
 pub fn check_source_theorem_registration_closure(
     source: &SurfaceResolvedArena,

@@ -1,5 +1,7 @@
 # mizar-checker: Type Checker
 
+`check_source_functor_definition_cycles` authenticates explicit definiens/original-target maps through Resolver, then rejects cycles among canonical func identities with `logic.circular_definition`. Its immutable inputs and `Result<(), String>` convey no graph-completeness or acceptance credit; automatic selection, mixed/algorithm cycles and public diagnostic adoption remain deferred.
+
 `check_source_dependent_mode_types` implements the [bounded dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) using existing binding, declaration and inference tables.
 
 `SourceVariableSemanticsChecker::check_theorem_skeletons` consumes the existing typed

@@ -7285,3 +7285,411 @@ fn symbol_id(local: &str, fqn: &str) -> SymbolId {
         FullyQualifiedName::new(fqn),
     )
 }
+
+mod source_functor_definition_cycles {
+    use super::*;
+    use mizar_frontend::{
+        lexical_env::{
+            FrontendLexicalEnvironmentError, LexicalEnvironmentRequest, LexicalSummaryProvider,
+            ResolvedImports,
+        },
+        orchestration::Frontend,
+        parsing::MizarParserSeam,
+        source::{FrontendSourceLoader, SourceUnitRequest},
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        resolved_ast::SymbolRef,
+        symbols::{SignatureProjectionExtractor, source_definiens_dependencies},
+    };
+    use mizar_session::{
+        DiskSourceLoader, Edition, Hash, SourceInput, SourceOriginInput, normalize_path,
+    };
+    use syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
+    use std::collections::BTreeMap;
+
+    struct NoImports;
+
+    impl LexicalSummaryProvider for NoImports {
+        fn resolve_imports(
+            &self,
+            _: &LexicalEnvironmentRequest<'_>,
+        ) -> Result<ResolvedImports, FrontendLexicalEnvironmentError> {
+            Ok(ResolvedImports {
+                imports: vec![],
+                summaries: vec![],
+                diagnostics: vec![],
+            })
+        }
+    }
+
+    fn parsed(text: &str) -> (SurfaceAst, SymbolEnv, SurfaceResolvedArena) {
+        let root = std::env::temp_dir().join(format!(
+            "mizar-checker-cycles-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&root).unwrap();
+        std::fs::create_dir(root.join("src")).unwrap();
+        let path = root.join("src/main.miz");
+        std::fs::write(&path, text).unwrap();
+        let output = Frontend::new(
+            FrontendSourceLoader::new(DiskSourceLoader::new(&root)),
+            NoImports,
+            MizarParserSeam,
+        )
+        .run(
+            SourceUnitRequest {
+                snapshot: BuildSnapshotId::from_published_schema_str(&format!(
+                    "mizar-session-build-snapshot-v1:{}",
+                    "47".repeat(Hash::BYTE_LEN)
+                ))
+                .unwrap(),
+                input: SourceInput {
+                    package_id: PackageId::new("pkg"),
+                    module_path: ModulePath::new("main"),
+                    normalized_path: normalize_path(&root, &path).unwrap(),
+                    edition: Edition::new("2025"),
+                    origin: SourceOriginInput::Disk { path },
+                },
+            },
+            &InMemorySessionIdAllocator::new(),
+        )
+        .unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+        assert!(
+            output.diagnostics.is_empty(),
+            "{text}\n{:?}",
+            output.diagnostics
+        );
+        let ast = output.ast.unwrap();
+        let module = module_id();
+        let shells = DeclarationShellCollector::new(&ast, &module).collect();
+        let collected =
+            SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("main"))
+                .collect(&module);
+        assert!(
+            collected.diagnostics().is_empty(),
+            "{:?}",
+            collected.diagnostics()
+        );
+        let arena = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+        (ast, collected.into_env(), arena)
+    }
+
+    fn symbol<'a>(env: &'a SymbolEnv, text: &str, declaration: &str) -> &'a SymbolEntry {
+        let start = text.find(declaration).unwrap();
+        let entries = env.symbols().iter().filter(|entry| matches!(entry.origin().anchor(), SourceAnchor::Range(range) if range.start == start)).collect::<Vec<_>>();
+        assert_eq!(entries.len(), 1, "{declaration}");
+        entries[0]
+    }
+
+    fn select(ast: &SurfaceAst, start: usize, target: &SymbolEntry) -> (SurfaceNodeId, SymbolRef) {
+        let nodes = ast
+            .node_views()
+            .filter(|node| {
+                node.range().start == start && node.kind() == &SurfaceNodeKind::TermReference
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(nodes.len(), 1, "term reference at {start}");
+        (
+            nodes[0].id(),
+            SymbolRef::new(target.symbol().clone(), nodes[0].range()),
+        )
+    }
+
+    fn selections(
+        ast: &SurfaceAst,
+        env: &SymbolEnv,
+        text: &str,
+        sites: &[(&str, &str, &str)],
+    ) -> BTreeMap<SurfaceNodeId, SymbolRef> {
+        sites
+            .iter()
+            .map(|(context, spelling, declaration)| {
+                select(
+                    ast,
+                    text.find(context).unwrap() + context.rfind(spelling).unwrap(),
+                    symbol(env, text, declaration),
+                )
+            })
+            .collect()
+    }
+
+    fn check(
+        arena: &SurfaceResolvedArena,
+        env: &SymbolEnv,
+        selected: &BTreeMap<SurfaceNodeId, SymbolRef>,
+        originals: &BTreeMap<SurfaceNodeId, SymbolRef>,
+    ) -> Result<(), String> {
+        let before = (
+            arena.clone(),
+            env.clone(),
+            selected.clone(),
+            originals.clone(),
+        );
+        let result =
+            super::super::check_source_functor_definition_cycles(arena, env, selected, originals);
+        assert_eq!(
+            (
+                arena.clone(),
+                env.clone(),
+                selected.clone(),
+                originals.clone()
+            ),
+            before
+        );
+        result
+    }
+
+    fn circular(result: Result<(), String>) {
+        assert_eq!(result, Err("logic.circular_definition".to_owned()));
+    }
+
+    #[test]
+    fn real_direct_and_mutual_sources() {
+        let text = include_str!(
+            "../../../../tests/miz/fail/definitions/fail_definition_direct_functor_cycle_001.miz"
+        );
+        let (ast, env, arena) = parsed(text);
+        let target = symbol(&env, text, "func Self:");
+        let selected = BTreeMap::from([select(&ast, text.rfind("self(n)").unwrap(), target)]);
+        let dependencies =
+            source_definiens_dependencies(&arena, &env, &selected, &BTreeMap::new()).unwrap();
+        assert_eq!(dependencies.len(), 1);
+        let edge = dependencies.iter().next().unwrap();
+        let endpoint = mizar_resolve::env::DependencyEndpoint::Symbol(target.symbol().clone());
+        assert_eq!(edge.source(), &endpoint);
+        assert_eq!(edge.target(), &endpoint);
+        circular(check(&arena, &env, &selected, &BTreeMap::new()));
+
+        let text = include_str!(
+            "../../../../tests/miz/fail/definitions/fail_definition_mutual_functor_cycle_001.miz"
+        );
+        let (ast, env, arena) = parsed(text);
+        let selected = selections(
+            &ast,
+            &env,
+            text,
+            &[
+                ("equals g(n)", "g", "func G:"),
+                ("equals f(n)", "f", "func F:"),
+            ],
+        );
+        assert_eq!(
+            source_definiens_dependencies(&arena, &env, &selected, &BTreeMap::new())
+                .unwrap()
+                .len(),
+            2
+        );
+        circular(check(&arena, &env, &selected, &BTreeMap::new()));
+    }
+
+    #[test]
+    fn longer_cycle_tail_repeated_edges_and_selection_order() {
+        for text in [
+            "definition let n be object; func F: f(n) -> object equals g(g(n)); func G: g(n) -> object equals h(n); func H: h(n) -> object equals f(n); func Tail: tail(n) -> object equals f(n); end;",
+            "definition let n be object; func Tail: tail(n) -> object equals f(n); func H: h(n) -> object equals f(n); func G: g(n) -> object equals h(n); func F: f(n) -> object equals g(g(n)); end;",
+        ] {
+            let (ast, env, arena) = parsed(text);
+            let selected = selections(
+                &ast,
+                &env,
+                text,
+                &[
+                    ("equals g(", "g", "func G:"),
+                    ("equals g(g(", "g", "func G:"),
+                    ("equals h(n)", "h", "func H:"),
+                    ("func H: h(n) -> object equals f(n)", "f", "func F:"),
+                    ("func Tail: tail(n) -> object equals f(n)", "f", "func F:"),
+                ],
+            );
+            assert_eq!(
+                source_definiens_dependencies(&arena, &env, &selected, &BTreeMap::new())
+                    .unwrap()
+                    .len(),
+                5
+            );
+            circular(check(&arena, &env, &selected, &BTreeMap::new()));
+        }
+    }
+
+    #[test]
+    fn acyclic_chain_diamond_and_empty_or_partial_graphs() {
+        let text = "definition let n be object; func A: a(n) -> object equals b(c(n)); func B: b(n) -> object equals d(n); func C: c(n) -> object equals d(n); func D: d(n) -> object equals n; end;";
+        let (ast, env, arena) = parsed(text);
+        let selected = selections(
+            &ast,
+            &env,
+            text,
+            &[
+                ("equals b(", "b", "func B:"),
+                ("equals b(c(", "c", "func C:"),
+                ("func B: b(n) -> object equals d(n)", "d", "func D:"),
+                ("func C: c(n) -> object equals d(n)", "d", "func D:"),
+            ],
+        );
+        for count in 0..=selected.len() {
+            let partial = selected
+                .iter()
+                .take(count)
+                .map(|(&id, reference)| (id, reference.clone()))
+                .collect();
+            assert_eq!(check(&arena, &env, &partial, &BTreeMap::new()), Ok(()));
+        }
+        let text = include_str!(
+            "../../../../tests/miz/fail/definitions/fail_definition_mutual_functor_cycle_001.miz"
+        );
+        let (ast, env, arena) = parsed(text);
+        let partial = selections(&ast, &env, text, &[("equals g(n)", "g", "func G:")]);
+        assert_eq!(check(&arena, &env, &partial, &BTreeMap::new()), Ok(()));
+        let (_, env, arena) = parsed("");
+        assert_eq!(
+            check(&arena, &env, &BTreeMap::new(), &BTreeMap::new()),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn equal_spelling_overload_symbol_identities_are_distinct() {
+        let text = "definition let n,m be object; func First: f(n) -> object equals f(n,m); func Second: f(n,m) -> object equals n; end;";
+        let (ast, env, arena) = parsed(text);
+        let first = symbol(&env, text, "func First:");
+        let second = symbol(&env, text, "func Second:");
+        assert_eq!(
+            first.primary_spelling().split_whitespace().next(),
+            second.primary_spelling().split_whitespace().next()
+        );
+        assert_ne!(first.symbol(), second.symbol());
+        for (declaration, cyclic) in [("func Second:", false), ("func First:", true)] {
+            let selected = selections(&ast, &env, text, &[("equals f(n,m)", "f", declaration)]);
+            let result = check(&arena, &env, &selected, &BTreeMap::new());
+            if cyclic {
+                circular(result);
+            } else {
+                assert_eq!(result, Ok(()));
+            }
+        }
+    }
+
+    #[test]
+    fn originals_canonicalize_but_relations_and_algorithm_bodies_add_no_edges() {
+        let text = "definition let n be object; func Base: f(n) -> object equals n; synonym alias(n) for f(n); synonym chain(n) for alias(n); redefine func Changed: f(n) -> object equals chain(n); coherence by Proof; algorithm run(n) -> object do return caller(n); end; func Caller: caller(n) -> object equals run(n); end;";
+        let (ast, env, arena) = parsed(text);
+        let originals = [
+            (
+                "synonym alias",
+                SurfaceNodeKind::NotationAlias,
+                "func Base:",
+            ),
+            (
+                "synonym chain",
+                SurfaceNodeKind::NotationAlias,
+                "synonym alias",
+            ),
+            (
+                "redefine func Changed:",
+                SurfaceNodeKind::FunctorRedefinition,
+                "func Base:",
+            ),
+        ]
+        .into_iter()
+        .map(|(marker, kind, target)| {
+            let node = ast
+                .node_views()
+                .find(|node| {
+                    node.kind() == &kind && node.range().start == text.find(marker).unwrap()
+                })
+                .unwrap();
+            (
+                node.id(),
+                SymbolRef::new(symbol(&env, text, target).symbol().clone(), node.range()),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+        assert!(
+            source_definiens_dependencies(&arena, &env, &BTreeMap::new(), &originals)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(check(&arena, &env, &BTreeMap::new(), &originals), Ok(()));
+        let calls = selections(
+            &ast,
+            &env,
+            text,
+            &[("equals run(n)", "run", "algorithm run")],
+        );
+        let edges = source_definiens_dependencies(&arena, &env, &calls, &originals).unwrap();
+        assert_eq!(edges.len(), 1);
+        assert_eq!(check(&arena, &env, &calls, &originals), Ok(()));
+        let selected = selections(
+            &ast,
+            &env,
+            text,
+            &[("equals chain(n)", "chain", "synonym chain")],
+        );
+        circular(check(&arena, &env, &selected, &originals));
+        let body = BTreeMap::from([select(
+            &ast,
+            text.find("return caller").unwrap() + "return ".len(),
+            symbol(&env, text, "func Caller:"),
+        )]);
+        let error = check(&arena, &env, &body, &originals).unwrap_err();
+        assert_ne!(error, "logic.circular_definition");
+    }
+
+    #[test]
+    fn invalid_foreign_and_stale_inputs_precede_cycle_and_preserve_inputs() {
+        let text = include_str!(
+            "../../../../tests/miz/fail/definitions/fail_definition_direct_functor_cycle_001.miz"
+        );
+        let (ast, env, arena) = parsed(text);
+        let target = symbol(&env, text, "func Self:");
+        let selected = BTreeMap::from([select(&ast, text.rfind("self(n)").unwrap(), target)]);
+        let (&site, reference) = selected.first_key_value().unwrap();
+        let (_, stale, _) = parsed(&text.replace("func Self:", "func Other:"));
+        let foreign = SurfaceResolvedArena::lower(
+            &ast,
+            &ModuleId::new(PackageId::new("pkg"), ModulePath::new("foreign")),
+        )
+        .unwrap();
+        for (source, symbols) in [(&arena, &stale), (&foreign, &env)] {
+            let expected =
+                source_definiens_dependencies(source, symbols, &selected, &BTreeMap::new())
+                    .unwrap_err();
+            assert_ne!(expected, "logic.circular_definition");
+            assert_eq!(
+                check(source, symbols, &selected, &BTreeMap::new()),
+                Err(expected)
+            );
+        }
+        let mut bad_range = reference.range();
+        bad_range.end += 1;
+        let mut foreign_range = reference.range();
+        foreign_range.source_id = source_ids_pair().1;
+        let unknown = symbol_id("missing", "main.missing");
+        for (id, invalid_reference) in [
+            (ast.root().unwrap(), reference.clone()),
+            (site, SymbolRef::new(target.symbol().clone(), bad_range)),
+            (site, SymbolRef::new(target.symbol().clone(), foreign_range)),
+            (site, SymbolRef::new(unknown, reference.range())),
+        ] {
+            let mut invalid = selected.clone();
+            invalid.insert(id, invalid_reference);
+            let expected = source_definiens_dependencies(&arena, &env, &invalid, &BTreeMap::new())
+                .unwrap_err();
+            assert_ne!(expected, "logic.circular_definition");
+            assert_eq!(
+                check(&arena, &env, &invalid, &BTreeMap::new()),
+                Err(expected)
+            );
+        }
+        let originals = BTreeMap::from([(ast.root().unwrap(), reference.clone())]);
+        let expected =
+            source_definiens_dependencies(&arena, &env, &selected, &originals).unwrap_err();
+        assert_eq!(check(&arena, &env, &selected, &originals), Err(expected));
+    }
+}

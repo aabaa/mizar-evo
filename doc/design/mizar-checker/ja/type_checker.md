@@ -1,5 +1,7 @@
 # mizar-checker: Type Checker
 
+`check_source_functor_definition_cycles` は明示的な definiens／元の対象の map を Resolver で認証し、正規 func ID 間の循環を `logic.circular_definition` で拒否する。不変入力と `Result<(), String>` はグラフ完全性・受理 credit を付与しない。自動選択、混合／algorithm 循環、公開診断への採用は保留する。
+
 `check_source_dependent_mode_types` は既存 binding・declaration・inference table を使い、[限定 dependent-mode owner](./source_mode_definition.md#step-5c4-mode-semantics) の検査を実装する。
 
 `SourceVariableSemanticsChecker::check_theorem_skeletons` は既存の typed arena、

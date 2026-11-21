@@ -8,7 +8,7 @@ Gap: `test_gap` for direct/mutual func cycles; `design_drift` in the former blan
 
 ## Scope
 
-Add `type_checker::check_source_functor_definition_cycles(source, symbols,
+Add [`type_checker::check_source_functor_definition_cycles`](../../mizar-checker/en/type_checker.md) `(source, symbols,
 selected, originals) -> Result<(), String>` using the existing resolver maps
 and `source_definiens_dependencies`. Authenticate all supplied associations
 before checking reachability over canonical func-to-func definiens edges.
@@ -34,7 +34,9 @@ and runner adoption. P7 availability alone does not implement those consumers.
 
 Test-first real `tests/miz/fail/definitions/` sources for direct func
 self-reference and the §22.5.2 mutual func cycle, consumed by Checker unit
-tests with explicit occurrence selections. No corpus expectation/trace activation.
+tests with explicit occurrence selections and layout-required inactive sidecars;
+no runner tags or trace activation. Sidecars cite the existing §10.3 manifest
+owner; their notes identify §10.3.3/§22.5.2 without adding coverage credit.
 Matrix (six families, at most six test functions): (1) real direct/mutual
 sources reject with the exact key; (2) longer cycle with an acyclic tail and
 repeated edges rejects independent of selection order; (3) acyclic chain,

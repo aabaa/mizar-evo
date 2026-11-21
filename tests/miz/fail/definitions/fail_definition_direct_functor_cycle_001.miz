@@ -1,0 +1,4 @@
+definition
+  let n be object;
+  func Self: self(n) -> object equals self(n);
+end;

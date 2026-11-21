@@ -1,0 +1,5 @@
+definition
+  let n be object;
+  func F: f(n) -> object equals g(n);
+  func G: g(n) -> object equals f(n);
+end;
