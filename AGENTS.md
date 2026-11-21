@@ -93,6 +93,12 @@ parent decides. Keep the parent context small:
   packet; later messages carry only findings or packet corrections. Split a
   matrix of more than six cases into two parallel packets with disjoint
   files or appended modules.
+- When every case of the test matrix depends on one shared fixture that no
+  existing test constructs, establish that fixture and confirm that one case
+  passes its setup before writing the other cases or starting a further test
+  packet. If establishing it needs work outside the unit's scope, the
+  protocol's stop conditions apply at that point: report it without writing
+  the remaining cases.
 - A specification review that passed on the frozen contract is not repeated
   before implementation unless the contract changed.
 - Wait for sub-agents with `wait_agent` and a timeout of at least 300 seconds,
