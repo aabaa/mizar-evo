@@ -333,6 +333,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       shape、供給された witness byte、witness/obligation consistency だけを検証する。
       source-derived producer/publication integration は `external_dependency_gap` として残る。
 
+25. **区別可能な built-in discharge witness。** [~]
+    - [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/ja/PROOF-DISCHARGE-ACCEPTANCE.md) の Artifact 段階。[実 theorem-reflexivity の bounded 経路](../en/phase15_emission_reevaluation.md#implemented-bounded-path) は一致する accepted Builtin witness を公開する。generic/state built-in publication、完全な dependency slice、reuse は保留。完全な phase-15 emission は task 17 に残る。
+
 26. **[実 source の明示的 built-in reference profile](../../task_contracts/ja/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x] — Unpublished projection only; task 25 publication remains open.
 
 27. **[Explicit built-in enclosing profile](../../task_contracts/ja/ARTIFACT-BUILTIN-ENCLOSING-PROFILE.md).** [x]

@@ -422,6 +422,9 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 22. **Vacuous statement diagnostic (W0104)。** [ ]
     - 診断専用。kernel に新しい入口が必要なら利用者への相談が要る。契約: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/ja/AIREV-W0104-VACUOUS-STATEMENT.md)。
 
+23. **通常の by/built-in acceptance と witness publication。** [~]
+    - [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/ja/PROOF-DISCHARGE-ACCEPTANCE.md)。実 source theorem-reflexivity の bounded [Builtin publication](witness_store.md#publication-references) は実装済み。一般 ATP/by とより広い built-in acceptance/publication は保留。Artifact task 25 が witness support を所有し、完全 emission は Artifact task 17 に残る。
+
 24. **[Fresh source candidate checking](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — 通常 Kernel 検査と既存 policy 分類。汎用 integration/publication は保留。
 
 25. **[Fresh source-bound winner selection](../../task_contracts/ja/PROOF-SOURCE-CANDIDATE-SELECTION.md).** [x]
@@ -502,6 +505,10 @@ kernel の拒否語彙と evidence 契約を訂正した。policy 層はその�
 73. **[state証拠FILE構造reader](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-READER.md).** [x]
 
 74. **[state Draft/FILE staging対応](../../task_contracts/ja/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-STAGING.md).** [x]
+
+75. **[Committed source-theorem candidate reachability](../../task_contracts/ja/PROOF-COMMITTED-SOURCE-THEOREM-WITNESS.md).** [x] — 通常 KernelVerified candidate のみ。保持 token は currentness や FILE integrity の権限を更新しない。
+
+- [Same-result reflexivity composition](../../task_contracts/ja/PROOF-REFLEXIVITY-SAME-RESULT-COMPOSITION.md) は実装済み。元の graph と不完全な dependency slice/MISS は不変。合成は witness/publication や service-binding の権限を追加しない。
 
 ## 推奨検証
 

@@ -76,11 +76,9 @@ here.
 
 ## Resolved And Open Decisions
 
-- **First backend and evidence route: design frozen, implementation deferred.**
-  DR-1 (2026-11-14) selects Vampire; paired [evidence.md](evidence.md) fixes
-  extraction, finder-only candidate payloads and the guarded provisioning route.
-  No adapter, output parser or new candidate schema is implemented; provision
-  the pinned executable before the separate implementation dispatch.
+- **First backend and evidence route: guarded Vampire implemented.**
+  DR-1 (2026-11-14) selects Vampire; the [extraction owner](evidence.md) and
+  [contract status](../../task_contracts/en/ATPK-BACKEND-EXTRACTION.md) distinguish the implemented guarded FOF route from broader backend/format and downstream integration residuals. Candidate evidence still requires independent Kernel checking.
 - **Evidence schema ownership: follows `mizar-kernel` tasks 23-25.** This
   crate constructs candidate evidence against kernel-owned schema types; the
   kernel never depends on this crate.
@@ -671,7 +669,7 @@ candidate evidence through the kernel-owned schema and must not weaken it.
       witness/cache output, or trusted backend material.
 30. **Untrusted instance finder core.** [x]
     - [Backend-free finder](./instance_finder.md) searches actual encoded premises under explicit policy limits and returns only kernel-checked candidates. Contract: [ATPK-INSTANCE-FINDER](../../task_contracts/en/ATPK-INSTANCE-FINDER.md).
-    - Real backend extraction and portfolio execution remain Step 7 item 1 work; task-29 joint fixtures stay rejecting until source-derived extraction exists.
+    - Guarded Vampire extraction and explicit sequential portfolio execution are implemented; broader Step 7 item 1 integrations remain open. Task-29 joint fixtures stay rejecting until source-derived extraction exists.
 31. **Deterministic premise ranking.** [ ]
     - Bounded `symbol-overlap-v1` ranking/pruning/suggestion values over authenticated inputs are implemented; unresolved citations, visible-fact production, VC/live wiring, artifacts and full integration remain open (spec §22.4.4). Contract: [ATPK-PREMISE-RANKING](../../task_contracts/en/ATPK-PREMISE-RANKING.md).
 32. **Counterexample search on open statements.** [ ]

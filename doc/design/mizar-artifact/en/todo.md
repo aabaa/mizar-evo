@@ -338,10 +338,9 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       consistency; source-derived producer/publication integration remains an
       `external_dependency_gap`.
 
-25. **Distinct built-in discharge witnesses.** [ ]
+25. **Distinct built-in discharge witnesses.** [~]
     - Artifact stage of [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md);
-      status-schema design can start; publication waits for real accepted
-      formula/substitution outputs. Full phase-15 emission remains task 17.
+      the [bounded genuine theorem-reflexivity path](phase15_emission_reevaluation.md#implemented-bounded-path) publishes matching accepted Builtin witnesses. Generic/state built-in publication, complete dependency slices and reuse remain open; full phase-15 emission remains task 17.
 
 26. **[Explicit source built-in reference profile](../../task_contracts/en/PROOF-SOURCE-DISCHARGE-WITNESS-PROJECTION.md).** [x] — Unpublished projection only; task 25 publication remains open.
 

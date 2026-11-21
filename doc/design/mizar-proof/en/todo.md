@@ -441,10 +441,9 @@ layer consumes both; one alignment task is owned here.
 22. **Vacuous statement diagnostic (W0104).** [ ]
     - Diagnostic only; a new kernel entry needs user consultation. Contract: [AIREV-W0104-VACUOUS-STATEMENT](../../task_contracts/en/AIREV-W0104-VACUOUS-STATEMENT.md).
 
-23. **Ordinary by/built-in acceptance and witness publication.** [ ]
+23. **Ordinary by/built-in acceptance and witness publication.** [~]
     - [PROOF-DISCHARGE-ACCEPTANCE](../../task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md);
-      source acceptance follows real candidate producers; Artifact task 25 owns
-      built-in witness support, and full emission remains Artifact task 17.
+      bounded genuine theorem-reflexivity [Builtin publication](witness_store.md#publication-references) is implemented. General ATP/by and broader built-in acceptance/publication remain open; Artifact task 25 owns witness support, and full emission remains Artifact task 17.
 
 24. **[Fresh source candidate checking](../../task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md).** [x] — Normal Kernel checking and existing-policy classification; general integration/publication remain open.
 
@@ -526,6 +525,10 @@ layer consumes both; one alignment task is owned here.
 73. **[State witness file structural reader](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-READER.md).** [x]
 
 74. **[State Draft/file staging association](../../task_contracts/en/PROOF-SOURCE-ALGORITHM-STATE-WITNESS-FILE-STAGING.md).** [x]
+
+75. **[Committed source-theorem candidate reachability](../../task_contracts/en/PROOF-COMMITTED-SOURCE-THEOREM-WITNESS.md).** [x] — Normal KernelVerified candidates only; retained tokens grant no renewed currentness or file-integrity authority.
+
+- [Same-result reflexivity composition](../../task_contracts/en/PROOF-REFLEXIVITY-SAME-RESULT-COMPOSITION.md) is implemented; original graphs and incomplete dependency slice/MISS remain unchanged. Composition adds no witness/publication or service-binding authority.
 
 ## Recommended Verification
 

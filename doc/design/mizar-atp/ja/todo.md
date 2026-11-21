@@ -74,11 +74,9 @@ deferred のままである。`mizar-proof` は現在 workspace crate だが、A
 
 ## 解決済みおよび保留中の決定
 
-- **最初のバックエンドと evidence route: 設計凍結、実装 deferred。**
-  DR-1（2026-11-14）で Vampire を選択し、対訳 [evidence.md](evidence.md) が
-  extraction、finder 専用 candidate payload、guarded provisioning route を固定する。
-  adapter、output parser、新 candidate schema は未実装であり、別の実装 dispatch 前に
-  pinned executable を provision する。
+- **最初のバックエンドと evidence route: guarded Vampire 実装済み。**
+  DR-1（2026-11-14）で Vampire を選択した。[extraction owner](evidence.md) と
+  [契約の現状](../../task_contracts/ja/ATPK-BACKEND-EXTRACTION.md) が guarded FOF route の実装と、より広い backend/format・下流統合の残課題を区別する。candidate evidence は引き続き独立した Kernel 検査を要する。
 - **evidence schema ownership: `mizar-kernel` task 23-25 に従う。** この crate は
   kernel 所有のスキーマ型に対して candidate evidence を構築する。kernel がこの
   crate に依存することは決してない。
@@ -617,10 +615,9 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
       この task は fake payload、placeholder runner、expectation rebaseline、
       kernel call、proof policy、witness/cache output、trusted backend material を
       追加しない。
-30. **Untrusted instance finder。** [ ]
-    - ローカル候補 transport 前提: [VC62](../../task_contracts/ja/VC-LOCAL-EVIDENCE-WIRE.md)。抽出・探索は保留。
-    - Policy 設定の前提: [Proof36](../../task_contracts/ja/PROOF-INSTANCE-SEARCH-LIMITS.md)。探索/計数/制限適用は保留。
-    - 証明できた問題から kernel の根拠を作る (task 15 の取り出しの保留を解消する)。契約: [ATPK-INSTANCE-FINDER](../../task_contracts/ja/ATPK-INSTANCE-FINDER.md)。
+30. **Untrusted instance finder core。** [x]
+    - [Backend-free finder](./instance_finder.md) は明示的 policy 制限下で実際の encoded premise を探索し、Kernel 検査済み candidate のみを返す。契約: [ATPK-INSTANCE-FINDER](../../task_contracts/ja/ATPK-INSTANCE-FINDER.md)。
+    - Guarded Vampire 抽出と明示的な逐次 portfolio 実行は実装済み。より広い Step 7 item 1 統合は保留。task-29 joint fixture は source-derived extraction が存在するまで拒否のまま。
 31. **Deterministic premise ranking。** [ ]
     - 刈り込み・提案・解決できない引用のための `symbol-overlap-v1` (spec §22.4.4)。契約: [ATPK-PREMISE-RANKING](../../task_contracts/ja/ATPK-PREMISE-RANKING.md)。
 32. **Counterexample search on open statements。** [ ]
