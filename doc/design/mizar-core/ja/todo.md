@@ -697,7 +697,7 @@ IR264. **Authenticated structure-property definition owner。** [x]
     - [P5: CFG use collection の循環検出](../../task_contracts/ja/P5-CORE-CFG-CYCLE-USES.md)。
 49. **Range/collection-loop CFG attachment。** [ ]
 50. **Match CFG attachment。** [ ]
-51. **Snapshot/claim flow state。** [~] — 限定 empty-interface claim CFG は実装済み。snapshot capture は延期。
+51. **Snapshot/claim flow state。** [~] — 限定 empty-interface claim CFG と flat snapshot capture は実装済み。nested snapshots と claim links は延期。
 52. **Contract/call/ghost/termination CFG attachment。** [~]
 53. **Complete source-derived flow diagnostics。** [~]
     - [Step 5C.14](../../task_contracts/ja/STEP5C14-ALGORITHM-SEMANTICS.md) は限定 header/local/typed-assignment/assert/return/break lowering、static break/ghost/immutable-write 観測と contract placement を所有する。完全な family と CFG snapshot baseline は延期。

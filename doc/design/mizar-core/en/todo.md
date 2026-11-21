@@ -743,7 +743,7 @@ IR264. **Authenticated structure-property definition owner.** [x]
     - [P5: cycle-safe CFG use collection](../../task_contracts/en/P5-CORE-CFG-CYCLE-USES.md).
 49. **Range and collection-loop CFG attachment.** [ ]
 50. **Match CFG attachment.** [ ]
-51. **Snapshot and claim flow state.** [~] — bounded empty-interface claim CFG implemented; snapshot capture deferred.
+51. **Snapshot and claim flow state.** [~] — bounded empty-interface claim CFG and flat snapshot capture implemented; nested snapshots and claim links deferred.
 52. **Contract, call, ghost, and termination CFG attachment.** [~]
 53. **Complete source-derived flow diagnostics.** [~]
     - [Step 5C.14](../../task_contracts/en/STEP5C14-ALGORITHM-SEMANTICS.md) owns bounded header/local/typed-assignment/assert/return/break lowering, static break/ghost/immutable-write observations, and contract placement; the complete families and CFG snapshot baseline remain deferred.
