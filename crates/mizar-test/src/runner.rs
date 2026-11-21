@@ -4162,7 +4162,7 @@ fn compare_exact_task180_core_snapshot(
 ) -> Option<String> {
     let Some(actual) = actual else {
         return Some(format!(
-            "requested exact Task-180 CoreIr snapshot `{}` but lowering produced no CoreIr",
+            "requested CoreIr snapshot `{}` but lowering produced no CoreIr",
             snapshot_path.display()
         ));
     };
@@ -4170,7 +4170,7 @@ fn compare_exact_task180_core_snapshot(
         Ok(expected) => expected,
         Err(error) => {
             return Some(format!(
-                "could not read exact Task-180 CoreIr snapshot `{}`: {error}",
+                "could not read CoreIr snapshot `{}`: {error}",
                 snapshot_path.display()
             ));
         }
@@ -4179,7 +4179,7 @@ fn compare_exact_task180_core_snapshot(
         None
     } else {
         Some(format!(
-            "exact Task-180 CoreIr snapshot `{}` differed (expected {} bytes, got {} bytes)",
+            "CoreIr snapshot `{}` differed (expected {} bytes, got {} bytes)",
             snapshot_path.display(),
             expected.len(),
             actual.len()
@@ -4193,6 +4193,23 @@ fn type_elaboration_detail_keys(
     output: FrontendRun,
     snapshot_text: &mut Option<String>,
 ) -> Vec<String> {
+    let core_context_baseline = crate::expectation::source_core_context_snapshot_candidate(
+        &case.expectation_path,
+        &case.expectation,
+    );
+    if core_context_baseline
+        && (!crate::expectation::exact_source_core_context_snapshot_admitted(
+            &workspace_root.join("tests"),
+            &case.expectation_path,
+            &case.expectation,
+        ) || case.id != case.expectation.id
+            || case.source_path
+                != workspace_root.join(
+                    "tests/miz/pass/types/pass_type_elaboration_core_context_baseline_001.miz",
+                ))
+    {
+        return vec!["type_elaboration.core.context.invalid_admission".to_owned()];
+    }
     if type_elaboration::is_step5c5_argument_candidate(case) {
         if !type_elaboration::step5c5_argument_admitted(Some(workspace_root), case) {
             return vec!["predicates.application.invalid_admission".to_owned()];
@@ -4336,6 +4353,25 @@ fn type_elaboration_detail_keys(
         return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
     };
     let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if core_context_baseline {
+        if !resolver.detail_keys.is_empty() {
+            return vec!["type_elaboration.core.context.invalid_resolver".to_owned()];
+        }
+        return match type_elaboration::source_predicate_core_context_snapshot(
+            &ast,
+            resolver.module,
+            &resolver.shells,
+            &resolver.env,
+            &source_text,
+            case.id.clone(),
+        ) {
+            Ok(text) => {
+                *snapshot_text = Some(text);
+                Vec::new()
+            }
+            Err(error) => vec![error],
+        };
+    }
     if let Some((declaration_kind, redefinition_kind, coherence_kind)) = {
         use mizar_checker::{
             overload_resolution::CandidateDeclarationKind as D,

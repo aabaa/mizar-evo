@@ -415,6 +415,17 @@ code `E-TYPE-ELABORATION-SNAPSHOT` at
 `type_elaboration.snapshot.<case-id>`. The ordinary detail-key result remains
 unchanged, and no other type-elaboration case enters this path.
 
+### Core context baseline admission
+
+The dedicated `pass_type_elaboration_core_context_baseline_001` case admits
+only its exact sidecar/source/baseline paths, `core.context` domain, pass
+kind/outcome, elaboration phase, active type tag and scoped trace reference.
+The runner rebuilds the authenticated 248/259-to-Core33 pair independently,
+checks equality of the complete handoffs and CoreIr bytes, and verify-compares
+an existing `SnapshotRecord` with CoreIr kind and canonical content hash.
+The body is the complete item-shell CoreIr debug text; binder/context data
+stay in the retained handoff. It grants no type/body/proof/VC acceptance.
+
 ## Runner Source Ownership (Checker Task 250 Update)
 
 The current production runner layout contains exactly 21 paths and 23,184

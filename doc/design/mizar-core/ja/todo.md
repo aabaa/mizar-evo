@@ -655,6 +655,9 @@ IR264. **Authenticated structure-property definition owner。** [x]
       inputになる。Task34I264/IR264がauthenticated selector/type edgeとdefinition-owner valueを
       供給済み。Shell item/unreviewed semantic changeはauthorizeしない。
 33. **Source-derived Core context/item/binder/source map。** [ ]
+    - [P20契約](../../task_contracts/ja/CORE-SOURCE-BASELINE-33.md) は production
+      predicate identity-shell baseline と保持する binder 文脈のみを所有する。
+      Core33全体と他のsource familyは未完了。
     - checker 248を`MT10-CIR-TE`でconsumeし、type/proof/algorithm bodyは扱わない。
       C4C8についてchecker 248だけでは不十分なままであり、Task 33C4C8はseparately
       authorized capture-context prerequisiteだけをownする。General Core-33 source

@@ -1,0 +1,43 @@
+snapshot_record = "mizar-test-snapshot"
+schema_version = 1
+test_id.len = 47
+test_id = pass_type_elaboration_core_context_baseline_001
+kind = core_ir
+profile.toolchain.name.len = 10
+profile.toolchain.name = mizar-core
+profile.toolchain.version.len = 5
+profile.toolchain.version = 0.1.0
+profile.toolchain.metadata.count = 0
+profile.verifier_config_hash = 19db260ff9a7fe3eb876de25a05af3761dc656ec1ae716cca107c141f496a70d
+profile.parallelism = sequential
+profile.normalize_paths = true
+profile.allow_local_paths = false
+body.len = 2039
+body = <<SNAPSHOT
+core-ir-debug-v1
+source: SourceId(OpaqueId(1))
+module: ModuleId { package: PackageId("mizar-test-corpus"), path: ModulePath("tests.miz.pass.types.pass_type_elaboration_core_context_baseline_001") }
+[items]
+CoreItemId(0): CoreItem { symbol: SymbolId { module: ModuleId { package: PackageId("mizar-test-corpus"), path: ModulePath("tests.miz.pass.types.pass_type_elaboration_core_context_baseline_001") }, local: LocalSymbolId("contribution=0:namespace=tests.miz.pass.types.pass_type_elaboration_core_context_baseline_001:owner=definition-block#0/predicate-definition#0:shell=predicate-definition:kind=predicate:name=x task259_rel y:notation=x task259_rel y:arity=2:definition=predicate:registration=_:policy=overloadable:slot=overloadable:2:predicate:_"), fqn: FullyQualifiedName("mizar-test-corpus::tests.miz.pass.types.pass_type_elaboration_core_context_baseline_001::contribution=0:namespace=tests.miz.pass.types.pass_type_elaboration_core_context_baseline_001:owner=definition-block#0/predicate-definition#0:shell=predicate-definition:kind=predicate:name=x task259_rel y:notation=x task259_rel y:arity=2:definition=predicate:registration=_:policy=overloadable:slot=overloadable:2:predicate:_") }, kind: Predicate, visibility: CoreVisibility("public"), status: Valid, dependencies: [], source: CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 61, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("source-predicate-core-item-v1.definition.0") }] }, diagnostics: [] }
+[terms]
+[formulas]
+[definitions]
+[proofs]
+[proof-nodes]
+[algorithms]
+[algorithm-statements]
+[generated]
+[obligation-seeds]
+[diagnostics]
+[source-map]
+items: {CoreItemId(0): CoreSourceRef { anchor: SourceRange(SourceRange { source_id: SourceId(OpaqueId(1)), start: 61, end: 122 }), provenance: [CoreProvenance { phase: Checker, key: CoreProvenanceKey("source-predicate-core-item-v1.definition.0") }] }}
+terms: {}
+formulas: {}
+definitions: {}
+proofs: {}
+algorithms: {}
+generated: {}
+obligations: {}
+
+SNAPSHOT
+content_hash = 48b4cfd24979abb41d34955729e475a89d7c32b82912fc23d10fafe2b3288da1

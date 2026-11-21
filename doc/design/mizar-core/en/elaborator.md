@@ -246,6 +246,15 @@ mismatched, recovered, diagnostic-bearing, partial, or orphan state fails
 closed. The API adds no field or installer and does not generalize one
 definition block to multiple semantic owners.
 
+### First source context baseline
+
+`SourcePredicateCoreContextProducer::lower` creates the authenticated predicate
+seed and composes 33LB/33I259, returning their complete immutable handoff with
+an item-only `CoreIr`. The `MT10-CIR-TE` baseline verifies complete CoreIr bytes;
+normalized variables, binding order, contexts and binder provenance remain in
+the separately validated handoff. This bounded identity-shell route does not
+lower types, guards, definiens, correctness or proof bodies, or complete Core33.
+
 ### Core-33 Task260 functor item context
 
 Current coordinates use checked d=source-item end−261 and require source-item start<=d.

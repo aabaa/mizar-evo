@@ -224,6 +224,14 @@ definition table、range/provenanceはidentity-selected itemのvalidation専用�
 Missing/extra/duplicate/reordered/stale/mismatch/recovered/diagnostic/partial/orphanはfail
 closed。Field/installerを追加せず、one definition blockをmultiple semantic ownerへgeneralizeしない。
 
+### First source context baseline
+
+`SourcePredicateCoreContextProducer::lower` は認証済み predicate seed を作成し、
+33LB/33I259 の完全な不変 handoff と項目のみの `CoreIr` を返す。
+`MT10-CIR-TE` は CoreIr 全バイトを照合する。正規化変数、束縛順序、文脈と
+binder provenance は別途検証する handoff に保持する。型、guard、definiens、
+correctness、証明本体の lowering と Core33 全体の完成は対象外とする。
+
 ### Core-33 Task260 functor item context
 
 現在の座標はchecked d=source-item終端−261を使い、source-item開始<=dを要求する。

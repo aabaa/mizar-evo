@@ -700,7 +700,8 @@ IR264. **Authenticated structure-property definition owner.** [x]
       No shell item or unreviewed semantic change is authorized.
 33. **Source-derived Core context, items, binders, and source maps.** [ ]
     - The [P20 contract](../../task_contracts/en/CORE-SOURCE-BASELINE-33.md)
-      bounds the first production predicate identity-shell baseline.
+      owns the production predicate identity-shell baseline and retained binder
+      context. General Core33 and other source families remain open.
     - Consume checker 248 through `MT10-CIR-TE`; no type/proof/algorithm body.
       For C4C8, checker 248 remains insufficient; Task 33C4C8 owns only the
       separately authorized capture-context prerequisite. The general Core-33

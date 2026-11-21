@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_core_context_baseline_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "core.context"
+source = "pass_type_elaboration_core_context_baseline_001.miz"
+expected_outcome = "pass"
+expected_phase = "elaboration"
+diagnostic_codes = []
+diagnostic_payloads = []
+snapshots = "snapshots/core/pass_type_elaboration_core_context_baseline_001.core_ir.snap"
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.mizar_core.core_ir.source_context_baseline",
+]

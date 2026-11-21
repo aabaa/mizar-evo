@@ -1835,6 +1835,64 @@ impl SourcePredicateCoreContextHandoff {
 pub struct SourcePredicateCoreContextProducer;
 
 impl SourcePredicateCoreContextProducer {
+    /// Lowers the exact checker-authenticated predicate identity shell.
+    pub fn lower(
+        source_context: SourceBindingContextHandoff,
+        checker_owner: SourcePredicateDefinitionHandoff,
+    ) -> Result<(SourcePredicateCoreContextHandoff, CoreIr), SourcePredicateCoreContextError> {
+        if source_context.source_id() != checker_owner.source_id()
+            || source_context.module_id() != checker_owner.module_id()
+            || source_context.binding_env().source_id() != source_context.source_id()
+            || source_context.binding_env().module_id() != source_context.module_id()
+        {
+            return Err(SourcePredicateCoreContextError::EnvironmentMismatch);
+        }
+        let definition = validate_predicate_checker_owner(&source_context, &checker_owner)?;
+        let provenance = CoreProvenance::new(
+            CoreProvenancePhase::Checker,
+            SOURCE_PREDICATE_CORE_ITEM_PROVENANCE_KEY,
+        );
+        let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+            source_context.source_id(),
+            source_context.module_id().clone(),
+        ));
+        input.item_seeds.push(
+            CoreItemSeed::new(
+                definition.symbol().clone(),
+                CoreItemKind::Predicate,
+                "public",
+                CoreSourceRef::direct(definition.source_range()).with_provenance(vec![provenance]),
+                CheckerOwnedProvenance::checker(SOURCE_PREDICATE_CORE_ITEM_PROVENANCE_KEY),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::DefinitionalItem),
+        );
+        let context = prepare_core_context(input)
+            .map_err(|_| SourcePredicateCoreContextError::InvalidCoreContext)?;
+        let source_bindings =
+            SourceBindingCoreContextProducer::build(context, source_context.binding_env().clone())
+                .map_err(|_| SourcePredicateCoreContextError::InvalidSourceBindingContext)?;
+        let handoff = Self::build(source_bindings, source_context, checker_owner)?;
+        let context = handoff.context();
+        let core = CoreIr::try_new(CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: CoreTermTable::new(),
+            formulas: CoreFormulaTable::new(),
+            definitions: CoreDefinitionTable::new(),
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: GeneratedOriginTable::new(),
+            obligation_seeds: ObligationSeedTable::new(),
+            source_map: context.source_map().clone(),
+            diagnostics: CoreDiagnosticTable::new(),
+        })
+        .map_err(|_| SourcePredicateCoreContextError::InvalidCoreContext)?;
+        Ok((handoff, core))
+    }
+
     pub fn build(
         source_bindings: SourceBindingCoreContextHandoff,
         source_context: SourceBindingContextHandoff,

@@ -277,6 +277,11 @@ The first general snapshot-registry/schema change must be paired with the first
 real non-Task-180 source-derived baseline that needs it. An empty infrastructure
 commit or a synthetic Core/CFG snapshot is forbidden.
 
+The first bounded `MT10-CIR-TE` [identity-shell route](elaborator.md#first-source-context-baseline)
+uses 33LB/33I259. Its CoreIr snapshot covers the item/source map; complete
+binders and contexts remain in the retained handoff. Other Core33--35 profiles
+and their semantic-body baselines remain deferred.
+
 ## Gates And Cross-Crate Boundary
 
 - Gate A1 now names only the bounded source existential-proof prerequisite; MC-G004 and broader Core40 remain blocked.

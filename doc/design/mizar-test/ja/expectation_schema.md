@@ -811,8 +811,12 @@ fixed tests-root-relative path
 を `snapshots` に設定してよい。type-elaboration runnerはexact Task-180 adapter
 成功後、complete `CoreIr::debug_text()` byteをverify-only modeで比較する。pass
 outcome/phase/diagnostic/existing `.miz` intentは変更しない。他の
-type-elaboration caseは`snapshots`を使えず、このshortcutにimplicit update modeは
+type-elaboration caseはこのshortcutを使えず、implicit update modeは
 なく、general `[[snapshots]]` registryをactivate/parseしない。
+
+別の [Core context baseline admission](harness.md#core-context-baseline-admission)
+は専用のelaboration-phase sidecarで、完全なbody byteとcontent hashを持つ
+canonical CoreIr `SnapshotRecord` baselineだけを許可する。
 
 VC Task 31 は3件目の transitional shortcutをexactに1件だけ追加する。distinct
 `pass_proof_verification_contradiction_formula_constant_001` active pass sidecarはfixed

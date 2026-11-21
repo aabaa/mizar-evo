@@ -222,6 +222,10 @@ return の欠落・重複・順序変更と古い branch ownership の破損ケ�
 non-Task-180 baseline と同じ task/commit に含める。Empty infrastructure commit と
 synthetic Core/CFG snapshot は禁止する。
 
+最初の限定 `MT10-CIR-TE` [identity-shell 経路](elaborator.md#first-source-context-baseline)
+は33LB/33I259を使う。CoreIr snapshotは項目とsource mapを含み、完全なbinderと
+文脈はhandoffに保持する。他のCore33--35 profileと意味論本体は未実装とする。
+
 ## Gates And Cross-Crate Boundary
 
 - Gate A1/MC-G004 は Core 40 を block し続ける。

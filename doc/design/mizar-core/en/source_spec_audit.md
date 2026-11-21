@@ -149,6 +149,7 @@ Source: `crates/mizar-core/src/elaborator.rs`. Owning spec: `elaborator.md`.
 `source_algorithm_formula_payloads` follows the [algorithm formula content owner](./elaborator.md#source-algorithm-formula-payloads).
 `source_algorithm_core_semantic_payload` follows the [whole algorithm Core content owner](./elaborator.md#source-algorithm-core-semantic-payload).
 `source_theorem_core_semantic_payload` follows the [bounded Core content owner](./elaborator.md#source-theorem-core-semantic-payload).
+`SourcePredicateCoreContextProducer::lower` follows the [first source context baseline](elaborator.md#first-source-context-baseline).
 
 Top-level public API groups:
 

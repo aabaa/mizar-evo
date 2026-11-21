@@ -259,6 +259,7 @@ top-level public API group:
   `AlgorithmLoweringOutput`, `lower_algorithm_inputs`
 - source theorem-skeleton lowering: `lower_source_theorem_skeletons`（[仕様の所有元](./elaborator.md)）。
 - `source_theorem_core_semantic_payload`: [限定した Core 内容の所有元](./elaborator.md#source-theorem-core-semantic-payload)。
+- `SourcePredicateCoreContextProducer::lower`: [最初の文脈ベースライン](elaborator.md#first-source-context-baseline)。
 
 対応:
 

@@ -21,6 +21,73 @@ const EXACT_TASK31_VC_SNAPSHOT_PATH: &str =
     "snapshots/vc/pass_proof_verification_contradiction_formula_constant_001.vc_ir.snap";
 const EXACT_TASK31_VC_SNAPSHOT_SPEC_REF: &str =
     "spec.en.mizar_vc.vc_ir.task180_proof_verification_snapshot";
+const SOURCE_CORE_CONTEXT_CASE: &str = "pass_type_elaboration_core_context_baseline_001";
+const SOURCE_CORE_CONTEXT_SPEC_REF: &str = "spec.en.mizar_core.core_ir.source_context_baseline";
+
+pub(crate) fn source_core_context_snapshot_candidate(
+    path: &Path,
+    expectation: &Expectation,
+) -> bool {
+    expectation.id.0 == SOURCE_CORE_CONTEXT_CASE
+        || expectation.domain == "core.context"
+        || path.file_stem().and_then(|stem| stem.to_str())
+            == Some("pass_type_elaboration_core_context_baseline_001.expect")
+        || expectation
+            .source
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            == Some(SOURCE_CORE_CONTEXT_CASE)
+        || expectation.snapshots.as_ref().is_some_and(|path| {
+            path.file_stem().and_then(|stem| stem.to_str())
+                == Some("pass_type_elaboration_core_context_baseline_001.core_ir")
+        })
+        || expectation
+            .spec_refs
+            .iter()
+            .any(|id| id.0 == SOURCE_CORE_CONTEXT_SPEC_REF)
+}
+
+pub(crate) fn exact_source_core_context_snapshot_admitted(
+    tests_root: &Path,
+    path: &Path,
+    expectation: &Expectation,
+) -> bool {
+    expectation.schema_version == 1
+        && expectation.id.0 == SOURCE_CORE_CONTEXT_CASE
+        && path.strip_prefix(tests_root).ok()
+            == Some(Path::new(
+                "miz/pass/types/pass_type_elaboration_core_context_baseline_001.expect.toml",
+            ))
+        && expectation.source == Path::new("pass_type_elaboration_core_context_baseline_001.miz")
+        && expectation.kind == TestKind::Pass
+        && expectation.stage == Stage::TypeElaboration
+        && expectation.expected_outcome == ExpectedOutcome::Pass
+        && expectation.expected_phase == Some(PipelinePhase::Elaboration)
+        && expectation.domain == "core.context"
+        && expectation.tags.as_slice() == ["active_type_elaboration"]
+        && expectation
+            .spec_refs
+            .iter()
+            .map(|id| id.0.as_str())
+            .eq([SOURCE_CORE_CONTEXT_SPEC_REF])
+        && expectation.snapshots.as_deref()
+            == Some(Path::new(
+                "snapshots/core/pass_type_elaboration_core_context_baseline_001.core_ir.snap",
+            ))
+        && expectation.profiles.as_slice() == ["fast"]
+        && expectation.failure_category.is_none()
+        && expectation.rejection_reason.is_none()
+        && expectation.diagnostic_codes.is_empty()
+        && expectation.diagnostic_payloads.is_empty()
+        && expectation.declaration_symbol_payloads.is_empty()
+        && expectation.stable_detail_key.is_none()
+        && expectation.notes.is_none()
+        && expectation.ast_profile.is_none()
+        && expectation.snapshot_profiles.is_empty()
+        && expectation.tokens.is_empty()
+        && expectation.origin.is_none()
+        && expectation.architecture22.is_none()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TestCaseId(pub String);
@@ -1191,6 +1258,17 @@ pub fn validate_expectation_path(
     tests_root: &Path,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
+    if source_core_context_snapshot_candidate(path, expectation)
+        && !exact_source_core_context_snapshot_admitted(tests_root, path, expectation)
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-CORE-CONTEXT-ADMISSION",
+            "expectation.core_context",
+            "Core context baseline requires its exact source, sidecar and snapshot metadata",
+        ));
+    }
     let sidecar_stem = expectation_stem(path).unwrap_or_default();
     if expectation.id.0 != sidecar_stem {
         diagnostics.push(ValidationDiagnostic::error(
@@ -1496,6 +1574,7 @@ pub fn validate_expectation_path(
         });
         if !active_parse_only
             && !exact_task31_core_snapshot
+            && !exact_source_core_context_snapshot_admitted(tests_root, path, expectation)
             && !exact_task31_vc_snapshot
             && !exact_source_vc_snapshot
         {

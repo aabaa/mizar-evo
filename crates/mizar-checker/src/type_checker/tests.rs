@@ -7305,8 +7305,8 @@ mod source_functor_definition_cycles {
     use mizar_session::{
         DiskSourceLoader, Edition, Hash, SourceInput, SourceOriginInput, normalize_path,
     };
-    use syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
     use std::collections::BTreeMap;
+    use syntax::{SurfaceAst, SurfaceNodeId, SurfaceNodeKind};
 
     struct NoImports;
 

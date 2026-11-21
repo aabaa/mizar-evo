@@ -854,9 +854,13 @@ may set `snapshots` to the fixed tests-root-relative
 path. The type-elaboration runner compares the complete
 `CoreIr::debug_text()` bytes in verify-only mode after the exact Task-180
 adapter succeeds. The pass outcome, phase, diagnostics, and existing `.miz`
-intent do not change. No other type-elaboration case may use `snapshots`, the
+intent do not change. No other type-elaboration case may use this shortcut; the
 shortcut has no implicit update mode, and it does not activate or parse the
 general `[[snapshots]]` registry.
+
+The separate [Core context baseline admission](harness.md#core-context-baseline-admission)
+allows its exact elaboration-phase sidecar to use a canonical CoreIr
+`SnapshotRecord` baseline, with complete body bytes and content hash.
 
 VC Task 31 adds exactly one third transitional shortcut. The distinct
 `pass_proof_verification_contradiction_formula_constant_001` active pass

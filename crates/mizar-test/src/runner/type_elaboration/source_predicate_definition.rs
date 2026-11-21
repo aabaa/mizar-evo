@@ -431,6 +431,66 @@ pub(in crate::runner) fn source_predicate_definition_output(
     )
 }
 
+pub(in crate::runner) fn source_predicate_core_context_snapshot(
+    ast: &SurfaceAst,
+    module: ModuleId,
+    shells: &DeclarationShellSet,
+    symbols: &SymbolEnv,
+    source_text: &str,
+    test_id: crate::expectation::TestCaseId,
+) -> Result<String, String> {
+    use crate::snapshot::{
+        ParallelismProfile, SnapshotBody, SnapshotKind, SnapshotProfile, SnapshotRecord,
+        ToolchainInfo,
+    };
+    let rebuild = || {
+        let output = source_predicate_definition_output_impl(
+            ast,
+            module.clone(),
+            shells,
+            symbols,
+            source_text,
+            SourcePredicateDefinitionRouteMutation::None,
+        )
+        .ok_or_else(|| INVALID_PAYLOAD_KEY.to_owned())??;
+        if !route_output_is_exact(&output) {
+            return Err(INVALID_PAYLOAD_KEY.to_owned());
+        }
+        let source_context = output
+            .resolved
+            .source_context()
+            .ok_or_else(|| INVALID_PAYLOAD_KEY.to_owned())?
+            .clone();
+        let owner = output
+            .resolved
+            .source_predicate_definition()
+            .ok_or_else(|| INVALID_PAYLOAD_KEY.to_owned())?
+            .clone();
+        mizar_core::elaborator::SourcePredicateCoreContextProducer::lower(source_context, owner)
+            .map_err(|error| error.to_string())
+    };
+    let first = rebuild()?;
+    let replay = rebuild()?;
+    let body = first.1.debug_text();
+    if first != replay || body != replay.1.debug_text() {
+        return Err("type_elaboration.core.context.nondeterministic".to_owned());
+    }
+    SnapshotRecord::new(
+        test_id,
+        SnapshotKind::CoreIr,
+        SnapshotProfile {
+            toolchain: ToolchainInfo::new("mizar-core", env!("CARGO_PKG_VERSION")),
+            verifier_config_hash: mizar_session::hash_text("core-context-baseline-v1"),
+            parallelism: ParallelismProfile::Sequential,
+            normalize_paths: true,
+            allow_local_paths: false,
+        },
+        SnapshotBody { text: body },
+    )
+    .and_then(|record| record.canonical_text())
+    .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 pub(in crate::runner) fn source_predicate_definition_output_with_mutation(
     ast: &SurfaceAst,

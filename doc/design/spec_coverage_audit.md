@@ -2125,6 +2125,12 @@ Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit
 
 Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit_addenda.md).
 
+## Core33 first source context baseline
+
+The [identity-shell route](mizar-core/en/elaborator.md#first-source-context-baseline)
+adds a bounded real CoreIr item/source-map baseline with independently checked
+binder/context retention. General Core33--35 and semantic-body coverage remain deferred.
+
 ## Checker Task 247 Remaining-Family Ownership Update
 
 Details archived: [spec_coverage_audit_addenda.md](./archive/spec_coverage_audit_addenda.md).

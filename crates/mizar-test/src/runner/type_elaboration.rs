@@ -463,8 +463,8 @@ pub(super) use source_predicate_definition::{
     source_predicate_definition_output, source_predicate_definition_output_with_mutation,
 };
 pub(super) use source_predicate_definition::{
-    source_predicate_definition_transport_detail_keys, step5c5_predicate_argument_detail_keys,
-    step5c5_predicate_semantics_detail_keys,
+    source_predicate_core_context_snapshot, source_predicate_definition_transport_detail_keys,
+    step5c5_predicate_argument_detail_keys, step5c5_predicate_semantics_detail_keys,
 };
 #[cfg(test)]
 pub(super) use source_proof_local_declaration::{

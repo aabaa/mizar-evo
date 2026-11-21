@@ -816,6 +816,26 @@ const STEP5C2_STRUCTURE_CASES: [(&str, &str, PipelinePhase, ExpectedOutcome); 12
 ];
 
 pub(in crate::runner) fn is_active_type_elaboration(case: &TestCase) -> bool {
+    if crate::expectation::source_core_context_snapshot_candidate(
+        &case.expectation_path,
+        &case.expectation,
+    ) {
+        return case
+            .expectation_path
+            .ancestors()
+            .nth(4)
+            .is_some_and(|tests_root| {
+                crate::expectation::exact_source_core_context_snapshot_admitted(
+                    tests_root,
+                    &case.expectation_path,
+                    &case.expectation,
+                ) && case.id == case.expectation.id
+                    && case.source_path
+                        == tests_root.join(
+                            "miz/pass/types/pass_type_elaboration_core_context_baseline_001.miz",
+                        )
+            });
+    }
     if super::super::formula_statement::is_step5c5_negated_candidate(case) {
         return false;
     }

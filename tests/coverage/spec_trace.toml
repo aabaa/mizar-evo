@@ -7478,6 +7478,19 @@ deferred_reason = "Task 19 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
+id = "spec.en.mizar_core.core_ir.source_context_baseline"
+source = "doc/design/mizar-core/en/elaborator.md"
+section = "First source context baseline"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_core_context_baseline_001.expect.toml",
+]
+notes = "Bounded Core33 predicate item/source-map snapshot with independently validated immutable binder/context handoff; context bytes are outside CoreIr. No type, guard, definiens, correctness, proof, algorithm, VC, acceptance or general Core33--35 credit."
+
+[[requirement]]
 id = "spec.en.mizar_core.core_ir.task180_type_elaboration_snapshot"
 source = "doc/design/mizar-core/en/00.crate_plan.md"
 section = "Task 31; exact Task-180 CoreIr type-elaboration snapshot"

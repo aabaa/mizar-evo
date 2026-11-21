@@ -585,8 +585,9 @@ fn task259_expectation_selection_and_mixed_definition_route_stay_isolated() {
     let plan = build_test_plan(&config).expect("Task259 repository plan should build");
     let selected = active_type_elaboration_cases(&plan)
         .filter(|case| {
-            std::fs::read_to_string(&case.source_path)
-                .is_ok_and(|source| source == SOURCE_PREDICATE_DEFINITION_TEXT)
+            case.expectation.domain == "checker.type_elaboration"
+                && std::fs::read_to_string(&case.source_path)
+                    .is_ok_and(|source| source == SOURCE_PREDICATE_DEFINITION_TEXT)
         })
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
@@ -1905,5 +1906,295 @@ fn metamorphic_predicate_layout_distinguishes_source_authentication_and_unsuppor
         .expect("supported foreign AST")
         .expect_err("stale source association before lower Type");
         assert!(error.starts_with("Task259 resolver:"), "{error}");
+    }
+}
+
+const CORE_SOURCE_BASELINE_CASE: &str = "pass_type_elaboration_core_context_baseline_001";
+const CORE_SOURCE_BASELINE_SNAPSHOT: &str =
+    "snapshots/core/pass_type_elaboration_core_context_baseline_001.core_ir.snap";
+
+#[test]
+fn core_source_baseline_real_fixture_setup() {
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/miz/pass/types/pass_type_elaboration_core_context_baseline_001.miz"
+    ));
+    assert_eq!(source, SOURCE_PREDICATE_DEFINITION_TEXT);
+    let (ast, module, shells, symbols, diagnostics) =
+        task253_ast_from_source_text_with_diagnostic_count(source, 33_000);
+    assert_eq!(diagnostics, 0);
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    let output = source_predicate_definition_output(&ast, module, &shells, &symbols, source)
+        .expect("Core baseline source selector")
+        .expect("Core baseline checker route");
+    let source_context = output.typed_ast.source_context().unwrap().clone();
+    let checker_owner = output
+        .typed_ast
+        .source_predicate_definition()
+        .unwrap()
+        .clone();
+    let first = mizar_core::elaborator::SourcePredicateCoreContextProducer::lower(
+        source_context.clone(),
+        checker_owner.clone(),
+    )
+    .expect("Core baseline real-source context");
+    let second = mizar_core::elaborator::SourcePredicateCoreContextProducer::lower(
+        source_context.clone(),
+        checker_owner.clone(),
+    )
+    .expect("independent Core replay");
+    assert_eq!(first, second);
+    let (context, core) = first;
+    assert_eq!(core.debug_text(), second.1.debug_text());
+    assert_eq!(context.source_context(), &source_context);
+    assert_eq!(context.checker_owner(), &checker_owner);
+    assert_eq!(core.source_id(), ast.source_id);
+    assert_eq!(core.module_id(), context.module_id());
+    assert_eq!(core.items(), context.context().item_registry().items());
+    assert_eq!(core.source_map(), context.context().source_map());
+    assert_eq!(core.items().len(), 1);
+    let (_, item) = core.items().iter().next().unwrap();
+    assert_eq!(item.kind, mizar_core::core_ir::CoreItemKind::Predicate);
+    assert_eq!(item.visibility.as_str(), "public");
+    assert_eq!(
+        item.source.provenance,
+        vec![mizar_core::core_ir::CoreProvenance::new(
+            mizar_core::core_ir::CoreProvenancePhase::Checker,
+            "source-predicate-core-item-v1.definition.0",
+        )]
+    );
+    assert_eq!(
+        context
+            .source_bindings()
+            .variables()
+            .iter()
+            .map(|(id, row)| (id.index(), row.binding().index(), row.core_var().index()))
+            .collect::<Vec<_>>(),
+        vec![(0, 0, 0), (1, 1, 1)]
+    );
+    assert!(core.terms().is_empty());
+    assert!(core.formulas().is_empty());
+    assert!(core.definitions().is_empty());
+    assert!(core.proofs().is_empty());
+    assert!(core.proof_nodes().is_empty());
+    assert!(core.algorithms().is_empty());
+    assert!(core.algorithm_statements().is_empty());
+    assert!(core.generated().is_empty());
+    assert!(core.obligation_seeds().is_empty());
+    assert!(core.diagnostics().is_empty());
+
+    let (foreign_ast, foreign_module, foreign_shells, foreign_symbols) =
+        task253_ast_from_source_text(source, 33_001);
+    let foreign = source_predicate_definition_output(
+        &foreign_ast,
+        foreign_module,
+        &foreign_shells,
+        &foreign_symbols,
+        source,
+    )
+    .unwrap()
+    .unwrap();
+    for (context, owner) in [
+        (
+            source_context,
+            foreign
+                .typed_ast
+                .source_predicate_definition()
+                .unwrap()
+                .clone(),
+        ),
+        (
+            foreign.typed_ast.source_context().unwrap().clone(),
+            checker_owner,
+        ),
+    ] {
+        assert!(
+            mizar_core::elaborator::SourcePredicateCoreContextProducer::lower(context, owner,)
+                .is_err(),
+            "cross-source/module/owner pair must fail closed"
+        );
+    }
+}
+
+#[test]
+fn core_source_baseline_exact_admission_rejects_metadata_drift() {
+    use crate::expectation::{ExpectedOutcome, PipelinePhase, SpecRequirementId, TestKind};
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests");
+    let path = root.join(format!(
+        "miz/pass/types/{CORE_SOURCE_BASELINE_CASE}.expect.toml"
+    ));
+    let expected = crate::expectation::parse_expectation_file(&path).unwrap();
+    assert!(
+        crate::expectation::exact_source_core_context_snapshot_admitted(&root, &path, &expected,)
+    );
+    for mutation in 0..13 {
+        let mut changed = expected.clone();
+        let mut changed_path = path.clone();
+        match mutation {
+            0 => changed.stage = crate::Stage::ParseOnly,
+            1 => changed.tags.clear(),
+            2 => changed.expected_phase = Some(PipelinePhase::TypeCheck),
+            3 => changed.domain = "checker.type_elaboration".to_owned(),
+            4 => changed.id.0.push_str("_wrong"),
+            5 => changed.source = "other.miz".into(),
+            6 => changed.kind = TestKind::Snapshot,
+            7 => changed.spec_refs = vec![SpecRequirementId("spec.en.wrong".to_owned())],
+            8 => changed.expected_outcome = ExpectedOutcome::Fail,
+            9 => changed.snapshots = None,
+            10 => changed.snapshots = Some("snapshots/core/other.core_ir.snap".into()),
+            11 => {
+                changed_path =
+                    root.join(format!("miz/pass/{CORE_SOURCE_BASELINE_CASE}.expect.toml"))
+            }
+            12 => changed.profiles = vec!["full".to_owned()],
+            _ => unreachable!(),
+        }
+        assert!(
+            !crate::expectation::exact_source_core_context_snapshot_admitted(
+                &root,
+                &changed_path,
+                &changed,
+            ),
+            "metadata mutation {mutation}"
+        );
+    }
+}
+
+#[test]
+fn core_source_baseline_canonical_snapshot_and_existing_routes() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    let tests_root = root.join("tests");
+    let plan = build_test_plan(&DiscoveryConfig {
+        workspace_root: root.clone(),
+        tests_root: tests_root.clone(),
+        manifest_path: tests_root.join("coverage/spec_trace.toml"),
+        profile: TestProfile::Fast,
+        validation_mode: ValidationMode::Metadata,
+    })
+    .unwrap();
+    let (ordinal, case) = active_type_elaboration_cases(&plan)
+        .enumerate()
+        .find(|(_, case)| case.id.0 == CORE_SOURCE_BASELINE_CASE)
+        .unwrap();
+    let frontend = run_frontend(&root, case, ordinal).unwrap();
+    assert!(frontend.diagnostics.is_empty());
+    let ast = frontend.ast.unwrap();
+    let resolver = resolver_symbol_collection(&root, case, &ast);
+    assert!(resolver.detail_keys.is_empty());
+    let text = super::type_elaboration::source_predicate_core_context_snapshot(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &resolver.env,
+        &frontend.source_text,
+        case.id.clone(),
+    )
+    .unwrap();
+    let baseline = std::fs::read_to_string(tests_root.join(CORE_SOURCE_BASELINE_SNAPSHOT)).unwrap();
+    assert_eq!(text, baseline);
+    assert!(text.contains("kind = core_ir"));
+    assert!(text.contains("core-ir-debug-v1\n"));
+    let checker = source_predicate_definition_output(
+        &ast,
+        resolver.module.clone(),
+        &resolver.shells,
+        &resolver.env,
+        &frontend.source_text,
+    )
+    .unwrap()
+    .unwrap();
+    let (_, core) = mizar_core::elaborator::SourcePredicateCoreContextProducer::lower(
+        checker.typed_ast.source_context().unwrap().clone(),
+        checker
+            .typed_ast
+            .source_predicate_definition()
+            .unwrap()
+            .clone(),
+    )
+    .unwrap();
+    use crate::snapshot::{
+        ParallelismProfile, SnapshotBody, SnapshotKind, SnapshotProfile, SnapshotRecord,
+        SnapshotUpdateMode, ToolchainInfo, verify_or_update_snapshot_baseline,
+    };
+    let record = SnapshotRecord::new(
+        case.id.clone(),
+        SnapshotKind::CoreIr,
+        SnapshotProfile {
+            toolchain: ToolchainInfo::new("mizar-core", env!("CARGO_PKG_VERSION")),
+            verifier_config_hash: mizar_session::hash_text("core-context-baseline-v1"),
+            parallelism: ParallelismProfile::Sequential,
+            normalize_paths: true,
+            allow_local_paths: false,
+        },
+        SnapshotBody::text(core.debug_text()),
+    )
+    .unwrap();
+    assert_eq!(text, record.canonical_text().unwrap());
+    let temporary =
+        std::env::temp_dir().join(format!("mizar-core-baseline-{}", std::process::id()));
+    std::fs::create_dir_all(temporary.join("snapshots/core")).unwrap();
+    let verify = |record: &SnapshotRecord| {
+        verify_or_update_snapshot_baseline(
+            &temporary,
+            CORE_SOURCE_BASELINE_SNAPSHOT,
+            record,
+            SnapshotUpdateMode::VerifyOnly,
+        )
+    };
+    assert!(verify(&record).is_err(), "missing baseline");
+    let baseline_path = temporary.join(CORE_SOURCE_BASELINE_SNAPSHOT);
+    for changed in [
+        text.replace("kind = core_ir", "kind = typed_ast"),
+        text.replace("core-ir-debug-v1", "core-ir-debug-v2"),
+        format!("{text}\n"),
+    ] {
+        assert_ne!(changed, text);
+        std::fs::write(&baseline_path, changed).unwrap();
+        assert!(verify(&record).is_err(), "changed canonical baseline");
+    }
+    std::fs::write(&baseline_path, &text).unwrap();
+    assert!(verify(&record).is_ok());
+    let mut changed = record.clone();
+    changed.body.text.push_str("changed");
+    assert!(verify(&changed).is_err(), "stale body hash");
+    changed = record.clone();
+    changed.kind = SnapshotKind::TypedAst;
+    assert!(verify(&changed).is_err(), "stale kind hash");
+    changed = record;
+    changed.content_hash = mizar_session::hash_text("wrong");
+    assert!(verify(&changed).is_err(), "wrong content hash");
+    std::fs::remove_dir_all(temporary).unwrap();
+    assert!(
+        super::type_elaboration::source_predicate_core_context_snapshot(
+            &ast,
+            resolver.module,
+            &resolver.shells,
+            &resolver.env,
+            "",
+            case.id.clone(),
+        )
+        .is_err(),
+        "absent source must publish no output"
+    );
+    for id in [
+        CORE_SOURCE_BASELINE_CASE,
+        TASK259_CASE,
+        "pass_type_elaboration_contradiction_formula_constant_001",
+        "pass_type_elaboration_source_binding_context_shadowing_001",
+    ] {
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == id)
+            .unwrap();
+        assert_eq!(
+            run_type_elaboration_case(&root, &tests_root, case, ordinal).status,
+            TypeElaborationCaseStatus::Passed,
+            "{id}"
+        );
     }
 }

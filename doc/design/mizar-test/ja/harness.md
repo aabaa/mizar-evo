@@ -385,6 +385,15 @@ public case statusを`Failed`にし、`snapshot_failure`を設定してinternal 
 code `E-TYPE-ELABORATION-SNAPSHOT`を`type_elaboration.snapshot.<case-id>`でemitする。
 ordinary detail-key resultは不変で、他のtype-elaboration caseはこのpathに入らない。
 
+### Core context baseline admission
+
+専用 `pass_type_elaboration_core_context_baseline_001` は正確な sidecar/source/
+baseline path、`core.context`、pass kind/outcome、elaboration phase、active type tag、
+専用 trace reference のみを許可する。248/259-to-Core33 の組を独立に再構築し、
+完全な handoff と CoreIr byte の一致を確認して、CoreIr kind と canonical hash を
+持つ既存 `SnapshotRecord` を verify-only で照合する。body は項目シェルの CoreIr
+全 debug text で、binder/文脈は handoff に保持する。型/本体/証明/VCの受理は行わない。
+
 ## Runner Source Ownership (Checker Task 250 update)
 
 current production runner layoutは正確に21 path、23,184行である。Checker Task 250は
