@@ -97,13 +97,13 @@ real adapter は、owning crate が次の seam を同時に公開した場合だ
 | Service | D-015 readiness | 分類 |
 |---|---|---|
 | `ModuleResolver` | [bounded theorem producer](frontend_adapter.md#native-theorem-module-publication) は sealed resolved data を供給し、明示 bounded [resolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) と [signature service](frontend_adapter.md#scheduled-source-theorem-signature-collection) が各 phase を担当する。一般 resolution/signature collection、public resolver 診断の採用と artifact-backed ModuleSummary reuse は未対応。 | `external_dependency_gap` |
-| `SemanticChecker` | `mizar-checker` は explicit checker-owned payload を公開しているが、source-derived payload extraction、accepted proof / artifact status integration、public diagnostic allocation、artifact emission / reuse、統一された driver service envelope は未準備。 | `external_dependency_gap` |
-| `Elaborator` | `mizar-core` は explicit lowering / control-flow data と local diagnostics を公開しているが、source-to-checker extraction、具体的な downstream identity、artifact schema、public diagnostic allocation、downstream VC / kernel / proof / artifact consumer は未準備。 | `external_dependency_gap` |
+| `SemanticChecker` | 限定 [type checking](frontend_adapter.md#scheduled-source-theorem-type-checking)、[registration resolution](frontend_adapter.md#scheduled-source-theorem-registration-resolution)、[overload resolution](frontend_adapter.md#scheduled-source-theorem-overload-resolution) service は実 theorem metadata を公開する。一般 checker family と public diagnostic adoption は未対応。 | `external_dependency_gap` |
+| `Elaborator` | 限定 [elaboration](frontend_adapter.md#scheduled-source-theorem-elaboration) と [algorithm preparation](frontend_adapter.md#scheduled-source-theorem-algorithm-preparation) service は downstream 用の実 Core/preparation 入力を公開する。一般 elaboration/control-flow family は未対応。 | `external_dependency_gap` |
 | `VcService` | 実[bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation)と[singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge) serviceは未信頼module IRを供給する。一般upstream payload familyと受理proof/ATP/cache/artifact consumerは未準備。 | `external_dependency_gap` |
 | `AtpService` | 明示[bounded ATP solve](frontend_adapter.md#scheduled-source-theorem-atp-solve)は完全なcurrent transport identityで実未信頼候補を公開。general backend execution/extraction、proof-policy、cache reuse、witness publicationは未準備。 | `external_dependency_gap` |
-| `KernelService` | 明示[backend-free source candidate check](frontend_adapter.md#scheduled-source-theorem-candidate-check)が実非信頼Atpと独立検査DATAを合成。別の [genuine reflexivity status](frontend_adapter.md#genuine-reflexivity-kernel-status-service) は opt-in。一般source/backend抽出/cache-artifact統合は未対応。 | `external_dependency_gap` |
-| `ArtifactService` | [限定 source theorem commit](frontend_adapter.md#scheduled-source-theorem-artifactcommit)は利用可能だが、一般 producer projection/phase-15 emission は external gap で、driver に publication-token authority はない。closeout report 欠落は gap table の別の report-only `repo_metadata_conflict` に残る。 | `external_dependency_gap` |
-| `DocExtractionService` | `mizar-doc` には design TODO があるが、workspace crate も実装済みの service-facing extraction owner surface も存在しない。 | `deferred` |
+| `KernelService` | 明示 [backend-free source candidate check](frontend_adapter.md#scheduled-source-theorem-candidate-check) が実非信頼 ATP と独立検査 DATA を合成する。別の [genuine reflexivity status](frontend_adapter.md#genuine-reflexivity-kernel-status-service) は opt-in FILE/Artifact consumer に渡る。一般 source family、backend 抽出、cache 統合は未対応。 | `external_dependency_gap` |
+| `ArtifactService` | [限定 source theorem commit](frontend_adapter.md#scheduled-source-theorem-artifactcommit) と [genuine reflexivity FILE/Artifact consumer](frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) は利用可能。full source emission と coherent SnapshotPublished は未対応で、driver に publication-token authority はない。closeout report 欠落は gap table の別の report-only `repo_metadata_conflict` に残る。 | `external_dependency_gap` |
+| `DocExtractionService` | `mizar-doc` workspace crate は published-input 読取りと限定 documentation prerequisite を実装済み。登録された phase-16 extraction service は未対応。 | `deferred` |
 
 D-015 では real adapter を登録しないため、既存の registry tests が適切な coverage である:
 missing service が owner gap を報告すること、test-only fixture が tests 内に留まること、
@@ -124,13 +124,13 @@ adapter seam を公開するまで absent でよい。
 | `SourceLoad` | 1 | `mizar-frontend` | Disk source service。[source services](frontend_adapter.md) を参照。 |
 | `Frontend` | 2-3 | `mizar-frontend` | 実disk frontend。[source services](frontend_adapter.md#disk-frontend-service) を参照。 |
 | `ModuleResolver` | 4-5 | `mizar-resolve` | 明示 [SourceTheoremModuleResolver](frontend_adapter.md#scheduled-source-theorem-module-resolver) と [SourceTheoremSignatureCollection](frontend_adapter.md#scheduled-source-theorem-signature-collection) は bounded phase を担当。一般 resolver/signature service は `external_dependency_gap`。 |
-| `SemanticChecker` | 6-8 | `mizar-checker` | checker service が real typed output を公開するまで `external_dependency_gap`。 |
-| `Elaborator` | 9-10 | `mizar-core` | core/elaboration service が着地するまで `external_dependency_gap`。 |
+| `SemanticChecker` | 6-8 | `mizar-checker` | 明示限定 theorem type/registration/overload service は利用可能。一般 checker service は `external_dependency_gap`。 |
+| `Elaborator` | 9-10 | `mizar-core` | 明示限定 theorem elaboration/preparation service は利用可能。一般 Core/control-flow service は `external_dependency_gap`。 |
 | `VcService` | 11-12 | `mizar-vc` | 明示[bounded generation](frontend_adapter.md#scheduled-source-theorem-vc-generation)と[singleton discharge](frontend_adapter.md#scheduled-source-theorem-vc-discharge)は利用可能。全generation/discharge profileとproof/ATP/cache/artifact統合は `external_dependency_gap` のまま。 |
 | `AtpService` | 13 | `mizar-atp` | [SourceTheoremAtpSolve](frontend_adapter.md#scheduled-source-theorem-atp-solve)をbounded AtpSolveだけに明示登録し、BackendRun/general ATP・policy・evidence integrationは`external_dependency_gap`。 |
 | `KernelService` | 14 | `mizar-kernel`/`mizar-proof` | 明示[SourceTheoremCandidateCheck](frontend_adapter.md#scheduled-source-theorem-candidate-check)が限定backend-free KernelCheck DATAを供給し、別の [genuine reflexivity service](frontend_adapter.md#genuine-reflexivity-kernel-status-service) が限定 built-in status を封印する。一般受理統合はowner作業。 |
-| `ArtifactService` | 15 | `mizar-artifact` と producer seam | 明示[限定 source theorem commit](frontend_adapter.md#scheduled-source-theorem-artifactcommit)を供給し、一般 ArtifactService は `external_dependency_gap` のまま。registry は publication token を作らない。 |
-| `DocExtractionService` | 16 | `mizar-doc` | documentation/extraction owner surface が着地するまで `deferred`。 |
+| `ArtifactService` | 15 | `mizar-artifact` と producer seam | 明示限定 source theorem と genuine reflexivity FILE/Artifact commit は利用可能。full emission は `external_dependency_gap` のまま。registry は publication token を作らない。 |
+| `DocExtractionService` | 16 | `mizar-doc` | `deferred`: 登録された phase-16 extraction service は未対応。 |
 
 Rust registry は concrete な phase key として
 `mizar-build::task_graph::PipelinePhase` を使う。一部の `PipelinePhase` variant は

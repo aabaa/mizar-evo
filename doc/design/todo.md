@@ -121,22 +121,22 @@ All crates below are workspace members. "Next work" points into the
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] historical milestone plus parser Tasks 48/46 increments, S-026 dense views, and Step 5A.1 complete | S-021 remains the sole deferred syntax task | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] Tasks 1-48 plus bounded `PARSER-RECOVERY-B1B1P-P1` and Step 5A.4-5A.8 complete | No inferred Task 49; P-265-47D closed by the Chapter 8 list alignment | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] prior milestone plus Step 5A.2/5A.3/5A.6/5A.8 increments | — | [todo](./mizar-frontend/en/todo.md) |
-| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] alpha semantic slices plus source-bound imports, private theorem labels and distinct variable scopes implemented | Step 6; full ModuleResolver publication remains producer-blocked | [todo](./mizar-resolve/en/todo.md) |
+| mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [~] alpha semantic slices, bounded source-theorem producers and explicitly selected local algorithm call/dependency groups implemented | Step 6 general ModuleResolver/summary publication; external call identities and typed selection remain open | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] alpha semantic bridge and source-derived resolver consumer slices implemented | Step 6 integration; pre-audit Task 49 remains gated by 5B.3 | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantics | Remaining producer tasks under existing dependencies; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) and [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) bounded normalization and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem-skeleton lowering | Broader producer Tasks 33-53 beyond the Step 5 alpha corpus, under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] exact source-derived contradiction VC integration complete through task 31 | Broader Tasks 32-55 and Step 7 task 60; VC 40/53 and S1 dependencies remain explicit | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted evidence parsing and checking | [x] SAT-backed kernel milestone complete | Step 7 task 36; task 32 remains parked | [todo](./mizar-kernel/en/todo.md) |
-| mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
-| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | Step 7 task 23 and accepted-output reuse integration | [todo](./mizar-proof/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] contradiction VC milestone through task 31; bounded theorem services and direct-return E1/E4 request/checking prerequisites implemented | Broader Tasks 32-55 and Step 7 task 60; VC 40/53 and S1 dependencies remain explicit | [todo](./mizar-vc/en/todo.md) |
+| mizar-kernel | Trusted evidence parsing and checking | [x] SAT-backed milestone plus bounded theorem reflexivity and E1/E4 checking implemented | Step 7 task 36; task 32 remains parked | [todo](./mizar-kernel/en/todo.md) |
+| mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone through task 29; guarded Vampire extraction and explicit sequential portfolio execution implemented | step 7 | [todo](./mizar-atp/en/todo.md) |
+| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone through task 21; bounded theorem witness and native E1-inhabitation/E4 adoption implemented | Step 7 task 23 and accepted-output reuse integration | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete through task 24 | step 7 | [todo](./mizar-cache/en/todo.md) |
-| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 24 | Step 6 task 17 is producer-blocked; Step 7 task 25 owns built-in witnesses | [todo](./mizar-artifact/en/todo.md) |
+| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest through task 24 and bounded theorem/reflexivity FILE/Artifact commit routes implemented | Full Step 6 task 17 emission and broader Step 7 task 25 built-in witnesses remain open | [todo](./mizar-artifact/en/todo.md) |
 | mizar-ir | IR storage, snapshot handles, sealed output blobs, projections | [x] storage/projection milestone complete | step 6 | [todo](./mizar-ir/en/todo.md) |
-| mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [~] scheduler milestone and scheduled lexical-prefix ordering implemented | Step 6 task 28, real-service equivalence | [todo](./mizar-build/en/todo.md) |
-| mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] scheduled SourceLoad/Frontend and workspace lexical publication implemented | Step 6 real-service equivalence; later services remain producer-blocked | [todo](./mizar-driver/en/todo.md) |
+| mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [~] scheduler/native workspace inputs and bounded NoKey/cache-backed edit/clean comparisons implemented | Step 6 task 28, broader registered-service/cache equivalence | [todo](./mizar-build/en/todo.md) |
+| mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [~] bounded source-theorem services through genuine Kernel status/FILE/Artifact commit and explicit cache routes implemented | Step 6 general services/cache integration and broader real-service equivalence | [todo](./mizar-driver/en/todo.md) |
 | mizar-diagnostics | Diagnostic registry, failure records, ordering, rendering | [x] internal milestone and E0220–E0224 import descriptors implemented | Step 8 broader public adoption | [todo](./mizar-diagnostics/en/todo.md) |
-| mizar-lsp | Editor protocol and range conversion | [~] range/lifecycle foundation; semantic consumers remain open | Step 8 tasks 6–24 | [todo](./mizar-lsp/en/todo.md) |
-| mizar-doc | Documentation rendering and extraction | [~] published-input reader/export index/native source input implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
+| mizar-lsp | Editor protocol and range conversion | [~] range/lifecycle, snapshot-backed syntax and retained-publication completion implemented; broader semantic consumers remain open | Step 8 remaining tasks 6–25 | [todo](./mizar-lsp/en/todo.md) |
+| mizar-doc | Documentation rendering and extraction | [~] published reader/index/native inputs, comment attachment and bounded Markdown/link/render prerequisites implemented | Step 8 tasks 4–29 | [todo](./mizar-doc/en/todo.md) |
 
 ## Sequential Execution Plan
 
@@ -253,7 +253,7 @@ Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P
   execute and pass them. Acceptance: GitHub main CI green at the resulting
   main, and local full `cargo test` shows these tests executed, not skipped,
   and passing. Dependencies: none.
-- [ ] **P1 — Roadmap state sync; M, light; Lane 1.** Reconcile crate-status
+- [x] **P1 — Roadmap state sync; M, light; Lane 1.** Reconcile crate-status
   rows, Step 6.1, Step 7.1/3, Step 8.3/5, algorithm/reflected-syntax stale
   rows and remaining ALGDEF-RESOLVE-CALL-EDGES slices against landed commits.
   Scope: this roadmap, `D/mizar-driver/en/registry.md`,
@@ -1006,9 +1006,9 @@ Native editor [storage codecs](./mizar-frontend/en/source.md#canonical-openbuffe
 [Explicit retained Frontend scheduling](./task_contracts/en/DRIVER-RETAINED-NATIVE-FRONTEND-CACHE-SCHEDULE.md) binds the same protected capture before full runtime integration.
 Their LSP build bridge and current diagnostic publication remain Step 8 prerequisites.
 Step 7's [instance-finder design](./task_contracts/en/ATPK-INSTANCE-FINDER.md) follows its existing producer dependencies.
-Full cache-hit equivalence still needs complete active-runtime context beyond
-the explicit retained SourceLoad route; Frontend cache producers, later semantic/proof services
-and full artifact emission remain dependency-blocked.
+Automatic SourceLoad/Frontend cache routes and bounded cache-hit equivalence are
+implemented. Broader active-runtime context, semantic/proof cache producers and
+full artifact emission remain dependency-blocked.
 Pre-audit 5B.3 and Gate S1 block only consumers requiring their outputs.
 
 **M1 sequencing:** connect authentic, snapshot-fresh services as producers
@@ -1020,7 +1020,7 @@ witness and VerifiedArtifact inputs. See [M1](#m1-dispatch-policy).
    snapshot freshness. Completed prerequisites
    are indexed in the [driver](./mizar-driver/en/00.crate_plan.md),
    [IR](./mizar-ir/en/00.crate_plan.md), and [build](./mizar-build/en/00.crate_plan.md) plans.
-   The supported frontier is:
+   The supported frontier includes:
 
    - [x] Scheduled SourceLoad/Frontend publication and restricted import
      diagnostics ([A42](./task_contracts/en/STEP6A42-SCHEDULED-FRONTEND-PREFIX.md)).
@@ -1060,12 +1060,11 @@ witness and VerifiedArtifact inputs. See [M1](#m1-dispatch-policy).
    [Source public theorem export candidates](./task_contracts/en/RESOLVE-SOURCE-PUBLIC-THEOREM-EXPORT-ROWS.md) supply unpublished original-owner rows with absent projected proof status; complete outgoing summaries, services and publication remain separate.
    [Source theorem summary candidates](./task_contracts/en/RESOLVE-SOURCE-THEOREM-MODULE-SUMMARY-CANDIDATE.md) compose actual Frontend-bound rows and source-checked empty inventories into an unpublished Artifact shape; native identity binding, services, general summaries and publication remain separate.
    [Captured native theorem summary candidates](./task_contracts/en/DRIVER-NATIVE-THEOREM-MODULE-SUMMARY-CANDIDATE.md) bind protected captured Frontend execution and the existing native identity projection to that raw shape; complete build authentication, services and publication remain separate.
-   [Native theorem module publication](./mizar-driver/en/frontend_adapter.md#native-theorem-module-publication) seals the coherent bounded pair/storage/semantic assembly as a prerequisite; real services, complete summaries and runtime integration remain separate.
+   [Native theorem module publication](./mizar-driver/en/frontend_adapter.md#native-theorem-module-publication) seals the coherent bounded pair/storage/semantic assembly; complete general summaries remain separate.
 
-   [Explicit scheduled theorem resolution](./task_contracts/en/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md) adds bounded ModuleResolve execution; [explicit signature collection](./task_contracts/en/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md) adds a leading summary phase before missing TypeChecking. General resolver/signature services remain open.
+   [Explicit scheduled theorem resolution](./task_contracts/en/DRIVER-SCHEDULED-THEOREM-MODULE-RESOLVE.md) adds bounded ModuleResolve execution; [explicit signature collection](./task_contracts/en/DRIVER-SCHEDULED-THEOREM-SIGNATURE-COLLECTION.md) adds a leading summary phase. The bounded [theorem services](./mizar-driver/en/frontend_adapter.md#scheduled-source-theorem-type-checking) continue through checker/Core/preparation, VC/discharge, ATP/candidate checking and ArtifactCommit; a separate [genuine reflexivity profile](./mizar-driver/en/frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) supplies Builtin status/FILE/Artifact commit. General services, full source emission and coherent SnapshotPublished remain open.
 2. [~] [Real-service equivalence](./task_contracts/en/STEP6C-REAL-SERVICE-EQUIVALENCE.md)
-   (build 28 / BUILD-G-017), with its uncached prefix implemented and remaining
-   slices following the contract's producer dependencies.
+   (build 28 / BUILD-G-017): bounded NoKey reflexivity/discharge profiles and automatic SourceLoad/Frontend cache-backed importer/leaf/intermediate edit–warm–clean comparisons are implemented. Broader registered-service/cache equivalence follows the contract's producer dependencies.
    Build task 24, test task 14 and driver task 16 remain the existing seam-level
    guards; they do not establish this real-service gate.
 3. [ ] [Artifact task 17](./mizar-artifact/en/todo.md) — deferred until real
@@ -1091,11 +1090,11 @@ grants trusted acceptance. Item 3 supplies acceptance/witness publication,
 then Step 6 item 3 performs full artifact emission. Broader portfolio,
 ranking, reuse and benchmarks remain separate dependent work.
 
-1. [ ] Real ATP backend extraction and portfolio execution in `mizar-atp`
+1. [~] Real ATP backend extraction and portfolio execution in `mizar-atp`
    (IV-004), using the [untrusted instance finder](./task_contracts/en/ATPK-INSTANCE-FINDER.md)
    (atp 30). Equality slices require the [kernel equality instances](./task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md)
    (kernel 36).
-   Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; the backend-free finder core is complete. [Guarded Vampire FOF extraction](./mizar-atp/en/evidence.md) connects the provisioned runner to the existing kernel-checked finder; portfolio execution and the remaining backend/format and downstream integrations remain open.
+   Bounded source [projections](./task_contracts/en/ATP-SOURCE-REGISTRATION-PROJECTIONS.md), [encoded input bindings](./task_contracts/en/ATP-ENCODED-PROBLEM-PRODUCER.md) and shared [local evidence transport](./task_contracts/en/VC-LOCAL-EVIDENCE-WIRE.md) are implemented; the backend-free finder core is complete. [Guarded Vampire FOF extraction](./mizar-atp/en/evidence.md) connects the provisioned runner to the existing kernel-checked finder; explicit sequential portfolio plans also execute; broader portfolio, backend/format and downstream integrations remain open.
    [Unchecked source candidate inputs](./task_contracts/en/ATP-SOURCE-CANDIDATE-INPUTS.md) supply bound normal wire only; full search/acceptance gates remain open.
    [Observed ground input terms](./task_contracts/en/ATP-OBSERVED-GROUND-TERMS.md) supply the backend-free finder core without unbounded term generation.
    [Explicit policy limits](./task_contracts/en/PROOF-INSTANCE-SEARCH-LIMITS.md) configure finder counting/enforcement unchanged for the guarded backend-assisted route.
@@ -1104,30 +1103,17 @@ ranking, reuse and benchmarks remain separate dependent work.
    [Bounded structured source substitutions](./task_contracts/en/ATP-SOURCE-STRUCTURED-SUBSTITUTIONS.md) implement the existing-factory extraction prerequisite; full finder/search and acceptance remain open.
    [Opt-in screened source checking](./task_contracts/en/PROOF-SOURCE-SCREENED-ATTEMPT.md) implements the bounded Proof consumer; full search and acceptance/publication remain open.
    [Uncited theorem local handoffs](./task_contracts/en/VC-SOURCE-THEOREM-LOCAL-HANDOFF.md) supply original guard/goal inputs; equality candidates and fresh acceptance remain open.
-   [Local-variable reflexivity names](./task_contracts/en/ATP-LOCAL-VARIABLE-REFLEXIVITY-NAMES.md) supply bounded instance inputs; source Proof consumption and the full finder remain open.
-   [Theorem formula content](./task_contracts/en/CORE-SOURCE-THEOREM-FORMULA-PAYLOADS.md) supplies bounded original local content; VC/context identity and source acceptance remain open.
-   [Theorem canonical components](./task_contracts/en/VC-SOURCE-THEOREM-CANONICAL-COMPONENTS.md) supply bounded VC/goal/context content before source identity assembly and acceptance.
-   [Genuine theorem inputs](./task_contracts/en/PROOF-SOURCE-THEOREM-CANONICAL-INPUTS.md) join that content and the original conservative slice; source identity and acceptance remain open.
-   [Theorem local syntax](./task_contracts/en/RESOLVE-SOURCE-THEOREM-SYNTAX-PAYLOADS.md) supplies declaration-local bytes before source identity; acceptance remains open.
-   [Theorem original identity](./task_contracts/en/SOURCE-THEOREM-ORIGINAL-IDENTITY.md) binds genuine original fields and the full conservative slice; acceptance and reuse remain open.
-   [Fresh theorem reflexivity checking](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-CHECK.md) connects genuine normal results to existing built-in classification; general acceptance, witness/publication and reuse remain open.
-   [Fresh theorem reflexivity selection](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-SELECTION.md) connects actual checked targets to existing selection; witness/publication and reuse remain open.
-   [Source theorem internal status](./task_contracts/en/PROOF-SOURCE-THEOREM-STATUS-PROJECTION.md) composes genuine identity, selection and conservative dependencies; publication and reuse remain open.
-   [Theorem raw metadata and checked wire](./task_contracts/en/PROOF-SOURCE-THEOREM-REFLEXIVITY-METADATA.md) retain actual same-call check products; trusted witness/publication and reuse remain open.
-   [Fresh theorem trusted witness metadata](./task_contracts/en/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-METADATA.md) supplies only an opaque same-check token; staging/publication, reuse and general acceptance remain open.
-   [Same-check trusted witness wire](./task_contracts/en/PROOF-SOURCE-THEOREM-TRUSTED-WITNESS-WIRE.md) retains the actual checked bytes beside the opaque token; matching status/draft/staging, publication and reuse remain separate.
-   [Genuine theorem internal draft](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-DRAFT.md) composes original identity, same-check evidence and retained snapshot metadata; staging/publication, reuse and complete footprints remain separate.
-   [Unpublished theorem witness projection](./task_contracts/en/PROOF-SOURCE-THEOREM-WITNESS-PROJECTION.md) binds genuine original identity and same-call checked context/payload; trusted staging/publication and reuse remain open.
-   [Same-result theorem used-axioms status](./task_contracts/en/PROOF-SOURCE-THEOREM-USED-AXIOMS-STATUS.md) retains genuine reference metadata with the original conservative slice; full imported-FQN recording, publication and reuse remain open.
+   The [genuine theorem reflexivity chain](./mizar-proof/en/status.md#source-theorem-reflexivity-same-result-composition) now composes original source identity, actual checked results, conservative dependencies and trusted status/metadata. Its [FILE/Artifact consumer](./mizar-driver/en/frontend_adapter.md#genuine-reflexivity-fileartifact-consumer) publishes the matching bounded Builtin witness and commits real artifacts. General acceptance, imported-FQN recording, complete footprints and reuse remain open.
 2. [ ] [Built-in evidence candidates](./task_contracts/en/PREATP-FORMULA-EVIDENCE.md)
    (VC 60); design frozen, implementation deferred until authentic
    formula/context/substitution/provenance producers exist. [Original-source direct-premise candidates](./task_contracts/en/VC-SOURCE-DIRECT-PREMISE-CANDIDATE.md) supply only bounded untrusted association.
-3. [ ] [By/built-in acceptance and witness publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
-   (Proof 23 / Artifact 25). ATP acceptance follows item 1; built-in acceptance
-   follows item 2. Each witness requires a matching accepted result; distinct
-   built-in witness support belongs to Artifact 25, full emission to Step 6 item 3.
+3. [~] [By/built-in acceptance and witness publication](./task_contracts/en/PROOF-DISCHARGE-ACCEPTANCE.md)
+   (Proof 23 / Artifact 25). The bounded genuine theorem-reflexivity Builtin route
+   above is implemented. General ATP acceptance follows item 1; broader built-in
+   acceptance follows item 2. Each witness requires a matching accepted result;
+   full emission remains Step 6 item 3.
    [Fresh source candidate checking](./task_contracts/en/PROOF-SOURCE-CANDIDATE-CHECK.md) is a bounded classification prerequisite; general acceptance/publication remain open.
-   [Fresh source-bound selection](./task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md) is implemented for genuine candidate/check outputs; witness/Artifact publication remains pending.
+   [Fresh source-bound selection](./task_contracts/en/PROOF-SOURCE-CANDIDATE-SELECTION.md) is implemented for genuine candidate/check outputs; the separate genuine reflexivity route above supplies bounded Builtin witness publication. General acceptance/publication remains open.
    [Direct-premise source checking](./task_contracts/en/PROOF-SOURCE-DISCHARGE-CHECK.md) is a bounded built-in classification prerequisite. [Raw local component hashes](./task_contracts/en/VC-LOCAL-EVIDENCE-COMPONENT-HASHES.md) precede accepted metadata association. [Raw same-call metadata](./task_contracts/en/PROOF-SOURCE-DISCHARGE-METADATA.md) precedes trusted witness production.
    [Original-source raw identity](./task_contracts/en/PROOF-SOURCE-ORIGINAL-IDENTITY.md) is implemented with explicit incomplete VC-local data; same-check witness binding remains open.
 4. [ ] Proof cache/witness handoffs: Proof reuse metadata into Cache
@@ -1159,19 +1145,18 @@ outputs; do not fabricate metadata to unblock these consumers.
    diagnostics, build bridge, metadata, navigation, actions, explanations,
    and the `@show_*`/`@eval` projection audit (SCA-003).
 3. [~] [mizar-doc tasks 1-34](./mizar-doc/en/todo.md) — published-input reading and
-   raw export indexing are implemented; full planning/indexing, phase-16 rendering,
-   extraction and remaining specs stay open (SCA-002). `mizar-doc` must not re-run semantic analysis.
+   indexing, native inputs and validated published comment attachment are implemented. CommonMark/tag parsing and authenticated link/render prerequisites are available; coherent planning, full HTML/phase-16 rendering and extraction remain open (SCA-002). `mizar-doc` must not re-run semantic analysis.
    [Optional published module summaries](./task_contracts/en/DOC-PUBLISHED-MODULE-SUMMARIES.md) are implemented as preserved label inputs; full index/link planning remains open.
    [Stored label export candidates](./task_contracts/en/DOC-PUBLISHED-LABEL-EXPORT-CANDIDATES.md) are implemented as exact stored-record queries; full label/link planning remains open.
-   [Optional native Disk source content](./task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) implements a text/hash prerequisite; comment attachment and currentness remain separate.
-   [Optional native lexical source](./task_contracts/en/DOC-NATIVE-LEXICAL-SOURCE.md) is implemented as a raw-trivia prerequisite; full task6/attachment remains open.
+   [Optional native Disk source content](./task_contracts/en/DOC-NATIVE-DISK-SOURCE.md) implements a text/hash prerequisite; full currentness integration remains separate.
+   [Optional native lexical source](./task_contracts/en/DOC-NATIVE-LEXICAL-SOURCE.md) is implemented as a raw-trivia prerequisite; it does not replace the published comment-attachment route.
 4. [~] [`mizar lsp` stdio entry point](./task_contracts/en/EDITOR-LSP-ENTRY.md)
    has an executable [lifecycle host](./mizar-driver/en/cli.md#stdio-lifecycle-host);
    workspace/settings, build binding and current-build diagnostics remain open. [Raw initialize inputs](./task_contracts/en/LSP-RAW-INITIALIZE-HANDOFF.md) precede their host binding. [Explicit native metadata acquisition](./task_contracts/en/LSP-NATIVE-WORKSPACE-INPUTS.md) precedes runtime context. [Current Disk diagnostic indexes](./task_contracts/en/DRIVER-CURRENT-DISK-DIAGNOSTIC-INDEX.md) and [native OpenBuffer handoffs](./task_contracts/en/DRIVER-CURRENT-NATIVE-DIAGNOSTIC-INDEX.md) precede current LSP transport. [Import-discovered native indexes](./task_contracts/en/DRIVER-IMPORT-DISCOVERED-NATIVE-DIAGNOSTIC-INDEX.md) compose genuine pregraph results before native host binding. [Explicit frontend notifications](./task_contracts/en/LSP-NATIVE-FRONTEND-DIAGNOSTIC-NOTIFICATIONS.md) bind original current OpenBuffer inputs before wire/host integration. [Originating native capture](./task_contracts/en/LSP-NATIVE-OPEN-BUFFER-CAPTURE.md) binds the original open incarnation before full snapshot/host integration.
    [Native filesystem source layout](./task_contracts/en/BUILD-NATIVE-SOURCE-LAYOUT.md) is implemented for ordinary workspace trees; [explicit native OpenBuffer association](./task_contracts/en/BUILD-NATIVE-OPEN-BUFFER-INPUT.md) precedes complete native host binding.
    [Native workspace input acquisition](./task_contracts/en/BUILD-NATIVE-WORKSPACE-INPUTS.md) supplies parser-owned metadata before genuine runtime context and native host binding. [Package replay metadata](./task_contracts/en/BUILD-COMPUTATION-POLICY.md) is a configuration prerequisite; runtime replay and full configuration identity remain pending. [Workspace lock coordinates](./task_contracts/en/BUILD-WORKSPACE-LOCK-PATH-BINDING.md) bind parsed member inputs before native runtime context. [Lock content fingerprints](./task_contracts/en/BUILD-LOCK-CONTENT-FINGERPRINT.md) supply current typed-content identity before complete context and caller binding. [Explicit native lock association](./task_contracts/en/DRIVER-NATIVE-LOCK-CONTENT-BINDING.md) compares that profile at caller request before runtime integration. [Package configuration content](./task_contracts/en/BUILD-CONFIG-CONTENT-FINGERPRINT.md) supplies current typed metadata identity before complete active configuration and caller binding. [Explicit native configuration association](./task_contracts/en/DRIVER-NATIVE-CONFIG-CONTENT-BINDING.md) is a caller-only prerequisite. [Optional package toolchain metadata](./task_contracts/en/BUILD-PACKAGE-TOOLCHAIN-METADATA.md) supplies workspace constraints before complete pinning/runtime identity. [Recorded toolchain metadata](./task_contracts/en/BUILD-LOCKED-TOOLCHAIN-METADATA.md) preserves parsed values; [raw constraint relations](./task_contracts/en/BUILD-RECORDED-TOOLCHAIN-MATCHES.md) precede authenticated pinning and runtime binding.
-5. [ ] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
-   (mizar-lsp task 25).
+5. [~] [Code completion](./task_contracts/en/EDITOR-LSP-COMPLETION.md)
+   (mizar-lsp task 25): snapshot-backed syntax and retained-publication routes are implemented; broader producer readiness and owner-task closeout remain separate.
 6. [ ] [VS Code extension](./task_contracts/en/EDITOR-VSCODE-EXTENSION.md)
    (mizar-lsp task 28), published on the Marketplace from `editors/vscode/`;
    deps items 4 and the toolchain manager below.
@@ -1195,7 +1180,7 @@ listed dependencies are complete.
    deps Core 42/44/46, VC 44 and R3 validated exports; same-package Open-goal generation also waits for R3.
 4. [ ] Checker 280 — [definition dependency cycles](./task_contracts/en/ALGDEF-CHECKER280-DEFINITION-CYCLES.md);
    deps resolver declaration dependency edges and algorithm call targets.
-5. [ ] Resolver 33 — [algorithm synonym targets and citations](./task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md).
+5. [~] Resolver 33 — [algorithm synonym targets and citations](./task_contracts/en/ALGDEF-RESOLVE33-ALGORITHM-REFERENCES.md): definition-label identity projection implemented; automatic synonym targets, citations and promotion adoption remain deferred.
 6. [ ] VC 57 — [module-local promotion axioms as premises](./task_contracts/en/ALGDEF-VC57-PROMOTION-FACTS.md);
    deps Core 54, VC 52/53, E1/E2/E4 producers and resolver 33; follows the bounded proof-status
    precedent for module-local acceptance.
@@ -1204,7 +1189,9 @@ listed dependencies are complete.
    checker Task 274 and VC 53.
 
 8. [~] [ALGDEF-PARSER-FAIL](./task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare syntax complete; message/report forms remain lexical-spec-gap blocked, reflected reports also await AST-PARSE.
-9. [ ] [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) — follows fail and authentic call/CFG/proof producers.
+9. [~] [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) — bounded direct-return E1/E4 requests/checking, native inhabitation/E4 adoption and typing/single-valuedness schema association implemented; broader call/CFG/termination proof and algorithm acceptance remain open.
+
+[ALGDEF-RESOLVE-CALL-EDGES](./task_contracts/en/ALGDEF-RESOLVE-CALL-EDGES.md) has implemented source inventory/candidates, selected definiens dependencies and complete explicitly selected local recursive groups. Remaining slices concern external imported/builtin identities, typed target selection and consumer adoption; cycle/termination/promotion acceptance remains separate. See the [source-edge owner](./mizar-resolve/en/symbols.md#planned-algorithm-call-dependencies).
 
 Core 48 additionally owns the missing-`return`-or-`fail` diagnostic, and Core 46 the
 contract self-reference rejection. Public codes E0330, E0501, and E0502 stay
@@ -1214,10 +1201,10 @@ spec-reserved until a separately authorized diagnostics adoption.
 
 Active implementation contracts follow their own dependencies; completed AST-SPEC records remain specification-transfer history.
 The [multiple-argument Binder specification](./task_contracts/en/AST-MULTI-BINDER-SPEC.md) fixes the product-domain extension and acceptance requirements for these owners; it adds no implementation activation.
-The [Binder task decomposition](./task_contracts/en/AST-MULTI-BINDER-PLAN.md) assigns MBP-01–09 to the existing owners, adds the explicit Resolver prerequisite and separates provisional formation from proof/adoption. Continue MBP-01 beyond the bounded set/grouped/body-root syntax increment; MBP-03 library-input inventory and MBP-08 descriptor preparation can proceed independently. Differentiation remains a later specification/library task.
+The [Binder task decomposition](./task_contracts/en/AST-MULTI-BINDER-PLAN.md) assigns MBP-01–09 to the existing owners, adds the explicit Resolver prerequisite and separates provisional formation from proof/adoption. MBP-01 syntax prerequisites, MBP-03 pinned-library input inventory and MBP-08 descriptor preparation have landed in bounded scope; certification, formation and source-aware emission remain gated by their authentic producers. Differentiation remains a later specification/library task.
 
-1. [~] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — expr types complete; bounded Binder roots complete, remaining hosts/patterns/contextual syntax open; lexical/match retirement implemented.
-2. [ ] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — descriptor design; emission waits for source-aware producers.
+1. [~] [AST-PARSE](./task_contracts/en/AST-PARSE.md) — expr/Binder hosts and explicit computation-input/direct-thesis syntax prerequisites implemented; broader ordinary inputs, ambiguous partitions and semantic/formation/reflection consumers remain open.
+2. [~] [AST-DIAGNOSTICS](./task_contracts/en/AST-DIAGNOSTICS.md) — reserved descriptors implemented; emission/adoption waits for source-aware producers.
 3. [ ] [AST-TYPE](./task_contracts/en/AST-TYPE.md) — follows syntax and certified library/declaration producers.
 4. [ ] [AST-LOWER](./task_contracts/en/AST-LOWER.md) — follows authentic checked formation.
 5. [ ] [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md) — complete guarded obligations; earlier ALGDEF owners retain promotion/uniqueness.
@@ -1320,7 +1307,7 @@ Priority set only; each contract keeps its own readiness and gates.
 | Class | Contracts | R slices served |
 |---|---|---|
 | MVM | [MVM-READINESS-MAP](./task_contracts/en/MVM-READINESS-MAP.md) and the R2-R8 design contracts above; [AST-ARTIFACT](./task_contracts/en/AST-ARTIFACT.md); [ALG-MVM-EVALUATION](./task_contracts/en/ALG-MVM-EVALUATION.md); [ALGDEF-COMPUTATION-ADMISSION](./task_contracts/en/ALGDEF-COMPUTATION-ADMISSION.md); [VC 58](./task_contracts/en/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md); [AST-COMPUTE](./task_contracts/en/AST-COMPUTE.md); [BUILD-COMPUTATION-POLICY](./task_contracts/en/BUILD-COMPUTATION-POLICY.md); the R8-A–H families of [AST-CORPUS](./task_contracts/en/AST-CORPUS.md); implementation contracts later frozen from an R design | R1-R8 |
-| Registered producers | [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md); [Core 42-53](./mizar-core/en/todo.md); [AST-TYPE](./task_contracts/en/AST-TYPE.md); [AST-LOWER](./task_contracts/en/AST-LOWER.md); [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md); [AST-FORMATION-PROOFS](./task_contracts/en/AST-FORMATION-PROOFS.md); remaining [ALGDEF-RESOLVE-CALL-EDGES](./task_contracts/en/ALGDEF-RESOLVE-CALL-EDGES.md) slices | R2, R4-R7 |
+| Registered producers | [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md); [Core 42-53](./mizar-core/en/todo.md); [AST-TYPE](./task_contracts/en/AST-TYPE.md); [AST-LOWER](./task_contracts/en/AST-LOWER.md); [AST-CONTRACT](./task_contracts/en/AST-CONTRACT.md); [AST-FORMATION-PROOFS](./task_contracts/en/AST-FORMATION-PROOFS.md); [ALGDEF-RESOLVE-CALL-EDGES](./task_contracts/en/ALGDEF-RESOLVE-CALL-EDGES.md) external-identity/typed-selection/consumer slices | R2, R4-R7 |
 
 ### Distribution and playground [ ]
 
