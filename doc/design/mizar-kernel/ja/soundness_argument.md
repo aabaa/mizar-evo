@@ -501,6 +501,83 @@ normalized term symbols であり、kernel-side `qua` resolution によって導
   Step 5 source-derived runner が real evidence を生成できるまで inactive な
   source-semantic corpus row に留まる。
 
+## Algorithm return/inhabitation 規則
+
+以下の局所規則は `check_kernel_evidence` の外側にあり、成功は certificate 受理ではない。
+ここで **契約 E1** は [§20.13.1](../../../spec/ja/20.algorithm_and_verification.md#20131-契約公理)
+を指し、上記の envelope 不変条件 E1 とは別である。限定された source 例は
+[`idalgo`](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz)。
+厳密な入力 profile は [checker API](./checker.md#bounded-varsole-return-local-validation)
+が所有し、以下では論理的前提を分けて示す。
+
+### 局所導出と前提
+
+parameter は不変 ([§20.1.2](../../../spec/ja/20.algorithm_and_verification.md#2012-パラメータと戻り値の型))、
+`return e` は `e` を値として終了する ([§20.2.6](../../../spec/ja/20.algorithm_and_verification.md#2026-ジャンプステートメント-returnbreakcontinuefail))。
+symbolic return 規則では Kernel が単一 parameter `a`、異なる result、唯一の所有された
+`Return(Var(a))`、role、解決可能な guard、error/diagnostic/ghost effect の不在を検査する。
+唯一の context は parameter guard `object(a)` でなければならない。CFG を再構築する前に
+term cycle を拒否し、algorithm/flow 対応を検査する。これを symbolic profile と呼ぶ。
+result guard は、typing 規則が object 検査を加える場合以外は解決できればよい。
+
+| 規則 | 導出と追加前提 |
+|---|---|
+| `check_sole_return_var` | 条件付き operational evaluation。唯一の environment binding が parameter/guard ID に一致し、不透明な値をそのまま返す。初期化と guard の意味的充足は呼出側の前提であり Kernel は検査しない。sole-return の形を検査するが、CFG 再構築・認証や object guard は要求しない。 |
+| `check_instantiated_algorithm_returns` | symbolic profile の下で witness `Var(a)`、定義を持たない input/result `a` から `returns(a,a)` だけを導く。不透明な environment 前提も元の existential 結論もない。 |
+| `check_algorithm_returns_existential` | 元の result は `(r,None)`、`r != a`。result だけを input に置き換え、同一呼出しで instantiated child を再検査する。context は厳密に `object(a)` なので `r` は自由出現せず、witness 代入と存在導入は capture-free。 |
+| `check_object_inhabitation_witness` | algorithm/CFG と独立に、body は `object(r)`、witness は `Var(a)`、`r != a`、child と唯一の context はともに `object(a)` に解決される。仮定・atomic 代入・存在導入により `object(a)` の下で `exists r. object(r)` を導く。normal return や `requires` を仮定せず、そのような全 typed input に対する inhabitation を示す。 |
+| `check_algorithm_return_typing` | symbolic profile に加えて Core input/result 変数それぞれの object guard、fresh result binder と厳密な atomic 結論を要求する。全 return が `a` なので `object(a)` から `returns(a,r) -> object(r)` が従い、E4 の存在とは独立。 |
+| `check_algorithm_return_single_valuedness` | 二つの relation は algorithm/flow/statement/input を共有し、順序付きの定義なし result と等式が互いに異なる binder に一致し、両 binder は `a` と異なる。両 return が同一の不変 input なので `r=s`。typing、`ensures`、E4 の存在とは独立。 |
+
+存在導入は [§16.7.3](../../../spec/ja/16.theorems_and_proofs.md#1673-スケルトンエンコーディング) に従う。
+保持型 existential/inhabitation result は生成する呼出しで検査した Core 入力を束縛する。
+保持型 result も schema 番号も source request の認証や policy eligibility を与えない。
+
+### 呼出側の義務と一般化の限界
+
+VC は局所検査前に元の生成 goal、binder、順序付き projection、context を認証する。
+Proof の同一呼出しでの元の identity 再生成と raw slice 全体の比較が検査済み request を
+対応付ける。切り離された tuple/scalar は source/Core/CFG 対応を与えない。現在の
+source/module/snapshot/dependency と policy との対応は引き続き呼出側の義務である。
+[VC original descriptor](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor) と
+[Proof association](../../mizar-proof/ja/status.md#original-e1-single-valuedness-request-identity-association)
+を参照。不透明値 validator には明示的な environment 前提も残る。
+
+契約 E1 の三義務は別々である: return 結果の typing、同一の完全 input に対する
+single-valuedness、戻り型を主張する **全** typed input での inhabitation。
+object inhabitation は algorithm return を証明せず、typing/uniqueness 単独も存在を証明しない。
+E4 は normal-return の存在であり E2 の body correctness ではない。値の等式から
+`returns` は従わない。局所成功は symbol 導入や定義全体の受理を行わず、
+[bounded accepted-definition boundary](../../mizar-core/ja/mvm_correspondence.md#限定された定義受理の境界)
+は別に残る。
+
+任意・依存戻り型、追加 parameter/前提、mutable/local/ghost 値、call、branch、loop、
+Pick、recursion、reflection、recovered flow には一般化しない。構文を含む input は
+Adm/InputOK と同一の完全 environment を保持し、ここでは environment の解釈を与えない。
+CFG traversal 前の term-cycle 拒否は formula/general-cycle safety や任意の不正 Core に
+対する全域検査の主張ではない。Open/Deferred 義務、unknown/incomplete で再利用不可の
+slice は残り、R3-Q2/R5-Q2 と G/RESERVED/unassigned の決定は owner に保留する。
+
+### 拒否 corpus
+
+直接規則と認証 handoff の corpus は
+[`source_algorithm_return.rs`](../../../../crates/mizar-test/src/runner/proof_verification/term_proof_tests/source_algorithm_return.rs)
+にあり、上記 certificate sidecar とは別である。拒否を検査し、広い source 受理を与えない。
+以下のテスト名は `source_algorithm_` 接頭辞を省略する。
+
+| 規則群 / regression suffix | 拒否する変更 |
+|---|---|
+| 条件付き sole return: `sole_return_var_refuses_environment_mismatch_without_output`, `sole_return_var_refuses_other_roles_and_executable_bodies`, `sole_return_var_refuses_corrupt_core_and_absent_algorithm` | binding の欠落・重複・追加、guard/変数不一致、role drift、error/ghost effect、非変数/void return、追加 statement。不正 owner 参照は Core 構築時に拒否する。 |
+| Instantiated child: `e4_instantiated_kernel_refuses_wrong_child_and_resolved_guards` | witness/input/result/context 不一致、定義付き値、flow/statement/owner 不一致、非対応 body、term cycle。 |
+| 元の existential: `e4_existential_kernel_requires_original_binder_and_rechecked_child` | binder 不一致/capture、元 result の定義、witness/context/CFG 不一致。保持型 result も同じ検査で拒否する。 |
+| Object inhabitation: `object_inhabitation_checks_resolved_child_context_and_substitution` | body/binder/type 不一致、非変数/capture witness、context 欠落・追加、child/context guard 不一致。同じ意味に解決する異なる ID は成功する。 |
+| E1 typing: `typing_kernel_requires_exact_relation_conclusion_and_object_guards` | result binder/定義/結論不一致、非 object/subject 不一致の Core guard、symbolic profile 由来の失敗。 |
+| E1 single-valuedness: `single_valuedness_kernel_requires_matching_relations_and_guarded_body` | binder alias/capture、等式の順序逆転、result の定義、relation projection 不一致、profile 由来の失敗。解決可能な非 object output guard でも uniqueness は成功する。 |
+
+認証 VC/Proof テストは source/check/Core/CFG/guard/role/identity 入力も変更し、schema と
+delegate の一致および slice 全体の対応を検査する。この corpus は限定された論証を支えるが、
+generic evidence parsing、定義全体の adoption、一般的 cycle safety は確立しない。
+
 ## クレート TODO への影響(指摘のみ; 改訂は後続タスク)
 
 - `doc/design/mizar-kernel/en/todo.md`: 候補新タスク — (a) 訂正後検査

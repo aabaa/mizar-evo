@@ -517,6 +517,8 @@ Every finding maps to a task or a recorded disposition:
       spec 05 §5.8.3, 13 §13.8.7; template_encoding_audit.md F1/F3.
 36. **Kernel-constructed equality instances.** [x]
     - Approved kernel-scope expansion (spec §21.7.5). Contract: [ATPK-KERNEL-EQUALITY-INSTANCES](../../task_contracts/en/ATPK-KERNEL-EQUALITY-INSTANCES.md).
+37. **Algorithm return/inhabitation soundness revisit (P6).** [x]
+    - [Local derivations, caller obligations, rejection corpus and limits](./soundness_argument.md#algorithm-return-and-inhabitation-rules); documentation only, no Kernel behavior or acceptance credit.
 
 ## Recommended Verification
 

@@ -525,6 +525,93 @@ Task 35 therefore records the following boundary:
   inactive source-semantic corpus rows until the Step 5 source-derived runner
   can produce real evidence.
 
+## Algorithm Return And Inhabitation Rules
+
+These local rules are outside `check_kernel_evidence`; their success is not a
+certificate acceptance. Here **contract E1** means
+[§20.13.1](../../../spec/en/20.algorithm_and_verification.md#20131-contract-axioms),
+not envelope invariant E1 above. The bounded source example is
+[`idalgo`](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz).
+The [checker API](./checker.md#bounded-varsole-return-local-validation) owns
+the exact input profiles; the argument below separates their logical premises.
+
+### Local derivations and premises
+
+Parameters are immutable ([§20.1.2](../../../spec/en/20.algorithm_and_verification.md#2012-parameters-and-return-type));
+`return e` exits with `e` ([§20.2.6](../../../spec/en/20.algorithm_and_verification.md#2026-jump-statements-return-break-continue-fail)).
+For the symbolic return rules, Kernel checks one parameter `a`, a distinct result,
+the sole owned `Return(Var(a))`, roles, resolvable guards and absence of errors,
+diagnostics and ghost effects. The sole context must be the parameter guard
+`object(a)`. It refuses term cycles before rebuilding the CFG and checks the
+algorithm/flow association. Call this the symbolic profile; its result guard
+need only resolve unless the typing rule adds the object check.
+
+| Rule | Derivation and additional premises |
+|---|---|
+| `check_sole_return_var` | Conditional operational evaluation: the sole environment binding matches the parameter/guard IDs and its opaque value is returned unchanged. The caller must premise initialization and semantic guard satisfaction; Kernel checks neither. This rule checks the sole-return shape, but does not rebuild/authenticate CFG or require object guards. |
+| `check_instantiated_algorithm_returns` | Under the symbolic profile, witness `Var(a)` and definition-free input/result both `a` derive only `returns(a,a)`. There is no opaque environment premise and no original existential conclusion. |
+| `check_algorithm_returns_existential` | Original result is `(r,None)` with `r != a`. Replace only that result by input and check the instantiated child in the same call. Since context is exactly `object(a)`, `r` is absent from its free variables; witness substitution and existential introduction are capture-free. |
+| `check_object_inhabitation_witness` | Independently of any algorithm/CFG, body is `object(r)`, witness is `Var(a)`, `r != a`, and child and sole context both resolve to `object(a)`. Assumption, atomic substitution and existential introduction derive `exists r. object(r)` under `object(a)`. This establishes inhabitation for every such typed input, without assuming normal return or `requires`. |
+| `check_algorithm_return_typing` | Symbolic profile plus object guards on both Core input/result variables, fresh result binder and exact atomic conclusion. Every return is `a`, so `returns(a,r) -> object(r)` follows from `object(a)`, independently of E4 existence. |
+| `check_algorithm_return_single_valuedness` | Two relations share algorithm/flow/statement/input; ordered definition-free results and equality match distinct binders, both different from `a`. Each return equals the same immutable input, hence `r=s`. This is independent of typing, `ensures` and E4 existence. |
+
+Existential introduction uses [§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding).
+The retained existential/inhabitation results bind checked Core inputs in the
+producing call. Neither a retained result nor a schema number authenticates a
+source request or grants policy eligibility.
+
+### Caller obligations and generalization limits
+
+VC must authenticate original generated goals, binders, ordered projections and
+context before local checking. Proof's same-call original identity regeneration
+and whole raw-slice comparison associate that checked request; source/Core/CFG
+association is not supplied by a detached tuple or scalar. Callers still own
+current source/module/snapshot/dependency and policy association. See the
+[VC original descriptors](../../mizar-vc/en/generator.md#original-e1-typing-descriptor)
+and [Proof associations](../../mizar-proof/en/status.md#original-e1-single-valuedness-request-identity-association).
+The opaque-value validator additionally retains its explicit environment premises.
+
+The three contract-E1 duties remain separate: returned-result typing,
+single-valuedness for the same complete input, and inhabitation on **all** typed
+inputs wherever return typing is asserted. Object inhabitation proves no
+algorithm return; typing or uniqueness alone proves no existence. E4 proves
+normal-return existence, not E2 body correctness; a value equality does not imply
+`returns`. Local successes do not introduce symbols or accept a whole definition;
+the [bounded accepted-definition boundary](../../mizar-core/en/mvm_correspondence.md#bounded-accepted-definition-boundary)
+remains separate.
+
+These arguments do not generalize to arbitrary/dependent return types, extra
+parameters or premises, mutable/local/ghost values, calls, branches, loops,
+Pick, recursion, reflection or recovered flow. Syntax-bearing inputs retain
+Adm/InputOK and the same complete environment; no environment interpretation
+is provided here. Term-cycle refusal before CFG traversal is not a claim of
+formula/general-cycle safety or total validation of arbitrary malformed Core.
+Open/Deferred obligations and unknown/incomplete, reuse-ineligible slices remain;
+R3-Q2/R5-Q2 and G/RESERVED/unassigned decisions stay with the owner.
+
+### Rejection corpus
+
+The direct-rule and authenticated-handoff corpus lives in
+[`source_algorithm_return.rs`](../../../../crates/mizar-test/src/runner/proof_verification/term_proof_tests/source_algorithm_return.rs),
+separately from the certificate sidecars above. It checks refusal rather than
+conferring broader source acceptance:
+
+Test names below have the prefix `source_algorithm_`.
+
+| Rule family / regression suffix | Rejected mutations |
+|---|---|
+| Conditional sole return: `sole_return_var_refuses_environment_mismatch_without_output`, `sole_return_var_refuses_other_roles_and_executable_bodies`, `sole_return_var_refuses_corrupt_core_and_absent_algorithm` | Missing/duplicate/extra bindings, guard/variable mismatches, role drift, errors/ghost effects, non-variable/void return and additional statements. Invalid owner references are refused by Core construction. |
+| Instantiated child: `e4_instantiated_kernel_refuses_wrong_child_and_resolved_guards` | Wrong witness/input/result/context, definition-bearing values, wrong flow/statement/owner, unsupported body and cyclic terms. |
+| Original existential: `e4_existential_kernel_requires_original_binder_and_rechecked_child` | Wrong/capturing binder, original-result definition, mismatched witness/context/CFG; retained-result refusal follows the same check. |
+| Object inhabitation: `object_inhabitation_checks_resolved_child_context_and_substitution` | Wrong body/binder/type, non-variable or capturing witness, missing/extra context and mismatched child/context guards; distinct IDs with equal resolved meaning succeed. |
+| E1 typing: `typing_kernel_requires_exact_relation_conclusion_and_object_guards` | Wrong result binder/definition/conclusion, non-object or wrong-subject Core guards and inherited symbolic-profile failures. |
+| E1 single-valuedness: `single_valuedness_kernel_requires_matching_relations_and_guarded_body` | Aliased/capturing binders, swapped equality, result definitions, mismatched relation projections and inherited profile failures; a resolving non-object output guard still permits uniqueness. |
+
+Authenticated VC/Proof tests additionally mutate source, check, Core, CFG, guards,
+role and identity inputs, and check schema/delegate parity and whole-slice
+association. These tests support the bounded argument; they do not establish
+generic evidence parsing, whole-definition adoption or general cycle safety.
+
 ## Impact On Crate TODOs (report only; revisions are follow-up tasks)
 
 - `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) B4
