@@ -1,6 +1,7 @@
 # mizar-checker TODO
 
 P19 source correspondence: [RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE](../../task_contracts/en/RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
+P19 pattern intake: [RESOLVE-P19-BINDER-PATTERN-INTAKE](../../task_contracts/en/RESOLVE-P19-BINDER-PATTERN-INTAKE.md).
 
 - [x] [CHECKER-FUNCTOR-PREFIX-GEOMETRY](../../task_contracts/en/CHECKER-FUNCTOR-PREFIX-GEOMETRY.md).
 
