@@ -56,6 +56,17 @@ VC が[元の記述子](../../mizar-vc/ja/generator.md#元の-e1-typing-descript
 返すのは boolean のみ。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
 single-valuedness や広範な credit は与えない。
 
+## Bounded Original E1 Single-Valuedness
+
+`check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`
+は `object(a)` の下で元の `forall r,s. (returns(a,r) & returns(a,s)) implies r=s` を確認する。
+result binder は相異なり入力とも異なり、result に definition がなく、順序付き等式と共通の
+algorithm/CFG/statement/input が一致することを要求する。唯一の入力 guard により capture を避ける。
+既存の immutable-parameter/sole-Return profile と再構築 CFG 検証を再利用し、両実行が同じ
+parameter を返すことによる (§20.1.2, §20.2.6)。typing、ensures、E4 existence に依存しない。
+VC が[元の descriptor](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor)を認証する。
+boolean のみを返し、native evidence、Proof association/adoption、symbol、credit は与えない。
+
 ## Original AlgorithmReturns Existential
 
 `check_algorithm_returns_existential(core, target, binder, witness, context)` は

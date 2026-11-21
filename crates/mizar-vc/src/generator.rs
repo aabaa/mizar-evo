@@ -3429,6 +3429,107 @@ pub fn check_source_algorithm_e1_typing_request(
     Ok(descriptor)
 }
 
+/// Checks the freshly authenticated original E1 single-valuedness projections.
+/// Returns the whole unchanged descriptor without evidence or Proof adoption.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "retain authenticated producer inputs and existing descriptor types"
+)]
+pub fn check_source_algorithm_e1_single_valuedness_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        [ContextEntryId; 2],
+        [VcFormulaRef; 2],
+        VcFormulaRef,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let descriptor = generate_source_algorithm_e1_single_valuedness_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e1_single_valuedness_check".to_owned();
+    let (vcs, binders, returns, conclusion, guard, _) = &descriptor;
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    let [Some(left), Some(right)] =
+        binders.map(
+            |id| match &parent.local_context.entries().get(id.index())?.kind {
+                ContextEntryKind::BinderDeclaration { var, .. } => Some(*var),
+                _ => None,
+            },
+        )
+    else {
+        return Err(invalid());
+    };
+    let [Some(first), Some(second)] = returns.map(|reference| {
+        let VcFormulaRef::Generated(id) = reference else {
+            return None;
+        };
+        match &vcs.generated_formula(id)?.shape {
+            Shape::AlgorithmReturns {
+                algorithm,
+                flow,
+                statement,
+                input,
+                result,
+            } => Some((
+                *algorithm,
+                *flow,
+                *statement,
+                (input.var, input.definition),
+                (result.var, result.definition),
+            )),
+            _ => None,
+        }
+    }) else {
+        return Err(invalid());
+    };
+    let (VcFormulaRef::Generated(conclusion), VcFormulaRef::Core(guard)) = (conclusion, guard)
+    else {
+        return Err(invalid());
+    };
+    let Shape::ProgramEquals {
+        left: equality_left,
+        right: equality_right,
+    } = &vcs
+        .generated_formula(*conclusion)
+        .ok_or_else(invalid)?
+        .shape
+    else {
+        return Err(invalid());
+    };
+    if !mizar_kernel::checker::check_algorithm_return_single_valuedness(
+        core,
+        [first, second],
+        [left, right],
+        [*equality_left, *equality_right].map(|value| (value.var, value.definition)),
+        &[*guard],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Describes an untrusted witness reduction while retaining the whole original request graph.
 /// The binder-to-term pair and child guard grant no checking or existential-introduction credit.
 #[expect(

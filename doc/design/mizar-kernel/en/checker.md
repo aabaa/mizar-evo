@@ -111,6 +111,18 @@ independently of E4 existence. VC authenticates the [original descriptor](../../
 Return only a boolean. No opaque value/environment interpretation, native evidence,
 Proof identity/policy/adoption, single-valuedness or broader credit follows.
 
+## Bounded Original E1 Single-Valuedness
+
+`check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`
+checks `forall r,s. (returns(a,r) & returns(a,s)) implies r=s` under `object(a)`.
+Require distinct result binders, each different from input, definition-free results,
+matching ordered equality and common algorithm/CFG/statement/input. The sole input
+guard makes those binders capture-free. Reuse the exact immutable-parameter/sole-Return
+profile and rebuilt CFG validation: both executions return the same parameter
+(§20.1.2, §20.2.6), independently of typing, ensures or E4 existence.
+VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor).
+Return only a boolean; no native evidence, Proof association/adoption, symbols or credit.
+
 ## Original AlgorithmReturns Existential
 
 `check_algorithm_returns_existential(core, target, binder, witness, context)`

@@ -3021,25 +3021,30 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                         "Core mutation {mutation} must precede selection {selected:?}"
                     );
                 }
-                assert_eq!(
-                    mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request(
-                        source,
-                        check,
-                        symbols,
-                        &changed,
-                        vcs.snapshot(),
-                        &request.anchor.generation_schema_version,
-                        vcs.schema_version(),
-                        if selected == request.id {
-                            VcId::new(2)
-                        } else {
-                            selected
-                        },
-                    )
-                    .unwrap_err(),
-                    expected,
-                    "Core/CFG mutation {mutation} must precede single-valuedness selection"
-                );
+                for consume in [
+                    mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
+                    mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
+                ] {
+                    assert_eq!(
+                        consume(
+                            source,
+                            check,
+                            symbols,
+                            &changed,
+                            vcs.snapshot(),
+                            &request.anchor.generation_schema_version,
+                            vcs.schema_version(),
+                            if selected == request.id {
+                                VcId::new(2)
+                            } else {
+                                selected
+                            },
+                        )
+                        .unwrap_err(),
+                        expected,
+                        "Core/CFG mutation {mutation} must precede single-valuedness selection"
+                    );
+                }
                 assert_eq!(
                     mizar_proof::status::check_source_algorithm_e1_typing(
                         source,
@@ -3299,20 +3304,25 @@ fn source_algorithm_direct_return_uniqueness_binds_distinct_results() {
             slice.clone(),
         );
         for _ in 0..2 {
-            assert_eq!(
-                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    generation,
-                    vcs.schema_version(),
-                    request.id,
-                )
-                .unwrap(),
-                expected
-            );
+            for consume in [
+                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
+                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
+            ] {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        generation,
+                        vcs.schema_version(),
+                        request.id,
+                    )
+                    .unwrap(),
+                    expected
+                );
+            }
         }
         assert_eq!(slice.status(), &VcStatus::Open);
         assert_eq!(
@@ -4921,20 +4931,25 @@ fn source_algorithm_inhabitation_witness_preserves_upstream_errors_before_select
                             );
                         }
                         for selected in [VcId::new(2), VcId::new(usize::MAX)] {
-                            assert_eq!(
-                                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request(
-                                    source,
-                                    check,
-                                    symbols,
-                                    core,
-                                    vcs.snapshot(),
-                                    generation,
-                                    vcs.schema_version(),
-                                    selected,
-                                )
-                                .unwrap_err(),
-                                expected
-                            );
+                            for consume in [
+                                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
+                                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
+                            ] {
+                                assert_eq!(
+                                    consume(
+                                        source,
+                                        check,
+                                        symbols,
+                                        core,
+                                        vcs.snapshot(),
+                                        generation,
+                                        vcs.schema_version(),
+                                        selected,
+                                    )
+                                    .unwrap_err(),
+                                    expected
+                                );
+                            }
                         }
                         for selected in [VcId::new(3), VcId::new(usize::MAX)] {
                             for policy in [
@@ -8465,6 +8480,23 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
             (typing_result, "object"),
             &[guard],
         ));
+        let single_binders = [
+            typing_binder,
+            mizar_core::core_ir::CoreVarId::new(usize::MAX - 1),
+        ];
+        let single_results = single_binders.map(|var| (var, None));
+        for (selected_flow, expected) in [(flow, true), (other_flow, false)] {
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_return_single_valuedness(
+                    &two,
+                    single_results.map(|result| (id, selected_flow, statement, value, result)),
+                    single_binders,
+                    single_results,
+                    &[guard],
+                ),
+                expected,
+            );
+        }
         assert!(checked(&two, target, witness, &[guard]));
         assert!(!checked(
             &two,
@@ -8699,6 +8731,197 @@ fn source_algorithm_e4_existential_kernel_requires_original_binder_and_rechecked
 }
 
 #[test]
+fn source_algorithm_single_valuedness_kernel_requires_matching_relations_and_guarded_body() {
+    use mizar_core::{
+        control_flow::{ControlFlowId, build_control_flow_ir},
+        core_ir::{
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaId,
+            CoreFormulaKind, CoreIr, CoreTermKind, CoreVarId,
+        },
+    };
+    use mizar_kernel::checker::check_algorithm_return_single_valuedness as checked;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let CoreAlgorithmStmtKind::Return(Some(witness)) =
+            core.algorithm_statements().get(statement).unwrap().kind
+        else {
+            panic!("sole return")
+        };
+        let flow = build_control_flow_ir(core).flow_map[&id];
+        let input = (algorithm.params[0].var, None);
+        let old_result = (algorithm.result.as_ref().unwrap().var, None);
+        let binders = [CoreVarId::new(usize::MAX), CoreVarId::new(usize::MAX - 1)];
+        let results = binders.map(|var| (var, None));
+        let targets = results.map(|result| (id, flow, statement, input, result));
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
+        for _ in 0..2 {
+            assert!(checked(core, targets, binders, results, &[guard]));
+        }
+        for binders in [
+            [binders[0], binders[0]],
+            [binders[1], binders[0]],
+            [input.0, binders[1]],
+            [old_result.0, binders[1]],
+            [CoreVarId::new(usize::MAX - 2), binders[1]],
+        ] {
+            assert!(!checked(core, targets, binders, results, &[guard]));
+        }
+        for conclusion in [
+            [results[1], results[0]],
+            [results[0], results[0]],
+            [input, results[1]],
+            [old_result, results[1]],
+            [(results[0].0, Some(statement)), results[1]],
+        ] {
+            assert!(!checked(core, targets, binders, conclusion, &[guard]));
+        }
+        for index in 0..2 {
+            for relation in [
+                (
+                    CoreAlgorithmId::new(core.algorithms().len()),
+                    flow,
+                    statement,
+                    input,
+                    results[index],
+                ),
+                (
+                    id,
+                    ControlFlowId::new(usize::MAX),
+                    statement,
+                    input,
+                    results[index],
+                ),
+                (
+                    id,
+                    flow,
+                    CoreAlgorithmStmtId::new(core.algorithm_statements().len()),
+                    input,
+                    results[index],
+                ),
+                (id, flow, statement, old_result, results[index]),
+                (
+                    id,
+                    flow,
+                    statement,
+                    (input.0, Some(statement)),
+                    results[index],
+                ),
+                (id, flow, statement, input, results[1 - index]),
+                (
+                    id,
+                    flow,
+                    statement,
+                    input,
+                    (results[index].0, Some(statement)),
+                ),
+            ] {
+                let mut changed = targets;
+                changed[index] = relation;
+                assert!(
+                    !checked(core, changed, binders, results, &[guard]),
+                    "relation {index}: {relation:?}"
+                );
+            }
+        }
+        // Consistent renaming cannot capture the immutable input premise.
+        let captured = [input, results[1]];
+        assert!(!checked(
+            core,
+            captured.map(|result| (id, flow, statement, input, result)),
+            [input.0, binders[1]],
+            captured,
+            &[guard],
+        ));
+        let duplicate = [results[0]; 2];
+        assert!(!checked(
+            core,
+            duplicate.map(|result| (id, flow, statement, input, result)),
+            [binders[0]; 2],
+            duplicate,
+            &[guard],
+        ));
+        for context in [
+            vec![],
+            vec![guard, guard],
+            vec![result_guard],
+            vec![guard, result_guard],
+            vec![CoreFormulaId::new(core.formulas().len())],
+        ] {
+            assert!(!checked(core, targets, binders, results, &context));
+        }
+        let CoreFormulaKind::TypePred { subject, .. } = core.formulas().get(guard).unwrap().kind
+        else {
+            panic!("object input guard")
+        };
+        let CoreFormulaKind::TypePred {
+            subject: other_subject,
+            ..
+        } = core.formulas().get(result_guard).unwrap().kind
+        else {
+            panic!("object result guard")
+        };
+        for kind in [
+            CoreFormulaKind::True,
+            CoreFormulaKind::False,
+            CoreFormulaKind::TypePred {
+                subject,
+                ty: "set".into(),
+            },
+            CoreFormulaKind::TypePred {
+                subject: other_subject,
+                ty: "object".into(),
+            },
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.formulas.get_mut(guard).unwrap().kind = kind;
+            assert!(!checked(
+                &CoreIr::try_new(parts).unwrap(),
+                targets,
+                binders,
+                results,
+                &[guard]
+            ));
+        }
+        // Single-valued execution does not establish the independent result-typing goal.
+        let mut parts = sole_return_core_parts(core);
+        parts.formulas.get_mut(result_guard).unwrap().kind = CoreFormulaKind::False;
+        assert!(checked(
+            &CoreIr::try_new(parts).unwrap(),
+            targets,
+            binders,
+            results,
+            &[guard]
+        ));
+        for kind in [
+            CoreTermKind::Var(old_result.0),
+            CoreTermKind::Numeral("0".into()),
+        ] {
+            let mut parts = sole_return_core_parts(core);
+            parts.terms.get_mut(witness).unwrap().kind = kind;
+            assert!(!checked(
+                &CoreIr::try_new(parts).unwrap(),
+                targets,
+                binders,
+                results,
+                &[guard]
+            ));
+        }
+        let mut parts = sole_return_core_parts(core);
+        parts.algorithm_statements.get_mut(statement).unwrap().kind =
+            CoreAlgorithmStmtKind::Return(None);
+        assert!(!checked(
+            &CoreIr::try_new(parts).unwrap(),
+            targets,
+            binders,
+            results,
+            &[guard]
+        ));
+    });
+}
+
+#[test]
 fn source_algorithm_single_valuedness_descriptor_refuses_other_roles_and_absent_ids() {
     with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
         for selected in vcs
@@ -8708,20 +8931,25 @@ fn source_algorithm_single_valuedness_descriptor_refuses_other_roles_and_absent_
             .map(|vc| vc.id)
             .chain([VcId::new(vcs.vcs().len()), VcId::new(usize::MAX)])
         {
-            assert_eq!(
-                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    &vcs.vcs()[0].anchor.generation_schema_version,
-                    vcs.schema_version(),
-                    selected,
-                )
-                .unwrap_err(),
-                "algorithms.direct_return.invalid_e1_single_valuedness_request"
-            );
+            for consume in [
+                mizar_vc::generator::generate_source_algorithm_e1_single_valuedness_request,
+                mizar_vc::generator::check_source_algorithm_e1_single_valuedness_request,
+            ] {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        &vcs.vcs()[0].anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        selected,
+                    )
+                    .unwrap_err(),
+                    "algorithms.direct_return.invalid_e1_single_valuedness_request"
+                );
+            }
         }
     });
 }
@@ -8730,6 +8958,7 @@ fn source_algorithm_single_valuedness_descriptor_refuses_other_roles_and_absent_
 fn source_algorithm_single_valuedness_descriptor_regenerates_source_and_schema_identities() {
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e1_single_valuedness_request as checked,
             generate_source_algorithm_direct_return_requests as original,
             generate_source_algorithm_e1_single_valuedness_request as descriptor,
         },
@@ -8818,20 +9047,22 @@ fn source_algorithm_single_valuedness_descriptor_regenerates_source_and_schema_i
                     VcFormulaRef::Core(algorithm.params[0].ty_guard.unwrap()),
                     slices.slice_for(request.id).unwrap().clone(),
                 );
-                assert_eq!(
-                    descriptor(
-                        source,
-                        check,
-                        symbols,
-                        &core,
-                        snapshot,
-                        &generation,
-                        &schema,
-                        request.id,
-                    )
-                    .unwrap(),
-                    expected,
-                );
+                for consume in [descriptor, checked] {
+                    assert_eq!(
+                        consume(
+                            source,
+                            check,
+                            symbols,
+                            &core,
+                            snapshot,
+                            &generation,
+                            &schema,
+                            request.id,
+                        )
+                        .unwrap(),
+                        expected,
+                    );
+                }
                 assert_eq!(parent.snapshot(), snapshot);
                 assert_eq!(parent.schema_version(), &schema);
                 assert!(

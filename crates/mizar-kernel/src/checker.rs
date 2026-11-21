@@ -1418,6 +1418,53 @@ pub fn check_algorithm_return_typing(
         )
 }
 
+/// Checks original `forall r,s. (returns(a,r) & returns(a,s)) implies r=s`.
+/// Immutable parameter/sole-Return semantics fix both results under `object(a)`.
+/// This boolean supplies no native typing prerequisite, evidence or Proof adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "project original relations and equality without a single-use representation"
+)]
+pub fn check_algorithm_return_single_valuedness(
+    core: &CoreIr,
+    targets: [(
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ); 2],
+    binders: [CoreVarId; 2],
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> bool {
+    let [
+        (algorithm, flow, statement, input, left),
+        (other, other_flow, other_statement, other_input, right),
+    ] = targets;
+    let Some(CoreAlgorithmStmtKind::Return(Some(witness))) = core
+        .algorithm_statements()
+        .get(statement)
+        .map(|statement| &statement.kind)
+    else {
+        return false;
+    };
+    (algorithm, flow, statement, input) == (other, other_flow, other_statement, other_input)
+        && binders[0] != binders[1]
+        && !binders.contains(&input.0)
+        && [left, right] == binders.map(|var| (var, None))
+        && conclusion == [left, right]
+        // Reuse structural validation only; each return is the immutable input,
+        // independently of result typing, ensures or E4 existence.
+        && check_instantiated_algorithm_returns(
+            core,
+            (algorithm, flow, statement, input, input),
+            *witness,
+            context,
+        )
+}
+
 /// Checks `exists r.returns(a,r)` by deriving and checking its exact child.
 /// The child rule fixes the witness to `Var(a)` and the context to `object(a)`;
 /// requiring `r != a` therefore also excludes free occurrence in that context.
