@@ -1879,15 +1879,30 @@ mod vampire_extraction_refusal_tests {
         crate::translator::backend_extraction_fixture()
     }
 
-    fn pinned_path() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../.tools/provers/vampire-4.9/vampire")
-            .canonicalize()
-            .expect("provisioned Vampire 4.9")
+    fn pinned_path(test: &str) -> Option<PathBuf> {
+        let path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.tools/provers/vampire-4.9/vampire");
+        match path.canonicalize() {
+            Ok(path) => Some(path),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                use std::io::Write;
+                writeln!(
+                    std::io::stderr(),
+                    "SKIP {test}: provisioned Vampire 4.9 is absent at {}: {error}",
+                    path.display()
+                )
+                .expect("report Vampire skip reason");
+                None
+            }
+            Err(error) => panic!(
+                "cannot resolve provisioned Vampire at {}: {error}",
+                path.display()
+            ),
+        }
     }
 
-    fn real_completed_run(problem: &AtpProblem, run_id: &str) -> BackendRunResult {
-        let executable = pinned_path();
+    fn real_completed_run(problem: &AtpProblem, run_id: &str) -> Option<BackendRunResult> {
+        let executable = pinned_path(run_id)?;
         let command = BackendCommand::new(
             executable.clone(),
             [
@@ -1933,7 +1948,7 @@ mod vampire_extraction_refusal_tests {
         assert_eq!(result.termination(), BackendTermination::Exited);
         assert!(result.child_reaped());
         assert!(result.version_record().is_some_and(pinned_vampire_version));
-        result
+        Some(result)
     }
 
     fn replace_output(result: &mut BackendRunResult, output: &[u8]) {
@@ -1953,7 +1968,9 @@ mod vampire_extraction_refusal_tests {
     #[test]
     fn real_completed_run_rejects_missing_or_malformed_szs_status() {
         let (problem, handoff) = fixture();
-        let completed = real_completed_run(&problem, "vampire-negative-status");
+        let Some(completed) = real_completed_run(&problem, "vampire-negative-status") else {
+            return;
+        };
         for malformed in [
             b"".as_slice(),
             b"% SZS status Theorem\n% SZS status Unsatisfiable\n".as_slice(),
@@ -1991,7 +2008,9 @@ mod vampire_extraction_refusal_tests {
     #[test]
     fn unknown_advisory_label_discards_the_whole_report_and_finds_all_premises() {
         let (problem, handoff) = fixture();
-        let completed = real_completed_run(&problem, "vampire-negative-advisory");
+        let Some(completed) = real_completed_run(&problem, "vampire-negative-advisory") else {
+            return;
+        };
         let mut run = completed;
         replace_output(
             &mut run,
@@ -2017,7 +2036,9 @@ mod vampire_extraction_refusal_tests {
     #[test]
     fn no_advisory_uses_all_premises_and_proof_trace_cannot_supply_payload() {
         let (problem, handoff) = fixture();
-        let completed = real_completed_run(&problem, "vampire-negative-proof-payload");
+        let Some(completed) = real_completed_run(&problem, "vampire-negative-proof-payload") else {
+            return;
+        };
         let mut run = completed;
         let offered = b"% SZS status Theorem\n% SZS output start Proof\nfof(step, plain, q(a), inference(resolution, [], [axiom])).\n% SZS output end Proof\n";
         replace_output(&mut run, offered);
@@ -2050,7 +2071,10 @@ mod vampire_extraction_refusal_tests {
     #[test]
     fn proof_claims_cannot_supply_context_polarity_or_import_bindings() {
         let (problem, handoff) = fixture();
-        let completed = real_completed_run(&problem, "vampire-negative-inferred-context");
+        let Some(completed) = real_completed_run(&problem, "vampire-negative-inferred-context")
+        else {
+            return;
+        };
         let mut baseline = completed.clone();
         replace_output(&mut baseline, b"% SZS status Theorem\n");
         let baseline = extract_vampire_evidence(baseline, &problem, &handoff, Some([1, 2, 0, 2]));
@@ -2136,6 +2160,11 @@ mod vampire_extraction_refusal_tests {
 
     #[test]
     fn bare_executable_names_are_rejected_before_probe_or_solve() {
+        let Some(executable) =
+            pinned_path("bare_executable_names_are_rejected_before_probe_or_solve")
+        else {
+            return;
+        };
         let (problem, handoff) = fixture();
         let dir = TestDir::new();
         let name = format!(
@@ -2143,11 +2172,11 @@ mod vampire_extraction_refusal_tests {
             dir.path().file_name().unwrap().to_str().unwrap()
         );
         let alias = PathBuf::from(&name);
-        std::os::unix::fs::symlink(pinned_path(), &alias).expect("local pinned-binary alias");
+        std::os::unix::fs::symlink(&executable, &alias).expect("local pinned-binary alias");
         for bare_probe in [false, true] {
             let command = BackendCommand::new(
                 if bare_probe {
-                    pinned_path()
+                    executable.clone()
                 } else {
                     alias.clone()
                 },
@@ -2176,7 +2205,7 @@ mod vampire_extraction_refusal_tests {
                     if bare_probe {
                         alias.clone()
                     } else {
-                        pinned_path()
+                        executable.clone()
                     },
                     vec!["--version".to_owned()],
                     Duration::from_secs(1),
