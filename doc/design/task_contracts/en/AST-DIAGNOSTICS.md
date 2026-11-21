@@ -1,6 +1,7 @@
 # Task AST-DIAGNOSTICS: Reflection descriptor preparation
 Canonical language: English; [Japanese pointer](../ja/AST-DIAGNOSTICS.md).
 Status: frozen descriptor scope; producer adoption deferred. Tier: full gates.
+Bounded adoption is separately owned by [E0206](AST-DIAGNOSTICS-E0206.md); this descriptor freeze remains unchanged.
 Primary owner: [mizar-diagnostics](../../mizar-diagnostics/en/00.crate_plan.md).
 Consumers: future parser/checker, VC/proof/MVM, mizar-test and tooling adoption.
 Dependencies/readiness: existing registry infrastructure suffices for descriptors;
