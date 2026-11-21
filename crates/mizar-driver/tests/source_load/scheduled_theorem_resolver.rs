@@ -560,6 +560,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         )
         .unwrap();
     let mut driver = CompilerDriver::new(builder.build().unwrap());
+    let mut guarded_driver = None;
     #[expect(
         clippy::type_complexity,
         reason = "retain genuine Core, preparation, VC, and discharge handles with their source session"
@@ -569,6 +570,11 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
         Vec<AnyPhaseOutputRef>,
         mizar_driver::request::BuildSession,
         [Hash; 2],
+        Option<(
+            std::sync::Arc<PhaseOutputPublisher>,
+            Vec<AnyPhaseOutputRef>,
+            [usize; 2],
+        )>,
     )> = None;
     for (generation, (backend_free, main)) in [false, true]
         .into_iter()
@@ -1077,6 +1083,7 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 assert_eq!(fs::read_dir(&parent_root).unwrap().count(), 0, "{case}");
             }
         }
+        let mut guarded_previous = None;
         if !backend_free {
             let guarded_verifier = verifier
                 .clone()
@@ -1154,8 +1161,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 }
                 guarded_input.worker_count = workers;
                 guarded_input.completion_order = order;
-                let submission = CompilerDriver::new(guarded_builder.build().unwrap())
-                    .with_output_publisher(guarded_owner.clone())
+                let mut producer = if workers == 1 {
+                    guarded_driver
+                        .take()
+                        .unwrap_or_else(|| CompilerDriver::new(guarded_builder.build().unwrap()))
+                } else {
+                    CompilerDriver::new(guarded_builder.build().unwrap())
+                }
+                .with_output_publisher(guarded_owner.clone());
+                let submission = producer
                     .submit_captured(
                         session.clone(),
                         &ids,
@@ -1164,6 +1178,9 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                         Default::default(),
                     )
                     .unwrap();
+                if workers == 1 {
+                    guarded_driver = Some(producer);
+                }
                 assert_eq!(submission.session.captured(), &captured);
                 assert_eq!(
                     submission.status,
@@ -1265,6 +1282,21 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 }
             }
             assert_eq!(guarded_outputs, if stage >= 3 { [1, 1] } else { [0, 0] });
+            guarded_driver
+                .as_ref()
+                .unwrap()
+                .validate_current_native_diagnostics(actual.session.id(), &snapshots)
+                .unwrap();
+            guarded_previous = Some((
+                actual_owner.clone(),
+                actual_run
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| row.output_refs.iter().cloned())
+                    .collect::<Vec<_>>(),
+                guarded_outputs,
+            ));
         }
         let replay_session = (backend_free && stage == 3).then(|| session.clone());
         let clean = clean_driver
@@ -1322,25 +1354,43 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
             );
         }
         assert_eq!(actual.missing_services, clean.missing_services);
-        if let Some((old_owner, old_outputs, old_session, old_hashes)) = previous.take() {
+        if let Some((old_owner, old_outputs, old_session, old_hashes, old_guarded)) =
+            previous.take()
+        {
             assert_ne!(hashes[0], old_hashes[0]);
             assert_eq!(hashes[1], old_hashes[1]);
             let old_snapshot = old_session.captured().snapshot().id;
             assert_ne!(snapshot, old_snapshot);
-            old_owner
-                .replace_current_snapshot(old_snapshot, snapshot)
-                .unwrap();
-            for old_output in &old_outputs {
-                for target in [old_snapshot, snapshot] {
-                    assert!(
-                        old_owner
-                            .validate_output(
-                                target,
-                                old_output,
-                                OutputAuthorization::CurrentPackage
-                            )
-                            .is_err()
-                    );
+            let had_guarded = old_guarded.is_some();
+            if let Some((_, outputs, expected)) = &old_guarded {
+                assert_eq!(
+                    ["SourceTheoremVampireRun", "SourceTheoremVampireKernelCheck"].map(|kind| {
+                        outputs
+                            .iter()
+                            .filter(|output| output.output_kind() == &OutputKind::new(kind))
+                            .count()
+                    }),
+                    *expected
+                );
+            }
+            for (old_owner, old_outputs) in std::iter::once((old_owner, old_outputs))
+                .chain(old_guarded.map(|(owner, outputs, _)| (owner, outputs)))
+            {
+                old_owner
+                    .replace_current_snapshot(old_snapshot, snapshot)
+                    .unwrap();
+                for old_output in &old_outputs {
+                    for target in [old_snapshot, snapshot] {
+                        assert!(
+                            old_owner
+                                .validate_output(
+                                    target,
+                                    old_output,
+                                    OutputAuthorization::CurrentPackage
+                                )
+                                .is_err()
+                        );
+                    }
                 }
             }
             assert_eq!(
@@ -1349,6 +1399,15 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                     .unwrap_err(),
                 "obsolete diagnostic session"
             );
+            if had_guarded {
+                assert!(
+                    guarded_driver
+                        .as_ref()
+                        .unwrap()
+                        .validate_current_native_diagnostics(old_session.id(), &snapshots)
+                        .is_err()
+                );
+            }
         }
         driver
             .validate_current_native_diagnostics(actual.session.id(), &snapshots)
@@ -3436,7 +3495,13 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 } else {
                     stale_outputs
                 };
-                previous = Some((owner.clone(), stale_outputs, actual.session.clone(), hashes));
+                previous = Some((
+                    owner.clone(),
+                    stale_outputs,
+                    actual.session.clone(),
+                    hashes,
+                    guarded_previous.take(),
+                ));
             }
         }
         for (producer, submission) in [(&driver, &actual), (&clean_driver, &clean)] {
