@@ -559,6 +559,11 @@ API より前に実 check/Core/raw graph/VC74 handoff、v1 parse、実 name enco
 原文、parameter rename、Unicode trivia、algorithm owner rename を baseline で扱う。別 snapshot と default/development/interactive policy の変更は原文のみに独立の case とし、直積にしない。実 raw Open/Deferred/不完全 anchor/accounting と source/nodes/symbols/policy/先行実 result を保持し、編集間 hash 不変は仮定しない。
 absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ensures 二 return Core は既存 generator String、object result の bare-return 実 source は既存 checker String を absent-id/disabled-policy より先に返す。valid source/handoff 後の empty・formula-only format は scheduling error、absent target は disabled policy より先。既存 lower profile/normal grammar/name/context/policy の拒否 matrix を再利用し、架空 producer や checker test の重複は禁止。
 
+## Original E1 typing request-identity association
+
+`check_source_algorithm_e1_typing(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC typing checker](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。既存 `(ProofObligationIdentity, DependencySlice)` ペアを atomic に返す。
+検査済みの元 typing 要求だけを関連付ける。native result 前提、新 type、detached input、policy/adoption、generic evidence 変換はない。currentness は呼出側責務。Open4/Deferred、raw unknown/incomplete/cache miss を保持する。single-valuedness、意味的 environment 解釈、opaque type、E4 converse、広い credit は対象外で、登録済み質問と formula-cycle hardening は延期する。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。

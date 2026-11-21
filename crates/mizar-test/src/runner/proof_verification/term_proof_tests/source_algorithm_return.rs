@@ -3021,6 +3021,19 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                         "Core mutation {mutation} must precede selection {selected:?}"
                     );
                 }
+                assert_eq!(
+                    mizar_proof::status::check_source_algorithm_e1_typing(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        selected,
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core/CFG mutation {mutation} must precede Proof selection {selected:?}"
+                );
             }
         }
     });
@@ -4186,6 +4199,18 @@ fn source_algorithm_typing_descriptor_refuses_every_other_role_and_absent_id() {
                     "algorithms.direct_return.invalid_e1_typing_request"
                 );
             }
+            assert_eq!(
+                mizar_proof::status::check_source_algorithm_e1_typing(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    selected,
+                )
+                .unwrap_err(),
+                "algorithms.direct_return.invalid_e1_typing_request"
+            );
         }
     });
 }
@@ -5479,6 +5504,25 @@ fn source_algorithm_e4_reduction_uses_renamed_relocated_return_and_original_fres
                 .unwrap(),
                 typing,
             );
+            let expected_typing = source_algorithm_direct_return_reference(
+                source,
+                check,
+                symbols,
+                parent.snapshot(),
+                0,
+            );
+            assert_eq!(
+                mizar_proof::status::check_source_algorithm_e1_typing(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    parent.snapshot(),
+                    VcId::new(1),
+                )
+                .unwrap(),
+                (expected_typing.0, expected_typing.4)
+            );
             let ContextEntryKind::BinderDeclaration {
                 var: typing_binder, ..
             } = parent.vcs()[1].local_context.entries()[typing.1.index()].kind
@@ -5701,6 +5745,20 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                                     expected
                                 );
                             }
+                        }
+                        for selected in [VcId::new(1), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                mizar_proof::status::check_source_algorithm_e1_typing(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    selected,
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
                         }
                         assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
                     }
@@ -6892,6 +6950,71 @@ fn source_algorithm_e4_validator_handoff_preserves_selection_and_upstream_error_
                 },
             );
         }
+    });
+}
+
+#[test]
+fn source_algorithm_e1_typing_proof_association_preserves_original_identity_and_raw_slice() {
+    use mizar_proof::status::check_source_algorithm_e1_typing as associate;
+    use mizar_vc::{
+        dependency_slice::DependencySliceCompleteness,
+        generator::check_source_algorithm_e1_typing_request as checked, vc_ir::VcStatus,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+        for snapshot in [vcs.snapshot(), snapshot_id(1)] {
+            let expected =
+                source_algorithm_direct_return_reference(source, check, symbols, snapshot, 0);
+            let descriptor = checked(
+                source,
+                check,
+                symbols,
+                core,
+                snapshot,
+                &generation,
+                &schema,
+                VcId::new(1),
+            )
+            .unwrap();
+            let raw = source_algorithm_direct_return_slice_oracle(
+                source,
+                check,
+                symbols,
+                core,
+                &descriptor.0,
+                &generation,
+            );
+            assert_eq!(&expected.4, raw.slice_for(VcId::new(1)).unwrap());
+            assert!(
+                descriptor
+                    .0
+                    .vcs()
+                    .iter()
+                    .all(|vc| vc.status == VcStatus::Open)
+            );
+            assert!(descriptor.0.seed_accounting().iter().any(|entry| {
+                entry.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+            }));
+            for _ in 0..2 {
+                let (identity, slice) =
+                    associate(source, check, symbols, core, snapshot, VcId::new(1)).unwrap();
+                assert_eq!((&identity, &slice), (&expected.0, &expected.4));
+                assert_eq!(slice, descriptor.5);
+                assert_eq!(slice.status(), &VcStatus::Open);
+                assert_eq!(
+                    slice.completeness(),
+                    DependencySliceCompleteness::IncompleteUncacheable
+                );
+                assert!(!slice.unknowns().is_empty());
+                assert!(slice.requires_cache_miss());
+            }
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
     });
 }
 

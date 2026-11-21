@@ -59,6 +59,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `VcProofSelection`、`ProofSelectionSource`、`ArtifactProofSelection`、`ArtifactProofSelectionError`、`merge_artifact_proof_selections` | `selection.md` の artifact proof selection merge section。 | merge canonical order、source/class compatibility、duplicate source、trusted precedence、same-class tie-break、non-trusted preservation tests。 | consistent |
 
 ### Status
+`check_source_algorithm_e1_typing`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
 `check_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-request-identity-association).
 `consume_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-current-policy-consumption).
 `NativeE4NormalReturn`: [sole API owner](./status.md#native-original-e4-adoption).
