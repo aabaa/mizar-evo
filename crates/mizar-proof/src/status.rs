@@ -1199,23 +1199,47 @@ pub fn check_source_algorithm_e1_typing(
     ),
     String,
 > {
-    let descriptor = mizar_vc::generator::check_source_algorithm_e1_typing_request(
-        source,
-        check,
-        symbols,
-        core,
-        snapshot,
-        &mizar_vc::vc_ir::GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1"),
-        &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1"),
-        vc_id,
-    )?;
+    check_source_algorithm_e1_typing_with_schema(source, check, symbols, core, snapshot, vc_id)
+        .map(|(identity, slice, _)| (identity, slice))
+}
+
+/// Associates the original E1 typing identity and whole raw slice with its same-call Kernel schema.
+/// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
+pub fn check_source_algorithm_e1_typing_with_schema(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        u16,
+    ),
+    String,
+> {
+    let (descriptor, checker_schema) =
+        mizar_vc::generator::check_source_algorithm_e1_typing_request_with_schema(
+            source,
+            check,
+            symbols,
+            core,
+            snapshot,
+            &mizar_vc::vc_ir::GenerationSchemaVersion::new(
+                "mizar-vc-generation-vc53-direct-return-v1",
+            ),
+            &mizar_vc::vc_ir::VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1"),
+            vc_id,
+        )?;
     let (identity, slice) = source_algorithm_direct_return_obligation_identity(
         source, check, symbols, snapshot, vc_id,
     )?;
     if descriptor.5 != slice {
         return Err("algorithm.proof.invalid_direct_return_request".to_owned());
     }
-    Ok((identity, slice))
+    Ok((identity, slice, checker_schema))
 }
 
 /// Associates the original E1 single-valuedness identity and whole raw slice after same-call checking.

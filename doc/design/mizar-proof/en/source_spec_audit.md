@@ -59,7 +59,7 @@ matching crate or module-level boundary comment:
 | `VcProofSelection`, `ProofSelectionSource`, `ArtifactProofSelection`, `ArtifactProofSelectionError`, `merge_artifact_proof_selections` | Artifact proof selection merge section in `selection.md`. | Merge canonical order, source/class compatibility, duplicate source, trusted precedence, same-class tie-break, and non-trusted preservation tests. | consistent |
 
 ### Status
-`check_source_algorithm_e1_typing`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
+`check_source_algorithm_e1_typing`, `check_source_algorithm_e1_typing_with_schema`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
 `check_source_algorithm_e1_single_valuedness`: [sole API owner](./status.md#original-e1-single-valuedness-request-identity-association).
 `check_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-request-identity-association).
 `consume_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-current-policy-consumption).
