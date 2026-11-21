@@ -774,6 +774,20 @@ Someだけ既存supported descriptor schemaへ正確に `;witness_file_path_pref
 同じscheduled_theorem_resolver_edits_match_independent_clean_modules gateを同じtaskで拡張する。backend1+evidence1とbackendfree+evidence1、全5編集、独立clean/incremental store、worker1/4、canonical/reversed captureを保ちowner/clean builderをopt-inにする。新kind権限だけ増やし旧payload/query/Kernel4+Atp metadata/NoKey/stale/pair全比較を保持する。必要なら実kindでrole選択し、全FILE値/独立68Ref2/hash/実Kernel直接parentと推移的元3/source/snapshot/module/config/path/currentnessを比較する。backend1は実BackendRun欠落のままでKernel/FILE成功は無い。phase数/event数だけの達成や隠れAtp物理保持の主張は禁止。
 既存source_load末尾に3family `native_theorem_candidate_witness_file_matches_current_kernel`、`native_theorem_candidate_witness_file_preserves_refusals`、`scheduled_theorem_candidate_witness_files_preserve_pair_and_rights` を追加する。既存helper/fixtureは不変、新helperは必要かつ実3callsite時だけ。新API前に実104/独立同capture68/実KernelPolicyInput/本物TrustedAX/FILE/ref/hash/期待IRbytesを得る。Disk/residentとOpenBuffer/Blob、path/policy/source変種、実production Blob getと全FILEの一致・独立期待canonicalbytes/利用可能fingerprint、公開Artifact parse/hash破損control、raw無割当/purity、公開lineage/source/currentness、旧factory pair-onlyと新descriptor/prefix拒否、構成可能な本物rejectedまたは静的dataflow、cancel/rights/欠落・別・収集・obsolete ref、Atp metadata-only、lowerFIRST/一優先例、late child拒否時の本物Kernel部分公開/abandoned slotを検証する。IR内部blob bytesとproduction decoder closureには公開変異/アクセスAPIが無いため、その拒否分岐は実source dataflowと既存IR storage fail-closedテストに委ね、新seamやdecoder複製を作らない。偽Accepted/Kernel/token/mainArtifact/注入/AST SourceId編集はせず、下位matrixは継承する。
 
+## Scheduled guarded Vampire backend
+
+明示的な guarded Vampire 経路は
+guarded Vampire BackendRun と実候補用の別 KernelCheck を登録する。
+実 Core/VC/Discharge ancestry、元の local handoff、固定 runner の実候補と安定 metadata を保持する。
+Kernel service は返された候補 bytes を parse し、元 handoff components と照合して
+通常 Kernel と既存 Proof policy evaluator で検査する。等式 instances は返された
+実候補から取り、local candidate producer の出力へ置換しない。
+bytes は設定・binding・候補と実 process identity/version metadata を保持する。
+経過時間と生 process capture は diagnostic のままとする。
+retained decoder は局所 immutable transport であり cache/persistent replay 権限を与えない。
+候補欠落、process failure、取消し、古い親から accepted result を得ることはできない。
+既存 local-candidate/witness/Artifact profile の境界は維持する。
+
 ## Source theorem unpublished module draft
 真正な captured-source プロファイルは Disk と OpenBuffer を同じ証明、lock/configuration、lineage、source/dependency hash、manifest の検証で受け入れる。通常の Artifact schema 1.2 は元の SourceId、origin、OpenBuffer document version、captured-text hash を記録し、保持した Artifact と SnapshotPublished は元の source/map の対応を維持する。OpenBuffer の phase と Artifact data は OpenBuffer/InternalOnly の認可を使う。capture と保持読み取りは editor currentness を付与せず、受理した編集、version-only replacement、close/reopen、新しい Disk capture による失効は LSP 所有者の境界のままである。save は既存 capture の origin を変更しない。
 

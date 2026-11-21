@@ -822,6 +822,56 @@ impl PhaseRegistryBuilder {
         Ok(self.register(service))
     }
 
+    pub fn register_source_theorem_vampire_backend(
+        &mut self,
+        discharge_policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+    ) -> Result<&mut Self, String> {
+        let candidate = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy: discharge_policy,
+            logic_profile,
+            concrete_format: mizar_atp::problem::ConcreteFormat::Tptp,
+        };
+        if candidate.configuration_tags().is_none()
+            || candidate.logic_profile.fragment() != mizar_atp::problem::LogicFragment::Fof
+        {
+            return Err("unsupported guarded Vampire configuration".to_owned());
+        }
+        Ok(
+            self.register(crate::frontend_adapter::SourceTheoremVampireService {
+                candidate,
+                verifier_policy,
+                kernel_check: false,
+            }),
+        )
+    }
+
+    pub fn register_source_theorem_vampire_kernel_check(
+        &mut self,
+        discharge_policy: mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        verifier_policy: mizar_proof::policy::VerifierPolicy,
+    ) -> Result<&mut Self, String> {
+        let candidate = crate::frontend_adapter::SourceTheoremAtpSolveService {
+            policy: discharge_policy,
+            logic_profile,
+            concrete_format: mizar_atp::problem::ConcreteFormat::Tptp,
+        };
+        if candidate.configuration_tags().is_none()
+            || candidate.logic_profile.fragment() != mizar_atp::problem::LogicFragment::Fof
+        {
+            return Err("unsupported guarded Vampire configuration".to_owned());
+        }
+        Ok(
+            self.register(crate::frontend_adapter::SourceTheoremVampireService {
+                candidate,
+                verifier_policy,
+                kernel_check: true,
+            }),
+        )
+    }
+
     pub fn register_source_theorem_candidate_check(
         &mut self,
         discharge_policy: mizar_vc::discharge::DischargePolicy,

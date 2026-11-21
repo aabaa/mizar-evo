@@ -1137,7 +1137,8 @@ impl CompilerDriver {
                     SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
-                    SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
+                    SourceTheoremVampireService, SourceTheoremVcDischargeService,
+                    SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
@@ -1251,6 +1252,72 @@ impl CompilerDriver {
                                 }).count() == 1
                         })
                 };
+            let vampire_profile = matches!(self.registry.descriptors().len(), 13 | 14)
+                && self
+                    .registry
+                    .service_for_phase(PipelinePhase::BackendRun)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVampireService>()
+                            && self
+                                .registry
+                                .descriptor_for_phase(PipelinePhase::BackendRun)
+                                .ok()
+                                == Some(&service.phase())
+                    })
+                && (self.registry.descriptors().len() == 13
+                    || self
+                        .registry
+                        .service_for_phase(PipelinePhase::KernelCheck)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<SourceTheoremVampireService>()
+                                && self
+                                    .registry
+                                    .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                    .ok()
+                                    == Some(&service.phase())
+                                && self
+                                    .registry
+                                    .descriptor_for_phase(PipelinePhase::BackendRun)
+                                    .is_ok_and(|backend| {
+                                        backend.schema_version.strip_prefix(
+                                            "mizar-driver/source-theorem-vampire/v1;kernel=false;",
+                                        ) == service.phase().schema_version.strip_prefix(
+                                            "mizar-driver/source-theorem-vampire/v1;kernel=true;",
+                                        )
+                                    })
+                        }))
+                && {
+                    use mizar_build::task_graph::{TaskKind, WorkUnit};
+                    let mut backends = std::collections::BTreeSet::new();
+                    let mut evidence = std::collections::BTreeSet::new();
+                    task_graph
+                        .tasks()
+                        .iter()
+                        .all(|task| match (&task.kind, &task.unit) {
+                            (
+                                TaskKind::BackendRun,
+                                WorkUnit::BackendAttempt {
+                                    module,
+                                    backend_profile,
+                                    ..
+                                },
+                            ) => {
+                                task.phases == [PipelinePhase::BackendRun]
+                                    && backend_profile.as_str() == "vampire-4.9"
+                                    && backends
+                                        .insert((module.package.as_str(), module.path.as_str()))
+                            }
+                            (TaskKind::KernelCheck, WorkUnit::EvidenceCandidate { module, .. }) => {
+                                task.phases == [PipelinePhase::KernelCheck]
+                                    && evidence
+                                        .insert((module.package.as_str(), module.path.as_str()))
+                            }
+                            (TaskKind::BackendRun | TaskKind::KernelCheck, _) => false,
+                            _ => true,
+                        })
+                };
             let artifact_profile = self.registry.descriptors().len() == 14
                 && self
                     .registry
@@ -1309,19 +1376,20 @@ impl CompilerDriver {
                             modules.insert((module.package.as_str(), module.path.as_str()))
                         })
                 };
-            let atp_profile = (self.registry.descriptors().len() == 12 || kernel_profile)
-                && self
-                    .registry
-                    .service_for_phase(PipelinePhase::AtpSolve)
-                    .is_ok_and(|service| {
-                        std::any::Any::type_id(service)
-                            == std::any::TypeId::of::<SourceTheoremAtpSolveService>()
-                            && self
-                                .registry
-                                .descriptor_for_phase(PipelinePhase::AtpSolve)
-                                .ok()
-                                == Some(&service.phase())
-                    });
+            let atp_profile =
+                (self.registry.descriptors().len() == 12 || kernel_profile || vampire_profile)
+                    && self
+                        .registry
+                        .service_for_phase(PipelinePhase::AtpSolve)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<SourceTheoremAtpSolveService>()
+                                && self
+                                    .registry
+                                    .descriptor_for_phase(PipelinePhase::AtpSolve)
+                                    .ok()
+                                    == Some(&service.phase())
+                        });
             let discharge_profile = (self.registry.descriptors().len() == 11 || atp_profile)
                 && self
                     .registry

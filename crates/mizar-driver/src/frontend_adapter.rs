@@ -142,7 +142,9 @@ pub use artifact::{PublishedSourceMetadata, SnapshotPublication};
 pub(crate) use artifact::{
     SourceTheoremArtifactCommitService, SourceTheoremReflexivityArtifactCommitService,
 };
-pub(crate) use candidate::{SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService};
+pub(crate) use candidate::{
+    SourceTheoremAtpSolveService, SourceTheoremCandidateCheckService, SourceTheoremVampireService,
+};
 pub(crate) use checking::{
     SourceTheoremOverloadResolutionService, SourceTheoremRegistrationResolutionService,
     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,

@@ -391,7 +391,8 @@ fn dispatch_registry_phase(
                     SourceTheoremReflexivityKernelCheckService,
                     SourceTheoremRegistrationResolutionService,
                     SourceTheoremSignatureCollectionService, SourceTheoremTypeCheckingService,
-                    SourceTheoremVcDischargeService, SourceTheoremVcGenerationService,
+                    SourceTheoremVampireService, SourceTheoremVcDischargeService,
+                    SourceTheoremVcGenerationService,
                 },
                 registry::PhaseService,
             };
@@ -420,6 +421,9 @@ fn dispatch_registry_phase(
                     task.task.unit,
                     mizar_build::task_graph::WorkUnit::EvidenceCandidate { .. }
                 );
+            let backend_task = task.task.kind == mizar_build::task_graph::TaskKind::BackendRun
+                && task.task.phases == [PipelinePhase::BackendRun]
+                && matches!(&task.task.unit, mizar_build::task_graph::WorkUnit::BackendAttempt { backend_profile, .. } if backend_profile.as_str() == "vampire-4.9");
             let artifact_task = task.task.kind == mizar_build::task_graph::TaskKind::ArtifactCommit
                 && task.task.phases == [PipelinePhase::ArtifactCommit]
                 && matches!(
@@ -517,19 +521,53 @@ fn dispatch_registry_phase(
                                 .ok()
                                 == Some(&service.phase())
                     });
-            let atp_service = (registry.descriptors().len() == 12 || kernel_service)
+            let vampire_service = matches!(registry.descriptors().len(), 13 | 14)
                 && registry
-                    .service_for_phase(PipelinePhase::AtpSolve)
+                    .service_for_phase(PipelinePhase::BackendRun)
                     .is_ok_and(|service| {
                         std::any::Any::type_id(service)
-                            == std::any::TypeId::of::<SourceTheoremAtpSolveService>()
-                            && registry.descriptor_for_phase(PipelinePhase::AtpSolve).ok()
+                            == std::any::TypeId::of::<SourceTheoremVampireService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::BackendRun)
+                                .ok()
                                 == Some(&service.phase())
-                    })
-                && matches!(
-                    registry.descriptor_for_phase(PipelinePhase::BackendRun),
-                    Err(PhaseRegistryError::MissingPhaseService { .. })
-                );
+                    });
+            let vampire_kernel_service = vampire_service
+                && registry.descriptors().len() == 14
+                && registry
+                    .service_for_phase(PipelinePhase::KernelCheck)
+                    .is_ok_and(|service| {
+                        std::any::Any::type_id(service)
+                            == std::any::TypeId::of::<SourceTheoremVampireService>()
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::KernelCheck)
+                                .ok()
+                                == Some(&service.phase())
+                            && registry
+                                .descriptor_for_phase(PipelinePhase::BackendRun)
+                                .is_ok_and(|backend| {
+                                    backend.schema_version.strip_prefix(
+                                        "mizar-driver/source-theorem-vampire/v1;kernel=false;",
+                                    ) == service.phase().schema_version.strip_prefix(
+                                        "mizar-driver/source-theorem-vampire/v1;kernel=true;",
+                                    )
+                                })
+                    });
+            let atp_service =
+                (registry.descriptors().len() == 12 || kernel_service || vampire_service)
+                    && registry
+                        .service_for_phase(PipelinePhase::AtpSolve)
+                        .is_ok_and(|service| {
+                            std::any::Any::type_id(service)
+                                == std::any::TypeId::of::<SourceTheoremAtpSolveService>()
+                                && registry.descriptor_for_phase(PipelinePhase::AtpSolve).ok()
+                                    == Some(&service.phase())
+                        })
+                    && (vampire_service
+                        || matches!(
+                            registry.descriptor_for_phase(PipelinePhase::BackendRun),
+                            Err(PhaseRegistryError::MissingPhaseService { .. })
+                        ));
             let signature_prefix = check_and_elaborate
                 && registry
                     .descriptor_for_phase(PipelinePhase::SignatureCollection)
@@ -549,6 +587,7 @@ fn dispatch_registry_phase(
                 || vc_task
                 || discharge_task
                 || atp_task
+                || backend_task
                 || kernel_task
                 || artifact_task)
                 && registry
@@ -711,13 +750,21 @@ fn dispatch_registry_phase(
                     && vc_profile
                     && reflexivity_service
                     && task.task.dependencies.len() == 1);
+            let vampire_backend_prefix =
+                backend_task && discharge_profile && atp_service && vampire_service;
+            let vampire_kernel_prefix =
+                kernel_task && discharge_profile && atp_service && vampire_kernel_service;
             let kernel_prefix = kernel_task && discharge_profile && atp_service && kernel_service;
             let artifact_prefix = artifact_task
                 && discharge_profile
                 && atp_service
                 && kernel_service
                 && artifact_service;
-            let candidate_prefix = atp_prefix || kernel_prefix || artifact_prefix;
+            let candidate_prefix = atp_prefix
+                || kernel_prefix
+                || artifact_prefix
+                || vampire_backend_prefix
+                || vampire_kernel_prefix;
             vc_group = vc_prefix && check_and_elaborate;
             if !signature_prefix
                 && !type_prefix
@@ -771,10 +818,18 @@ fn dispatch_registry_phase(
                         .descriptor_for_phase(PipelinePhase::AtpSolve)
                         .ok()?
                         .clone(),
-                    [PipelinePhase::KernelCheck] if kernel_prefix || reflexivity_prefix => registry
-                        .descriptor_for_phase(PipelinePhase::KernelCheck)
+                    [PipelinePhase::BackendRun] if vampire_backend_prefix => registry
+                        .descriptor_for_phase(PipelinePhase::BackendRun)
                         .ok()?
                         .clone(),
+                    [PipelinePhase::KernelCheck]
+                        if kernel_prefix || reflexivity_prefix || vampire_kernel_prefix =>
+                    {
+                        registry
+                            .descriptor_for_phase(PipelinePhase::KernelCheck)
+                            .ok()?
+                            .clone()
+                    }
                     [PipelinePhase::ArtifactCommit]
                         if artifact_prefix || reflexivity_artifact_prefix =>
                     {
@@ -821,8 +876,13 @@ fn dispatch_registry_phase(
                     {
                         module
                     }
+                    mizar_build::task_graph::WorkUnit::BackendAttempt { module, .. }
+                        if vampire_backend_prefix =>
+                    {
+                        module
+                    }
                     mizar_build::task_graph::WorkUnit::EvidenceCandidate { module, .. }
-                        if kernel_prefix || reflexivity_prefix =>
+                        if kernel_prefix || reflexivity_prefix || vampire_kernel_prefix =>
                     {
                         module
                     }
@@ -882,13 +942,13 @@ fn dispatch_registry_phase(
                 } else {
                     Vec::new()
                 };
-                let direct = if discharge_prefix || candidate_prefix || reflexivity_prefix {
-                    let (phase, kind) = if candidate_prefix {
-                        (PipelinePhase::VcDischarge, "SourceTheoremDischarge")
+                let upstream = if vampire_backend_prefix || vampire_kernel_prefix {
+                    let (phase, kind) = if vampire_backend_prefix {
+                        (PipelinePhase::AtpSolve, "SourceTheoremCandidateInputs")
                     } else {
-                        (PipelinePhase::VcGenerate, "SourceTheoremVC")
+                        (PipelinePhase::BackendRun, "SourceTheoremVampireRun")
                     };
-                    let mut candidates = task.task.dependencies.iter().filter_map(|id| {
+                    let mut outputs = task.task.dependencies.iter().filter_map(|id| {
                         let [result] = phase_results.get(id)?.as_slice() else {
                             return None;
                         };
@@ -902,8 +962,46 @@ fn dispatch_registry_phase(
                             && output.snapshot() == task.snapshot
                             && output.work_unit() == &unit
                             && output.schema_version() == mizar_ir::storage::SchemaVersion::new(1)
-                            && output.lineage().named_input_hashes == named)
+                            && output.lineage().named_input_hashes == named
+                            && output.lineage().parents.len() == 3)
                             .then_some(output)
+                    });
+                    let output = outputs.next()?;
+                    if outputs.next().is_some() {
+                        return None;
+                    }
+                    Some(output)
+                } else {
+                    None
+                };
+                let direct = if discharge_prefix || candidate_prefix || reflexivity_prefix {
+                    let (phase, kind) = if candidate_prefix {
+                        (PipelinePhase::VcDischarge, "SourceTheoremDischarge")
+                    } else {
+                        (PipelinePhase::VcGenerate, "SourceTheoremVC")
+                    };
+                    let mut candidates = phase_results.iter().filter_map(|(id, results)| {
+                        if upstream.is_none() && !task.task.dependencies.contains(id) {
+                            return None;
+                        }
+                        let [result] = results.as_slice() else {
+                            return None;
+                        };
+                        let [output] = result.output_refs.as_slice() else {
+                            return None;
+                        };
+                        (result.status == PhaseStatus::Complete
+                            && result.diagnostics.is_empty()
+                            && output.phase() == &IrPhase::from(phase)
+                            && output.output_kind() == &OutputKind::new(kind)
+                            && output.snapshot() == task.snapshot
+                            && output.work_unit() == &unit
+                            && output.schema_version() == mizar_ir::storage::SchemaVersion::new(1)
+                            && output.lineage().named_input_hashes == named
+                            && upstream.is_none_or(|upstream| {
+                                upstream.lineage().parents.contains(&output.output())
+                            }))
+                        .then_some(output)
                     });
                     let output = candidates.next()?;
                     if candidates.next().is_some() {
@@ -1021,6 +1119,17 @@ fn dispatch_registry_phase(
                     }
                     if candidate_prefix {
                         parents.push(direct?);
+                    }
+                    if let Some(upstream) = upstream {
+                        if ![core.output(), vc?.output(), direct?.output()]
+                            .iter()
+                            .all(|id| upstream.lineage().parents.contains(id))
+                        {
+                            return None;
+                        }
+                        if vampire_kernel_prefix {
+                            parents.push(upstream);
+                        }
                     }
                     if reflexivity_artifact_prefix {
                         let mut kernels = task.task.dependencies.iter().filter_map(|id| {

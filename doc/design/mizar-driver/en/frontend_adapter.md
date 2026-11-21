@@ -781,6 +781,21 @@ This intentionally composes two EXISTING fresh owner checks:104 authenticates ac
 Extend SAME scheduled_theorem_resolver_edits_match_independent_clean_modules gate IMMEDIATELY in this task: both backend1+evidence1 and backendfree+evidence1 modes, all FIVE edits, independent clean/incremental stores, worker1/4 and canonical/reversed capture. Opt-in owner/clean builders and caller grants add only actual new FILE kind. Retain every old whole payload/query/Kernel4+Atp metadata/NoKey/stale/old pair assertion, role-select real Kernel versus FILE if necessary rather than weaken old checks. Compare WHOLE CanonicalJson file and independent same-capture68/normalRef2/wholeFILEhash, actual direct Kernel parent/transitive original3 ancestry/source/snapshot/module/currentness/config/path and real opaque refs; backend1 still has missing BackendRun and no Kernel/FILE. No phase/event-count-only completion or hiddenAtp physical credit.
 Append THREE focused source_load families: native_theorem_candidate_witness_file_matches_current_kernel, native_theorem_candidate_witness_file_preserves_refusals, scheduled_theorem_candidate_witness_files_preserve_pair_and_rights. Existing native helpers/fixtures unchanged; new helpers only if necessary with THREE real callers, default inline. BEFORE new raw/publish calls actual104 and independent same-capture Proof68 products/physical Kernel/resultInput/whole TrustedAX baseline, full exact FILE/reference/hash +expected IRcanonical bytes. Exercise Disk/resident and OpenBuffer/Blob, configured path/policy/source variants, actual production Blob get equal to the whole FILE plus independently expected canonical bytes/available blob fingerprint; malformed public Artifact parse/hash controls, raw purity/no allocation and publisher direct lineage/source origin/currentness; generic7key/FILEhash/IRhash stay distinct. Validate old factory exact pair-only descriptor/results, new descriptor intent/prefix rejection, real rejected data where constructible or static dataflow, cancellation/rights/missing/foreign/collected/stale refs, hiddenAtp metadata-only limit, lower104/68 error FIRST/ONE precedence, late denied-child partial real Kernel publication/abandoned slots. Private IR blob bytes and the production decoder closure have no public mutation/access API: adverse-byte decoder branches receive actual source dataflow review and inherited IR storage fail-closed tests, not a new seam or copied decoder. No fake positive Accepted/Kernel/token/mainArtifact, injected metadata or AST SourceId edits; inherited lower deep matrices stay inherited.
 
+## Scheduled guarded Vampire backend
+
+The explicit guarded Vampire route registers BackendRun and a separate actual-candidate
+KernelCheck. It retains genuine Core/VC/Discharge ancestry, the original local
+handoff and the pinned runner's actual candidate and stable run metadata. The Kernel service parses the
+returned candidate bytes, authenticates their original handoff components, and
+uses normal Kernel checking and the existing Proof policy evaluator. Equality
+instances come from the returned candidate; local candidate output is never substituted.
+Run bytes cover configuration, binding, candidate and actual stable process
+identity/version metadata; elapsed time and raw process captures remain diagnostic.
+Retained decoders are local immutable transport, without cache or persistent
+replay authority. Missing evidence,
+process failure, cancellation and stale parents cannot yield accepted results.
+The existing local-candidate/witness/Artifact profiles keep their boundaries.
+
 ## Source theorem unpublished module draft
 The genuine captured-source profile now admits both Disk and OpenBuffer through the same proof, lock/configuration, lineage, source/dependency hash and manifest checks. Normal Artifact schema 1.2 records the original SourceId, origin, OpenBuffer document version and captured-text hash; retained artifacts and SnapshotPublished keep their original source/map association. OpenBuffer phase and Artifact data use OpenBuffer/InternalOnly authorization. Capture and retained reads do not establish editor currentness; accepted edits, version-only replacement, close/reopen and new Disk capture remain the LSP owner's separate invalidation boundary. Save does not relabel an existing capture.
 

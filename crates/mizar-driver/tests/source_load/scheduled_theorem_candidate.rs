@@ -1,6 +1,12 @@
 use super::*;
 use mizar_ir::publisher::OutputAuthorization;
 
+type GuardedVampireRun = (
+    mizar_atp::backend::EncodedBackendProblem,
+    mizar_atp::backend::BackendCandidateEvidence,
+    (String, Hash, String, String, String),
+);
+
 #[test]
 fn scheduled_theorem_candidate_check_matches_genuine_publication() {
     use mizar_atp::{backend::build_source_theorem_candidate_inputs as build, problem::*};
@@ -1764,4 +1770,817 @@ fn scheduled_theorem_candidate_witness_files_preserve_pair_and_rights() {
             );
         },
     );
+}
+
+#[test]
+fn scheduled_theorem_vampire_genuine_fixture() {
+    use mizar_atp::{backend::*, problem::*, translator::translate_source_theorem_sequent};
+    use mizar_core::core_ir::CoreIr;
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+            KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+            KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+        },
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeOutput, DischargePolicy},
+        kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion, VcSet},
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    for open in [false, true] {
+        with_native_summary_parent(
+            text,
+            open,
+            0,
+            |fixture, _, old, _, _, (session, ids, snapshots)| {
+                let policy = DischargePolicy {
+                    computation_limit: ComputationLimit {
+                        policy: PolicyKey::new("guarded-vampire"),
+                        max_steps: 64,
+                    },
+                };
+                let profile = LogicProfile::try_new(
+                    "guarded-vampire",
+                    LogicFragment::Fof,
+                    EqualitySupport::Supported,
+                    QuantifierPolicy::FirstOrder,
+                    SoftTypeStrategy::ScopedGuardPredicates,
+                    NativePropertySupport::Unsupported,
+                    [ConcreteFormat::Tptp].into_iter().collect(),
+                )
+                .unwrap();
+                let owner = publisher(old.snapshot, 0, &old.work_unit);
+                allow_frontend(&owner, &old.work_unit);
+                for (phase, kind) in [
+                    ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                    ("SignatureCollection", "SourceTheoremModuleSummary"),
+                    ("TypeChecking", "SourceTheoremTypedAst"),
+                    ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                    ("OverloadResolution", "SourceTheoremMetadata"),
+                    ("Elaboration", "SourceTheoremCore"),
+                    ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                    ("VcGenerate", "SourceTheoremVC"),
+                    ("VcDischarge", "SourceTheoremDischarge"),
+                    ("AtpSolve", "SourceTheoremCandidateInputs"),
+                    ("BackendRun", "SourceTheoremVampireRun"),
+                    ("KernelCheck", "SourceTheoremVampireKernelCheck"),
+                ] {
+                    owner.allow_work_unit(AllowedWorkUnit::new(
+                        IrPipelinePhase::new(phase),
+                        OutputKind::new(kind),
+                        IrWorkUnit::new("\"alpha\":\"main\""),
+                    ));
+                }
+                let verifier = mizar_proof::policy::VerifierPolicy::release()
+                    .with_instance_search_limits(Some([1, 0, 1, 2]));
+                let mut builder = PhaseRegistryBuilder::new();
+                builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(
+                        GenerationSchemaVersion::new("guarded"),
+                        VcSchemaVersion::new("guarded"),
+                    )
+                    .register_source_theorem_vc_discharge(policy.clone())
+                    .register_source_theorem_atp_solve(
+                        policy.clone(),
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )
+                    .unwrap()
+                    .register_source_theorem_vampire_backend(
+                        policy.clone(),
+                        profile.clone(),
+                        verifier.clone(),
+                    )
+                    .unwrap()
+                    .register_source_theorem_vampire_kernel_check(
+                        policy.clone(),
+                        profile.clone(),
+                        verifier.clone(),
+                    )
+                    .unwrap();
+                let (_, mut submit) = fixture.submit_request(vec![], vec![]);
+                let WorkUnit::Module { module } = &old.work_unit else {
+                    panic!()
+                };
+                submit.vc_descriptors = vec![mizar_build::task_graph::VcTaskDescriptor::new(
+                    mizar_build::task_graph::VcTaskDescriptorId::new("guarded"),
+                    module.clone(),
+                    mizar_build::task_graph::VcOrderKey::new("0"),
+                    vec![mizar_build::task_graph::BackendProfileId::new(
+                        "vampire-4.9",
+                    )],
+                    vec![mizar_build::task_graph::EvidenceCandidateId::new("guarded")],
+                )];
+                let mut driver = CompilerDriver::new(builder.build().unwrap())
+                    .with_output_publisher(owner.clone());
+                let submission = driver
+                    .submit_captured(session.clone(), ids, snapshots, submit, Default::default())
+                    .unwrap();
+                let refs = submission
+                    .scheduler_run
+                    .as_ref()
+                    .unwrap()
+                    .phase_results
+                    .values()
+                    .flatten()
+                    .flat_map(|row| &row.output_refs)
+                    .collect::<Vec<_>>();
+                let parent = |kind: &str| {
+                    *refs
+                        .iter()
+                        .find(|row| row.output_kind() == &OutputKind::new(kind))
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "missing {kind}; completed kinds {:?}",
+                                refs.iter().map(|row| row.output_kind()).collect::<Vec<_>>()
+                            )
+                        })
+                };
+                let core_ref = parent("SourceTheoremCore");
+                let vc_ref = parent("SourceTheoremVC");
+                let discharge_ref = parent("SourceTheoremDischarge");
+                let core = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<CoreIr>(core_ref, core_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let vcs = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<VcSet>(vc_ref, vc_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let discharge = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<DischargeOutput>(
+                                discharge_ref,
+                                discharge_ref.output_kind(),
+                            )
+                            .unwrap(),
+                    )
+                    .unwrap();
+                let [vc] = vcs.vcs() else {
+                    panic!("genuine singleton VC")
+                };
+                let problem = translate_source_theorem_sequent(
+                    &core,
+                    &vcs,
+                    vc.id,
+                    &discharge,
+                    &policy,
+                    profile.clone(),
+                )
+                .unwrap();
+                let handoff = build_source_theorem_discharge_kernel_handoff(
+                    &core, &vcs, vc.id, &discharge, &policy,
+                )
+                .unwrap();
+                assert!(problem.axioms().is_empty() && problem.type_context().guards().is_empty());
+                let encoded =
+                    EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).unwrap();
+                let executable = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../.tools/provers/vampire-4.9/vampire");
+                let command = BackendCommand::new(
+                    &executable,
+                    [
+                        "--mode",
+                        "vampire",
+                        "--input_syntax",
+                        "tptp",
+                        "--proof",
+                        "tptp",
+                        "--output_axiom_names",
+                        "on",
+                    ]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                )
+                .unwrap();
+                let backend = BackendProfile::new(
+                    BackendProfileId::new("guarded-vampire").unwrap(),
+                    BackendKind::new("vampire").unwrap(),
+                    ConcreteFormat::Tptp,
+                )
+                .with_version_probe(
+                    BackendVersionProbe::new(
+                        &executable,
+                        vec!["--version".into()],
+                        std::time::Duration::from_secs(10),
+                    )
+                    .unwrap(),
+                );
+                let base_run_input = BackendRunInput::new(
+                    BackendRunId::new("guarded-vampire").unwrap(),
+                    encoded.clone(),
+                    backend,
+                    command,
+                    BackendResourceLimits::new(),
+                    BackendIoMode::PrivateProblemFile,
+                    Default::default(),
+                );
+                let run = run_vampire_backend(
+                    base_run_input.clone(),
+                    &problem,
+                    &handoff,
+                    Some([1, 0, 1, 2]),
+                );
+                assert_eq!(run.status(), BackendRunStatus::Proved, "{run:?}");
+                assert!(
+                    run.metadata()
+                        .version_record()
+                        .unwrap()
+                        .parsed_version()
+                        .unwrap()
+                        .starts_with("Vampire 4.9")
+                );
+                let candidate = run.candidate_evidence().unwrap();
+                assert_eq!(candidate.target_binding(), encoded.target_binding());
+                assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+                let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload()
+                else {
+                    panic!("actual formula payload")
+                };
+                let target = handoff.canonical_evidence().target_vc();
+                let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+                let mut parse = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                    KernelProfileRecord::v1(
+                        handoff.canonical_evidence().kernel_profile().profile_id,
+                        ClauseTautologyPolicy::Reject,
+                    ),
+                );
+                parse.accepted_schema_versions.insert(2);
+                let actual = parse_formula_evidence(bytes, &parse).unwrap();
+                let entries = handoff.context_identity().entries().iter().map(|entry| {
+            let mizar_vc::vc_ir::VcFormulaRef::Core(formula) = entry.producer_formula_ref() else { panic!() };
+            let mizar_vc::kernel_evidence_handoff::KernelContextIdentitySource::LocalHypothesis { local_context_id } = entry.source() else { panic!() };
+            KernelContextIdentityEntry::new(
+                KernelContextIdentitySource::LocalHypothesis { local_context_id }, entry.formula_id(),
+                Fingerprint::new(entry.formula_fingerprint().algorithm_id, entry.formula_fingerprint().digest.clone()),
+                KernelFormulaProducerRef::Core(formula),
+            )
+        }).collect();
+                let context = FormulaEvidenceContext::with_context_identity(
+                    Some(handoff.context_identity_hash().as_bytes().to_vec()),
+                    vec![],
+                    vec![],
+                    Some(KernelContextIdentityPayload::new(
+                        target.clone(),
+                        handoff.canonical_hash(),
+                        handoff.context_identity_hash(),
+                        entries,
+                    )),
+                    ImportedFactContextLimits::default(),
+                )
+                .unwrap();
+                let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+                    target_vc_fingerprint: &target,
+                    evidence: &actual,
+                    formula_context: Some(&context),
+                    check_kind: KernelEvidenceCheckKind::ProofObligation,
+                    policy: KernelCheckPolicy::default(),
+                    limits: KernelEvidenceCheckLimits::default(),
+                });
+                assert_eq!(checked.status(), KernelCheckStatus::Accepted);
+                let run_ref = parent("SourceTheoremVampireRun");
+                let scheduled = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<GuardedVampireRun>(run_ref, run_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(&scheduled.1, candidate);
+                assert_eq!(scheduled.0, encoded);
+                assert_eq!(scheduled.2.2, "vampire");
+                assert_eq!(scheduled.2.3, "vampire-4.9");
+                assert!(scheduled.2.4.starts_with("Vampire 4.9"));
+                let kernel_ref = parent("SourceTheoremVampireKernelCheck");
+                let accepted = owner
+                    .storage()
+                    .get(
+                        &owner
+                            .storage()
+                            .typed_handle::<(
+                                mizar_kernel::checker::KernelCheckResult,
+                                mizar_proof::policy::PolicyDecision,
+                            )>(kernel_ref, kernel_ref.output_kind())
+                            .unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(accepted.0, checked);
+                assert_eq!(
+                    accepted.1.class,
+                    mizar_proof::policy::CandidatePolicyClass::KernelVerified
+                );
+                let (inputs, source_input) = native_disk_lookup_context(&submission, ids);
+                for phase in [PipelinePhase::BackendRun, PipelinePhase::KernelCheck] {
+                    for case in [
+                        "missing",
+                        "duplicate",
+                        "extra",
+                        "module",
+                        "source",
+                        "descriptor",
+                        "cancel",
+                        "foreign-token",
+                        "no-publisher",
+                        "no-inputs",
+                        "wrong-backend",
+                    ] {
+                        if case == "wrong-backend" && phase == PipelinePhase::KernelCheck {
+                            continue;
+                        }
+                        let mut parents =
+                            vec![core_ref.clone(), vc_ref.clone(), discharge_ref.clone()];
+                        if phase == PipelinePhase::KernelCheck {
+                            parents.push(run_ref.clone());
+                        }
+                        match case {
+                            "missing" => {
+                                parents.pop();
+                            }
+                            "duplicate" => parents.push(parents[0].clone()),
+                            "extra" => parents.push(parent("FrontendOutput").clone()),
+                            _ => {}
+                        }
+                        let task_module = if case == "module" {
+                            mizar_build::module_index::ModuleId::new(
+                                PackageId::new("alpha"),
+                                ModulePath::new("other"),
+                            )
+                        } else {
+                            module.clone()
+                        };
+                        let descriptor = mizar_build::task_graph::VcTaskDescriptorId::new(
+                            if case == "descriptor" {
+                                "foreign"
+                            } else {
+                                "guarded"
+                            },
+                        );
+                        let work = if phase == PipelinePhase::BackendRun {
+                            WorkUnit::BackendAttempt {
+                                module: task_module,
+                                descriptor,
+                                backend_profile: mizar_build::task_graph::BackendProfileId::new(
+                                    if case == "wrong-backend" {
+                                        "foreign"
+                                    } else {
+                                        "vampire-4.9"
+                                    },
+                                ),
+                            }
+                        } else {
+                            WorkUnit::EvidenceCandidate {
+                                module: task_module,
+                                descriptor,
+                                evidence_candidate:
+                                    mizar_build::task_graph::EvidenceCandidateId::new("guarded"),
+                            }
+                        };
+                        let bundle = PhaseDispatchInputBundle::new(
+                            old.snapshot,
+                            if case == "source" {
+                                Hash::from_bytes([197; 32])
+                            } else {
+                                source_input.identities().input_hash()
+                            },
+                            source_input.identities().dependency_hashes().to_vec(),
+                            parents
+                                .into_iter()
+                                .map(|parent| {
+                                    SealedParentOutputHandle::from_published_output(
+                                        &owner,
+                                        old.snapshot,
+                                        parent,
+                                    )
+                                    .unwrap()
+                                })
+                                .collect(),
+                        );
+                        let Ok(bundle) = bundle else {
+                            assert_eq!(case, "duplicate");
+                            continue;
+                        };
+                        let query = PhaseInput::new(work, bundle);
+                        assert!(matches!(
+                            driver
+                                .registry()
+                                .cache_key_for_phase(phase, &query)
+                                .unwrap()
+                                .intent,
+                            PhaseCacheIntent::NoKey { .. }
+                        ));
+                        // A descriptor label does not authorize a different original run at KernelCheck.
+                        if case == "descriptor" && phase == PipelinePhase::BackendRun {
+                            continue;
+                        }
+                        let result = driver
+                            .registry()
+                            .execute_phase_with_resources(
+                                phase,
+                                query,
+                                PhaseExecutionResources {
+                                    output_publisher: (case != "no-publisher")
+                                        .then(|| owner.clone()),
+                                    source_load: (case != "no-inputs").then_some(inputs),
+                                    cancellation: matches!(case, "cancel" | "foreign-token")
+                                        .then_some(CancellationToken {
+                                            snapshot: if case == "foreign-token" {
+                                                snapshot_id(197)
+                                            } else {
+                                                old.snapshot
+                                            },
+                                            generation: CancellationGeneration::new(1),
+                                            reason: CancellationReason::ExplicitRequest,
+                                        }),
+                                    ..Default::default()
+                                },
+                            )
+                            .unwrap();
+                        assert_eq!(
+                            result.result.status,
+                            if case == "cancel" {
+                                PhaseStatus::Cancelled
+                            } else {
+                                PhaseStatus::Blocking
+                            },
+                            "{phase:?}/{case}"
+                        );
+                        assert!(result.result.output_refs.is_empty(), "{phase:?}/{case}");
+                    }
+                }
+                if !open {
+                    let original_parents =
+                        vec![core_ref.clone(), vc_ref.clone(), discharge_ref.clone()];
+                    let query = |phase, parents: Vec<AnyPhaseOutputRef>| {
+                        PhaseInput::new(
+                            if phase == PipelinePhase::BackendRun {
+                                WorkUnit::BackendAttempt {
+                                    module: module.clone(),
+                                    descriptor: mizar_build::task_graph::VcTaskDescriptorId::new(
+                                        "guarded",
+                                    ),
+                                    backend_profile: mizar_build::task_graph::BackendProfileId::new(
+                                        "vampire-4.9",
+                                    ),
+                                }
+                            } else {
+                                WorkUnit::EvidenceCandidate {
+                                    module: module.clone(),
+                                    descriptor: mizar_build::task_graph::VcTaskDescriptorId::new(
+                                        "guarded",
+                                    ),
+                                    evidence_candidate:
+                                        mizar_build::task_graph::EvidenceCandidateId::new("guarded"),
+                                }
+                            },
+                            PhaseDispatchInputBundle::new(
+                                old.snapshot,
+                                source_input.identities().input_hash(),
+                                source_input.identities().dependency_hashes().to_vec(),
+                                parents
+                                    .into_iter()
+                                    .map(|parent| {
+                                        SealedParentOutputHandle::from_published_output(
+                                            &owner,
+                                            old.snapshot,
+                                            parent,
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect(),
+                            )
+                            .unwrap(),
+                        )
+                    };
+                    for limits in [
+                        None,
+                        Some([0, 0, 1, 2]),
+                        Some([1, 0, 0, 2]),
+                        Some([1, 0, 1, 1]),
+                    ] {
+                        let mut limited = PhaseRegistryBuilder::new();
+                        limited
+                            .register_source_theorem_vampire_backend(
+                                policy.clone(),
+                                profile.clone(),
+                                verifier.clone().with_instance_search_limits(limits),
+                            )
+                            .unwrap();
+                        let result = limited
+                            .build()
+                            .unwrap()
+                            .execute_phase_with_resources(
+                                PipelinePhase::BackendRun,
+                                query(PipelinePhase::BackendRun, original_parents.clone()),
+                                PhaseExecutionResources {
+                                    output_publisher: Some(owner.clone()),
+                                    source_load: Some(inputs),
+                                    ..Default::default()
+                                },
+                            )
+                            .unwrap();
+                        assert_eq!(result.result.status, PhaseStatus::Blocking, "{limits:?}");
+                        assert!(result.result.output_refs.is_empty(), "{limits:?}");
+                    }
+                    let unsupported = LogicProfile::try_new(
+                        "unsupported-vampire",
+                        LogicFragment::SmtLibUninterpreted,
+                        EqualitySupport::Supported,
+                        QuantifierPolicy::FirstOrder,
+                        SoftTypeStrategy::ScopedGuardPredicates,
+                        NativePropertySupport::Unsupported,
+                        [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+                            .into_iter()
+                            .collect(),
+                    )
+                    .unwrap();
+                    let mut unsupported_builder = PhaseRegistryBuilder::new();
+                    assert!(
+                        unsupported_builder
+                            .register_source_theorem_vampire_backend(
+                                policy.clone(),
+                                unsupported.clone(),
+                                verifier.clone()
+                            )
+                            .is_err()
+                    );
+                    assert!(
+                        unsupported_builder
+                            .register_source_theorem_vampire_kernel_check(
+                                policy.clone(),
+                                unsupported,
+                                verifier.clone()
+                            )
+                            .is_err()
+                    );
+                    let absent = PhaseRegistryBuilder::new().build().unwrap();
+                    assert!(
+                        absent
+                            .descriptor_for_phase(PipelinePhase::BackendRun)
+                            .is_err()
+                    );
+                    assert!(
+                        absent
+                            .descriptor_for_phase(PipelinePhase::KernelCheck)
+                            .is_err()
+                    );
+                    // Exercise the guarded process refusal with the same actual source problem.
+                    for case in [
+                        "unavailable-executable",
+                        "unavailable-probe",
+                        "arguments",
+                        "process-failure",
+                    ] {
+                        let missing = executable.with_file_name("missing-vampire");
+                        let mut backend = base_run_input.profile().clone();
+                        let mut command = base_run_input.command().clone();
+                        let mut resources = BackendResourceLimits::new();
+                        match case {
+                            "unavailable-executable" => {
+                                command =
+                                    BackendCommand::new(&missing, command.args().to_vec()).unwrap()
+                            }
+                            "unavailable-probe" => {
+                                backend = backend.with_version_probe(
+                                    BackendVersionProbe::new(
+                                        &missing,
+                                        vec!["--version".into()],
+                                        std::time::Duration::from_secs(1),
+                                    )
+                                    .unwrap(),
+                                )
+                            }
+                            "arguments" => {
+                                command = BackendCommand::new(
+                                    &executable,
+                                    vec!["--not-authorized".into()],
+                                )
+                                .unwrap()
+                            }
+                            _ => resources = resources.with_stdout_limit(0),
+                        }
+                        let result = run_vampire_backend(
+                            BackendRunInput::new(
+                                BackendRunId::new(case).unwrap(),
+                                encoded.clone(),
+                                backend,
+                                command,
+                                resources,
+                                BackendIoMode::PrivateProblemFile,
+                                Default::default(),
+                            ),
+                            &problem,
+                            &handoff,
+                            Some([1, 0, 1, 2]),
+                        );
+                        assert_ne!(
+                            result.status(),
+                            BackendRunStatus::Proved,
+                            "{case}: {result:?}"
+                        );
+                        assert!(result.candidate_evidence().is_none(), "{case}");
+                    }
+                    let names = encode_local_variable_reflexivity_names(
+                        &parse_formula_evidence(
+                            &handoff.encode_local_evidence(None).unwrap(),
+                            &parse,
+                        )
+                        .unwrap(),
+                    )
+                    .unwrap();
+                    let [name] = names.as_slice() else {
+                        panic!("one returned equality instance")
+                    };
+                    let removed = 6 + name.len();
+                    let directory = bytes
+                        .windows(13)
+                        .enumerate()
+                        .filter(|(_, entry)| {
+                            entry[0..5] == [7, 0, 0, 0, 1]
+                                && u32::from_be_bytes(entry[9..13].try_into().unwrap()) as usize
+                                    == removed
+                        })
+                        .map(|(index, _)| index)
+                        .collect::<Vec<_>>();
+                    let [directory] = directory.as_slice() else {
+                        panic!("one equality section directory")
+                    };
+                    let mut no_instance = bytes[..bytes.len() - removed].to_vec();
+                    no_instance[directory + 1..directory + 5].fill(0);
+                    no_instance[directory + 9..directory + 13].fill(0);
+                    let unproved = parse_formula_evidence(&no_instance, &parse).unwrap();
+                    assert_eq!(unproved.final_goal(), actual.final_goal());
+                    assert!(unproved.equality_instances().is_empty());
+                    assert_ne!(
+                        check_kernel_evidence(KernelEvidenceCheckInput {
+                            target_vc_fingerprint: &target,
+                            evidence: &unproved,
+                            formula_context: Some(&context),
+                            check_kind: KernelEvidenceCheckKind::ProofObligation,
+                            policy: KernelCheckPolicy::default(),
+                            limits: KernelEvidenceCheckLimits::default()
+                        })
+                        .status(),
+                        KernelCheckStatus::Accepted
+                    );
+                    let provenance = &actual.provenance().last().unwrap().payload;
+                    assert!(!provenance.is_empty());
+                    let offset = bytes
+                        .windows(provenance.len())
+                        .rposition(|row| row == provenance)
+                        .unwrap();
+                    let mut altered_provenance = bytes.clone();
+                    altered_provenance[offset + provenance.len() - 1] ^= 1;
+                    let parsed_altered =
+                        parse_formula_evidence(&altered_provenance, &parse).unwrap();
+                    assert_eq!(parsed_altered.final_goal(), actual.final_goal());
+                    assert_ne!(parsed_altered.provenance(), actual.provenance());
+                    for (case, wire) in [
+                        ("missing-equality-instance", no_instance),
+                        ("provenance", altered_provenance),
+                        ("target", bytes.clone()),
+                        ("encoded-hash", bytes.clone()),
+                        ("metadata", bytes.clone()),
+                    ] {
+                        let altered_candidate = BackendCandidateEvidence::new(
+                            candidate.candidate_id(),
+                            BackendCandidatePayload::FormulaSubstitutionBytes(wire),
+                            if case == "target" {
+                                AtpTargetBinding::new(
+                                    AtpFingerprint::new(1, vec![197; 32]).unwrap(),
+                                    candidate.target_binding().producer_binding().clone(),
+                                )
+                                .unwrap()
+                            } else {
+                                candidate.target_binding().clone()
+                            },
+                            if case == "encoded-hash" {
+                                Hash::from_bytes([197; 32])
+                            } else {
+                                candidate.encoded_problem_hash()
+                            },
+                            candidate.provenance_hash(),
+                            candidate.formula_label_refs().to_vec(),
+                            candidate.symbol_binding_refs().to_vec(),
+                        )
+                        .unwrap();
+                        let mut altered = (*scheduled).clone();
+                        altered.1 = altered_candidate;
+                        if case == "metadata" {
+                            altered.2.0.push_str("foreign");
+                        }
+                        let wire = format!("{altered:?}").into_bytes();
+                        let retained_wire = wire.clone();
+                        let retained = altered.clone();
+                        // A captured internal variant leaves the genuine run immutable.
+                        let negative = owner.for_captured_execution(old.snapshot);
+                        let changed = negative
+                            .publish(mizar_ir::publisher::PublishOutputInput {
+                                slot: negative.allocate::<GuardedVampireRun>(
+                                    old.snapshot,
+                                    run_ref.phase().clone(),
+                                    run_ref.work_unit().clone(),
+                                    run_ref.output_kind().clone(),
+                                    mizar_ir::storage::SchemaVersion::new(1),
+                                ),
+                                snapshot: old.snapshot,
+                                phase: run_ref.phase().clone(),
+                                work_unit: run_ref.work_unit().clone(),
+                                output_kind: run_ref.output_kind().clone(),
+                                schema_version: mizar_ir::storage::SchemaVersion::new(1),
+                                payload: altered,
+                                canonical_payload: Some(wire.clone()),
+                                storage_payload: Some(wire),
+                                decode: mizar_ir::storage::BlobDecoder::new(move |wire| {
+                                    if wire == retained_wire {
+                                        Ok(retained.clone())
+                                    } else {
+                                        Err(mizar_ir::storage::BlobDecodeError::new(
+                                            "altered negative tuple",
+                                        ))
+                                    }
+                                }),
+                                parents: original_parents.clone(),
+                                named_input_hashes: run_ref.lineage().named_input_hashes.clone(),
+                                side_tables: mizar_ir::storage::IrSideTables::default(),
+                                origin: mizar_ir::publisher::OutputOrigin::OpenBuffer,
+                                target: mizar_ir::publisher::PublicationTarget::InternalOnly,
+                            })
+                            .unwrap();
+                        let mut parents = original_parents.clone();
+                        parents.push(changed.erase());
+                        let rejected = driver
+                            .registry()
+                            .execute_phase_with_resources(
+                                PipelinePhase::KernelCheck,
+                                query(PipelinePhase::KernelCheck, parents),
+                                PhaseExecutionResources {
+                                    output_publisher: Some(owner.clone()),
+                                    source_load: Some(inputs),
+                                    ..Default::default()
+                                },
+                            )
+                            .unwrap();
+                        assert_eq!(rejected.result.status, PhaseStatus::Blocking, "{case}");
+                        assert!(rejected.result.output_refs.is_empty(), "{case}");
+                    }
+                    let stale_backend = query(PipelinePhase::BackendRun, original_parents.clone());
+                    let mut kernel_parents = original_parents;
+                    kernel_parents.push(run_ref.clone());
+                    let stale_kernel = query(PipelinePhase::KernelCheck, kernel_parents);
+                    owner.mark_obsolete(old.snapshot).unwrap();
+                    for (phase, query) in [
+                        (PipelinePhase::BackendRun, stale_backend),
+                        (PipelinePhase::KernelCheck, stale_kernel),
+                    ] {
+                        let rejected = driver
+                            .registry()
+                            .execute_phase_with_resources(
+                                phase,
+                                query,
+                                PhaseExecutionResources {
+                                    output_publisher: Some(owner.clone()),
+                                    source_load: Some(inputs),
+                                    ..Default::default()
+                                },
+                            )
+                            .unwrap();
+                        assert_eq!(rejected.result.status, PhaseStatus::Blocking);
+                        assert!(rejected.result.output_refs.is_empty());
+                    }
+                }
+            },
+        );
+    }
 }

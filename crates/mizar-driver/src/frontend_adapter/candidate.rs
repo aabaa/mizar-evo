@@ -1,19 +1,21 @@
 use super::*;
 
 impl<'a> crate::registry::SourceLoadInputs<'a> {
-    /// Produces untrusted theorem candidates after authenticating all three retained parents.
-    pub fn native_theorem_candidate_with_core_vc_discharge_parents(
+    #[expect(
+        clippy::type_complexity,
+        reason = "Returns the three authenticated owner values without another holder"
+    )]
+    fn native_theorem_authenticated_parents(
         self,
         input: &PhaseInput,
         publisher: &mizar_ir::publisher::PhaseOutputPublisher,
         vc_id: mizar_vc::vc_ir::VcId,
         policy: &mizar_vc::discharge::DischargePolicy,
-        logic_profile: mizar_atp::problem::LogicProfile,
-        concrete_format: mizar_atp::problem::ConcreteFormat,
     ) -> Result<
         Option<(
-            mizar_atp::backend::EncodedBackendProblem,
-            mizar_atp::backend::BackendCandidateEvidence,
+            std::sync::Arc<mizar_core::core_ir::CoreIr>,
+            std::sync::Arc<mizar_vc::vc_ir::VcSet>,
+            std::sync::Arc<mizar_vc::discharge::DischargeOutput>,
         )>,
         String,
     > {
@@ -109,6 +111,38 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
             .map_err(|error| error.to_string())?;
         let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
+        for parent in [core_ref, vc_ref, discharge_ref] {
+            storage
+                .validate_handle(parent)
+                .map_err(|error| error.to_string())?;
+            publisher
+                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok(Some((core, vcs, discharge)))
+    }
+
+    /// Produces untrusted theorem candidates after authenticating all three retained parents.
+    pub fn native_theorem_candidate_with_core_vc_discharge_parents(
+        self,
+        input: &PhaseInput,
+        publisher: &mizar_ir::publisher::PhaseOutputPublisher,
+        vc_id: mizar_vc::vc_ir::VcId,
+        policy: &mizar_vc::discharge::DischargePolicy,
+        logic_profile: mizar_atp::problem::LogicProfile,
+        concrete_format: mizar_atp::problem::ConcreteFormat,
+    ) -> Result<
+        Option<(
+            mizar_atp::backend::EncodedBackendProblem,
+            mizar_atp::backend::BackendCandidateEvidence,
+        )>,
+        String,
+    > {
+        let Some((core, vcs, discharge)) =
+            self.native_theorem_authenticated_parents(input, publisher, vc_id, policy)?
+        else {
+            return Ok(None);
+        };
         let pair = mizar_atp::backend::build_source_theorem_candidate_inputs(
             &core,
             &vcs,
@@ -118,12 +152,17 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             logic_profile,
             concrete_format,
         )?;
-        for parent in [core_ref, vc_ref, discharge_ref] {
-            storage
-                .validate_handle(parent)
+        for parent in input.parent_outputs() {
+            publisher
+                .storage()
+                .validate_handle(parent.as_output_ref())
                 .map_err(|error| error.to_string())?;
             publisher
-                .validate_output(input.snapshot, parent, OutputAuthorization::Published)
+                .validate_output(
+                    input.snapshot,
+                    parent.as_output_ref(),
+                    OutputAuthorization::Published,
+                )
                 .map_err(|error| error.to_string())?;
         }
         Ok(Some(pair))
@@ -450,17 +489,20 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
             )
             .map_err(|error| error.to_string())?,
         );
-        let Some(expected_pair) = self.native_theorem_candidate_with_core_vc_discharge_parents(
-            &originals,
-            publisher,
-            vc_id,
-            policies.0,
-            encoding.0.clone(),
-            encoding.1,
-        )?
+        let Some((core, vcs, discharge)) =
+            self.native_theorem_authenticated_parents(&originals, publisher, vc_id, policies.0)?
         else {
             return Ok(None);
         };
+        let expected_pair = mizar_atp::backend::build_source_theorem_candidate_inputs(
+            &core,
+            &vcs,
+            vc_id,
+            &discharge,
+            policies.0,
+            encoding.0.clone(),
+            encoding.1,
+        )?;
         let pair = storage
             .typed_handle::<(
                 mizar_atp::backend::EncodedBackendProblem,
@@ -471,24 +513,6 @@ impl<'a> crate::registry::SourceLoadInputs<'a> {
         if *pair != expected_pair {
             return Err("native theorem candidate check complete ATP mismatch".to_owned());
         }
-        let core = storage
-            .typed_handle::<mizar_core::core_ir::CoreIr>(
-                core_ref,
-                &OutputKind::new("SourceTheoremCore"),
-            )
-            .map_err(|error| error.to_string())?;
-        let core = storage.get(&core).map_err(|error| error.to_string())?;
-        let vcs = storage
-            .typed_handle::<mizar_vc::vc_ir::VcSet>(vc_ref, &OutputKind::new("SourceTheoremVC"))
-            .map_err(|error| error.to_string())?;
-        let vcs = storage.get(&vcs).map_err(|error| error.to_string())?;
-        let discharge = storage
-            .typed_handle::<mizar_vc::discharge::DischargeOutput>(
-                discharge_ref,
-                &OutputKind::new("SourceTheoremDischarge"),
-            )
-            .map_err(|error| error.to_string())?;
-        let discharge = storage.get(&discharge).map_err(|error| error.to_string())?;
         let version = unique(self.snapshot.source_versions.iter().filter(|version| {
             version.package_id == module.package && version.module_path == module.path
         }))
@@ -2271,4 +2295,569 @@ pub fn native_theorem_candidate_check_from_storage_bytes(
         return Ok(None);
     }
     Ok(Some((result, decision)))
+}
+
+pub(crate) struct SourceTheoremVampireService {
+    pub(crate) candidate: SourceTheoremAtpSolveService,
+    pub(crate) verifier_policy: mizar_proof::policy::VerifierPolicy,
+    pub(crate) kernel_check: bool,
+}
+
+impl PhaseService for SourceTheoremVampireService {
+    fn phase(&self) -> PhaseDescriptor {
+        let (name, owner, phase, kind) = if self.kernel_check {
+            (
+                "SourceTheoremVampireKernelCheck",
+                PhaseOwner::MizarKernelProof,
+                PipelinePhase::KernelCheck,
+                "SourceTheoremVampireKernelCheck",
+            )
+        } else {
+            (
+                "SourceTheoremVampireBackend",
+                PhaseOwner::MizarAtp,
+                PipelinePhase::BackendRun,
+                "SourceTheoremVampireRun",
+            )
+        };
+        PhaseDescriptor::new(name, owner, vec![phase], format!(
+            "mizar-driver/source-theorem-vampire/v1;kernel={};backend=vampire-4.9;candidate={};verifier={}",
+            self.kernel_check, self.candidate.phase().schema_version,
+            self.verifier_policy.policy_fingerprint().to_lower_hex(),
+        ), kind).expect("fixed guarded Vampire descriptor")
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        PhaseCacheIntent::NoKey {
+            reason: "guarded Vampire has no complete dependency footprint".to_owned(),
+        }
+    }
+
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext<'_>) -> PhaseResult {
+        use mizar_atp::{
+            backend::*,
+            problem::{ConcreteFormat, LogicFragment},
+        };
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            checker::{
+                FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+                KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+                KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+                KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+            },
+            formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+            rejection::TargetVcFingerprint,
+        };
+        use mizar_proof::policy::{
+            CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput, PolicyCandidate,
+            ProofPolicyEvaluator,
+        };
+        if context.common.snapshot != input.snapshot || context.common.work_unit != input.work_unit
+        {
+            return blocking();
+        }
+        if let Some(token) = context.cancellation {
+            return if token.snapshot == input.snapshot {
+                PhaseResult {
+                    status: PhaseStatus::Cancelled,
+                    ..blocking()
+                }
+            } else {
+                blocking()
+            };
+        }
+        let result = (|| {
+            if self.candidate.configuration_tags().is_none()
+                || self.candidate.logic_profile.fragment() != LogicFragment::Fof
+            {
+                return None;
+            }
+            let publisher = context.output_publisher?;
+            let inputs = context.source_load?;
+            if inputs.snapshot.id != input.snapshot {
+                return None;
+            }
+            publisher.validate_current_snapshot(input.snapshot).ok()?;
+            let module = match &input.work_unit {
+                WorkUnit::BackendAttempt {
+                    module,
+                    backend_profile,
+                    ..
+                } if !self.kernel_check && backend_profile.as_str() == "vampire-4.9" => module,
+                WorkUnit::EvidenceCandidate { module, .. } if self.kernel_check => module,
+                _ => return None,
+            };
+            if input.parent_outputs().len() != if self.kernel_check { 4 } else { 3 } {
+                return None;
+            }
+            let originals: Vec<_> = input
+                .parent_outputs()
+                .iter()
+                .filter(|parent| {
+                    parent.as_output_ref().phase()
+                        != &IrPipelinePhase::from(PipelinePhase::BackendRun)
+                })
+                .cloned()
+                .collect();
+            let module_input = PhaseInput::new(
+                WorkUnit::Module {
+                    module: module.clone(),
+                },
+                mizar_ir::dispatch_input::PhaseDispatchInputBundle::new(
+                    input.snapshot,
+                    input.identities().input_hash(),
+                    input.identities().dependency_hashes().to_vec(),
+                    originals,
+                )
+                .ok()?,
+            );
+            let storage = publisher.storage();
+            let vc_parent = unique(module_input.parent_outputs().iter().filter(|parent| {
+                parent.as_output_ref().phase() == &IrPipelinePhase::from(PipelinePhase::VcGenerate)
+            }))?;
+            let vcs = storage
+                .get(
+                    &storage
+                        .typed_handle::<mizar_vc::vc_ir::VcSet>(
+                            vc_parent.as_output_ref(),
+                            &OutputKind::new("SourceTheoremVC"),
+                        )
+                        .ok()?,
+                )
+                .ok()?;
+            let [vc] = vcs.vcs() else {
+                return None;
+            };
+            let (core, vcs, discharge) = inputs
+                .native_theorem_authenticated_parents(
+                    &module_input,
+                    &publisher,
+                    vc.id,
+                    &self.candidate.policy,
+                )
+                .ok()??;
+            let problem = mizar_atp::translator::translate_source_theorem_sequent(
+                &core,
+                &vcs,
+                vc.id,
+                &discharge,
+                &self.candidate.policy,
+                self.candidate.logic_profile.clone(),
+            )
+            .ok()?;
+            let handoff =
+                mizar_vc::kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff(
+                    &core,
+                    &vcs,
+                    vc.id,
+                    &discharge,
+                    &self.candidate.policy,
+                )
+                .ok()?;
+            let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).ok()?;
+            let executable = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../.tools/provers/vampire-4.9/vampire");
+            let profile = BackendProfile::new(
+                BackendProfileId::new("vampire-4.9").ok()?,
+                BackendKind::new("vampire").ok()?,
+                ConcreteFormat::Tptp,
+            )
+            .with_version_probe(
+                BackendVersionProbe::new(
+                    &executable,
+                    vec!["--version".to_owned()],
+                    std::time::Duration::from_secs(5),
+                )
+                .ok()?,
+            );
+            let command = BackendCommand::new(
+                &executable,
+                [
+                    "--mode",
+                    "vampire",
+                    "--input_syntax",
+                    "tptp",
+                    "--proof",
+                    "tptp",
+                    "--output_axiom_names",
+                    "on",
+                ]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            )
+            .ok()?
+            .with_semantic_executable_id("vampire-4.9")
+            .ok()?;
+            let configuration = Hash::from_bytes(blake3::derive_key(
+                "mizar-driver/vampire-configuration/v1",
+                format!(
+                    "{};{}",
+                    self.candidate.phase().schema_version,
+                    self.verifier_policy.policy_fingerprint().to_lower_hex()
+                )
+                .as_bytes(),
+            ));
+            let run_identity = match &input.work_unit {
+                WorkUnit::BackendAttempt { descriptor, .. }
+                | WorkUnit::EvidenceCandidate { descriptor, .. } => {
+                    format!(
+                        "{};descriptor={}:{};backend=vampire-4.9",
+                        module_work_unit_label(module.package.as_str(), module.path.as_str()),
+                        descriptor.as_str().len(),
+                        descriptor.as_str()
+                    ) + ";config="
+                        + &configuration.to_lower_hex()
+                }
+                _ => return None,
+            };
+            let run_input = BackendRunInput::new(
+                BackendRunId::new(run_identity).ok()?,
+                encoded.clone(),
+                profile,
+                command,
+                BackendResourceLimits::default(),
+                BackendIoMode::Stdin,
+                BackendCancellationToken::new(),
+            );
+            let version = unique(inputs.snapshot.source_versions.iter().filter(|version| {
+                version.package_id == module.package && version.module_path == module.path
+            }))?;
+            if input.identities().input_hash() != source_input_hash(version) {
+                return None;
+            }
+            let work_unit = IrWorkUnit::new(module_work_unit_label(
+                module.package.as_str(),
+                module.path.as_str(),
+            ));
+            let named = vec![NamedInputHash {
+                name: "source".to_owned(),
+                domain: SOURCE_UNIT_CACHE_KEY_VERSION.to_owned(),
+                digest: source_input_hash(version),
+            }];
+            let (origin, target) = source_publication_route(&version.origin);
+            if self.kernel_check {
+                let parent = unique(input.parent_outputs().iter().filter(|parent| {
+                    parent.as_output_ref().phase()
+                        == &IrPipelinePhase::from(PipelinePhase::BackendRun)
+                }))?
+                .as_output_ref();
+                publisher
+                    .validate_output(input.snapshot, parent, OutputAuthorization::Published)
+                    .ok()?;
+                let expected: Vec<_> = module_input
+                    .parent_outputs()
+                    .iter()
+                    .map(|parent| parent.as_output_ref().output())
+                    .collect();
+                if parent.snapshot() != input.snapshot
+                    || parent.work_unit() != &work_unit
+                    || parent.schema_version() != SchemaVersion::new(1)
+                    || parent.lineage().named_input_hashes != named
+                    || parent.lineage().parents.len() != 3
+                    || !expected
+                        .iter()
+                        .all(|id| parent.lineage().parents.contains(id))
+                {
+                    return None;
+                }
+                let run = storage
+                    .get(
+                        &storage
+                            .typed_handle::<(
+                                EncodedBackendProblem,
+                                BackendCandidateEvidence,
+                                (String, Hash, String, String, String),
+                            )>(
+                                parent, &OutputKind::new("SourceTheoremVampireRun")
+                            )
+                            .ok()?,
+                    )
+                    .ok()?;
+                if run.0 != encoded
+                    || run.2.0 != run_input.run_id().as_str()
+                    || run.2.2 != "vampire"
+                    || run.2.3 != "vampire-4.9"
+                    || !run.2.4.starts_with("Vampire 4.9")
+                {
+                    return None;
+                }
+                let candidate = &run.1;
+                if candidate.target_binding() != encoded.target_binding()
+                    || candidate.encoded_problem_hash() != encoded.input_hash()
+                    || candidate.provenance_hash() != encoded.provenance_hash()
+                    || candidate.formula_label_refs() != encoded.formula_labels()
+                    || candidate.symbol_binding_refs() != encoded.symbol_bindings()
+                {
+                    return None;
+                }
+                let BackendCandidatePayload::FormulaSubstitutionBytes(wire) = candidate.payload()
+                else {
+                    return None;
+                };
+                let evaluator = ProofPolicyEvaluator::new(self.verifier_policy.clone());
+                if !evaluator.can_schedule_kernel_check(
+                    &PolicyCandidate::UncheckedFormulaSubstitution {
+                        encoded_problem_matches: true,
+                    },
+                ) {
+                    return None;
+                }
+                let envelope = handoff.canonical_evidence();
+                let original_target = envelope.target_vc();
+                if envelope.kernel_profile().clause_tautology_policy
+                    != mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Reject
+                {
+                    return None;
+                }
+                let mut parse_context = FormulaEvidenceParseContext::v1(
+                    Fingerprint::new(original_target.algorithm_id, original_target.digest.clone()),
+                    KernelProfileRecord::v1(
+                        envelope.kernel_profile().profile_id,
+                        ClauseTautologyPolicy::Reject,
+                    ),
+                );
+                parse_context.accepted_schema_versions.insert(2);
+                let parsed = parse_formula_evidence(wire, &parse_context).ok()?;
+                let original = parse_formula_evidence(
+                    &handoff.encode_local_evidence(None).ok()?,
+                    &parse_context,
+                )
+                .ok()?;
+                if parsed.symbol_manifest() != original.symbol_manifest()
+                    || parsed.variable_manifest() != original.variable_manifest()
+                    || parsed.formulas() != original.formulas()
+                    || parsed.substitutions() != original.substitutions()
+                    || parsed.provenance() != original.provenance()
+                    || parsed.final_goal() != original.final_goal()
+                {
+                    return None;
+                }
+                let target_vc = TargetVcFingerprint::new(
+                    original_target.algorithm_id,
+                    original_target.digest.clone(),
+                );
+                // This bounded source route has exactly one Core local guard and no imports.
+                let [entry] = handoff.context_identity().entries() else {
+                    return None;
+                };
+                let mizar_vc::kernel_evidence_handoff::KernelContextIdentitySource::LocalHypothesis { local_context_id } = entry.source() else { return None; };
+                let mizar_vc::vc_ir::VcFormulaRef::Core(formula) = entry.producer_formula_ref()
+                else {
+                    return None;
+                };
+                if handoff
+                    .formula_context_requirements()
+                    .is_some_and(|requirements| {
+                        !requirements.imported_axioms.is_empty()
+                            || !requirements.imported_theorems.is_empty()
+                    })
+                {
+                    return None;
+                }
+                let formula_context = FormulaEvidenceContext::with_context_identity(
+                    Some(handoff.context_identity_hash().as_bytes().to_vec()),
+                    vec![],
+                    vec![],
+                    Some(KernelContextIdentityPayload::new(
+                        target_vc.clone(),
+                        handoff.canonical_hash(),
+                        handoff.context_identity_hash(),
+                        vec![KernelContextIdentityEntry::new(
+                            KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                            entry.formula_id(),
+                            Fingerprint::new(
+                                entry.formula_fingerprint().algorithm_id,
+                                entry.formula_fingerprint().digest.clone(),
+                            ),
+                            KernelFormulaProducerRef::Core(formula),
+                        )],
+                    )),
+                    ImportedFactContextLimits::default(),
+                )
+                .ok()?;
+                let checked = check_kernel_evidence(KernelEvidenceCheckInput {
+                    target_vc_fingerprint: &target_vc,
+                    evidence: &parsed,
+                    formula_context: Some(&formula_context),
+                    check_kind: KernelEvidenceCheckKind::ProofObligation,
+                    policy: KernelCheckPolicy::default(),
+                    limits: KernelEvidenceCheckLimits::default(),
+                });
+                let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(
+                    KernelPolicyInput::from_kernel_result(
+                        &checked,
+                        KernelEvidenceOrigin::AtpFormulaSubstitution,
+                    ),
+                ));
+                if checked.status() != KernelCheckStatus::Accepted
+                    || decision.class != CandidatePolicyClass::KernelVerified
+                {
+                    return None;
+                }
+                let bytes = framing::encode(
+                    b"mizar-driver/vampire-kernel/v1\0",
+                    &[
+                        wire,
+                        self.phase().schema_version.as_bytes(),
+                        handoff.canonical_hash().as_bytes(),
+                        handoff.context_identity_hash().as_bytes(),
+                    ],
+                    32 * 1024 * 1024,
+                )?;
+                let retained_bytes = bytes.clone();
+                let payload = (checked, decision);
+                let retained = payload.clone();
+                return publish_native_output(
+                    &publisher,
+                    input.snapshot,
+                    (
+                        IrPipelinePhase::from(PipelinePhase::KernelCheck),
+                        work_unit,
+                        OutputKind::new("SourceTheoremVampireKernelCheck"),
+                    ),
+                    |slot, phase, work_unit, output_kind| PublishOutputInput {
+                        slot,
+                        snapshot: input.snapshot,
+                        phase,
+                        work_unit,
+                        output_kind,
+                        schema_version: SchemaVersion::new(1),
+                        payload,
+                        canonical_payload: Some(bytes.clone()),
+                        storage_payload: Some(bytes),
+                        decode: BlobDecoder::new(move |bytes| {
+                            if bytes == retained_bytes {
+                                Ok(retained.clone())
+                            } else {
+                                Err(BlobDecodeError::new(
+                                    "invalid retained Vampire Kernel result",
+                                ))
+                            }
+                        }),
+                        parents: input
+                            .parent_outputs()
+                            .iter()
+                            .map(|parent| parent.as_output_ref().clone())
+                            .collect(),
+                        named_input_hashes: named,
+                        side_tables: IrSideTables::default(),
+                        origin,
+                        target,
+                    },
+                )
+                .ok()
+                .map(|handle| handle.erase());
+            }
+            let run = run_vampire_backend(
+                run_input,
+                &problem,
+                &handoff,
+                self.verifier_policy.instance_search_limits(),
+            );
+            if run.status() != BackendRunStatus::Proved {
+                return None;
+            }
+            let candidate = run.candidate_evidence()?.clone();
+            if candidate.target_binding() != encoded.target_binding()
+                || candidate.encoded_problem_hash() != encoded.input_hash()
+                || candidate.provenance_hash() != encoded.provenance_hash()
+                || candidate.formula_label_refs() != encoded.formula_labels()
+                || candidate.symbol_binding_refs() != encoded.symbol_bindings()
+            {
+                return None;
+            }
+            let BackendCandidatePayload::FormulaSubstitutionBytes(wire) = candidate.payload()
+            else {
+                return None;
+            };
+            let metadata = (
+                run.run_id().as_str().to_owned(),
+                run.command_fingerprint(),
+                run.backend_kind().as_str().to_owned(),
+                run.profile_id().as_str().to_owned(),
+                run.version_record()?.parsed_version()?.to_owned(),
+            );
+            // All candidate binding fields equal the genuine encoding; its metadata
+            // fingerprint covers target, labels, symbols and provenance. Retain only
+            // stable actual run metadata, never elapsed time or raw process traces.
+            let storage_bytes = framing::encode(
+                b"mizar-driver/vampire-run/v1\0",
+                &[
+                    self.phase().schema_version.as_bytes(),
+                    encoded.input_hash().as_bytes(),
+                    encoded.metadata_hash().as_bytes(),
+                    candidate.candidate_id().as_bytes(),
+                    wire,
+                    metadata.0.as_bytes(),
+                    metadata.1.as_bytes(),
+                    metadata.2.as_bytes(),
+                    metadata.3.as_bytes(),
+                    metadata.4.as_bytes(),
+                ],
+                32 * 1024 * 1024,
+            )?;
+            let semantic_bytes = storage_bytes.clone();
+            let payload = (encoded, candidate, metadata);
+            let storage_hash = Hash::from_bytes(blake3::derive_key(
+                "mizar-driver/vampire-run-storage/v1",
+                &storage_bytes,
+            ));
+            let retained_bytes = storage_bytes.clone();
+            let retained = payload.clone();
+            publish_native_output(
+                &publisher,
+                input.snapshot,
+                (
+                    IrPipelinePhase::from(PipelinePhase::BackendRun),
+                    work_unit,
+                    OutputKind::new("SourceTheoremVampireRun"),
+                ),
+                |slot, phase, work_unit, output_kind| PublishOutputInput {
+                    slot,
+                    snapshot: input.snapshot,
+                    phase,
+                    work_unit,
+                    output_kind,
+                    schema_version: SchemaVersion::new(1),
+                    payload,
+                    canonical_payload: Some(semantic_bytes),
+                    storage_payload: Some(storage_bytes),
+                    decode: BlobDecoder::new(move |bytes| {
+                        if bytes == retained_bytes {
+                            Ok(retained.clone())
+                        } else {
+                            Err(BlobDecodeError::new("invalid retained Vampire run"))
+                        }
+                    }),
+                    parents: input
+                        .parent_outputs()
+                        .iter()
+                        .map(|parent| parent.as_output_ref().clone())
+                        .collect(),
+                    named_input_hashes: named,
+                    side_tables: IrSideTables {
+                        source_maps: vec![SideTableRecord::new(
+                            "vampire-run-storage",
+                            version.normalized_path.as_str(),
+                            storage_hash,
+                        )],
+                        ..IrSideTables::default()
+                    },
+                    origin,
+                    target,
+                },
+            )
+            .ok()
+            .map(|handle| handle.erase())
+        })();
+        match result {
+            Some(output) => PhaseResult {
+                output_refs: vec![output],
+                ..PhaseResult::complete()
+            },
+            None => blocking(),
+        }
+    }
 }

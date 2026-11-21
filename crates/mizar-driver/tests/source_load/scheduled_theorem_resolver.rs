@@ -1077,6 +1077,195 @@ fn scheduled_theorem_resolver_edits_match_independent_clean_modules() {
                 assert_eq!(fs::read_dir(&parent_root).unwrap().count(), 0, "{case}");
             }
         }
+        if !backend_free {
+            let guarded_verifier = verifier
+                .clone()
+                .with_instance_search_limits(Some([1, 0, 1, 2]));
+            let mut guarded = Vec::new();
+            for (workers, order) in [
+                (1, CompletionOrder::Canonical),
+                (4, CompletionOrder::Reverse),
+            ] {
+                let guarded_owner = publisher(snapshot, 0, &units[0]);
+                for module in ["main", "leaf"] {
+                    for (phase, kind) in [
+                        ("SourceLoad", "SourceUnit"),
+                        ("Frontend", "FrontendOutput"),
+                        ("ModuleResolve", "SourceTheoremModuleCandidates"),
+                        ("SignatureCollection", "SourceTheoremModuleSummary"),
+                        ("TypeChecking", "SourceTheoremTypedAst"),
+                        ("RegistrationResolution", "SourceTheoremRegistrationClosure"),
+                        ("OverloadResolution", "SourceTheoremMetadata"),
+                        ("Elaboration", "SourceTheoremCore"),
+                        ("AlgorithmPreparation", "SourceTheoremPreparation"),
+                        ("VcGenerate", "SourceTheoremVC"),
+                        ("VcDischarge", "SourceTheoremDischarge"),
+                        ("AtpSolve", "SourceTheoremCandidateInputs"),
+                        ("BackendRun", "SourceTheoremVampireRun"),
+                        ("KernelCheck", "SourceTheoremVampireKernelCheck"),
+                    ] {
+                        guarded_owner.allow_work_unit(AllowedWorkUnit::new(
+                            IrPipelinePhase::new(phase),
+                            OutputKind::new(kind),
+                            IrWorkUnit::new(format!("{:?}:{:?}", "alpha", module)),
+                        ));
+                    }
+                }
+                let mut guarded_builder = PhaseRegistryBuilder::new();
+                guarded_builder
+                    .register_source_load()
+                    .register_frontend(vec![])
+                    .register_source_theorem_module_resolver()
+                    .register_source_theorem_signature_collection()
+                    .register_source_theorem_type_checking()
+                    .register_source_theorem_registration_resolution()
+                    .register_source_theorem_overload_resolution()
+                    .register_source_theorem_elaboration()
+                    .register_source_theorem_algorithm_preparation()
+                    .register_source_theorem_vc_generation(
+                        generation_schema.clone(),
+                        vc_schema.clone(),
+                    )
+                    .register_source_theorem_vc_discharge(policy.clone())
+                    .register_source_theorem_atp_solve(
+                        policy.clone(),
+                        profile.clone(),
+                        ConcreteFormat::Tptp,
+                    )
+                    .unwrap()
+                    .register_source_theorem_vampire_backend(
+                        policy.clone(),
+                        profile.clone(),
+                        guarded_verifier.clone(),
+                    )
+                    .unwrap()
+                    .register_source_theorem_vampire_kernel_check(
+                        policy.clone(),
+                        profile.clone(),
+                        guarded_verifier.clone(),
+                    )
+                    .unwrap();
+                let (_, mut guarded_input) = fixture.submit_request(vec![], vec![]);
+                guarded_input.source_layout = input.source_layout.clone();
+                guarded_input.dependency_overlay = input.dependency_overlay.clone();
+                guarded_input.vc_descriptors = input.vc_descriptors.clone();
+                for descriptor in &mut guarded_input.vc_descriptors {
+                    descriptor.backend_profiles = vec![BackendProfileId::new("vampire-4.9")];
+                }
+                guarded_input.worker_count = workers;
+                guarded_input.completion_order = order;
+                let submission = CompilerDriver::new(guarded_builder.build().unwrap())
+                    .with_output_publisher(guarded_owner.clone())
+                    .submit_captured(
+                        session.clone(),
+                        &ids,
+                        &snapshots,
+                        guarded_input,
+                        Default::default(),
+                    )
+                    .unwrap();
+                assert_eq!(submission.session.captured(), &captured);
+                assert_eq!(
+                    submission.status,
+                    DriverSubmissionStatus::BlockedByMissingPhaseServices
+                );
+                guarded.push((guarded_owner, submission));
+            }
+            let [(actual_owner, actual), (clean_owner, clean)] = guarded.as_slice() else {
+                panic!("independent guarded stores")
+            };
+            assert!(!std::sync::Arc::ptr_eq(
+                actual_owner.storage(),
+                clean_owner.storage()
+            ));
+            let actual_run = actual.scheduler_run.as_ref().unwrap();
+            let clean_run = clean.scheduler_run.as_ref().unwrap();
+            assert_eq!(actual_run.task_states, clean_run.task_states);
+            assert_eq!(actual_run.diagnostics, clean_run.diagnostics);
+            assert_eq!(
+                actual_run.phase_results.keys().collect::<Vec<_>>(),
+                clean_run.phase_results.keys().collect::<Vec<_>>()
+            );
+            let mut guarded_outputs = [0; 2];
+            for (task, rows) in &actual_run.phase_results {
+                let clean_rows = &clean_run.phase_results[task];
+                assert_eq!(rows.len(), clean_rows.len());
+                for (row, clean_row) in rows.iter().zip(clean_rows) {
+                    assert_eq!(row.status, clean_row.status);
+                    assert_eq!(row.diagnostics, clean_row.diagnostics);
+                    assert_eq!(row.output_refs.len(), clean_row.output_refs.len());
+                    for (output, expected) in row.output_refs.iter().zip(&clean_row.output_refs) {
+                        assert_eq!(output.lineage(), expected.lineage());
+                        assert_eq!(
+                            actual_owner.storage().side_tables_by_ref(output).unwrap(),
+                            clean_owner.storage().side_tables_by_ref(expected).unwrap()
+                        );
+                        if output.output_kind() == &OutputKind::new("SourceTheoremVampireRun") {
+                            type Run = (
+                                EncodedBackendProblem,
+                                BackendCandidateEvidence,
+                                (String, Hash, String, String, String),
+                            );
+                            let [actual, clean] = [(actual_owner, output), (clean_owner, expected)]
+                                .map(|(owner, reference)| {
+                                    owner
+                                        .storage()
+                                        .get(
+                                            &owner
+                                                .storage()
+                                                .typed_handle::<Run>(
+                                                    reference,
+                                                    reference.output_kind(),
+                                                )
+                                                .unwrap(),
+                                        )
+                                        .unwrap()
+                                });
+                            assert_eq!(actual, clean);
+                            assert_eq!(actual.1.target_binding(), actual.0.target_binding());
+                            assert_eq!(actual.1.encoded_problem_hash(), actual.0.input_hash());
+                            assert_eq!(actual.2.2, "vampire");
+                            assert_eq!(actual.2.3, "vampire-4.9");
+                            assert!(actual.2.4.starts_with("Vampire 4.9"));
+                            guarded_outputs[0] += 1;
+                        } else if output.output_kind()
+                            == &OutputKind::new("SourceTheoremVampireKernelCheck")
+                        {
+                            type Checked = (
+                                mizar_kernel::checker::KernelCheckResult,
+                                mizar_proof::policy::PolicyDecision,
+                            );
+                            let [actual, clean] = [(actual_owner, output), (clean_owner, expected)]
+                                .map(|(owner, reference)| {
+                                    owner
+                                        .storage()
+                                        .get(
+                                            &owner
+                                                .storage()
+                                                .typed_handle::<Checked>(
+                                                    reference,
+                                                    reference.output_kind(),
+                                                )
+                                                .unwrap(),
+                                        )
+                                        .unwrap()
+                                });
+                            assert_eq!(actual, clean);
+                            assert_eq!(
+                                actual.0.status(),
+                                mizar_kernel::checker::KernelCheckStatus::Accepted
+                            );
+                            assert_eq!(
+                                actual.1.class,
+                                mizar_proof::policy::CandidatePolicyClass::KernelVerified
+                            );
+                            guarded_outputs[1] += 1;
+                        }
+                    }
+                }
+            }
+            assert_eq!(guarded_outputs, if stage >= 3 { [1, 1] } else { [0, 0] });
+        }
         let replay_session = (backend_free && stage == 3).then(|| session.clone());
         let clean = clean_driver
             .submit_captured(
