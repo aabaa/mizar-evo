@@ -8,6 +8,11 @@
 構造化問題は encoded 入力全体を再現し、元の local handoff の target、source formula、provenance と一致しなければならない。対応範囲は local formula evidence、先頭の全称量化された前提、ground goal であり、type guard は認証済み前提と完全に一致する重複に限る。encoded property、既存の substitution payload、未対応の式や項は fail closed とする。encoded problem 外の前提は使わない。
 参考用 used-premise label は実際の前提 label へ探索を制限するだけであり、未知または conjecture の label は無効とする。backend trace、log、report から式や信頼された事実を得ない。
 
+## Scoped theorem の対応
+
+[限定 theorem producer](../en/translator.md#source-theorem-scoped-sequent) の、外部 axiom がゼロ、元の local guard が一つ、全称量化した guarded reflexive conjecture の形にも対応する。前件と後件を同じ binder/manifest-variable 対応で元 guard/goal と照合する。handoff に結び付く primitive metadata suffix 全体と、共通の正規 source/module/binder prefix、role/source row、generated-binder 対応を要求する。opaque な Core identity は一致の metadata であり、独立に認証した origin とは扱わない。
+元の local guard、goal、context、provenance を wire に保持し、前提置換は加えない。共通 local variable は rigid な等式探索項として term 上限に数えるが ground 置換領域には加えない。十分な最小上限は `[1,0,1,2]`。上限指定なし、または term、equality-name、query 上限不足なら証拠を返さない。一般の量化 conjecture と非反射的 scoped goal は未対応。既存 guarded backend route は実際の finder 結果を利用できるが、Driver 登録は別作業である。
+
 ## 探索と上限
 
 呼出側は [verifier-policy limits](../../mizar-proof/en/policy.md#instance-search-limits) をそのまま渡す。None は証拠を返さず、Some はゼロを含む値をそのまま扱う。4 座標は distinct observed/generated ground terms、premise-instantiation candidates（ground 前提の空置換を含む）、named equality-instance candidates、kernel/SAT checks の上限である。上限到達による探索失敗は証拠を返さない。

@@ -4398,3 +4398,486 @@ fn source_theorem_candidate_witness_file_rejects_cross_associations() {
     }
     fs::remove_dir_all(root).unwrap();
 }
+
+fn source_theorem_finder_fixture(
+    text: &str,
+    fragment: mizar_atp::problem::LogicFragment,
+) -> (
+    mizar_atp::problem::AtpProblem,
+    mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+) {
+    use mizar_atp::{problem::*, translator::translate_source_theorem_sequent};
+    use mizar_vc::{
+        discharge::{ComputationLimit, DischargeInput, DischargePolicy, try_discharge},
+        generator::generate_source_theorem_vcs,
+        kernel_evidence_handoff::build_source_theorem_discharge_kernel_handoff,
+        vc_ir::{GenerationSchemaVersion, PolicyKey, VcSchemaVersion},
+    };
+    let core = step5c14_computation_core(text).unwrap();
+    let vcs = generate_source_theorem_vcs(
+        &core,
+        snapshot_id(777),
+        &GenerationSchemaVersion::new("finder-generation"),
+        &VcSchemaVersion::new("finder-schema"),
+    )
+    .unwrap();
+    let id = vcs.vcs()[0].id;
+    let policy = DischargePolicy {
+        computation_limit: ComputationLimit {
+            policy: PolicyKey::new("explicit"),
+            max_steps: 64,
+        },
+    };
+    let output = try_discharge(DischargeInput {
+        vc_set: &vcs,
+        policy: &policy,
+    })
+    .unwrap();
+    let profile = LogicProfile::try_new(
+        "source-finder",
+        fragment,
+        EqualitySupport::Supported,
+        QuantifierPolicy::FirstOrder,
+        SoftTypeStrategy::ScopedGuardPredicates,
+        NativePropertySupport::Supported,
+        [ConcreteFormat::Tptp, ConcreteFormat::SmtLib]
+            .into_iter()
+            .collect(),
+    )
+    .unwrap();
+    let problem =
+        translate_source_theorem_sequent(&core, &vcs, id, &output, &policy, profile).unwrap();
+    let handoff =
+        build_source_theorem_discharge_kernel_handoff(&core, &vcs, id, &output, &policy).unwrap();
+    assert!(problem.axioms().is_empty() && problem.type_context().guards().is_empty());
+    assert_eq!(handoff.canonical_evidence().formula_evidence().len(), 1);
+    assert_eq!(handoff.canonical_evidence().variable_manifest().len(), 1);
+    (problem, handoff)
+}
+
+#[test]
+fn source_theorem_finder_candidates_preserve_original_kernel_context() {
+    use mizar_atp::{
+        backend::{
+            BackendCandidatePayload, EncodedBackendProblem, encode_local_variable_reflexivity_names,
+        },
+        instance_finder::find_instance_evidence,
+        problem::*,
+    };
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        checker::{
+            FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
+            KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
+            KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
+            KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+        },
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+        rejection::TargetVcFingerprint,
+    };
+    use mizar_vc::{
+        kernel_evidence_handoff::KernelContextIdentitySource as SourceContext, vc_ir::VcFormulaRef,
+    };
+    for text in [
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        "theorem T: for Bound being set holds Bound = Bound proof let Local be set; thus Local = Local; end;",
+        ":: 日本語 λ\ntheorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+    ] {
+        for (fragment, format) in [
+            (LogicFragment::Fof, ConcreteFormat::Tptp),
+            (LogicFragment::SmtLibUninterpreted, ConcreteFormat::SmtLib),
+        ] {
+            let (problem, handoff) = source_theorem_finder_fixture(text, fragment);
+            let encoded = EncodedBackendProblem::encode(&problem, format).unwrap();
+            let before = (problem.clone(), encoded.clone(), handoff.clone());
+            let candidate =
+                find_instance_evidence(&problem, &encoded, &handoff, Some([1, 0, 1, 2]), None)
+                    .unwrap()
+                    .unwrap();
+            assert_eq!(
+                Some(candidate.clone()),
+                find_instance_evidence(&problem, &encoded, &handoff, Some([1, 0, 1, 2]), None)
+                    .unwrap()
+            );
+            assert_eq!(candidate.target_binding(), encoded.target_binding());
+            assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+            assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+            assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+            assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+            let target = handoff.canonical_evidence().target_vc();
+            let profile = handoff.canonical_evidence().kernel_profile();
+            assert_eq!(
+                profile.clause_tautology_policy,
+                mizar_vc::kernel_evidence_handoff::KernelClauseTautologyPolicy::Reject
+            );
+            let mut parse_context = FormulaEvidenceParseContext::v1(
+                Fingerprint::new(target.algorithm_id, target.digest.clone()),
+                KernelProfileRecord::v1(profile.profile_id, ClauseTautologyPolicy::Reject),
+            );
+            parse_context.accepted_schema_versions.insert(2);
+            let BackendCandidatePayload::FormulaSubstitutionBytes(wire) = candidate.payload()
+            else {
+                panic!()
+            };
+            let parsed = parse_formula_evidence(wire, &parse_context).unwrap();
+            let original = parse_formula_evidence(
+                &handoff.encode_local_evidence(None).unwrap(),
+                &parse_context,
+            )
+            .unwrap();
+            assert_eq!(parsed.formulas(), original.formulas());
+            assert_eq!(parsed.final_goal(), original.final_goal());
+            assert_eq!(parsed.provenance(), original.provenance());
+            assert_eq!(parsed.variable_manifest(), original.variable_manifest());
+            assert!(parsed.substitutions().is_empty());
+            let names = encode_local_variable_reflexivity_names(&original).unwrap();
+            assert_eq!(names.len(), 1);
+            assert_eq!(wire, &handoff.encode_local_evidence(Some(&names)).unwrap());
+            assert_eq!(parsed.equality_instances().len(), 1);
+            assert_eq!(
+                parsed.equality_instances()[0].1,
+                original.final_goal().formula
+            );
+            let target = TargetVcFingerprint::new(target.algorithm_id, target.digest.clone());
+            let entries = handoff
+                .context_identity()
+                .entries()
+                .iter()
+                .map(|entry| {
+                    let VcFormulaRef::Core(formula) = entry.producer_formula_ref() else {
+                        panic!()
+                    };
+                    let SourceContext::LocalHypothesis { local_context_id } = entry.source() else {
+                        panic!()
+                    };
+                    KernelContextIdentityEntry::new(
+                        KernelContextIdentitySource::LocalHypothesis { local_context_id },
+                        entry.formula_id(),
+                        Fingerprint::new(
+                            entry.formula_fingerprint().algorithm_id,
+                            entry.formula_fingerprint().digest.clone(),
+                        ),
+                        KernelFormulaProducerRef::Core(formula),
+                    )
+                })
+                .collect();
+            let context = FormulaEvidenceContext::with_context_identity(
+                Some(handoff.context_identity_hash().as_bytes().to_vec()),
+                vec![],
+                vec![],
+                Some(KernelContextIdentityPayload::new(
+                    target.clone(),
+                    handoff.canonical_hash(),
+                    handoff.context_identity_hash(),
+                    entries,
+                )),
+                ImportedFactContextLimits::default(),
+            )
+            .unwrap();
+            let result = check_kernel_evidence(KernelEvidenceCheckInput {
+                target_vc_fingerprint: &target,
+                evidence: &parsed,
+                formula_context: Some(&context),
+                check_kind: KernelEvidenceCheckKind::ProofObligation,
+                policy: KernelCheckPolicy::default(),
+                limits: KernelEvidenceCheckLimits::default(),
+            });
+            assert_eq!(result.status(), KernelCheckStatus::Accepted);
+            assert!(!result.policy_taint() && result.used_axioms().is_empty());
+            assert_eq!((problem, encoded, handoff), before);
+        }
+    }
+}
+
+#[test]
+fn source_theorem_finder_refuses_stale_metadata_and_unsupported_shapes() {
+    use mizar_atp::{
+        backend::EncodedBackendProblem, instance_finder::find_instance_evidence, problem::*,
+    };
+    let text = "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;";
+    let (problem, handoff) = source_theorem_finder_fixture(text, LogicFragment::Fof);
+    let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).unwrap();
+    let (foreign, foreign_handoff) =
+        source_theorem_finder_fixture(&text.replace("T:", "Foreign:"), LogicFragment::Fof);
+    let foreign_encoded = EncodedBackendProblem::encode(&foreign, ConcreteFormat::Tptp).unwrap();
+    for (current, wire, local) in [
+        (&problem, &foreign_encoded, &handoff),
+        (&foreign, &encoded, &handoff),
+        (&problem, &encoded, &foreign_handoff),
+    ] {
+        assert!(find_instance_evidence(current, wire, local, Some([1, 0, 1, 2]), None).is_err());
+    }
+    let parts = || AtpProblemParts {
+        vc_id: problem.vc_id(),
+        target_binding: problem.target_binding().clone(),
+        logic_profile: problem.logic_profile().clone(),
+        expected_result: problem.expected_result(),
+        declarations: problem.declarations().to_vec(),
+        axioms: problem.axioms().to_vec(),
+        conjecture: problem.conjecture().clone(),
+        type_context: problem.type_context().clone(),
+        properties: problem.properties().to_vec(),
+        symbol_map: problem.symbol_map().to_vec(),
+        provenance: problem.provenance().to_vec(),
+        diagnostics: problem.diagnostics().to_vec(),
+    };
+    let refuse = |parts| {
+        let altered = AtpProblem::try_new(parts).unwrap();
+        let wire = EncodedBackendProblem::encode(&altered, ConcreteFormat::Tptp).unwrap();
+        assert!(
+            find_instance_evidence(&altered, &wire, &handoff, Some([1, 0, 1, 2]), None).is_err()
+        );
+    };
+    let mut changed = parts();
+    changed.target_binding = foreign.target_binding().clone();
+    refuse(changed);
+    for field in [
+        "source",
+        "module",
+        "binder",
+        "target",
+        "handoff",
+        "context",
+        "guard-ref",
+        "goal-ref",
+        "guard-fingerprint",
+        "goal-fingerprint",
+        "guard-provenance",
+        "goal-provenance",
+        "role",
+    ] {
+        let mut changed = parts();
+        let row = &problem.provenance()[0];
+        let payload = row
+            .payload()
+            .as_str()
+            .split(';')
+            .map(|part| {
+                if part.starts_with(&format!("{field}=")) {
+                    format!("{part}0")
+                } else {
+                    part.to_owned()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(";");
+        changed.provenance[0] = AtpProvenance::new(row.id(), row.source().clone(), payload);
+        refuse(changed);
+    }
+    for (field, value) in [("source", "gg"), ("module", "0"), ("binder", "00")] {
+        let mut changed = parts();
+        for row in &mut changed.provenance {
+            let payload = row
+                .payload()
+                .as_str()
+                .split(';')
+                .map(|part| {
+                    if part.starts_with(&format!("{field}=")) {
+                        format!("{field}={value}")
+                    } else {
+                        part.to_owned()
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(";");
+            let source = if field == "binder" && row.id().index() == 1 {
+                AtpSourceRef::CheckerOwnedFact(AtpSourceBinding::new("proof-let:00"))
+            } else {
+                row.source().clone()
+            };
+            *row = AtpProvenance::new(row.id(), source, payload);
+        }
+        if field == "binder" {
+            changed.symbol_map[0] = AtpSymbolMapEntry::new(
+                "local:0",
+                AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new("proof-let:00")),
+            );
+        }
+        refuse(changed);
+    }
+    for index in 0..3 {
+        let mut changed = parts();
+        let row = &problem.provenance()[index];
+        changed.provenance[index] = AtpProvenance::new(
+            row.id(),
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("foreign")),
+            row.payload().clone(),
+        );
+        refuse(changed);
+    }
+    let mut changed = parts();
+    let row = changed
+        .symbol_map
+        .iter_mut()
+        .find(|row| matches!(row.source(), AtpSymbolSource::GeneratedBinder(_)))
+        .unwrap();
+    *row = AtpSymbolMapEntry::new(
+        row.backend_symbol().clone(),
+        AtpSymbolSource::GeneratedBinder(AtpSourceBinding::new("proof-let:999")),
+    );
+    refuse(changed);
+    let AtpFormulaTree::Forall { binders, body } = problem.conjecture().formula().unwrap() else {
+        panic!()
+    };
+    let AtpFormulaTree::Implies(guard, goal) = body.as_ref() else {
+        panic!()
+    };
+    for tree in [
+        AtpFormulaTree::Forall {
+            binders: binders.clone(),
+            body: Box::new(AtpFormulaTree::Implies(
+                Box::new(AtpFormulaTree::True),
+                goal.clone(),
+            )),
+        },
+        AtpFormulaTree::Forall {
+            binders: binders.clone(),
+            body: Box::new(AtpFormulaTree::Implies(
+                guard.clone(),
+                Box::new(AtpFormulaTree::False),
+            )),
+        },
+        AtpFormulaTree::Exists {
+            binders: binders.clone(),
+            body: body.clone(),
+        },
+        body.as_ref().clone(),
+    ] {
+        let mut changed = parts();
+        changed.conjecture = AtpFormula::new(
+            problem.conjecture().id(),
+            tree,
+            problem.conjecture().provenance(),
+        );
+        assert!(matches!(
+            AtpProblem::try_new(changed),
+            Err(AtpProblemError::UnsupportedProfileFeature {
+                feature: "scoped-guard sequent"
+            })
+        ));
+    }
+    let mut changed = parts();
+    changed.conjecture = AtpFormula::new(
+        problem.conjecture().id(),
+        AtpFormulaTree::Forall {
+            binders: vec![AtpBinder::new("foreign", None)],
+            body: body.clone(),
+        },
+        problem.conjecture().provenance(),
+    );
+    assert!(
+        matches!(AtpProblem::try_new(changed), Err(AtpProblemError::MissingSymbolMap { symbol }) if symbol.as_str() == "foreign")
+    );
+}
+
+#[test]
+fn source_theorem_finder_limits_and_advisory_reports_are_literal() {
+    use mizar_atp::{
+        backend::EncodedBackendProblem, instance_finder::find_instance_evidence, problem::*,
+    };
+    let (problem, handoff) = source_theorem_finder_fixture(
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        LogicFragment::Fof,
+    );
+    let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).unwrap();
+    for limits in [
+        None,
+        Some([0, 0, 1, 2]),
+        Some([1, 0, 0, 2]),
+        Some([1, 0, 1, 0]),
+        Some([1, 0, 1, 1]),
+    ] {
+        assert!(
+            find_instance_evidence(&problem, &encoded, &handoff, limits, None)
+                .unwrap()
+                .is_none(),
+            "{limits:?}"
+        );
+    }
+    let candidate = find_instance_evidence(&problem, &encoded, &handoff, Some([1, 0, 1, 2]), None)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        Some(candidate),
+        find_instance_evidence(&problem, &encoded, &handoff, Some([1, 0, 1, 2]), Some(&[]))
+            .unwrap()
+    );
+    assert!(
+        find_instance_evidence(
+            &problem,
+            &encoded,
+            &handoff,
+            Some([1, 0, 1, 2]),
+            Some(&["conj_0".into()])
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn source_theorem_finder_guarded_vampire_returns_actual_candidate() {
+    use mizar_atp::{backend::*, instance_finder::find_instance_evidence, problem::*};
+    use std::{path::PathBuf, time::Duration};
+    let (problem, handoff) = source_theorem_finder_fixture(
+        "theorem T: for X being set holds X = X proof let X be set; thus X = X; end;",
+        LogicFragment::Fof,
+    );
+    let encoded = EncodedBackendProblem::encode(&problem, ConcreteFormat::Tptp).unwrap();
+    let executable =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.tools/provers/vampire-4.9/vampire");
+    let command = BackendCommand::new(
+        &executable,
+        [
+            "--mode",
+            "vampire",
+            "--input_syntax",
+            "tptp",
+            "--proof",
+            "tptp",
+            "--output_axiom_names",
+            "on",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect(),
+    )
+    .unwrap();
+    let profile = BackendProfile::new(
+        BackendProfileId::new("source-theorem-vampire").unwrap(),
+        BackendKind::new("vampire").unwrap(),
+        ConcreteFormat::Tptp,
+    )
+    .with_version_probe(
+        BackendVersionProbe::new(
+            &executable,
+            vec!["--version".into()],
+            Duration::from_secs(10),
+        )
+        .unwrap(),
+    );
+    let input = BackendRunInput::new(
+        BackendRunId::new("source-theorem-finder").unwrap(),
+        encoded.clone(),
+        profile,
+        command,
+        BackendResourceLimits::new(),
+        BackendIoMode::PrivateProblemFile,
+        Default::default(),
+    );
+    let result = run_vampire_backend(input, &problem, &handoff, Some([1, 0, 1, 2]));
+    assert_eq!(result.status(), BackendRunStatus::Proved, "{result:?}");
+    let metadata = result.metadata();
+    let probe = metadata.version_record().unwrap();
+    assert!(
+        probe.success()
+            && probe
+                .parsed_version()
+                .is_some_and(|version| version.starts_with("Vampire 4.9"))
+    );
+    assert_eq!(
+        result.candidate_evidence(),
+        find_instance_evidence(&problem, &encoded, &handoff, Some([1, 0, 1, 2]), None)
+            .unwrap()
+            .as_ref()
+    );
+}

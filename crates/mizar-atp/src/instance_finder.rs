@@ -1,4 +1,4 @@
-//! Deterministic, untrusted ground instance search over a local VC handoff.
+//! Deterministic, untrusted instance search over a local VC handoff.
 
 use std::{
     cell::Cell,
@@ -32,15 +32,16 @@ pub use crate::backend::BackendCandidateEvidence as CandidateKernelEvidence;
 use crate::{
     backend::{BackendCandidatePayload, EncodedBackendProblem},
     problem::{
-        AtpDeclarationKind, AtpFormula, AtpFormulaTree, AtpProblem, AtpSourceRef, AtpTerm,
-        ConcreteFormat,
+        AtpDeclarationKind, AtpFormula, AtpFormulaTree, AtpProblem, AtpSourceRef, AtpSymbolSource,
+        AtpTerm, ConcreteFormat, SoftTypeStrategy,
     },
 };
 
 type WireSections = Vec<Vec<Vec<u8>>>;
 
-/// Search limits count observed ground terms, premise substitutions (including
-/// zero-variable premises), equality names, and kernel/SAT queries, respectively.
+/// Search limits count terms (including the scoped rigid variable), premise
+/// substitutions (including zero-variable premises), equality names, and
+/// kernel/SAT queries, respectively.
 /// Missing limits disable search; zero limits are literal. Reports may only
 /// select real premise labels. Unsupported or mismatched handoffs fail closed.
 pub fn find_instance_evidence(
@@ -89,7 +90,7 @@ pub fn find_instance_evidence(
     );
     parse_context.accepted_schema_versions.insert(2);
     let parsed = parse_formula_evidence(&base, &parse_context).map_err(|_| invalid())?;
-    if !parsed.substitutions().is_empty() || parsed.formulas().len() != problem.axioms().len() {
+    if !parsed.substitutions().is_empty() {
         return Err(invalid());
     }
     let mut symbols = BTreeMap::new();
@@ -135,57 +136,253 @@ pub fn find_instance_evidence(
         return Err(invalid());
     }
     let mut premises = Vec::new();
-    for row in problem.axioms() {
-        let provenance = provenance(problem, row)?;
-        let entry = parsed
-            .formulas()
-            .iter()
-            .find(|entry| source_matches(provenance.source(), &entry.source))
-            .ok_or_else(invalid)?;
-        if !matched.insert(entry.formula_id) {
+    let rigid = if problem.axioms().is_empty() && !parsed.formulas().is_empty() {
+        let envelope = handoff.canonical_evidence();
+        let (
+            [guard],
+            [entry],
+            [variable],
+            [guard_decl, binder_decl],
+            [binder_map, guard_map],
+            [guard_prov, binder_prov, closure_prov],
+        ) = (
+            envelope.formula_evidence(),
+            parsed.formulas(),
+            parsed.variable_manifest(),
+            problem.declarations(),
+            problem.symbol_map(),
+            problem.provenance(),
+        )
+        else {
+            return Err(invalid());
+        };
+        let Some(AtpFormulaTree::Forall { binders, body }) = problem.conjecture().formula() else {
+            return Err(invalid());
+        };
+        let [binder] = binders.as_slice() else {
+            return Err(invalid());
+        };
+        let AtpFormulaTree::Implies(local_guard, local_goal) = body.as_ref() else {
+            return Err(invalid());
+        };
+        let (Formula::Atom(guard_atom), Formula::Atom(goal_atom)) =
+            (&entry.formula, &parsed.final_goal().formula)
+        else {
+            return Err(invalid());
+        };
+        let term = Term::Variable(variable.variable_id);
+        if problem.logic_profile().soft_types() != SoftTypeStrategy::ScopedGuardPredicates
+            || binder.sort().is_some()
+            || binder.variable().as_str() != "local:0"
+            || guard_atom.symbol.kind != SymbolKind::BuiltinRelation
+            || guard_atom.arguments.as_slice() != std::slice::from_ref(&term)
+            || goal_atom.symbol.kind != SymbolKind::Equality
+            || goal_atom.arguments != [term.clone(), term.clone()]
+            || !problem.type_context().guards().is_empty()
+            || !problem.diagnostics().is_empty()
+            || problem.conjecture().id().index() != 0
+            || problem.conjecture().provenance() != closure_prov.id()
+            || guard_decl.id().index() != 0
+            || guard_decl.kind() != AtpDeclarationKind::Predicate
+            || guard_decl.symbol().as_str() != "type:set"
+            || guard_decl.arity() != 1
+            || guard_decl.provenance() != guard_prov.id()
+            || binder_decl.id().index() != 1
+            || binder_decl.kind() != AtpDeclarationKind::GeneratedBinder
+            || binder_decl.symbol() != binder.variable()
+            || binder_decl.arity() != 0
+            || binder_decl.provenance() != binder_prov.id()
+            || guard_map.backend_symbol() != guard_decl.symbol()
+            || !matches!(guard_map.source(), AtpSymbolSource::MizarSymbol(source) if source.as_str() == "builtin-type:set")
+            || binder_map.backend_symbol() != binder.variable()
+            || !source_matches(guard_prov.source(), &entry.source)
+            || !matches!(closure_prov.source(), AtpSourceRef::GeneratedVcFact(source) if source.as_str() == "goal:1")
+            || [
+                guard_prov.id().index(),
+                binder_prov.id().index(),
+                closure_prov.id().index(),
+            ] != [0, 1, 2]
+            || !matches!(entry.source, FormulaSource::LocalHypothesis { .. })
+            || entry.formula_id != guard.formula_id()
+            || entry.provenance_id != guard.provenance_id()
+            || entry.formula_fingerprint.algorithm_id != guard.formula_fingerprint().algorithm_id
+            || entry.formula_fingerprint.digest != guard.formula_fingerprint().digest
+            || parsed.final_goal().provenance_id != envelope.final_goal().provenance_id
+        {
             return Err(invalid());
         }
-        authenticate_payload(provenance.payload().as_str(), entry.provenance_id, &parsed)?;
-        let (tree, binders) = strip_universals(row.formula().ok_or_else(invalid)?)?;
         let mut variables = BTreeMap::new();
         match_formula(
-            tree,
+            local_guard,
             &entry.formula,
             &mut symbols,
             &mut variables,
             &mut equalities,
         )?;
-        if variables.keys().cloned().collect::<BTreeSet<_>>() != binders {
+        match_formula(
+            local_goal,
+            &parsed.final_goal().formula,
+            &mut symbols,
+            &mut variables,
+            &mut equalities,
+        )?;
+        if variables.len() != 1
+            || variables.get(binder.variable().as_str()) != Some(&variable.variable_id)
+            || symbols.len() != 1
+            || !symbols.contains_key("type:set")
+            || equalities.len() != 1
+        {
             return Err(invalid());
         }
-        let label = labels.get(&row.id()).ok_or_else(invalid)?;
-        if used_premises.is_none_or(|report| report.contains(label)) {
-            selected.insert(entry.formula_id);
-            premises.push((entry, variables.values().copied().collect::<BTreeSet<_>>()));
+        // Source/module/binder identify an opaque, shared producer prefix. Only
+        // the suffix can be authenticated independently against this handoff.
+        let (prefix, _) = closure_prov
+            .payload()
+            .as_str()
+            .split_once(";target=")
+            .ok_or_else(invalid)?;
+        let prefix_fields = prefix
+            .strip_prefix("mizar-atp/source-theorem-sequent/v1;source=")
+            .ok_or_else(invalid)?;
+        let (source, prefix_fields) = prefix_fields.split_once(";module=").ok_or_else(invalid)?;
+        let (module, local) = prefix_fields.split_once(";binder=").ok_or_else(invalid)?;
+        if [source, module].iter().any(|value| {
+            value.is_empty()
+                || value.len() % 2 != 0
+                || !value
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        }) || local
+            .parse::<usize>()
+            .ok()
+            .is_none_or(|value| value.to_string() != local)
+            || !matches!(binder_prov.source(), AtpSourceRef::CheckerOwnedFact(source) if source.as_str() == format!("proof-let:{local}"))
+            || !matches!(binder_map.source(), AtpSymbolSource::GeneratedBinder(source) if source.as_str() == format!("proof-let:{local}"))
+        {
+            return Err(invalid());
         }
-    }
-    let goal = problem.conjecture();
-    let goal_provenance = provenance(problem, goal)?;
-    if !matches!(goal_provenance.source(), AtpSourceRef::GeneratedVcFact(binding) if binding.as_str() == "goal:1")
-    {
-        return Err(invalid());
-    }
-    authenticate_payload(
-        goal_provenance.payload().as_str(),
-        parsed.final_goal().provenance_id,
-        &parsed,
-    )?;
-    let mut variables = BTreeMap::new();
-    match_formula(
-        goal.formula().ok_or_else(invalid)?,
-        &parsed.final_goal().formula,
-        &mut symbols,
-        &mut variables,
-        &mut equalities,
-    )?;
-    if !variables.is_empty() || equalities.len() > 1 {
-        return Err(invalid());
-    }
+        let guard_ref = guard.producer_formula_ref().ok_or_else(invalid)?;
+        if !matches!(guard_ref, VcFormulaRef::Core(_))
+            || !matches!(
+                envelope.final_goal().producer_formula_ref,
+                VcFormulaRef::Core(_)
+            )
+        {
+            return Err(invalid());
+        }
+        let mut primitive = Vec::new();
+        for (id, fingerprint) in [
+            (guard.provenance_id(), guard.formula_fingerprint()),
+            (
+                envelope.final_goal().provenance_id,
+                &envelope.final_goal().formula_fingerprint,
+            ),
+        ] {
+            primitive.push(
+                envelope
+                    .provenance()
+                    .iter()
+                    .find(|row| {
+                        row.provenance_id == id
+                            && &row.formula_fingerprint == fingerprint
+                            && &row.target_vc == target
+                    })
+                    .ok_or_else(invalid)?,
+            );
+        }
+        let hex = |bytes: &[u8]| {
+            bytes
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        };
+        let metadata = format!(
+            "{prefix};target={}:{};handoff={};context={};guard-ref={};goal-ref={};guard-fingerprint={}:{};goal-fingerprint={}:{};guard-provenance={}:{};goal-provenance={}:{}",
+            target.algorithm_id,
+            hex(&target.digest),
+            hex(handoff.canonical_hash().as_bytes()),
+            hex(handoff.context_identity_hash().as_bytes()),
+            hex(format!("{guard_ref:?}").as_bytes()),
+            hex(format!("{:?}", envelope.final_goal().producer_formula_ref).as_bytes()),
+            guard.formula_fingerprint().algorithm_id,
+            hex(&guard.formula_fingerprint().digest),
+            envelope.final_goal().formula_fingerprint.algorithm_id,
+            hex(&envelope.final_goal().formula_fingerprint.digest),
+            primitive[0].provenance_id,
+            hex(&primitive[0].payload),
+            primitive[1].provenance_id,
+            hex(&primitive[1].payload),
+        );
+        for (row, role) in [
+            (guard_prov, "guard"),
+            (binder_prov, "binder"),
+            (closure_prov, "closure"),
+        ] {
+            if row.payload().as_str() != format!("{metadata};role={role}") {
+                return Err(invalid());
+            }
+        }
+        // Keep the authenticated guard local without charging it as a premise
+        // instantiation or placing its variable in the substitution domain.
+        selected.insert(entry.formula_id);
+        Some(term)
+    } else {
+        if parsed.formulas().len() != problem.axioms().len() {
+            return Err(invalid());
+        }
+        for row in problem.axioms() {
+            let provenance = provenance(problem, row)?;
+            let entry = parsed
+                .formulas()
+                .iter()
+                .find(|entry| source_matches(provenance.source(), &entry.source))
+                .ok_or_else(invalid)?;
+            if !matched.insert(entry.formula_id) {
+                return Err(invalid());
+            }
+            authenticate_payload(provenance.payload().as_str(), entry.provenance_id, &parsed)?;
+            let (tree, binders) = strip_universals(row.formula().ok_or_else(invalid)?)?;
+            let mut variables = BTreeMap::new();
+            match_formula(
+                tree,
+                &entry.formula,
+                &mut symbols,
+                &mut variables,
+                &mut equalities,
+            )?;
+            if variables.keys().cloned().collect::<BTreeSet<_>>() != binders {
+                return Err(invalid());
+            }
+            let label = labels.get(&row.id()).ok_or_else(invalid)?;
+            if used_premises.is_none_or(|report| report.contains(label)) {
+                selected.insert(entry.formula_id);
+                premises.push((entry, variables.values().copied().collect::<BTreeSet<_>>()));
+            }
+        }
+        let goal = problem.conjecture();
+        let goal_provenance = provenance(problem, goal)?;
+        if !matches!(goal_provenance.source(), AtpSourceRef::GeneratedVcFact(binding) if binding.as_str() == "goal:1")
+        {
+            return Err(invalid());
+        }
+        authenticate_payload(
+            goal_provenance.payload().as_str(),
+            parsed.final_goal().provenance_id,
+            &parsed,
+        )?;
+        let mut variables = BTreeMap::new();
+        match_formula(
+            goal.formula().ok_or_else(invalid)?,
+            &parsed.final_goal().formula,
+            &mut symbols,
+            &mut variables,
+            &mut equalities,
+        )?;
+        if !variables.is_empty() || equalities.len() > 1 {
+            return Err(invalid());
+        }
+        None
+    };
     for (name, symbol) in &symbols {
         let declaration = problem
             .declarations()
@@ -234,6 +431,12 @@ pub fn find_instance_evidence(
         .iter()
         .map(|term| (term.render(), term.clone()))
         .collect::<BTreeMap<_, _>>();
+    if let Some(term) = rigid {
+        counted_terms.insert(term.render(), term);
+    }
+    if counted_terms.len() as u64 > limits[0] {
+        return Ok(None);
+    }
     let mut ground_atoms = Vec::new();
     collect_atoms(&parsed.final_goal().formula, &mut ground_atoms);
     let query = |sections: &WireSections| -> Result<Option<Vec<u8>>, String> {
@@ -707,6 +910,10 @@ fn kind_tag(kind: SymbolKind) -> Result<u8, String> {
 
 fn put_term(term: &Term, bytes: &mut Vec<u8>) -> Result<(), String> {
     match term {
+        Term::Variable(id) => {
+            bytes.push(1);
+            put_u32(id.0 as usize, bytes)
+        }
         Term::Application { symbol, arguments } => {
             bytes.push(2);
             bytes.push(kind_tag(symbol.kind)?);
