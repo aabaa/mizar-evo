@@ -50,11 +50,11 @@ Proof [same-call typing association](../../mizar-proof/en/status.md#original-e1-
 ## Original E1 single-valuedness Proof request-identity association
 Proof [same-call single-valuedness association](../../mizar-proof/en/status.md#original-e1-single-valuedness-request-identity-association) preserves VC-first checking, fixed-schema identity regeneration and whole raw-slice equality without policy/adoption.
 
-## Successful E1 typing schema handoffs
-Checker/generator and Proof same-call typing association above own schema reporting and delegation.
-## Successful E1 single-valuedness checker-schema handoff
-Authority: §20.1.2/§20.2.6/E1. Full tier: new Kernel/VC APIs fail pattern criterion; source-return tests and paired owner/API docs.
-Add `check_algorithm_return_single_valuedness_schema` with identical inputs; invoke the unchanged boolean and report `Some(1_u16)` only on success, otherwise `None`. Add `check_source_algorithm_e1_single_valuedness_request_with_schema`: authenticate the original descriptor FIRST, check its original ordered projections in-call, returning `(unchanged six-tuple, u16)` atomically. Existing VC checking delegates, discarding only schema; preserve producer/selection/local errors.
-No new type/field/abstraction, Proof association/policy/adoption, native typing prerequisite, environment interpretation, E4 converse, symbols or credit. Preserve Open4/Deferred, caller currentness, raw unknown/incomplete/cache misses and registered/cycle exclusions; lower producers, specs, fixtures/expectations, trace/coverage and acceptance stay unchanged.
-Tests, cap four groups: Kernel Some/None parity including ordered projection/guard/profile refusals; VC schema/whole-descriptor and delegate parity/repeatability; snapshot/schema isolation and Open4/Deferred/raw-slice purity; other roles/unknown IDs and source/check/Core/CFG/guard mismatches preserve producer-first errors. Reuse controls.
-Exit: specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Kernel/VC/Proof owners, source-return, proof-verification E2E and links/fragments; full tests follow lane cadence.
+Typing checker/generator and Proof association above own schema reporting and delegation.
+Single-valuedness checker/generator above own success-only Kernel schema reporting, authenticated descriptor/schema handoff and delegation.
+## Successful E1 single-valuedness Proof schema association
+Authority: §20.1.2/§20.2.6/E1. Full tier: new Proof API fails pattern criterion; source-return tests; paired Proof owner/API docs.
+Add `check_source_algorithm_e1_single_valuedness_with_schema` with identical inputs: call authenticated VC schema checking FIRST with unchanged fixed schemas, regenerate the original identity on identical inputs, require whole descriptor.5/raw-slice equality, and return existing `(ProofObligationIdentity, DependencySlice, u16)` atomically. Pair API delegates, discarding only schema; preserve producer-first errors.
+Exclude types/fields/abstractions, policy/adoption, native typing prerequisites, environment interpretation, E4 converse, symbols and credit. Preserve Open4/Deferred, caller currentness, raw unknown/incomplete/cache misses and registered/cycle exclusions; lower producers, specs, fixtures/expectations, trace/coverage and acceptance stay unchanged.
+Tests, cap four groups: success schema/identity/whole-slice equality and delegate parity/repeatability; snapshots and fixed-schema identity inputs with Open4/Deferred/raw-slice purity; other roles/unknown IDs preserve VC-first errors; source/check/Core/CFG/guard refusals preserve producer errors. Reuse controls.
+Exit: specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Proof/VC owners, source-return, proof-verification E2E and links/fragments; full tests follow lane cadence.
