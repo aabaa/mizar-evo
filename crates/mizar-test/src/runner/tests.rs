@@ -1829,6 +1829,13 @@ fn source_candidate_check_bytes(
     handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
     bytes: &[u8], target: &mizar_atp::problem::AtpTargetBinding,
 ) -> Result<mizar_kernel::checker::KernelCheckStatus, String> {
+    source_candidate_check_result(handoff, bytes, target).map(|result| result.status())
+}
+
+fn source_candidate_check_result(
+    handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    bytes: &[u8], target: &mizar_atp::problem::AtpTargetBinding,
+) -> Result<mizar_kernel::checker::KernelCheckResult, String> {
     use mizar_kernel::{certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
         checker::*, formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence}, rejection::TargetVcFingerprint};
     use mizar_vc::{kernel_evidence_handoff::KernelContextIdentitySource as VcSource, vc_ir::VcFormulaRef};
@@ -1860,7 +1867,7 @@ fn source_candidate_check_bytes(
         formula_context: Some(&context), check_kind: KernelEvidenceCheckKind::ProofObligation,
         policy: KernelCheckPolicy::default(), limits: KernelEvidenceCheckLimits::default() });
     assert!(!result.policy_taint());
-    Ok(result.status())
+    Ok(result)
 }
 
 pub(super) fn source_registration_owner_inputs(
@@ -12901,4 +12908,707 @@ fn task279_remainder_real_advanced_semantics_case_is_stable_and_metadata_bound()
     let rejected = super::run_advanced_semantics_case(&config.workspace_root, &counterfeit, 0);
     assert_eq!(rejected.status, super::TypeElaborationCaseStatus::Failed);
     assert!(rejected.actual_detail_keys.iter().any(|key| key == "advanced_semantics.invalid_prepared_case"));
+}
+
+mod p23_candidate_corpus {
+    use mizar_atp::{
+        backend::{BackendCandidatePayload, build_local_candidate_inputs},
+        problem::*,
+        translator::*,
+    };
+    use mizar_core::{control_flow::ObligationHandoffId, core_ir::*};
+    use mizar_kernel::{
+        checker::KernelCheckStatus,
+        clause::{Atom, SymbolKey, SymbolKind, Term, VariableId},
+        formula_evidence::Formula,
+    };
+    use mizar_session::{InMemorySessionIdAllocator, SessionIdAllocator, SourceRange};
+    use mizar_vc::{kernel_evidence_handoff::*, vc_ir::*};
+    use serde_json::Value;
+
+    fn number(value: &Value) -> u32 {
+        u32::try_from(value.as_u64().unwrap()).unwrap()
+    }
+
+    // Only the two corpus seeds' atom/variable, negation and disjunction shapes.
+    fn formula(value: &Value, seed: &Value) -> (Formula, AtpFormulaTree, Vec<u8>) {
+        match value["kind"].as_str().unwrap() {
+            "atom" => {
+                let id = number(&value["symbol_id"]);
+                let symbol = seed["symbol_manifest"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|row| number(&row["symbol_id"]) == id)
+                    .unwrap();
+                assert_eq!(symbol["kind"], "predicate");
+                let arguments = value["arguments"].as_array().unwrap();
+                assert_eq!(
+                    number(&symbol["arity"]),
+                    u32::try_from(arguments.len()).unwrap()
+                );
+                let mut wire = vec![1, 1];
+                wire.extend(id.to_be_bytes());
+                wire.extend(number(&symbol["arity"]).to_be_bytes());
+                wire.extend((u32::try_from(arguments.len()).unwrap()).to_be_bytes());
+                let mut terms = Vec::new();
+                let mut atp_terms = Vec::new();
+                for argument in arguments {
+                    assert_eq!(argument["kind"], "variable");
+                    let variable = number(&argument["variable_id"]);
+                    let row = seed["variable_manifest"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .find(|row| number(&row["variable_id"]) == variable)
+                        .unwrap();
+                    terms.push(Term::Variable(VariableId(variable)));
+                    atp_terms.push(AtpTerm::Variable(
+                        row["debug_name"].as_str().unwrap().into(),
+                    ));
+                    wire.push(1);
+                    wire.extend(variable.to_be_bytes());
+                }
+                (
+                    Formula::Atom(Atom::new(SymbolKey::new(SymbolKind::Predicate, id), terms)),
+                    AtpFormulaTree::Atom(AtpAtom::new(
+                        symbol["debug_name"].as_str().unwrap(),
+                        atp_terms,
+                    )),
+                    wire,
+                )
+            }
+            "not" => {
+                let (kernel, atp, bytes) = formula(&value["child"], seed);
+                (
+                    Formula::Not(Box::new(kernel)),
+                    AtpFormulaTree::Not(Box::new(atp)),
+                    [vec![2], bytes].concat(),
+                )
+            }
+            "or" => {
+                let children = value["children"].as_array().unwrap();
+                let mut wire = vec![4];
+                wire.extend((u32::try_from(children.len()).unwrap()).to_be_bytes());
+                let mut kernels = Vec::new();
+                let mut atps = Vec::new();
+                for child in children {
+                    let (kernel, atp, bytes) = formula(child, seed);
+                    kernels.push(kernel);
+                    atps.push(atp);
+                    wire.extend(bytes);
+                }
+                (Formula::Or(kernels), AtpFormulaTree::Or(atps), wire)
+            }
+            _ => panic!("unsupported corpus formula"),
+        }
+    }
+
+    fn original(
+        seed: &Value,
+        source_text: &str,
+        format: ConcreteFormat,
+    ) -> (AtpProblem, VcKernelEvidenceHandoff) {
+        let rows = seed["formula_evidence"].as_array().unwrap();
+        let snapshot = super::super::shared::snapshot_id(23029);
+        let source = InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot)
+            .unwrap();
+        let source_range = SourceRange {
+            source_id: source,
+            start: source_text.find('{').unwrap(),
+            end: source_text.len(),
+        };
+        let location = CoreSourceRef::direct(source_range);
+        let provenance = || {
+            vec![VcProvenance {
+                phase: VcProvenancePhase::Generator,
+                key: VcText::new("P23-corpus"),
+                core: None,
+            }]
+        };
+        let reference = |index| VcFormulaRef::Generated(VcGeneratedFormulaId::new(index));
+        // VC context IDs are dense; preceding slots contribute no formulas or premises.
+        let mut entries = (0..usize::try_from(number(&rows[0]["local_context_ref"])).unwrap() - 1)
+            .map(|index| ContextEntry {
+                id: ContextEntryId::new(index),
+                sort_key: CanonicalSortKey::new(format!("{index:03}")),
+                kind: ContextEntryKind::ProofAssumption,
+                formula: None,
+                provenance: provenance(),
+            })
+            .collect::<Vec<_>>();
+        entries.extend(
+            rows.iter()
+                .take(2)
+                .enumerate()
+                .map(|(index, row)| ContextEntry {
+                    id: ContextEntryId::new(
+                        usize::try_from(number(&row["local_context_ref"])).unwrap() - 1,
+                    ),
+                    sort_key: CanonicalSortKey::new(format!(
+                        "{:03}",
+                        number(&row["local_context_ref"]) - 1
+                    )),
+                    kind: if row["source_class"] == "cited_premise" {
+                        ContextEntryKind::CitedPremise
+                    } else {
+                        ContextEntryKind::ProofAssumption
+                    },
+                    formula: Some(reference(index)),
+                    provenance: provenance(),
+                }),
+        );
+        let mut premises = entries
+            .iter()
+            .filter(|entry| entry.formula.is_some())
+            .map(|entry| PremiseRef::LocalContext(entry.id))
+            .collect::<Vec<_>>();
+        // The copied-goal row has a legitimate generated source in the original.
+        // Its seed claim of LocalHypothesis 99 never enters canonical identity.
+        for index in 2..rows.len() {
+            premises.push(PremiseRef::GeneratedFact {
+                formula: reference(index),
+            });
+        }
+        let anchor_hash = || HashMarker::Unavailable {
+            reason: AnchorUnavailableReason::new("corpus projection"),
+        };
+        let set = VcSet::try_new(VcSetParts {
+            schema_version: VcSchemaVersion::new("P23-corpus"),
+            snapshot,
+            source,
+            module: VcModuleRef::new(seed["target_vc"].as_str().unwrap()),
+            generated_formulas: (0..=rows.len())
+                .map(|index| VcGeneratedFormula {
+                    id: VcGeneratedFormulaId::new(index),
+                    kind: VcGeneratedFormulaKind::SplitGoal,
+                    shape: VcGeneratedFormulaShape::True,
+                    provenance: provenance(),
+                })
+                .collect(),
+            vcs: vec![VcIr {
+                id: VcId::new(0),
+                kind: VcKind::TheoremProofStep,
+                source: VcSourceRef {
+                    primary: location.clone(),
+                    related: Vec::new(),
+                },
+                seed: SeedVcRef {
+                    handoff: ObligationHandoffId::new(0),
+                },
+                anchor: ObligationAnchor {
+                    owner: AnchorOwner::Theorem(CoreItemId::new(0)),
+                    kind: VcKind::TheoremProofStep,
+                    local_path: LocalProofOrProgramPath::new("P23/corpus"),
+                    label: None,
+                    semantic_origin: NormalizedSemanticOrigin::new("P23-corpus"),
+                    source_range: Some(source_range),
+                    provenance: provenance(),
+                    source_shape_hash: anchor_hash(),
+                    canonical_goal_hash: anchor_hash(),
+                    canonical_context_hash: anchor_hash(),
+                    generation_schema_version: GenerationSchemaVersion::new("P23-corpus"),
+                    completeness: AnchorCompleteness::Incomplete {
+                        missing: vec![
+                            AnchorIngredient::SourceShapeHash,
+                            AnchorIngredient::CanonicalGoalHash,
+                            AnchorIngredient::CanonicalContextHash,
+                        ],
+                    },
+                },
+                local_context: LocalContext::try_new(entries, Vec::new()).unwrap(),
+                premises,
+                goal: reference(rows.len()),
+                proof_hint: None,
+                status: VcStatus::NeedsAtp,
+                provenance: provenance(),
+            }],
+            seed_accounting: vec![SeedAccounting {
+                handoff: ObligationHandoffId::new(0),
+                origin: SeedOriginRef::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+                seed_status: ObligationSeedStatus::Active,
+                mapping: SeedVcMapping::One { vc: VcId::new(0) },
+            }],
+        })
+        .unwrap();
+        let formulas = rows
+            .iter()
+            .map(|row| &row["formula"])
+            .chain(std::iter::once(&seed["final_goal"]["formula"]))
+            .map(|row| formula(row, seed))
+            .collect::<Vec<_>>();
+        let payloads = formulas
+            .iter()
+            .enumerate()
+            .map(|(index, (kernel, _, wire))| KernelFormulaPayload {
+                formula_ref: reference(index),
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: KernelEvidenceFingerprint::new(
+                        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                        kernel.canonical_hash_input().unwrap(),
+                    )
+                    .unwrap(),
+                    formula_bytes: wire.clone(),
+                    provenance_payload: format!("corpus:{index}").into_bytes(),
+                },
+            })
+            .collect::<Vec<_>>();
+        let symbols = seed["symbol_manifest"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(index, row)| KernelManifestEntry {
+                entry_id: u32::try_from(index).unwrap(),
+                payload: [
+                    vec![match row["kind"].as_str().unwrap() {
+                        "predicate" => 1,
+                        "function" => 2,
+                        _ => panic!("seed symbol"),
+                    }],
+                    number(&row["symbol_id"]).to_be_bytes().to_vec(),
+                ]
+                .concat(),
+            })
+            .collect::<Vec<_>>();
+        let variables = seed["variable_manifest"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(index, row)| KernelManifestEntry {
+                entry_id: u32::try_from(index).unwrap(),
+                payload: number(&row["variable_id"]).to_be_bytes().to_vec(),
+            })
+            .collect::<Vec<_>>();
+        let handoff = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+            vc_set: &set,
+            vc: VcId::new(0),
+            goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: &symbols,
+            variable_manifest: &variables,
+            formula_payloads: &payloads,
+            imported_formula_payloads: &[],
+            substitutions: &[],
+            formula_context: None,
+            discharge_output: None,
+        })
+        .unwrap();
+        let premise_tree = |tree| AtpFormulaTree::Forall {
+            binders: seed["variable_manifest"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|row| row["role"] == "free")
+                .map(|row| AtpBinder::new(row["debug_name"].as_str().unwrap(), None))
+                .collect(),
+            body: Box::new(tree),
+        };
+        let projections = formulas
+            .iter()
+            .enumerate()
+            .map(|(index, (_, atp, _))| {
+                let identity = if index == rows.len() {
+                    "goal:1".to_owned()
+                } else if index == 0 {
+                    format!(
+                        "local-context:{}",
+                        number(&rows[index]["local_context_ref"])
+                    )
+                } else if index == 1 {
+                    format!(
+                        "cited-premise:{}",
+                        number(&rows[index]["local_context_ref"])
+                    )
+                } else {
+                    format!("generated:{}", index + 1)
+                };
+                let binding = AtpSourceBinding::new(&identity);
+                let source = if index == 0 {
+                    AtpSourceRef::LocalHypothesis(binding)
+                } else if index == 1 {
+                    AtpSourceRef::CitedPremise(binding)
+                } else {
+                    AtpSourceRef::GeneratedVcFact(binding)
+                };
+                AtpFormulaProjection {
+                    target: AtpFormulaProjectionTarget::VcFormula(reference(index)),
+                    formula: if index < rows.len() {
+                        premise_tree(atp.clone())
+                    } else {
+                        atp.clone()
+                    },
+                    provenance: AtpProjectionProvenance::new(source, format!("atp:{identity}")),
+                    source_identity: identity.into(),
+                    handoff_formula_fingerprint: AtpFingerprint::new(
+                        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                        payloads[index]
+                            .projection
+                            .formula_fingerprint
+                            .digest
+                            .clone(),
+                    )
+                    .unwrap(),
+                    handoff_provenance_payload: payloads[index]
+                        .projection
+                        .provenance_payload
+                        .clone(),
+                }
+            })
+            .collect();
+        let mut declarations = seed["symbol_manifest"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| {
+                let name = row["debug_name"].as_str().unwrap();
+                AtpDeclarationProjection {
+                    key: AtpProjectionKey::new(name),
+                    kind: if row["kind"] == "predicate" {
+                        AtpDeclarationKind::Predicate
+                    } else {
+                        AtpDeclarationKind::Function
+                    },
+                    symbol: AtpSymbolName::new(name),
+                    arity: number(&row["arity"]),
+                    provenance: AtpProjectionProvenance::new(
+                        AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!(
+                            "decl:{name}"
+                        ))),
+                        format!("decl:{name}"),
+                    ),
+                    symbol_source: AtpSymbolSourceProjection::MizarSymbol(AtpSourceBinding::new(
+                        name,
+                    )),
+                }
+            })
+            .collect::<Vec<_>>();
+        declarations.extend(
+            seed["variable_manifest"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| {
+                    let name = row["debug_name"].as_str().unwrap();
+                    AtpDeclarationProjection {
+                        key: AtpProjectionKey::new(name),
+                        kind: AtpDeclarationKind::GeneratedBinder,
+                        symbol: AtpSymbolName::new(name),
+                        arity: 0,
+                        provenance: AtpProjectionProvenance::new(
+                            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!(
+                                "binder:{name}"
+                            ))),
+                            format!("binder:{name}"),
+                        ),
+                        symbol_source: AtpSymbolSourceProjection::GeneratedBinder(
+                            AtpSourceBinding::new(name),
+                        ),
+                    }
+                }),
+        );
+        let problem = translate_problem(AtpTranslationInput {
+            vc_set: &set,
+            vc: VcId::new(0),
+            kernel_handoff: &handoff,
+            logic_profile: super::source_candidate_profile("P23-corpus", format),
+            declaration_projections: declarations,
+            soft_type_projections: vec![AtpSoftTypeProjection {
+                key: AtpProjectionKey::new("corpus-guard"),
+                representation: AtpSoftTypeRepresentation::GuardFormula(premise_tree(
+                    formulas[0].1.clone(),
+                )),
+                provenance: AtpProjectionProvenance::new(
+                    AtpSourceRef::TypeFact(AtpSourceBinding::new("corpus-guard")),
+                    "corpus-guard",
+                ),
+            }],
+            formula_projections: projections,
+            diagnostics: Vec::new(),
+        })
+        .unwrap();
+        (problem, handoff)
+    }
+
+    fn checked_candidate(
+        seed: &Value,
+        handoff: &VcKernelEvidenceHandoff,
+        problem: &AtpProblem,
+        format: ConcreteFormat,
+        claims: &[(u32, KernelFormulaSource)],
+        polarity: KernelGoalPolarity,
+    ) -> mizar_kernel::checker::KernelCheckResult {
+        use mizar_kernel::{
+            certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+            formula_evidence::{
+                FormulaEvidenceParseContext, FormulaSource, GoalPolarity, parse_formula_evidence,
+            },
+        };
+        let (encoded, candidate) =
+            build_local_candidate_inputs(problem, handoff, format, polarity, claims).unwrap();
+        assert_eq!(candidate.target_binding(), encoded.target_binding());
+        assert_eq!(candidate.encoded_problem_hash(), encoded.input_hash());
+        assert_eq!(candidate.provenance_hash(), encoded.provenance_hash());
+        assert_eq!(candidate.formula_label_refs(), encoded.formula_labels());
+        assert_eq!(candidate.symbol_binding_refs(), encoded.symbol_bindings());
+        let BackendCandidatePayload::FormulaSubstitutionBytes(bytes) = candidate.payload() else {
+            panic!("local candidate bytes")
+        };
+        let target = handoff.canonical_evidence().target_vc();
+        let mut context = FormulaEvidenceParseContext::v1(
+            Fingerprint::new(target.algorithm_id, target.digest.clone()),
+            KernelProfileRecord::v1(
+                handoff.canonical_evidence().kernel_profile().profile_id,
+                ClauseTautologyPolicy::Reject,
+            ),
+        );
+        context.accepted_schema_versions.insert(2);
+        let parsed = parse_formula_evidence(bytes, &context).unwrap();
+        let rows = seed["formula_evidence"].as_array().unwrap();
+        assert_eq!(parsed.formulas().len(), rows.len());
+        assert_eq!(parsed.formulas().len(), claims.len());
+        for ((actual, row), (id, claim)) in parsed.formulas().iter().zip(rows).zip(claims) {
+            assert_eq!(actual.formula_id, number(&row["formula_id"]));
+            assert_eq!(actual.formula_id, *id);
+            assert_eq!(actual.formula, formula(&row["formula"], seed).0);
+            let source = match *claim {
+                KernelFormulaSource::LocalHypothesis { local_context_id } => {
+                    FormulaSource::LocalHypothesis { local_context_id }
+                }
+                KernelFormulaSource::CitedPremise { local_context_id } => {
+                    FormulaSource::CitedPremise { local_context_id }
+                }
+                KernelFormulaSource::GeneratedVcFact { vc_fact_id } => {
+                    FormulaSource::GeneratedVcFact { vc_fact_id }
+                }
+                _ => panic!("corpus source"),
+            };
+            assert_eq!(actual.source, source);
+        }
+        assert_eq!(
+            parsed.final_goal().polarity,
+            match polarity {
+                KernelGoalPolarity::AssertFalseForRefutation =>
+                    GoalPolarity::AssertFalseForRefutation,
+                KernelGoalPolarity::AssertTrueForConsistency =>
+                    GoalPolarity::AssertTrueForConsistency,
+                _ => panic!("corpus polarity"),
+            }
+        );
+        assert_eq!(
+            parsed.final_goal().formula,
+            formula(&seed["final_goal"]["formula"], seed).0
+        );
+        assert_eq!(
+            parsed
+                .symbol_manifest()
+                .iter()
+                .map(|row| row.symbol)
+                .collect::<Vec<_>>(),
+            seed["symbol_manifest"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| SymbolKey::new(
+                    match row["kind"].as_str().unwrap() {
+                        "predicate" => SymbolKind::Predicate,
+                        "function" => SymbolKind::FunctorPredicate,
+                        _ => panic!("corpus symbol kind"),
+                    },
+                    number(&row["symbol_id"])
+                ))
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            parsed
+                .variable_manifest()
+                .iter()
+                .map(|row| row.variable_id.0)
+                .collect::<Vec<_>>(),
+            seed["variable_manifest"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| number(&row["variable_id"]))
+                .collect::<Vec<_>>()
+        );
+        super::source_candidate_check_result(handoff, bytes, encoded.target_binding()).unwrap()
+    }
+
+    #[test]
+    fn fail_certificate_sat_goal_polarity_mismatch_001() {
+        let root = super::step5c11_config().workspace_root;
+        let path = root.join(
+            "tests/certificates/fail/sat/fail_certificate_sat_goal_polarity_mismatch_001.cert.json",
+        );
+        let source_text = std::fs::read_to_string(&path).unwrap();
+        let seed: Value = serde_json::from_str(&source_text).unwrap();
+        let expected = crate::expectation::parse_expectation_file(
+            &path.with_extension("").with_extension("expect.toml"),
+        )
+        .unwrap();
+        assert_eq!(seed["test_id"].as_str().unwrap(), expected.id.0);
+        let evidence = &seed["evidence"];
+        assert_eq!(
+            evidence["final_goal"]["polarity"],
+            "assert_true_for_consistency"
+        );
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let (problem, handoff) = original(evidence, &source_text, format);
+            let immutable = handoff.clone();
+            let claims = evidence["formula_evidence"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| {
+                    let source = match row["source_class"].as_str().unwrap() {
+                        "local_hypothesis" => KernelFormulaSource::LocalHypothesis {
+                            local_context_id: number(&row["local_context_ref"]),
+                        },
+                        "cited_premise" => KernelFormulaSource::CitedPremise {
+                            local_context_id: number(&row["local_context_ref"]),
+                        },
+                        _ => panic!("seed source"),
+                    };
+                    (number(&row["formula_id"]), source)
+                })
+                .collect::<Vec<_>>();
+            let control = checked_candidate(
+                evidence,
+                &handoff,
+                &problem,
+                format,
+                &claims,
+                KernelGoalPolarity::AssertFalseForRefutation,
+            );
+            assert_eq!(control.status(), KernelCheckStatus::Rejected);
+            assert_eq!(
+                control.rejections()[0].detail(),
+                mizar_kernel::rejection::RejectionDetail::InvalidSatRefutation
+            );
+            let checked = checked_candidate(
+                evidence,
+                &handoff,
+                &problem,
+                format,
+                &claims,
+                KernelGoalPolarity::AssertTrueForConsistency,
+            );
+            assert_eq!(checked.status(), KernelCheckStatus::Rejected);
+            let [rejection] = checked.rejections() else {
+                panic!("one rejection: {checked:?}")
+            };
+            assert_eq!(
+                Some(rejection.category().stable_key()),
+                expected.failure_category.as_deref()
+            );
+            assert_eq!(
+                Some(rejection.detail().stable_key()),
+                expected.rejection_reason.as_deref()
+            );
+            assert_eq!(
+                Some(format!(
+                    "soundness.certificate.{}",
+                    rejection.stable_detail_key()
+                )),
+                expected.stable_detail_key
+            );
+            assert_eq!(handoff, immutable);
+        }
+    }
+
+    #[test]
+    fn fail_certificate_symbols_unverifiable_local_hypothesis_001() {
+        let root = super::step5c11_config().workspace_root;
+        let path = root.join("tests/certificates/fail/symbols/fail_certificate_symbols_unverifiable_local_hypothesis_001.cert.json");
+        let source_text = std::fs::read_to_string(&path).unwrap();
+        let seed: Value = serde_json::from_str(&source_text).unwrap();
+        let expected = crate::expectation::parse_expectation_file(
+            &path.with_extension("").with_extension("expect.toml"),
+        )
+        .unwrap();
+        assert_eq!(seed["test_id"].as_str().unwrap(), expected.id.0);
+        let evidence = &seed["evidence"];
+        assert_eq!(
+            evidence["final_goal"]["polarity"],
+            "assert_false_for_refutation"
+        );
+        let rows = evidence["formula_evidence"].as_array().unwrap();
+        assert_eq!(rows[2]["source_class"], "local_hypothesis");
+        assert_eq!(rows[2]["local_context_ref"], 99);
+        for format in [ConcreteFormat::Tptp, ConcreteFormat::SmtLib] {
+            let (problem, handoff) = original(evidence, &source_text, format);
+            let immutable = handoff.clone();
+            assert!(
+                !handoff
+                    .context_identity()
+                    .entries()
+                    .iter()
+                    .any(|entry| matches!(
+                        entry.source(),
+                        KernelContextIdentitySource::LocalHypothesis {
+                            local_context_id: 99
+                        }
+                    ))
+            );
+            let mut claims = handoff
+                .canonical_evidence()
+                .formula_evidence()
+                .iter()
+                .map(|row| (row.formula_id(), row.source().clone()))
+                .collect::<Vec<_>>();
+            assert!(matches!(
+                claims[2].1,
+                KernelFormulaSource::GeneratedVcFact { .. }
+            ));
+            let checked = checked_candidate(
+                evidence,
+                &handoff,
+                &problem,
+                format,
+                &claims,
+                KernelGoalPolarity::AssertFalseForRefutation,
+            );
+            assert_eq!(checked.status(), KernelCheckStatus::Accepted);
+            assert!(checked.rejections().is_empty());
+            claims[2] = (
+                number(&rows[2]["formula_id"]),
+                KernelFormulaSource::LocalHypothesis {
+                    local_context_id: number(&rows[2]["local_context_ref"]),
+                },
+            );
+            let checked = checked_candidate(
+                evidence,
+                &handoff,
+                &problem,
+                format,
+                &claims,
+                KernelGoalPolarity::AssertFalseForRefutation,
+            );
+            assert_eq!(checked.status(), KernelCheckStatus::Rejected);
+            let [rejection] = checked.rejections() else {
+                panic!("one rejection: {checked:?}")
+            };
+            assert_eq!(
+                Some(rejection.category().stable_key()),
+                expected.failure_category.as_deref()
+            );
+            assert_eq!(
+                Some(rejection.detail().stable_key()),
+                expected.rejection_reason.as_deref()
+            );
+            assert_eq!(
+                Some(format!(
+                    "soundness.certificate.{}",
+                    rejection.stable_detail_key()
+                )),
+                expected.stable_detail_key
+            );
+            assert_eq!(handoff, immutable);
+        }
+    }
 }
