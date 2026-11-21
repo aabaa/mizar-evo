@@ -67,7 +67,7 @@ implementation. Undocumented flags are usage errors.
 ### Stdio lifecycle host
 
 The `mizar` executable is hosted in `mizar-lsp`, depending on Driver so the later LSP build bridge can consume Driver without a dependency cycle. Driver owns CLI parsing/exit policy; LSP owns protocol/framing.
-Exactly one `lsp` argument runs existing `Server::serve` on locked stdin/stdout. No CLI flags or build context are synthesized; initialize workspace/settings and current-build diagnostics remain separate prerequisites.
+Exactly one `lsp` argument runs `Server::serve` with owned buffered stdin and locked stdout, configuring the existing nonterminal LSP bridge. The [native host](../../mizar-lsp/en/server.md#native-executable-host) binds explicit initialize workspace inputs to the approved frontend-only profile; no CLI flags or effective settings are synthesized.
 Actual lifecycle exit codes are 0/1; fatal framing, EOF or I/O errors exit 1 with stderr text. Stdout contains only framed protocol responses.
 Other arguments use the existing Driver batch parser: invalid or non-Unicode arguments exit 2; valid build arguments exit unavailable-owner 3 because filesystem bootstrap is absent. Startup failures use stderr with empty stdout, before any build/message-format execution.
 The executable root and reusable process suite introduce no public library API or second build pipeline.

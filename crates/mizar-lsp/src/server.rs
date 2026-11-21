@@ -1086,6 +1086,14 @@ impl Server {
         )>,
         String,
     > {
+        let Some(root) = self.native_workspace_root()? else {
+            return Ok(None);
+        };
+        let (packages, lockfile) = mizar_build::planner::read_native_workspace_inputs(&root)?;
+        Ok(Some((root, packages, lockfile)))
+    }
+
+    fn native_workspace_root(&self) -> Result<Option<mizar_session::WorkspaceRoot>, String> {
         let Some(uri) = self
             .initialization_params()
             .and_then(|params| params.get("rootUri"))
@@ -1109,8 +1117,7 @@ impl Server {
         let path = std::fs::canonicalize(path).map_err(|error| error.to_string())?;
         let root =
             mizar_session::WorkspaceRoot::new(path.to_str().ok_or("workspace root must be UTF-8")?);
-        let (packages, lockfile) = mizar_build::planner::read_native_workspace_inputs(&root)?;
-        Ok(Some((root, packages, lockfile)))
+        Ok(Some(root))
     }
 
     /// Borrows the current full-sync document version and text.
@@ -1167,12 +1174,6 @@ impl Server {
         (mizar_driver::driver::BuildSubmission, Option<Vec<Value>>),
         mizar_driver::driver::DriverSubmitError,
     > {
-        use mizar_build::task_graph::{PipelinePhase as BuildPhase, TaskKind, WorkUnit};
-        use mizar_diagnostics::{
-            failure_record::{DiagnosticFreshness, DiagnosticPrimaryLocation, PipelinePhase},
-            registry::DiagnosticSeverity,
-        };
-        use mizar_driver::registry::PhaseStatus;
         let submission = driver.submit_captured(
             session,
             allocator,
@@ -1184,7 +1185,24 @@ impl Server {
                 ..Default::default()
             },
         )?;
-        let notifications = (|| {
+        let notifications =
+            self.completed_native_frontend_diagnostics(driver, snapshots, &submission);
+        Ok((submission, notifications))
+    }
+
+    fn completed_native_frontend_diagnostics<A: mizar_session::SessionIdAllocator>(
+        &self,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        submission: &mizar_driver::driver::BuildSubmission,
+    ) -> Option<Vec<Value>> {
+        use mizar_build::task_graph::{PipelinePhase as BuildPhase, TaskKind, WorkUnit};
+        use mizar_diagnostics::{
+            failure_record::{DiagnosticFreshness, DiagnosticPrimaryLocation, PipelinePhase},
+            registry::DiagnosticSeverity,
+        };
+        use mizar_driver::registry::PhaseStatus;
+        (|| {
             if self.initialized.is_none() || self.shutdown || self.exit_code.is_some() {
                 return None;
             }
@@ -1307,8 +1325,7 @@ impl Server {
                 .validate_current_native_diagnostics(submission.session.id(), snapshots)
                 .ok()?;
             Some(notifications)
-        })();
-        Ok((submission, notifications))
+        })()
     }
 
     /// Submits native frontend diagnostics and writes each currently eligible LSP frame.
@@ -1329,24 +1346,42 @@ impl Server {
     > {
         let (submission, notifications) =
             self.submit_native_frontend_diagnostics(driver, session, allocator, snapshots, input)?;
-        let delivery = (|| {
-            let mut count = 0;
-            for notification in notifications.into_iter().flatten() {
-                let body = serde_json::to_vec(&notification).map_err(io::Error::other)?;
-                if driver
+        let delivery = self.write_native_notifications(
+            driver,
+            snapshots,
+            &submission,
+            notifications,
+            None,
+            output,
+        );
+        Ok((submission, delivery))
+    }
+
+    fn write_native_notifications<A: mizar_session::SessionIdAllocator>(
+        &self,
+        driver: &mizar_driver::driver::CompilerDriver,
+        snapshots: &mizar_session::SnapshotRegistry<A>,
+        submission: &mizar_driver::driver::BuildSubmission,
+        notifications: Option<Vec<Value>>,
+        association: Option<&NativeOpenBufferSnapshot>,
+        output: &mut impl Write,
+    ) -> io::Result<usize> {
+        let mut count = 0;
+        for notification in notifications.into_iter().flatten() {
+            let body = serde_json::to_vec(&notification).map_err(io::Error::other)?;
+            if association.is_some_and(|original| !self.native_association_current(original))
+                || driver
                     .validate_current_native_diagnostics(submission.session.id(), snapshots)
                     .is_err()
-                {
-                    break;
-                }
-                write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
-                output.write_all(&body)?;
-                output.flush()?;
-                count += 1;
+            {
+                break;
             }
-            Ok(count)
-        })();
-        Ok((submission, delivery))
+            write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
+            output.write_all(&body)?;
+            output.flush()?;
+            count += 1;
+        }
+        Ok(count)
     }
 
     /// Handles a JSON-RPC message without creating compiler snapshots.
@@ -1868,99 +1903,258 @@ impl Server {
         None
     }
 
+    fn serve_native(
+        &mut self,
+        mut input: impl BufRead + Send + 'static,
+        output: &mut impl Write,
+    ) -> io::Result<i32> {
+        use mizar_build::{module_index::build_module_index, planner::produce_build_plan};
+        use mizar_driver::{
+            driver::CompilerDriver,
+            registry::{StageConfig, assemble_registry},
+            request::{BuildRequestDraft, BuildSession, LspPriority, LspRequest, SourceInputSet},
+        };
+        use mizar_ir::{
+            identity::{OutputKind, PipelinePhase, SnapshotHandleRegistry, WorkUnit},
+            publisher::{AllowedWorkUnit, PhaseOutputPublisher},
+            storage::IrStorageService,
+        };
+        use mizar_session::{InMemorySessionIdAllocator, SnapshotRegistry};
+        use std::{
+            sync::{Arc, mpsc},
+            time::Instant,
+        };
+
+        if let Some(code) = self.exit_code {
+            return Ok(code);
+        }
+        let lane = self
+            .build_bridge
+            .as_ref()
+            .expect("configured bridge missing")
+            .lane;
+        let allocator = InMemorySessionIdAllocator::new();
+        let snapshots = Arc::new(SnapshotRegistry::new());
+        let publisher = Arc::new(PhaseOutputPublisher::new(
+            Arc::new(IrStorageService::new()),
+            Arc::new(SnapshotHandleRegistry::new()),
+        ));
+        let mut driver = CompilerDriver::new(
+            assemble_registry(&StageConfig::frontend(vec![])).map_err(io::Error::other)?,
+        )
+        .with_output_publisher(publisher.clone());
+        let (sender, receiver) = mpsc::sync_channel(1);
+        // Stdin may remain blocked after exit. Dropping this handle deliberately detaches it.
+        std::thread::Builder::new().spawn(move || {
+            loop {
+                let frame = read_message(&mut input);
+                let failed = frame.is_err();
+                if sender.send(frame).is_err() || failed {
+                    break;
+                }
+            }
+        })?;
+        let mut completed = Vec::new();
+        loop {
+            let frame = if self.exit_code.is_some() {
+                None
+            } else {
+                match receiver.try_recv() {
+                    Ok(frame) => Some(frame?),
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::UnexpectedEof,
+                            "Missing LSP exit",
+                        ));
+                    }
+                    Err(mpsc::TryRecvError::Empty) => match self.next_build_deadline(&driver) {
+                        Some(deadline) => match receiver
+                            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                        {
+                            Ok(frame) => Some(frame?),
+                            Err(mpsc::RecvTimeoutError::Timeout) => None,
+                            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                                return Err(io::Error::new(
+                                    io::ErrorKind::UnexpectedEof,
+                                    "Missing LSP exit",
+                                ));
+                            }
+                        },
+                        None => Some(receiver.recv().map_err(io::Error::other)??),
+                    },
+                }
+            };
+            let parse_error = matches!(frame, Some(None));
+            let (response, submitted) = self.drive_build_bridge(
+                frame.flatten(),
+                &mut driver,
+                &allocator,
+                &snapshots,
+                &publisher,
+                |server, generation| {
+                    let root = server
+                        .native_workspace_root()?
+                        .ok_or("explicit workspace root required")?;
+                    let (session, input) = BuildSession::capture_native_lsp(
+                        root,
+                        lane,
+                        generation,
+                        LspRequest {
+                            focus: None,
+                            priority: LspPriority::Normal,
+                        },
+                        &allocator,
+                        &snapshots,
+                    )?;
+                    let lease = session.captured().active_snapshot_lease();
+                    let prepared = (|| {
+                        let request = session.request();
+                        let draft = BuildRequestDraft {
+                            lane: request.lane,
+                            origin: request.origin.clone(),
+                            generation: request.generation,
+                            workspace_root: request.workspace_root.clone(),
+                            profile: request.profile.clone(),
+                            targets: request.targets.clone(),
+                            source_inputs: SourceInputSet::default(),
+                            dependency_inputs: request.dependency_inputs.clone(),
+                            verifier_config: request.verifier_config,
+                        };
+                        let plan = produce_build_plan(
+                            input.plan_request.clone(),
+                            input.workspace_packages.clone(),
+                            input.lockfile.clone(),
+                        )
+                        .map_err(|error| error.to_string())?;
+                        let index = build_module_index(
+                            &plan,
+                            &input.source_layout,
+                            &input.dependency_artifacts,
+                        )
+                        .map_err(|error| format!("{error:?}"))?;
+                        let originals = session
+                            .captured()
+                            .native_sources()
+                            .ok_or("native source capture missing")?;
+                        let mut sources = Vec::new();
+                        for uri in server.documents.keys() {
+                            let path = mizar_session::source::file_path_from_document_uri(uri)
+                                .ok_or("open document must be a supported file URI")?;
+                            let mut matches = originals.iter().filter(|(loader, _, original)| {
+                                mizar_session::normalize_path(loader.package_root(), &path)
+                                    .is_ok_and(|path| path == original.normalized_path)
+                            });
+                            let (loader, _, original) = matches
+                                .next()
+                                .ok_or("open document is outside native workspace inputs")?;
+                            if matches.next().is_some() {
+                                return Err("ambiguous native document coordinates".into());
+                            }
+                            sources.push((
+                                loader.clone(),
+                                original.package_id.clone(),
+                                uri.clone(),
+                            ));
+                        }
+                        for module in &index.modules {
+                            for (phase, kind) in
+                                [("SourceLoad", "SourceUnit"), ("Frontend", "FrontendOutput")]
+                            {
+                                publisher.allow_work_unit(AllowedWorkUnit::new(
+                                    PipelinePhase::new(phase),
+                                    OutputKind::new(kind),
+                                    WorkUnit::new(mizar_session::module_work_unit_label(
+                                        module.package_id.as_str(),
+                                        module.module_path.as_str(),
+                                    )),
+                                ));
+                            }
+                        }
+                        Ok((draft, index, sources, input))
+                    })();
+                    snapshots
+                        .release_lease(lease.snapshot, lease.lease_id)
+                        .map_err(|error| format!("{error:?}"))?;
+                    prepared
+                },
+            );
+            let response = if parse_error {
+                Some(json!({"jsonrpc": "2.0", "id": null,
+                    "error": {"code": -32700, "message": "Parse error"}}))
+            } else {
+                response
+            };
+            if let Some(response) = response {
+                let body = serde_json::to_vec(&response).map_err(io::Error::other)?;
+                write!(output, "Content-Length: {}\r\n\r\n", body.len())?;
+                output.write_all(&body)?;
+                output.flush()?;
+            }
+            self.write_pending_non_range_clear(output)?;
+            if let Ok(Some(submission)) = submitted
+                && submission.session.is_terminal()
+            {
+                completed.push(submission);
+            }
+            // Each turn handles queued protocol traffic before advancing owned work.
+            completed.extend(
+                self.progress_build_bridge(&mut driver, &allocator, &snapshots)
+                    .map_err(|error| io::Error::other(format!("{error:?}")))?,
+            );
+            for submission in completed.drain(..) {
+                let association = self.build_bridge.as_ref().and_then(|bridge| {
+                    bridge
+                        .submitted
+                        .iter()
+                        .find(|(id, _, _)| *id == submission.session.id())
+                        .map(|(_, _, original)| original)
+                });
+                if let Some(association) = association
+                    && self.native_association_current(association)
+                {
+                    let notifications = self.completed_native_frontend_diagnostics(
+                        &driver,
+                        &snapshots,
+                        &submission,
+                    );
+                    self.write_native_notifications(
+                        &driver,
+                        &snapshots,
+                        &submission,
+                        notifications,
+                        Some(association),
+                        output,
+                    )?;
+                }
+            }
+            if let Some(code) = self.exit_code
+                && self.next_build_deadline(&driver).is_none()
+            {
+                return Ok(code);
+            }
+        }
+    }
+
     /// Serves bounded Content-Length frames until an exit notification.
-    pub fn serve(&mut self, input: &mut impl BufRead, output: &mut impl Write) -> io::Result<i32> {
-        let invalid = || io::Error::new(io::ErrorKind::InvalidData, "Invalid LSP frame");
+    pub fn serve(
+        &mut self,
+        mut input: impl BufRead + Send + 'static,
+        output: &mut impl Write,
+    ) -> io::Result<i32> {
+        if self
+            .build_bridge
+            .as_ref()
+            .is_some_and(|bridge| bridge.nonterminal)
+        {
+            return self.serve_native(input, output);
+        }
         loop {
             if let Some(code) = self.exit_code {
                 return Ok(code);
             }
-            let mut header = Vec::new();
-            loop {
-                let available = input.fill_buf()?;
-                if available.is_empty() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::UnexpectedEof,
-                        "Missing LSP exit or truncated header",
-                    ));
-                }
-                let count = available
-                    .iter()
-                    .position(|byte| *byte == b'\n')
-                    .map_or(available.len(), |index| index + 1);
-                if header.len() + count > 8 * 1024 {
-                    return Err(invalid());
-                }
-                header.extend_from_slice(&available[..count]);
-                input.consume(count);
-                if header.last() == Some(&b'\n') && !header.ends_with(b"\r\n") {
-                    return Err(invalid());
-                }
-                if header.ends_with(b"\r\n\r\n") {
-                    break;
-                }
-            }
-            if !header.is_ascii() {
-                return Err(invalid());
-            }
-            let mut length = None;
-            let mut content_type = None;
-            let header = std::str::from_utf8(&header).map_err(|_| invalid())?;
-            for line in header[..header.len() - 4].split("\r\n") {
-                let (name, value) = line.split_once(':').ok_or_else(invalid)?;
-                if name.is_empty()
-                    || !name.bytes().all(|byte| {
-                        byte.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&byte)
-                    })
-                    || !value
-                        .bytes()
-                        .all(|byte| byte.is_ascii_graphic() || byte == b' ' || byte == b'\t')
-                {
-                    return Err(invalid());
-                }
-                let value = value.trim();
-                if name.eq_ignore_ascii_case("Content-Length") {
-                    if length.is_some()
-                        || value.is_empty()
-                        || !value.bytes().all(|byte| byte.is_ascii_digit())
-                    {
-                        return Err(invalid());
-                    }
-                    let value = value.parse::<usize>().map_err(|_| invalid())?;
-                    if value > 16 * 1024 * 1024 {
-                        return Err(invalid());
-                    }
-                    length = Some(value);
-                } else if name.eq_ignore_ascii_case("Content-Type")
-                    && content_type.replace(value).is_some()
-                {
-                    return Err(invalid());
-                }
-            }
-            let mut body = vec![0; length.ok_or_else(invalid)?];
-            input.read_exact(&mut body)?;
-            let supported = content_type.is_none_or(|value| {
-                let mut parts = value.split(';');
-                parts.next().is_some_and(|kind| {
-                    kind.trim()
-                        .eq_ignore_ascii_case("application/vscode-jsonrpc")
-                }) && parts.all(|part| {
-                    part.trim().split_once('=').is_some_and(|(key, value)| {
-                        !key.trim().eq_ignore_ascii_case("charset") || {
-                            let value = value.trim();
-                            let value = value
-                                .strip_prefix('"')
-                                .and_then(|value| value.strip_suffix('"'))
-                                .unwrap_or(value);
-                            value.eq_ignore_ascii_case("utf-8")
-                                || value.eq_ignore_ascii_case("utf8")
-                        }
-                    })
-                })
-            });
-            let response = match serde_json::from_slice::<Value>(&body) {
-                Ok(message) if supported => self.handle_message(message),
-                _ => Some(json!({"jsonrpc": "2.0", "id": null,
+            let response = match read_message(&mut input)? {
+                Some(message) => self.handle_message(message),
+                None => Some(json!({"jsonrpc": "2.0", "id": null,
                     "error": {"code": -32700, "message": "Parse error"}})),
             };
             if let Some(response) = response {
@@ -1972,6 +2166,96 @@ impl Server {
             self.write_pending_non_range_clear(output)?;
         }
     }
+}
+
+fn read_message(input: &mut impl BufRead) -> io::Result<Option<Value>> {
+    let invalid = || io::Error::new(io::ErrorKind::InvalidData, "Invalid LSP frame");
+    let mut header = Vec::new();
+    loop {
+        let available = input.fill_buf()?;
+        if available.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Missing LSP exit or truncated header",
+            ));
+        }
+        let count = available
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map_or(available.len(), |index| index + 1);
+        if header.len() + count > 8 * 1024 {
+            return Err(invalid());
+        }
+        header.extend_from_slice(&available[..count]);
+        input.consume(count);
+        if header.last() == Some(&b'\n') && !header.ends_with(b"\r\n") {
+            return Err(invalid());
+        }
+        if header.ends_with(b"\r\n\r\n") {
+            break;
+        }
+    }
+    if !header.is_ascii() {
+        return Err(invalid());
+    }
+    let mut length = None;
+    let mut content_type = None;
+    let header = std::str::from_utf8(&header).map_err(|_| invalid())?;
+    for line in header[..header.len() - 4].split("\r\n") {
+        let (name, value) = line.split_once(':').ok_or_else(invalid)?;
+        if name.is_empty()
+            || !name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&byte))
+            || !value
+                .bytes()
+                .all(|byte| byte.is_ascii_graphic() || byte == b' ' || byte == b'\t')
+        {
+            return Err(invalid());
+        }
+        let value = value.trim();
+        if name.eq_ignore_ascii_case("Content-Length") {
+            if length.is_some()
+                || value.is_empty()
+                || !value.bytes().all(|byte| byte.is_ascii_digit())
+            {
+                return Err(invalid());
+            }
+            let value = value.parse::<usize>().map_err(|_| invalid())?;
+            if value > 16 * 1024 * 1024 {
+                return Err(invalid());
+            }
+            length = Some(value);
+        } else if name.eq_ignore_ascii_case("Content-Type") && content_type.replace(value).is_some()
+        {
+            return Err(invalid());
+        }
+    }
+    let mut body = vec![0; length.ok_or_else(invalid)?];
+    input.read_exact(&mut body)?;
+    let supported = content_type.is_none_or(|value| {
+        let mut parts = value.split(';');
+        parts.next().is_some_and(|kind| {
+            kind.trim()
+                .eq_ignore_ascii_case("application/vscode-jsonrpc")
+        }) && parts.all(|part| {
+            part.trim().split_once('=').is_some_and(|(key, value)| {
+                !key.trim().eq_ignore_ascii_case("charset") || {
+                    let value = value.trim();
+                    let value = value
+                        .strip_prefix('"')
+                        .and_then(|value| value.strip_suffix('"'))
+                        .unwrap_or(value);
+                    value.eq_ignore_ascii_case("utf-8") || value.eq_ignore_ascii_case("utf8")
+                }
+            })
+        })
+    });
+    Ok(if supported {
+        serde_json::from_slice(&body).ok()
+    } else {
+        None
+    })
 }
 
 #[cfg(test)]
@@ -2170,10 +2454,7 @@ mod tests {
                 .handle_message(notification("exit", Value::Null))
                 .is_none()
         );
-        assert_eq!(
-            server.serve(&mut Cursor::new([]), &mut Vec::new()).unwrap(),
-            0
-        );
+        assert_eq!(server.serve(Cursor::new([]), &mut Vec::new()).unwrap(), 0);
     }
 
     #[test]
@@ -2448,10 +2729,7 @@ mod tests {
                 assert_eq!(server.exit_code, None);
             }
             server.handle_message(json!({"jsonrpc": "2.0", "method": "exit"}));
-            assert_eq!(
-                server.serve(&mut Cursor::new([]), &mut Vec::new()).unwrap(),
-                1
-            );
+            assert_eq!(server.serve(Cursor::new([]), &mut Vec::new()).unwrap(), 1);
         }
     }
 
@@ -2488,7 +2766,7 @@ mod tests {
             assert_eq!(
                 server
                     .serve(
-                        &mut BufReader::with_capacity(capacity, Cursor::new(&bytes)),
+                        BufReader::with_capacity(capacity, Cursor::new(bytes.clone())),
                         &mut output
                     )
                     .unwrap(),
@@ -2529,10 +2807,7 @@ mod tests {
         let mut output = Vec::new();
         assert_eq!(
             Server::default()
-                .serve(
-                    &mut BufReader::with_capacity(2, Cursor::new(bytes)),
-                    &mut output
-                )
+                .serve(BufReader::with_capacity(2, Cursor::new(bytes)), &mut output)
                 .unwrap(),
             1
         );
@@ -2561,10 +2836,7 @@ mod tests {
             let mut output = Vec::new();
             assert_eq!(
                 Server::default()
-                    .serve(
-                        &mut BufReader::with_capacity(1, Cursor::new(bytes)),
-                        &mut output
-                    )
+                    .serve(BufReader::with_capacity(1, Cursor::new(bytes)), &mut output)
                     .unwrap(),
                 1
             );
@@ -2586,7 +2858,7 @@ mod tests {
             b"Content-Length: 0\r\nContent-Type: application/vscode-jsonrpc\r\ncontent-type: application/vscode-jsonrpc\r\n\r\n"] {
             let mut server = Server::default();
             let mut output = Vec::new();
-            assert!(server.serve(&mut BufReader::with_capacity(1, Cursor::new(bytes)), &mut output).is_err(), "{bytes:?}");
+            assert!(server.serve(BufReader::with_capacity(1, Cursor::new(bytes)), &mut output).is_err(), "{bytes:?}");
             assert!(output.is_empty());
             assert_eq!(server.exit_code, None);
         }
@@ -2595,7 +2867,7 @@ mod tests {
         let bytes = frame(request("shutdown", Value::Null).to_string());
         assert_eq!(
             server
-                .serve(&mut Cursor::new(bytes), &mut Vec::new())
+                .serve(Cursor::new(bytes), &mut Vec::new())
                 .unwrap_err()
                 .kind(),
             io::ErrorKind::UnexpectedEof
@@ -2611,7 +2883,7 @@ mod tests {
         let bytes = format!("{header}{body}");
         assert_eq!(
             Server::default()
-                .serve(&mut Cursor::new(bytes), &mut Vec::new())
+                .serve(Cursor::new(bytes), &mut Vec::new())
                 .unwrap(),
             1
         );
@@ -2620,10 +2892,8 @@ mod tests {
             "a".repeat(8193),
             "Content-Length: 16777217\r\n\r\n".to_owned(),
         ] {
-            let mut input = Cursor::new(bytes);
-            let error = Server::default()
-                .serve(&mut input, &mut Vec::new())
-                .unwrap_err();
+            let input = Cursor::new(bytes);
+            let error = Server::default().serve(input, &mut Vec::new()).unwrap_err();
             assert_eq!(error.kind(), io::ErrorKind::InvalidData);
         }
         let mut body = vec![b' '; 16 * 1024 * 1024];
@@ -2633,7 +2903,7 @@ mod tests {
         let mut output = Vec::new();
         assert_eq!(
             Server::default()
-                .serve(&mut Cursor::new(bytes), &mut output)
+                .serve(Cursor::new(bytes), &mut output)
                 .unwrap(),
             1
         );
@@ -2645,7 +2915,7 @@ mod tests {
         let bytes = frame(request("unknown", Value::Null).to_string());
         assert_eq!(
             Server::default()
-                .serve(&mut Cursor::new(bytes), &mut [].as_mut_slice())
+                .serve(Cursor::new(bytes), &mut [].as_mut_slice())
                 .unwrap_err()
                 .kind(),
             io::ErrorKind::WriteZero
@@ -2658,7 +2928,7 @@ mod tests {
         let directory = std::fs::File::open(std::env::temp_dir()).unwrap();
         assert!(
             Server::default()
-                .serve(&mut BufReader::new(directory), &mut Vec::new())
+                .serve(BufReader::new(directory), &mut Vec::new())
                 .is_err()
         );
         let sink = std::fs::OpenOptions::new()
@@ -2669,7 +2939,7 @@ mod tests {
         let bytes = frame(request("unknown", Value::Null).to_string());
         assert!(
             Server::default()
-                .serve(&mut Cursor::new(bytes), &mut output)
+                .serve(Cursor::new(bytes), &mut output)
                 .is_err()
         );
     }
@@ -2814,10 +3084,7 @@ mod tests {
         let mut output = Vec::new();
         assert_eq!(
             server
-                .serve(
-                    &mut BufReader::with_capacity(2, Cursor::new(bytes)),
-                    &mut output
-                )
+                .serve(BufReader::with_capacity(2, Cursor::new(bytes)), &mut output)
                 .unwrap(),
             0
         );
@@ -9870,7 +10137,7 @@ mod genuine_source_load_diagnostic_host_tests {
                 assert_eq!(
                     fixture
                         .server
-                        .serve(&mut std::io::Cursor::new(input), &mut wire)
+                        .serve(std::io::Cursor::new(input), &mut wire)
                         .unwrap(),
                     0
                 );

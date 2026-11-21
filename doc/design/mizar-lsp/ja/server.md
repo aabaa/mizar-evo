@@ -4,7 +4,7 @@
 
 既存 serde_json で decoding する最小 JSON-RPC layer とし、framing・lifecycle・buffer 更新は LSP の責務、追加依存は不要である。
 `Server: Default` は1接続を所有する。`handle_message(Value)` は optional response、
-`document(uri)` は借用 `(i32 version, text)`、`serve(BufRead, Write)` は framed traffic と exit code を返す。
+`document(uri)` は借用 `(i32 version, text)`、`serve(BufRead + Send + 'static, Write)` は入力を所有し、framed traffic と exit code を返す。
 
 initialize は1回で、params に processId (i32/null)、rootUri (string/null)、object capabilities を要求する。
 未知の capability/option は無視し、UTF-16 と openClose/full text sync を応答する。[non-range diagnostic 拡張](non_range_diagnostics.md#open-owner-decisions) は version 1 を広告し、厳密な client opt-in で配送を有効にする。受理した編集無効化は `serve` または明示 diagnostic writer 用に消去をキューへ入れる。
@@ -28,6 +28,12 @@ application/vscode-jsonrpc と utf-8/旧 utf8 charset を許す。完全 frame �
 不正 JSON は -32700/null を返して継続する。framing 不正・切断・早期 EOF・I/O 失敗は io error。
 応答長は byte 数で、flush し log text を混ぜない。
 
+## Native executable host
+
+`mizar lsp` は文書 traffic の前に既存 nonterminal bridge を構成する。未構成の `serve` は protocol-only のままとする。両経路は strict framing を共有し、構成済み経路は bounded channel で入力を読み、次 frame を待たず deadline を駆動する。reader は stream を所有し、exit 時に join しない。Server/Driver 更新と stdout 書込みは host のみが行う。各 turn は queued frame を一つ progress より先に処理し、terminal traffic 後は取消し・drain のみで診断を配信しない。
+flush ごとに受理済み initialize の明示 root URI を既存 native-root 規則で復号し、Driver の [native runtime producer](../../mizar-driver/en/request.md#native-runtime-context-definition) を呼ぶ。cwd fallback や settings 解釈は行わない。実 plan/request 座標を既存の全 open cohort capture へ渡し、一つでも対応不能な URI があれば admission 全体を失敗させる。一時 Disk capture lease は全経路で解放する。metadata は次の受理済み文書 event で再取得し、bridge の失敗消費と既存診断を保つ。
+lane 専用 Driver/publisher、`StageConfig::frontend(vec![])`、normal dependencies、cache unavailable defaults を使う。完了した元 bridge submission は再送信せず既存 frontend 変換・guarded writer を共有する。元 open incarnation、現在の正確な raw tuple、各 frame 前の Driver guard を必須とする。既存の限定 all-Open notification profile を保ち、未捕捉の closed workspace member により必要 phase evidence が得られなければ診断 cohort 全体を保留する。mixed Disk/Open 診断配送は別の責務に残す。この軽量経路は coherent full snapshot や semantic navigation/explanation を有効化しない。batch bootstrap、Watch/disk trigger、effective policy/settings、registry artifact、完全検証は別の責務に残る。
+
 ## Native initialize workspace inputs
 
 `Server::native_workspace_inputs(&self) -> Result<Option<(WorkspaceRoot, Vec<WorkspacePackage>, Lockfile)>, String>` は最初に受理した initialize rootUri から、呼出側が明示的に native metadata を取得する。初期化前または null は Ok(None) とし、cwd・親・rootPath・workspaceFolders・settings へ fallback しない。terminal traffic 後も protocol 検査/応答、保持 params、文書 buffer を変更しない。
@@ -50,7 +56,7 @@ URI 順に、各 capture URI へ owned JSON-RPC 2.0 textDocument/publishDiagnost
 `Server::submit_native_frontend_diagnostics_to_writer<A: SessionIdAllocator, L: SourceLayoutProvider>(&self, driver: &mut CompilerDriver, session: BuildSession, allocator: &A, snapshots: &SnapshotRegistry<A>, input: DriverSubmitInput<L>, output: &mut impl Write) -> Result<(BuildSubmission, io::Result<usize>), DriverSubmitError>` は既存 notification producer を一度だけ呼ぶ。通常の submission と構造化 Driver error を保持し、outer error は書込みなし、通知対象外の None は実 submission と inner Ok(0) を返す。代替 messages/diagnostics/capture は受け取らない。
 生成から即時書込みまで同じ immutable Server borrow を保持するため、producer の初期化/終了状態と元 URI/version/raw text 検査は有効なままであり重複実装しない。各 frame header の直前、serialize 後に、同じ保存 session と registry の validate_current_native_diagnostics を要求する。guard 不成立なら後続を止め、inner Ok(完全 flush 済み件数) を返す。0 は送信 frame なしを意味する。registry.get で元 raw capture を再構成せず、値の置換や phase 再実行もしない。
 元通知を UTF-8 JSON にし、byte 数の Content-Length と CRLF/CRLF、body 全体、flush の順に書いてから件数を増やす。順序と元 field を保ち、既存 framing 操作を inline に使う。production 二箇所だけの helper は作らない。最初の serialize/header/body/flush error は実 submission を保持した inner Err とし、直ちに止め、部分 bytes の retry/rollback は行わない。Write callback が共有 publisher/registry を無効化しても既に開始した bytes は取り消せず、次 frame は新しい guard を通す。これは handoff 時点の検査であり atomic currentness や PublishedLspSnapshot ではない。
-三つの実 native consumer 系統で、error/clean frame と独立した byte/range/version 期待値、正常 control と送信抑止/Driver error、I/O/部分送信/currentness を検証する。private setup helper/Write adapter は各三系統の実 call site を必要とする。既存通知/protocol/stdio/producer tests は不変とし、条件付き lightweight Diagnostics consumer の範囲も変えない。自動 host/serve/main 接続、完全な runtime/settings/toolchain/dependency、scheduler cancellation、IR retention、完全な current-build 診断は保留する。
+三つの実 native consumer 系統で、error/clean frame と独立した byte/range/version 期待値、正常 control と送信抑止/Driver error、I/O/部分送信/currentness を検証する。private setup helper/Write adapter は各三系統の実 call site を必要とする。既存通知/protocol/stdio/producer tests は不変とし、条件付き lightweight Diagnostics consumer の範囲も変えない。下記 native host が承認済みの限定 runtime profile を供給する。settings 解釈、IR retention、完全な current-build 診断は保留する。
 
 ## Open document lifetimes
 

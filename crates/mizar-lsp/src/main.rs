@@ -1,6 +1,7 @@
 use std::{
-    io::{self, Write},
+    io::{self, BufReader, Write},
     process::ExitCode,
+    time::Instant,
 };
 
 use mizar_driver::cli::{CliExitCode, CliInvocation};
@@ -9,7 +10,10 @@ use mizar_lsp::Server;
 fn main() -> ExitCode {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
     if args.len() == 1 && args[0] == "lsp" {
-        return match Server::default().serve(&mut io::stdin().lock(), &mut io::stdout().lock()) {
+        return match Server::default()
+            .with_nonterminal_build_bridge(mizar_driver::request::BuildLaneId::new(1), Instant::now)
+            .serve(BufReader::new(io::stdin()), &mut io::stdout().lock())
+        {
             Ok(code) => ExitCode::from(code as u8),
             Err(error) => {
                 let _ = writeln!(io::stderr().lock(), "mizar: {error}");

@@ -136,6 +136,49 @@ impl Process {
             .unwrap()
     }
 
+    #[cfg(target_os = "linux")]
+    fn native() -> Self {
+        let process = Self::new(&["lsp".into()], false);
+        fs::write(
+            process.root.join("mizar.pkg"),
+            "[package]\nname = \"editor\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        fs::write(process.root.join("mizar.lock"), "schema_version = 1\n[[package]]\nname = \"editor\"\nversion = \"0.1.0\"\nsource = { kind = \"workspace\", path = \".\" }\ndependencies = []\n").unwrap();
+        process
+    }
+
+    #[cfg(target_os = "linux")]
+    fn initialize(&mut self, root: Value) {
+        self.send(&frame(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":root,"capabilities":{}}})));
+        assert_eq!(self.response()["id"], 1);
+    }
+
+    #[cfg(target_os = "linux")]
+    fn assert_silent(&self) {
+        let response = self.responses.recv_timeout(Duration::from_millis(800));
+        assert!(
+            matches!(response, Err(mpsc::RecvTimeoutError::Timeout)),
+            "unexpected response: {response:?}"
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    fn shutdown(mut self) {
+        self.send(&frame(
+            json!({"jsonrpc":"2.0","id":99,"method":"shutdown","params":null}),
+        ));
+        assert_eq!(
+            self.response(),
+            json!({"jsonrpc":"2.0","id":99,"result":null})
+        );
+        self.send(&frame(json!({"jsonrpc":"2.0","method":"exit"})));
+        let (status, responses, errors) = self.finish();
+        assert_eq!(status.code(), Some(0));
+        assert!(responses.is_empty());
+        assert!(errors.is_empty());
+    }
+
     fn finish(mut self) -> (ExitStatus, Vec<Value>, Vec<u8>) {
         self.input.take();
         let deadline = Instant::now() + TIMEOUT;
@@ -173,6 +216,311 @@ fn frame(message: Value) -> Vec<u8> {
     let mut bytes = format!("Content-Length: {}\r\n\r\n", body.len()).into_bytes();
     bytes.extend(body);
     bytes
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_stdio_publishes_editor_frontend_errors_and_clean_clearing_while_idle() {
+    let mut process = Process::native();
+    let uri = format!("file://{}", process.root.join("src/Unicode.miz").display());
+    let clean = fs::read_to_string(process.root.join("src/Unicode.miz")).unwrap();
+    process.initialize(json!(format!("file://{}", process.root.display())));
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":7,"text":"\u{feff}:: 雪😀\r\n::=🦀=::end\r\n"}}})));
+    // The block comment before `end` occupies eight UTF-16 units, ten bytes.
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":7,"diagnostics":[
+            {"range":{"start":{"line":1,"character":8},"end":{"line":1,"character":11}},"code":"E0033","message":"unmatched `end` in lexical scope skeleton","severity":1},
+            {"range":{"start":{"line":1,"character":8},"end":{"line":1,"character":11}},"code":"E0052","message":"`end` has no matching block opener","severity":1}
+        ]}})
+    );
+    assert!(process.child.try_wait().unwrap().is_none());
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":8},"contentChanges":[{"text":clean}]}})));
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":8,"diagnostics":[]}})
+    );
+    process.shutdown();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_stdio_publishes_each_open_member_with_transitive_normal_dependencies() {
+    let mut process = Process::native();
+    fs::write(
+        process.root.join("mizar.workspace"),
+        "[workspace]\nmembers = [\"alpha\", \"beta\", \"gamma\", \"devonly\"]\n",
+    )
+    .unwrap();
+    let mut lock = String::from("schema_version = 1\n");
+    for (name, dependency) in [
+        ("alpha", Some("beta")),
+        ("beta", Some("gamma")),
+        ("gamma", None),
+        ("devonly", None),
+    ] {
+        let member = process.root.join(name);
+        fs::create_dir_all(member.join("src")).unwrap();
+        fs::write(member.join("src/main.miz"), "definition\nend;\n").unwrap();
+        let mut manifest = format!("[package]\nname = {name:?}\nversion = \"0.1.0\"\n");
+        let mut dependencies = Vec::new();
+        if let Some(dependency) = dependency {
+            manifest.push_str(&format!("[dependencies]\n{dependency} = \"0.1.0\"\n"));
+            dependencies.push(format!("{{ name = {dependency:?}, version = \"0.1.0\" }}"));
+        }
+        if name == "alpha" {
+            manifest.push_str("[dev-dependencies]\ndevonly = \"0.1.0\"\n");
+            dependencies.push("{ name = \"devonly\", version = \"0.1.0\" }".into());
+        }
+        fs::write(member.join("mizar.pkg"), manifest).unwrap();
+        lock.push_str(&format!("[[package]]\nname = {name:?}\nversion = \"0.1.0\"\nsource = {{ kind = \"workspace\", path = {name:?} }}\ndependencies = [{}]\n", dependencies.join(", ")));
+    }
+    // Preserve unused registry lock metadata without making it a manifest dependency.
+    lock.push_str("[[package]]\nname = \"unused\"\nversion = \"1.0.0\"\nsource = { kind = \"registry\", registry = \"default\", checksum = \"sha256:unused\" }\ndependencies = []\n");
+    fs::write(process.root.join("mizar.lock"), lock).unwrap();
+    process.initialize(json!(format!("file://{}", process.root.display())));
+    let alpha = format!(
+        "file://{}",
+        process.root.join("alpha/src/main.miz").display()
+    );
+    let gamma = format!(
+        "file://{}",
+        process.root.join("gamma/src/main.miz").display()
+    );
+    fs::write(process.root.join("gamma/src/main.miz"), "end;\n").unwrap();
+    for (uri, version, text) in [(&alpha, 3, "end;\n"), (&gamma, 9, "definition\nend;\n")] {
+        process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":version,"text":text}}})));
+    }
+    // Uncaptured closed members cannot authorize clean clearing for this all-Open profile.
+    process.assert_silent();
+    let beta = format!(
+        "file://{}",
+        process.root.join("beta/src/main.miz").display()
+    );
+    let devonly = format!(
+        "file://{}",
+        process.root.join("devonly/src/main.miz").display()
+    );
+    for (uri, version) in [(&beta, 4), (&devonly, 5)] {
+        process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":version,"text":"definition\nend;\n"}}})));
+    }
+    for (uri, version, codes) in [
+        (&alpha, 3, vec!["E0033", "E0052"]),
+        (&beta, 4, vec![]),
+        (&devonly, 5, vec![]),
+        (&gamma, 9, vec![]),
+    ] {
+        let diagnostics = process.response();
+        assert_eq!(diagnostics["method"], "textDocument/publishDiagnostics");
+        assert_eq!(diagnostics["params"]["uri"], *uri);
+        assert_eq!(diagnostics["params"]["version"], version);
+        assert_eq!(
+            diagnostics["params"]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|diagnostic| diagnostic["code"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            codes
+        );
+    }
+    process.shutdown();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_stdio_coalesces_edits_and_reacquires_metadata_only_on_accepted_events() {
+    let mut process = Process::native();
+    let uri = format!("file://{}", process.root.join("src/Unicode.miz").display());
+    process.initialize(json!(format!("file://{}", process.root.display())));
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":"end;\n"}}})));
+    for version in 2..=8 {
+        process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":version},"contentChanges":[{"text":"end;\n"}]}})));
+    }
+    let latest = process.response();
+    assert_eq!(latest["method"], "textDocument/publishDiagnostics");
+    assert_eq!(latest["params"]["version"], 8);
+    assert_eq!(latest["params"]["diagnostics"].as_array().unwrap().len(), 2);
+    for message in [
+        json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":7},"contentChanges":[{"text":"definition\nend;\n"}]}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":8},"contentChanges":[{"text":"definition\nend;\n"}]}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":9},"contentChanges":[{"text":12}]}}),
+        json!({"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":uri}}}),
+        json!({"jsonrpc":"2.0","method":"workspace/didChangeConfiguration","params":{"settings":{"mizar":{"quietPeriod":0}}}}),
+    ] {
+        process.send(&frame(message));
+    }
+    process.assert_silent();
+    // Reopen at the same version; the new incarnation gets its own clean cohort.
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{"textDocument":{"uri":uri}}})));
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":8,"text":"definition\nend;\n"}}})));
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":8,"diagnostics":[]}})
+    );
+    let manifest = fs::read(process.root.join("mizar.pkg")).unwrap();
+    fs::write(process.root.join("mizar.pkg"), "[package").unwrap();
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":9},"contentChanges":[{"text":"end;\n"}]}})));
+    process.assert_silent();
+    fs::write(process.root.join("mizar.pkg"), manifest).unwrap();
+    for method in ["textDocument/didSave", "workspace/didChangeConfiguration"] {
+        process.send(&frame(json!({"jsonrpc":"2.0","method":method,"params":{"textDocument":{"uri":uri},"settings":{}}})));
+    }
+    process.assert_silent();
+    process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":10},"contentChanges":[{"text":"definition\nend;\n"}]}})));
+    assert_eq!(
+        process.response(),
+        json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":10,"diagnostics":[]}})
+    );
+    // Queued ignored traffic still permits actual native task progress, with no wall-clock timing oracle.
+    let mut input = frame(
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"processId":null,"rootUri":format!("file://{}", process.root.display()),"capabilities":{}}}),
+    );
+    input.extend(frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":11,"text":"definition\nend;\n"}}})));
+    for _ in 0..128 {
+        input.extend(frame(json!({"jsonrpc":"2.0","method":"workspace/didChangeConfiguration","params":{"settings":{}}})));
+    }
+    input.extend(frame(
+        json!({"jsonrpc":"2.0","id":99,"method":"shutdown","params":null}),
+    ));
+    input.extend(frame(json!({"jsonrpc":"2.0","method":"exit"})));
+    let tick = AtomicU64::new(0);
+    let start = Instant::now();
+    let mut server = mizar_lsp::Server::default()
+        .with_nonterminal_build_bridge(mizar_driver::request::BuildLaneId::new(1), move || {
+            start + Duration::from_millis(tick.fetch_add(301, Ordering::Relaxed))
+        });
+    let mut output = Vec::new();
+    assert_eq!(
+        server.serve(io::Cursor::new(input), &mut output).unwrap(),
+        0
+    );
+    let expected = frame(
+        json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":11,"diagnostics":[]}}),
+    );
+    assert!(
+        output
+            .windows(expected.len())
+            .any(|bytes| bytes == expected)
+    );
+    process.shutdown();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_stdio_acquisition_failures_stay_responsive_and_viable_edits_recover() {
+    for failure in [
+        "null_root",
+        "invalid_root",
+        "non_file_root",
+        "missing_manifest",
+        "malformed_manifest",
+        "missing_lock",
+        "malformed_lock",
+        "missing_source",
+        "registry",
+        "unmappable_open",
+    ] {
+        let mut process = Process::native();
+        let manifest = fs::read(process.root.join("mizar.pkg")).unwrap();
+        let lock = fs::read_to_string(process.root.join("mizar.lock")).unwrap();
+        let source = fs::read(process.root.join("src/Unicode.miz")).unwrap();
+        let uri = format!("file://{}", process.root.join("src/Unicode.miz").display());
+        let root = match failure {
+            "null_root" => Value::Null,
+            "invalid_root" => json!("file:///%GG"),
+            "non_file_root" => json!("untitled:workspace"),
+            _ => json!(format!("file://{}", process.root.display())),
+        };
+        match failure {
+            "missing_manifest" => fs::remove_file(process.root.join("mizar.pkg")).unwrap(),
+            "malformed_manifest" => fs::write(process.root.join("mizar.pkg"), "[package").unwrap(),
+            "missing_lock" => fs::remove_file(process.root.join("mizar.lock")).unwrap(),
+            "malformed_lock" => {
+                fs::write(process.root.join("mizar.lock"), "schema_version = [").unwrap()
+            }
+            "missing_source" => fs::remove_file(process.root.join("src/Unicode.miz")).unwrap(),
+            "registry" => {
+                fs::write(process.root.join("mizar.pkg"), "[package]\nname = \"editor\"\nversion = \"0.1.0\"\n[dependencies]\ndep = \"1.0.0\"\n").unwrap();
+                fs::write(process.root.join("mizar.lock"), format!("{}[[package]]\nname = \"dep\"\nversion = \"1.0.0\"\nsource = {{ kind = \"registry\", registry = \"default\", checksum = \"sha256:dep\" }}\ndependencies = []\n", lock.replace("dependencies = []", "dependencies = [{ name = \"dep\", version = \"1.0.0\" }]"))).unwrap();
+            }
+            _ => {}
+        }
+        process.initialize(root);
+        process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":"end;\n"}}})));
+        if failure == "unmappable_open" {
+            process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"untitled:other","languageId":"mizar","version":1,"text":"end;\n"}}})));
+        }
+        process.send(&frame(json!({"jsonrpc":"2.0","id":2,"method":"textDocument/hover","params":{"textDocument":{"uri":uri},"position":{"line":0,"character":0}}})));
+        assert_eq!(
+            process.response(),
+            json!({"jsonrpc":"2.0","id":2,"result":null}),
+            "{failure}"
+        );
+        process.assert_silent();
+        if !matches!(failure, "null_root" | "invalid_root" | "non_file_root") {
+            fs::write(process.root.join("mizar.pkg"), manifest).unwrap();
+            fs::write(process.root.join("mizar.lock"), lock).unwrap();
+            fs::write(process.root.join("src/Unicode.miz"), source).unwrap();
+            if failure == "unmappable_open" {
+                process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{"textDocument":{"uri":"untitled:other"}}})));
+            }
+            process.send(&frame(json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":2},"contentChanges":[{"text":"definition\nend;\n"}]}})));
+            assert_eq!(
+                process.response(),
+                json!({"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":uri,"version":2,"diagnostics":[]}}),
+                "{failure}"
+            );
+        }
+        process.shutdown();
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_stdio_terminal_traffic_discards_work_and_exits_with_partial_header_open() {
+    // Actual running-task cancellation remains covered by checkpoint-controlled bridge tests.
+    for shutdown in [false, true] {
+        for published in [false, true] {
+            let mut process = Process::native();
+            let uri = format!("file://{}", process.root.join("src/Unicode.miz").display());
+            process.initialize(json!(format!("file://{}", process.root.display())));
+            let open = json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":uri,"languageId":"mizar","version":1,"text":"end;\n"}}});
+            let mut bytes = if published {
+                process.send(&frame(open));
+                assert_eq!(process.response()["params"]["version"], 1);
+                frame(
+                    json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":uri,"version":2},"contentChanges":[{"text":"end;\n"}]}}),
+                )
+            } else {
+                frame(open)
+            };
+            if shutdown {
+                bytes.extend(frame(
+                    json!({"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}),
+                ));
+                process.send(&bytes);
+                assert_eq!(
+                    process.response(),
+                    json!({"jsonrpc":"2.0","id":2,"result":null})
+                );
+                bytes.clear();
+            }
+            bytes.extend(frame(json!({"jsonrpc":"2.0","method":"exit"})));
+            bytes.extend_from_slice(b"Content-Len");
+            process.send(&bytes);
+            let deadline = Instant::now() + TIMEOUT;
+            while process.child.try_wait().unwrap().is_none() {
+                assert!(Instant::now() < deadline, "exit required closing stdin");
+                thread::sleep(Duration::from_millis(10));
+            }
+            assert!(process.input.is_some());
+            let (status, responses, errors) = process.finish();
+            assert_eq!(status.code(), Some(if shutdown { 0 } else { 1 }));
+            assert!(responses.is_empty());
+            assert!(errors.is_empty());
+        }
+    }
 }
 
 #[test]

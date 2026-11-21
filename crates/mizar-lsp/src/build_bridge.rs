@@ -32,13 +32,13 @@ pub enum BuildBridgeError {
 }
 
 pub(super) struct BuildBridge {
-    lane: BuildLaneId,
+    pub(super) lane: BuildLaneId,
     clock: Box<dyn Fn() -> Instant + Send + Sync>,
     pub(super) slot: Option<(Instant, Instant)>,
     generation: u64,
     current: Option<BuildSessionId>,
-    nonterminal: bool,
-    submitted: Vec<(
+    pub(super) nonterminal: bool,
+    pub(super) submitted: Vec<(
         BuildSessionId,
         BuildRequestGeneration,
         Arc<NativeOpenBufferSnapshot>,
