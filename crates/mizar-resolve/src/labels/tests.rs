@@ -13566,3 +13566,380 @@ fn algorithm_definition_labels_leave_collector_profiles_and_citations_unchanged(
         )));
     }
 }
+
+const COMPUTATION_SCOPE_SOURCE: &str = "definition let p be expr of boolean; algorithm inspect(p) -> expr of boolean do return p; end; end; theorem Bad: for x being object holds x = x by computation(inspect(x = x));";
+
+#[test]
+fn computation_scope_evidence_real_fixture_and_exact_sites() {
+    use crate::symbols::{
+        source_computation_scope_evidence, validate_source_computation_scope_evidence,
+    };
+    let text = format!(
+        "{COMPUTATION_SCOPE_SOURCE} theorem Other: for x being object holds x = x by computation(inspect(x = x));"
+    );
+    let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+    let before = (ast.clone(), env.clone(), source.clone());
+    let records = source_computation_scope_evidence(&ast, &source, &env).unwrap();
+    assert_eq!(records.len(), 4);
+    assert_eq!(
+        records,
+        source_computation_scope_evidence(&ast, &source, &env).unwrap()
+    );
+    validate_source_computation_scope_evidence(&ast, &source, &env, &records).unwrap();
+    let first = &records[0];
+    let algorithm = env
+        .symbols()
+        .iter()
+        .find(|entry| entry.kind() == crate::env::SymbolKind::Algorithm)
+        .unwrap();
+    assert_eq!(first.algorithm(), algorithm.symbol());
+    assert_eq!(first.source_id(), ast.source_id);
+    for (site, expected, start) in [
+        (
+            first.statement(),
+            "theorem Bad: for x being object holds x = x by computation(inspect(x = x));",
+            text.find("theorem Bad").unwrap(),
+        ),
+        (
+            first.insertion(),
+            "by computation(inspect(x = x))",
+            text.find("by computation").unwrap(),
+        ),
+        (
+            first.call(),
+            "inspect(x = x)",
+            text.find("inspect(x = x)").unwrap(),
+        ),
+        (
+            first.callee(),
+            "inspect",
+            text.find("inspect(x = x)").unwrap(),
+        ),
+        (
+            first.algorithm_declaration(),
+            "algorithm inspect(p) -> expr of boolean do return p; end;",
+            text.find("algorithm inspect").unwrap(),
+        ),
+        (
+            first.argument(),
+            "x = x",
+            text.find("inspect(x = x)").unwrap() + "inspect(".len(),
+        ),
+        (
+            first.formal(),
+            "p",
+            text.find("inspect(p)").unwrap() + "inspect(".len(),
+        ),
+        (
+            first.formal_declaration(),
+            "let p be expr of boolean;",
+            text.find("let p").unwrap(),
+        ),
+        (
+            first.formal_type(),
+            "expr of boolean",
+            text.find("expr of boolean").unwrap(),
+        ),
+        (
+            first.use_site(),
+            "x",
+            text.find("inspect(x = x)").unwrap() + "inspect(".len(),
+        ),
+        (
+            first.unavailable_declaration(),
+            "x",
+            text.find("for x").unwrap() + "for ".len(),
+        ),
+    ] {
+        assert_eq!(site.1, range(ast.source_id, start, start + expected.len()));
+        assert_eq!(ast.node_view(site.0).unwrap().range(), site.1);
+        assert_eq!(&text[site.1.start..site.1.end], expected);
+    }
+    assert_ne!(records[0].use_site(), records[1].use_site());
+    assert_eq!(
+        records[0].unavailable_declaration(),
+        records[1].unavailable_declaration()
+    );
+    assert_ne!(
+        records[0].unavailable_declaration(),
+        records[2].unavailable_declaration()
+    );
+    assert_eq!(
+        records[2].unavailable_declaration(),
+        records[3].unavailable_declaration()
+    );
+    assert_eq!((ast, env, source), before);
+}
+
+#[test]
+fn computation_scope_evidence_visible_outer_bindings_win() {
+    use crate::symbols::source_computation_scope_evidence;
+    for text in [
+        format!("reserve x for object; {COMPUTATION_SCOPE_SOURCE}"),
+        COMPUTATION_SCOPE_SOURCE
+            .replace(
+                "theorem Bad: for",
+                "theorem Bad: thesis proof let x be object; thus for",
+            )
+            .replace("inspect(x = x));", "inspect(x = x)); end;"),
+    ] {
+        let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+        assert_eq!(
+            source_computation_scope_evidence(&ast, &source, &env),
+            Ok(Vec::new()),
+            "{text}"
+        );
+    }
+}
+
+#[test]
+fn computation_scope_evidence_unknown_names_are_not_unavailable() {
+    use crate::symbols::source_computation_scope_evidence;
+    for (argument, count) in [("y = y", 0), ("x = y", 1), ("y = x", 1)] {
+        let text =
+            COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", &format!("inspect({argument})"));
+        let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+        let records = source_computation_scope_evidence(&ast, &source, &env).unwrap();
+        assert_eq!(records.len(), count, "{argument}");
+        for row in records {
+            assert_eq!(&text[row.use_site().1.start..row.use_site().1.end], "x");
+        }
+    }
+    let text = COMPUTATION_SCOPE_SOURCE.replace("for x being object holds ", "");
+    let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+    assert_eq!(
+        source_computation_scope_evidence(&ast, &source, &env),
+        Ok(Vec::new())
+    );
+}
+
+#[test]
+fn computation_scope_evidence_requires_real_unary_boolean_formal_and_callee() {
+    use crate::symbols::source_computation_scope_evidence;
+    let declaration = "definition let p be expr of boolean; algorithm inspect(p) -> expr of boolean do return p; end; end; ";
+    for text in [
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "absent(x = x)"),
+        format!(
+            "theorem Earlier: thesis; {}",
+            COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "Earlier(x = x)")
+        ),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "Ns.inspect(x = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace(declaration, ""),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect()"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(x = x, x = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace("algorithm inspect(p)", "algorithm inspect()"),
+        COMPUTATION_SCOPE_SOURCE.replace("algorithm inspect(p)", "algorithm inspect(q)"),
+        COMPUTATION_SCOPE_SOURCE.replace("expr of boolean", "object"),
+        COMPUTATION_SCOPE_SOURCE.replace("expr of boolean", "expr of object"),
+        COMPUTATION_SCOPE_SOURCE.replace("let p be expr of boolean; ", ""),
+        COMPUTATION_SCOPE_SOURCE.replace("let p be expr of boolean;", "let q be expr of boolean;"),
+        COMPUTATION_SCOPE_SOURCE
+            .replace(
+                "let p be expr of boolean;",
+                "let p be expr of boolean; let q be object;",
+            )
+            .replace("algorithm inspect(p)", "algorithm inspect(q)"),
+        format!("reserve inspect for object; {COMPUTATION_SCOPE_SOURCE}"),
+    ] {
+        let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+        assert!(
+            source_computation_scope_evidence(&ast, &source, &env).is_err(),
+            "{text}"
+        );
+    }
+    // Duplicate declarations are rejected by Frontend itself. Recollect a
+    // coherent duplicate projection from genuine, initially distinct nodes.
+    for (text, needle, replacement) in [
+        (
+            COMPUTATION_SCOPE_SOURCE.replace(
+                "let p be expr of boolean;",
+                "let p be expr of boolean; let q be expr of boolean;",
+            ),
+            "let q",
+            "p",
+        ),
+        (
+            format!(
+                "{} {COMPUTATION_SCOPE_SOURCE}",
+                declaration.replace("inspect", "another")
+            ),
+            "algorithm another",
+            "inspect",
+        ),
+    ] {
+        let (ast, module, namespace, _, _) = parsed_private_theorem_fixture(&text);
+        let target = text.find(needle).unwrap() + needle.rfind(' ').unwrap() + 1;
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for node in ast.node_views() {
+            let children = node
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect();
+            let id = match node.kind() {
+                SurfaceNodeKind::Token(token) => builder.add_token(
+                    token.kind,
+                    if node.range().start == target {
+                        replacement
+                    } else {
+                        token.text.as_ref()
+                    },
+                    node.range(),
+                ),
+                kind => builder.add_node(kind.clone(), node.range(), children),
+            };
+            rebuilt.push(id);
+        }
+        let duplicate = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&duplicate, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&duplicate, &shells, namespace)
+                .collect(&module);
+        let arena = SurfaceResolvedArena::lower(&duplicate, &module).unwrap();
+        assert!(source_computation_scope_evidence(&duplicate, &arena, collected.env()).is_err());
+    }
+}
+
+#[test]
+fn computation_scope_evidence_authenticates_originals_and_rejects_stale_replay() {
+    use crate::symbols::{
+        source_computation_scope_evidence, validate_source_computation_scope_evidence,
+    };
+    let text = COMPUTATION_SCOPE_SOURCE;
+    let (ast, module, namespace, env, source) = parsed_private_theorem_fixture(text);
+    let records = source_computation_scope_evidence(&ast, &source, &env).unwrap();
+    let foreign = SurfaceResolvedArena::lower(&ast, &module_id("pkg", "foreign")).unwrap();
+    let mut foreign_ast = ast.clone();
+    foreign_ast.source_id = distinct_source_ids().1;
+    let (_, _, _, augmented, _) =
+        parsed_private_theorem_fixture(&format!("{text} theorem Added: thesis;"));
+    for (original, arena, symbols) in [
+        (&foreign_ast, &source, &env),
+        (&ast, &foreign, &env),
+        (&ast, &source, &augmented),
+    ] {
+        assert!(source_computation_scope_evidence(original, arena, symbols).is_err());
+        assert!(
+            validate_source_computation_scope_evidence(original, arena, symbols, &records).is_err()
+        );
+    }
+    for recovered in [false, true] {
+        let mut builder = SurfaceAstBuilder::new(ast.source_id);
+        let mut rebuilt = Vec::new();
+        for node in ast.node_views() {
+            let children = node
+                .children()
+                .iter()
+                .map(|id| rebuilt[id.index()])
+                .collect();
+            let id = match node.kind() {
+                SurfaceNodeKind::Token(token)
+                    if node.range().start == text.find("return p").unwrap() + "return ".len() =>
+                {
+                    if recovered {
+                        builder.add_recovered_token(token.kind, "q", node.range())
+                    } else {
+                        builder.add_token(token.kind, "q", node.range())
+                    }
+                }
+                SurfaceNodeKind::Token(token) => {
+                    builder.add_token(token.kind, token.text.clone(), node.range())
+                }
+                kind => builder.add_node(kind.clone(), node.range(), children),
+            };
+            rebuilt.push(id);
+        }
+        let changed = builder.finish(Some(rebuilt[ast.root().unwrap().index()]), None);
+        let shells =
+            crate::declarations::DeclarationShellCollector::new(&changed, &module).collect();
+        let collected =
+            crate::symbols::SignatureProjectionExtractor::new(&changed, &shells, namespace.clone())
+                .collect(&module);
+        let arena = SurfaceResolvedArena::lower(&changed, &module).unwrap();
+        assert!(source_computation_scope_evidence(&changed, &source, &env).is_err());
+        assert!(
+            validate_source_computation_scope_evidence(&changed, &arena, collected.env(), &records)
+                .is_err()
+        );
+        if !recovered {
+            assert_ne!(
+                collected.env(),
+                &env,
+                "coherent original uses its regenerated symbol projection"
+            );
+            let fresh =
+                source_computation_scope_evidence(&changed, &arena, collected.env()).unwrap();
+            assert_eq!(fresh.len(), records.len());
+            assert_ne!(
+                fresh, records,
+                "coherent body edit must invalidate old evidence"
+            );
+            validate_source_computation_scope_evidence(&changed, &arena, collected.env(), &fresh)
+                .unwrap();
+        } else {
+            assert!(source_computation_scope_evidence(&changed, &arena, collected.env()).is_err());
+        }
+    }
+    validate_source_computation_scope_evidence(&ast, &source, &env, &records).unwrap();
+    assert!(
+        validate_source_computation_scope_evidence(&ast, &source, &env, &records[..1]).is_err()
+    );
+}
+
+#[test]
+fn computation_scope_evidence_refuses_unsupported_shapes_wholly_and_preserves_legacy() {
+    use crate::symbols::source_computation_scope_evidence;
+    for text in [
+        format!(
+            "definition func Global: g -> object equals 0; end; {}",
+            COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(g = x)")
+        ),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(not x = x)"),
+        COMPUTATION_SCOPE_SOURCE
+            .replace("inspect(x = x)", "inspect(for y being object holds y = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(f(x) = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(x)"),
+        COMPUTATION_SCOPE_SOURCE.replace(
+            "by computation(inspect(x = x))",
+            "by computation(inspect(x = x), inspect(x = x))",
+        ),
+        format!(
+            "{COMPUTATION_SCOPE_SOURCE} theorem Unsupported: for y being object holds y = y by computation(inspect(not y = y));"
+        ),
+        COMPUTATION_SCOPE_SOURCE
+            .replace("theorem Bad: for", "theorem Bad: thesis proof now thus for")
+            .replace("inspect(x = x));", "inspect(x = x)); end; end;"),
+    ] {
+        let (ast, _, _, env, source) = parsed_private_theorem_fixture(&text);
+        assert!(
+            source_computation_scope_evidence(&ast, &source, &env).is_err(),
+            "{text}"
+        );
+    }
+    let imported = format!("import external.library; {COMPUTATION_SCOPE_SOURCE}");
+    let (ast, _, _, env, source) =
+        parsed_private_theorem_fixture_with_unresolved_imports(&imported, 1);
+    assert!(source_computation_scope_evidence(&ast, &source, &env).is_err());
+    let (ast, module, _, env, source) = parsed_private_theorem_fixture(COMPUTATION_SCOPE_SOURCE);
+    let before = crate::names::SourceVariableScopeResolver::resolve_proof_bindings(
+        crate::names::SourceVariableScopeInput::new(&ast, &module, &env),
+    );
+    assert!(
+        before.is_err(),
+        "legacy profile still refuses the computation application"
+    );
+    assert_eq!(
+        source_computation_scope_evidence(&ast, &source, &env)
+            .unwrap()
+            .len(),
+        2
+    );
+    assert_eq!(
+        before,
+        crate::names::SourceVariableScopeResolver::resolve_proof_bindings(
+            crate::names::SourceVariableScopeInput::new(&ast, &module, &env)
+        )
+    );
+}

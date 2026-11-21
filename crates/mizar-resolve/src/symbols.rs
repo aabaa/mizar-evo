@@ -189,6 +189,413 @@ pub fn source_algorithm_definition_labels<'a>(
     Ok(labels)
 }
 
+/// Reject-only original-source evidence for an unavailable quantified declaration.
+///
+/// All sites retain the physical node and its range. Construction and replay
+/// authenticate the complete original tree; this is neither typing nor execution.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceComputationScopeEvidence {
+    source_id: SourceId,
+    original: mizar_session::Hash,
+    algorithm: SymbolId,
+    statement: (SurfaceNodeId, SourceRange),
+    insertion: (SurfaceNodeId, SourceRange),
+    call: (SurfaceNodeId, SourceRange),
+    callee: (SurfaceNodeId, SourceRange),
+    algorithm_declaration: (SurfaceNodeId, SourceRange),
+    argument: (SurfaceNodeId, SourceRange),
+    formal: (SurfaceNodeId, SourceRange),
+    formal_declaration: (SurfaceNodeId, SourceRange),
+    formal_type: (SurfaceNodeId, SourceRange),
+    use_site: (SurfaceNodeId, SourceRange),
+    unavailable_declaration: (SurfaceNodeId, SourceRange),
+}
+
+impl SourceComputationScopeEvidence {
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+    pub const fn algorithm(&self) -> &SymbolId {
+        &self.algorithm
+    }
+    pub const fn statement(&self) -> (SurfaceNodeId, SourceRange) {
+        self.statement
+    }
+    pub const fn insertion(&self) -> (SurfaceNodeId, SourceRange) {
+        self.insertion
+    }
+    pub const fn call(&self) -> (SurfaceNodeId, SourceRange) {
+        self.call
+    }
+    pub const fn callee(&self) -> (SurfaceNodeId, SourceRange) {
+        self.callee
+    }
+    pub const fn algorithm_declaration(&self) -> (SurfaceNodeId, SourceRange) {
+        self.algorithm_declaration
+    }
+    pub const fn argument(&self) -> (SurfaceNodeId, SourceRange) {
+        self.argument
+    }
+    pub const fn formal(&self) -> (SurfaceNodeId, SourceRange) {
+        self.formal
+    }
+    pub const fn formal_declaration(&self) -> (SurfaceNodeId, SourceRange) {
+        self.formal_declaration
+    }
+    pub const fn formal_type(&self) -> (SurfaceNodeId, SourceRange) {
+        self.formal_type
+    }
+    pub const fn use_site(&self) -> (SurfaceNodeId, SourceRange) {
+        self.use_site
+    }
+    pub const fn unavailable_declaration(&self) -> (SurfaceNodeId, SourceRange) {
+        self.unavailable_declaration
+    }
+}
+
+/// Replays evidence against a fresh authenticated derivation of the supplied original.
+pub fn validate_source_computation_scope_evidence(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    evidence: &[SourceComputationScopeEvidence],
+) -> Result<(), String> {
+    if source_computation_scope_evidence(ast, source, symbols)? != evidence {
+        return Err("computation scope evidence does not match the original source".to_owned());
+    }
+    Ok(())
+}
+
+/// Finds unavailable statement quantifiers in bounded unary boolean-expr calls.
+///
+/// Unknown argument names and visible outer winners produce no failure record.
+/// Unsupported syntax refuses the entire acquisition, including earlier records.
+pub fn source_computation_scope_evidence(
+    ast: &SurfaceAst,
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Vec<SourceComputationScopeEvidence>, String> {
+    use mizar_syntax::SurfaceNodeKind as K;
+    let invalid = || "unsupported original computation scope evidence".to_owned();
+    source
+        .validate_against(ast, source.module())
+        .map_err(|_| invalid())?;
+    validated_source_symbol_ast(source, symbols)?;
+    let (scopes, parents) =
+        crate::names::validate_variable_surface_with_mode(ast, true).map_err(|_| invalid())?;
+    let bindings = crate::names::computation_scope_declarations(ast, source.module())
+        .map_err(|_| invalid())?;
+    // Outside this bounded local profile an omitted term declaration/import
+    // could win a spelling. Refuse that context instead of inferring absence.
+    for node in ast.node_views() {
+        if node.kind() == &K::ItemList
+            && parents
+                .get(&node.id())
+                .and_then(|id| ast.node_view(*id))
+                .is_some_and(|parent| parent.kind() == &K::CompilationUnit)
+            && node.child_views().any(|item| {
+                !matches!(
+                    item.kind(),
+                    K::DefinitionBlockItem | K::TheoremItem | K::ReserveItem
+                )
+            })
+        {
+            return Err(invalid());
+        }
+        if node.kind() == &K::DefinitionBlockItem
+            && node.child_views().any(|item| {
+                !matches!(
+                    item.kind(),
+                    K::Token(_) | K::DefinitionParameter | K::AlgorithmDefinition
+                )
+            })
+        {
+            return Err(invalid());
+        }
+    }
+    let view = |id| ast.node_view(id).ok_or_else(invalid);
+    let token_is = |id, spelling: &str| {
+        ast.node_view(id)
+            .and_then(SurfaceNodeView::as_token)
+            .is_some_and(|t| {
+                matches!(
+                    t.kind,
+                    SurfaceTokenKind::ReservedWord | SurfaceTokenKind::ReservedSymbol
+                ) && t.text.as_ref() == spelling
+            })
+    };
+    let shape = |id, kind: &K, layout: &[&str]| -> Result<&[SurfaceNodeId], String> {
+        let node = view(id)?;
+        if node.kind() != kind
+            || node.children().len() != layout.len()
+            || node
+                .children()
+                .iter()
+                .zip(layout)
+                .any(|(&id, spelling)| !spelling.is_empty() && !token_is(id, spelling))
+        {
+            return Err(invalid());
+        }
+        Ok(node.children())
+    };
+    let identifier = |id| -> Result<&str, String> {
+        view(id)?
+            .as_token()
+            .filter(|t| t.kind == SurfaceTokenKind::Identifier)
+            .map(|t| t.text.as_ref())
+            .ok_or_else(invalid)
+    };
+    let anchor = |id| view(id).map(|node| (id, node.range()));
+    let mut hasher = mizar_session::domain_hasher("mizar-resolve/computation-scope-original/v1");
+    hasher.update(&ast.canonical_bytes().ok_or_else(invalid)?);
+    let original = mizar_session::Hash::from_bytes(*hasher.finalize().as_bytes());
+    let shells = DeclarationShellCollector::new(ast, source.module()).collect();
+    let mut records = Vec::new();
+    for computation in ast
+        .node_views()
+        .filter(|node| node.kind() == &K::ComputationJustification)
+    {
+        let clause = *parents.get(&computation.id()).ok_or_else(invalid)?;
+        let clause_parts = shape(clause, &K::JustificationClause, &["by", ""])?;
+        if clause_parts[1] != computation.id() {
+            return Err(invalid());
+        }
+        let mut statement = *parents.get(&clause).ok_or_else(invalid)?;
+        if view(statement)?.kind() == &K::Proposition {
+            statement = *parents.get(&statement).ok_or_else(invalid)?;
+        }
+        if !matches!(
+            view(statement)?.kind(),
+            K::TheoremItem | K::CompactStatement | K::ConclusionStatement
+        ) {
+            return Err(invalid());
+        }
+        let mut ancestor = parents.get(&statement).copied();
+        while let Some(id) = ancestor {
+            if !matches!(
+                view(id)?.kind(),
+                K::Root
+                    | K::CompilationUnit
+                    | K::ItemList
+                    | K::StatementItem
+                    | K::TheoremItem
+                    | K::ProofBlock
+            ) {
+                return Err(invalid());
+            }
+            ancestor = parents.get(&id).copied();
+        }
+        let formulas = view(statement)?
+            .child_views()
+            .flat_map(|node| {
+                if node.kind() == &K::Proposition {
+                    node.child_views().collect::<Vec<_>>()
+                } else {
+                    vec![node]
+                }
+            })
+            .filter(|node| node.kind() == &K::FormulaExpression)
+            .collect::<Vec<_>>();
+        let [statement_formula] = formulas.as_slice() else {
+            return Err(invalid());
+        };
+        let cp = shape(
+            computation.id(),
+            &K::ComputationJustification,
+            &["computation", "(", "", ")"],
+        )?;
+        let call = cp[2];
+        let application = shape(call, &K::ApplicationTerm, &["", "(", "", ")"])?;
+        let callee = shape(application[0], &K::TermReference, &[""])?[0];
+        let name = identifier(callee)?;
+        let insertion_scope = scopes.get(&clause).ok_or_else(invalid)?;
+        let winner = |spelling: &str| {
+            bindings
+                .iter()
+                .filter(|binding| {
+                    binding.spelling() == spelling
+                        && insertion_scope.path().starts_with(binding.scope().path())
+                        && binding.range().start
+                            <= view(clause).map(|n| n.range().start).unwrap_or(0)
+                })
+                .max_by_key(|binding| {
+                    (
+                        binding.scope().path().len(),
+                        binding.range().start,
+                        binding.ordinal(),
+                    )
+                })
+        };
+        if winner(name).is_some() {
+            return Err(invalid());
+        }
+        let mut candidates = symbols
+            .symbols()
+            .iter()
+            .filter(|entry| entry.primary_spelling() == name);
+        let algorithm = candidates.next().ok_or_else(invalid)?;
+        if algorithm.kind() != SymbolKind::Algorithm || candidates.next().is_some() {
+            return Err(invalid());
+        }
+        let mut declarations = shells.declarations().iter().filter(|shell| {
+            shell.kind() == DeclarationShellKind::AlgorithmDefinition
+                && algorithm.origin()
+                    == &shell_origin(
+                        ast.source_id,
+                        source.module(),
+                        shell,
+                        &shell_context(&shells, shell),
+                    )
+        });
+        let declaration = declarations.next().ok_or_else(invalid)?;
+        if declarations.next().is_some() || declaration.range().end > computation.range().start {
+            return Err(invalid());
+        }
+        let block = shells
+            .declaration(declaration.parent().ok_or_else(invalid)?)
+            .ok_or_else(invalid)?;
+        if block.kind() != DeclarationShellKind::DefinitionBlock {
+            return Err(invalid());
+        }
+        for item in view(block.node_id())?.child_views() {
+            match item.kind() {
+                K::Token(_) | K::AlgorithmDefinition => {}
+                K::DefinitionParameter => {
+                    let p = shape(item.id(), &K::DefinitionParameter, &["let", "", ";"])?;
+                    let segment = shape(p[1], &K::QualifiedVariableSegment, &["", "be", ""])?;
+                    identifier(segment[0])?;
+                    if view(segment[2])?.kind() != &K::TypeExpression {
+                        return Err(invalid());
+                    }
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        let parameters = view(declaration.node_id())?
+            .child_views()
+            .filter(|node| node.kind() == &K::AlgorithmParameters)
+            .collect::<Vec<_>>();
+        let [parameters] = parameters.as_slice() else {
+            return Err(invalid());
+        };
+        let formal = shape(parameters.id(), &K::AlgorithmParameters, &["(", "", ")"])?[1];
+        let formal_name = identifier(formal)?;
+        let mut formal_declarations = Vec::new();
+        for parameter in view(block.node_id())?.child_views().filter(|node| {
+            node.kind() == &K::DefinitionParameter && node.range().end <= declaration.range().start
+        }) {
+            for segment in parameter
+                .child_views()
+                .filter(|node| node.kind() == &K::QualifiedVariableSegment)
+            {
+                if segment.child_views().any(|node| {
+                    node.as_token().is_some_and(|t| {
+                        t.kind == SurfaceTokenKind::Identifier && t.text.as_ref() == formal_name
+                    })
+                }) {
+                    let p = shape(parameter.id(), &K::DefinitionParameter, &["let", "", ";"])?;
+                    if p[1] != segment.id() {
+                        return Err(invalid());
+                    }
+                    let p = shape(segment.id(), &K::QualifiedVariableSegment, &["", "be", ""])?;
+                    if identifier(p[0])? != formal_name {
+                        return Err(invalid());
+                    }
+                    let ty = p[2];
+                    let head = shape(ty, &K::TypeExpression, &[""])?[0];
+                    let expr = shape(head, &K::TypeHead, &["expr", "of", ""])?;
+                    let boolean = shape(expr[2], &K::TypeExpression, &[""])?[0];
+                    if identifier(shape(boolean, &K::TypeHead, &[""])?[0])? != "boolean" {
+                        return Err(invalid());
+                    }
+                    formal_declarations.push((parameter.id(), ty));
+                }
+            }
+        }
+        let [(formal_declaration, formal_type)] = formal_declarations.as_slice() else {
+            return Err(invalid());
+        };
+        let argument = application[2];
+        shape(argument, &K::FormulaExpression, &[""])?;
+        // Admit the entire formula before deriving any use evidence. Quantifiers
+        // belong only to the statement; nested argument binders are unsupported.
+        let mut unavailable = BTreeMap::new();
+        let mut uses = Vec::new();
+        for (root, argument_side) in [(statement_formula.id(), false), (argument, true)] {
+            let mut pending = vec![root];
+            while let Some(id) = pending.pop() {
+                let node = view(id)?;
+                match node.kind() {
+                    K::FormulaExpression => {
+                        pending.push(shape(id, &K::FormulaExpression, &[""])?[0]);
+                    }
+                    K::QuantifiedFormula(_) if !argument_side => {
+                        let p = node.children();
+                        if p.len() != 4
+                            || !(token_is(p[0], "for") || token_is(p[0], "ex"))
+                            || !token_is(p[2], "holds")
+                        {
+                            return Err(invalid());
+                        }
+                        let segment =
+                            shape(p[1], &K::QuantifierVariableSegment, &["", "being", ""])?;
+                        let name = identifier(segment[0])?;
+                        let head = shape(segment[2], &K::TypeExpression, &[""])?[0];
+                        let ty = shape(head, &K::TypeHead, &[""])?[0];
+                        if !(token_is(ty, "object") || token_is(ty, "set"))
+                            || unavailable.insert(name, segment[0]).is_some()
+                        {
+                            return Err(invalid());
+                        }
+                        pending.push(p[3]);
+                    }
+                    K::BuiltinPredicateApplication => {
+                        let p = shape(id, &K::BuiltinPredicateApplication, &["", "=", ""])?;
+                        pending.extend([p[2], p[0]]);
+                    }
+                    K::TermExpression => {
+                        pending.push(shape(id, &K::TermExpression, &[""])?[0]);
+                    }
+                    K::TermReference => {
+                        let token = shape(id, &K::TermReference, &[""])?[0];
+                        identifier(token)?;
+                        if argument_side {
+                            uses.push(token);
+                        }
+                    }
+                    _ => return Err(invalid()),
+                }
+            }
+        }
+        for use_site in uses {
+            let name = identifier(use_site)?;
+            if winner(name).is_some() {
+                continue;
+            }
+            let Some(&unavailable_declaration) = unavailable.get(name) else {
+                continue;
+            };
+            records.push(SourceComputationScopeEvidence {
+                source_id: ast.source_id,
+                original,
+                algorithm: algorithm.symbol().clone(),
+                statement: anchor(statement)?,
+                insertion: anchor(clause)?,
+                call: anchor(call)?,
+                callee: anchor(callee)?,
+                algorithm_declaration: anchor(declaration.node_id())?,
+                argument: anchor(argument)?,
+                formal: anchor(formal)?,
+                formal_declaration: anchor(*formal_declaration)?,
+                formal_type: anchor(*formal_type)?,
+                use_site: anchor(use_site)?,
+                unavailable_declaration: anchor(unavailable_declaration)?,
+            });
+        }
+    }
+    Ok(records)
+}
+
 /// Authenticates all proof occurrence rows against the original source and symbols.
 pub fn validate_source_proof_occurrences(
     source: &SurfaceResolvedArena,

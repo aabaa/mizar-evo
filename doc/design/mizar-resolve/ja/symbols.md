@@ -751,6 +751,12 @@ labels/tests.rs に source_proof_inputs_match_actual_collectors_and_preserve_inp
 この raw map は source ownership データだけを供給し、BindingEnv・typed context・label・fact・真理・完全 phase・受理・currentness・reuse を作らない。既存 source_proof_inputs と全旧 Resolver 出力を保つ。
 map のテストは実 capture/collector と独立した元 occurrence 認証から、全 node/parent・宣言/参照 scope・boundary range・反復・Disk/OpenBuffer 安定性・入力不変性を確認する。広い Resolver 入力と狭い[定理 binding-context consumer](../../mizar-checker/ja/type_checker.md#original-source-theorem-binding-contexts)を分け、負例は同じ入力の元 validator error を先に得て比較する。
 
+## Computation unavailable-declaration evidence
+
+`source_computation_scope_evidence` は渡された元 AST と resolved arena・symbol replay 全体の一致を認証してから、明示的な `expr of boolean` formal と formula 引数を持つ unary local algorithm の reject-only row を導出する。row は実際の call/declaration/formal/type と insertion/use/unavailable-declaration の anchor を保持し、挿入位置の lexical winner は statement の量化変数より優先する。未知名は unavailable-declaration row を作らない。
+限定 formula intake は bare-name の等式と、明示的な object/set 型の単名 statement 量化変数を扱う。未対応の formula/scope host、callee の曖昧さ、formal の不一致、受付 lexical profile 外の source 宣言は取得全体を拒否し、先に作った row も返さない。
+`validate_source_computation_scope_evidence` は row 全体を再導出し元の構造 identity を比較して、古い provenance・別 source を拒否する。認証対象は source 構造であり、物理 raw text の currentness・free UID・checked reflection・診断出力・計算・受理ではない。一般 occurrence intake と既存 consumer は変更せず、後続 E0206 採用は AST-DIAGNOSTICS が所有する。
+
 ## Original-source declaration shells
 `source_declaration_shells(&SurfaceResolvedArena, &SymbolEnv) -> Result<DeclarationShellSet, String>` は最初に未変更 validated_source_symbol_ast を呼び、その error をそのまま返す。得た実 private AST/module を既存 DeclarationShellCollector に渡し、空結果・全 declaration/export・opaque ID・順序・parent・range・visibility・recovery を選別や namespace cast なしで保持する。occurrence/label/type 検証や新 source profile、context/phase/proof/acceptance/publication/currentness/reuse の権威は作らず、旧 API と入力を保つ。
 labels/tests.rs に source_declaration_shells_match_original_collectors と source_declaration_shells_preserve_upstream_errors だけを追記する。実 native Frontend helper、未変更 private/lemma fixture、空/export/nested 宣言、未解決変数を含む広い source を用い、先に独立 collector と literal role/visibility・実 node/range/parent/export 対応を確認して全 set 等値・再実行・入力不変性を検査する。実成功対照の後に foreign source/module・augmented env・実 parser recovery を拒否し、先に得た未変更 validate_source_symbol_env の error と比較する。正例 AST/env/shell の捏造と下位 guard 行列の重複は禁止。

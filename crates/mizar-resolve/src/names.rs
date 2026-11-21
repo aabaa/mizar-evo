@@ -7817,6 +7817,18 @@ pub(crate) fn source_function_binder_candidates(
     VariableResolveState::new(ast, module, scopes, true, false).collect_function_binders(true)
 }
 
+pub(crate) fn computation_scope_declarations(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<Vec<SourceVariableBinding>, SourceVariableScopeError> {
+    let scopes = validate_variable_surface_with_mode(ast, true)?;
+    let mut state = VariableResolveState::new(ast, module, scopes, true, true);
+    state.proof_bindings = true;
+    state.collect_declarations()?;
+    state.validate_declarations()?;
+    Ok(state.bindings)
+}
+
 pub(crate) fn validate_variable_surface_with_mode(
     ast: &SurfaceAst,
     comprehension_scopes: bool,
