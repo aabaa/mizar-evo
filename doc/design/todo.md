@@ -222,6 +222,206 @@ the trust policy, using a mock producer, or weakening tests. This is a
 bounded milestone, not full `proof_verification` coverage, MVM execution,
 full cache equivalence, or complete-processor status.
 
+### Adopted frontier producer registration — Waves 1–4 [ ]
+
+Authority: `mizar-frontier-producibility-2026-11-21.md` §§4–5, owner adoption
+2026-11-21 12:42 JST (option ①), plus NT6/Vampire decisions below. Registration
+adds no completion/acceptance/coverage credit; owner gates and contract freezes apply.
+M = state maintenance; A = producer/design. `D/` = `doc/design/`, `C/` = `crates/`,
+`TC/` = `doc/design/task_contracts/en/`; paired owners keep EN/JA sync. G judgments
+remain external blockers for owner decisions at the scene; language-intent changes stop.
+Wave order applies among ready units: P22 waits for P2 despite its listed order.
+Lane 1 takes eligible either-lane L2-set work without duplicating Lane 2 claims.
+Serialize `control_flow.rs`: P5 → P8 → P9 → P10; `type_checker.rs`: P7/P8/P14.
+VC53 owns `C/mizar-vc/src/generator.rs`, `C/mizar-kernel/src/checker.rs`,
+`C/mizar-proof/src/{status,policy}.rs` and `C/mizar-test/src/runner/proof_verification/term_proof_tests/source_algorithm_return.rs`.
+P3/P15 run at VC53 boundaries; P12/P13 wait for E1; internal design follows existing gates.
+
+#### Wave 1 — ready Lane 1 sequence and Lane 2 gaps
+
+Lane 1: NT6 → Vampire-skip → P1 → P4 → P5 → P7. Lane 2: VC53, urgent P11 then P6 in gaps.
+
+- [ ] **NT6 application — Lane 1; docs-only.** Apply the owner-approved
+  2026-11-21 10:31 JST NT6 Class 3 draft unchanged: add the shared-fixture
+  head-phase clause to repo `AGENTS.md`, Task Workflow And Delegation,
+  immediately after the test-matrix bullet. Dependencies: none; serialize
+  with P1 if the application also touches this roadmap.
+- [ ] **Vampire-skip — Lane 1; test-only.** Owner decision 2026-11-21
+  12:39 JST (option ①): in `C/mizar-atp/src/backend/tests.rs`, affected
+  `vampire_extraction_refusal_tests` explicitly report the reason for skipping
+  when the provisioned Vampire binary is absent. Provisioned dev-linux must
+  execute and pass them. Acceptance: GitHub main CI green at the resulting
+  main, and local full `cargo test` shows these tests executed, not skipped,
+  and passing. Dependencies: none.
+- [ ] **P1 — Roadmap state sync; M, light; Lane 1.** Reconcile crate-status
+  rows, Step 6.1, Step 7.1/3, Step 8.3/5, algorithm/reflected-syntax stale
+  rows and remaining ALGDEF-RESOLVE-CALL-EDGES slices against landed commits.
+  Scope: this roadmap, `D/mizar-driver/en/registry.md`,
+  `D/mizar-build/en/00.crate_plan.md`, JA companions. Dependencies: sealed
+  push (satisfied at adoption); serialize with NT6 if files overlap. No extra credit.
+- [ ] **P4 — LSP 25 close-out and Doc TODO sync; M; Lane 1.** Run the
+  outstanding final T2 read-only completion audit and count the task;
+  reconcile landed Doc 5–13 work without credit denied by contracts.
+  Scope: `D/mizar-lsp/en/todo.md`, `D/mizar-doc/en/todo.md`; roadmap
+  completion row through P1 while both are open. Dependencies: none.
+- [ ] **P5 — Cycle-safe Core CFG use collection; A; L2-set, either lane.**
+  Make `collect_formula_uses`/`collect_term_uses` fail closed on cyclic IDs;
+  inventory sibling arena walkers and existing guards. Scope: Core 48,
+  `C/mizar-core/src/control_flow.rs`, crate tests,
+  `D/mizar-core/en/control_flow.md`. No dependencies; file-disjoint from VC53.
+  No formula/general cycle-safety claim until this lands.
+- [ ] **P7 — Automatic selected algorithm call targets; A; L2-set, either lane.**
+  First produce checked-source same-module non-overloaded direct-call node →
+  selected `SymbolRef`/original synonym maps, feeding
+  `source_definiens_dependencies` and `source_algorithm_recursive_groups`.
+  Scope: `C/mizar-checker/src/{type_checker.rs,source_overload.rs}`,
+  `mizar-test` consumer, `D/mizar-checker/en/type_checker.md`. Dependencies:
+  none; file-disjoint from VC53. Freeze Checker ownership against architecture
+  03/overload boundaries; unresolved ownership parks at G19.
+- [ ] **P11 — Accepted-definition design/contract freeze; A; urgent Lane 2 gap.**
+  Freeze only the bounded direct-return obligation set (E1 typing,
+  single-valuedness, inhabitation; E2 postcondition; E4), same-identity
+  source/check/Core/snapshot/policy binding, atomic adoption, refusal matrix
+  and R3 eligibility input. Scope: new paired acceptance contract and
+  `D/mizar-core/en/mvm_correspondence.md`/JA; avoid `status.md`.
+  Dependencies: none to start; mandatory T2 for the acceptance boundary.
+  Park Deferred termination (G10); it gates P13. No implementation in this unit.
+- [ ] **P6 — Kernel soundness-argument revisit; A; Lane 2 gap (either lane).**
+  Document premises, caller obligations and rejection corpus for
+  `check_sole_return_var`, `check_instantiated_algorithm_returns`,
+  `check_algorithm_returns_existential`, `check_object_inhabitation_witness`
+  and E1 typing/single-valuedness rules as they land; assess generalization
+  limits. Scope: `D/mizar-kernel/en/{soundness_argument,todo}.md`, JA pairs;
+  Kernel source read-only. Dependencies: none to start; close before P13.
+  Docs-only; code findings become separate units (precedent: Kernel 35).
+
+#### Wave 2 — source/Core roots and Step 7 preparation
+
+Lane 1: P28, P20, P21, P22, P2 (dependencies first); either lane: P8 → P9, P14.
+
+- [ ] **P28 — Checker 280 readiness/definiens cycles; A; Lane 1.** Correct
+  stale readiness, then detect direct/mutual `func` definiens cycles.
+  Scope: `TC/ALGDEF-CHECKER280-DEFINITION-CYCLES.md`, `C/mizar-checker/src/`,
+  real `tests/miz/fail/` sources. Dependencies: none for definiens-only
+  (study inference); algorithm edges wait for P7.
+- [ ] **P20 — Core 33 real MT10-CIR-TE baseline; A; Lane 1.** Install the
+  first genuine source-derived context/items/binders baseline from the nine
+  zero-credit associations, opening Core 34–39/VC 32–39/general services.
+  Scope: `C/mizar-core/src/elaborator.rs`, `mizar-test` runner,
+  `D/mizar-core/en/todo.md`. Dependencies: none; Checker 248 is done.
+- [ ] **P21 — Checker umbrella re-inventory; A; Lane 1.** For 257C/258/272/277B,
+  freeze a bounded next slice or close with explicit residuals when children
+  are done. Scope: `D/mizar-checker/en/{todo,payload_family_decomposition}.md`,
+  new paired contracts. Dependencies: none; docs first, implementation follows.
+- [ ] **P22 — Driver guarded Vampire BackendRun; A; Lane 1.** Register a
+  genuine scheduled `run_vampire_backend` service feeding existing
+  Kernel-checked candidates. Scope: `C/mizar-driver/src/registry.rs`,
+  `frontend_adapter/`, `driver/scheduler.rs`, tests guarded on
+  `.tools/provers/vampire-4.9/vampire`, `D/mizar-driver/en/registry.md`.
+  Dependencies: P2; freeze confirms DR-1 covers a Driver-scheduled external process.
+- [ ] **P2 — Step 7 owner-document sync; M; Lane 1.** Record implemented
+  guarded Vampire and bounded Proof 23 (task 75/composition), retaining
+  Proof 23/Artifact 25 residuals. Scope: `TC/ATPK-BACKEND-EXTRACTION.md`
+  status and `D/mizar-{atp,proof,artifact}/en/todo.md`, JA pairs. Dependencies: none.
+- [ ] **P8 — Core 43 if/path-condition and bare-fail shells; A; L2-set, either lane.**
+  Lower source `if`/bare `fail` into Core/CFG without continuation or
+  postcondition after fail; add Core 48 internal return-or-fail checking,
+  no public E0501. Scope: checker `type_checker.rs`,
+  `C/mizar-core/src/{core_ir.rs,elaborator.rs,control_flow.rs}`, test-first
+  `.miz`, Core elaborator/control-flow docs. Dependencies: P5; serialize
+  with P7 on checker writes. Freeze may split independent if/fail routes.
+- [ ] **P9 — Real ControlFlowIr snapshot baseline; A; L2-set, either lane.**
+  Add `SnapshotKind::ControlFlowIr` and real `idalgo` MT10-CFG-PV baseline.
+  Scope: `C/mizar-test/src/snapshot.rs`, Core `control_flow.rs`, `tests/snapshots/`.
+  Dependencies: P5; file order P8 → P9 → P10.
+- [ ] **P14 — Typed ground invocation; A; Lane 2, either-lane scheduling.**
+  Probe same-module `idalgo(0)` resolution/typing read-only, then produce
+  authenticated target identity, ordered actuals and source/context provenance
+  for R4's loader join. Scope: checker `type_checker.rs`, test-first
+  `tests/miz/`, checker type-checker docs. Dependencies: P7; serialize P8/P14.
+  Unspecified numeral-to-object admissibility parks as a specification question.
+
+#### Wave 3 — boundary work and independent consumers
+
+Lane 2 boundaries: P3, P15, P16, P17. Lane 1: P23, P24, P26, P27, P25 definition.
+Either lane: P10, P19. P16/P17 must be ready before P13 completes; G9 still applies.
+
+- [ ] **P3 — Core/VC/Checker state sync; M; L2-set, Lane 2 boundary.**
+  Reconcile Core 42–53/VC 43/54 EN/JA boxes, VC 32/39/47/50 active slices,
+  VC53 stale blocked line, checker umbrellas and T1 F1 implemented policy
+  consumption deferrals. Scope: relevant TODOs,
+  `D/mizar-kernel/en/checker.md`, `D/mizar-vc/en/generator.md`, JA pairs.
+  Dependencies: VC53 unit boundary; F1 may join the next VC53 freeze.
+- [ ] **P15 — R6-A/B local closure/classification; A; Lane 2 boundary.**
+  Build same-package evaluated-call closure and value/procedure, ghost Pick,
+  set/sequence loop and resolved-ensures-result classifications. No R6-C goals
+  before R3. Scope: VC `generator.rs` or bounded module,
+  `TC/ALGDEF-VC58-COMPUTATION-UNIQUENESS.md` refreeze,
+  `D/mizar-vc/en/mvm_computation_admission.md`. Dependencies: P7, P10 for loops.
+- [ ] **P16 — R3 freeze-preparation dossier; A; Lane 2, either lane.**
+  Options/consequences/recommendation for R3-Q1/Q3/N3 and R4/R6/R7;
+  collect Q2/N1/N2 facts without answering owner questions. Scope:
+  `D/mizar-artifact/en/mvm_runtime_export.md`, JA pair; docs only.
+  Dependencies: G9 mechanism permission; owner retains answers.
+- [ ] **P17 — R5-Q1 accounting/report dossier; A; Lane 2.** Prepare options,
+  consequences and recommendation for step/timeout/nest accounting and report
+  framing before R4 pilot. Scope: `D/mizar-vc/en/mvm_executor.md`, JA pair.
+  Dependencies: G9; owner retains decisions.
+- [ ] **P23 — Task-29 rejecting ATP fixtures; A; Lane 1; tests only.** Drive
+  Kernel `fail_certificate_*` cases through genuine ATP candidates for ATP-G-029.
+  Scope: `C/mizar-atp/src/translator/tests.rs` or `mizar-test`; no dependencies (study inference).
+- [ ] **P24 — Generic/state built-in witness publication; A; Lane 1.** Extend
+  bounded theorem-reflexivity acceptance to the profiles retaining publication
+  gaps. Scope: `C/mizar-proof/src/witness_store.rs`,
+  `C/mizar-artifact/src/proof_witness.rs`, `PROOF-DISCHARGE-ACCEPTANCE` successor; depends on P2.
+- [ ] **P26 — LSP navigation definitions; A; Lane 1.** Go-to-definition using
+  existing `ModuleSummary`/`PublishedImportView`, with an LSP-NAVIGATION-TOKENS
+  style contract. Scope: `C/mizar-lsp/src/{server.rs,metadata.rs}`.
+  Dependencies: none; one/two slices, reference index remains later.
+- [ ] **P27 — E0225 descriptor; A, light; Lane 1.** Register the spec-allocated
+  import-cycle descriptor following AST-DIAGNOSTICS precedent; emission waits
+  for complete import graph. Scope: `C/mizar-diagnostics/src/registry/builtin.rs`,
+  `D/mizar-diagnostics/en/`. Dependencies: none.
+- [ ] **P25 — Native runtime-context definition/staged producer; A; Lane 1.**
+  Define toolchain identity, verifier-config hash (`workspace_config_content_hash`),
+  default LSP profile and workspace-only dependency inputs in
+  `D/mizar-driver/en/` and `D/mizar-build/en/planner.md`. Dependencies: none
+  for definition; G14 approval between definition and code. Wave 4 then stages
+  the producer (`C/mizar-driver/src/request.rs` or `mizar-build`) and native
+  host (`C/mizar-lsp/src/main.rs`, `tests/stdio.rs`), about four units total;
+  supports build bootstrap/BUILD-COMPUTATION-POLICY. No early host activation.
+- [ ] **P10 — Core 44 range/collection-loop shell; A; L2-set, either lane.**
+  Source-derived loop kind with hidden bound/step inputs for R6-B set/sequence
+  classification and VC58 loop sites. Scope: P8 files plus real fixture.
+  Dependencies: P8; serialize after P9 on `control_flow.rs`.
+- [ ] **P19 — MBP-02 Binder resolution remainder; A; L2-set, either lane.**
+  First map completed Checker 257B to the plan; then head/body candidates,
+  outer declaration/type-source correspondence, checker mode selection before
+  head commitment, captures, MB4/6/8 scope controls and E0206 producer.
+  Scope: `C/mizar-resolve/src/names.rs`, `C/mizar-checker/src/binding_env.rs`,
+  `TC/AST-MULTI-BINDER-PLAN.md`, owner sections. Dependencies: readiness review;
+  usefulness limited until G8 (MBP-04 also requires MBP-03).
+
+#### Wave 4 — accepted definition and downstream admission
+
+Lane 2: P12 → P13 after VC53 E1, then P18. Lane 1: existing Core 34+, Core 46 call metadata, Resolver 33 and P25 producer/host under owner freezes/prerequisites.
+
+- [ ] **P12 — E2 same-identity direct-return adoption; A; Lane 2.** Adopt
+  regenerated graph's retained postcondition under original identity/current
+  policy, following NativeE4NormalReturn; older substituted reflexivity is
+  insufficient. Scope: Proof `status.rs`, `source_algorithm_return.rs` tests,
+  `D/mizar-proof/en/status.md`. Dependencies: P11; serialize with VC53.
+- [ ] **P13 — Accepted-definition aggregate; A; Lane 2.** One atomic
+  Proof-owned decision over five adoptions for the identical immutable
+  definition, only as R3 eligibility input/VC59's first producer; no status
+  promotion, symbol introduction or publication. Scope: Proof `status.rs`,
+  tests, Proof status/Core correspondence docs. Dependencies: VC53 E1, P12, P6, G10.
+- [ ] **P18 — R6 admission-binding dossier; A; Lane 2.** Prepare options,
+  consequences and recommendation for R6-Q1/Q2 closure authentication and
+  per-VC/exemption binding to request/contract/closure/policy/version.
+  Scope: `D/mizar-vc/en/mvm_computation_admission.md`, JA pair; Proof `policy.md`
+  reference only. Dependencies: G9; useful after P15. Owner retains decisions.
+
 ### Velocity gate — November 2026 [x]
 
 Selected before any further per-element source-transport slice. Tasks 1-2
