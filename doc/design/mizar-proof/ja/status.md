@@ -566,7 +566,7 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 
 ## Original E1 single-valuedness request-identity association
 
-`check_source_algorithm_e1_single_valuedness(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC single-valuedness checker](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。既存 `(ProofObligationIdentity, DependencySlice)` ペアを atomic に返す。
+`check_source_algorithm_e1_single_valuedness_with_schema(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC single-valuedness schema checker](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。Kernel 所有の schema をそのまま渡し、既存 `(ProofObligationIdentity, DependencySlice, u16)` 値を atomic に返す。`check_source_algorithm_e1_single_valuedness` は委譲して schema だけを捨て、既存の pair API を保持する。
 検査済みの元 single-valuedness 要求だけを関連付ける。native typing 前提、新 type、detached input、policy/adoption、generic evidence 変換はない。currentness は呼出側責務。Open4/Deferred、raw unknown/incomplete/cache miss を保持し、environment 解釈、opaque types、E4 converse、symbol、広い credit は除外する。登録済み質問と formula-cycle hardening は保留する。
 
 ## Original E4 request-identity association
