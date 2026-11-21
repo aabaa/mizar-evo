@@ -1357,6 +1357,67 @@ pub fn check_instantiated_algorithm_returns(
             .is_some_and(|flow| flow.algorithm == algorithm_id)
 }
 
+/// Checks `forall r. returns(a,r) implies object(r)` under the original `object(a)`.
+/// The immutable parameter and sole `Return(Var(a))` fix every returned value.
+/// This boolean grants no native evidence, Proof adoption or other E1 prerequisite.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "project the original relation and conclusion without a single-use representation"
+)]
+pub fn check_algorithm_return_typing(
+    core: &CoreIr,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: ((CoreVarId, Option<CoreAlgorithmStmtId>), &str),
+    context: &[CoreFormulaId],
+) -> bool {
+    let (algorithm_id, flow, statement, input, result) = target;
+    let Some(output) = core
+        .algorithms()
+        .get(algorithm_id)
+        .and_then(|algorithm| algorithm.result.as_ref())
+    else {
+        return false;
+    };
+    let Some(CoreFormulaKind::TypePred { subject, ty }) = output
+        .ty_guard
+        .and_then(|guard| core.formulas().get(guard))
+        .map(|formula| &formula.kind)
+    else {
+        return false;
+    };
+    let Some(CoreAlgorithmStmtKind::Return(Some(witness))) = core
+        .algorithm_statements()
+        .get(statement)
+        .map(|statement| &statement.kind)
+    else {
+        return false;
+    };
+    result == (binder, None)
+        && binder != input.0
+        && conclusion == (result, "object")
+        && ty.as_str() == "object"
+        && core
+            .terms()
+            .get(*subject)
+            .is_some_and(|term| term.kind == CoreTermKind::Var(output.var))
+        // Reuse only the exact sole-return profile/guard/CFG validation. Typing
+        // follows from that body's semantics, independently of E4 existence.
+        && check_instantiated_algorithm_returns(
+            core,
+            (algorithm_id, flow, statement, input, input),
+            *witness,
+            context,
+        )
+}
+
 /// Checks `exists r.returns(a,r)` by deriving and checking its exact child.
 /// The child rule fixes the witness to `Var(a)` and the context to `object(a)`;
 /// requiring `r != a` therefore also excludes free occurrence in that context.

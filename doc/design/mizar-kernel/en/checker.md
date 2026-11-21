@@ -99,6 +99,18 @@ VC owns [original relation/context authentication](../../mizar-vc/en/generator.m
 This child check supplies no original E4 existential introduction, semantic
 environment association, Proof identity/policy binding/adoption or broader credit.
 
+## Bounded Original E1 Typing
+
+`check_algorithm_return_typing(core, target, binder, conclusion, context)` checks
+`forall r. returns(a,r) implies object(r)` under the original `object(a)` guard.
+Require result `(binder,None)`, distinct from input, and matching atomic object
+conclusion. Both Core guards must be object predicates on their own variables.
+Reuse the symbolic child's exact immutable-parameter/sole-Return profile and CFG
+validation; typing follows from returning that parameter (§20.1.2, §20.2.6),
+independently of E4 existence. VC authenticates the [original descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor).
+Return only a boolean. No opaque value/environment interpretation, native evidence,
+Proof identity/policy/adoption, single-valuedness or broader credit follows.
+
 ## Original AlgorithmReturns Existential
 
 `check_algorithm_returns_existential(core, target, binder, witness, context)`

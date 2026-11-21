@@ -2791,6 +2791,7 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
     use mizar_core::core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr, CoreIrParts};
     use mizar_vc::{
         generator::{
+            check_source_algorithm_e1_typing_request as checked,
             generate_source_algorithm_direct_return_requests,
             generate_source_algorithm_e1_typing_request as descriptor,
         },
@@ -2866,6 +2867,20 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
         assert_eq!(entries[1].formula, None);
         assert_ne!(var, parameter.var);
         assert_ne!(var, result.var);
+        let target = (
+            algorithm_id,
+            mizar_core::control_flow::build_control_flow_ir(core).flow_map[&algorithm_id],
+            algorithm.statements[0],
+            (parameter.var, None),
+            (var, None),
+        );
+        assert!(mizar_kernel::checker::check_algorithm_return_typing(
+            core,
+            target,
+            var,
+            ((var, None), "object"),
+            &[parameter.ty_guard.unwrap()],
+        ));
         let generation = &request.anchor.generation_schema_version;
         let slices = source_algorithm_direct_return_slice_oracle(
             source, check, symbols, core, vcs, generation,
@@ -2880,20 +2895,22 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
             slice.clone(),
         );
         for _ in 0..2 {
-            assert_eq!(
-                descriptor(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    generation,
-                    vcs.schema_version(),
-                    request.id
-                )
-                .unwrap(),
-                expected
-            );
+            for consume in [descriptor, checked] {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        generation,
+                        vcs.schema_version(),
+                        request.id
+                    )
+                    .unwrap(),
+                    expected
+                );
+            }
         }
         assert_eq!(
             format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
@@ -2987,20 +3004,149 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
             )
             .unwrap_err();
             for selected in [request.id, VcId::new(usize::MAX)] {
-                assert_eq!(
-                    mizar_vc::generator::generate_source_algorithm_e1_typing_request(
-                        source,
-                        check,
-                        symbols,
-                        &changed,
-                        vcs.snapshot(),
-                        &request.anchor.generation_schema_version,
-                        vcs.schema_version(),
-                        selected,
-                    )
-                    .unwrap_err(),
-                    expected,
-                    "Core mutation {mutation} must precede selection {selected:?}"
+                for consume in [descriptor, checked] {
+                    assert_eq!(
+                        consume(
+                            source,
+                            check,
+                            symbols,
+                            &changed,
+                            vcs.snapshot(),
+                            &request.anchor.generation_schema_version,
+                            vcs.schema_version(),
+                            selected,
+                        )
+                        .unwrap_err(),
+                        expected,
+                        "Core mutation {mutation} must precede selection {selected:?}"
+                    );
+                }
+            }
+        }
+    });
+}
+
+#[test]
+fn source_algorithm_typing_kernel_requires_exact_relation_conclusion_and_object_guards() {
+    use mizar_core::{
+        control_flow::{ControlFlowId, build_control_flow_ir},
+        core_ir::{
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreFormulaId, CoreFormulaKind, CoreIr, CoreVarId,
+        },
+    };
+    use mizar_kernel::checker::check_algorithm_return_typing as checked;
+    with_direct_return_request_fixture(|_, _, _, core, _| {
+        let (id, algorithm) = core.algorithms().iter().next().unwrap();
+        let statement = algorithm.statements[0];
+        let flow = build_control_flow_ir(core).flow_map[&id];
+        let input = (algorithm.params[0].var, None);
+        let old_result = (algorithm.result.as_ref().unwrap().var, None);
+        let binder = CoreVarId::new(usize::MAX);
+        let result = (binder, None);
+        let target = (id, flow, statement, input, result);
+        let guard = algorithm.params[0].ty_guard.unwrap();
+        let result_guard = algorithm.result.as_ref().unwrap().ty_guard.unwrap();
+        let conclusion = (result, "object");
+        assert!(checked(core, target, binder, conclusion, &[guard]));
+        for (target, binder) in [
+            (
+                (
+                    CoreAlgorithmId::new(core.algorithms().len()),
+                    flow,
+                    statement,
+                    input,
+                    result,
+                ),
+                binder,
+            ),
+            (
+                (id, ControlFlowId::new(usize::MAX), statement, input, result),
+                binder,
+            ),
+            (
+                (
+                    id,
+                    flow,
+                    CoreAlgorithmStmtId::new(core.algorithm_statements().len()),
+                    input,
+                    result,
+                ),
+                binder,
+            ),
+            ((id, flow, statement, old_result, result), binder),
+            ((id, flow, statement, result, result), binder),
+            (
+                (id, flow, statement, (input.0, Some(statement)), result),
+                binder,
+            ),
+            ((id, flow, statement, input, old_result), binder),
+            (
+                (id, flow, statement, input, (binder, Some(statement))),
+                binder,
+            ),
+            (target, CoreVarId::new(binder.index() - 1)),
+        ] {
+            assert!(
+                !checked(core, target, binder, conclusion, &[guard]),
+                "{target:?}, {binder:?}"
+            );
+        }
+        assert!(!checked(
+            core,
+            (id, flow, statement, input, input),
+            input.0,
+            (input, "object"),
+            &[guard]
+        ));
+        for conclusion in [
+            (input, "object"),
+            (old_result, "object"),
+            ((binder, Some(statement)), "object"),
+            (result, "set"),
+            (result, ""),
+        ] {
+            assert!(!checked(core, target, binder, conclusion, &[guard]));
+        }
+        for context in [
+            vec![],
+            vec![guard, guard],
+            vec![result_guard],
+            vec![guard, result_guard],
+            vec![CoreFormulaId::new(core.formulas().len())],
+        ] {
+            assert!(!checked(core, target, binder, conclusion, &context));
+        }
+        for (guard_id, other_guard) in [(guard, result_guard), (result_guard, guard)] {
+            let CoreFormulaKind::TypePred { subject, .. } =
+                core.formulas().get(guard_id).unwrap().kind
+            else {
+                panic!("object guard")
+            };
+            let CoreFormulaKind::TypePred {
+                subject: other_subject,
+                ..
+            } = core.formulas().get(other_guard).unwrap().kind
+            else {
+                panic!("other object guard")
+            };
+            for kind in [
+                CoreFormulaKind::True,
+                CoreFormulaKind::False,
+                CoreFormulaKind::TypePred {
+                    subject,
+                    ty: "set".into(),
+                },
+                CoreFormulaKind::TypePred {
+                    subject: other_subject,
+                    ty: "object".into(),
+                },
+            ] {
+                let mut parts = sole_return_core_parts(core);
+                parts.formulas.get_mut(guard_id).unwrap().kind = kind;
+                let changed = CoreIr::try_new(parts).unwrap();
+                assert!(
+                    !checked(&changed, target, binder, conclusion, &[guard]),
+                    "guard {guard_id:?}"
                 );
             }
         }
@@ -4021,20 +4167,25 @@ fn source_algorithm_typing_descriptor_refuses_every_other_role_and_absent_id() {
             .map(|vc| vc.id)
             .chain([VcId::new(vcs.vcs().len()), VcId::new(usize::MAX)])
         {
-            assert_eq!(
-                mizar_vc::generator::generate_source_algorithm_e1_typing_request(
-                    source,
-                    check,
-                    symbols,
-                    core,
-                    vcs.snapshot(),
-                    &vcs.vcs()[0].anchor.generation_schema_version,
-                    vcs.schema_version(),
-                    selected,
-                )
-                .unwrap_err(),
-                "algorithms.direct_return.invalid_e1_typing_request"
-            );
+            for consume in [
+                mizar_vc::generator::generate_source_algorithm_e1_typing_request,
+                mizar_vc::generator::check_source_algorithm_e1_typing_request,
+            ] {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        &vcs.vcs()[0].anchor.generation_schema_version,
+                        vcs.schema_version(),
+                        selected,
+                    )
+                    .unwrap_err(),
+                    "algorithms.direct_return.invalid_e1_typing_request"
+                );
+            }
         }
     });
 }
@@ -5303,6 +5454,53 @@ fn source_algorithm_e4_reduction_uses_renamed_relocated_return_and_original_fres
                 core.terms().get(term).unwrap().kind,
                 CoreTermKind::Var(algorithm.params[0].var)
             );
+            let typing = mizar_vc::generator::generate_source_algorithm_e1_typing_request(
+                source,
+                check,
+                symbols,
+                &core,
+                parent.snapshot(),
+                &generation,
+                &schema,
+                VcId::new(1),
+            )
+            .unwrap();
+            assert_eq!(
+                mizar_vc::generator::check_source_algorithm_e1_typing_request(
+                    source,
+                    check,
+                    symbols,
+                    &core,
+                    parent.snapshot(),
+                    &generation,
+                    &schema,
+                    VcId::new(1),
+                )
+                .unwrap(),
+                typing,
+            );
+            let ContextEntryKind::BinderDeclaration {
+                var: typing_binder, ..
+            } = parent.vcs()[1].local_context.entries()[typing.1.index()].kind
+            else {
+                panic!("relocated typing declaration")
+            };
+            assert_ne!(typing_binder, algorithm.params[0].var);
+            assert_ne!(typing_binder, algorithm.result.as_ref().unwrap().var);
+            let input = (algorithm.params[0].var, None);
+            assert!(mizar_kernel::checker::check_algorithm_return_typing(
+                &core,
+                (
+                    algorithm_id,
+                    mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&algorithm_id],
+                    algorithm.statements[0],
+                    input,
+                    (typing_binder, None)
+                ),
+                typing_binder,
+                ((typing_binder, None), "object"),
+                &[algorithm.params[0].ty_guard.unwrap()],
+            ));
             let request = &parent.vcs()[4];
             let Shape::Quantified {
                 kind: QuantifierKind::Exists,
@@ -5482,6 +5680,27 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                                 .unwrap_err(),
                                 expected
                             );
+                        }
+                        for consume in [
+                            mizar_vc::generator::generate_source_algorithm_e1_typing_request,
+                            mizar_vc::generator::check_source_algorithm_e1_typing_request,
+                        ] {
+                            for selected in [VcId::new(1), VcId::new(usize::MAX)] {
+                                assert_eq!(
+                                    consume(
+                                        source,
+                                        check,
+                                        symbols,
+                                        core,
+                                        vcs.snapshot(),
+                                        generation,
+                                        vcs.schema_version(),
+                                        selected
+                                    )
+                                    .unwrap_err(),
+                                    expected
+                                );
+                            }
                         }
                         assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
                     }
@@ -5735,6 +5954,8 @@ fn source_algorithm_sole_return_var_refuses_other_roles_and_executable_bodies() 
         let value = (algorithm.params[0].var, None);
         let target = (id, flow, statement, value, value);
         let context = [algorithm.params[0].ty_guard.unwrap()];
+        let binder = mizar_core::core_ir::CoreVarId::new(usize::MAX);
+        let typing_target = (id, flow, statement, value, (binder, None));
         for mutation in 0..18 {
             let mut parts = sole_return_core_parts(core);
             match mutation {
@@ -5836,6 +6057,16 @@ fn source_algorithm_sole_return_var_refuses_other_roles_and_executable_bodies() 
                 ),
                 "instantiated mutation {mutation}"
             );
+            assert!(
+                !mizar_kernel::checker::check_algorithm_return_typing(
+                    &changed,
+                    typing_target,
+                    binder,
+                    ((binder, None), "object"),
+                    &context,
+                ),
+                "typing mutation {mutation}"
+            );
         }
     });
 }
@@ -5863,6 +6094,8 @@ fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() 
         let value = (algorithm.params[0].var, None);
         let target = (id, flow, statement, value, value);
         let context = [algorithm.params[0].ty_guard.unwrap()];
+        let binder = mizar_core::core_ir::CoreVarId::new(usize::MAX);
+        let typing_target = (id, flow, statement, value, (binder, None));
         assert_eq!(
             check_sole_return_var(
                 core,
@@ -5991,6 +6224,16 @@ fn source_algorithm_sole_return_var_refuses_corrupt_core_and_absent_algorithm() 
                             &changed, target, term, &context,
                         ),
                         "instantiated mutation {mutation}"
+                    );
+                    assert!(
+                        !mizar_kernel::checker::check_algorithm_return_typing(
+                            &changed,
+                            typing_target,
+                            binder,
+                            ((binder, None), "object"),
+                            &context,
+                        ),
+                        "typing mutation {mutation}"
                     );
                 }
             }
@@ -7975,6 +8218,23 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
         let two = CoreIr::try_new(parts).unwrap();
         let other_flow = build_control_flow_ir(&two).flow_map[&other_id];
         assert_ne!(flow, other_flow);
+        let typing_binder = mizar_core::core_ir::CoreVarId::new(usize::MAX);
+        let typing_result = (typing_binder, None);
+        let typing_target = (id, flow, statement, value, typing_result);
+        assert!(mizar_kernel::checker::check_algorithm_return_typing(
+            &two,
+            typing_target,
+            typing_binder,
+            (typing_result, "object"),
+            &[guard],
+        ));
+        assert!(!mizar_kernel::checker::check_algorithm_return_typing(
+            &two,
+            (id, other_flow, statement, value, typing_result),
+            typing_binder,
+            (typing_result, "object"),
+            &[guard],
+        ));
         assert!(checked(&two, target, witness, &[guard]));
         assert!(!checked(
             &two,
@@ -7998,6 +8258,13 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
             .unwrap()
             .kind = CoreAlgorithmStmtKind::Return(Some(cyclic_id));
         let cyclic = CoreIr::try_new(parts).unwrap();
+        assert!(!mizar_kernel::checker::check_algorithm_return_typing(
+            &cyclic,
+            typing_target,
+            typing_binder,
+            (typing_result, "object"),
+            &[guard],
+        ));
         assert!(!checked(&cyclic, target, witness, &[guard]));
         let binder = mizar_core::core_ir::CoreVarId::new(usize::MAX);
         assert!(!mizar_kernel::checker::check_algorithm_returns_existential(

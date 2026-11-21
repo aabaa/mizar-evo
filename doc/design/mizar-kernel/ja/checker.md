@@ -44,6 +44,18 @@ flow owner を照合して boolean を返す。実行値は前提を供給しな
 identity/policy binding/adoption や広範な credit は与えない。
 詳細は [英語版](../en/checker.md#symbolic-instantiated-algorithmreturns-child) を参照。
 
+## Bounded Original E1 Typing
+
+`check_algorithm_return_typing(core, target, binder, conclusion, context)` は元の
+`object(a)` guard の下で `forall r. returns(a,r) implies object(r)` を検査する。
+結果は入力と異なる `(binder,None)`、結論は同じ結果の atomic object 述語とする。
+Core の両 guard はそれぞれの変数の object 述語でなければならない。
+symbolic child の immutable parameter・sole Return・CFG 検証を再利用する。
+型付けはその parameter を返す意味論（§20.1.2、§20.2.6）に従い、E4 の存在とは独立する。
+VC が[元の記述子](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor)を認証する。
+返すのは boolean のみ。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
+single-valuedness や広範な credit は与えない。
+
 ## Original AlgorithmReturns Existential
 
 `check_algorithm_returns_existential(core, target, binder, witness, context)` は

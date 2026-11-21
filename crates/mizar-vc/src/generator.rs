@@ -3185,6 +3185,101 @@ pub fn generate_source_algorithm_e1_typing_request(
     Ok((vcs, binder, antecedent, conclusion, guard, slice))
 }
 
+/// Checks the freshly authenticated original E1 typing request through Kernel.
+/// Returns its complete unchanged descriptor without evidence or Proof adoption.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "retain the authentic source producer inputs and existing descriptor types"
+)]
+pub fn check_source_algorithm_e1_typing_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        ContextEntryId,
+        VcFormulaRef,
+        VcFormulaRef,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let descriptor = generate_source_algorithm_e1_typing_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+        vc_id,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e1_typing_check".to_owned();
+    let (vcs, binder, antecedent, conclusion, guard, _) = &descriptor;
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    let Some(ContextEntryKind::BinderDeclaration { var, .. }) = parent
+        .local_context
+        .entries()
+        .get(binder.index())
+        .map(|entry| &entry.kind)
+    else {
+        return Err(invalid());
+    };
+    let (
+        VcFormulaRef::Generated(antecedent),
+        VcFormulaRef::Generated(conclusion),
+        VcFormulaRef::Core(guard),
+    ) = (antecedent, conclusion, guard)
+    else {
+        return Err(invalid());
+    };
+    let Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = &vcs
+        .generated_formula(*antecedent)
+        .ok_or_else(invalid)?
+        .shape
+    else {
+        return Err(invalid());
+    };
+    let Shape::ProgramTypePredicate { subject, ty } = &vcs
+        .generated_formula(*conclusion)
+        .ok_or_else(invalid)?
+        .shape
+    else {
+        return Err(invalid());
+    };
+    if !mizar_kernel::checker::check_algorithm_return_typing(
+        core,
+        (
+            *algorithm,
+            *flow,
+            *statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        *var,
+        ((subject.var, subject.definition), ty.as_str()),
+        &[*guard],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Describes an untrusted witness reduction while retaining the whole original request graph.
 /// The binder-to-term pair and child guard grant no checking or existential-introduction credit.
 #[expect(

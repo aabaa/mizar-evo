@@ -626,6 +626,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `(VcSet, ContextEntryId, VcFormulaRef, VcFormulaRef, VcFormulaRef, DependencySlice)` として、変更しない graph 全体、元 binder、前件、結論、Core typed-input guard、元の raw slice 全体を返す。元の式への参照であり、置換、子の scheduling、checking、proof credit は与えない。Open4/Deferred、unknown/incomplete/cache-miss、呼出側 currentness を保つ。環境解釈、single-valuedness、adoption、symbol introduction、promotion、reuse、acceptance/coverage は伴わず、formula-cycle hardening は別件のままとする。
 
+`check_source_algorithm_e1_typing_request` は先にその記述子を再生成し、上流 error と選択拒否を保つ。元の binder、returns 前件、object 結論、Core guard のみを Kernel の[限定型付け規則](../../mizar-kernel/ja/checker.md#bounded-original-e1-typing)へ射影し、成功時には変更しない六要素 tuple 全体を返し、失敗時は拒否する。E4 converse、native evidence、Proof adoption、status 変更は与えず、記述子の Open4/Deferred とその他の除外事項を保つ。
+
 ### E1 inhabitation witness-reduction request
 
 `generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` は既存 producer で四要求の authentic graph 全体を再生成し、元の error を保つ。Open E1-inhabitation existential のみを選び、変更しない `VcSet`、実 return の `CoreTermId`、元の binder `ContextEntryId`、置換後の子 `VcFormulaRef::Core(parameter.ty_guard)`、親の raw `DependencySlice` 全体を返す。選択 ID と元 set 全体で goal/context/anchor/fingerprint を保持する。Proof identity の権限は既存 Proof route に残る。

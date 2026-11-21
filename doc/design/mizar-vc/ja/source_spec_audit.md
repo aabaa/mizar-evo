@@ -111,7 +111,8 @@ literal top-level public item:
 - `CoreGenerationInput`, `VcNormalizationInput`,
   `CoreGenerationCandidateSet`, `CoreGenerationCandidate`,
   `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`, `generate_source_void_claim`, `generate_source_computation_request`
-- `generate_source_algorithm_e1_typing_request`: [元の E1 typing descriptor](generator.md#元の-e1-typing-descriptor)。
+- `generate_source_algorithm_e1_typing_request`
+- `check_source_algorithm_e1_typing_request`: [元の E1 typing descriptor](generator.md#元の-e1-typing-descriptor)。
 
 Correspondence:
 
