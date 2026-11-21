@@ -7673,7 +7673,7 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
         actual.bindings[2].function_binder_source(),
         Some((actual.bindings[0].id, type_nodes[0].id()))
     );
-    for mutation in 0..18 {
+    for mutation in 0..20 {
         let mut changed = actual.clone();
         match mutation {
             0 => changed.references[0].binding = changed.bindings[0].id,
@@ -7709,6 +7709,15 @@ fn fresh_function_binder_replay_rejects_changed_receipts_and_coherent_sources() 
             15 => changed.bindings[2].function_binder_source = None,
             16 => changed.function_binders.clear(),
             17 => changed.source_id = distinct_source_ids().1,
+            18 => changed.function_binders[0].position = SourceFunctionBinderPosition::Unsupported,
+            19 => {
+                changed.function_binders[0].position = SourceFunctionBinderPosition::Pattern {
+                    case: changed.function_binders[0].node,
+                    pattern: changed.function_binders[0].node,
+                    branch: changed.function_binders[0].body,
+                    names: changed.function_binders[0].heads.clone(),
+                }
+            }
             _ => unreachable!(),
         }
         assert!(

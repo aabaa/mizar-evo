@@ -31,6 +31,7 @@ excluded. This acquires references only, without tuple typing or comprehension f
 
 Mathematical Binder heads in the occurrence-only theorem/lemma surface use the appended `SourceVariableBindingKind::FunctionBinder` and a body-local lexical boundary. Head tokens retain the incoming source scope; their declarations and the body use the new body scope. Preserve ordered real head tokens and fresh declaration identities; resolve all unambiguous admitted prior outer let/reserve types before simultaneous introduction, including transitive fresh-head inheritance in nesting. Body references select the nearest head while free outer references keep their actual winners.
 `ResolvedVariableScope::function_binders()` retains source-ordered `SourceFunctionBinderCandidate` roots, ordered head tokens, incoming scopes and final bodies. `SourceVariableBinding::function_binder_source()` returns each fresh head's selected outer binding and ultimate physical TypeExpression; untyped Let defaults and nested fresh heads preserve the original Let/Reserve type node. These authenticated correspondences provide no carrier or function-formation evidence.
+`SourceFunctionBinderPosition` records Mathematical, Pattern or Unsupported before declaration lookup. Pattern provenance retains the actual case, root pattern, branch and bare-name occurrences, including repeated names and nested Binder groups. Only Binder-root patterns with bare-name bodies and parenthesization enter this source-only intake; names are pending branch labels, never captured Var UIDs. Fresh occurrence resolution still requires Mathematical position.
 Preserve DefinitionBlock exclusion and existing Inline capture profiles. Unsupported algorithm capture/reconstruction and reflection positions receive no fresh-mode fallback. Occurrence receipts retain empty thesis/statements; legacy `resolve` refuses owned Binder terms instead of flattening their bodies. Certified carriers, expected-type-only inference, function formation and checker semantic credit remain separate.
 
 > Canonical language: English. Japanese companion: [../ja/names.md](../ja/names.md).
@@ -562,6 +563,7 @@ The R-026 public-enum registrations are:
 - `SourceVariableFormula`
 - `SourceVariableStatement`
 - `SourceVariableScopeError`
+- `SourceFunctionBinderPosition`
 
 All remain `#[non_exhaustive]`; no exception is registered.
 

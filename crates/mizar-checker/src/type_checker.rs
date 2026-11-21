@@ -448,6 +448,13 @@ pub fn check_source_algorithm_types<'a>(
     use mizar_resolve::names::{SourceVariableReferenceKind as R, SourceVariableScopeResolver};
     let invalid = || "algorithms.unsupported_source_types".to_owned();
     mizar_resolve::symbols::validate_source_symbol_env(source, symbols)?;
+    if !SourceVariableSemanticsChecker::source_pattern_binding_env(source, symbols)
+        .map_err(|_| invalid())?
+        .bindings()
+        .is_empty()
+    {
+        return Err(invalid());
+    }
     let node = |id| source.arena().node(id).ok_or_else(invalid);
     let range = |id| match node(id)?.origin().anchor() {
         SourceAnchor::Range(range) => Ok(*range),
@@ -21154,6 +21161,157 @@ impl SourceVariableSemanticsChecker {
         .map_err(|error| error.to_string())
     }
 
+    /// Acquires immutable, untyped source pattern names without captured variable identities.
+    pub fn source_pattern_binding_env(
+        source: &SurfaceResolvedArena,
+        symbols: &SymbolEnv,
+    ) -> Result<BindingEnv, String> {
+        use mizar_resolve::names::SourceFunctionBinderPosition;
+        let invalid = || "algorithms.bindings.unsupported_pattern_intake".to_owned();
+        let candidates =
+            mizar_resolve::symbols::source_function_binder_candidates(source, symbols)?;
+        let mut names_by_branch = BTreeMap::new();
+        for candidate in &candidates {
+            let SourceFunctionBinderPosition::Pattern { branch, names, .. } = candidate.position()
+            else {
+                return Err(invalid());
+            };
+            names_by_branch.insert(
+                source.resolved_node_for(*branch).ok_or_else(invalid)?,
+                names,
+            );
+        }
+        let mut parents = BTreeMap::new();
+        let mut cases = BTreeMap::new();
+        for (id, node) in source.arena().iter() {
+            for child in node.children() {
+                if !(node.kind() == &K::Root
+                    && source
+                        .arena()
+                        .node(*child)
+                        .is_some_and(|node| matches!(node.kind(), K::Token(_))))
+                    && parents.insert(*child, id).is_some()
+                {
+                    return Err(invalid());
+                }
+            }
+            if node.kind() == &K::MatchCase {
+                let branch = *node.children().get(3).ok_or_else(invalid)?;
+                if source
+                    .arena()
+                    .node(branch)
+                    .is_none_or(|node| node.kind() != &K::AlgorithmStatementList)
+                {
+                    return Err(invalid());
+                }
+                cases.insert(branch, id);
+            }
+        }
+        let range = |id| match source
+            .arena()
+            .node(id)
+            .ok_or_else(invalid)?
+            .origin()
+            .anchor()
+        {
+            SourceAnchor::Range(range) => Ok(*range),
+            _ => Err(invalid()),
+        };
+        let mut branches = Vec::new();
+        for (branch, case) in &cases {
+            let mut path = vec![u32::try_from(branch.index()).map_err(|_| invalid())?];
+            let mut current = *case;
+            while let Some(parent) = parents.get(&current) {
+                if cases.contains_key(parent) {
+                    path.push(u32::try_from(parent.index()).map_err(|_| invalid())?);
+                }
+                current = *parent;
+            }
+            path.reverse();
+            branches.push((LocalTermScope::new(path), *branch, *case));
+        }
+        branches.sort_by(|left, right| {
+            (left.0.path().len(), left.0.path()).cmp(&(right.0.path().len(), right.0.path()))
+        });
+        let mut contexts = BindingContextTable::new();
+        let root = contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: Some(LocalTermScope::default()),
+            bindings: Vec::new(),
+            visible_bindings: Vec::new(),
+            recovery: BindingContextRecovery::Normal,
+        });
+        let mut ids = BTreeMap::from([(LocalTermScope::default(), root)]);
+        let mut bindings = BindingTable::new();
+        for (local, branch, case) in branches {
+            let parent_scope = LocalTermScope::new(local.path()[..local.path().len() - 1].to_vec());
+            let parent = *ids.get(&parent_scope).ok_or_else(invalid)?;
+            let owner = BindingContextId::new(contexts.len());
+            let mut visible = contexts
+                .get(parent)
+                .ok_or_else(invalid)?
+                .visible_bindings
+                .clone();
+            let mut own = Vec::new();
+            let mut spellings = BTreeSet::new();
+            for name in names_by_branch
+                .get(&branch)
+                .into_iter()
+                .flat_map(|names| names.iter())
+            {
+                let id = source.resolved_node_for(*name).ok_or_else(invalid)?;
+                let K::Token(token) = source.arena().node(id).ok_or_else(invalid)?.kind() else {
+                    return Err(invalid());
+                };
+                if !spellings.insert(token.text.as_ref()) {
+                    continue;
+                }
+                let declaration_range = range(id)?;
+                let ordinal = declaration_range.start;
+                own.push(bindings.insert(BindingDraft {
+                    spelling: token.text.to_string(),
+                    kind: BindingKind::PatternName,
+                    identity: BinderIdentity::ResolverLocal {
+                        scope: local.clone(),
+                        ordinal,
+                        declaration_range,
+                    },
+                    owner_context: owner,
+                    declaration_range,
+                    visible_after_ordinal: ordinal,
+                    type_site: BindingTypeSite::Missing,
+                    status: BindingStatus::Active,
+                    captured: CapturedFreeVariables::default(),
+                    diagnostics: Vec::new(),
+                    recovery: BindingRecoveryState::Normal,
+                }));
+            }
+            visible.extend(&own);
+            let inserted = contexts.insert(BindingContextDraft {
+                owner: BindingContextOwner::SourceStatement {
+                    source_range: range(case)?,
+                },
+                parent: Some(parent),
+                layer: BindingContextLayer::Block,
+                lexical_scope: Some(local.clone()),
+                bindings: own,
+                visible_bindings: visible,
+                recovery: BindingContextRecovery::Normal,
+            });
+            ids.insert(local, inserted);
+        }
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: source.source_id(),
+            module_id: source.module().clone(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|error| error.to_string())
+    }
+
     /// Retains real theorem lexical contexts without changing existing inference handoffs.
     pub fn source_theorem_binding_env(
         source: &SurfaceResolvedArena,
@@ -21161,10 +21319,15 @@ impl SourceVariableSemanticsChecker {
         scope: &ResolvedVariableScope,
     ) -> Result<BindingEnv, String> {
         let invalid = || "theorems.bindings.invalid_lexical_association".to_owned();
-        let function_metadata = scope
-            .bindings()
-            .iter()
-            .any(|binding| binding.kind() == SourceVariableBindingKind::FunctionBinder);
+        if scope.function_binders().iter().any(|candidate| {
+            !matches!(
+                candidate.position(),
+                mizar_resolve::names::SourceFunctionBinderPosition::Mathematical
+            )
+        }) {
+            return Err(invalid());
+        }
+        let function_metadata = !scope.function_binders().is_empty();
         let comprehension_metadata = !function_metadata
             && scope
                 .bindings()

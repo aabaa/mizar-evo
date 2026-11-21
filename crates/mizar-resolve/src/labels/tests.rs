@@ -9776,6 +9776,104 @@ fn algorithm_ordinary_occurrences_reject_source_recovery_and_missing_write_token
 }
 
 #[test]
+fn pattern_binder_intake_original_fixture() {
+    use crate::names::SourceFunctionBinderPosition as Position;
+    for (pattern, expected_groups, expected_names) in [
+        ("x |-> body", vec![vec!["x"]], vec!["x", "body"]),
+        (
+            "(x,y) |-> body",
+            vec![vec!["x", "y"]],
+            vec!["x", "y", "body"],
+        ),
+        ("((x |-> (x)))", vec![vec!["x"]], vec!["x", "x"]),
+        (
+            "(x,y) |-> (z |-> x)",
+            vec![vec!["x", "y"], vec!["z"]],
+            vec!["x", "y", "z", "x"],
+        ),
+    ] {
+        let text = format!(
+            "definition let n be object; algorithm inspect(n) -> object do match n do case {pattern} do return n; end; end; return n; end; end;"
+        );
+        let (ast, _, _, symbols, source) = parsed_private_theorem_fixture(&text);
+        let before = (ast.clone(), symbols.clone(), source.clone());
+        let actual = crate::symbols::source_function_binder_candidates(&source, &symbols).unwrap();
+        assert_eq!(
+            actual,
+            crate::symbols::source_function_binder_candidates(&source, &symbols).unwrap()
+        );
+        let case = ast
+            .node_views()
+            .find(|node| node.kind() == &SurfaceNodeKind::MatchCase)
+            .unwrap();
+        let pattern = ast
+            .node_views()
+            .find(|node| {
+                node.kind() == &SurfaceNodeKind::TermExpression
+                    && node.range().start == text.find("case ").unwrap() + 5
+            })
+            .unwrap();
+        let branch = case
+            .children()
+            .iter()
+            .copied()
+            .find(|id| {
+                ast.node_view(*id).unwrap().kind() == &SurfaceNodeKind::AlgorithmStatementList
+            })
+            .unwrap();
+        let spelling = |id| {
+            ast.node_view(id)
+                .unwrap()
+                .as_token()
+                .unwrap()
+                .text
+                .to_string()
+        };
+        assert_eq!(
+            actual
+                .iter()
+                .map(|candidate| candidate
+                    .heads()
+                    .iter()
+                    .copied()
+                    .map(spelling)
+                    .collect::<Vec<_>>())
+                .collect::<Vec<_>>(),
+            expected_groups
+        );
+        for candidate in &actual {
+            let root = ast.node_view(candidate.node()).unwrap();
+            assert_eq!(root.kind(), &SurfaceNodeKind::BinderExpression);
+            assert_eq!(Some(&candidate.body()), root.children().last());
+            let Position::Pattern {
+                case: actual_case,
+                pattern: actual_pattern,
+                branch: actual_branch,
+                names,
+            } = candidate.position()
+            else {
+                panic!("pattern provenance: {pattern:?}")
+            };
+            assert_eq!(
+                (*actual_case, *actual_pattern, *actual_branch),
+                (case.id(), pattern.id(), branch)
+            );
+            assert_eq!(
+                names.iter().copied().map(spelling).collect::<Vec<_>>(),
+                expected_names
+            );
+            assert!(
+                names
+                    .windows(2)
+                    .all(|pair| ast.node_view(pair[0]).unwrap().range().start
+                        < ast.node_view(pair[1]).unwrap().range().start)
+            );
+        }
+        assert_eq!((ast, symbols, source), before);
+    }
+}
+
+#[test]
 fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
     use crate::names::{
         SourceVariableBindingKind as B, SourceVariableScopeInput, SourceVariableScopeResolver,
@@ -9989,6 +10087,10 @@ fn fresh_function_binders_preserve_source_identity_types_scopes_and_captures() {
                         })
                         .collect::<Vec<_>>();
                     assert_eq!(candidate.node(), binder.id());
+                    assert_eq!(
+                        candidate.position(),
+                        &crate::names::SourceFunctionBinderPosition::Mathematical
+                    );
                     assert_eq!(candidate.heads(), heads);
                     let head_ordinal = expected_nodes
                         .iter()

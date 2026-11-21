@@ -482,6 +482,7 @@ pub enum BindingKind {
     GivenWitness,
     Generated,
     FunctionBinder,
+    PatternName,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1745,6 +1746,7 @@ fn binding_kind_name(kind: BindingKind) -> &'static str {
         BindingKind::GivenWitness => "given_witness",
         BindingKind::Generated => "generated",
         BindingKind::FunctionBinder => "function_binder",
+        BindingKind::PatternName => "pattern_name",
     }
 }
 

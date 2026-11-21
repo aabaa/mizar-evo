@@ -744,6 +744,8 @@ labels/tests.rs に source_proof_inputs_match_actual_collectors_and_preserve_inp
 実際の成功 source/環境を対照に、別 source/module・拡張環境・実 parser recovery を拒否する。未解決変数を持つ source で既存 occurrence の実失敗と元環境エラーの優先順位を確認する。成功用 AST/scope/contribution/label/resolution/semantic receipt は捏造しない。
 
 ## Original-source proof lexical maps
+
+`source_function_binder_candidates` は既存の source 所有の構造 replay と symbol collection 全体の一致を通して位置・pattern provenance を取得する。caller の candidate は受け取らず、head 型の検索、raw text の認証、意味上の capture は行わない。
 `source_proof_scope_maps(&SurfaceResolvedArena, &SymbolEnv, &ResolvedVariableScope)` は既存所有型 `(BTreeMap<SurfaceNodeId, LocalTermScope>, BTreeMap<SurfaceNodeId, SurfaceNodeId>)` または String を返す。最初に未変更 validate_source_proof_occurrences を一度呼びエラーを保持する。同じ認証済み非公開 AST から validate_variable_surface_with_mode(ast, true) の実二表を返し、この既存 helper だけを crate 内公開にする。caller map・AST・status は受けない。
 未使用 boundary を含む全 node/scope 対応と実 structural parent を保持し、parser-root の flat-token metadata より structural parent を優先する。root に親はない。ID は同じ source 内の局所 key とし、checker/typed context や artifact identity に変換しない。scope path の再構成・行の選別・名前解決の再実装・既存 admission/error/profile の変更はしない。
 この raw map は source ownership データだけを供給し、BindingEnv・typed context・label・fact・真理・完全 phase・受理・currentness・reuse を作らない。既存 source_proof_inputs と全旧 Resolver 出力を保つ。

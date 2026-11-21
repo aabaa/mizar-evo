@@ -23,6 +23,7 @@ type inference、registration activation、overload selection、proof behavior �
 ## 境界
 
 fresh な数学的 head は元の resolver-local identity を保持した `BindingKind::FunctionBinder` を使う。`SourceFunctionBinder { source_range }` は実親 Binder の range と Expression layer の body scope を所有し、head token は入力側 source scope に残る。flat 投影は module transaction、認証済み字句投影は実 body context を保つ。この Binder 経路の全 binding 行で `BindingTypeSite::Missing` を保持し、正規化された型や関数形成の根拠は付けない。
+`BindingKind::PatternName` は branch 所有の Block context にある不変な未確定 source 名を表す。同じ branch の反復出現は一つの名前を共有し、入れ子 branch の字句 shadowing と sibling の分離を保つ。source-local identity と Missing type site は captured UID、expr 型、matching、reconstruction の根拠を与えない。
 
 `binding_env` が所有するもの:
 

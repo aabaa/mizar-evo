@@ -5370,6 +5370,20 @@ impl<'a> SourceVariableScopeInput<'a> {
     }
 }
 
+/// Authenticated construction position, without choosing Binder semantics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SourceFunctionBinderPosition {
+    Mathematical,
+    Pattern {
+        case: SurfaceNodeId,
+        pattern: SurfaceNodeId,
+        branch: SurfaceNodeId,
+        names: Vec<SurfaceNodeId>,
+    },
+    Unsupported,
+}
+
 /// Source-only function Binder shape collected before fresh head introduction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceFunctionBinderCandidate {
@@ -5377,9 +5391,16 @@ pub struct SourceFunctionBinderCandidate {
     body: SurfaceNodeId,
     heads: Vec<SurfaceNodeId>,
     incoming_scope: LocalTermScope,
+    position: SourceFunctionBinderPosition,
 }
 
 impl SourceFunctionBinderCandidate {
+    /// Returns the source construction position before interpreting its heads.
+    #[must_use]
+    pub const fn position(&self) -> &SourceFunctionBinderPosition {
+        &self.position
+    }
+
     /// Returns the actual Binder root.
     #[must_use]
     pub const fn node(&self) -> SurfaceNodeId {
@@ -6114,7 +6135,186 @@ impl<'a> VariableResolveState<'a> {
         }
     }
 
+    fn binder_parts(
+        &self,
+        node: SurfaceNodeId,
+    ) -> Result<(Vec<SurfaceNodeId>, SurfaceNodeId), SourceVariableScopeError> {
+        let invalid = SourceVariableScopeError::InvalidShape;
+        let view = self.view(node)?;
+        let children = view.children();
+        if children.len() < 3 {
+            return Err(invalid);
+        }
+        let body = *children.last().ok_or(invalid)?;
+        if self.view(body)?.kind() != &SurfaceNodeKind::TermExpression
+            || !self
+                .view(children[children.len() - 2])?
+                .as_token()
+                .is_some_and(|token| {
+                    token.kind == SurfaceTokenKind::ReservedSymbol && token.text.as_ref() == "|->"
+                })
+        {
+            return Err(invalid);
+        }
+        let head = &children[..children.len() - 2];
+        let mut names = BTreeSet::new();
+        let mut heads = Vec::new();
+        for (index, child) in head.iter().enumerate() {
+            let token = self.view(*child)?.as_token().ok_or(invalid)?;
+            if head.len() == 1 || (index > 0 && index + 1 < head.len() && index % 2 == 1) {
+                if token.kind != SurfaceTokenKind::Identifier || !names.insert(token.text.as_ref())
+                {
+                    return Err(invalid);
+                }
+                heads.push(*child);
+            } else {
+                let expected = if index == 0 {
+                    "("
+                } else if index + 1 == head.len() {
+                    ")"
+                } else {
+                    ","
+                };
+                if head.len() < 5
+                    || head.len() % 2 == 0
+                    || token.kind != SurfaceTokenKind::ReservedSymbol
+                    || token.text.as_ref() != expected
+                {
+                    return Err(invalid);
+                }
+            }
+        }
+        Ok((heads, body))
+    }
+
+    fn pattern_names(
+        &self,
+        node: SurfaceNodeId,
+        names: &mut Vec<SurfaceNodeId>,
+    ) -> Result<(), SourceVariableScopeError> {
+        let invalid = SourceVariableScopeError::InvalidShape;
+        let view = self.view(node)?;
+        match (view.kind(), view.children()) {
+            (SurfaceNodeKind::TermExpression, [child]) => self.pattern_names(*child, names),
+            (SurfaceNodeKind::ParenthesizedTerm, [open, child, close]) => {
+                for (id, expected) in [(*open, "("), (*close, ")")] {
+                    if !self.view(id)?.as_token().is_some_and(|token| {
+                        token.kind == SurfaceTokenKind::ReservedSymbol
+                            && token.text.as_ref() == expected
+                    }) {
+                        return Err(invalid);
+                    }
+                }
+                self.pattern_names(*child, names)
+            }
+            (SurfaceNodeKind::BinderExpression, _) => {
+                let (heads, body) = self.binder_parts(node)?;
+                names.extend(heads);
+                self.pattern_names(body, names)
+            }
+            (SurfaceNodeKind::TermReference, [name])
+                if self
+                    .view(*name)?
+                    .as_token()
+                    .is_some_and(|token| token.kind == SurfaceTokenKind::Identifier) =>
+            {
+                names.push(*name);
+                Ok(())
+            }
+            _ => Err(invalid),
+        }
+    }
+
+    fn collect_function_binders(
+        &self,
+        include_definitions: bool,
+    ) -> Result<Vec<SourceFunctionBinderCandidate>, SourceVariableScopeError> {
+        let mut candidates = Vec::new();
+        for view in self
+            .ast
+            .node_views()
+            .filter(|view| view.kind() == &SurfaceNodeKind::BinderExpression)
+        {
+            if !include_definitions && self.in_definition_block(view.id()) {
+                continue;
+            }
+            let (heads, body) = self.binder_parts(view.id())?;
+            let mut child = view.id();
+            let mut mathematical = false;
+            let mut unsupported = false;
+            let mut reflected = false;
+            let mut pattern_position = None;
+            while let Some(parent) = self.parents.get(&child).copied() {
+                let ancestor = self.view(parent)?;
+                mathematical |= matches!(
+                    ancestor.kind(),
+                    SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem
+                );
+                unsupported |= matches!(
+                    ancestor.kind(),
+                    SurfaceNodeKind::AlgorithmDefinition
+                        | SurfaceNodeKind::AlgorithmBody
+                        | SurfaceNodeKind::MatchStatement
+                        | SurfaceNodeKind::MatchCase
+                );
+                reflected |= ancestor.kind() == &SurfaceNodeKind::QuaExpression
+                    && direct_type_expression(self.ast, parent)
+                        .and_then(|ty| {
+                            direct_children(self.ast, ty.id(), |kind| {
+                                matches!(kind, SurfaceNodeKind::TypeHead)
+                            })
+                            .next()
+                        })
+                        .and_then(|head| head.child_views().next())
+                        .and_then(SurfaceNodeView::as_token)
+                        .is_some_and(|token| {
+                            token.kind == SurfaceTokenKind::ReservedWord
+                                && token.text.as_ref() == "expr"
+                        });
+                if ancestor.kind() == &SurfaceNodeKind::MatchCase
+                    && ancestor.children().get(1) == Some(&child)
+                    && let Some(branch) = ancestor.children().get(3).copied().filter(|branch| {
+                        self.view(*branch).is_ok_and(|view| {
+                            view.kind() == &SurfaceNodeKind::AlgorithmStatementList
+                        })
+                    })
+                {
+                    let mut names = Vec::new();
+                    if self.pattern_names(child, &mut names).is_ok() {
+                        pattern_position = Some(SourceFunctionBinderPosition::Pattern {
+                            case: parent,
+                            pattern: child,
+                            branch,
+                            names,
+                        });
+                    }
+                }
+                child = parent;
+            }
+            let position = if reflected {
+                SourceFunctionBinderPosition::Unsupported
+            } else if let Some(pattern) = pattern_position {
+                pattern
+            } else if mathematical && !unsupported {
+                SourceFunctionBinderPosition::Mathematical
+            } else {
+                SourceFunctionBinderPosition::Unsupported
+            };
+            candidates.push(SourceFunctionBinderCandidate {
+                node: view.id(),
+                body,
+                heads,
+                incoming_scope: self.scope_of(view.id()),
+                position,
+            });
+        }
+        candidates
+            .sort_by_key(|candidate| self.ast.node(candidate.node).map(|node| node.range.start));
+        Ok(candidates)
+    }
+
     fn collect_declarations(&mut self) -> Result<(), SourceVariableScopeError> {
+        self.function_binders = self.collect_function_binders(false)?;
         for view in self.ast.node_views() {
             let id = view.id();
             if self.in_definition_block(id) {
@@ -6125,111 +6325,31 @@ impl<'a> VariableResolveState<'a> {
                     if !self.comprehension_scopes {
                         return Err(SourceVariableScopeError::InvalidShape);
                     }
-                    let mut current = self.parents.get(&id).copied();
-                    let mut mathematical_owner = false;
-                    while let Some(parent) = current {
-                        let ancestor = self.view(parent)?;
-                        if matches!(
-                            ancestor.kind(),
-                            SurfaceNodeKind::AlgorithmDefinition
-                                | SurfaceNodeKind::AlgorithmBody
-                                | SurfaceNodeKind::MatchStatement
-                                | SurfaceNodeKind::MatchCase
-                        ) {
-                            return Err(SourceVariableScopeError::InvalidShape);
-                        }
-                        if matches!(ancestor.kind(), SurfaceNodeKind::QuaExpression)
-                            && direct_type_expression(self.ast, parent)
-                                .and_then(|ty| {
-                                    direct_children(self.ast, ty.id(), |kind| {
-                                        matches!(kind, SurfaceNodeKind::TypeHead)
-                                    })
-                                    .next()
-                                })
-                                .and_then(|head| head.child_views().next())
-                                .and_then(SurfaceNodeView::as_token)
-                                .is_some_and(|token| {
-                                    token.kind == SurfaceTokenKind::ReservedWord
-                                        && token.text.as_ref() == "expr"
-                                })
-                        {
-                            return Err(SourceVariableScopeError::InvalidShape);
-                        }
-                        mathematical_owner |= matches!(
-                            ancestor.kind(),
-                            SurfaceNodeKind::TheoremItem | SurfaceNodeKind::LemmaItem
-                        );
-                        current = self.parents.get(&parent).copied();
-                    }
-                    if !mathematical_owner {
+                    let candidate = self
+                        .function_binders
+                        .iter()
+                        .find(|candidate| candidate.node == id)
+                        .cloned()
+                        .ok_or(SourceVariableScopeError::InvalidShape)?;
+                    if candidate.position != SourceFunctionBinderPosition::Mathematical {
                         return Err(SourceVariableScopeError::InvalidShape);
                     }
-                    let children = view.children();
-                    if children.len() < 3 {
-                        return Err(SourceVariableScopeError::InvalidShape);
-                    }
-                    let body = self.view(*children.last().expect("nonempty Binder children"))?;
-                    let arrow = self.view(children[children.len() - 2])?;
-                    if body.kind() != &SurfaceNodeKind::TermExpression
-                        || !arrow.as_token().is_some_and(|token| {
-                            token.kind == SurfaceTokenKind::ReservedSymbol
-                                && token.text.as_ref() == "|->"
-                        })
-                    {
-                        return Err(SourceVariableScopeError::InvalidShape);
-                    }
-                    let body = body.id();
-                    let body_scope = self.scope_of(body);
-                    let head = &children[..children.len() - 2];
-                    let mut names = BTreeSet::new();
-                    let mut heads = Vec::new();
-                    for (index, child) in head.iter().enumerate() {
-                        let binder = self.view(*child)?;
+                    for head in candidate.heads {
+                        let binder = self.view(head)?;
                         let token = binder
                             .as_token()
                             .ok_or(SourceVariableScopeError::InvalidShape)?;
-                        let identifier = head.len() == 1
-                            || (index > 0 && index + 1 < head.len() && index % 2 == 1);
-                        if !identifier {
-                            let expected = if index == 0 {
-                                "("
-                            } else if index + 1 == head.len() {
-                                ")"
-                            } else {
-                                ","
-                            };
-                            if head.len() < 5
-                                || head.len() % 2 == 0
-                                || token.kind != SurfaceTokenKind::ReservedSymbol
-                                || token.text.as_ref() != expected
-                            {
-                                return Err(SourceVariableScopeError::InvalidShape);
-                            }
-                            continue;
-                        }
-                        if token.kind != SurfaceTokenKind::Identifier
-                            || !names.insert(token.text.to_string())
-                        {
-                            return Err(SourceVariableScopeError::InvalidShape);
-                        }
-                        heads.push(binder.id());
                         self.push_decl(VariableDeclSite {
                             kind: SourceVariableBindingKind::FunctionBinder,
                             owner: id,
-                            binder: binder.id(),
+                            binder: head,
                             spelling: token.text.to_string(),
                             range: binder.range(),
-                            scope: body_scope.clone(),
+                            scope: self.scope_of(candidate.body),
                             declared_type: None,
                             arity: None,
                         });
                     }
-                    self.function_binders.push(SourceFunctionBinderCandidate {
-                        node: id,
-                        body,
-                        heads,
-                        incoming_scope: self.scope_of(id),
-                    });
                 }
                 SurfaceNodeKind::ReserveItem => {
                     if !self
@@ -7687,6 +7807,14 @@ fn validate_variable_surface(
     ast: &SurfaceAst,
 ) -> Result<VariableSurfaceValidation, SourceVariableScopeError> {
     validate_variable_surface_with_mode(ast, false)
+}
+
+pub(crate) fn source_function_binder_candidates(
+    ast: &SurfaceAst,
+    module: &ModuleId,
+) -> Result<Vec<SourceFunctionBinderCandidate>, SourceVariableScopeError> {
+    let scopes = validate_variable_surface_with_mode(ast, true)?;
+    VariableResolveState::new(ast, module, scopes, true, false).collect_function_binders(true)
 }
 
 pub(crate) fn validate_variable_surface_with_mode(

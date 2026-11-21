@@ -1,6 +1,274 @@
 use super::*;
 
 #[test]
+fn source_pattern_binder_intake_keeps_branch_names_pending_and_local() {
+    use mizar_checker::{
+        binding_env::*, type_checker::SourceVariableSemanticsChecker as Semantics,
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::NamespacePath,
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+        symbols::{SignatureProjectionExtractor, source_function_binder_candidates},
+    };
+    use mizar_session::{ModulePath, PackageId};
+    use mizar_syntax::SurfaceNodeKind as K;
+
+    let text = "definition let n be object; algorithm inspect(n) -> object do match n do case (x,y) |-> x do match n do case x |-> body do return n; end; end; return n; end; case (x,z) |-> body do return n; end; case plain do return n; end; end; return n; end; end;";
+    let ast = parse(text);
+    assert!(ast.node_views().all(|node| !node.is_recovered()));
+    let module = ModuleId::new(
+        PackageId::new("membership-test"),
+        ModulePath::new("membership"),
+    );
+    let source = SurfaceResolvedArena::lower(&ast, &module).unwrap();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let symbols =
+        SignatureProjectionExtractor::new(&ast, &shells, NamespacePath::new("membership"))
+            .collect(&module)
+            .into_env();
+    let pristine = (source.clone(), symbols.clone());
+    let candidates = source_function_binder_candidates(&source, &symbols).unwrap();
+    assert_eq!(candidates.len(), 3);
+    let pending = Semantics::source_pattern_binding_env(&source, &symbols).unwrap();
+    assert_eq!(
+        pending,
+        Semantics::source_pattern_binding_env(&source, &symbols).unwrap()
+    );
+    assert_eq!(
+        pending.contexts().len(),
+        5,
+        "module and every case, including plain case"
+    );
+    assert_eq!(
+        pending.bindings().len(),
+        7,
+        "repeated x in one pattern is one name"
+    );
+    assert!(pending.diagnostics().is_empty());
+    let mut cases = ast
+        .node_views()
+        .filter(|node| node.kind() == &K::MatchCase)
+        .collect::<Vec<_>>();
+    cases.sort_by_key(|node| node.range().start);
+    let contexts = cases
+        .iter()
+        .map(|case| {
+            pending
+                .contexts()
+                .iter()
+                .find(|(_, context)| {
+                    context.owner
+                        == BindingContextOwner::SourceStatement {
+                            source_range: case.range(),
+                        }
+                })
+                .unwrap()
+                .0
+        })
+        .collect::<Vec<_>>();
+    let root = BindingContextId::new(0);
+    assert_eq!(
+        pending.contexts().get(root).unwrap().owner,
+        BindingContextOwner::Module
+    );
+    for (index, id) in contexts.iter().copied().enumerate() {
+        let context = pending.contexts().get(id).unwrap();
+        assert_eq!(context.layer, BindingContextLayer::Block);
+        assert_eq!(
+            context.parent,
+            Some(if index == 1 { contexts[0] } else { root })
+        );
+        let branch = cases[index]
+            .children()
+            .iter()
+            .find(|id| ast.node_view(**id).unwrap().kind() == &K::AlgorithmStatementList)
+            .unwrap();
+        let path = context.lexical_scope.as_ref().unwrap().path();
+        assert_eq!(path.last().copied(), Some(branch.index() as u32));
+        assert_eq!(path.len(), if index == 1 { 2 } else { 1 });
+        if index == 1 {
+            assert_eq!(
+                &path[..1],
+                pending
+                    .contexts()
+                    .get(contexts[0])
+                    .unwrap()
+                    .lexical_scope
+                    .as_ref()
+                    .unwrap()
+                    .path()
+            );
+        }
+    }
+    for (_, binding) in pending.bindings().iter() {
+        assert_eq!(binding.kind, BindingKind::PatternName);
+        assert_eq!(binding.type_site, BindingTypeSite::Missing);
+        assert_eq!(binding.status, BindingStatus::Active);
+        assert!(matches!(
+            binding.identity,
+            BinderIdentity::ResolverLocal { .. }
+        ));
+        assert!(binding.captured.identities().is_empty());
+        assert!(binding.diagnostics.is_empty());
+    }
+    let lookup = |context, spelling| {
+        let scope = pending
+            .contexts()
+            .get(context)
+            .unwrap()
+            .lexical_scope
+            .clone();
+        pending
+            .lookup(&BindingLookupSite::new(
+                spelling,
+                context,
+                scope,
+                usize::MAX,
+            ))
+            .unwrap()
+    };
+    let local = |context, spelling| match lookup(context, spelling) {
+        BindingLookupResult::Local(id) => id,
+        other => panic!("{spelling}: {other:?}"),
+    };
+    let outer_x = local(contexts[0], "x");
+    let inner_x = local(contexts[1], "x");
+    let sibling_x = local(contexts[2], "x");
+    assert_ne!(outer_x, inner_x);
+    assert_ne!(outer_x, sibling_x);
+    assert_ne!(
+        pending.bindings().get(outer_x).unwrap().identity,
+        pending.bindings().get(sibling_x).unwrap().identity
+    );
+    assert_eq!(local(contexts[1], "y"), local(contexts[0], "y"));
+    for (context, spelling) in [
+        (contexts[0], "body"),
+        (contexts[0], "z"),
+        (contexts[2], "y"),
+        (contexts[3], "x"),
+        (root, "x"),
+        (root, "body"),
+    ] {
+        assert_eq!(
+            lookup(context, spelling),
+            BindingLookupResult::Unresolved,
+            "sibling/post-match {spelling}"
+        );
+    }
+    assert_eq!((source, symbols), pristine);
+}
+
+#[test]
+fn source_pattern_binder_intake_authenticates_before_refusing_higher_consumers() {
+    use mizar_checker::{
+        type_checker::{SourceVariableSemanticsChecker as Semantics, check_source_algorithm_types},
+        typed_ast::{TypedArena, TypedNode, TypedNodeId},
+    };
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::NamespacePath,
+        names::SourceFunctionBinderPosition as Position,
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+        symbols::{SignatureProjectionExtractor, source_function_binder_candidates},
+    };
+    use mizar_session::{ModulePath, PackageId};
+    use mizar_syntax::SurfaceAstBuilder;
+    let module = ModuleId::new(
+        PackageId::new("membership-test"),
+        ModulePath::new("membership"),
+    );
+    let collect = |ast: &mizar_syntax::SurfaceAst| {
+        let shells = DeclarationShellCollector::new(ast, &module).collect();
+        let symbols =
+            SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new("membership"))
+                .collect(&module)
+                .into_env();
+        (SurfaceResolvedArena::lower(ast, &module).unwrap(), symbols)
+    };
+    let text = "definition let n be object; algorithm inspect(n) -> object do match n do case x |-> body do return n; end; end; return n; end; end;";
+    let ast = parse(text);
+    let (source, symbols) = collect(&ast);
+    let candidates = source_function_binder_candidates(&source, &symbols).unwrap();
+    let pending = Semantics::source_pattern_binding_env(&source, &symbols).unwrap();
+    for changed in [
+        text.replace("x |-> body", "z |-> body"),
+        text.replace("x |-> body", "body |-> x"),
+    ] {
+        let changed_ast = parse(&changed);
+        let (changed_source, changed_symbols) = collect(&changed_ast);
+        let changed_candidates =
+            source_function_binder_candidates(&changed_source, &changed_symbols).unwrap();
+        assert_eq!(changed_candidates.len(), 1);
+        assert_ne!(
+            pending,
+            Semantics::source_pattern_binding_env(&changed_source, &changed_symbols).unwrap()
+        );
+        assert!(source_function_binder_candidates(&source, &changed_symbols).is_err());
+        assert!(Semantics::source_pattern_binding_env(&changed_source, &symbols).is_err());
+    }
+    let foreign = SurfaceResolvedArena::lower(
+        &ast,
+        &ModuleId::new(
+            PackageId::new("membership-test"),
+            ModulePath::new("foreign"),
+        ),
+    )
+    .unwrap();
+    assert!(source_function_binder_candidates(&foreign, &symbols).is_err());
+    assert!(Semantics::source_pattern_binding_env(&foreign, &symbols).is_err());
+    let mut builder = SurfaceAstBuilder::new(ast.source_id);
+    let head = candidates[0].heads()[0];
+    let mut ids = Vec::new();
+    for node in ast.node_views() {
+        let children = node.children().iter().map(|id| ids[id.index()]).collect();
+        ids.push(if let Some(token) = node.as_token() {
+            if node.id() == head {
+                builder.add_recovered_token(token.kind, token.text.clone(), node.range())
+            } else {
+                builder.add_token(token.kind, token.text.clone(), node.range())
+            }
+        } else {
+            builder.add_node(node.kind().clone(), node.range(), children)
+        });
+    }
+    let recovered = builder.finish(ast.root().map(|id| ids[id.index()]), None);
+    let (recovered_source, recovered_symbols) = collect(&recovered);
+    assert!(source_function_binder_candidates(&recovered_source, &recovered_symbols).is_err());
+    assert!(Semantics::source_pattern_binding_env(&recovered_source, &recovered_symbols).is_err());
+    let duplicate = parse(&text.replace("x |-> body", "(x,x) |-> body"));
+    let (duplicate_source, duplicate_symbols) = collect(&duplicate);
+    assert!(source_function_binder_candidates(&duplicate_source, &duplicate_symbols).is_err());
+    assert!(Semantics::source_pattern_binding_env(&duplicate_source, &duplicate_symbols).is_err());
+    for (text, position, pattern_ok, algorithm_ok) in [
+        (text.to_owned(), Some(true), true, false),
+        (text.replace("x |-> body", "x |-> body(n)"), Some(false), false, false),
+        (text.replace("do return n; end; end; return", "do var x := n; return n; end; end; return"), Some(true), true, false),
+        ("definition let n be object; algorithm inspect(n) -> object do return n |-> n; end; end;".to_owned(), Some(false), false, false),
+        ("reserve x for set; theorem B: (x |-> x) qua expr of set = x;".to_owned(), Some(false), false, false),
+        ("definition let n be object; algorithm inspect(n) -> object do return n; end; end;".to_owned(), None, true, true),
+    ] {
+        let ast = parse(&text);
+        assert!(ast.node_views().all(|node| !node.is_recovered()), "{text}");
+        let (source, symbols) = collect(&ast);
+        let actual = source_function_binder_candidates(&source, &symbols).unwrap();
+        assert_eq!(actual.len(), usize::from(position.is_some()));
+        match position {
+            Some(true) => assert!(matches!(actual[0].position(), Position::Pattern { .. }), "{text}"),
+            Some(false) => assert_eq!(actual[0].position(), &Position::Unsupported, "{text}"),
+            None => {}
+        }
+        assert_eq!(Semantics::source_pattern_binding_env(&source, &symbols).is_ok(), pattern_ok, "{text}");
+        let typed = TypedArena::try_new(Some(TypedNodeId::new(source.arena().root().index())), source.arena().iter().map(|(id, node)| TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone()).with_resolved_node(id).with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())).collect()).unwrap();
+        assert_eq!(check_source_algorithm_types(&source, &typed, &symbols).is_ok(), algorithm_ok, "{text}");
+    }
+    assert_eq!(
+        Semantics::source_pattern_binding_env(&source, &symbols).unwrap(),
+        pending
+    );
+}
+
+#[test]
 fn source_theorem_scoped_primary_retain_occurrences_and_lookup() -> Result<(), String> {
     use mizar_checker::{
         binding_env::*,

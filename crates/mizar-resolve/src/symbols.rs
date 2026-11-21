@@ -42,6 +42,16 @@ pub fn validate_source_symbol_env(
     validated_source_symbol_ast(source, symbols).map(|_| ())
 }
 
+/// Acquires ordered Binder construction positions through exact original-source replay.
+pub fn source_function_binder_candidates(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+) -> Result<Vec<crate::names::SourceFunctionBinderCandidate>, String> {
+    let ast = validated_source_symbol_ast(source, symbols)?;
+    crate::names::source_function_binder_candidates(&ast, source.module())
+        .map_err(|error| format!("{error:?}"))
+}
+
 /// Returns all declaration and export shells authenticated against the original source.
 ///
 /// Preserves the collector's source-local identities and metadata.
