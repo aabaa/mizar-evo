@@ -2124,10 +2124,10 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
             .filter(|case| case.source_path.extension().is_some_and(|ext| ext == "miz"))
             .count(),
     ];
-    assert_eq!(active_type_consumer_counts, [273, 273, 273, 260, 273, 273]);
+    assert_eq!(active_type_consumer_counts, [274, 274, 274, 260, 274, 274]);
     assert_eq!(
         (plan.cases.len(), plan.manifest.requirements.len()),
-        (635, 545)
+        (638, 546)
     );
     assert_eq!(
         plan.cases.iter().fold((0, 0), |(pass, fail), case| {
@@ -2137,7 +2137,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
                 _ => (pass, fail),
             }
         }),
-        (361, 274)
+        (362, 276)
     );
     assert_eq!(
         (
@@ -2146,7 +2146,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
             active_type_elaboration_cases(&plan).count(),
             crate::active_proof_verification_cases(&plan).count(),
         ),
-        (172, 13, 273, 23)
+        (172, 13, 274, 23)
     );
     let type_stage = plan
         .coverage_report
@@ -2154,7 +2154,7 @@ fn task260_route_publishes_no_proof_fact_acceptance_or_vc() {
         .iter()
         .find(|stage| stage.stage == crate::staged_model::Stage::TypeElaboration)
         .expect("Task260 type-elaboration coverage stage");
-    assert_eq!((type_stage.requirements, type_stage.covered), (307, 295));
+    assert_eq!((type_stage.requirements, type_stage.covered), (308, 296));
     assert_eq!((plan.warning_count(), plan.error_count()), (23, 0));
 
     let (ast, module, shells, symbols) =
