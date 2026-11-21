@@ -3185,6 +3185,155 @@ pub fn generate_source_algorithm_e1_typing_request(
     Ok((vcs, binder, antecedent, conclusion, guard, slice))
 }
 
+/// Decomposes the original Open E1 single-valuedness request without checking it.
+/// Returns the whole graph, ordered binders, returns atoms, equality, guard and raw slice.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::type_complexity,
+    reason = "retain the authentic source producer inputs and existing untrusted descriptor types"
+)]
+pub fn generate_source_algorithm_e1_single_valuedness_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: BuildSnapshotId,
+    generation_schema: &GenerationSchemaVersion,
+    vc_schema: &VcSchemaVersion,
+    vc_id: VcId,
+) -> Result<
+    (
+        VcSet,
+        [ContextEntryId; 2],
+        [VcFormulaRef; 2],
+        VcFormulaRef,
+        VcFormulaRef,
+        crate::dependency_slice::DependencySlice,
+    ),
+    String,
+> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaShape as Shape, VcProgramValue};
+
+    let vcs = generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        generation_schema,
+        vc_schema,
+    )?;
+    let invalid = || "algorithms.direct_return.invalid_e1_single_valuedness_request".to_owned();
+    let parent = vcs.vc(vc_id).ok_or_else(invalid)?;
+    if parent.kind != VcKind::AlgorithmE1SingleValuedness || parent.status != VcStatus::Open {
+        return Err(invalid());
+    }
+    let VcFormulaRef::Generated(goal) = parent.goal else {
+        return Err(invalid());
+    };
+    let Shape::Quantified {
+        kind: QuantifierKind::Forall,
+        binders,
+        body: VcFormulaRef::Generated(body),
+    } = &vcs.generated_formula(goal).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let [typed, first, second] = parent.local_context.entries() else {
+        return Err(invalid());
+    };
+    let [Some(left), Some(right)] = [first, second].map(|binder| match &binder.kind {
+        ContextEntryKind::BinderDeclaration { var, role }
+            if role.as_str() == "result" && binder.formula.is_none() =>
+        {
+            Some(VcProgramValue {
+                var: *var,
+                definition: None,
+            })
+        }
+        _ => None,
+    }) else {
+        return Err(invalid());
+    };
+    let Shape::Implies {
+        premise: VcFormulaRef::Generated(antecedent),
+        conclusion: VcFormulaRef::Generated(conclusion),
+    } = &vcs.generated_formula(*body).ok_or_else(invalid)?.shape
+    else {
+        return Err(invalid());
+    };
+    let Shape::And(returns) = &vcs
+        .generated_formula(*antecedent)
+        .ok_or_else(invalid)?
+        .shape
+    else {
+        return Err(invalid());
+    };
+    let [
+        VcFormulaRef::Generated(returns_left),
+        VcFormulaRef::Generated(returns_right),
+    ] = returns.as_slice()
+    else {
+        return Err(invalid());
+    };
+    let (algorithm_id, algorithm) = core.algorithms().iter().next().ok_or_else(invalid)?;
+    let parameter = &algorithm.params[0];
+    let guard = VcFormulaRef::Core(parameter.ty_guard.ok_or_else(invalid)?);
+    // The unchanged producer authenticates the complete Core and sole-return CFG first.
+    let flow = mizar_core::control_flow::build_control_flow_ir(core)
+        .flow_map
+        .get(&algorithm_id)
+        .copied()
+        .ok_or_else(invalid)?;
+    if typed.kind != ContextEntryKind::CheckerFact
+        || typed.formula != Some(guard)
+        || parent.premises.as_slice() != [PremiseRef::LocalContext(typed.id)]
+        || binders.as_slice() != [first.id, second.id]
+        || left.var == right.var
+        || [left.var, right.var].contains(&parameter.var)
+        || vcs
+            .generated_formula(*conclusion)
+            .ok_or_else(invalid)?
+            .shape
+            != (Shape::ProgramEquals { left, right })
+    {
+        return Err(invalid());
+    }
+    for (reference, result) in [(*returns_left, left), (*returns_right, right)] {
+        if vcs.generated_formula(reference).ok_or_else(invalid)?.shape
+            != (Shape::AlgorithmReturns {
+                algorithm: algorithm_id,
+                flow,
+                statement: algorithm.statements[0],
+                input: VcProgramValue {
+                    var: parameter.var,
+                    definition: None,
+                },
+                result,
+            })
+        {
+            return Err(invalid());
+        }
+    }
+    let binders = [first.id, second.id];
+    let returns = [
+        VcFormulaRef::Generated(*returns_left),
+        VcFormulaRef::Generated(*returns_right),
+    ];
+    let conclusion = VcFormulaRef::Generated(*conclusion);
+    let slices =
+        crate::dependency_slice::try_compute_source_algorithm_direct_return_dependency_slices(
+            source,
+            check,
+            symbols,
+            core,
+            &vcs,
+            generation_schema,
+        )?;
+    let slice = slices.slice_for(vc_id).cloned().ok_or_else(invalid)?;
+    Ok((vcs, binders, returns, conclusion, guard, slice))
+}
+
 /// Checks the freshly authenticated original E1 typing request through Kernel.
 /// Returns its complete unchanged descriptor without evidence or Proof adoption.
 #[expect(

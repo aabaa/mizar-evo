@@ -701,6 +701,12 @@ Return `(VcSet, ContextEntryId, VcFormulaRef, VcFormulaRef, VcFormulaRef, Depend
 
 `check_source_algorithm_e1_typing_request` regenerates that descriptor first, preserving upstream errors and selection refusals. Project only its original binder, returns antecedent, object conclusion and Core guard to Kernel's [bounded typing rule](../../mizar-kernel/en/checker.md#bounded-original-e1-typing); return the complete unchanged six-tuple on success, otherwise refuse. No E4 converse, native evidence, Proof adoption or status change follows; the descriptor's Open4/Deferred and other exclusions remain unchanged.
 
+### Original E1 single-valuedness descriptor
+
+`generate_source_algorithm_e1_single_valuedness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` regenerates the authentic direct-return graph before selecting only Open single-valuedness. Require the original two ordered distinct Forall result declarations, implication over exactly two AlgorithmReturns atoms sharing algorithm/CFG/return/input, matching ProgramEquals conclusion, and sole CheckerFact input guard/premise. Producer errors precede selection refusal (`algorithms.direct_return.invalid_e1_single_valuedness_request`).
+
+Return `(VcSet, [ContextEntryId; 2], [VcFormulaRef; 2], VcFormulaRef, VcFormulaRef, DependencySlice)`: unchanged graph, original binders, original returns atoms, equality conclusion, Core guard and whole original raw slice. No native typing result is required. These are original formula projections without substitution, checking, new proof premises or credit. Preserve Open4/Deferred, unknown/incomplete/cache-miss states and caller currentness; environment interpretation, adoption, symbol introduction and acceptance remain excluded. Formula-cycle hardening remains separate.
+
 ### E1 inhabitation witness-reduction request
 
 `generate_source_algorithm_e1_inhabitation_witness_request(source, check, symbols, core, snapshot, generation_schema, vc_schema, vc_id)` first regenerates the complete authentic four-request graph through the existing producer, preserving its errors. Select only the Open E1-inhabitation existential. Return the unchanged `VcSet`, actual returned `CoreTermId`, original `ContextEntryId` binder, instantiated child `VcFormulaRef::Core(parameter.ty_guard)` and entire original raw `DependencySlice`. The selected ID plus whole original set retain its goal, context, anchor and fingerprints; Proof's existing original-identity route remains authoritative for Proof identities.
