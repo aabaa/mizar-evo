@@ -294,7 +294,7 @@ E0220–E0225 は仕様22.7の名前と英語正本のsummaryを用い、`meanin
 
 仕様予約 E0104/E0111/E0112/E0206/E0332/E0333 の descriptor を、§22.7 の厳密な名前/summary と
 上記の初期メタデータ既定値、範囲に対応する Type/Resolution/Proof family で準備する。B1-B8 は分類記録でありコードではない。
-共有 registry lookup と draft/record 構築のみを可能にする。以下の source 由来の採用テストは保留する。
+共有 registry lookup と draft/record 構築を可能にする。限定された [Driver computation scope bridge](../../mizar-driver/ja/frontend_adapter.md#computation-scope-diagnostic-adoption) は認証済みの利用不能な一行量化束縛だけに E0206 を採用する。その他の source 由来の採用は保留する。
 採用はソース付きの所有段階記録を消費する。descriptor だけで発行や corpus coverage を有効化しない。
 宣言/使用、欠落する局所条件/モード/C、候補/残存位置、最初の未適用 rule または未完了段階を報告する。
 テストは source 宣言/使用位置、ghost の runtime 流入、Binder/C と valuation 形成、candidate/残留位置、runtime/import/inspection の limit stage を検査する。未証明/偽、fail/未完、guard 付き valid_at、import 拒否後の返却保持を区別する。

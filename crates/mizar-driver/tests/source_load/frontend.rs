@@ -1,4 +1,343 @@
 use super::*;
+use mizar_diagnostics::{
+    aggregator::BuildDiagnosticIndex,
+    registry::{DiagnosticRegistry, DiagnosticSeverity},
+    render::{DiagnosticRenderInput, DiagnosticSourceContext, RenderOptions, render_diagnostics},
+};
+
+const COMPUTATION_SCOPE_SOURCE: &str = "definition let p be expr of boolean; algorithm inspect(p) -> expr of boolean do return p; end; end; theorem Bad: for x being object holds x = x by computation(inspect(x = x));";
+
+impl DiagnosticSourceContext for Fixture {
+    fn path_for(&self, source: SourceId) -> Option<&str> {
+        (source == self.version.source_id).then_some("alpha/src/main.miz")
+    }
+
+    fn source_key_for(&self, source: SourceId) -> String {
+        format!("{source:?}")
+    }
+
+    fn line_text(&self, source: SourceId, line: u32) -> Option<&str> {
+        (source == self.version.source_id).then(|| {
+            std::str::from_utf8(&self.bytes)
+                .ok()?
+                .lines()
+                .nth(line.checked_sub(1)? as usize)
+        })?
+    }
+
+    fn line_column(
+        &self,
+        range: mizar_session::SourceRange,
+    ) -> Option<mizar_session::LineColumnRange> {
+        self.line_map.line_column_range(range).ok()
+    }
+}
+
+#[test]
+fn scheduled_frontend_computation_scope_reports_current_sites_and_blocks_dependents() {
+    let text = COMPUTATION_SCOPE_SOURCE;
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let baseline = fixture.submit(&ids, &snapshots);
+    let snapshot = baseline.session.captured().snapshot().id;
+    let unit = &source_task(&baseline).unit;
+    let publisher = publisher(snapshot, usize::MAX, unit);
+    allow_frontend(&publisher, unit);
+    let mut builder = PhaseRegistryBuilder::new();
+    builder.register_source_load();
+    builder.register_frontend(Vec::new());
+    let mut driver = CompilerDriver::new(builder.build().unwrap()).with_output_publisher(publisher);
+    let (request, input) = fixture.submit_request(Vec::new(), Vec::new());
+    let submission = driver
+        .submit(request, &ids, &snapshots, input, Default::default())
+        .unwrap();
+    assert_eq!(
+        submission.session.state(),
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    let run = submission.scheduler_run.as_ref().unwrap();
+    let graph = submission.task_graph.as_ref().unwrap();
+    for (kind, state) in [
+        (TaskKind::Frontend, TaskState::Failed),
+        (TaskKind::ModuleResolve, TaskState::Blocked),
+    ] {
+        let task = graph.tasks().iter().find(|task| task.kind == kind).unwrap();
+        assert_eq!(
+            run.task_states
+                .iter()
+                .find(|row| row.task_id == task.id)
+                .unwrap()
+                .state,
+            state
+        );
+    }
+    let frontend = graph
+        .tasks()
+        .iter()
+        .find(|task| task.kind == TaskKind::Frontend)
+        .unwrap();
+    let result = &run.phase_results.get(&frontend.id).unwrap()[0];
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    assert!(
+        run.phase_results
+            .values()
+            .flatten()
+            .flat_map(|result| &result.output_refs)
+            .all(|output| output.phase() == &IrPipelinePhase::new("SourceLoad"))
+    );
+    let drafts = result
+        .diagnostics
+        .iter()
+        .flat_map(|batch| batch.drafts())
+        .collect::<Vec<_>>();
+    assert_eq!(drafts.len(), 2);
+    let use_start = text.find("inspect(x = x)").unwrap() + "inspect(".len();
+    for (ordinal, draft) in drafts.iter().enumerate() {
+        assert_eq!(draft.code().number(), 206);
+        assert_eq!(draft.phase(), DiagnosticPhase::Resolver);
+        assert_eq!(draft.category(), FailureCategory::ResolveError);
+        assert_eq!(draft.stable_detail_key(), "resolve.ast_scope");
+        assert_eq!(draft.source_snapshot(), snapshot);
+        let descriptor = DiagnosticRegistry::builtin().lookup(draft.code()).unwrap();
+        assert_eq!(draft.message(), descriptor.summary);
+        let DiagnosticPrimaryLocation::Span(primary) = draft.primary_location() else {
+            panic!("source use span")
+        };
+        let start = use_start + ordinal * "x = ".len();
+        assert_eq!(primary.range().start..primary.range().end, start..start + 1);
+        assert_eq!(primary.range().source_id, fixture.version.source_id);
+        assert!(primary.label().is_some());
+        assert_eq!(draft.secondary_spans().len(), 2);
+        for (span, needle) in draft
+            .secondary_spans()
+            .iter()
+            .zip(["by computation(inspect(x = x))", "x"])
+        {
+            assert!(span.label().is_some());
+            assert_eq!(span.range().source_id, fixture.version.source_id);
+            assert_eq!(&text[span.range().start..span.range().end], needle);
+        }
+        let declaration = text.find("for x").unwrap() + "for ".len();
+        assert_eq!(draft.secondary_spans()[1].range().start, declaration);
+        let details = draft.details().entries();
+        assert_eq!(
+            details.get("resolve.name"),
+            Some(&DiagnosticDetailValue::String("x".to_owned()))
+        );
+        for (key, span) in [
+            ("resolve.use_site", primary),
+            ("resolve.insertion", &draft.secondary_spans()[0]),
+            (
+                "resolve.unavailable_declaration",
+                &draft.secondary_spans()[1],
+            ),
+        ] {
+            assert_eq!(
+                details.get(key),
+                Some(&DiagnosticDetailValue::Source(span.range()))
+            );
+        }
+    }
+    let index = BuildDiagnosticIndex::from_batches(snapshot, result.diagnostics.clone()).unwrap();
+    assert!(
+        index
+            .records()
+            .iter()
+            .all(|record| record.severity() == DiagnosticSeverity::Error)
+    );
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &fixture,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(rendered.matches("error[E0206]").count(), 2);
+    assert!(rendered.contains("inspect(x = x)"));
+}
+
+#[test]
+fn frontend_computation_scope_repeated_acquisition_preserves_distinct_uses_and_declarations() {
+    let text = format!(
+        "{COMPUTATION_SCOPE_SOURCE} theorem Other: for x being object holds x = x by computation(inspect(x = x));"
+    );
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let submission = fixture.submit(&ids, &snapshots);
+    let snapshot = submission.session.captured().snapshot().id;
+    let (source, publisher) = execute(&submission, &ids, usize::MAX);
+    let results = (0..2)
+        .map(|_| {
+            execute_frontend(
+                &submission,
+                &ids,
+                &publisher,
+                source.output_refs.clone(),
+                (source_key(&fixture.version), Vec::new()),
+                Vec::new(),
+                None,
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(results[0].diagnostics, results[1].diagnostics);
+    assert!(
+        results.iter().all(
+            |result| result.status == PhaseStatus::Recoverable && result.output_refs.is_empty()
+        )
+    );
+    let batches = results
+        .into_iter()
+        .flat_map(|result| result.diagnostics)
+        .collect::<Vec<_>>();
+    let index = BuildDiagnosticIndex::from_batches(snapshot, batches.clone()).unwrap();
+    let mut reversed = batches;
+    reversed.reverse();
+    let reordered = BuildDiagnosticIndex::from_batches(snapshot, reversed).unwrap();
+    assert_eq!(index.records(), reordered.records());
+    assert_eq!(index.records().len(), 4);
+    let records = index.records();
+    let uses = records
+        .iter()
+        .map(|record| match record.primary_location() {
+            DiagnosticPrimaryLocation::Span(span) => span.range(),
+            _ => panic!("source use span"),
+        })
+        .collect::<Vec<_>>();
+    assert!(uses.windows(2).all(|pair| pair[0].start < pair[1].start));
+    let declarations = records
+        .iter()
+        .map(|record| record.secondary_spans()[1].range())
+        .collect::<Vec<_>>();
+    assert_eq!(declarations[0], declarations[1]);
+    assert_eq!(declarations[2], declarations[3]);
+    assert_ne!(declarations[0], declarations[2]);
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        records,
+        &fixture,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(rendered.matches("error[E0206]").count(), 4);
+}
+
+#[test]
+fn frontend_computation_scope_refuses_visible_unknown_and_unsupported_batches() {
+    let visible = COMPUTATION_SCOPE_SOURCE
+        .replace(
+            "theorem Bad: for",
+            "theorem Bad: thesis proof let x be object; thus for",
+        )
+        .replace("inspect(x = x));", "inspect(x = x)); end;");
+    let cases = [
+        format!("reserve x for object; {COMPUTATION_SCOPE_SOURCE}"),
+        visible,
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(y = y)"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "absent(x = x)"),
+        format!("reserve inspect for object; {COMPUTATION_SCOPE_SOURCE}"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "Ns.inspect(x = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect()"),
+        COMPUTATION_SCOPE_SOURCE.replace("inspect(x = x)", "inspect(x = x, x = x)"),
+        COMPUTATION_SCOPE_SOURCE.replace("algorithm inspect(p)", "algorithm inspect(q)"),
+        COMPUTATION_SCOPE_SOURCE.replace("expr of boolean", "expr of object"),
+        COMPUTATION_SCOPE_SOURCE.replace("let p be expr of boolean; ", ""),
+        format!(
+            "{COMPUTATION_SCOPE_SOURCE} theorem Unsupported: for y being object holds y = y by computation(inspect(not y = y));"
+        ),
+        format!("{COMPUTATION_SCOPE_SOURCE} definition"),
+    ];
+    for (ordinal, text) in cases.iter().enumerate() {
+        let fixture = Fixture::new(text.as_bytes());
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let submission = fixture.submit(&ids, &snapshots);
+        let (source, publisher) = execute(&submission, &ids, usize::MAX);
+        let result = execute_frontend(
+            &submission,
+            &ids,
+            &publisher,
+            source.output_refs,
+            (source_key(&fixture.version), Vec::new()),
+            Vec::new(),
+            None,
+        );
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .flat_map(|batch| batch.drafts())
+                .all(|draft| draft.code().number() != 206),
+            "{text}"
+        );
+        if ordinal < 3 {
+            assert_eq!(result.status, PhaseStatus::Complete, "{text}");
+            assert_eq!(result.output_refs.len(), 1);
+        }
+        if ordinal == cases.len() - 1 {
+            assert_eq!(result.status, PhaseStatus::Recoverable);
+            assert!(result.output_refs.is_empty());
+        }
+    }
+}
+
+#[test]
+fn frontend_computation_scope_unicode_relocation_retains_current_readable_sites() {
+    let text = format!(":: relocated α source\n\n{COMPUTATION_SCOPE_SOURCE}");
+    let fixture = Fixture::new(text.as_bytes());
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let submission = fixture.submit(&ids, &snapshots);
+    let snapshot = submission.session.captured().snapshot().id;
+    let (source, publisher) = execute(&submission, &ids, usize::MAX);
+    let result = execute_frontend(
+        &submission,
+        &ids,
+        &publisher,
+        source.output_refs,
+        (source_key(&fixture.version), Vec::new()),
+        Vec::new(),
+        None,
+    );
+    assert_eq!(result.status, PhaseStatus::Recoverable);
+    assert!(result.output_refs.is_empty());
+    let index = BuildDiagnosticIndex::from_batches(snapshot, result.diagnostics).unwrap();
+    assert_eq!(index.records().len(), 2);
+    let use_start = text.find("inspect(x = x)").unwrap() + "inspect(".len();
+    for (ordinal, record) in index.records().iter().enumerate() {
+        let DiagnosticPrimaryLocation::Span(primary) = record.primary_location() else {
+            panic!("source use span")
+        };
+        let start = use_start + ordinal * "x = ".len();
+        assert_eq!(
+            primary.range().start..primary.range().end,
+            start..start + "x".len()
+        );
+        assert_eq!(primary.range().source_id, fixture.version.source_id);
+        assert_eq!(
+            record.details().entries().get("resolve.name"),
+            Some(&DiagnosticDetailValue::String("x".to_owned()))
+        );
+        assert!(primary.label().unwrap().contains('x'));
+        for span in std::iter::once(primary).chain(record.secondary_spans()) {
+            assert!(text.get(span.range().start..span.range().end).is_some());
+            assert_eq!(span.range().source_id, fixture.version.source_id);
+        }
+        assert_eq!(
+            record.secondary_spans()[0].range().start,
+            text.find("by computation").unwrap()
+        );
+        assert_eq!(
+            record.secondary_spans()[1].range().start,
+            text.find("for x").unwrap() + "for ".len()
+        );
+    }
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        index.records(),
+        &fixture,
+        RenderOptions::plain(),
+    ));
+    assert_eq!(rendered.matches("error[E0206]").count(), 2);
+    assert!(rendered.contains("inspect(x = x)"));
+}
 
 #[test]
 fn frontend_publishes_only_clean_loaded_source_with_parent_and_storage_maps() {

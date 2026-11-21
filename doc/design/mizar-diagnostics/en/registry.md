@@ -297,8 +297,7 @@ E0220–E0225 follow the exact names and summaries in specification 22.7, with `
 The spec-defined reservations E0104/E0111/E0112/E0206/E0332/E0333 have prepared descriptors
 using exact §22.7 names/summaries and the initial metadata defaults above, with
 Type/Resolution/Proof families assigned by range. B1-B8 are classification records, not codes.
-These descriptors enable shared registry lookup and draft/record construction only;
-source-bound adoption tests below remain deferred.
+These descriptors enable shared registry lookup and draft/record construction. The bounded [Driver computation scope bridge](../../mizar-driver/en/frontend_adapter.md#computation-scope-diagnostic-adoption) adopts E0206 only for authenticated unavailable one-line quantifiers; other source-bound adoption below remains deferred.
 Adoption consumes source-aware owning-stage records; descriptors alone activate neither emissions nor corpus coverage.
 Report source declarations/use, missing guarded conditions/mode/C, candidate/residual position and first unavailable rule or incomplete stage.
 Tests cover source declaration/use anchors, ghost runtime flows, Binder/C and valuation formation, candidate/residual positions and runtime/import/inspection limit stages; distinguish unproved/false, fail/incomplete, legal guarded valid_at and return retained after rejected import.

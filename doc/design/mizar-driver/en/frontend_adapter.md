@@ -90,6 +90,12 @@ Tests exercise actual clean/imported and failed pipelines, blob roundtrip, curre
 
 The [approved native payload profile](../../mizar-lsp/en/native_payload_producers.md) attaches E0041 payloads only from typed export insertion evidence. `native_export_semicolon_context` validates the exact canonical handle/source association and returns bounded canonical JSON; `native_export_semicolon_command` authenticates its precise canonical command. The host supplies only genuinely captured records; these shape validators do not admit caller-owned records or change error-session output acceptance.
 
+## Computation scope diagnostic adoption
+
+After clean Frontend parsing and import validation, privately collect original declaration symbols and the matching resolved arena, then acquire Resolver's authenticated computation unavailable-declaration evidence. Only complete genuine rows emit E0206 (`resolve.ast_scope`) through a separate Resolver/ResolveError sink; use the existing descriptor unchanged.
+Reports identify the source name/use, computation insertion and unavailable quantified declaration with labeled current spans and structured source details. Validate the entire batch against the loaded source before emission and recheck parent/publisher currentness before returning Recoverable without outputs; the scheduled prefix fails the session and skips ordinary dependents.
+Unsupported acquisition produces no E0206 and preserves the prior Frontend path. Unknown names, visible outer winners, stale/recovered/mismatched sources and unsupported call/formal/formula shapes cannot fabricate reports. Existing shape/unresolved/Missing errors retain their meanings. This bridge grants no checked reflection, capture, reconstruction, formation, execution, proof/acceptance or semantic/corpus credit.
+
 ## Diagnostic-only import continuation design
 
 The resolver’s [source-bound import producer](../../mizar-resolve/en/imports.md#parsed-import-candidates) owns parsed/prescan/source correspondence and path resolution for the supplied-parent, diagnostic-only and clean-importer routes. Driver admission, sealed currentness, publication and diagnostic conversion remain unchanged.

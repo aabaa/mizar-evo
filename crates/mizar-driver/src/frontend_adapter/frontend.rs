@@ -1141,6 +1141,29 @@ impl PhaseService for FrontendService {
         if used.len() != workspace_summaries.len() {
             return blocking();
         }
+        if let Some(drafts) = computation_scope_diagnostics(&output, snapshot)
+            && !drafts.is_empty()
+        {
+            use mizar_diagnostics::sink::{DiagnosticProducerScope, DiagnosticSink};
+            let mut resolver_sink = DiagnosticSink::new(DiagnosticProducerScope::new(
+                DiagnosticPhase::Resolver,
+                snapshot,
+                "frontend.computation_scope",
+            ));
+            for draft in drafts {
+                if resolver_sink.emit(draft).is_err() {
+                    return blocking();
+                }
+            }
+            if !parents_current() {
+                return blocking();
+            }
+            return PhaseResult {
+                status: PhaseStatus::Recoverable,
+                diagnostics: vec![sink.seal(), resolver_sink.seal()],
+                ..blocking()
+            };
+        }
         let Some(ast_key) = output.cache_keys.ast.as_ref() else {
             return blocking();
         };
@@ -1236,6 +1259,111 @@ impl PhaseService for FrontendService {
             Err(_) => blocking(),
         }
     }
+}
+
+fn computation_scope_diagnostics(
+    output: &FrontendOutput<<MizarParserSeam as ParserSeam>::Ast>,
+    snapshot: BuildSnapshotId,
+) -> Option<Vec<DiagnosticDraft>> {
+    use mizar_resolve::{
+        declarations::DeclarationShellCollector,
+        env::NamespacePath,
+        resolved_ast::{ModuleId, SurfaceResolvedArena},
+        symbols::{SignatureProjectionExtractor, source_computation_scope_evidence},
+    };
+    let source = &output.source;
+    let ast = output.ast.as_ref()?;
+    if !output.diagnostics.is_empty()
+        || ast.source_id != source.source_id
+        || source.line_map.source_id() != source.source_id
+        || source.line_map.source() != source.source_text.as_ref()
+    {
+        return None;
+    }
+    let module = ModuleId::new(source.package_id.clone(), source.module_path.clone());
+    let arena = SurfaceResolvedArena::lower(ast, &module).ok()?;
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let symbols =
+        SignatureProjectionExtractor::new(ast, &shells, NamespacePath::new(module.path().as_str()))
+            .collect(&module);
+    if !symbols.diagnostics().is_empty() {
+        return None;
+    }
+    let records = source_computation_scope_evidence(ast, &arena, symbols.env()).ok()?;
+    let registry = mizar_diagnostics::registry::DiagnosticRegistry::builtin();
+    let descriptor =
+        registry.lookup(DiagnosticCode::from_parts(DiagnosticSeverity::Error, 206).ok()?)?;
+    records
+        .iter()
+        .map(|record| {
+            if record.source_id() != source.source_id {
+                return None;
+            }
+            for (_, range) in [
+                record.statement(),
+                record.insertion(),
+                record.call(),
+                record.callee(),
+                record.algorithm_declaration(),
+                record.argument(),
+                record.formal(),
+                record.formal_declaration(),
+                record.formal_type(),
+                record.use_site(),
+                record.unavailable_declaration(),
+            ] {
+                source.line_map.validate_range(range).ok()?;
+            }
+            let use_site = record.use_site().1;
+            let insertion = record.insertion().1;
+            let declaration = record.unavailable_declaration().1;
+            let name = source.source_text.get(use_site.start..use_site.end)?;
+            DiagnosticDraft::new(DiagnosticDraftInput {
+                source_snapshot: snapshot,
+                code: descriptor.code,
+                phase: DiagnosticPhase::Resolver,
+                category: FailureCategory::ResolveError,
+                stable_detail_key: descriptor.semantic_name.to_owned(),
+                message: descriptor.summary.to_owned(),
+                primary_location: DiagnosticPrimaryLocation::Span(
+                    DiagnosticSpan::primary(
+                        use_site,
+                        Some(format!("`{name}` is unavailable here")),
+                    )
+                    .ok()?,
+                ),
+                secondary_spans: vec![
+                    DiagnosticSpan::secondary(insertion, Some("computation insertion".to_owned()))
+                        .ok()?,
+                    DiagnosticSpan::secondary(
+                        declaration,
+                        Some(format!("unavailable quantified declaration `{name}`")),
+                    )
+                    .ok()?,
+                ],
+                notes: Vec::new(),
+                details: DiagnosticDetails::from_entries([
+                    (
+                        "resolve.name",
+                        DiagnosticDetailValue::String(name.to_owned()),
+                    ),
+                    ("resolve.use_site", DiagnosticDetailValue::Source(use_site)),
+                    (
+                        "resolve.insertion",
+                        DiagnosticDetailValue::Source(insertion),
+                    ),
+                    (
+                        "resolve.unavailable_declaration",
+                        DiagnosticDetailValue::Source(declaration),
+                    ),
+                ])
+                .ok()?,
+                fixes: Vec::new(),
+                explanation: None,
+            })
+            .ok()
+        })
+        .collect()
 }
 
 fn convert_frontend_diagnostics(

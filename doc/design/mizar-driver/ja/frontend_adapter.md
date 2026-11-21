@@ -83,6 +83,12 @@ dispatch input hashは捕捉versionのSourceUnitCacheKey、dependency hashesは�
 class対応はsource preconditionがlexical-precondition（未終端commentのみcomment-structure）、import/raw-import scanがimport-prescan、environmentがlexical-environment、scopeがscope-skeleton、raw-scan/lexerがtokenization、既知parser keyがsyntaxまたはannotation-syntaxとする。SourceLoad項目、未知code/class/parser文字列、不整合code/class組合せは変換全体を失敗させる。全主範囲・副アンカー射影を所有loaded sourceのidentity/本文に照合し、順序・長さ・UTF-8端点を検証する。共有アンカーは意図未指定で欠落なく保持し、message/生成理由原文、副位置順序・重複を維持する。recovery Noneはnoteなし、Someは空文字列を含め1個のNoteとする。保存復元の成功だけからソース結合を推測しない。
 実clean/imported/失敗経路、blob往復、current親/lineage/hash分離、全mapping、未知・不正入力、アンカー/意図・空note保持、変換失敗の原子性を検査する。実際に生成する分類は実生成元、予約・pass-through分類はtyped retained fixtureを使い、後者で生成可能性を主張しない。全体buildと後段の受理は後続とする。
 
+## Computation scope diagnostic adoption
+
+clean な Frontend parse と import 検証の後、元の宣言 symbol と対応する resolved arena を非公開で収集し、Resolver の認証済み computation unavailable-declaration evidence を取得する。完全な実 row だけが既存 descriptor の E0206 (`resolve.ast_scope`) を別の Resolver/ResolveError sink に出す。
+source 名/使用・computation 挿入点・利用不能な量化宣言を labeled current span と構造化 source detail で示す。全 batch を loaded source に照合してから発行し、返却前に parent/publisher currentness を再確認する。出力なしの Recoverable により scheduled prefix は session を失敗させ通常の後続を skip する。
+未対応の取得は E0206 を作らず従来の Frontend 経路を維持する。未知名・可視の外側束縛・古い/回復済み/不一致 source・未対応 call/formal/formula から報告を捏造しない。既存 shape/unresolved/Missing error を保ち、checked reflection・capture・再構成・formation・実行・proof/acceptance・semantic/corpus credit を与えない。
+
 ## 診断専用 import 継続の設計
 
 resolver の [source-bound import producer](../../mizar-resolve/ja/imports.md#構文木からの-import-候補) が supplied-parent・診断専用・clean-importer 経路の parsed/prescan/source 対応と path 解決を担当する。driver の admission、封印出力の現行性、publication と診断変換は維持する。

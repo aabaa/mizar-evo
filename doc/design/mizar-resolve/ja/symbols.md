@@ -755,7 +755,7 @@ map のテストは実 capture/collector と独立した元 occurrence 認証か
 
 `source_computation_scope_evidence` は渡された元 AST と resolved arena・symbol replay 全体の一致を認証してから、明示的な `expr of boolean` formal と formula 引数を持つ unary local algorithm の reject-only row を導出する。row は実際の call/declaration/formal/type と insertion/use/unavailable-declaration の anchor を保持し、挿入位置の lexical winner は statement の量化変数より優先する。未知名は unavailable-declaration row を作らない。
 限定 formula intake は bare-name の等式と、明示的な object/set 型の単名 statement 量化変数を扱う。未対応の formula/scope host、callee の曖昧さ、formal の不一致、受付 lexical profile 外の source 宣言は取得全体を拒否し、先に作った row も返さない。
-`validate_source_computation_scope_evidence` は row 全体を再導出し元の構造 identity を比較して、古い provenance・別 source を拒否する。認証対象は source 構造であり、物理 raw text の currentness・free UID・checked reflection・診断出力・計算・受理ではない。一般 occurrence intake と既存 consumer は変更せず、後続 E0206 採用は AST-DIAGNOSTICS が所有する。
+`validate_source_computation_scope_evidence` は row 全体を再導出し元の構造 identity を比較して、古い provenance・別 source を拒否する。認証対象は source 構造であり、物理 raw text の currentness・free UID・checked reflection・診断出力・計算・受理ではない。一般 occurrence intake は変更せず、限定 E0206 採用は [Driver scope bridge](../../mizar-driver/ja/frontend_adapter.md#computation-scope-diagnostic-adoption) が所有する。
 
 ## Original-source declaration shells
 `source_declaration_shells(&SurfaceResolvedArena, &SymbolEnv) -> Result<DeclarationShellSet, String>` は最初に未変更 validated_source_symbol_ast を呼び、その error をそのまま返す。得た実 private AST/module を既存 DeclarationShellCollector に渡し、空結果・全 declaration/export・opaque ID・順序・parent・range・visibility・recovery を選別や namespace cast なしで保持する。occurrence/label/type 検証や新 source profile、context/phase/proof/acceptance/publication/currentness/reuse の権威は作らず、旧 API と入力を保つ。
