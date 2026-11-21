@@ -48,6 +48,8 @@ must not:
 - build legacy `Certificate`, `LegacyCertificate`, or `LegacyResolutionTrace`
   objects as trusted handoff material.
 
+The bounded [source theorem profile](#source-theorem-local-handoff) defines an explicit independent-reflexivity evidence subset; these exhaustive generic-builder rules otherwise remain unchanged.
+
 Instantiated formulas and SAT clauses are not handoff fields. They are
 kernel-derived acceptance material only.
 
@@ -420,13 +422,14 @@ These are raw handoff data, including the existing v1 profile rendering, without
 ## Source theorem local handoff
 
 `build_source_theorem_kernel_handoff(&CoreIr, &VcSet, VcId) -> Result<VcKernelEvidenceHandoff, String>` consumes validated Core and its original generic VC set; raw Core is no unforgeable Checker seal. It preserves old handoff APIs, registration output and all input statuses/source maps.
-The initial profile has exactly one unmodified `CoreItemKind::Theorem` (not Lemma), Valid/PendingAutomaticProof, one active TheoremProof seed and one proof containing IntroduceBinder then its actual uncited TerminalGoal. No extra item/proof/seed, definition, algorithm, generated origin or diagnostic is supported.
+The profile has a nonempty finite set of unmodified `CoreItemKind::Theorem` owners (not Lemma), each Valid/PendingAutomaticProof with one active TheoremProof seed and IntroduceBinder followed by its actual TerminalGoal. Each terminal may cite at most one earlier local owner. Multi-owner modules require public owners; unsupported items, definitions, algorithms, generated origins and diagnostics refuse.
 The original proposition has one universal binder with an actual set guard and its bound-variable reflexive equality body. The introduced local variable has its own actual set guard and reflexive equality terminal goal. These Core variable identities must differ, even under equal source spelling; only actually reachable profile terms/formulas are permitted.
 
 First look up the selected VC handle, then call [raw generation](./generator.md#source-theorem-vc-generation) with the supplied snapshot/VC schema and selected anchor generation schema. Require WHOLE replay equality, including seed accounting, owner, goal and local-context association, before profile validation or evidence projection.
 Only the original Open TheoremProofStep generated from this Core TerminalGoal is supported; no terminal marker is synthesized. VcId is a lookup handle, not origin proof; absent, foreign, cross-paired or modified whole graphs and default-Discharge/NeedsAtp alternatives fail closed. Profile refusals use internal `theorem.handoff.invalid_projection`; actual lower errors retain Display text.
-Project only the actual local guard and selected local goal into KernelFormulaPayloads and consume them through existing `build_kernel_evidence_handoff`. The original Forall guard/body authenticates the skeleton; it is never flattened into a premise. Neither proposition nor goal becomes a premise.
-Cited/pending dependencies, richer profiles and other roles refuse. Do not recover formulas from caller payload, source text or Debug, recheck source in VC, invent a substitution/equality instance, introduce imported/accepted facts or hide a cited premise.
+Validate the whole owner/proof/seed/accounting bijection and reachable formula/term union before selecting the requested VC. The original quantified citations, dependency symbols and full context remain in Core/VC and their canonical identities.
+Project only the actual local guard and goal. Uncited profiles retain the existing generic builder and singleton bytes. For a cited terminal, assemble an explicit independent-reflexivity evidence subset using the original full target fingerprint and actual guard context entry. Evidence context identity covers that subset; the original target still binds every context entry and premise. Never clone a reduced VC and claim its target as the original.
+The Kernel proves the stronger local sequent using its existing equality law; unused cited propositions are neither flattened, instantiated nor claimed as evidence. Proof/Driver must freshly accept every clean cited ancestor before publication. Richer profiles, unsupported context and other roles refuse; generic builder exhaustiveness is unchanged. No source reconstruction, new trusted inference or cited-formula proof credit follows.
 
 Dense manifests map the actual required builtin Equality to numeric 0 and BuiltinRelation(set) to numeric 1, with exactly those two symbol rows. The actual proof-local CoreVarId alone maps to Kernel variable 0 and manifest row 0; the distinct original quantified variable is excluded. No free term becomes a ground constant.
 Encode the actual Core TypePred with ty `set` and its selected Var, and equality with both actual occurrences of that same Var. Inline minimal atom/term construction, reuse existing VC/Kernel local v1 grammar, algorithm-2 formula-fingerprint framing and final writer; no new envelope codec or hash family.

@@ -32,6 +32,8 @@ substitution から instantiated formula を再導出し、deterministic SAT pro
 
 ## Boundary Rules
 
+汎用 builder の全前提要求に対する唯一の bounded な例外は [source theorem profile](#source-theorem-local-handoff) の独立 reflexivity 証拠部分集合である。
+
 `mizar-vc` は prover-independent のままでなければならない。task 25 が追加する
 handoff builder は、既存の VC data、canonical formula payload、context entry、premise
 reference、discharge record、dependency slice、provenance を調べてよいが、次を行っては
@@ -394,13 +396,14 @@ context identity は全実 envelope と producer entry を結び、provenance �
 ## Source theorem local handoff
 
 `build_source_theorem_kernel_handoff(&CoreIr, &VcSet, VcId) -> Result<VcKernelEvidenceHandoff, String>` は検証済み Core と元の汎用 VC set を消費する。raw Core は偽造不能な Checker seal ではない。既存 API、registration 出力、入力 status/source map を保持する。
-初期 profile は unmodified `CoreItemKind::Theorem`（Lemma 以外）1件、Valid/PendingAutomaticProof、active TheoremProof seed 1件、IntroduceBinder と実際の uncited TerminalGoal の順の proof 1件のみ。追加 item/proof/seed、definition、algorithm、generated origin、diagnostic は拒否する。
+profile は unmodified `CoreItemKind::Theorem`（Lemma 以外）の有限非空集合。各 owner は Valid/PendingAutomaticProof、active TheoremProof seed と IntroduceBinder/TerminalGoal を各一つ持ち、terminal は先行する local owner を最大一つ引用できる。複数 owner は public に限定し、未対応 item/definition/algorithm/generated origin/diagnostic は拒否する。
 元 proposition は実 set guard 付き universal binder 1件と、その束縛変数の反射等式 body を持つ。導入した local variable は自身の実 set guard と反射等式 terminal goal を持つ。同じ source 表記でも両 Core variable identity は異なり、実際に到達可能な profile term/formula のみ扱う。
 
 最初に selected VC handle を検索し、supplied snapshot/VC schema と selected anchor generation schema で [raw generation](./generator.md#source-theorem-vc-generation) を呼ぶ。profile validation/evidence 射影より前に、seed accounting、owner、goal、local-context association を含む WHOLE replay equality を要求する。
 この Core TerminalGoal から生成された元の Open TheoremProofStep のみ対応し、terminal marker は合成しない。VcId は検索 handle であり出自証明ではない。欠落、foreign、cross-paired、whole-graph 変更、既定 Discharge/NeedsAtp alternative は拒否する。profile 拒否は internal `theorem.handoff.invalid_projection`、下位 error は元の Display text を保持する。
-実 local guard と selected local goal だけを KernelFormulaPayloads に射影し、既存 `build_kernel_evidence_handoff` で消費する。元の Forall guard/body は skeleton 確認専用で前提へ平坦化せず、proposition/goal を前提にしない。
-Cited/pending dependency、拡張 profile、他 role は拒否する。caller payload/source text/Debug からの式復元、VC での source 再検査、置換・等式 instance の捏造、imported/accepted fact や隠れた引用前提の追加は禁止する。
+選択前に owner/proof/seed/accounting の全単射と到達可能な formula/term の和集合を検証する。元の量化引用、依存 symbol と完全 context は Core/VC とその canonical identity に保持する。
+実 local guard/goal のみを射影する。引用なしは既存汎用 builder と singleton bytes を保持する。引用ありは、元の完全 target fingerprint と実 guard context entry で独立 reflexivity の証拠部分集合を構築する。evidence context identity はその部分集合を覆い、元 target は全 context/premise に束縛される。VC を縮小して別 target を元 target として扱わない。
+Kernel は既存 equality law でより強い local sequent を証明する。未使用引用は平坦化・事前インスタンス化せず、証拠として主張しない。公開前に Proof/Driver が全 clean な引用祖先を新規受理する。拡張 profile、未対応 context、他 role は拒否し、汎用 builder の全前提要求は不変。source 復元、新 trusted inference、引用式による証明 credit は与えない。
 
 Dense manifest は実 builtin Equality を numeric 0、BuiltinRelation(set) を numeric 1 に写し、この2 symbol row のみ持つ。実 proof-local CoreVarId だけを Kernel variable 0 と manifest row 0 に写し、異なる元の quantified variable は除外する。free term を ground constant にしない。
 実 Core TypePred の ty `set` と selected Var、等式の同じ Var の実左右出現を encode する。最小 atom/term 構築を inline とし、既存 VC/Kernel local v1 grammar、algorithm-2 formula-fingerprint framing、final writer を再利用する。新 envelope codec/hash family は追加しない。
