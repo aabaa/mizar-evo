@@ -1177,9 +1177,14 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
             AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput,
             PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
         },
-        status::check_source_algorithm_return_reflexivity as verify,
+        status::{
+            check_source_algorithm_e2_result as associate,
+            check_source_algorithm_return_reflexivity as verify,
+            source_algorithm_return_obligation_identity,
+        },
     };
     use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
         generator::generate_source_algorithm_postconditions,
         kernel_evidence_handoff::{
             KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
@@ -1272,6 +1277,18 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
             let handoff =
                 build_source_algorithm_return_kernel_handoff(&core, &vcs, vc.id, &generation)
                     .unwrap();
+            let original = source_algorithm_return_obligation_identity(
+                &source, &check, &symbols, snapshot, vc.id,
+            )
+            .unwrap();
+            let slices = try_compute_dependency_slices(DependencySliceInput {
+                vc_set: &vcs,
+                discharge_output: None,
+            })
+            .unwrap();
+            assert_eq!(&original.1, slices.slice_for(vc.id).unwrap());
+            assert!(original.1.requires_cache_miss());
+            assert!(!original.1.unknowns().is_empty());
             let envelope = handoff.canonical_evidence();
             let target = envelope.target_vc();
             let profile = envelope.kernel_profile();
@@ -1422,6 +1439,15 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
             );
             let expected_decision =
                 evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input.clone()));
+            let associated = associate(&source, &check, &symbols, &core, snapshot, vc.id).unwrap();
+            assert_eq!(
+                associated,
+                (original.0, original.1, expected_result.clone(), 1_u16)
+            );
+            assert_eq!(
+                associate(&source, &check, &symbols, &core.clone(), snapshot, vc.id).unwrap(),
+                associated
+            );
             let actual = verify(&source, &nodes, &symbols, snapshot, vc.id, &policy).unwrap();
             assert_eq!(actual, (expected_result, expected_decision));
             assert_eq!(actual.0.status(), KernelCheckStatus::Accepted);
@@ -11004,4 +11030,254 @@ fn source_algorithm_native_e1_single_valuedness_rechecks_current_policy_after_up
                 .unwrap()
         );
     });
+}
+
+#[test]
+fn source_algorithm_e2_result_refuses_foreign_mutated_and_unused_core() {
+    use mizar_core::{
+        core_ir::{CoreFormulaKind, CoreIr},
+        elaborator::{lower_source_algorithms, source_algorithm_formula_payloads},
+    };
+    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "owners",
+        0,
+        |source, _, symbols, check| {
+            let core = lower_source_algorithms(check).unwrap();
+            let guard = core.algorithms().iter().next().unwrap().1.params[0]
+                .ty_guard
+                .unwrap();
+            let baseline =
+                associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap();
+            assert_eq!(
+                associate(
+                    source,
+                    check,
+                    symbols,
+                    &core.clone(),
+                    snapshot_id(0),
+                    VcId::new(0)
+                )
+                .unwrap(),
+                baseline
+            );
+            with_source_algorithm_identity_inputs(
+                &text.replace("idalgo", "foreign_algorithm"),
+                "other-package",
+                "owners",
+                7,
+                |_, _, _, other_check| {
+                    let foreign = lower_source_algorithms(other_check).unwrap();
+                    let mut mutated = sole_return_core_parts(&core);
+                    mutated.formulas.get_mut(guard).unwrap().kind = CoreFormulaKind::False;
+                    let mut unused = sole_return_core_parts(&core);
+                    let term = core.terms().iter().next().unwrap().1.clone();
+                    let extra = unused.terms.insert(term.clone());
+                    unused.source_map.term_sources.insert(extra, term.source);
+                    for refused in [
+                        foreign,
+                        CoreIr::try_new(mutated).unwrap(),
+                        CoreIr::try_new(unused).unwrap(),
+                    ] {
+                        assert_ne!(lower_source_algorithms(check).unwrap(), refused);
+                        let before = refused.clone();
+                        let expected = source_algorithm_formula_payloads(check, &refused, &[guard])
+                            .unwrap_err();
+                        for selected in [VcId::new(0), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                associate(
+                                    source,
+                                    check,
+                                    symbols,
+                                    &refused,
+                                    snapshot_id(0),
+                                    selected
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
+                        }
+                        assert_eq!(refused, before);
+                    }
+                },
+            );
+            assert_eq!(
+                associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap(),
+                baseline
+            );
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
+    use mizar_checker::type_checker::check_source_algorithm_types;
+    use mizar_core::elaborator::lower_source_algorithms;
+    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "owners",
+        0,
+        |source, _, symbols, check| {
+            let core = lower_source_algorithms(check).unwrap();
+            let baseline =
+                associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap();
+            with_source_algorithm_identity_inputs(
+                &text.replace("idalgo", "foreign_algorithm"),
+                "other-package",
+                "owners",
+                7,
+                |other_source, _, other_symbols, other_check| {
+                    for (source, check, symbols) in [
+                        (other_source, check, symbols),
+                        (source, other_check, other_symbols),
+                        (source, check, other_symbols),
+                    ] {
+                        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{baseline:?}");
+                        let expected = check_source_algorithm_types(source, check.typed(), symbols)
+                            .unwrap_err();
+                        for selected in [VcId::new(0), VcId::new(usize::MAX)] {
+                            assert_eq!(
+                                associate(source, check, symbols, &core, snapshot_id(0), selected)
+                                    .unwrap_err(),
+                                expected
+                            );
+                        }
+                        assert_eq!(
+                            format!("{source:?}{check:?}{symbols:?}{core:?}{baseline:?}"),
+                            before
+                        );
+                    }
+                },
+            );
+            let config = config();
+            let plan = crate::harness::build_test_plan(&config).unwrap();
+            let case = plan
+                .cases
+                .iter()
+                .find(|case| case.id.0 == "pass_proof_verification_algorithm_ensures_return_001")
+                .unwrap();
+            let text = text.replace("return a;", "return;");
+            let (refused_source, refused_typed, refused_symbols) =
+                super::super::super::source_registration_inputs(
+                    &config.workspace_root,
+                    case,
+                    super::super::super::formula_statement::step5c8_test_frontend(&text),
+                )
+                .unwrap();
+            let expected =
+                check_source_algorithm_types(&refused_source, &refused_typed, &refused_symbols)
+                    .unwrap_err();
+            assert_eq!(
+                check_source_algorithm_types(&refused_source, check.typed(), &refused_symbols)
+                    .unwrap_err(),
+                expected
+            );
+            assert_eq!(
+                associate(
+                    &refused_source,
+                    check,
+                    &refused_symbols,
+                    &core,
+                    snapshot_id(0),
+                    VcId::new(usize::MAX)
+                )
+                .unwrap_err(),
+                expected
+            );
+            assert_eq!(
+                associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap(),
+                baseline
+            );
+        },
+    );
+}
+
+#[test]
+fn source_algorithm_e2_result_preserves_core_generation_and_handoff_precedence() {
+    use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
+    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    use mizar_vc::{
+        generator::generate_source_algorithm_postconditions,
+        kernel_evidence_handoff::build_source_algorithm_return_kernel_handoff,
+    };
+    let config = config();
+    let original = fs::read_to_string(config.workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    let broader = fs::read_to_string(config.workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_var_const_assert_001.miz",
+    ))
+    .unwrap();
+    for (kind, text) in [
+        ("absent", original.clone()),
+        ("zero", original.replace("    ensures result = a\n", "")),
+        ("broader", broader),
+        (
+            "two_returns",
+            original
+                .replace("    ensures result = a\n", "")
+                .replace("return a;", "return a;\n    return a;"),
+        ),
+    ] {
+        with_source_algorithm_identity_inputs(
+            &text,
+            "owner-test",
+            "owners",
+            0,
+            |source, _, symbols, check| {
+                let core = lower_source_algorithms(check).unwrap();
+                let before = format!("{source:?}{check:?}{symbols:?}{core:?}");
+                let generation =
+                    GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+                let schema = VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1");
+                let selected = if kind == "absent" {
+                    VcId::new(usize::MAX)
+                } else {
+                    VcId::new(0)
+                };
+                let roots = core
+                    .algorithms()
+                    .iter()
+                    .flat_map(|(_, a)| a.params.iter().filter_map(|p| p.ty_guard))
+                    .collect::<Vec<_>>();
+                let expected = match source_algorithm_formula_payloads(check, &core, &roots) {
+                    Err(error) => error,
+                    Ok(_) => match generate_source_algorithm_postconditions(
+                        &core,
+                        snapshot_id(0),
+                        &generation,
+                        &schema,
+                    ) {
+                        Err(error) => error,
+                        Ok(vcs) => build_source_algorithm_return_kernel_handoff(
+                            &core,
+                            &vcs,
+                            selected,
+                            &generation,
+                        )
+                        .unwrap_err(),
+                    },
+                };
+                assert_eq!(
+                    associate(source, check, symbols, &core, snapshot_id(0), selected).unwrap_err(),
+                    expected,
+                    "{kind}"
+                );
+                assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
+            },
+        );
+    }
 }

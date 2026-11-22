@@ -539,6 +539,11 @@ projection/slice/draft 全体を一括で返し、stage・I/O は行いません
 新しい成功呼出の前に、既存 API の実際の元 identity/slice 全体、status projection、trusted token/wire を取得し、既存 constructor で期待 Draft 全体を独立に組み立てます。返却 triple 全体、元の domain/field、実際の accepted metadata/wire/policy/candidate と保持済み capture digest を比較します。native origin/source/snapshot と有効 policy の変種、再実行、実際に受け取った入力の不変性を検証します。捕捉した空参照は incomplete のままで、非空参照を与える場合も明示的に metadata だけです。raw file hash を Build の typed lock/config profile や runtime attestation と同一視しません。
 実際の identity error を最優先し、identity 成功後は既存 raw-check error を比較します。absent VC/disabled policy の組合せ、構成可能な non-theorem/open/multiple/cited・foreign/recovered source/env を含みます。不正 path は既存の実際の生成物による Draft constructor の error と比較します。構成不可能な防御的 association/selection guard は静的にレビューし、Accepted/Rejected/None metadata・complete slice・公開 receipt を捏造しません。既存の独立した下位行列と受理方針は保持します。
 
+## Original E2 request-identity association
+
+`check_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id)` は `(ProofObligationIdentity, DependencySlice, KernelCheckResult, u16)` を返す。fresh Checker 認証と algorithm 一致確認後、Core formula payloads で supplied Core 全体を replay 認証する。同じ Core 上で元の step5c14-return graph、raw slice 全体、singleton return handoff を生成し、実 v1/name/v2 evidence を既存 private helper 経由で normal Kernel に一度だけ渡し、成功時のみの checker schema を運ぶ。既存 caller は schema のみ捨て、結果と error を保持する。
+[元 return identity](#source-algorithm-return-obligation-identity) を再生成し、raw slice 全体の一致、実 Accepted・untainted ProofObligation と schema の存在を要求して一括返却する。owner error はそのまま伝え、局所的拒否は `algorithm.proof.invalid_e2_request`。currentness は caller 所有、raw Open/Deferred/unknown/incomplete/cache miss は維持する。policy consumption、native retention/adoption、五 role の aggregate acceptance は別工程で、symbol・promotion・reuse 権限を与えない。
+
 ## Source algorithm return reflexivity
 
 `check_source_algorithm_return_reflexivity(source: &SurfaceResolvedArena, nodes: &TypedArena, symbols: &SymbolEnv, snapshot: BuildSnapshotId, vc_id: VcId, policy: &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` を既存 status.rs の theorem reflexivity の完全な doccomment/function 直前へ一つ追加する。caller Core/check/VC/evidence/target/result/flag は受け取らない。

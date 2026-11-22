@@ -248,7 +248,7 @@ pub fn try_source_algorithm_state_transitivity_witness_draft(
     }) {
         return Err("algorithm.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input.clone()));
@@ -463,7 +463,7 @@ pub fn source_algorithm_state_transitivity_witness_draft(
     }) {
         return Err("algorithm.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input.clone()));
@@ -2020,7 +2020,7 @@ pub fn check_source_algorithm_state_transitivity(
     }) {
         return Err("algorithm.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
@@ -2091,11 +2091,108 @@ pub fn try_check_source_algorithm_state_transitivity(
     }) {
         return Err("algorithm.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
     Ok(Some((result, decision)))
+}
+
+/// Associates a genuine whole-body E2 check with its original request and raw slice.
+/// Source/snapshot currentness remains caller-owned; no policy or adoption follows.
+pub fn check_source_algorithm_e2_result(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        KernelCheckResult,
+        u16,
+    ),
+    String,
+> {
+    use mizar_kernel::{
+        certificate_parser::{ClauseTautologyPolicy, Fingerprint, KernelProfileRecord},
+        formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
+    };
+    use mizar_vc::{
+        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        generator::generate_source_algorithm_postconditions,
+        kernel_evidence_handoff::{
+            KernelClauseTautologyPolicy, build_source_algorithm_return_kernel_handoff,
+        },
+        vc_ir::{GenerationSchemaVersion, VcSchemaVersion},
+    };
+
+    let invalid = || "algorithm.proof.invalid_e2_request".to_owned();
+    let fresh =
+        mizar_checker::type_checker::check_source_algorithm_types(source, check.typed(), symbols)?;
+    if fresh.algorithm() != check.algorithm() {
+        return Err(invalid());
+    }
+    let roots = core
+        .algorithms()
+        .iter()
+        .flat_map(|(_, algorithm)| {
+            algorithm
+                .params
+                .iter()
+                .filter_map(|parameter| parameter.ty_guard)
+        })
+        .collect::<Vec<_>>();
+    mizar_core::elaborator::source_algorithm_formula_payloads(&fresh, core, &roots)?;
+    let generation = GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1");
+    let vcs = generate_source_algorithm_postconditions(
+        core,
+        snapshot,
+        &generation,
+        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+    )?;
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: &vcs,
+        discharge_output: None,
+    })
+    .map_err(|error| error.to_string())?;
+    let handoff = build_source_algorithm_return_kernel_handoff(core, &vcs, vc_id, &generation)?;
+    let envelope = handoff.canonical_evidence();
+    let target = envelope.target_vc();
+    let profile = envelope.kernel_profile();
+    let bytes = handoff.encode_local_evidence(None)?;
+    let tautology = match profile.clause_tautology_policy {
+        KernelClauseTautologyPolicy::Reject => ClauseTautologyPolicy::Reject,
+        KernelClauseTautologyPolicy::Marker => ClauseTautologyPolicy::Marker,
+        _ => return Err("algorithm.proof.invalid_source_evidence".to_owned()),
+    };
+    let mut parse_context = FormulaEvidenceParseContext::v1(
+        Fingerprint::new(target.algorithm_id, target.digest.clone()),
+        KernelProfileRecord::v1(profile.profile_id, tautology),
+    );
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("algorithm.proof.parse:{error:?}"))?;
+    let names = mizar_atp::backend::encode_local_variable_reflexivity_names(&parsed)?;
+    let bytes = handoff.encode_local_evidence(Some(&names))?;
+    parse_context.accepted_schema_versions.insert(2);
+    let parsed = parse_formula_evidence(&bytes, &parse_context)
+        .map_err(|error| format!("algorithm.proof.parse:{error:?}"))?;
+    let (result, schema) =
+        check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
+    let (identity, slice) =
+        source_algorithm_return_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+    if slices.slice_for(vc_id) != Some(&slice)
+        || result.status() != mizar_kernel::checker::KernelCheckStatus::Accepted
+        || result.policy_taint()
+        || result.evidence_check_kind()
+            != Some(mizar_kernel::checker::KernelEvidenceCheckKind::ProofObligation)
+    {
+        return Err(invalid());
+    }
+    let schema = schema.ok_or_else(invalid)?;
+    Ok((identity, slice, result, schema))
 }
 
 /// Checks one genuine source algorithm return goal with normal Kernel and policy.
@@ -2157,7 +2254,7 @@ pub fn check_source_algorithm_return_reflexivity(
     }) {
         return Err("algorithm.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "algorithm.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
@@ -2265,7 +2362,7 @@ pub fn check_source_theorem_candidate(
     parse_context.accepted_schema_versions.insert(2);
     let parsed = parse_formula_evidence(bytes, &parse_context)
         .map_err(|error| format!("theorem.candidate.proof.parse:{error:?}"))?;
-    let result = check_source_kernel_handoff(
+    let (result, _) = check_source_kernel_handoff(
         &handoff,
         &parsed,
         "theorem.candidate.proof.invalid_source_evidence",
@@ -2605,7 +2702,7 @@ fn check_source_theorem_reflexivity_payload(
     }) {
         return Err("theorem.proof.kernel_policy_rejected".to_owned());
     }
-    let result =
+    let (result, _) =
         check_source_kernel_handoff(&handoff, &parsed, "theorem.proof.invalid_source_evidence")?;
     let input = KernelPolicyInput::from_kernel_result(&result, origin);
     let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
@@ -4333,7 +4430,7 @@ fn check_source_registration_candidate_payload(
     parse_context.accepted_schema_versions.insert(2);
     let parsed = parse_formula_evidence(bytes, &parse_context)
         .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
-    let result = check_source_kernel_handoff(
+    let (result, _) = check_source_kernel_handoff(
         &handoff,
         &parsed,
         "registration.proof.invalid_source_candidate",
@@ -4516,7 +4613,7 @@ fn check_source_registration_discharge_payload(
     );
     let parsed = parse_formula_evidence(&bytes, &parse_context)
         .map_err(|error| format!("registration.proof.parse:{error:?}"))?;
-    let result = check_source_kernel_handoff(
+    let (result, _) = check_source_kernel_handoff(
         &handoff,
         &parsed,
         "registration.proof.invalid_source_candidate",
@@ -4591,14 +4688,15 @@ fn check_source_kernel_handoff(
     handoff: &mizar_vc::kernel_evidence_handoff::VcKernelEvidenceHandoff,
     parsed: &mizar_kernel::formula_evidence::ParsedKernelEvidence,
     invalid: &str,
-) -> Result<KernelCheckResult, String> {
+) -> Result<(KernelCheckResult, Option<u16>), String> {
     use mizar_kernel::{
         certificate_parser::Fingerprint,
         checker::{
             FormulaEvidenceContext, ImportedFactContextLimits, KernelCheckPolicy,
             KernelContextIdentityEntry, KernelContextIdentityPayload, KernelContextIdentitySource,
             KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
-            KernelFormulaProducerRef, KernelVcGeneratedFormulaId, check_kernel_evidence,
+            KernelFormulaProducerRef, KernelVcGeneratedFormulaId,
+            check_kernel_evidence_with_schema,
         },
         rejection::TargetVcFingerprint,
     };
@@ -4661,7 +4759,7 @@ fn check_source_kernel_handoff(
         ImportedFactContextLimits::default(),
     )
     .map_err(|error| format!("registration.proof.context:{error:?}"))?;
-    let result = check_kernel_evidence(KernelEvidenceCheckInput {
+    let result = check_kernel_evidence_with_schema(KernelEvidenceCheckInput {
         target_vc_fingerprint: &target,
         evidence: parsed,
         formula_context: Some(&context),
@@ -4826,7 +4924,7 @@ pub fn prove_source_existential_registration(
                     .map_err(|_| invalid())?;
             schema = 2;
         };
-        let result = check_source_kernel_handoff(
+        let (result, _) = check_source_kernel_handoff(
             &handoff,
             &parsed,
             "registration.proof.invalid_source_evidence",
