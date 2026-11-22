@@ -1845,13 +1845,13 @@ fn validate_type_profile(
             return Err(SourceModeDefinitionError::InvalidArenaOwnership);
         }
     }
-    for index in 0..2 {
+    for (index, parameter) in input.parameters.iter().enumerate() {
         let application = source_type
             .applications()
             .get(SourceTypeApplicationId::new(index))
             .ok_or(SourceModeDefinitionError::InvalidParameter { index })?;
         if application.id() != SourceTypeApplicationId::new(index)
-            || application.binding() != input.parameters[index].binding
+            || application.binding() != parameter.binding
             || application.source_ordinal() != index
             || application.root() != SourceTypeExpressionId::new(index)
         {
