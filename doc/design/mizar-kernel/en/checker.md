@@ -153,6 +153,11 @@ No evidence, acceptance, status, symbol, publication or broader credit follows.
 
 Only success constructs the existing `AlgorithmReturnsExistentialCheck`, borrowing Core and retaining that instantiated target, actual witness and caller guard. VC owns [fresh source and whole-request authentication](../../mizar-vc/en/generator.md#bounded-unary-child-existential). This rule changes neither the old formal rule nor Proof identity/policy/adoption; caller E4 acceptance, broader substitution and general malformed-Core safety remain deferred.
 
+## Bounded Unary Caller Operational Composition
+
+`check_unary_caller_returns_existential_result(core, request, target, child, context)` requires pointer-identical Core child evidence and rechecks its target/witness/context with the unchanged unary child rule before rebuilding CFG. Require the original caller flow/sole Return, the child's definition-free actual input/fresh result binder and identical sole caller guard. The child rule fixes the original Return→Apply→callee/actual and formal/result-slot joins; operationally the caller returns the child's checked actual witness.
+Only success constructs the existing `AlgorithmReturnsExistentialCheck` with the caller target, actual witness and guard. VC owns [whole-source/request authentication](../../mizar-vc/en/generator.md#bounded-unary-caller-e4-descriptor). Existing existential schema applies; Proof caller identity/policy/adoption, E1/E2 and whole acceptance remain separate. No generic evidence/status/publication, complete footprint or broader-profile authority follows.
+
 ## Bounded E1-inhabitation Witness Introduction
 
 `check_object_inhabitation_witness(core, target, witness, child, context)` checks

@@ -593,6 +593,21 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             mizar_vc::generator::check_source_unary_child_call_existential_result(
                 &source, &typed, symbols, &core, &request,
             ).unwrap();
+        let (composed_descriptor, composed) =
+            mizar_vc::generator::check_source_unary_child_call_caller_e4_result(
+                &source, &typed, symbols, &core, &request, &retained,
+            ).unwrap();
+        assert_eq!(composed_descriptor, caller_e4);
+        assert_eq!(composed.witness(), request.actual);
+        assert!(std::ptr::eq(composed.core(), &core));
+        assert_eq!(composed.target(), (
+            request.caller,
+            mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller],
+            request.statement, (input.var, None), (*var, None),
+        ));
+        assert_eq!(composed.context(), [expected.1.1]);
+        assert_eq!(composed.checker_schema_version(), retained.checker_schema_version());
+        assert_eq!(retained.target(), (algorithm, flow, statement, (input.var, None), (*var, None)));
         let association = mizar_proof::status::SourceUnaryChildCallAssociation::from_source(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
@@ -675,6 +690,20 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(
                 &source, &typed, symbols, current_core, &request,
             ).unwrap(), caller_e4);
+            let (_, current_child) = mizar_vc::generator::check_source_unary_child_call_existential_result(
+                &source, &typed, symbols, current_core, &request,
+            ).unwrap();
+            for _ in 0..2 {
+                let (descriptor, result) = mizar_vc::generator::check_source_unary_child_call_caller_e4_result(
+                    &source, &typed, symbols, current_core, &request, &current_child,
+                ).unwrap();
+                assert_eq!(descriptor, caller_e4);
+                assert!(std::ptr::eq(result.core(), current_core));
+                assert_eq!(result.target(), composed.target());
+                assert_eq!(result.witness(), request.actual);
+                assert_eq!(result.context(), composed.context());
+                assert_eq!(result.checker_schema_version(), composed.checker_schema_version());
+            }
         }
         assert_eq!(cloned_core, core_before.0);
         assert_eq!((&core, &request), (&core_before.0, &core_before.1));
@@ -704,12 +733,16 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         elaborator::lower_source_unary_child_call as lower,
     };
     use mizar_vc::generator::{
+        check_source_unary_child_call_caller_e4_result as compose,
         check_source_unary_child_call_existential_result as retain,
         generate_source_unary_child_call_caller_e4_request as caller_e4,
         generate_source_unary_child_call_descriptor as describe,
         generate_source_unary_child_call_existential_request as generate,
     };
-    use mizar_kernel::checker::check_unary_child_returns_existential_result as kernel;
+    use mizar_kernel::checker::{
+        check_unary_caller_returns_existential_result as compose_kernel,
+        check_unary_child_returns_existential_result as kernel,
+    };
     use mizar_proof::{
         policy::VerifierPolicy as Policy,
         status::{NativeUnaryChildCallExistential as Native, SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume},
@@ -726,6 +759,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_caller_e4 = caller_e4(&source, &typed, symbols, &core, &request).unwrap();
     let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
+    let (composed_descriptor, composed) = compose(&source, &typed, symbols, &core, &request, &retained).unwrap();
+    assert_eq!(composed_descriptor, genuine_caller_e4);
     let association = Association::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let policy = Policy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
@@ -733,6 +768,12 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let native = Native::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let (consumed, fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let cloned_core = core.clone();
+    let (_, cloned_child) = retain(&source, &typed, symbols, &cloned_core, &request).unwrap();
+    for (current_core, foreign_child) in [(&core, &cloned_child), (&cloned_core, &retained)] {
+        assert_eq!(compose(&source, &typed, symbols, current_core, &request, foreign_child).err().unwrap(),
+            "algorithms.unary_child.invalid_caller_e4_request");
+        assert!(compose_kernel(current_core, &request, composed.target(), foreign_child, retained.context()).is_none());
+    }
     let genuine_identity = native.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap();
     assert_eq!(canonical_unary_child(&source, &typed, symbols, &cloned_core, &request).unwrap(), canonical_unary_child(&source, &typed, symbols, &core, &request).unwrap());
     for current_policy in [&policy, &denied] {
@@ -774,6 +815,23 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         panic!("caller normal-return descriptor")
     };
     let caller_target = (algorithm, flow, statement, (input.var, input.definition), (result.var, result.definition));
+    assert_eq!(composed.target(), caller_target);
+    assert!(compose_kernel(&core, &request, caller_target, &retained, &[actual_guard]).is_some());
+    assert!(compose_kernel(&core, &request, target, &retained, &[actual_guard]).is_none());
+    assert!(compose_kernel(&core, &request, caller_target, &composed, &[actual_guard]).is_none());
+    assert_eq!(compose(&source, &typed, symbols, &core, &request, &composed).err().unwrap(),
+        "algorithms.unary_child.invalid_caller_e4_request");
+    let mut formal_target = target;
+    formal_target.3.0 = request.formal;
+    let formal_child = mizar_kernel::checker::check_algorithm_returns_existential_result(
+        &core, formal_target, binder, formal_return, &[formal_guard],
+    ).expect("formal-only child evidence is independently valid");
+    assert!(compose_kernel(&core, &request, caller_target, &formal_child, &[actual_guard]).is_none());
+    assert_eq!(compose(&source, &typed, symbols, &core, &request, &formal_child).err().unwrap(),
+        "algorithms.unary_child.invalid_caller_e4_request");
+    let mut different_binder = caller_target;
+    different_binder.4.0 = CoreVarId::new(binder.index() + 1);
+    assert!(compose_kernel(&core, &request, different_binder, &retained, &[actual_guard]).is_none());
     assert!(kernel(&core, &request, caller_target, binder, request.actual, &[actual_guard]).is_none());
     assert!(mizar_kernel::checker::check_algorithm_returns_existential_result(
         &core, caller_target, binder, request.actual, &[actual_guard],
@@ -805,6 +863,21 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             _ => unreachable!(),
         }
         assert!(kernel(&core, &request, changed, binder, request.actual, &[actual_guard]).is_none(), "target {mutation}");
+        let mut caller_changed = caller_target;
+        match mutation {
+            0 => caller_changed.0 = request.callee,
+            1 => caller_changed.0 = changed.0,
+            2 => caller_changed.1 = target.1,
+            3 => caller_changed.1 = changed.1,
+            4 => caller_changed.2 = target.2,
+            5 => caller_changed.2 = changed.2,
+            6..=8 | 17 => caller_changed.3.0 = changed.3.0,
+            9..=11 | 16 => caller_changed.4.0 = changed.4.0,
+            12 | 14 => caller_changed.3.1 = changed.3.1,
+            13 | 15 => caller_changed.4.1 = changed.4.1,
+            _ => unreachable!(),
+        }
+        assert!(compose_kernel(&core, &request, caller_changed, &retained, &[actual_guard]).is_none(), "caller target {mutation}");
     }
     for wrong in [formal_return, request.application, CoreTermId::new(usize::MAX)] {
         assert!(kernel(&core, &request, target, binder, wrong, &[actual_guard]).is_none(), "witness {wrong:?}");
@@ -819,6 +892,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     }
     for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
         assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
+        assert!(compose_kernel(&core, &request, caller_target, &retained, &context).is_none(), "caller context {context:?}");
     }
     for mutation in 0..17 {
         let mut changed = request.clone();
@@ -850,6 +924,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(canonical_unary_child(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "request {mutation}");
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "existential request {mutation}");
         assert_eq!(caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 request {mutation}");
+        assert_eq!(compose(&source, &typed, symbols, &core, &changed, &retained).err().unwrap(), "algorithms.unary_child.invalid_request", "composition request {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "association request {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer request {mutation}");
@@ -858,6 +933,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(native.obligation_identity(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
+        assert!(compose_kernel(&core, &changed, caller_target, &retained, &[actual_guard]).is_none(), "caller Kernel request {mutation}");
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
@@ -950,6 +1026,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(canonical_unary_child(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "existential Core {mutation}");
         assert_eq!(caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 Core {mutation}");
+        assert_eq!(compose(&source, &typed, symbols, &changed, &request, &retained).err().unwrap(), "algorithms.unary_child.invalid_request", "composition Core {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "association Core {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer Core {mutation}");
@@ -976,7 +1053,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         let other_typed = super::super::source_registration_receiver(&other_source, nodes).unwrap();
         if module == "atomic" && edited.contains("algorithm edited(") {
             let (other_core, other_request) = lower(&check(&other_source, other_collected.env(), &other_typed).unwrap()).unwrap();
-            let other_descriptor = retain(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().0;
+            let (other_descriptor, other_child) = retain(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_caller_e4 = caller_e4(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(other_caller_e4.0, other_descriptor.0);
             let mizar_vc::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns { algorithm, flow, statement, .. } = other_caller_e4.1[0].shape else {
@@ -985,6 +1062,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!((algorithm, flow, statement), (other_request.caller,
                 mizar_core::control_flow::build_control_flow_ir(&other_core).flow_map[&other_request.caller], other_request.statement));
             assert_eq!(other_caller_e4.1[1], other_descriptor.1[1]);
+            assert_eq!(compose(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &other_child).unwrap().0, other_caller_e4);
+            assert_eq!(compose(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &retained).err().unwrap(), "algorithms.unary_child.invalid_caller_e4_request");
+            assert_eq!(compose(&source, &typed, symbols, &core, &request, &other_child).err().unwrap(), "algorithms.unary_child.invalid_caller_e4_request");
             let other_association = Association::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(other_association.descriptor(), &other_descriptor);
             assert!(other_association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
@@ -1018,6 +1098,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(canonical_unary_child(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(caller_e4(s, t, e, &core, &request).unwrap_err(), error);
+            assert_eq!(compose(s, t, e, &core, &request, &cloned_child).err().unwrap(), error);
             assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(Association::from_source(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(consume(s, t, e, &core, &request, &denied).err().unwrap(), error);
@@ -1041,6 +1122,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(canonical_unary_child(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(caller_e4(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
+    assert_eq!(compose(&source, &forged, symbols, &core, &request, &cloned_child).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(retain(&source, &forged, symbols, &core, &request).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
     let error = check(&source, symbols, &forged).unwrap_err();
     assert_eq!(Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
@@ -1052,6 +1134,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let mut mismatched = request.clone();
     mismatched.caller = request.callee;
     assert_eq!(caller_e4(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
+    assert_eq!(compose(&source, &forged, symbols, &cloned_core, &mismatched, &retained).err().unwrap(), error);
     assert_eq!(retain(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(Association::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(consume(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
@@ -1082,6 +1165,12 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine_existential);
     assert_eq!(caller_e4(&source, &typed, symbols, &core, &request).unwrap(), genuine_caller_e4);
     assert_eq!(retain(&source, &typed, symbols, &core, &request).unwrap().0, genuine_existential);
+    let (recovered_descriptor, recovered) = compose(&source, &typed, symbols, &core, &request, &retained).unwrap();
+    assert_eq!(recovered_descriptor, genuine_caller_e4);
+    assert_eq!(recovered.target(), composed.target());
+    assert_eq!(recovered.witness(), retained.witness());
+    assert_eq!(recovered.context(), retained.context());
+    assert_eq!(recovered.checker_schema_version(), retained.checker_schema_version());
     assert_eq!((policy, denied), policies_before);
     assert_eq!((source, typed, symbols.clone(), core, request), before);
 }
@@ -1101,7 +1190,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert!(mizar_vc::generator::generate_source_unary_child_call_descriptor(
         &source, &typed, collected.env(), &core, &request,
     ).is_ok());
-    let (existential, _) = mizar_vc::generator::check_source_unary_child_call_existential_result(
+    let (existential, retained) = mizar_vc::generator::check_source_unary_child_call_existential_result(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap();
     let policy = mizar_proof::policy::VerifierPolicy::default();
@@ -1147,6 +1236,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap_err(), upstream);
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e4_result(
+        &source, &typed, collected.env(), &core, &request, &retained,
+    ).err().unwrap(), upstream);
     assert_eq!(mizar_vc::generator::check_source_unary_child_call_existential_result(
         &source, &typed, collected.env(), &core, &request,
     ).err().unwrap(), upstream);

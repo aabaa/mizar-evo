@@ -3062,6 +3062,54 @@ pub fn check_source_unary_child_call_existential_result<'core>(
     Ok((descriptor, checked))
 }
 
+/// Authenticates the caller target before composing explicit same-Core child evidence.
+pub fn check_source_unary_child_call_caller_e4_result<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    child: &mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+) -> Result<
+    (
+        (LocalContext, [crate::vc_ir::VcGeneratedFormula; 2]),
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    ),
+    String,
+> {
+    let descriptor =
+        generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let crate::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let checked = mizar_kernel::checker::check_unary_caller_returns_existential_result(
+        core,
+        request,
+        (
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        child,
+        &[guard],
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checked))
+}
+
 /// Emits Open E1/E4 requests for the authenticated terminating sole-parameter return profile.
 pub fn generate_source_algorithm_direct_return_requests(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

@@ -1630,7 +1630,7 @@ pub fn check_algorithm_returns_existential(
 }
 
 /// A checked `exists r.returns(a,r)` under the retained Core context.
-/// Only the exact existential rule can construct this immutable result.
+/// Only checked existential rules can construct this immutable result.
 #[expect(
     clippy::type_complexity,
     reason = "retain the original relation tuple without a single-use representation"
@@ -1649,7 +1649,7 @@ pub struct AlgorithmReturnsExistentialCheck<'core> {
 }
 
 impl<'core> AlgorithmReturnsExistentialCheck<'core> {
-    /// Schema of this Kernel-owned positive original-existential rule.
+    /// Schema of this Kernel-owned positive existential rule.
     #[must_use]
     pub const fn checker_schema_version(&self) -> u16 {
         1
@@ -1831,6 +1831,56 @@ pub fn check_unary_child_returns_existential_result<'core>(
         target,
         witness,
         context: [*assumption],
+    })
+}
+
+/// Composes the bounded caller Return/Apply with exact same-Core child evidence.
+/// This supplies no Proof caller association, policy eligibility or adoption.
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the checked existential relation without a parallel representation"
+)]
+pub fn check_unary_caller_returns_existential_result<'core>(
+    core: &'core CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    child: &AlgorithmReturnsExistentialCheck<'core>,
+    context: &[CoreFormulaId],
+) -> Option<AlgorithmReturnsExistentialCheck<'core>> {
+    if !std::ptr::eq(core, child.core)
+        || context != child.context
+        || target.3 != child.target.3
+        || target.4 != child.target.4
+    {
+        return None;
+    }
+    // Revalidate the whole child/request join and cycles before CFG rebuilding.
+    check_unary_child_returns_existential_result(
+        core,
+        request,
+        child.target,
+        child.target.4.0,
+        child.witness,
+        &child.context,
+    )?;
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    if target.0 != request.caller
+        || cfg.flow_map.get(&request.caller) != Some(&target.1)
+        || target.2 != request.statement
+    {
+        return None;
+    }
+    Some(AlgorithmReturnsExistentialCheck {
+        core,
+        target,
+        witness: child.witness,
+        context: child.context,
     })
 }
 
