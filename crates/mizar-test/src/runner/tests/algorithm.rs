@@ -15,7 +15,7 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
     use mizar_session::{SourceAnchor, SourceRange};
     use mizar_proof::{
         policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
-        status::consume_source_unary_child_call_existential as consume,
+        status::{NativeUnaryChildCallExistential as Native, consume_source_unary_child_call_existential as consume},
     };
     for (callee, caller, formal, actual, flags, trivia) in [
         ("child", "caller", "a", "b", [false, false], " "),
@@ -383,6 +383,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             &source, &typed, symbols, &core, &request,
         ).unwrap();
         let policy = Policy::default();
+        let native = Native::from_source(
+            &source, &typed, symbols, &core, &request, &policy,
+        ).unwrap();
+        assert!(native.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
         let (consumed, fingerprint) = consume(
             &source, &typed, symbols, &core, &request, &policy,
         ).unwrap();
@@ -403,6 +407,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             let denied_before = denied.clone();
             assert_eq!(consume(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_child_policy_rejected");
+            assert_eq!(Native::from_source(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
+                "algorithm.proof.unary_child_policy_rejected");
+            assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &request, &denied).unwrap_err(),
+                "algorithm.proof.unary_child_policy_rejected");
             assert_eq!(denied, denied_before);
             assert_eq!(fingerprint, policy.policy_fingerprint());
         }
@@ -419,6 +427,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 let (current, current_fingerprint) = consume(
                     &source, &typed, symbols, &core, &request, &current_policy,
                 ).unwrap();
+                let current_native = Native::from_source(&source, &typed, symbols, &core, &request, &current_policy).unwrap();
+                for product in [&native, &current_native] {
+                    assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &current_policy).unwrap());
+                }
                 assert_eq!(current_fingerprint, current_policy.policy_fingerprint());
                 for product in [&association, &consumed, &current] {
                     assert!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
@@ -471,7 +483,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     use mizar_kernel::checker::check_unary_child_returns_existential_result as kernel;
     use mizar_proof::{
         policy::VerifierPolicy as Policy,
-        status::{SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume},
+        status::{NativeUnaryChildCallExistential as Native, SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume},
     };
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
     let (source, nodes, collected, _) =
@@ -488,6 +500,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let policy = Policy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let policies_before = (policy.clone(), denied.clone());
+    let native = Native::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let (consumed, fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let cloned_core = core.clone();
     assert_eq!(retain(&source, &typed, symbols, &cloned_core, &request).unwrap().0, genuine_existential);
@@ -502,6 +515,12 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(cloned_consumed.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
     assert!(!cloned_consumed.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(!consumed.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
+    assert!(!native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
+    assert!(!native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &denied).unwrap());
+    let cloned_native = Native::from_source(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
+    assert!(cloned_native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
+    assert!(!cloned_native.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+    assert!(!cloned_native.adopt_original_request(&source, &typed, symbols, &core, &request, &denied).unwrap());
     let target = retained.target();
     let binder = target.4.0;
     let callee = core.algorithms().get(request.callee).unwrap();
@@ -585,6 +604,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "association request {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer request {mutation}");
+        assert_eq!(Native::from_source(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "native request {mutation}");
+        assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert_eq!(changed, changed_before);
@@ -680,6 +701,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "association Core {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer Core {mutation}");
+        assert_eq!(Native::from_source(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "native Core {mutation}");
+        assert_eq!(native.adopt_original_request(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck Core {mutation}");
         if matches!(mutation, 0..=8 | 10 | 15..=16 | 19..=26) {
             assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
@@ -713,6 +736,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert!(other_consumed.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
             assert!(!other_consumed.matches_source(&source, &typed, symbols, &core, &request).unwrap());
             assert!(!consumed.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            let other_native = Native::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
+            assert!(other_native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
+            assert!(!native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &denied).unwrap());
+            assert!(!other_native.adopt_original_request(&source, &typed, symbols, &core, &request, &denied).unwrap());
         }
         for (s, t, e) in [
             (&other_source, &typed, symbols),
@@ -727,6 +754,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(Association::from_source(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(consume(s, t, e, &core, &request, &denied).err().unwrap(), error);
+            assert_eq!(Native::from_source(s, t, e, &core, &request, &denied).err().unwrap(), error);
+            assert_eq!(native.adopt_original_request(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
         }
     }
@@ -746,14 +775,22 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let error = check(&source, symbols, &forged).unwrap_err();
     assert_eq!(Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
     assert_eq!(consume(&source, &forged, symbols, &core, &request, &denied).err().unwrap(), error);
+    assert_eq!(Native::from_source(&source, &forged, symbols, &core, &request, &denied).err().unwrap(), error);
+    assert_eq!(native.adopt_original_request(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
     let mut mismatched = request.clone();
     mismatched.caller = request.callee;
     assert_eq!(retain(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(Association::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(consume(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
+    assert_eq!(Native::from_source(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
+    assert_eq!(native.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     let (fresh, fresh_fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    let fresh_native = Native::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    for product in [&native, &fresh_native] {
+        assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+    }
     assert_eq!(fresh_fingerprint, fingerprint);
     assert_eq!(fingerprint, policy.policy_fingerprint());
     for product in [&association, &consumed, &fresh] {

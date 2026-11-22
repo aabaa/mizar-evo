@@ -620,6 +620,12 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` は最初に既存の [association constructor](#arena-local-unary-child-request-association) を一度だけ呼び、下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_child_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出し側の責任。native adoption、canonical identity/reuse、caller E4 acceptance、evidence/status、広い credit は与えない。
 
+## Native unary child-request adoption
+
+`NativeUnaryChildCallExistential::from_source` は既存の [current-policy consumer](#unary-child-request-current-policy-consumption) を一度呼び、返された association 全体を非公開で保持し、fingerprint を破棄する。切り離した constructor、getter、汎用 evidence への変換は設けない。
+`adopt_original_request` は最初に保持 association の認証付き `matches_source` を呼び、上流エラーを維持する。request/descriptor 全体または Core arena の同一性が不一致なら policy 検査前に false を返す。一致時は現行 Builtin 有効性と実際の保持結果の checker-schema 一致を要求し、consumer と同じ policy 拒否を使う。以前の成功は権限を与えず、true は元の子 existential のみを採用する。
+currentness は呼出側の責任。graph/status/scheduling 変更、canonical identity/reuse、caller E4 acceptance、E1/E2 discharge、generic substitution、広い profile、owner-gated scope、promotion/publication、coverage credit は与えない。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。

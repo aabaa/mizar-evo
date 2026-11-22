@@ -652,6 +652,12 @@ This association grants no canonical identity/reuse, current-policy consumption,
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` FIRST calls the unchanged [association constructor](#arena-local-unary-child-request-association) once, preserving errors. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema agreement with its actual Kernel result; otherwise return `algorithm.proof.unary_child_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically. Earlier success grants no authority; currentness remains caller-owned. No native adoption, canonical identity/reuse, caller E4 acceptance, evidence/status or broader credit follows.
 
+## Native unary child-request adoption
+
+`NativeUnaryChildCallExistential::from_source` calls the unchanged [current-policy consumer](#unary-child-request-current-policy-consumption) once and privately retains its whole association, discarding the fingerprint. No detached constructor, getters or generic evidence conversion is supplied.
+`adopt_original_request` FIRST invokes the retained association's authenticated `matches_source`, preserving upstream errors. Return false unless whole request/descriptor and exact Core arena match, before policy checking. Then require current enabled Builtin and exact checker-schema agreement with the retained actual result, using the consumer's policy refusal. Earlier success grants no authority; true adopts only that original child existential.
+Currentness remains caller-owned. No graph/status/scheduling change, canonical identity/reuse, caller E4 acceptance, E1/E2 discharge, generic substitution, broader profile, owner-gated scope, promotion/publication or coverage credit follows.
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` returns original `ProofObligationIdentity`, whole raw `DependencySlice` and borrowed Kernel `AlgorithmReturnsExistentialCheck` atomically. First call the authentic VC original-existential result producer with the fixed direct-return schemas above, preserving errors. Regenerate the existing original identity on identical inputs and require equality with the whole descriptor.5 raw slice; mismatch uses `algorithm.proof.invalid_direct_return_request`.
