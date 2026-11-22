@@ -3223,7 +3223,12 @@ The test consumer passes the distinct reference/application maps and original li
 
 Bounded if branches authenticate nested return/bare-fail/if statements and equality conditions through the existing binding inference. Bare fail is runtime-only in a nonterminating algorithm; branch declarations/snapshots and report payloads remain refused.
 
+### Bounded unary child-call request
+
+`check_source_unary_child_call(source, symbols, typed)` separately authenticates two public same-module unary object algorithms in distinct definition blocks: the earlier callee returns its formal and the later caller returns one selected direct application to its own parameter. The borrowed opaque seal retains actual source/declaration, scoped BindingEnv and normalized type associations; existing checked call selection owns the callee choice. Optional terminating flags retain declaration intent only. Unsupported syntax, recursion, incomplete selection, foreign/recovered source or mismatched neutral typed/environment associations refuse atomically. This profile grants no substitution, normal-return evidence, VC admission, promotion or execution and leaves the static algorithm seal unchanged.
+
 ### Algorithm ordinary occurrence intake
+
 After existing symbol/source/neutral authentication, the object-result branch consumes [Resolver ordinary occurrences](../../mizar-resolve/en/names.md#algorithm-ordinary-variable-occurrences). Actual binder node/range/kind/scope maps each source declaration to the Checker BindingId at its existing insertion point; generated result remains separate. Complete reference coverage and role/identity checks make Resolver targets determine ordinary uses, with no BindingEnv name lookup fallback or id/ordinal cast.
 Preserve existing contexts, binding visibility/type sites, parameter/header input, generated-result order, inference/owner/snapshot and Core output. Only exact ensures-special-result sites use the generated binding; snapshot capture continues its existing BindingEnv selection. The zero-parameter void/claim branch and runtime choice typing remain unchanged. New scope failures retain algorithms.unsupported_source_types; existing initial SymbolEnv errors keep priority. Current-API baseline tests and real-source lower tables check shadowed initializers, all admitted reference roles, result scoping and same-output preservation.
 

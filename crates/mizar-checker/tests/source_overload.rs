@@ -87,6 +87,240 @@ fn contest(input: &mut SourceOverloadInput, left: usize, right: usize, reason: &
 }
 
 #[test]
+fn unary_child_source_setup_selects_real_callee() {
+    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; terminating algorithm caller(b) -> object do return child(b); end; end;";
+    let fixture = SourceFixture::parse(text, "unary_child_source_setup");
+    let selected =
+        check_source_algorithm_call_targets(&fixture.native, &fixture.symbols, &fixture.typed)
+            .unwrap();
+    assert_eq!(
+        selected,
+        (
+            BTreeMap::new(),
+            checked_selection(
+                &fixture,
+                text,
+                SurfaceNodeKind::ApplicationTerm,
+                &[(
+                    text.rfind("child(b)").unwrap(),
+                    "child(b)",
+                    "algorithm child"
+                )],
+            ),
+            BTreeMap::new(),
+        )
+    );
+}
+
+#[test]
+fn unary_child_refuses_recursive_missing_ambiguous_and_unsupported_profiles() {
+    use mizar_checker::type_checker::check_source_unary_child_call as check;
+    let base = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
+    for (label, text) in [
+        ("self", base.replace("return child(b)", "return caller(b)")),
+        ("mutual", base.replace("return a", "return caller(a)")),
+        (
+            "missing",
+            base.replace("return child(b)", "return absent(b)"),
+        ),
+        (
+            "ambiguous",
+            base.replace(
+                "return a; end;",
+                "return a; end; algorithm child(a) -> object do return a; end;",
+            ),
+        ),
+        (
+            "wrong_target",
+            base.replace("return child(b)", "return b(b)"),
+        ),
+        (
+            "extra_call",
+            base.replace("return child(b);", "return child(b); return child(b);"),
+        ),
+        (
+            "grouped",
+            base.replace("return child(b)", "return (child(b))"),
+        ),
+        (
+            "nested",
+            base.replace("return child(b)", "return child(child(b))"),
+        ),
+        (
+            "statement",
+            base.replace("return child(b);", "var c := b; return child(c);"),
+        ),
+        (
+            "contract",
+            base.replace(
+                "caller(b) -> object do",
+                "caller(b) -> object ensures result = b do",
+            ),
+        ),
+    ] {
+        let fixture = SourceFixture::parse(&text, "unary_child_refusal");
+        assert!(
+            check(&fixture.native, &fixture.symbols, &fixture.typed).is_err(),
+            "{label}"
+        );
+    }
+}
+
+#[test]
+fn unary_child_refuses_real_mismatched_or_unsupported_types() {
+    use mizar_checker::type_checker::check_source_unary_child_call as check;
+    let base = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
+    for (label, text) in [
+        ("actual", base.replace("let b be object", "let b be set")),
+        ("formal", base.replace("let a be object", "let a be set")),
+        (
+            "callee_result",
+            base.replace("child(a) -> object", "child(a) -> set"),
+        ),
+        (
+            "caller_result",
+            base.replace("caller(b) -> object", "caller(b) -> set"),
+        ),
+        (
+            "literal",
+            base.replace("return child(b)", "return child(0)"),
+        ),
+        (
+            "arity",
+            base.replace("return child(b)", "return child(b,b)"),
+        ),
+    ] {
+        let fixture = SourceFixture::parse(&text, "unary_child_types");
+        assert!(
+            check(&fixture.native, &fixture.symbols, &fixture.typed).is_err(),
+            "{label}"
+        );
+    }
+}
+
+#[test]
+fn unary_child_refuses_foreign_stale_and_forged_inputs_atomically() {
+    use mizar_checker::{
+        type_checker::check_source_unary_child_call as check,
+        typed_ast::{
+            NodeRecoveryState, TypedArena, TypedAst, TypedAstParts, TypedNodeId, TypedNodeKind,
+        },
+    };
+    use mizar_resolve::env::{SymbolEnv, SymbolEnvIndexes, SymbolIndex};
+    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
+    let fixture = SourceFixture::parse(text, "unary_child_atomic");
+    let before = (
+        fixture.native.clone(),
+        fixture.symbols.clone(),
+        fixture.typed.clone(),
+    );
+    check(&fixture.native, &fixture.symbols, &fixture.typed).expect("genuine unary pair");
+    for other in [
+        SourceFixture::parse(text, "foreign"),
+        SourceFixture::parse(&text.replace("child", "edited"), "unary_child_atomic"),
+    ] {
+        assert!(check(&other.native, &fixture.symbols, &fixture.typed).is_err());
+        assert!(check(&fixture.native, &other.symbols, &fixture.typed).is_err());
+        assert!(check(&fixture.native, &fixture.symbols, &other.typed).is_err());
+    }
+    for edited in [
+        text.replace("algorithm child(a)", "algorithm child(b)"),
+        text.replace("return a;", "return b;"),
+        text.replace("return child(b)", "return child(a)"),
+    ] {
+        let other = SourceFixture::parse(&edited, "unary_child_declarations");
+        assert!(check(&other.native, &other.symbols, &other.typed).is_err());
+    }
+    let call = checked_site(
+        &fixture,
+        SurfaceNodeKind::ApplicationTerm,
+        text.rfind("child(b)").unwrap(),
+        "child(b)".len(),
+    )
+    .0;
+    for mutation in 0..7 {
+        let mut nodes: Vec<_> = fixture
+            .typed
+            .nodes()
+            .iter()
+            .map(|(_, node)| node.clone())
+            .collect();
+        match mutation {
+            0 => nodes[call.index()].kind = TypedNodeKind::new("ForgedApplication"),
+            1 => nodes[call.index()].resolved_node = fixture.typed.resolved_root(),
+            2 => {
+                nodes[call.index()].anchor = fixture
+                    .typed
+                    .nodes()
+                    .node(fixture.typed.nodes().root().unwrap())
+                    .unwrap()
+                    .anchor
+                    .clone()
+            }
+            3 => nodes[call.index()].children.clear(),
+            4 => nodes[call.index()].recovery = NodeRecoveryState::Recovered,
+            5 => nodes[call.index()].children.reverse(),
+            6 => nodes.push(nodes[call.index()].clone()),
+            _ => unreachable!(),
+        }
+        let mut typed = TypedAst::try_new(TypedAstParts {
+            source_id: fixture.typed.source_id(),
+            module_id: fixture.typed.module_id().clone(),
+            resolved_root: fixture.typed.resolved_root(),
+            source_context: None,
+            source_type: None,
+            source_attribute: None,
+            nodes: TypedArena::try_new(
+                Some(TypedNodeId::new(fixture.native.arena().root().index())),
+                nodes,
+            )
+            .unwrap(),
+            contexts: Default::default(),
+            types: Default::default(),
+            facts: Default::default(),
+            coercions: Default::default(),
+            initial_obligations: Default::default(),
+            diagnostics: Default::default(),
+        })
+        .unwrap();
+        let _ = typed.install_source_nodes(&fixture.native);
+        assert!(
+            check(&fixture.native, &fixture.symbols, &typed).is_err(),
+            "mutation {mutation}"
+        );
+    }
+    let mut symbols = SymbolIndex::new();
+    for entry in fixture
+        .symbols
+        .symbols()
+        .iter()
+        .filter(|entry| entry.primary_spelling() != "child")
+    {
+        symbols.insert(entry.clone());
+    }
+    let changed = SymbolEnv::new(
+        fixture.native.module().clone(),
+        SymbolEnvIndexes {
+            symbols,
+            imports: fixture.symbols.imports().clone(),
+            exports: fixture.symbols.exports().clone(),
+            labels: fixture.symbols.labels().clone(),
+            definitions: fixture.symbols.definitions().clone(),
+            overloads: fixture.symbols.overloads().clone(),
+            registrations: fixture.symbols.registrations().clone(),
+            lexical_summaries: fixture.symbols.lexical_summaries().clone(),
+            namespace_graph: fixture.symbols.namespace_graph().clone(),
+            declaration_dependencies: fixture.symbols.declaration_dependencies().clone(),
+            contributions: fixture.symbols.contributions().clone(),
+            module_summaries: fixture.symbols.module_summaries().clone(),
+        },
+    );
+    assert!(check(&fixture.native, &changed, &fixture.typed).is_err());
+    assert!(check(&fixture.native, &fixture.symbols, &fixture.typed).is_ok());
+    assert_eq!((fixture.native, fixture.symbols, fixture.typed), before);
+}
+
+#[test]
 fn checked_algorithm_calls_preserve_exact_self_mutual_and_repeated_sites() {
     for text in [
         "",

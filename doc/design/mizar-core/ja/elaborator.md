@@ -1,5 +1,7 @@
 # Elaborator
 
+`lower_source_unary_child_call(&SourceUnaryChildCallCheck)` は専用 Checker seal から既存 CoreIr と一つの `SourceUnaryChildCallRequest` を返す。二つの algorithm 所有者、仮引数・結果 binder、callee の return、caller の選択済み Apply／Return に検査済み識別子・object guard・source provenance を保持する。要求は後続の呼出し置換・正常復帰処理が使う実 Core 行を参照するだけで、置換・VC53 受理・証拠採用・昇格・実行は行わない。既存 static lowering と direct-return consumer の対象範囲は維持する。
+
 `lower_source_functorial_registration` は checker が封印した SourceRegistrationCheck のみから既存 Core の定義と全ガード付き関数型・簡約目標を生成し、SymbolEnv 参照、名前・型の再検査、要求キーの解析や受理済み効果を追加しない。
 簡約経路は恒等関数の入れ子適用、単元集合または変数の右辺、定義と登録の別々の束縛、および目標に結び付く登録所有の実際の `thus thesis` 証明を保持し、ガードは追加仮定のない bare set に限定する。
 両方の無引用経路は登録の識別情報を item/path に保持し、seed の前提ラベルを付けない。実際の reducibility seed に `vc-registration-style:reduction` を保持し、既存の `RegistrationStyleCorrectness` / `Reduction` VC family を選ぶ。

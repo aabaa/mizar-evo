@@ -1,6 +1,380 @@
 use super::*;
 
 #[test]
+fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
+    use mizar_checker::{
+        type_checker::{TermReference, TypeHeadRef, check_source_unary_child_call},
+        typed_ast::{TypeEntryActual, TypedSiteRef},
+    };
+    use mizar_core::{
+        core_ir::{
+            CoreAlgorithmStmtKind as S, CoreFormulaKind as F, CoreSourceAnchor, CoreTermKind as T,
+        },
+        elaborator::lower_source_unary_child_call,
+    };
+    use mizar_session::{SourceAnchor, SourceRange};
+    for (callee, caller, formal, actual, flags, trivia) in [
+        ("child", "caller", "a", "b", [false, false], " "),
+        (
+            "renamed",
+            "outer",
+            "input",
+            "arg",
+            [true, false],
+            "\n:: boundary trivia\n",
+        ),
+        ("inner", "outer", "same", "same", [false, true], " "),
+        ("child", "caller", "a", "b", [true, true], " "),
+    ] {
+        let flag = |yes| if yes { "terminating " } else { "" };
+        let text = format!(
+            "definition let {formal} be object; {}algorithm {callee}({formal}) -> object do return {formal}; end; end;{trivia}definition let {actual} be object; {}algorithm {caller}({actual}) -> object do return {callee}({actual}); end; end;",
+            flag(flags[0]),
+            flag(flags[1])
+        );
+        let (source, nodes, collected, _) =
+            source_registration_formula_inputs(&text, "unary-child", "joins", 0);
+        let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+        let symbols = collected.env();
+        let before = (source.clone(), typed.clone(), symbols.clone());
+        let checked = check_source_unary_child_call(&source, symbols, &typed).unwrap();
+        let checks = checked.algorithms();
+        let range = |start, len| SourceRange {
+            source_id: source.source_id(),
+            start,
+            end: start + len,
+        };
+        let algorithms = [
+            format!(
+                "{}algorithm {callee}({formal}) -> object do return {formal}; end;",
+                flag(flags[0])
+            ),
+            format!(
+                "{}algorithm {caller}({actual}) -> object do return {callee}({actual}); end;",
+                flag(flags[1])
+            ),
+        ]
+        .map(|part| range(text.find(&part).unwrap(), part.len()));
+        let declarations = [
+            range(text.find("let ").unwrap() + 4, formal.len()),
+            range(text.rfind("let ").unwrap() + 4, actual.len()),
+        ];
+        let parameter_types = [
+            range(text.find("be object").unwrap() + 3, 6),
+            range(text.rfind("be object").unwrap() + 3, 6),
+        ];
+        let result_types = [
+            range(text.find("-> object").unwrap() + 3, 6),
+            range(text.rfind("-> object").unwrap() + 3, 6),
+        ];
+        let headers = [
+            range(
+                text.find(&format!("{callee}({formal})")).unwrap() + callee.len() + 1,
+                formal.len(),
+            ),
+            range(
+                text.find(&format!("{caller}({actual})")).unwrap() + caller.len() + 1,
+                actual.len(),
+            ),
+        ];
+        let application_range = range(
+            text.rfind(&format!("{callee}({actual})")).unwrap(),
+            callee.len() + actual.len() + 2,
+        );
+        let arguments = [
+            range(text.find("return ").unwrap() + 7, formal.len()),
+            range(application_range.start + callee.len() + 1, actual.len()),
+        ];
+        let returns = [
+            range(text.find("return ").unwrap(), formal.len() + 8),
+            range(
+                text.rfind("return ").unwrap(),
+                application_range.end - text.rfind("return ").unwrap() + 1,
+            ),
+        ];
+        let checked_range = |id| {
+            let SourceAnchor::Range(range) = typed.nodes().node(id).unwrap().anchor else {
+                panic!("actual source range")
+            };
+            range
+        };
+        assert_eq!(checked_range(checked.application()), application_range);
+        assert_eq!(checked.arguments().map(checked_range), arguments);
+        assert_eq!(checked.returns().map(checked_range), returns);
+        let mut binding_ids = Vec::new();
+        for (ordinal, check) in checks.iter().enumerate() {
+            assert_eq!(check.declared_terminating(), flags[ordinal]);
+            assert_eq!(checked_range(check.algorithm().0), algorithms[ordinal]);
+            let declared = symbols
+                .symbols()
+                .iter()
+                .find(|entry| entry.symbol() == &check.algorithm().1)
+                .unwrap();
+            assert_eq!(declared.primary_spelling(), [callee, caller][ordinal]);
+            assert_eq!(
+                declared.origin().anchor(),
+                &typed.nodes().node(check.algorithm().0).unwrap().anchor
+            );
+            let inference = check.inference();
+            assert!(
+                inference.diagnostics().is_empty()
+                    && inference.facts().is_empty()
+                    && inference.candidate_sets().is_empty()
+            );
+            let mut references = Vec::new();
+            for (_, term) in inference.terms().iter() {
+                let Some(TermReference::Binding(binding)) = term.reference else {
+                    panic!("real parameter binding")
+                };
+                references.push(binding);
+                let entry = inference.type_entries().get(term.type_entry).unwrap();
+                let TypeEntryActual::Known(ty) = entry.actual else {
+                    panic!("authenticated actual type")
+                };
+                assert_eq!(
+                    inference.normalized_types().get(ty).unwrap().head,
+                    TypeHeadRef::BuiltinObject
+                );
+                assert_eq!(
+                    inference.normalized_types().get(ty).unwrap().source.range,
+                    parameter_types[ordinal]
+                );
+                assert_eq!(
+                    inference
+                        .normalized_types()
+                        .get(entry.expected.unwrap())
+                        .unwrap()
+                        .head,
+                    TypeHeadRef::BuiltinObject
+                );
+                assert_eq!(entry.owner, term.site);
+                assert_eq!(entry.expected, term.expected_type);
+                assert!(
+                    [headers[ordinal], arguments[ordinal]]
+                        .contains(&checked_range(term.site.node()))
+                );
+                for role in ["algorithm.actual", "algorithm.return"] {
+                    let expected_owner = TypedSiteRef::Role {
+                        node: term.site.node(),
+                        role: role.into(),
+                    };
+                    let type_entry = inference
+                        .type_entries()
+                        .iter()
+                        .find(|(_, entry)| entry.owner == expected_owner)
+                        .unwrap()
+                        .1;
+                    assert_eq!(
+                        type_entry.actual,
+                        TypeEntryActual::Known(if role == "algorithm.actual" {
+                            ty
+                        } else {
+                            entry.expected.unwrap()
+                        })
+                    );
+                }
+            }
+            assert_eq!(references.len(), 2);
+            assert_eq!(references[0], references[1]);
+            binding_ids.push(references[0]);
+        }
+        assert_ne!(binding_ids[0], binding_ids[1]);
+        let first = checks[0].bindings().bindings().get(binding_ids[0]).unwrap();
+        let second = checks[1].bindings().bindings().get(binding_ids[1]).unwrap();
+        assert_ne!(first.declaration_range, second.declaration_range);
+        for (ordinal, binding) in [first, second].into_iter().enumerate() {
+            assert_eq!(binding.declaration_range, declarations[ordinal]);
+            assert_eq!(
+                binding.type_site,
+                mizar_checker::binding_env::BindingTypeSite::Source(parameter_types[ordinal])
+            );
+        }
+        let (core, request) = lower_source_unary_child_call(&checked).unwrap();
+        let callee_row = core.algorithms().get(request.callee).unwrap();
+        let caller_row = core.algorithms().get(request.caller).unwrap();
+        assert_eq!(core.algorithms().len(), 2);
+        assert_eq!(
+            (&callee_row.symbol, &caller_row.symbol),
+            (&checks[0].algorithm().1, &checks[1].algorithm().1)
+        );
+        assert_eq!(
+            callee_row.source.anchor,
+            CoreSourceAnchor::SourceRange(algorithms[0])
+        );
+        assert_eq!(
+            caller_row.source.anchor,
+            CoreSourceAnchor::SourceRange(algorithms[1])
+        );
+        assert_eq!(
+            (
+                callee_row.declared_terminating,
+                caller_row.declared_terminating
+            ),
+            (flags[0], flags[1])
+        );
+        assert_eq!(callee_row.params[0].var, request.formal);
+        assert_eq!(
+            callee_row.result.as_ref().unwrap().var,
+            request.callee_result
+        );
+        assert_eq!(
+            caller_row.result.as_ref().unwrap().var,
+            request.caller_result
+        );
+        let vars = [
+            request.formal,
+            caller_row.params[0].var,
+            request.callee_result,
+            request.caller_result,
+        ];
+        assert_eq!(
+            vars.into_iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            4
+        );
+        for (binder, expected_range) in [
+            (&callee_row.params[0], declarations[0]),
+            (&caller_row.params[0], declarations[1]),
+            (callee_row.result.as_ref().unwrap(), result_types[0]),
+            (caller_row.result.as_ref().unwrap(), result_types[1]),
+        ] {
+            assert_eq!(
+                binder.source.anchor,
+                CoreSourceAnchor::SourceRange(expected_range)
+            );
+            let F::TypePred { subject, ty } =
+                &core.formulas().get(binder.ty_guard.unwrap()).unwrap().kind
+            else {
+                panic!("authenticated object guard")
+            };
+            assert_eq!(ty.as_str(), "object");
+            assert_eq!(core.terms().get(*subject).unwrap().kind, T::Var(binder.var));
+        }
+        let application = core.terms().get(request.application).unwrap();
+        assert_eq!(
+            application.kind,
+            T::Apply {
+                functor: callee_row.symbol.clone(),
+                args: vec![request.actual]
+            }
+        );
+        assert_eq!(
+            application.source.anchor,
+            CoreSourceAnchor::SourceRange(application_range)
+        );
+        assert_eq!(
+            core.source_map().term_sources.get(&request.application),
+            Some(&application.source)
+        );
+        let actual_row = core.terms().get(request.actual).unwrap();
+        assert_eq!(actual_row.kind, T::Var(caller_row.params[0].var));
+        assert_eq!(
+            actual_row.source.anchor,
+            CoreSourceAnchor::SourceRange(arguments[1])
+        );
+        assert_eq!(
+            core.source_map().term_sources.get(&request.actual),
+            Some(&actual_row.source)
+        );
+        assert_eq!(caller_row.statements, vec![request.statement]);
+        for (ordinal, owner, row) in [
+            (0, request.callee, callee_row),
+            (1, request.caller, caller_row),
+        ] {
+            let statement = core.algorithm_statements().get(row.statements[0]).unwrap();
+            assert_eq!(statement.owner, owner);
+            assert_eq!(
+                statement.source.anchor,
+                CoreSourceAnchor::SourceRange(returns[ordinal])
+            );
+            assert_eq!(
+                core.source_map().algorithm_sources.get(&row.statements[0]),
+                Some(&statement.source)
+            );
+            let S::Return(Some(value)) = statement.kind else {
+                panic!("sole actual Return")
+            };
+            if ordinal == 0 {
+                assert_eq!(
+                    core.terms().get(value).unwrap().kind,
+                    T::Var(request.formal)
+                );
+                assert_eq!(
+                    core.terms().get(value).unwrap().source.anchor,
+                    CoreSourceAnchor::SourceRange(arguments[0])
+                );
+            } else {
+                assert_eq!(value, request.application);
+            }
+        }
+        assert!(
+            core.obligation_seeds().is_empty()
+                && core.generated().is_empty()
+                && core.proofs().is_empty()
+                && core.diagnostics().is_empty()
+        );
+        assert_eq!(
+            lower_source_unary_child_call(
+                &check_source_unary_child_call(&source, symbols, &typed).unwrap()
+            )
+            .unwrap(),
+            (core, request)
+        );
+        assert_eq!((source, typed, symbols.clone()), before);
+    }
+}
+
+#[test]
+fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
+    use mizar_checker::type_checker::{
+        check_source_algorithm_types, check_source_unary_child_call,
+    };
+    use mizar_core::elaborator::{lower_source_algorithms, lower_source_unary_child_call};
+    let text = "definition let a be object; terminating algorithm child(a) -> object do return a; end; end; definition let b be object; terminating algorithm caller(b) -> object do return child(b); end; end;";
+    let (source, nodes, collected, _) =
+        source_registration_formula_inputs(text, "unary-child", "boundaries", 0);
+    let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+    let checked = check_source_unary_child_call(&source, collected.env(), &typed).unwrap();
+    let (core, _) = lower_source_unary_child_call(&checked).unwrap();
+    assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
+    assert!(lower_source_algorithms(&checked.algorithms()[1]).is_err());
+    for algorithm in checked.algorithms() {
+        assert!(
+            mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+                &source,
+                algorithm,
+                collected.env(),
+                &core,
+                super::super::shared::snapshot_id(0),
+                &mizar_vc::vc_ir::GenerationSchemaVersion::new("unary-child-boundary"),
+                &mizar_vc::vc_ir::VcSchemaVersion::new("unary-child-boundary")
+            )
+            .is_err()
+        );
+    }
+    let case = step5c14_return_case();
+    let control = std::fs::read_to_string(&case.source_path).unwrap();
+    let (source, nodes, collected, _) =
+        source_registration_formula_inputs(&control, "unary-child", "direct_return_control", 0);
+    let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+    let checked = check_source_algorithm_types(&source, typed.nodes(), collected.env()).unwrap();
+    let core = lower_source_algorithms(&checked).unwrap();
+    assert!(
+        mizar_vc::generator::generate_source_algorithm_direct_return_requests(
+            &source,
+            &checked,
+            collected.env(),
+            &core,
+            super::super::shared::snapshot_id(0),
+            &mizar_vc::vc_ir::GenerationSchemaVersion::new("unary-child-boundary"),
+            &mizar_vc::vc_ir::VcSchemaVersion::new("unary-child-boundary")
+        )
+        .is_ok()
+    );
+}
+
+#[test]
 fn algorithm_ordinary_occurrences_preserve_source_binding_targets() {
     use mizar_checker::binding_env::BindingKind;
     use mizar_checker::type_checker::{TermReference, TermStatus, TypeHeadRef};

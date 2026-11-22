@@ -572,6 +572,360 @@ pub struct SourceAlgorithmCheck<'a> {
     snapshots: BTreeMap<TypedNodeId, (String, Vec<BindingId>)>,
 }
 
+/// Checked unary call inputs; this seal requests later reasoning without admitting it.
+#[derive(Debug)]
+pub struct SourceUnaryChildCallCheck<'a> {
+    algorithms: [SourceAlgorithmCheck<'a>; 2],
+    application: TypedNodeId,
+    returns: [TypedNodeId; 2],
+    arguments: [TypedNodeId; 2],
+}
+
+impl SourceUnaryChildCallCheck<'_> {
+    pub const fn algorithms(&self) -> &[SourceAlgorithmCheck<'_>; 2] {
+        &self.algorithms
+    }
+    pub const fn application(&self) -> TypedNodeId {
+        self.application
+    }
+    pub const fn returns(&self) -> &[TypedNodeId; 2] {
+        &self.returns
+    }
+    pub const fn arguments(&self) -> &[TypedNodeId; 2] {
+        &self.arguments
+    }
+}
+
+/// Authenticates exactly a direct object-valued unary callee/caller pair.
+pub fn check_source_unary_child_call<'a>(
+    source: &SurfaceResolvedArena,
+    symbols: &SymbolEnv,
+    typed: &'a crate::typed_ast::TypedAst,
+) -> Result<SourceUnaryChildCallCheck<'a>, String> {
+    use crate::binding_env::{BindingLookupResult, BindingLookupSite};
+    let invalid = || "algorithms.unsupported_unary_child_call".to_owned();
+    let (definiens, selected, originals) =
+        check_source_algorithm_call_targets(source, symbols, typed)?;
+    let node = |id| source.arena().node(id).ok_or_else(invalid);
+    let range = |id| match node(id)?.origin().anchor() {
+        SourceAnchor::Range(r) => Ok(*r),
+        _ => Err(invalid()),
+    };
+    let parts = |id, kind: &K| {
+        let n = node(id)?;
+        if n.kind() != kind {
+            return Err(invalid());
+        }
+        Ok(n.children())
+    };
+    let only = |id, kind: &K| {
+        let [child] = parts(id, kind)? else {
+            return Err(invalid());
+        };
+        Ok(*child)
+    };
+    let text = |id| match node(id)?.kind() {
+        K::Token(t) => Ok(t.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let tokens = |pairs: &[(ResolvedNodeId, &str)]| {
+        for (id, expected) in pairs {
+            if text(*id)? != *expected {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    };
+    let identifier = |id| match node(id)?.kind() {
+        K::Token(t) if t.kind == SurfaceTokenKind::Identifier => Ok(t.text.as_ref()),
+        _ => Err(invalid()),
+    };
+    let direct = |mut id| {
+        loop {
+            match node(id)?.kind() {
+                K::Token(_) => {
+                    identifier(id)?;
+                    return Ok(id);
+                }
+                K::TermExpression
+                | K::TermReference
+                | K::QualifiedSymbol
+                | K::PathSegment
+                | K::TermList => {
+                    let [child] = node(id)?.children() else {
+                        return Err(invalid());
+                    };
+                    id = *child;
+                }
+                _ => return Err(invalid()),
+            }
+        }
+    };
+    let structural: Vec<_> = node(source.arena().root())?
+        .children()
+        .iter()
+        .copied()
+        .filter(|id| {
+            !matches!(
+                source.arena().node(*id).map(|n| n.kind()),
+                Some(K::Token(_))
+            )
+        })
+        .collect();
+    let [unit] = structural.as_slice() else {
+        return Err(invalid());
+    };
+    let [callee_block, caller_block] = parts(only(*unit, &K::CompilationUnit)?, &K::ItemList)?
+    else {
+        return Err(invalid());
+    };
+    let mut contexts = BindingContextTable::new();
+    let module_context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: Some(LocalTermScope::default()),
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    let mut bindings = BindingTable::new();
+    let mut profiles = Vec::new();
+    let mut application = None;
+    for (ordinal, block) in [*callee_block, *caller_block].into_iter().enumerate() {
+        let [definition, parameter, algorithm, end, semi] = parts(block, &K::DefinitionBlockItem)?
+        else {
+            return Err(invalid());
+        };
+        tokens(&[(*definition, "definition"), (*end, "end"), (*semi, ";")])?;
+        let [let_kw, segment, semi] = parts(*parameter, &K::DefinitionParameter)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*let_kw, "let"), (*semi, ";")])?;
+        let [binder, be, ty] = parts(*segment, &K::QualifiedVariableSegment)? else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*be, "be"),
+            (
+                only(only(*ty, &K::TypeExpression)?, &K::TypeHead)?,
+                "object",
+            ),
+        ])?;
+        let raw = parts(*algorithm, &K::AlgorithmDefinition)?;
+        let (terminating, raw) = if let [flag, rest @ ..] = raw
+            && node(*flag)?.kind() == &K::AlgorithmTerminationClause
+        {
+            tokens(&[(only(*flag, &K::AlgorithmTerminationClause)?, "terminating")])?;
+            (true, rest)
+        } else {
+            (false, raw)
+        };
+        let [keyword, name, parameters, arrow, result, body, semi] = raw else {
+            return Err(invalid());
+        };
+        tokens(&[
+            (*keyword, "algorithm"),
+            (*arrow, "->"),
+            (*semi, ";"),
+            (
+                only(only(*result, &K::TypeExpression)?, &K::TypeHead)?,
+                "object",
+            ),
+        ])?;
+        let [open, header, close] = parts(*parameters, &K::AlgorithmParameters)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*open, "("), (*close, ")")])?;
+        identifier(*header)?;
+        let [do_kw, statements, end] = parts(*body, &K::AlgorithmBody)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*do_kw, "do"), (*end, "end")])?;
+        let statement = only(*statements, &K::AlgorithmStatementList)?;
+        let [return_kw, expression, semi] = parts(statement, &K::ReturnStatement)? else {
+            return Err(invalid());
+        };
+        tokens(&[(*return_kw, "return"), (*semi, ";")])?;
+        let term = only(*expression, &K::TermExpression)?;
+        let argument = if ordinal == 0 {
+            direct(term)?
+        } else {
+            let [target, open, args, close] = parts(term, &K::ApplicationTerm)? else {
+                return Err(invalid());
+            };
+            direct(*target)?;
+            tokens(&[(*open, "("), (*close, ")")])?;
+            application = Some(term);
+            direct(*args)?
+        };
+        let algorithm_anchor = node(*algorithm)?.origin().anchor();
+        let owners: Vec<_> = symbols
+            .symbols()
+            .iter()
+            .filter(|e| {
+                e.kind() == SymbolKind::Algorithm && e.origin().anchor() == algorithm_anchor
+            })
+            .collect();
+        let [owner] = owners.as_slice() else {
+            return Err(invalid());
+        };
+        if owner.visibility() != Visibility::Public
+            || owner.primary_spelling() != identifier(*name)?
+            || !symbols.definitions().iter().any(|d| {
+                d.symbol() == owner.symbol()
+                    && d.kind() == DefinitionKind::Algorithm
+                    && d.origin() == owner.origin()
+                    && d.visibility() == Visibility::Public
+                    && d.conflict().is_none()
+            })
+        {
+            return Err(invalid());
+        }
+        let scope = LocalTermScope::new(vec![u32::try_from(block.index()).map_err(|_| invalid())?]);
+        let context = BindingContextId::new(contexts.len());
+        let local = LocalTermBinding::new(
+            identifier(*binder)?,
+            scope.clone(),
+            range(*binder)?,
+            range(*parameter)?.end,
+        );
+        let mut draft =
+            BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
+        draft.type_site = BindingTypeSite::Source(range(*ty)?);
+        let binding = bindings.insert(draft);
+        contexts.insert(BindingContextDraft {
+            owner: BindingContextOwner::SourceStatement {
+                source_range: range(block)?,
+            },
+            parent: Some(module_context),
+            layer: BindingContextLayer::Block,
+            lexical_scope: Some(scope.clone()),
+            bindings: vec![binding],
+            visible_bindings: vec![binding],
+            recovery: BindingContextRecovery::Normal,
+        });
+        profiles.push((
+            *algorithm,
+            owner.symbol().clone(),
+            terminating,
+            *header,
+            argument,
+            *ty,
+            *result,
+            statement,
+            context,
+            scope,
+            binding,
+        ));
+    }
+    let application = application.ok_or_else(invalid)?;
+    if !definiens.is_empty()
+        || !originals.is_empty()
+        || selected.len() != 1
+        || selected.iter().next().is_none_or(|(site, s)| {
+            source.resolved_node_for(*site) != Some(application) || s.symbol() != &profiles[0].1
+        })
+    {
+        return Err(invalid());
+    }
+    let bindings = BindingEnv::try_new(BindingEnvParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|_| invalid())?;
+    let mut algorithms = Vec::new();
+    let mut returns = Vec::new();
+    let mut arguments = Vec::new();
+    for (
+        algorithm,
+        symbol,
+        terminating,
+        header,
+        argument,
+        ty,
+        result,
+        statement,
+        context,
+        scope,
+        binding,
+    ) in profiles
+    {
+        let mut terms = Vec::new();
+        for use_site in [header, argument] {
+            if bindings
+                .lookup(&BindingLookupSite::new(
+                    identifier(use_site)?,
+                    context,
+                    Some(scope.clone()),
+                    range(use_site)?.start,
+                ))
+                .map_err(|_| invalid())?
+                != BindingLookupResult::Local(binding)
+            {
+                return Err(invalid());
+            }
+            terms.push(
+                TermInput::new(
+                    TypedSiteRef::Node(TypedNodeId::new(use_site.index())),
+                    context,
+                    range(use_site)?,
+                    TermKind::Variable,
+                )
+                .with_reference(TermReference::Binding(binding))
+                .with_result_type(TypeExpressionInput::new(
+                    TypedSiteRef::Role {
+                        node: TypedNodeId::new(use_site.index()),
+                        role: "algorithm.actual".into(),
+                    },
+                    range(ty)?,
+                    "object",
+                    TypeHeadInput::BuiltinObject,
+                ))
+                .with_expected_type(TypeExpressionInput::new(
+                    TypedSiteRef::Role {
+                        node: TypedNodeId::new(use_site.index()),
+                        role: "algorithm.return".into(),
+                    },
+                    range(result)?,
+                    "object",
+                    TypeHeadInput::BuiltinObject,
+                )),
+            );
+        }
+        let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, []);
+        if !inference.diagnostics().is_empty()
+            || inference.terms().len() != 2
+            || inference.terms().iter().any(|(_, t)| {
+                t.status != TermStatus::Inferred
+                    || !t.deferred.is_empty()
+                    || t.candidate_set.is_some()
+            })
+        {
+            return Err(invalid());
+        }
+        algorithms.push(SourceAlgorithmCheck {
+            typed: typed.nodes(),
+            bindings: bindings.clone(),
+            inference,
+            algorithm: (TypedNodeId::new(algorithm.index()), symbol),
+            declared_terminating: terminating,
+            snapshots: BTreeMap::new(),
+        });
+        returns.push(TypedNodeId::new(statement.index()));
+        arguments.push(TypedNodeId::new(argument.index()));
+    }
+    Ok(SourceUnaryChildCallCheck {
+        algorithms: algorithms.try_into().map_err(|_| invalid())?,
+        application: TypedNodeId::new(application.index()),
+        returns: returns.try_into().map_err(|_| invalid())?,
+        arguments: arguments.try_into().map_err(|_| invalid())?,
+    })
+}
+
 impl SourceAlgorithmCheck<'_> {
     /// Returns the authenticated neutral source projection.
     pub const fn typed(&self) -> &crate::typed_ast::TypedArena {

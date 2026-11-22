@@ -16813,6 +16813,264 @@ pub fn lower_source_functorial_registration(
     .map_err(|error| error.to_string())
 }
 
+/// References an authenticated unary call whose substitution and return reasoning remain pending.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceUnaryChildCallRequest {
+    pub callee: CoreAlgorithmId,
+    pub caller: CoreAlgorithmId,
+    pub application: CoreTermId,
+    pub statement: CoreAlgorithmStmtId,
+    pub actual: CoreTermId,
+    pub formal: CoreVarId,
+    pub callee_result: CoreVarId,
+    pub caller_result: CoreVarId,
+}
+
+/// Lowers only a checked child-call seal, without producing obligations or proof credit.
+pub fn lower_source_unary_child_call(
+    check: &mizar_checker::type_checker::SourceUnaryChildCallCheck<'_>,
+) -> Result<(CoreIr, SourceUnaryChildCallRequest), String> {
+    use mizar_checker::type_checker::{AttributeSet, TermReference, TypeHeadRef};
+    let invalid = || "algorithms.core.unsupported_unary_child_call".to_owned();
+    let checks = check.algorithms();
+    let typed = checks[0].typed();
+    let range = |id| match typed.node(id).ok_or_else(invalid)?.anchor {
+        SourceAnchor::Range(r) => Ok(r),
+        _ => Err(invalid()),
+    };
+    let provenance = |id: TypedNodeId| {
+        CheckerOwnedProvenance::checker(format!("algorithm/source-node#{}", id.index()))
+    };
+    let mut input = CoreContextInput::new(ResolvedTypedAstSummary::new(
+        checks[0].bindings().source_id(),
+        checks[0].bindings().module_id().clone(),
+    ));
+    let mut terms = Vec::new();
+    let mut formulas = Vec::new();
+    let mut binders = Vec::new();
+    let mut arguments = Vec::new();
+    for (index, algorithm) in checks.iter().enumerate() {
+        let (site, symbol) = algorithm.algorithm();
+        input.item_seeds.push(
+            CoreItemSeed::new(
+                symbol.clone(),
+                CoreItemKind::Algorithm,
+                "public",
+                CoreSourceRef::direct(range(*site)?),
+                provenance(*site),
+            )
+            .with_definition_boundary(DefinitionBoundaryKind::Algorithm),
+        );
+        let inferred = algorithm.inference();
+        let argument = inferred
+            .terms()
+            .iter()
+            .find_map(|(_, t)| (t.site.node() == check.arguments()[index]).then_some(t))
+            .ok_or_else(invalid)?;
+        let Some(TermReference::Binding(binding)) = argument.reference else {
+            return Err(invalid());
+        };
+        let entry = algorithm
+            .bindings()
+            .bindings()
+            .get(binding)
+            .ok_or_else(invalid)?;
+        let known = inferred
+            .type_entries()
+            .get(argument.type_entry)
+            .ok_or_else(invalid)?;
+        let mizar_checker::typed_ast::TypeEntryActual::Known(actual) = known.actual else {
+            return Err(invalid());
+        };
+        let expected = known.expected.ok_or_else(invalid)?;
+        for ty in [actual, expected] {
+            if inferred.normalized_types().get(ty).is_none_or(|t| {
+                t.head != TypeHeadRef::BuiltinObject
+                    || !t.args.is_empty()
+                    || t.attributes != AttributeSet::empty()
+            }) {
+                return Err(invalid());
+            }
+        }
+        let result_site = typed
+            .node(*site)
+            .ok_or_else(invalid)?
+            .children
+            .iter()
+            .find(|id| {
+                typed
+                    .node(**id)
+                    .is_some_and(|n| n.kind.as_str() == "TypeExpression")
+            })
+            .ok_or_else(invalid)?;
+        let result_range = range(*result_site)?;
+        let mut pair = Vec::new();
+        for (offset, role, span, name) in [
+            (
+                0,
+                "parameter",
+                entry.declaration_range,
+                Some(entry.spelling.clone()),
+            ),
+            (1, "result", result_range, None),
+        ] {
+            // These slots are allocated here; source BindingIds remain Checker identities.
+            let var = CoreVarId::new(index * 2 + offset);
+            let source = CoreSourceRef::direct(span);
+            input.variable_seeds.push(CoreVariableSeed::new(
+                var,
+                if offset == 0 {
+                    NormalizedVarClass::Free
+                } else {
+                    NormalizedVarClass::Generated
+                },
+                role,
+                NormalizedVarSort::Term,
+                provenance(*site),
+            ));
+            input
+                .binder_seeds
+                .push(CoreBinderSeed::new(var, source.clone(), provenance(*site)));
+            let term = CoreTermSeedId::new(terms.len());
+            terms.push(CoreTermSeed::new(
+                CoreTermSeedKind::Var(var),
+                source.clone(),
+                provenance(*site),
+            ));
+            let guard = CoreFormulaSeedId::new(formulas.len());
+            formulas.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::TypePred {
+                    subject: term,
+                    ty: CoreTypePredicate::new("object"),
+                },
+                source.clone(),
+                provenance(*site),
+            ));
+            pair.push((
+                CoreBinder {
+                    var,
+                    role: role.into(),
+                    ty_guard: None,
+                    source_name: name,
+                    source: source_with_provenance(source, &provenance(*site)),
+                },
+                guard,
+            ));
+        }
+        let argument_id = CoreTermSeedId::new(terms.len());
+        terms.push(CoreTermSeed::new(
+            CoreTermSeedKind::Var(pair[0].0.var),
+            CoreSourceRef::direct(range(check.arguments()[index])?),
+            provenance(check.arguments()[index]),
+        ));
+        arguments.push(argument_id);
+        binders.push(pair);
+    }
+    let application = CoreTermSeedId::new(terms.len());
+    terms.push(CoreTermSeed::new(
+        CoreTermSeedKind::Apply {
+            functor: checks[0].algorithm().1.clone(),
+            args: vec![arguments[1]],
+        },
+        CoreSourceRef::direct(range(check.application())?),
+        provenance(check.application()),
+    ));
+    let context = prepare_core_context(input).map_err(|e| e.to_string())?;
+    let owners = checks
+        .iter()
+        .map(|c| {
+            context
+                .item_registry()
+                .id_for_symbol(&c.algorithm().1)
+                .ok_or_else(invalid)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let lowered = lower_term_and_formula_inputs(
+        &context,
+        TermAndFormulaLoweringInput {
+            owner: owners[1],
+            template_type_parameter_sethoods: Vec::new(),
+            terms,
+            formulas,
+            failed_sites: Vec::new(),
+        },
+    )
+    .map_err(|e| e.to_string())?;
+    let definitions = lower_definition_inputs(&context, &lowered, DefinitionLoweringInput::new())
+        .map_err(|e| e.to_string())?;
+    let proofs = lower_proof_inputs(&context, &lowered, &definitions, ProofLoweringInput::new())
+        .map_err(|e| e.to_string())?;
+    let mut seeds = Vec::new();
+    for (index, algorithm) in checks.iter().enumerate() {
+        for (binder, guard) in &mut binders[index] {
+            binder.ty_guard = Some(lowered.formula_map[guard]);
+        }
+        seeds.push(AlgorithmSeed {
+            owner: owners[index],
+            symbol: algorithm.algorithm().1.clone(),
+            declared_terminating: algorithm.declared_terminating(),
+            params: vec![binders[index][0].0.clone()],
+            result: Some(binders[index][1].0.clone()),
+            contracts: CoreContractSet::default(),
+            payload: AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Return {
+                value: Some(
+                    lowered.term_map[&if index == 0 {
+                        arguments[0]
+                    } else {
+                        application
+                    }],
+                ),
+                source: CoreSourceRef::direct(range(check.returns()[index])?),
+                provenance: provenance(check.returns()[index]),
+            }]),
+            ghost_effects: Vec::new(),
+            source: CoreSourceRef::direct(range(algorithm.algorithm().0)?),
+            provenance: provenance(algorithm.algorithm().0),
+        });
+    }
+    let algorithms = lower_algorithm_inputs(
+        &context,
+        &lowered,
+        &proofs,
+        AlgorithmLoweringInput { algorithms: seeds },
+    )
+    .map_err(|e| e.to_string())?;
+    let callee = algorithms.algorithm_map[&owners[0]];
+    let caller = algorithms.algorithm_map[&owners[1]];
+    let request = SourceUnaryChildCallRequest {
+        callee,
+        caller,
+        application: lowered.term_map[&application],
+        statement: algorithms
+            .algorithms
+            .get(caller)
+            .ok_or_else(invalid)?
+            .statements[0],
+        actual: lowered.term_map[&arguments[1]],
+        formal: binders[0][0].0.var,
+        callee_result: binders[0][1].0.var,
+        caller_result: binders[1][1].0.var,
+    };
+    let core = CoreIr::try_new(CoreIrParts {
+        source_id: checks[0].bindings().source_id(),
+        module_id: checks[0].bindings().module_id().clone(),
+        items: context.item_registry().items().clone(),
+        terms: lowered.terms,
+        formulas: lowered.formulas,
+        definitions: definitions.definitions,
+        proofs: proofs.proofs,
+        proof_nodes: proofs.proof_nodes,
+        algorithms: algorithms.algorithms,
+        algorithm_statements: algorithms.algorithm_statements,
+        generated: lowered.generated,
+        obligation_seeds: proofs.obligation_seeds,
+        source_map: algorithms.source_map,
+        diagnostics: algorithms.diagnostics,
+    })
+    .map_err(|e| e.to_string())?;
+    Ok((core, request))
+}
+
 /// Lowers checker-authenticated bounded algorithms into existing Core statements.
 pub fn lower_source_algorithms(
     check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
