@@ -617,6 +617,12 @@ Only the checked original single-valuedness request is associated. No native typ
 `consume_source_algorithm_e1_single_valuedness(source, check, symbols, core, snapshot, vc_id, policy)` calls the unchanged [single-valuedness schema association](#original-e1-single-valuedness-request-identity-association) FIRST, preserving its errors. Require enabled `BuiltinKernelEvidence` and exact agreement between `policy.checker_schema_version()` and the returned Kernel schema; refusal is `algorithm.proof.e1_single_valuedness_policy_rejected`.
 Return original identity, whole raw slice, actual schema and `policy.policy_fingerprint()` atomically. Currentness remains caller-owned; Open4/Deferred and raw unknown/incomplete/cache-miss states persist. No retention/adoption, generic evidence/status, aggregate acceptance, symbols or reuse authority follows.
 
+## Native original-E1 single-valuedness adoption
+
+`NativeE1SingleValuedness::from_source` calls the unchanged [single-valuedness consumer](#original-e1-single-valuedness-current-policy-consumption) once and privately retains original identity, whole raw slice, exact snapshot, actual success-only checker schema and borrowed Core. There is no detached constructor or generic evidence conversion.
+`adopt_original_request` regenerates identity/slice first, preserving errors; return false unless complete equality, exact snapshot and identical Core arena hold. Then re-evaluate current enabled Builtin/schema agreement with the retained schema, using the consumer's policy refusal. Earlier fingerprints grant no authority.
+True adopts only that original single-valuedness obligation. Caller-owned currentness, Open4/Deferred, raw unknown/incomplete/cache misses persist. E2/aggregate acceptance, symbols, promotion, status and reuse remain excluded.
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` returns original `ProofObligationIdentity`, whole raw `DependencySlice` and borrowed Kernel `AlgorithmReturnsExistentialCheck` atomically. First call the authentic VC original-existential result producer with the fixed direct-return schemas above, preserving errors. Regenerate the existing original identity on identical inputs and require equality with the whole descriptor.5 raw slice; mismatch uses `algorithm.proof.invalid_direct_return_request`.

@@ -585,6 +585,12 @@ true が採用するのはその元 typing obligation のみ。currentness は�
 `consume_source_algorithm_e1_single_valuedness(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [single-valuedness schema association](#original-e1-single-valuedness-request-identity-association) を最初に呼び、エラーを保持する。`BuiltinKernelEvidence` の許可と、`policy.checker_schema_version()` と返された Kernel schema の完全一致を要求し、拒否は `algorithm.proof.e1_single_valuedness_policy_rejected`。
 元 identity・raw slice 全体・実際の schema・`policy.policy_fingerprint()` を atomic に返す。currentness は呼出側が所有し、Open4/Deferred と raw unknown/incomplete/cache-miss 状態を保持する。保持/adoption、generic evidence/status、aggregate acceptance、symbols、reuse 権限は与えない。
 
+## Native original-E1 single-valuedness adoption
+
+`NativeE1SingleValuedness::from_source` は変更しない [single-valuedness consumer](#original-e1-single-valuedness-current-policy-consumption) を一度呼び、元 identity・raw slice 全体・正確な snapshot・成功時の実際の checker schema・借用 Core を非公開に保持する。切り離した constructor や generic evidence への変換はない。
+`adopt_original_request` は最初に identity/slice を再生成し、エラーを保持する。完全一致・正確な snapshot・同一 Core arena が成立しなければ false。続いて保持した schema に対して現在の Builtin 許可/schema 一致を再評価し、consumer と同じ policy 拒否を使う。以前の fingerprint は権限を与えない。
+true が採用するのはその元 single-valuedness obligation のみ。currentness は呼出側が担い、Open4/Deferred・raw unknown/incomplete/cache miss は保つ。E2/aggregate acceptance・symbols・promotion・status・reuse は対象外。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。
