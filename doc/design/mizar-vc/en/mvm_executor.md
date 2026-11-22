@@ -74,6 +74,83 @@ they cannot serve as accepted or reproducible proof evidence.
 Exact successful computations must be reproducible for fixed
 authenticated input, compatible VM version and execution closure.
 
+## R5-Q1 accounting and report dossier
+
+**For owner consideration; no answer or implementation freeze.** This dossier
+prepares R4 choice (3) below, including the pilot; R5-F extends the eventual
+rule. Recommendations do not release R4 or settle R3 representation/loading,
+R5 witness providers, R6 admission or R7 conversion/replay.
+
+### Fixed constraints and decision surface
+
+[§20.9.2–4](../../../spec/en/20.algorithm_and_verification.md#2092-by-computation-proof-step)
+fixes `0` as unlimited, timeout as wall-clock milliseconds and nest as maximum
+function-call stack depth. Options apply to every call in a computation
+reference; §20.9.4 fixes gas per `by computation` invocation. Child calls must
+not obtain fresh budgets. Actual argument evaluation and transitive calls are
+execution work even when performed before the selected entry is entered.
+Validation, proof checking, conversion and inspection retain their own stages.
+
+The remaining choices below concern derived VM accounting and internal report
+design. A choice requiring different language intent must return to the owner
+as a specification question rather than become a pilot convention.
+
+### Options, consequences and recommendations
+
+| Question | Options and consequences | Recommendation to the owner |
+|---|---|---|
+| Step unit | Charge each executable instruction: easy to count, but tied to R3 encoding/lowering and may hide expensive primitive work. Charge versioned logical execution operations, with explicit costs for composite primitives: less sensitive to encoding, but needs an audited cost table and interruptible implementation. | Prefer logical operations with a small explicit schedule agreed with R3; bind it to VM semantics. Enumerate argument, entry, return and primitive work before the pilot; do not infer gas from AST nodes, source lines or pre-ATP fuel. |
+| Nested sharing | One invocation ledger shared by frames makes cumulative steps and the deadline explicit. Passing remaining fuel/deadline through each call can preserve the same bounds, but requires exact debit/return handling on every exit, including failure. Resetting a child budget is outside the fixed constraints. | Prefer one invocation ledger; freeze where each charge is reserved, and ensure completed work is neither refunded nor double charged. Retain one gas bound across explicit/goal calls in the same reference; specify their order and repeated-call treatment. |
+| Nest | Count active logical algorithm frames, including the root as depth 1; this matches stack depth directly. Counting physical host frames makes limits depend on implementation; eliminating logical frames on tail calls changes which runs fit. A root-at-zero convention needs an explicit relation to the specified depth. | Prefer root depth 1, a check before pushing a callee, and logical frames retained despite host optimizations. Argument calls contribute while active, and completed sibling calls do not accumulate depth. Freeze exact entry/pop and maximum-depth reporting. |
+| Timeout span | A monotonic elapsed wall-clock timer over VM argument/body/callee execution preserves milliseconds despite wall-clock adjustments. Timing the entire load/prove/import attempt additionally includes non-execution work and obscures the exhausted stage. CPU time or step-derived time is not the specified timeout. | Prefer one VM deadline, never renewed by a child. Keep validation/import resource accounting separate. Freeze start/end points, safe-point placement and maximum primitive interruption latency; polling only between unbounded primitives cannot enforce a positive bound. |
+| Boundaries and interruption | Checking before work prevents an over-budget operation; checking only afterward may execute beyond the bound. A fixed tie order gives repeatable internal reasons; retaining all observed stop causes preserves detail but complicates framing. Wall-time observation remains scheduling-dependent. | Prefer pre-charge/pre-push checks and deadline/cancellation checks at bounded safe points, including before publishing success. Owner must choose equality at the deadline, simultaneous stop precedence and cancellation framing; no diagnostic code or precedence is selected here. |
+| Report framing | A minimal internal normal-return record plus a separate attempt outcome separates E5 input from incomplete/failure data. A full instruction trace aids investigation/replay but couples R4 to an unfrozen format and can grow without bound. Serializing either now would prematurely settle an R3/R7 schema. | Prefer the minimal internal record and separate attempt outcome; defer trace/persistence until their owners require it. Report concepts below are a checklist, not fields, types or a wire format. |
+
+An instruction-count pilot remains an alternative only if its accepted unit
+and expensive primitives are explicitly bounded and versioned; it must not
+silently become the later logical-operation schedule. Any accounting change
+that can change completion at a finite limit needs compatible VM semantics
+and consumer invalidation rules coordinated with R3/R7.
+
+### Report checklist and freeze handoff
+
+The existing successful-report provenance above remains mandatory. For the
+owner's framing choice, additionally consider effective limits, accounting-rule
+identity, consumed steps, peak logical depth, timeout scope and the completed
+call's place in the invocation. Elapsed time is operational information, not
+reproducible proof evidence. A digest, counter or successful child does not
+replace the authenticated complete normal return of a requested call.
+
+For failed attempts preserve stage/operation, the applicable resource/limit
+and call path without carrying a successful-result marker. Existing
+[E0331/E0333 obligations](../../../spec/en/22.error_handling_and_diagnostics.md#2248-reflection-and-computation-diagnostics)
+still apply: runtime failure reports its message, listed values and call chain;
+resource incompleteness names the actual stage, operation, resource and limit.
+Cancellation framing stays open. If an earlier call returned before a later
+call or import failed, retain that genuine internal evidence separately;
+the failed operation supplies no new E5 fact or unchecked public candidate.
+
+Before R4's pilot, the owner answer must make the charge schedule, root/callee
+depth, shared limits, clock interval, check points, tie/cancellation policy and
+report framing unambiguous, in coordination with R3's instruction/value and
+VM-version choices. The implementation contract must then bind genuine
+R2/R3 inputs to the following controls within the existing readiness matrix:
+
+- Exact required steps versus one less, omitted/zero limits, argument and
+  nested work, and multiple calls without budget reset or duplicate charging.
+- Root and nested depth at/over the bound, siblings and optimized calls;
+  R5 supplies the real recursive/complex-flow extensions once supported.
+- Timeout before/during execution, expensive operations, cancellation and
+  simultaneous limits using controlled clock observations; repeat successful
+  values while allowing elapsed time and timeout completion to vary.
+- Failure/incomplete versus normal return, stale VM/accounting identities,
+  forged metrics and mixed successful/failed calls; subsequent import failure
+  preserves prior internal evidence without admitting a public result.
+
+These are future oracle requirements, not new fixtures or coverage credit.
+The existing Open requests cannot establish any boundary count or timeout
+behavior, and a synthetic receipt cannot discharge the pilot prerequisites.
+
 ## Readiness and test design
 
 | Case | Future executable oracle | Required negative control |
