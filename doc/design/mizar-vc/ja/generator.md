@@ -616,7 +616,7 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_caller_e4_result(source, typed, symbols, core, request, child)` はこの descriptor を先に再生成し、明示的 child evidence の検査より前に上流エラーを維持する。正確な caller relation と元 guard を [Kernel composition 規則](../../mizar-kernel/ja/checker.md#bounded-unary-caller-operational-composition) に渡し、変更しない descriptor と既存の不透明な結果を不可分に返す。局所拒否は `algorithms.unary_child.invalid_caller_e4_request`。同値な clone Core でも、その arena で新たに検査した child が必要である。
 
-この descriptor 単独では checked operational composition と normal-return evidence は与えない。Proof caller identity/current-policy/adoption、E1/E2、全体受理は延期し、child identity は caller target の権限にならない。unknown dependency、cache miss、caller 所有の currentness は維持する。一般 evidence・status・publication・complete footprint・profile 拡大は含まない。詳細は [英語版](../en/generator.md#bounded-unary-caller-e4-descriptor) を参照。
+この descriptor 単独では checked operational composition と normal-return evidence は与えない。受動的な [Proof caller identity](../../mizar-proof/ja/status.md#arena-local-caller-e4-association) は current-policy/adoption、E1/E2、全体受理の権限を与えず、child identity は caller target の権限にならない。unknown dependency、cache miss、caller 所有の currentness は維持する。一般 evidence・status・publication・complete footprint・profile 拡大は含まない。詳細は [英語版](../en/generator.md#bounded-unary-caller-e4-descriptor) を参照。
 
 ## Bounded direct-return E1/E4 producer design
 

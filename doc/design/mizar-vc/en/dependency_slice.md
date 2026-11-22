@@ -67,6 +67,10 @@ Out of scope:
 After authentication, normalize the fixed relationships into semantic slots: callee parameter/result/Return and caller parameter/result/Return-Apply, existential result binder, actual witness and object(actual) guard. Ordered callee/caller owners contain actual package/module/namespace/spelling/kind/visibility and terminating flags. Arena/source/range IDs, binder spelling and trivia are excluded. Existing bridge fingerprints use domains `mizar-vc/source-unary-child/{goal,context,vc}/v1` over VC-owned framed bytes; goal includes the whole normalized definition and witness, context the guard/binder, and VC the role plus goal/context hashes. Preserve the existing VC dependency boundary.
 Raw slice entries bind the whole definition bytes, context and goal under Definition/LocalContext/GeneratedFormula, using the existing slice fingerprint function. Explicit UpstreamPayload footprint and DischargeEvidence unknowns retain IncompleteUncacheable/cache-miss. Local VcId(0), AlgorithmE4NormalReturn/Open classify only this child request; no graph status, evidence, complete dependency coverage or reuse authority is produced. Direct-return and generic collectors remain unchanged.
 
+## Source unary caller E4 canonical inputs
+
+`source_unary_caller_e4_canonical_inputs(source, typed, symbols, core, request)` first regenerates the authenticated caller descriptor. VC-owned framed bytes under `mizar-vc/source-unary-caller-e4/{definition,goal,context,vc}/v1` bind the caller goal and both owners/terminating flags, original Apply/Return/formal/actual/result-slot joins, guard and fresh binder. It returns existing VC/goal/context hashes and whole conservative slice without child-identity reuse. Three normalized entries and explicit footprint/evidence unknowns retain Open/IncompleteUncacheable/cache-miss; no policy/adoption, status, VcSet/seeds, currentness or complete-footprint authority follows.
+
 ## Inputs And Outputs
 
 Required input:

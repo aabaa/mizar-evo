@@ -689,7 +689,7 @@ This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/
 
 `check_source_unary_child_call_caller_e4_result(source, typed, symbols, core, request, child)` first regenerates this authenticated descriptor, preserving upstream errors before inspecting explicit child evidence. It passes the exact caller relation and original guard to the [Kernel composition rule](../../mizar-kernel/en/checker.md#bounded-unary-caller-operational-composition), returning the unchanged descriptor and existing opaque result atomically; local refusal is `algorithms.unary_child.invalid_caller_e4_request`. Equal cloned Core requires newly checked child evidence in that arena.
 
-The descriptor alone supplies no checked operational composition or normal-return evidence. Proof caller identity/current-policy/adoption, E1/E2 and whole-algorithm acceptance remain deferred; child identity cannot authorize the caller target. Unknown dependencies, cache misses and caller-owned currentness remain unchanged. No generic evidence, status, publication, complete footprint or broader-profile authority follows.
+The descriptor alone supplies no checked operational composition or normal-return evidence. Passive [Proof caller identity](../../mizar-proof/en/status.md#arena-local-caller-e4-association) adds no current-policy/adoption, E1/E2 or whole-algorithm acceptance; child identity cannot authorize the caller target. Unknown dependencies, cache misses and caller-owned currentness remain unchanged. No generic evidence, status, publication, complete footprint or broader-profile authority follows.
 
 ## Bounded direct-return E1/E4 producer design
 

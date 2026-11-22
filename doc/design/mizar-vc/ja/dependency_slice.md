@@ -64,6 +64,10 @@ raw slice は定義 bytes・context・goal を Definition/LocalContext/Generated
 | DEP-G003 | `external_dependency_gap` | complete registration、cluster、reduction、import、proof/cache、corpus、artifact consumer はすべてが `mizar-vc` に接続済みではない。 | この仕様は unavailable coverage に conservative marker を要求し、consumer integration を deferred にする。 |
 | DEP-G004 | `deferred` | cross-edit reuse identity、canonical VC/context fingerprint、[architecture 22](../../architecture/ja/22.incremental_verification_contract.md) proof-reuse gate は task 20 以降の作業である。 | Task 13 は dependency slice が後続 fingerprint にどう供給されるべきかを定義するが、実装しない。 |
 
+## Source unary caller E4 canonical inputs
+
+`source_unary_caller_e4_canonical_inputs(source, typed, symbols, core, request)` は最初に caller descriptor を新たに認証する。VC 所有の framed bytes は `mizar-vc/source-unary-caller-e4/{definition,goal,context,vc}/v1` の下で caller goal と両 owner/terminating flag、元 Apply/Return/formal/actual/result-slot 結合、guard、fresh binder を結ぶ。child identity を再利用せず、既存 VC/goal/context hash と保守的 slice 全体を返す。三つの正規化 entry と footprint/evidence unknown が Open/IncompleteUncacheable/cache-miss を保ち、policy/adoption、status、VcSet/seeds、currentness、完全 footprint の権限は与えない。
+
 ## 入力と出力
 
 必須入力:

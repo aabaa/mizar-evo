@@ -620,7 +620,8 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 `SourceUnaryCallerE4Association::from_source(source, typed, symbols, core, request)` は変更しない VC child checker から一時的な真正 child evidence を取得し、同じ Core の evidence で既存 caller composition を呼ぶ。private fields は request 全体、返された caller context/formula descriptor、借用する checked caller result だけを保持し、変更不可の `request`、`descriptor`、`result` getter で元の値を返す。下位エラーを保持し、child descriptor/evidence は保持しない。
 `matches_source` は最初に全五入力から caller descriptor を新たに認証し、request/descriptor 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新しい arena での新規構築は可能。不変な全体の対応が元の caller/CFG/Return/Apply/callee/formal/actual/result-slot の結合を保持し、切り離した構築や Kernel 再検査はしない。currentness は呼出側が担う。
-この caller 専用 holder は canonical identity、child identity の再利用、current-policy consumption/native adoption、E1/E2/whole acceptance、status、publication、complete footprint、cache authority を与えない。既存 unary profile と raw unknown/incomplete/cache-miss 境界を保つ。
+`obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。成功時だけ同じ引数で [caller canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e4-canonical-inputs) を得る。全小文字 VC hash に `source-unary-caller-e4-candidate-anchor-v1:` を前置し、通常の五文字列 obligation object が anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e4/obligation` v1.0 で結ぶ。Some(既存 ProofObligationIdentity, raw slice 全体) を返し、保持 field や child identity 再利用は追加しない。
+この受動的 caller identity は currentness、current-policy consumption/native adoption、E1/E2/whole acceptance、status、publication、complete footprint、cache authority を与えない。arena 間 canonical 一致は association を認可しない。既存 unary profile と raw unknown/incomplete/cache-miss 境界を保つ。
 
 ## Unary child-request current-policy consumption
 
