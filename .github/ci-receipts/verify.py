@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trusted, shadow-only verifier. No candidate or evidence code is imported."""
+"""Verify receipts using independent trusted controls; never import evidence code."""
 import argparse
 import base64
 import datetime as dt
@@ -74,27 +74,28 @@ def object_bytes(repository, name, kind, limit):
 
 
 def classify_delta(repository, base, source):
-    """Only entire, nonempty regular Markdown deltas qualify."""
+    """Validate the entire nonempty comparison, independently of changed paths."""
     if git(repository, "merge-base", "--is-ancestor", base, source, check=False).returncode:
         return False
     records = git(repository, "diff", "--raw", "-z", "--no-renames", "--no-abbrev",
                   base, source, "--").stdout.split(b"\0")
     if records == [b""] or len(records) % 2 != 1 or records[-1]:
         return False
-    overrides = {b"doc/design/" + name + b".md" for name in (
-        b"autonomous_crate_development", b"documentation_compaction_rules",
-        b"codex_dispatch_template", b"ci_receipt_model", b"todo", b"spec_coverage_audit")}
+    modes = {b"100644", b"100755", b"120000", b"160000"}
     for index in range(0, len(records) - 1, 2):
         fields, path = records[index].split(), records[index + 1]
-        if len(fields) != 5 or fields[4] not in (b"A", b"D", b"M"):
+        if len(fields) != 5 or not fields[0].startswith(b":") or not path:
             return False
-        old, new = fields[0][1:], fields[1]
-        if old not in (b"000000", b"100644") or new not in (b"000000", b"100644"):
+        old, new, old_oid, new_oid, status = fields[0][1:], *fields[1:]
+        if old not in modes | {b"000000"} or new not in modes | {b"000000"}:
             return False
-        if path in overrides or path.startswith((b"doc/spec/", b"doc/design/architecture/",
-                                                 b"doc/design/task_contracts/")):
+        if not all(re.fullmatch(rb"[0-9a-f]{40}|[0-9a-f]{64}", value) for value in (old_oid, new_oid)):
             return False
-        if path != b"README.md" and not (path.startswith(b"doc/") and path.endswith(b".md")):
+        if (old == b"000000") != (set(old_oid) == {48}) or (new == b"000000") != (set(new_oid) == {48}):
+            return False
+        expected = (b"A" if old == b"000000" else b"D" if new == b"000000" else
+                    b"T" if old[:3] != new[:3] else b"M")
+        if status != expected or old == new == b"000000":
             return False
     return True
 
@@ -104,7 +105,7 @@ def read_policy(data):
     keys(policy, "schema enabled repository signer_identity signer_public_key plan_sha256 "
          "generator_sha256 environment_sha256 inventory_sha256 expected_inventory expected_ignored")
     require(type(policy["schema"]) is int and policy["schema"] == 1, "unsupported policy")
-    require(policy["enabled"] is False, "shortcut activation is outside this shadow implementation")
+    require(type(policy["enabled"]) is bool, "invalid enabled flag")
     require(type(policy["repository"]) is str and re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+",
                                                             policy["repository"]), "invalid repository")
     for field in ("signer_identity", "signer_public_key"):
@@ -115,6 +116,18 @@ def read_policy(data):
     for field in ("expected_inventory", "expected_ignored"):
         names(policy[field])
     require(set(policy["expected_ignored"]) <= set(policy["expected_inventory"]), "invalid ignored baseline")
+    if policy["enabled"]:
+        require(all(policy[field] is not None for field in (
+            "signer_identity", "signer_public_key", "plan_sha256", "generator_sha256",
+            "environment_sha256", "inventory_sha256")) and policy["expected_inventory"], "unprovisioned enabled policy")
+        require(re.fullmatch(r"[A-Za-z0-9@._-]+", policy["signer_identity"]) and
+                re.fullmatch(r"ssh-ed25519 [A-Za-z0-9+/]+={0,2}", policy["signer_public_key"]), "invalid signer pin")
+        try:
+            key = base64.b64decode(policy["signer_public_key"].split()[1], validate=True)
+        except ValueError as error:
+            raise ReceiptError("invalid signer key") from error
+        require(len(key) == 51 and key[:19] == b"\0\0\0\x0bssh-ed25519\0\0\0\x20", "invalid signer key")
+        require(digest(canonical(policy["expected_inventory"])) == policy["inventory_sha256"], "invalid inventory pin")
     return policy
 
 
@@ -125,10 +138,14 @@ def names(value):
 
 
 def live_refs(repository, event, remote):
-    refs = {event["source_ref"], event["default_ref"]}
+    require(type(event["default_ref"]) is str and event["default_ref"].startswith("refs/heads/"), "invalid default ref")
+    source_ref = event["source_ref"]
+    require(type(source_ref) is str and (
+        event["kind"] == "push" and source_ref.startswith("refs/heads/") or
+        event["kind"] == "pull_request" and re.fullmatch(r"refs/pull/[1-9][0-9]*/merge", source_ref)), "invalid source ref")
+    refs = {source_ref, event["default_ref"]}
     for ref in refs:
-        require(type(ref) is str and ref.startswith("refs/heads/") and
-                git(repository, "check-ref-format", ref, check=False).returncode == 0, "invalid live ref")
+        require(git(repository, "check-ref-format", ref, check=False).returncode == 0, "invalid live ref")
     if remote:
         lines = git(repository, "ls-remote", "--refs", remote, *sorted(refs)).stdout.splitlines()
         pairs = [line.decode("ascii").split("\t") for line in lines]
@@ -179,8 +196,9 @@ def timestamp(value):
         raise ReceiptError("invalid UTC timestamp") from error
 
 
-def verify_receipt(repository, policy_bytes, event, now=None, remote=None):
+def verify_receipt(repository, policy_bytes, event, now=None, remote=None, enforce=False):
     policy = read_policy(policy_bytes)
+    require(not enforce or policy["enabled"], "receipt enforcement is disabled")
     keys(event, "kind repository source base source_ref default_ref default_source fork synthetic_merge")
     require(event["repository"] == policy["repository"], "event repository mismatch")
     require(event["kind"] in ("push", "pull_request") and type(event["fork"]) is bool and
@@ -188,24 +206,33 @@ def verify_receipt(repository, policy_bytes, event, now=None, remote=None):
     for field in ("source", "base", "default_source"):
         require(oid(event[field]), "invalid event commit")
     full = {"decision": "full", "eligible": False, "reason": "event requires full CI"}
-    if event["kind"] != "push" or event["fork"] or event["synthetic_merge"]:
-        return full
+    require(event["kind"] == "pull_request" and event["synthetic_merge"] or
+            event["kind"] == "push" and not event["fork"] and not event["synthetic_merge"], "unsupported event")
     live_refs(repository, event, remote)
     require(git(repository, "cat-file", "-t", event["source"]).stdout.strip() == b"commit", "source is not commit")
     comparison_valid = True
-    if event["source_ref"] != event["default_ref"]:
+    if event["kind"] == "pull_request":
+        parent = git(repository, "rev-parse", "--verify", event["source"] + "^1", check=False)
+        comparison_valid = (parent.returncode == 0 and parent.stdout.decode().strip() ==
+                            event["base"] == event["default_source"])
+    elif event["source_ref"] == event["default_ref"]:
+        comparison_valid = event["default_source"] == event["source"]
+    else:
         bases = git(repository, "merge-base", "--all", event["default_source"], event["source"], check=False)
         comparison_valid = bases.returncode == 0 and bases.stdout.decode().splitlines() == [event["base"]]
     eligible_delta = comparison_valid and classify_delta(repository, event["base"], event["source"])
+    require(not enforce or eligible_delta, "invalid entire-delta comparison")
     tag = "refs/tags/ci-receipts/" + event["source"]
     if remote:
         advertised = remote_tag(repository, remote, tag)
         if advertised is None:
+            require(not enforce, "missing receipt")
             return {**full, "reason": "missing receipt"}
         git(repository, "fetch", "--no-tags", "--no-recurse-submodules", "--no-write-fetch-head",
             "--depth=1", "--filter=tree:0", remote, tag + ":" + tag)
     target = git(repository, "rev-parse", "--verify", tag, check=False)
     if target.returncode:
+        require(not enforce, "missing receipt")
         return {**full, "reason": "missing receipt"}
     evidence_oid = target.stdout.decode().strip()
     require(not remote or evidence_oid == advertised, "receipt tag changed during fetch")
@@ -273,7 +300,9 @@ def verify_receipt(repository, policy_bytes, event, now=None, remote=None):
         require(remote_tag(repository, remote, tag) == evidence_oid, "remote receipt tag moved")
     if not eligible_delta:
         return {**full, "reason": "delta requires full CI"}
-    return {"decision": "full", "eligible": True, "reason": "valid receipt; shadow mode retains full CI"}
+    if enforce:
+        return {"decision": "pass", "eligible": True, "reason": "valid exact-event full receipt"}
+    return {"decision": "full", "eligible": True, "reason": "valid receipt; observation retains full CI"}
 
 
 def main():
@@ -281,6 +310,7 @@ def main():
     parser.add_argument("--repository", required=True)
     parser.add_argument("--policy", required=True)
     parser.add_argument("--remote")
+    parser.add_argument("--enforce", action="store_true")
     for name in ("repository-id", "source", "base", "source-ref", "default-ref", "default-source"):
         parser.add_argument("--" + name, required=True)
     parser.add_argument("--event-kind", choices=("push", "pull_request"), required=True)
@@ -291,7 +321,7 @@ def main():
              "base": args.base, "source_ref": args.source_ref, "default_ref": args.default_ref,
              "default_source": args.default_source, "fork": args.fork, "synthetic_merge": args.synthetic_merge}
     try:
-        print(json.dumps(verify_receipt(args.repository, Path(args.policy).read_bytes(), event, remote=args.remote)))
+        print(json.dumps(verify_receipt(args.repository, Path(args.policy).read_bytes(), event, remote=args.remote, enforce=args.enforce)))
     except (ReceiptError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, "receipt sanity failed: " + str(error) + "\n")
 

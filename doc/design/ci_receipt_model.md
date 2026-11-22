@@ -116,9 +116,9 @@ host/signer compromise and unobserved inputs remain outside their assurance.
 
 ## Bootstrap operation
 
-This section describes the existing bootstrap deployment, not the authorized enforcing state.
+This section describes preparation before the enforcing workflow is landed.
 
-The orchestrator stores `generate.py` and its unprovisioned `custody.json` at
+The orchestrator stores `generate.py` and `custody.json` at
 `~/orchestration/ci-receipts/` on dev-linux; keys and the publication ledger stay there.
 Only the owner provisions custody and reviewed tool, environment and inventory pins.
 The fixed generator requires Linux namespaces, read-only Git metadata and toolchain,
@@ -127,7 +127,9 @@ It rejects source mutations through inotify as well as pre/postflight checks. Ha
 names and ignored names must match the reviewed baseline, including individual summary counts.
 The owner-only publication mode atomically pushes the sealed source and create-only evidence
 tag, then appends its publication observation; bootstrap never invokes publication.
-Repository policy starts disabled with no signer or baseline; it cannot grant a shortcut.
+An enabled public policy records reviewed signer and baseline pins; it does not
+enable custody or replace full CI. Custody remains disabled until successful
+hosted reconciliation of the prepared default-branch controls.
 The [verifier](../../.github/ci-receipts/verify.py) consumes only exact Git blobs and
 the [trusted policy](../../.github/ci-receipts/policy.json); no candidate modules are imported.
 The `receipt-shadow` job extracts them from a fixed default-branch commit into isolated
@@ -140,5 +142,5 @@ wire transfer before its size is available; shadow failure always retains full e
 Receipt tags trigger no source workflow; branch pushes and PRs retain their checks.
 Run the disposable attack matrix with `python3 -m unittest discover -s tests/ci_receipts -v`;
 generator tests use the external custody source, or `CI_RECEIPT_CUSTODY` for a disposable copy.
-Required-check source enforcement, live canaries, baseline approval and production custody
-deployment remain owner work. Rollback removes shadow observation and preserves full testing.
+Required-check source enforcement, live canaries, baseline approval and custody
+activation remain owner work. Rollback restores unconditional hosted testing.

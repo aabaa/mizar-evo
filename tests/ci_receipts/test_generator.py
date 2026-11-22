@@ -39,6 +39,7 @@ class GeneratorTests(unittest.TestCase):
         hidden_signer = json.dumps(str(self.custody / "signer"))
         (self.repo / "src/lib.rs").write_text(
             '#[test]\nfn complete_gate() {\n'
+            'assert_eq!(std::env::var("RUST_TEST_THREADS").unwrap(), "4");\n'
             f'assert!(!std::path::Path::new({hidden_signer}).exists());\n'
             'assert!(std::fs::OpenOptions::new().write(true).open(".git/config").is_err());\n'
             'unsafe extern "C" { fn lseek(fd: i32, offset: i64, whence: i32) -> i64; }\n'
@@ -65,8 +66,8 @@ class GeneratorTests(unittest.TestCase):
                        "policy_path": str(self.custody / "policy.json"), "signer_path": str(self.key),
                        "work_root": str(self.custody / "runs"), "ledger_path": str(self.custody / "ledger.jsonl"),
                        "timeout_seconds": 30}
-        environment = {"env": {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC",
-                               "CARGO_BUILD_JOBS": "4", "CARGO_NET_OFFLINE": "true", "RUSTC": tools["rustc"], "RUSTDOC": tools["rustdoc"],
+        self.environment = {"env": {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC",
+                               "CARGO_BUILD_JOBS": "4", "RUST_TEST_THREADS": "4", "CARGO_NET_OFFLINE": "true", "RUSTC": tools["rustc"], "RUSTDOC": tools["rustdoc"],
                                "CARGO_ENCODED_RUSTFLAGS": "", "CARGO_ENCODED_RUSTDOCFLAGS": ""},
                        "cargo_version": run(tools["cargo"], "--version").decode().strip(),
                        "rustc_version": run(tools["rustc"], "-vV").decode().strip(), "tool_sha256": hashes,
@@ -78,7 +79,7 @@ class GeneratorTests(unittest.TestCase):
                        "signer_identity": "fixture", "signer_public_key": " ".join(self.key.with_suffix(".pub").read_text().split()[:2]),
                        "plan_sha256": self.generator.digest(self.generator.canonical(self.generator.PLAN)),
                        "generator_sha256": self.generator.digest(self.generator_path.read_bytes()),
-                       "environment_sha256": self.generator.digest(self.generator.canonical(environment)),
+                       "environment_sha256": self.generator.digest(self.generator.canonical(self.environment)),
                        "inventory_sha256": self.generator.digest(self.generator.canonical(inventory)),
                        "expected_inventory": inventory, "expected_ignored": []}
         self.save()
@@ -171,6 +172,56 @@ class GeneratorTests(unittest.TestCase):
                 else:
                     target.write_bytes(original)
 
+    def test_pinned_fixture_is_read_only_and_checkout_stays_clean(self):
+        fixture = self.home / "approved/provers/vampire-4.9/vampire"
+        fixture.parent.mkdir(parents=True)
+        fixture.write_text("#!/bin/sh\nexit 0\n")
+        fixture.chmod(0o755)
+        fixture_hash = self.generator.digest(fixture.read_bytes())
+        self.config.update(fixture_root=str(self.home / "approved"), fixture_sha256=fixture_hash)
+        self.environment["fixture"] = {"path": "provers/vampire-4.9/vampire", "sha256": fixture_hash,
+                                       "source_mode": "0755", "snapshot_mode": "0555"}
+        self.policy["environment_sha256"] = self.generator.digest(self.generator.canonical(self.environment))
+        self.save()
+        self.replace_test('use std::os::unix::fs::PermissionsExt; '
+                          'let path = ".tools/provers/vampire-4.9/vampire"; '
+                          'assert_eq!(std::fs::metadata(path).unwrap().permissions().mode() & 0o777, 0o555); '
+                          'assert!(std::fs::OpenOptions::new().write(true).open(path).is_err()); '
+                          'assert!(std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).is_err()); '
+                          'assert!(std::process::Command::new(path).status().unwrap().success());')
+        result = self.execute()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(self.git("status", "--porcelain=v1", "--untracked-files=all", "--ignored"), b"")
+        self.assertEqual(fixture.stat().st_mode & 0o777, 0o755)
+
+    def test_fixture_hash_symlink_and_mode_refuse_without_receipt(self):
+        fixture = self.home / "approved/provers/vampire-4.9/vampire"
+        fixture.parent.mkdir(parents=True)
+        fixture.write_text("#!/bin/sh\nexit 0\n")
+        fixture.chmod(0o755)
+        self.config.update(fixture_root=str(self.home / "approved"),
+                           fixture_sha256=self.generator.digest(fixture.read_bytes()))
+        self.save()
+        fixture.write_text("#!/bin/sh\nexit 1\n")
+        self.assertIn(b"fixture differs", self.assert_refused().stderr)
+        fixture.write_text("#!/bin/sh\nexit 0\n")
+        fixture.chmod(0o644)
+        self.assertIn(b"regular executable", self.assert_refused().stderr)
+        fixture.chmod(0o755)
+        original = fixture.with_name("original")
+        fixture.rename(original)
+        fixture.symlink_to(original)
+        self.assertIn(b"regular executable", self.assert_refused().stderr)
+
+    def test_candidate_tools_contents_refuse_without_receipt(self):
+        tools = self.repo / ".tools"
+        tools.mkdir()
+        (tools / "candidate").write_text("unapproved input\n")
+        self.git("add", ".tools")
+        self.git("commit", "-m", "candidate fixture substitution")
+        self.source = self.oid()
+        self.assertIn(b"candidate .tools contents", self.assert_refused().stderr)
+
     def test_edit_and_revert_during_execution_has_no_receipt(self):
         self.replace_test('let before = std::fs::read("README.md").unwrap(); '
                           'std::fs::write("README.md", b"mutation").unwrap(); '
@@ -248,13 +299,38 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(counts["passed"], 2)
 
     def test_atomic_publication_and_remote_create_only_refusal(self):
+        candidate_helper = self.repo / "src/lib.rs"
+        candidate_helper.chmod(0o755)
+        self.git("commit", "-am", "executable candidate helper")
+        self.source = self.oid()
         result = self.execute()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         remote = self.home / "remote.git"
         run("git", "init", "--bare", str(remote))
-        self.config.update(publish_ref="refs/heads/main", publish_remote=str(remote))
+        helper = self.custody / "pinned gh"
+        helper.write_text("#!/bin/sh\nexit 1\n")
+        helper.chmod(0o755)
+        helper_config = self.custody / "gh-config"
+        helper_config.mkdir()
+        self.config.update(publish_ref="refs/heads/main", publish_remote=str(remote), gh=str(helper),
+                           gh_sha256="0" * 64, gh_config_dir=str(helper_config))
         self.save()
         command = ["python3", str(self.generator_path), "--publish", self.source, "refs/heads/main"]
+        refused = subprocess.run(command, capture_output=True)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn(b"publication helper differs", refused.stderr)
+        self.config["gh_sha256"] = self.generator.digest(helper.read_bytes())
+        for override in ({"gh": str(candidate_helper), "gh_sha256": self.generator.digest(candidate_helper.read_bytes())},
+                         {"gh_config_dir": str(self.repo / "src")}):
+            original = self.config.copy()
+            self.config.update(override)
+            self.save()
+            refused = subprocess.run(command, capture_output=True)
+            self.assertNotEqual(refused.returncode, 0)
+            self.assertIn(b"publication helper differs", refused.stderr)
+            self.config = original
+        self.save()
+        self.git("config", "url." + str(self.home / "candidate-redirect.git") + ".insteadOf", str(remote))
         result = subprocess.run(command, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         tag = "refs/tags/ci-receipts/" + self.source

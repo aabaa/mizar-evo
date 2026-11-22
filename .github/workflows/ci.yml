@@ -71,6 +71,8 @@ jobs:
     name: mizar-test
     runs-on: ubuntu-latest
     env:
+      CARGO_BUILD_JOBS: "4"
+      RUST_TEST_THREADS: "4"
       # Avoid intermittent HTTP/2 framing failures while downloading crates from
       # the sparse registry, and let Cargo retry transient network errors.
       CARGO_HTTP_MULTIPLEXING: "false"
@@ -106,6 +108,18 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --check
+
+      - name: Provision pinned Vampire 4.9 for exhaustive tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tools/provers/vampire-4.9
+          curl --fail --location --retry 3 \
+            https://github.com/vprover/vampire/releases/download/v4.9casc2024/vampire \
+            --output .tools/provers/vampire-4.9/vampire
+          echo 'ce3b39047565a3980e3d490315ff129f0eca5f8fbd40eeb0d6850122eb295b54  .tools/provers/vampire-4.9/vampire' | sha256sum --check
+          chmod 755 .tools/provers/vampire-4.9/vampire
+          .tools/provers/vampire-4.9/vampire --version | head -1 | grep -Fx 'Vampire 4.9 (commit 5ad494e78 on 2024-06-14 14:05:27 +0100)'
 
       - name: Run tests
         run: cargo test
