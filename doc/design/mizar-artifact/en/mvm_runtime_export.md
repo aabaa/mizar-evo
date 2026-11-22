@@ -31,9 +31,9 @@ is **not** runnable proof-checked code.
 **R6-C export inputs:** register type guards, `requires`, complete `ensures`
 and value-return/non-ghost Pick/set-versus-sequence loop classifications for
 every closure callee, including private helpers. R6-C consumes these R3
-inputs even for VC58 same-package Open-goal generation. This registration
-does not decide whether the exporter proves and transports uniqueness or
-the importer generates its obligations; see R3-N1 below.
+inputs even for VC58 same-package Open-goal generation. Under the R3-N1
+owner decision below, the exporter proves applicable closure uniqueness;
+importers still validate its exact evidence binding.
 
 **Visibility:** only public computable entry points may be imported and
 called across packages. Their validated executable may include private
@@ -73,43 +73,115 @@ manifest hash, stale publication, missing dependency, policy incompatibility,
 or local source fallback. Refusal yields no validated handle, E5 report or
 trusted computation status; retain the previous durable manifest on failure.
 
-**Open decisions (all undecided; no approved format):**
-R3-Q1/Q3 ownership follows the owner decision of 2026-11-20 11:00 JST.
-- **R3-Q1 — Artifact; blocks R3 implementation freeze and R4 format choice:**
-  versioned executable instruction/serialization model and exact semantics
-  against checked Core/CFG, including whether to share code-extraction
-  [RuntimeIr](../../mizar-doc/en/todo.md) or use a separate format. This is
-  the open question transferred from [R1-Q3](../../mizar-vc/en/mvm_readiness.md#open-questions);
-  neither representation is selected before the future Artifact-owned freeze.
-- **R3-Q2 — RESERVED/undecided owner/specification judgment at the R3 freeze;
-  unassigned in this slice; blocks R3 export and the R4 same-module pilot:**
-  same-package verification-time evaluation ordering. Determine
-  whether a separately authenticated, fully verified staged runtime item
-  can be loaded before public manifest commit, or whether evaluation must
-  await a published verified dependency. The same-file computation examples
-  (§20.9.2/§20.13.4) and file-final Artifact emit (§23.4) constrain this
-  choice; defining-file private-entry evaluation also remains undecided.
-  Never accept a self-dependent
-  proof/verification/publication cycle or unverified staging token.
-- **R3-Q3 — Artifact, with Build/Proof agreement; blocks R3 export:**
-  which producer-owned evidence, complete dependency closure and reader
-  checks demonstrate correspondence, with what format/manifest versioning?
-  **R3-N2:** what authenticates imported verification lineage (exporter-side
-  E1/E2/applicable E4 acceptance)? Relate the [Proof trust-transfer rule](../../mizar-proof/en/policy.md#trust-transfer-rule)
-  and [Artifact transport boundary](./manifest.md#imported-promotion-authority-boundary)
-  ([producer transport design](./manifest.md#producer-transport-design))
-  without deciding whether that authenticated publication is required for
-  runtime artifacts; computation retains separate correspondence checks.
-- **R3-N1 — registered in R3; blocks R3 export inputs for R6-C:** does the
-  exporter prove and transport closure uniqueness, or does the importer
-  generate it, including for private helpers whose contracts are opaque?
-- **R3-N3 — registered in R3; blocks R3 computable-public export eligibility:**
-  which producer determines that an algorithm is computable (§20.9.1)?
-  The producer and its ownership remain undecided. N1–N3 registration follows
-  the same owner decision; it does not settle their implementation ownership.
+## Freeze-preparation dossier
 
-**Exit for design review:** independently review these boundaries and record
-the undecided questions, their dispositions and blocked targets. Implementation
-still requires the version/correspondence decisions and authentic R2 evidence
-before a new Artifact-owned freeze under AST-ARTIFACT. R2 review is closed;
-its implementation, R3 export and MVM execution remain blocked.
+Q1/Q3 remain Artifact-owned (2026-11-20 11:00 JST), Q3 with Build/Proof
+agreement; Q2 remains RESERVED/unassigned. The owner decisions of
+2026-11-22 06:43 JST fix **N1: exporter proves** and **N2: extend the
+logical-import trust model**, and assign N3 preparation here. G9 mechanism
+permission (06:34 JST) authorizes preparation, not the remaining answers.
+The recommendations below select no format, schema, API or owner answer.
+
+### R3-Q1 — executable representation (open)
+
+This is the question transferred from [R1-Q3](../../mizar-vc/en/mvm_readiness.md#open-questions).
+It blocks the R3 implementation freeze and R4 format choice.
+
+| Option | Consequences |
+|---|---|
+| Share extraction `RuntimeIr` | One erasure/traceability model could serve both consumers, but [RuntimeIr specification and construction](../../mizar-doc/en/todo.md) are still planned. [Extraction §20.10](../../../spec/en/20.algorithm_and_verification.md#2010-code-extraction) requires terminating algorithms; MVM also permits partial algorithms. Sharing needs explicit profiles and joint semantics/version ownership, adding an extraction dependency to R4. |
+| Separate versioned Artifact executable derived from checked Core/CFG | Keeps R3/R4 independent of extraction delivery and supports the MVM profile, but requires its own instruction/value semantics, canonical encoding, erasure correspondence and compatibility checks; future extraction reuse is not automatic. |
+
+**Recommendation for owner consideration:** the separate, initially narrow MVM
+format; reuse checked Core/CFG facts rather than inventing another source
+lowering. Freeze supported operations, value/call semantics, erasure and VM/
+format compatibility together.
+
+### R3-Q3 — correspondence and loader evidence (open)
+
+Blocks R3 export. N2 fixes the imported-lineage trust basis, but does not
+choose how executable correspondence is established.
+
+| Option | Consequences |
+|---|---|
+| Producer establishes correspondence; authenticated publication transports it | Core/VC/Proof establish the accepted definition and extraction/erasure relation; Artifact binds exact executable bytes and dependencies to that evidence. Reader integrity and Proof authority/policy validation remain separate; no importer source-body replay is needed. This depends on genuine correspondence and accepted-result producers. |
+| Loader independently reconstructs/checks correspondence | Can reduce reliance on a producer's transformation claim, but requires a checked relation/witness checker or the original checked representation, a larger reader trust surface and version coupling. Opaque source cannot be fetched as fallback; N2 lineage authentication is still required. |
+
+**Recommendation for owner consideration:** producer-established correspondence
+with a validating reader, retaining independent negative controls. The future
+freeze must specify the accepted definition/body/CFG and contract identities,
+erased-to-executable relation, ordered instruction/value semantics, private
+helper and imported-public dependency closure, VM/format versions and current
+snapshot/lock/policy binding. Validate the same immutable bytes used for
+execution; hashes or signatures alone never prove the relation. Artifact owns
+canonical transport/manifest versioning; Proof owns acceptance/authentication,
+and Build/Driver consume only a validated handle.
+
+### R3-N3 — computability producer (open)
+
+Blocks computable-public export eligibility under §20.9.1.
+
+| Option | Consequences |
+|---|---|
+| Frontend/Checker alone | Has resolved types, visibility and operations, but lacks the full accepted body/executable dependency relation; a syntax or type flag cannot certify export readiness. |
+| Core/VC definition-and-closure assessment, with Proof acceptance; Artifact consumes it | Reuses checked bodies and call/classification facts, including private helpers and imported exports. Requires a complete, version-bound assessment; Checker/Resolver supply facts, Artifact enforces publication. |
+| Artifact infers computability from encodable instructions | Close to the format, but confuses backend support with language computability and duplicates semantic analysis; successful serialization is insufficient. |
+
+**Recommendation for owner consideration:** the Core/VC assessment route,
+separating semantic computability, accepted verification and current backend
+support. Exact producer/API ownership remains for the owner freeze.
+[§20.9.3](../../../spec/en/20.algorithm_and_verification.md#2093-computability-and-runtime-failures)
+allows input-dependent runtime failures without invalidating a definition;
+eligibility promises neither totality nor successful execution on every input.
+Unsupported or incomplete evidence gives no executable handle, and must not
+silently reclassify a computable public algorithm as contract-only.
+The owner must distinguish declaration-wide from input-dependent computability,
+including unreachable operations, template implementations and Pick enumerators;
+this dossier supplies no new language criterion for those cases.
+
+### R3-Q2 — ordering facts only (RESERVED)
+
+Blocks R3 export and the R4 same-module pilot. Same-file computation examples
+in §20.9.2/§20.13.4 coexist with file-final Artifact emit (§23.4).
+The owner still must determine whether fully verified, separately authenticated
+staged runtime items may load before public manifest commit or evaluation must
+await a published verified dependency; defining-file private-entry evaluation
+also remains reserved. The [logical transport design](./manifest.md#producer-transport-design)
+authenticates committed publication, so it supplies no pre-commit runtime
+authority by itself. Required facts for that decision are the earliest complete
+R2 acceptance point, dependency/group order, staging lifetime/currentness and
+failure rollback, and a non-circular proof of readiness. Neither an unverified
+staging token nor a proof that depends on its own future execution is acceptable.
+
+### R3-N1/N2 — decided inputs and remaining evidence
+
+- **N1: exporter proves closure uniqueness.** Exporter evidence must account
+  for applicable value-returning callees, including opaque private helpers,
+  with exact typed guards, `requires`, complete `ensures`, triggers and
+  proof or spec-exact exemption bindings. Importers validate those bindings,
+  dependencies and policy; they do not generate substitute private-body proofs.
+  This does not make every algorithm require uniqueness: R6's trigger rules
+  remain unchanged, and final admission checks the actual evaluated closure.
+- **N2: extend the logical-import trust model.** The [Proof trust-transfer rule](../../mizar-proof/en/policy.md#trust-transfer-rule)
+  and [Artifact transport boundary](./manifest.md#imported-promotion-authority-boundary)
+  supply importer-authorized authority, accepted-result-only committed
+  publication and exact object/group/dependency/policy binding. Runtime use
+  must additionally bind executable content, VM semantics and correspondence;
+  logical-only import still needs no runtime artifact. The existing transport
+  is a design, not an implemented runtime validator or accepted R3 fixture.
+
+### Consequences and next freeze prerequisites
+
+| Consumer | Consequence of the proposals and fixed N1/N2 inputs |
+|---|---|
+| [R4](../../mizar-vc/en/mvm_executor.md) | Needs Q1 semantics, Q3 validated bytes/closure and N3 eligibility plus a separately typed genuine invocation. Q2 continues to block the same-module pilot; actual normal return alone yields E5, not Proof admission. |
+| [R6](../../mizar-vc/en/mvm_computation_admission.md) | Local A/B preparation may proceed; C still requires R3 exports. N1 moves uniqueness proof production to the exporter, while D validates complete evaluated closure and exact accepted proof/exemption under N2; neither static computability nor an R4 return bypasses admission. |
+| [R7](../../mizar-proof/en/mvm_computation_import.md) | Must preserve N2 lineage and Q1/Q3 exact executable/dependency/VM identities with real E5, R6 and conversion inputs. Replay needs its separate equation/kernel basis; later computation records cannot authorize initial R3 export. |
+
+Before an Artifact-owned implementation freeze under AST-ARTIFACT: obtain
+owner Q1/Q2/Q3/N3 dispositions, genuine complete [R2 definition evidence](../../mizar-core/en/mvm_correspondence.md),
+exporter N1 evidence and the N2 runtime-extension contract; freeze compatible
+format/manifest/loader checks and the future positive/negative matrix above.
+R2's current accepted-set preparation retains Open/Deferred residuals and is
+not complete export eligibility. This dossier grants no implementation,
+runtime export, computation acceptance, new coverage or language-rule change.
