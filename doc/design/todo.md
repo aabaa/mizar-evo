@@ -158,6 +158,7 @@ priority over all other tasks, including the M1 and adopted-wave queues.
   pin reviewed identities, enforce exact-head sanity and required-check protection,
   replace per-push/PR full hosted testing with periodic reconciliation, and
   exercise the [activation boundary](./ci_receipt_model.md#activation-boundary).
+  [Activation contract](./task_contracts/en/CI-RECEIPT-ACTIVATION.md).
 
 - [x] **CI-RECEIPT-DESIGN — mizar CI receipt-model adoption design; Lane 1;
   design only.** Authority: owner CI policy recorded in the orchestrator

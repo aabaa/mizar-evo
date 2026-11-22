@@ -686,7 +686,9 @@ select tests only. A regression first found by periodic full testing becomes a
 focused check for that change class. Exact representative tests must exist; a
 renamed or missing test makes the command fail rather than pass zero tests.
 
-Keep ordinary `cargo test` exhaustive and CI running it on every push/PR.
+Keep ordinary `cargo test` exhaustive. On every push/PR, hosted CI enforces
+verification of the signed exact-head local-full receipt under the
+[receipt model](./ci_receipt_model.md); scheduled full hosted reconciliation remains.
 Do not add `#[ignore]` or omit cases from CI to implement this cadence.
 `TestProfile::Fast` selects corpus cases, not ordinary Rust tests; Rust target/
 case filters need explicit selection, and `--skip` still compiles its binary.
