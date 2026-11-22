@@ -9569,6 +9569,158 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
             witness,
             &[guard]
         ));
+        // A shared formula DAG in the unrelated algorithm still permits the selected return.
+        let mut parts = sole_return_core_parts(&two);
+        let mut formula = core.formulas().get(guard).unwrap().clone();
+        formula.kind = CoreFormulaKind::And(vec![guard, guard]);
+        let formula_root = parts.formulas.insert(formula.clone());
+        parts
+            .source_map
+            .formula_sources
+            .insert(formula_root, formula.source.clone());
+        formula.kind = CoreFormulaKind::True;
+        let formula_link = parts.formulas.insert(formula.clone());
+        parts
+            .source_map
+            .formula_sources
+            .insert(formula_link, formula.source);
+        let mut assertion = two
+            .algorithm_statements()
+            .get(other_statement_id)
+            .unwrap()
+            .clone();
+        assertion.kind = CoreAlgorithmStmtKind::Assert {
+            formula: formula_root,
+        };
+        let assertion_id = parts.algorithm_statements.insert(assertion.clone());
+        parts
+            .source_map
+            .algorithm_sources
+            .insert(assertion_id, assertion.source);
+        parts
+            .algorithms
+            .get_mut(other_id)
+            .unwrap()
+            .statements
+            .insert(0, assertion_id);
+        let shared = CoreIr::try_new(parts).unwrap();
+        assert_eq!(build_control_flow_ir(&shared).flow_map[&id], flow);
+        assert!(checked(&shared, target, witness, &[guard]));
+        let check_formula_core = |candidate: &CoreIr, expected: bool| {
+            assert_eq!(checked(candidate, target, witness, &[guard]), expected);
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_return_typing(
+                    candidate,
+                    typing_target,
+                    typing_binder,
+                    (typing_result, "object"),
+                    &[guard],
+                ),
+                expected,
+            );
+            let single_targets = single_results.map(|result| (id, flow, statement, value, result));
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_return_single_valuedness(
+                    candidate,
+                    single_targets,
+                    single_binders,
+                    single_results,
+                    &[guard],
+                ),
+                expected,
+            );
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_return_single_valuedness_schema(
+                    candidate,
+                    single_targets,
+                    single_binders,
+                    single_results,
+                    &[guard],
+                ),
+                expected.then_some(1),
+            );
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_returns_existential(
+                    candidate,
+                    typing_target,
+                    typing_binder,
+                    witness,
+                    &[guard],
+                ),
+                expected,
+            );
+            assert_eq!(
+                mizar_kernel::checker::check_algorithm_returns_existential_result(
+                    candidate,
+                    typing_target,
+                    typing_binder,
+                    witness,
+                    &[guard],
+                )
+                .map(|result| result.checker_schema_version()),
+                expected.then_some(1),
+            );
+        };
+        for child in [guard, formula_root, formula_link] {
+            let expected = child == guard;
+            let mut parts = sole_return_core_parts(&shared);
+            parts.formulas.get_mut(formula_link).unwrap().kind = CoreFormulaKind::Not(formula_root);
+            let base = CoreIr::try_new(parts).unwrap();
+            for kind in [
+                CoreFormulaKind::Not(child),
+                CoreFormulaKind::And(vec![guard, child, child]),
+                CoreFormulaKind::Or(vec![child, child, guard]),
+                CoreFormulaKind::Implies {
+                    premise: child,
+                    conclusion: guard,
+                },
+                CoreFormulaKind::Implies {
+                    premise: guard,
+                    conclusion: child,
+                },
+                CoreFormulaKind::Iff {
+                    left: child,
+                    right: guard,
+                },
+                CoreFormulaKind::Iff {
+                    left: guard,
+                    right: child,
+                },
+                CoreFormulaKind::Forall {
+                    binders: algorithm.params.clone(),
+                    body: child,
+                },
+                CoreFormulaKind::Exists {
+                    binders: algorithm.params.clone(),
+                    body: child,
+                },
+            ] {
+                let mut parts = sole_return_core_parts(&base);
+                parts.formulas.get_mut(formula_root).unwrap().kind = kind;
+                // All edges are valid indices; only cycles must refuse before shared CFG.
+                check_formula_core(&CoreIr::try_new(parts).unwrap(), expected);
+            }
+        }
+        for guard_child in [formula_root, formula_link] {
+            let mut binders = algorithm.params.clone();
+            binders[0].ty_guard = Some(guard_child);
+            for kind in [
+                CoreFormulaKind::Forall {
+                    binders: binders.clone(),
+                    body: guard,
+                },
+                CoreFormulaKind::Exists {
+                    binders: binders.clone(),
+                    body: guard,
+                },
+            ] {
+                let mut parts = sole_return_core_parts(&shared);
+                parts.formulas.get_mut(formula_root).unwrap().kind = kind;
+                parts.formulas.get_mut(formula_link).unwrap().kind =
+                    CoreFormulaKind::Not(formula_root);
+                check_formula_core(&CoreIr::try_new(parts).unwrap(), false);
+            }
+        }
         // N1: an unrelated, CoreIr-valid return cycle must refuse before CFG traversal.
         let mut parts = sole_return_core_parts(&two);
         let mut cyclic_term = core.terms().get(witness).unwrap().clone();

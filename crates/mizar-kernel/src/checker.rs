@@ -1349,6 +1349,49 @@ pub fn check_instantiated_algorithm_returns(
     if visited != core.terms().len() {
         return false;
     }
+    // CFG formula use collection also follows quantifier bodies and type guards.
+    let mut parents = vec![Vec::new(); core.formulas().len()];
+    let mut remaining = vec![0; core.formulas().len()];
+    for (id, formula) in core.formulas().iter() {
+        let children = match &formula.kind {
+            CoreFormulaKind::Not(inner) => vec![*inner],
+            CoreFormulaKind::And(items) | CoreFormulaKind::Or(items) => items.clone(),
+            CoreFormulaKind::Implies {
+                premise,
+                conclusion,
+            } => vec![*premise, *conclusion],
+            CoreFormulaKind::Iff { left, right } => vec![*left, *right],
+            CoreFormulaKind::Forall { binders, body }
+            | CoreFormulaKind::Exists { binders, body } => binders
+                .iter()
+                .filter_map(|binder| binder.ty_guard)
+                .chain(std::iter::once(*body))
+                .collect(),
+            _ => Vec::new(),
+        };
+        remaining[id.index()] = children.len();
+        for child in children {
+            parents[child.index()].push(id.index());
+        }
+    }
+    let mut ready = remaining
+        .iter()
+        .enumerate()
+        .filter_map(|(id, count)| (*count == 0).then_some(id))
+        .collect::<Vec<_>>();
+    let mut visited = 0;
+    while let Some(id) = ready.pop() {
+        visited += 1;
+        for parent in &parents[id] {
+            remaining[*parent] -= 1;
+            if remaining[*parent] == 0 {
+                ready.push(*parent);
+            }
+        }
+    }
+    if visited != core.formulas().len() {
+        return false;
+    }
     let cfg = mizar_core::control_flow::build_control_flow_ir(core);
     cfg.flow_map.get(&algorithm_id) == Some(&flow_id)
         && cfg
