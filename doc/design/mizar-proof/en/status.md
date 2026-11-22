@@ -648,6 +648,12 @@ True adopts only that original single-valuedness obligation. Caller-owned curren
 `matches_source` FIRST regenerates the authenticated existential descriptor on all five supplied inputs. Preserve upstream errors; return true only for whole request and descriptor equality and pointer-identical Core to the retained result. Equal cloned arenas return false. Private construction and immutable data preserve same-call checking without a detached-result constructor or another Kernel check. Source/environment/filesystem currentness remains caller-owned.
 This association grants no canonical identity/reuse, current-policy consumption, native adoption, caller E4 acceptance, evidence/status, promotion, publication or coverage credit. The existing unary object profile and lower-stage refusals remain unchanged.
 
+## Arena-local caller E1 inhabitation association
+
+`SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` calls the unchanged VC caller object-inhabitation checker once, preserving errors. Private fields retain the whole request, exact context/formula/witness tuple and same-call borrowed `ObjectInhabitationCheck`; immutable `request`, `descriptor` and `result` getters expose those values.
+`matches_source` FIRST regenerates the authenticated caller E1 inhabitation request, preserving errors before whole request/tuple equality and pointer-identical Core comparison. Equal cloned arenas refuse; fresh associations on clones succeed. No detached construction or repeated Kernel check. Currentness remains caller-owned.
+This grants no native adoption, passive identity, typing/single-valuedness checking, E2, whole acceptance, status, complete footprints/cache or promotion/publication. Existing unary profile and child/E4/direct-return/raw unknown/incomplete/cache-miss boundaries remain unchanged.
+
 ## Arena-local caller E4 association
 
 `SourceUnaryCallerE4Association::from_source(source, typed, symbols, core, request)` obtains temporary genuine child evidence through the unchanged VC child checker, then invokes the unchanged caller composition with that same-Core evidence. Private fields retain only the whole request, returned caller context/formula descriptor and borrowed checked caller result; immutable `request`, `descriptor` and `result` getters expose these original values. Upstream errors are preserved; no child descriptor/evidence is retained.

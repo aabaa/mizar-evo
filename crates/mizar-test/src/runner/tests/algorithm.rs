@@ -256,7 +256,7 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
     use mizar_session::{SourceAnchor, SourceRange};
     use mizar_proof::{
         policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
-        status::{NativeUnaryCallerE4Existential as NativeCaller, NativeUnaryChildCallExistential as Native, consume_source_unary_child_call_existential as consume, consume_source_unary_caller_e4_existential as consume_caller},
+        status::{SourceUnaryCallerE1InhabitationAssociation as InhabitationAssociation, NativeUnaryCallerE4Existential as NativeCaller, NativeUnaryChildCallExistential as Native, consume_source_unary_child_call_existential as consume, consume_source_unary_caller_e4_existential as consume_caller},
     };
     for (callee, caller, formal, actual, flags, trivia) in [
         ("child", "caller", "a", "b", [false, false], " "),
@@ -639,6 +639,19 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         assert_eq!(inhabited.binder(), *var);
         assert_eq!(inhabited.context(), [expected.1.1]);
         assert_eq!(inhabited.checker_schema_version(), 1);
+        let inhabitation_association = InhabitationAssociation::from_source(
+            &source, &typed, symbols, &core, &request,
+        ).unwrap();
+        assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+        assert_eq!(inhabitation_association.request(), &request);
+        assert_eq!(inhabitation_association.descriptor(), &caller_e1);
+        let kernel_inhabited = mizar_kernel::checker::check_object_inhabitation_result(
+            &core, (*var, *var, "object"), request.actual, expected.1.1, &[expected.1.1],
+        ).unwrap();
+        assert!(std::ptr::eq(inhabitation_association.result().core(), kernel_inhabited.core()));
+        assert_eq!(inhabitation_association.result().binder(), kernel_inhabited.binder());
+        assert_eq!(inhabitation_association.result().context(), kernel_inhabited.context());
+        assert_eq!(inhabitation_association.result().checker_schema_version(), kernel_inhabited.checker_schema_version());
         let caller_e4 = mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
@@ -823,6 +836,18 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap();
                 assert_eq!(descriptor, caller_e1);
+                let current_inhabitation = InhabitationAssociation::from_source(
+                    &source, &typed, symbols, current_core, &request,
+                ).unwrap();
+                assert!(current_inhabitation.matches_source(&source, &typed, symbols, current_core, &request).unwrap());
+                assert_eq!(inhabitation_association.matches_source(&source, &typed, symbols, current_core, &request).unwrap(), std::ptr::eq(current_core, &core));
+                assert_eq!(current_inhabitation.matches_source(&source, &typed, symbols, &core, &request).unwrap(), std::ptr::eq(current_core, &core));
+                assert_eq!(current_inhabitation.request(), &request);
+                assert_eq!(current_inhabitation.descriptor(), &caller_e1);
+                assert!(std::ptr::eq(current_inhabitation.result().core(), current_core));
+                assert_eq!(current_inhabitation.result().binder(), inhabited.binder());
+                assert_eq!(current_inhabitation.result().context(), inhabited.context());
+                assert_eq!(current_inhabitation.result().checker_schema_version(), inhabited.checker_schema_version());
                 assert!(std::ptr::eq(result.core(), current_core));
                 assert_eq!(result.binder(), inhabited.binder());
                 assert_eq!(result.context(), inhabited.context());
@@ -850,6 +875,13 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         }
         assert_eq!(caller_association.request(), &request);
         assert_eq!(caller_association.descriptor(), &caller_e4);
+        assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+        assert_eq!(inhabitation_association.request(), &request);
+        assert_eq!(inhabitation_association.descriptor(), &caller_e1);
+        assert!(std::ptr::eq(inhabitation_association.result().core(), &core));
+        assert_eq!(inhabitation_association.result().binder(), inhabited.binder());
+        assert_eq!(inhabitation_association.result().context(), inhabited.context());
+        assert_eq!(inhabitation_association.result().checker_schema_version(), inhabited.checker_schema_version());
         assert_eq!(cloned_core, core_before.0);
         assert_eq!((&core, &request), (&core_before.0, &core_before.1));
         assert_eq!(
@@ -892,7 +924,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     };
     use mizar_proof::{
         policy::VerifierPolicy as Policy,
-        status::{NativeUnaryCallerE4Existential as NativeCaller, NativeUnaryChildCallExistential as Native, SourceUnaryCallerE4Association as CallerAssociation, SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume, consume_source_unary_caller_e4_existential as consume_caller},
+        status::{SourceUnaryCallerE1InhabitationAssociation as InhabitationAssociation, NativeUnaryCallerE4Existential as NativeCaller, NativeUnaryChildCallExistential as Native, SourceUnaryCallerE4Association as CallerAssociation, SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume, consume_source_unary_caller_e4_existential as consume_caller},
     };
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
     let (source, nodes, collected, _) =
@@ -909,6 +941,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
     let (composed_descriptor, composed) = compose(&source, &typed, symbols, &core, &request, &retained).unwrap();
     assert_eq!(composed_descriptor, genuine_caller_e4);
+    let inhabitation_association = InhabitationAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let caller_association = CallerAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let association = Association::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let policy = Policy::default();
@@ -1103,7 +1136,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "association request {mutation}");
         assert_eq!(CallerAssociation::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "caller association request {mutation}");
+        assert_eq!(InhabitationAssociation::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "inhabitation association request {mutation}");
         assert_eq!(caller_association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller recheck request {mutation}");
+        assert_eq!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "inhabitation recheck request {mutation}");
         assert_eq!(caller_association.obligation_identity(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller recheck request {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer request {mutation}");
         assert_eq!(consume_caller(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "caller consumer request {mutation}");
@@ -1121,6 +1156,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(caller_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+    assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     for mutation in 0..27 {
         let mut p = CoreIrParts {
             source_id: core.source_id(), module_id: core.module_id().clone(),
@@ -1216,7 +1252,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "association Core {mutation}");
         assert_eq!(CallerAssociation::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "caller association Core {mutation}");
+        assert_eq!(InhabitationAssociation::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "inhabitation association Core {mutation}");
         assert_eq!(caller_association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller recheck Core {mutation}");
+        assert_eq!(inhabitation_association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "inhabitation recheck Core {mutation}");
         assert_eq!(caller_association.obligation_identity(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller recheck Core {mutation}");
         assert_eq!(consume(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer Core {mutation}");
         assert_eq!(consume_caller(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "caller consumer Core {mutation}");
@@ -1235,6 +1273,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(caller_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+    assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     for (module, edited) in [
         ("foreign", text.to_owned()),
         ("atomic", text.replace("child", "edited")),
@@ -1262,6 +1301,16 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(other_inhabited.binder(), result.var);
             assert_eq!(other_inhabited.context(), [other_core.algorithms().get(other_request.caller).unwrap().params[0].ty_guard.unwrap()]);
             assert_eq!(other_inhabited.checker_schema_version(), 1);
+            let other_inhabitation = InhabitationAssociation::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            assert!(other_inhabitation.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!inhabitation_association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!other_inhabitation.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+            assert_eq!(other_inhabitation.request(), &other_request);
+            assert_eq!(other_inhabitation.descriptor(), &other_caller_e1);
+            assert!(std::ptr::eq(other_inhabitation.result().core(), &other_core));
+            assert_eq!(other_inhabitation.result().binder(), other_inhabited.binder());
+            assert_eq!(other_inhabitation.result().context(), other_inhabited.context());
+            assert_eq!(other_inhabitation.result().checker_schema_version(), other_inhabited.checker_schema_version());
             assert_eq!(other_caller_e4.0, other_descriptor.0);
             let mizar_vc::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns { algorithm, flow, statement, .. } = other_caller_e4.1[0].shape else {
                 panic!("edited caller return relation")
@@ -1334,7 +1383,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(Association::from_source(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(CallerAssociation::from_source(s, t, e, &core, &request).err().unwrap(), error);
+            assert_eq!(InhabitationAssociation::from_source(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(caller_association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
+            assert_eq!(inhabitation_association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(caller_association.obligation_identity(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(consume(s, t, e, &core, &request, &denied).err().unwrap(), error);
             assert_eq!(consume_caller(s, t, e, &core, &request, &denied).err().unwrap(), error);
@@ -1369,7 +1420,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let error = check(&source, symbols, &forged).unwrap_err();
     assert_eq!(Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
     assert_eq!(CallerAssociation::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
+    assert_eq!(InhabitationAssociation::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
     assert_eq!(caller_association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
+    assert_eq!(inhabitation_association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
     assert_eq!(caller_association.obligation_identity(&source, &forged, symbols, &core, &request).unwrap_err(), error);
     assert_eq!(consume(&source, &forged, symbols, &core, &request, &denied).err().unwrap(), error);
     assert_eq!(consume_caller(&source, &forged, symbols, &core, &request, &denied).err().unwrap(), error);
@@ -1389,7 +1442,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(retain(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(Association::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(CallerAssociation::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
+    assert_eq!(InhabitationAssociation::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(caller_association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
+    assert_eq!(inhabitation_association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(caller_association.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(consume(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
     assert_eq!(consume_caller(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
@@ -1435,6 +1490,16 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(recovered_inhabited.binder(), binder);
     assert_eq!(recovered_inhabited.context(), [actual_guard]);
     assert_eq!(recovered_inhabited.checker_schema_version(), 1);
+    let fresh_inhabitation = InhabitationAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
+    for product in [&inhabitation_association, &fresh_inhabitation] {
+        assert!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+        assert_eq!(product.request(), &request);
+        assert_eq!(product.descriptor(), &genuine_caller_e1);
+        assert!(std::ptr::eq(product.result().core(), &core));
+        assert_eq!(product.result().binder(), recovered_inhabited.binder());
+        assert_eq!(product.result().context(), recovered_inhabited.context());
+        assert_eq!(product.result().checker_schema_version(), recovered_inhabited.checker_schema_version());
+    }
     assert_eq!(retain(&source, &typed, symbols, &core, &request).unwrap().0, genuine_existential);
     let (recovered_descriptor, recovered) = compose(&source, &typed, symbols, &core, &request, &retained).unwrap();
     assert_eq!(recovered_descriptor, genuine_caller_e4);
@@ -1479,6 +1544,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let (existential, retained) = mizar_vc::generator::check_source_unary_child_call_existential_result(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap();
+    let inhabitation_association = mizar_proof::status::SourceUnaryCallerE1InhabitationAssociation::from_source(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap();
+    assert!(inhabitation_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap());
     let caller_association = mizar_proof::status::SourceUnaryCallerE4Association::from_source(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap();
@@ -1538,6 +1607,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let checked = check_source_algorithm_types(&source, typed.nodes(), collected.env()).unwrap();
     let core = lower_source_algorithms(&checked).unwrap();
     let upstream = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
+    assert_eq!(mizar_proof::status::SourceUnaryCallerE1InhabitationAssociation::from_source(
+        &source, &typed, collected.env(), &core, &request,
+    ).err().unwrap(), upstream);
+    assert_eq!(inhabitation_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(mizar_proof::status::SourceUnaryCallerE4Association::from_source(
         &source, &typed, collected.env(), &core, &request,
     ).err().unwrap(), upstream);

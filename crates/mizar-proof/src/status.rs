@@ -1583,6 +1583,82 @@ impl<'core> SourceUnaryChildCallAssociation<'core> {
     }
 }
 
+/// Arena-local association of a complete authenticated caller E1 inhabitation request and result.
+/// It grants no currentness, policy, adoption, identity or whole-E1 authority.
+pub struct SourceUnaryCallerE1InhabitationAssociation<'core> {
+    request: mizar_core::elaborator::SourceUnaryChildCallRequest,
+    descriptor: (
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 2],
+        mizar_core::core_ir::CoreTermId,
+    ),
+    result: mizar_kernel::checker::ObjectInhabitationCheck<'core>,
+}
+
+impl<'core> SourceUnaryCallerE1InhabitationAssociation<'core> {
+    /// Authenticates the whole request and retains the producer's same-call products.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<Self, String> {
+        let (descriptor, result) =
+            mizar_vc::generator::check_source_unary_child_call_caller_e1_inhabitation_result(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(Self {
+            request: request.clone(),
+            descriptor,
+            result,
+        })
+    }
+
+    /// Reauthenticates before comparing the whole retained request and descriptor.
+    /// Equal contents in a different Core arena do not match this association.
+    pub fn matches_source(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<bool, String> {
+        let descriptor =
+            mizar_vc::generator::generate_source_unary_child_call_caller_e1_inhabitation_request(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(request == &self.request
+            && descriptor == self.descriptor
+            && std::ptr::eq(core, self.result.core()))
+    }
+
+    /// Complete original caller/callee request, including Apply and result-slot joins.
+    #[must_use]
+    pub const fn request(&self) -> &mizar_core::elaborator::SourceUnaryChildCallRequest {
+        &self.request
+    }
+
+    /// Complete original caller inhabitation context, formula rows and actual witness.
+    #[must_use]
+    pub const fn descriptor(
+        &self,
+    ) -> &(
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 2],
+        mizar_core::core_ir::CoreTermId,
+    ) {
+        &self.descriptor
+    }
+
+    /// Opaque Kernel result checked on the same immutable Core as the retained request.
+    #[must_use]
+    pub const fn result(&self) -> &mizar_kernel::checker::ObjectInhabitationCheck<'core> {
+        &self.result
+    }
+}
+
 /// Arena-local association of a complete authenticated caller E4 request and result.
 /// Canonical identity grants no currentness, policy, adoption or status authority.
 pub struct SourceUnaryCallerE4Association<'core> {
