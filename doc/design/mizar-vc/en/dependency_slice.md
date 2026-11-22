@@ -61,6 +61,12 @@ Out of scope:
 | DEP-G003 | `external_dependency_gap` | Complete registration, cluster, reduction, import, proof/cache, corpus, and artifact consumers are not all wired to `mizar-vc`. | The spec requires conservative markers for unavailable coverage and defers consumer integration. |
 | DEP-G004 | `deferred` | Cross-edit reuse identity, canonical VC/context fingerprints, and [architecture 22](../../architecture/en/22.incremental_verification_contract.md) proof-reuse gates are task-20+ work. | Task 13 defines how dependency slices must feed those later fingerprints without implementing them. |
 
+## Source unary child canonical inputs
+
+`source_unary_child_call_canonical_inputs(source, typed, symbols, core, request)` first regenerates the unchanged authentic child existential. It returns existing Hash values (VC, goal, context) and a whole DependencySlice, without a VcSet or seed. This bounded exception to graph-based collection supplies Proof's native child association only.
+After authentication, normalize the fixed relationships into semantic slots: callee parameter/result/Return and caller parameter/result/Return-Apply, existential result binder, actual witness and object(actual) guard. Ordered callee/caller owners contain actual package/module/namespace/spelling/kind/visibility and terminating flags. Arena/source/range IDs, binder spelling and trivia are excluded. Existing bridge fingerprints use domains `mizar-vc/source-unary-child/{goal,context,vc}/v1` over VC-owned framed bytes; goal includes the whole normalized definition and witness, context the guard/binder, and VC the role plus goal/context hashes. Preserve the existing VC dependency boundary.
+Raw slice entries bind the whole definition bytes, context and goal under Definition/LocalContext/GeneratedFormula, using the existing slice fingerprint function. Explicit UpstreamPayload footprint and DischargeEvidence unknowns retain IncompleteUncacheable/cache-miss. Local VcId(0), AlgorithmE4NormalReturn/Open classify only this child request; no graph status, evidence, complete dependency coverage or reuse authority is produced. Direct-return and generic collectors remain unchanged.
+
 ## Inputs And Outputs
 
 Required input:

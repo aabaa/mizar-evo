@@ -626,6 +626,11 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `adopt_original_request` は最初に保持 association の認証付き `matches_source` を呼び、上流エラーを維持する。request/descriptor 全体または Core arena の同一性が不一致なら policy 検査前に false を返す。一致時は現行 Builtin 有効性と実際の保持結果の checker-schema 一致を要求し、consumer と同じ policy 拒否を使う。以前の成功は権限を与えず、true は元の子 existential のみを採用する。
 currentness は呼出側の責任。graph/status/scheduling 変更、canonical identity/reuse、caller E4 acceptance、E1/E2 discharge、generic substitution、広い profile、owner-gated scope、promotion/publication、coverage credit は与えない。
 
+## Native unary child canonical identity
+
+`NativeUnaryChildCallExistential::obligation_identity` は adoption と同じ入力で、最初に adoption を一度呼ぶ。エラーを保持し、要求全体・descriptor・arena 不一致は policy 拒否より先に None。現在 policy で true の場合だけ、同じ不変入力を VC の [真正 child canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-child-canonical-inputs) へ渡す。
+VC hash の全小文字 hex に `source-unary-child-candidate-anchor-v1:` を前置して anchor とし、既存五文字列 obligation object が anchor・VC・goal・context・raw slice 全体の fingerprint を Interface `mizar-proof/source-unary-child/obligation` v1.0 で結ぶ。Some(既存 identity, slice 全体) を返し、native state や detached input は追加しない。arena 間 canonical 一致は adoption を認可しない。currentness、caller E4、generic evidence、status、reuse 権限は与えない。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。

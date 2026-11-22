@@ -49,6 +49,12 @@ traceability metadata、Rust source は変更しない。
 - 新しい source extraction、新しい VC generation、新しい semantic payload family;
 - unknown dependency coverage を empty dependency set として扱うこと。
 
+## Source unary child canonical inputs
+
+`source_unary_child_call_canonical_inputs(source, typed, symbols, core, request)` は最初に既存の真正 child existential を再生成する。既存 Hash の VC・goal・context と DependencySlice 全体を返す。VcSet/seed は作らず、graph ベース収集の限定例外として Proof の native child association だけに供給する。
+認証後、callee parameter/result/Return、caller parameter/result/Return-Apply、存在 result binder、実 witness、object(actual) guard を固定 semantic slot へ正規化する。callee/caller 順の owner は実 package/module/namespace/spelling/kind/visibility と terminating flag。arena/source/range ID、binder spelling、trivia は除外する。VC 所有 framed bytes に既存 bridge fingerprint の domain `mizar-vc/source-unary-child/{goal,context,vc}/v1` を使う。goal は定義全体と witness、context は guard/binder、VC は role と goal/context hash を含み、既存 VC dependency boundary を保持する。
+raw slice は定義 bytes・context・goal を Definition/LocalContext/GeneratedFormula として既存 fingerprint 関数で結ぶ。UpstreamPayload footprint と DischargeEvidence の unknown により IncompleteUncacheable/cache-miss を保持する。local VcId(0)・AlgorithmE4NormalReturn/Open は child 要求の分類のみ。graph status、evidence、完全依存、reuse 権限を生成せず、direct-return と generic collector は変更しない。
+
 ## この仕様の gap 分類
 
 | ID | 分類 | 証拠 | 扱い |

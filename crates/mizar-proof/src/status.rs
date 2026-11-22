@@ -1653,6 +1653,72 @@ impl<'core> NativeUnaryChildCallExistential<'core> {
         }
         Ok(true)
     }
+
+    /// Associates canonical identity only after original-request adoption under current policy.
+    /// The returned raw slice grants no caller-return, status or cache reuse authority.
+    pub fn obligation_identity(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<
+        Option<(
+            ProofObligationIdentity,
+            mizar_vc::dependency_slice::DependencySlice,
+        )>,
+        String,
+    > {
+        use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
+
+        if !self.adopt_original_request(source, typed, symbols, core, request, policy)? {
+            return Ok(None);
+        }
+        let (vc, goal, context, slice) =
+            mizar_vc::dependency_slice::source_unary_child_call_canonical_inputs(
+                source, typed, symbols, core, request,
+            )?;
+        let anchor = ObligationAnchor::new(format!(
+            "source-unary-child-candidate-anchor-v1:{}",
+            source_discharge_hex(vc.as_bytes()),
+        ))
+        .map_err(|error| error.to_string())?;
+        let obligation = CanonicalJson::object(
+            [
+                ("obligation_anchor", anchor.as_str().to_owned()),
+                ("vc_fingerprint", source_discharge_hex(vc.as_bytes())),
+                ("canonical_goal_hash", source_discharge_hex(goal.as_bytes())),
+                (
+                    "local_context_fingerprint",
+                    source_discharge_hex(context.as_bytes()),
+                ),
+                (
+                    "vc_local_dependency_slice_fingerprint",
+                    source_discharge_hex(slice.fingerprint().hash().as_bytes()),
+                ),
+            ]
+            .map(|(key, value)| (key, CanonicalJson::string(value))),
+        )
+        .map_err(|error| error.to_string())?;
+        let fingerprint = CanonicalHashDomain::new(
+            HashClass::Interface,
+            "mizar-proof/source-unary-child/obligation",
+            SchemaVersion::new(1, 0),
+        )
+        .hash(&obligation, &[]);
+        let identity = ProofObligationIdentity::new(
+            anchor.as_str().to_owned(),
+            anchor,
+            fingerprint,
+            vc,
+            context,
+            slice.fingerprint().hash(),
+        )
+        .map_err(|error| error.to_string())?;
+        Ok(Some((identity, slice)))
+    }
 }
 
 /// Associates the original E4 request identity and raw slice with its same-call Kernel result.

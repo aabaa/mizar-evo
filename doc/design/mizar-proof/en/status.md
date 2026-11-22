@@ -658,6 +658,11 @@ This association grants no canonical identity/reuse, current-policy consumption,
 `adopt_original_request` FIRST invokes the retained association's authenticated `matches_source`, preserving upstream errors. Return false unless whole request/descriptor and exact Core arena match, before policy checking. Then require current enabled Builtin and exact checker-schema agreement with the retained actual result, using the consumer's policy refusal. Earlier success grants no authority; true adopts only that original child existential.
 Currentness remains caller-owned. No graph/status/scheduling change, canonical identity/reuse, caller E4 acceptance, E1/E2 discharge, generic substitution, broader profile, owner-gated scope, promotion/publication or coverage credit follows.
 
+## Native unary child canonical identity
+
+`NativeUnaryChildCallExistential::obligation_identity` takes the same inputs as adoption and first calls it once. Errors propagate; a whole-request/descriptor/arena mismatch returns None before policy refusal. Only true adoption under the current policy reaches VC's [authentic child canonical inputs](../../mizar-vc/en/dependency_slice.md#source-unary-child-canonical-inputs), using identical immutable inputs.
+The VC hash supplies `source-unary-child-candidate-anchor-v1:` plus full lowercase hex. The existing five-string obligation object binds that anchor, VC, goal, context and whole raw slice fingerprint under Interface `mizar-proof/source-unary-child/obligation` v1.0. Return Some(existing identity, whole slice); no extra native state or detached input is introduced. Canonical equality across arenas does not authorize adoption. This data grants no currentness, caller E4, generic evidence, status or reuse authority.
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` returns original `ProofObligationIdentity`, whole raw `DependencySlice` and borrowed Kernel `AlgorithmReturnsExistentialCheck` atomically. First call the authentic VC original-existential result producer with the fixed direct-return schemas above, preserving errors. Regenerate the existing original identity on identical inputs and require equality with the whole descriptor.5 raw slice; mismatch uses `algorithm.proof.invalid_direct_return_request`.
