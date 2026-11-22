@@ -17,7 +17,6 @@ discharge; non-ghost unsupported set Pick may fail only in partial execution.
 Missing evidence stays Open.
 
 Tests: [return](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz), [ghost rejection](../../../../tests/miz/fail/algorithms/fail_type_elaboration_algorithm_ghost_isolation_001.miz).
-## Tests and acceptance
 Forbidden: MVM/E5, imported receipts, diagnostics, rebaselining, fabricated credit.
 ## Bounded direct-return producer design
 
@@ -51,10 +50,11 @@ Proof [same-call single-valuedness association](../../mizar-proof/en/status.md#o
 
 Typing checker/generator and Proof association above own schema reporting; [typing consumption](../../mizar-proof/en/status.md#original-e1-typing-current-policy-consumption) owns current-policy gating.
 Single-valuedness checker/generator above own success-only Kernel schema reporting, authenticated descriptor/schema handoff and delegation. Single-valuedness [consumption](../../mizar-proof/en/status.md#original-e1-single-valuedness-current-policy-consumption) owns current-policy gating.
-## E2 current-policy consumption
-[Proof association](../../mizar-proof/en/status.md#original-e2-request-identity-association) owns same-call whole-body/shared-Core authentication, original identity/raw slice and genuine result/schema. Kernel [schema reporting](../../mizar-kernel/en/checker.md#corrected-input-and-context) supplies success-only checker schema.
-Frozen; full tier: new public Proof API fails pattern public-seam criterion.
-`consume_source_algorithm_e2_result(source,check,symbols,core,snapshot,vc_id,policy)` calls unchanged `check_source_algorithm_e2_result` once FIRST and propagates errors. Require enabled BuiltinKernelEvidence and policy checker-schema equality with its returned schema; otherwise `algorithm.proof.e2_policy_rejected`. Return its four values unchanged plus PolicyFingerprint.
-Files: Proof status.rs, source_algorithm_return.rs, paired Proof status/API locators, this contract. Preserve caller currentness, Open/Deferred/unknown/incomplete/cache misses. No holder/helper, policy/status conversion, native retention/adoption, aggregate five-role acceptance, symbols, promotion, reuse or protected-artifact changes.
-Tests (cap four groups): genuine tuple/fingerprint/repeatability/purity; disabled and substitution-only formats reject; actual checker schema agrees while 0/2 reject (checker1 differs from wire2); upstream errors precede policy refusal. Reuse genuine positive/schema and refusal controls; inherit lower matrices without Kernel reconstruction.
-Exit: independent specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Proof/VC/Kernel owners, source-return, proof-verification E2E and links/fragments. Affected policy matrices; full tests on cadence trigger.
+## E2 native retention/adoption
+[Proof association/consumption](../../mizar-proof/en/status.md#original-e2-request-identity-association) and Kernel [schema reporting](../../mizar-kernel/en/checker.md#corrected-input-and-context) remain unchanged.
+Full tier: holder/method fails pattern public-seam criterion.
+`NativeE2BodyCorrectness<'core>::from_source` calls unchanged `consume_source_algorithm_e2_result` once FIRST, propagates errors and privately retains identity, whole raw slice, Kernel result, checker schema, snapshot and borrowed Core; discard fingerprint.
+`adopt_original_request` regenerates RETURN identity/whole slice FIRST; propagates errors; identity/slice/snapshot/Core-pointer mismatch returns false before policy checking. Matching requests require current enabled BuiltinKernelEvidence and retained checker-schema agreement, otherwise `algorithm.proof.e2_policy_rejected`; earlier success has no authority.
+Files: status.rs, source_algorithm_return.rs, paired Proof status/API locators, this contract. Preserve caller currentness, Open/Deferred/unknown/incomplete/cache misses. No detached constructors, generic conversions, test-only getters/helpers, duplicate Kernel reconstruction, aggregate five-role acceptance, symbols, promotion, status, reuse or protected-artifact changes.
+Tests (cap4): success/repeatability/purity/raw states; independent identity/slice, snapshot, equal-content distinct-Core mismatches under accepting/refusing policy; current formats/schema including checker1 versus wire2; constructor/adopter upstream-error precedence. Reuse genuine fixtures; no lower-matrix repetition.
+Exit: independent specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Proof/VC/Kernel owners, source-return, proof-verification E2E and links/fragments. Policy/identity/snapshot checks; full tests on cadence.
