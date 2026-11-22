@@ -622,6 +622,12 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `matches_source` は最初に認証済み caller E1 inhabitation request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した構築や Kernel 再検査はない。currentness は呼出側の責任。
 native adoption、passive identity、typing/single-valuedness checking、E2、whole acceptance、status、complete footprints/cache、promotion/publication は与えない。既存 unary profile と child/E4/direct-return/raw unknown/incomplete/cache-miss 境界を保つ。
 
+## Native caller E1 inhabitation adoption
+
+`NativeUnaryCallerE1Inhabitation::from_source(source, typed, symbols, core, request, policy)` は変更しない [association 全体](#arena-local-caller-e1-inhabitation-association) を一度構築し、保持する実際の Kernel result を既存の [object policy evaluator](./policy.md#bounded-native-positive-result-policy) に渡す。保持するのは association のみで fingerprint は破棄する。認証・checker エラーは既存の `algorithm.proof.native_e1_policy_rejected` より先に返す。
+`adopt_original_request` は最初に既存の `matches_source` を呼ぶ。認証エラーを保持し、request/tuple 全体または Core arena 同一性が不一致なら policy 検査前に false を返す。一致時は毎回、渡された現行 policy による Builtin 有効性と実際の checker-schema の完全一致を要求する。currentness は呼出側の責任で、採用時に Kernel 再検査はない。
+許可するのは元の caller object-inhabitation obligation のみ。passive identity、typing/single-valuedness、E2、全体 acceptance、status、完全 footprint/cache、promotion/publication は含まない。child/E4/direct-return と raw unknown/incomplete/cache-miss の境界は変更しない。
+
 ## Arena-local caller E4 association
 
 `SourceUnaryCallerE4Association::from_source(source, typed, symbols, core, request)` は変更しない VC child checker から一時的な真正 child evidence を取得し、同じ Core の evidence で既存 caller composition を呼ぶ。private fields は request 全体、返された caller context/formula descriptor、借用する checked caller result だけを保持し、変更不可の `request`、`descriptor`、`result` getter で元の値を返す。下位エラーを保持し、child descriptor/evidence は保持しない。

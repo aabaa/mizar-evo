@@ -1659,6 +1659,53 @@ impl<'core> SourceUnaryCallerE1InhabitationAssociation<'core> {
     }
 }
 
+/// Native adoption of only the original caller E1 object-inhabitation obligation.
+/// It grants no whole-E1, status, currentness or reuse authority.
+pub struct NativeUnaryCallerE1Inhabitation<'core> {
+    association: SourceUnaryCallerE1InhabitationAssociation<'core>,
+}
+
+impl<'core> NativeUnaryCallerE1Inhabitation<'core> {
+    /// Authenticates and checks the whole request before consuming current policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let association = SourceUnaryCallerE1InhabitationAssociation::from_source(
+            source, typed, symbols, core, request,
+        )?;
+        crate::policy::ProofPolicyEvaluator::new(policy.clone())
+            .consume_object_inhabitation(association.result())?;
+        Ok(Self { association })
+    }
+
+    /// Reauthenticates before mismatch refusal and reevaluates supplied current policy.
+    /// Source/environment currentness remains caller-owned.
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        crate::policy::ProofPolicyEvaluator::new(policy.clone())
+            .consume_object_inhabitation(self.association.result())?;
+        Ok(true)
+    }
+}
+
 /// Arena-local association of a complete authenticated caller E4 request and result.
 /// Canonical identity grants no currentness, policy, adoption or status authority.
 pub struct SourceUnaryCallerE4Association<'core> {

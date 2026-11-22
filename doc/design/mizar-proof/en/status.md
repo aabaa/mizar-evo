@@ -654,6 +654,12 @@ This association grants no canonical identity/reuse, current-policy consumption,
 `matches_source` FIRST regenerates the authenticated caller E1 inhabitation request, preserving errors before whole request/tuple equality and pointer-identical Core comparison. Equal cloned arenas refuse; fresh associations on clones succeed. No detached construction or repeated Kernel check. Currentness remains caller-owned.
 This grants no native adoption, passive identity, typing/single-valuedness checking, E2, whole acceptance, status, complete footprints/cache or promotion/publication. Existing unary profile and child/E4/direct-return/raw unknown/incomplete/cache-miss boundaries remain unchanged.
 
+## Native caller E1 inhabitation adoption
+
+`NativeUnaryCallerE1Inhabitation::from_source(source, typed, symbols, core, request, policy)` constructs the unchanged [whole association](#arena-local-caller-e1-inhabitation-association) once, then passes its actual retained Kernel result to the unchanged [object policy evaluator](./policy.md#bounded-native-positive-result-policy). It retains only that association and discards the fingerprint. Authentication/checker errors precede the existing `algorithm.proof.native_e1_policy_rejected` refusal.
+`adopt_original_request` first calls unchanged `matches_source`: authentication errors propagate and whole-request/tuple or exact Core-arena mismatch returns false before policy checks. A match consumes the retained result under the supplied current policy, requiring enabled Builtin and exact actual checker-schema agreement on every adoption. Currentness remains caller-owned; adoption performs no repeated Kernel check.
+This grants only the original caller object-inhabitation obligation, without passive identity, typing/single-valuedness, E2, whole acceptance, status, complete footprints/cache or promotion/publication. Existing child/E4/direct-return and raw unknown/incomplete/cache-miss boundaries remain unchanged.
+
 ## Arena-local caller E4 association
 
 `SourceUnaryCallerE4Association::from_source(source, typed, symbols, core, request)` obtains temporary genuine child evidence through the unchanged VC child checker, then invokes the unchanged caller composition with that same-Core evidence. Private fields retain only the whole request, returned caller context/formula descriptor and borrowed checked caller result; immutable `request`, `descriptor` and `result` getters expose these original values. Upstream errors are preserved; no child descriptor/evidence is retained.
