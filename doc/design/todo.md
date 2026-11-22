@@ -152,6 +152,13 @@ steps 4-8 are the implementation waves re-paced around them.
 Owner standing rule 2026-11-21: development-process improvement tasks take
 priority over all other tasks, including the M1 and adopted-wave queues.
 
+- [ ] **CI-RECEIPT-ACTIVATION — enforce signed local-full receipts; full tier.**
+  Owner dispatch 2026-11-22, following the orchestrator's 17:08 JST decision:
+  activate directly without shadow or transition. Provision production custody,
+  pin reviewed identities, enforce exact-head sanity and required-check protection,
+  replace per-push/PR full hosted testing with periodic reconciliation, and
+  exercise the [activation boundary](./ci_receipt_model.md#activation-boundary).
+
 - [x] **CI-RECEIPT-DESIGN — mizar CI receipt-model adoption design; Lane 1;
   design only.** Authority: owner CI policy recorded in the orchestrator
   ledger 2026-11-21 13:07 JST. Mirror oeis D9 / FCL D1: unit tests run locally;
