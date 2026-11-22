@@ -695,7 +695,9 @@ This tuple grants no checking, native adoption, identity, status, acceptance, cu
 
 `generate_source_unary_child_call_caller_e1_typing_request(source, typed, symbols, core, request)` first calls the unchanged [caller E4 producer](#bounded-unary-caller-e4-descriptor) once, preserving whole fresh authentication and upstream errors. Its existing `(LocalContext, [VcGeneratedFormula; 4])` retains the original context, caller returns row and fresh binder. Row one becomes object(result), row two implies returns to object, and row three universally quantifies the original result binder. Original row metadata is retained; appended rows are SplitGoal with empty provenance. Local shape refusal reuses `algorithms.unary_child.invalid_caller_e4_request`.
 
-Under only the original caller object-input guard this requests `forall r. returns_caller(actual,r) -> object(r)`, with no return/requires/ensures context fact. It supplies no checking, single-valuedness, E2, whole acceptance, status, currentness, complete footprint/cache, promotion or publication; child/E4/inhabitation/direct-return routes remain separate.
+Under only the original caller object-input guard this requests `forall r. returns_caller(actual,r) -> object(r)`, with no return/requires/ensures context fact. The request producer supplies no checking.
+
+`check_source_unary_child_call_caller_e1_typing_request` calls that unchanged producer first on the same inputs, preserving upstream errors. It passes the exact caller target, declared result binder, atomic object conclusion, sole original guard and rebuilt callee flow to unchanged [Kernel typing](../../mizar-kernel/en/checker.md#bounded-unary-caller-e1-typing) once. Only success returns the entire unchanged tuple; local refusal retains `algorithms.unary_child.invalid_caller_e4_request`. This supplies no single-valuedness, E2, whole acceptance, status, currentness, complete footprint/cache, promotion, publication or Proof typing authority; child/E4/inhabitation/direct-return routes remain separate.
 
 ## Bounded unary caller E4 descriptor
 

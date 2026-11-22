@@ -622,7 +622,9 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_caller_e1_typing_request(source, typed, symbols, core, request)` は既存 [caller E4 producer](#bounded-unary-caller-e4-descriptor) を一度先に呼び、新規認証全体と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 4])` は元 context、caller returns 行、fresh binder を保持する。行1は object(result)、行2は returns から object への含意、行3は元 result binder の全称量化となる。元行の metadata を保持し、追加行は空 provenance の SplitGoal とする。局所 shape 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。
 
-元 caller object-input guard のみの下で `forall r. returns_caller(actual,r) -> object(r)` を要求し、return/requires/ensures を context fact にしない。checking、single-valuedness、E2、全体受理、status、currentness、complete footprint/cache、promotion、publication は与えず、child/E4/inhabitation/direct-return は別途必要である。詳細は [英語版](../en/generator.md#bounded-unary-caller-e1-typing-request) を参照。
+元 caller object-input guard のみの下で `forall r. returns_caller(actual,r) -> object(r)` を要求し、return/requires/ensures を context fact にしない。request producer 自体は checking を与えない。
+
+`check_source_unary_child_call_caller_e1_typing_request` は同じ入力で既存 producer を先に呼び、上流エラーを維持する。正確な caller target、宣言 result binder、atomic object conclusion、唯一の元 guard、再構築した callee flow を既存 [Kernel typing](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-typing) に一度渡す。成功時だけ tuple 全体を変更せず返し、局所拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。single-valuedness、E2、全体受理、status、currentness、complete footprint/cache、promotion、publication、Proof typing 権限は与えず、child/E4/inhabitation/direct-return は別途必要である。詳細は [英語版](../en/generator.md#bounded-unary-caller-e1-typing-request) を参照。
 
 ## Bounded unary caller E4 descriptor
 

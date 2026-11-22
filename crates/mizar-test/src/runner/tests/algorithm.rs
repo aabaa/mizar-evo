@@ -135,6 +135,9 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
         ).unwrap();
         assert_eq!(caller_typing.0, caller_e4.0);
         assert_eq!(caller_typing.1[0], caller_e4.1[0]);
+        assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request(
+            &source, &typed, symbols, &core, &request,
+        ).unwrap(), caller_typing);
         assert!(mizar_kernel::checker::check_unary_caller_return_typing(
             &core, &request, retained.target().1, caller.result().target(), inhabitation.result().binder(),
             ((inhabitation.result().binder(), None), "object"), retained.context(),
@@ -756,6 +759,9 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             binders: vec![binder.id],
             body: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
         });
+        assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request(
+            &source, &typed, symbols, &core, &request,
+        ).unwrap(), caller_typing);
         assert!(mizar_kernel::checker::check_unary_caller_return_typing(
             &core, &request, flow,
             (request.caller, mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller], caller_row.statements[0], (caller_row.params[0].var, None), (*var, None)),
@@ -935,6 +941,9 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap(), caller_typing);
+                assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request(
+                    &source, &typed, symbols, current_core, &request,
+                ).unwrap(), caller_typing);
                 assert!(mizar_kernel::checker::check_unary_caller_return_typing(
                     current_core, &request, flow, composed.target(), *var,
                     ((*var, None), "object"), &[expected.1.1],
@@ -1025,6 +1034,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     };
     use mizar_vc::generator::{
         check_source_unary_child_call_caller_e1_inhabitation_result as inhabit,
+        check_source_unary_child_call_caller_e1_typing_request as check_typing,
         check_source_unary_child_call_caller_e4_result as compose,
         check_source_unary_child_call_existential_result as retain,
         generate_source_unary_child_call_caller_e1_inhabitation_request as caller_e1,
@@ -1055,6 +1065,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine_caller_e1 = caller_e1(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_caller_e4 = caller_e4(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_typing = caller_typing(&source, &typed, symbols, &core, &request).unwrap();
+    assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
     let (composed_descriptor, composed) = compose(&source, &typed, symbols, &core, &request, &retained).unwrap();
     assert_eq!(composed_descriptor, genuine_caller_e4);
@@ -1089,6 +1100,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(canonical_caller_e4(&source, &typed, symbols, &cloned_core, &request).unwrap(), genuine_caller_raw);
     assert_eq!(canonical_caller_e1(&source, &typed, symbols, &cloned_core, &request).unwrap(), genuine_e1_raw);
     assert_eq!(caller_typing(&source, &typed, symbols, &cloned_core, &request).unwrap(), genuine_typing);
+    assert_eq!(check_typing(&source, &typed, symbols, &cloned_core, &request).unwrap(), genuine_typing);
     assert_eq!(inhabitation_association.obligation_identity(&source, &typed, symbols, &cloned_core, &request).unwrap(), None);
     let cloned_inhabitation = InhabitationAssociation::from_source(&source, &typed, symbols, &cloned_core, &request).unwrap();
     assert_eq!(cloned_inhabitation.obligation_identity(&source, &typed, symbols, &cloned_core, &request).unwrap().unwrap(), genuine_e1_identity);
@@ -1287,6 +1299,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "existential request {mutation}");
         assert_eq!(caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 request {mutation}");
         assert_eq!(caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing request {mutation}");
+        assert_eq!(check_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing check request {mutation}");
         assert_eq!(caller_e1(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E1 request {mutation}");
         assert_eq!(inhabit(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "caller E1 check request {mutation}");
         assert_eq!(compose(&source, &typed, symbols, &core, &changed, &retained).err().unwrap(), "algorithms.unary_child.invalid_request", "composition request {mutation}");
@@ -1426,6 +1439,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "existential Core {mutation}");
         assert_eq!(caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 Core {mutation}");
         assert_eq!(caller_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "caller typing Core {mutation}");
+        assert_eq!(check_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), "caller typing check Core {mutation}");
         assert_eq!(caller_e1(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E1 Core {mutation}");
         assert_eq!(inhabit(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "caller E1 check Core {mutation}");
         assert_eq!(compose(&source, &typed, symbols, &changed, &request, &retained).err().unwrap(), "algorithms.unary_child.invalid_request", "composition Core {mutation}");
@@ -1476,10 +1490,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             let (other_descriptor, other_child) = retain(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_caller_e4 = caller_e4(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_typing = caller_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            assert_eq!(check_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), other_typing);
             assert_eq!(other_typing.0, other_caller_e4.0);
             assert_eq!(other_typing.1[0], other_caller_e4.1[0]);
             assert_eq!(caller_typing(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), caller_e4(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+            assert_eq!(check_typing(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), caller_typing(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(caller_typing(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), caller_e4(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+            assert_eq!(check_typing(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), caller_typing(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             let other_caller_e1 = caller_e1(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let mut expected_caller_e1 = other_descriptor.clone();
             let mizar_vc::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns { result, .. } = other_descriptor.1[0].shape else {
@@ -1586,6 +1603,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(caller_e4(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(caller_typing(s, t, e, &core, &request).unwrap_err(), error);
+            assert_eq!(check_typing(s, t, e, &core, &request).unwrap_err(), caller_typing(s, t, e, &core, &request).unwrap_err());
             assert_eq!(caller_e1(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(inhabit(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(compose(s, t, e, &core, &request, &cloned_child).err().unwrap(), error);
@@ -1628,6 +1646,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(caller_e4(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(caller_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_e4(&source, &forged, symbols, &core, &request).unwrap_err());
+    assert_eq!(check_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_typing(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(caller_e1(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(inhabit(&source, &forged, symbols, &core, &request).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(compose(&source, &forged, symbols, &core, &request, &cloned_child).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
@@ -1656,6 +1675,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     mismatched.caller = request.callee;
     assert_eq!(caller_e4(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
+    assert_eq!(check_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(caller_e1(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(inhabit(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(compose(&source, &forged, symbols, &cloned_core, &mismatched, &retained).err().unwrap(), error);
@@ -1714,6 +1734,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine_existential);
     assert_eq!(caller_e4(&source, &typed, symbols, &core, &request).unwrap(), genuine_caller_e4);
     assert_eq!(caller_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
+    assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     assert_eq!(caller_e1(&source, &typed, symbols, &core, &request).unwrap(), genuine_caller_e1);
     let (recovered_e1, recovered_inhabited) = inhabit(&source, &typed, symbols, &core, &request).unwrap();
     assert_eq!(recovered_e1, genuine_caller_e1);
@@ -1780,6 +1801,11 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
         &source, &typed, collected.env(), &core, &request,
     ).is_ok());
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap(), mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap());
     let inhabitation_association = mizar_proof::status::SourceUnaryCallerE1InhabitationAssociation::from_source(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap();
@@ -1886,6 +1912,11 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap_err(), upstream);
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap_err(), mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap_err());
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_inhabitation_request(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap_err(), upstream);
