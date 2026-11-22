@@ -1747,6 +1747,18 @@ pub fn check_kernel_evidence(input: KernelEvidenceCheckInput<'_>) -> KernelCheck
     }
 }
 
+/// Returns the unchanged normal check result and its Kernel-owned rule schema.
+/// Schema 1 is reported only on acceptance, independently of wire/profile versions.
+/// The schema grants no source association, Proof policy eligibility or adoption.
+#[must_use]
+pub fn check_kernel_evidence_with_schema(
+    input: KernelEvidenceCheckInput<'_>,
+) -> (KernelCheckResult, Option<u16>) {
+    let result = check_kernel_evidence(input);
+    let schema = (result.status() == KernelCheckStatus::Accepted).then_some(1_u16);
+    (result, schema)
+}
+
 pub fn check_kernel_evidence_batch(
     inputs: &[KernelEvidenceCheckInput<'_>],
 ) -> Vec<KernelCheckResult> {

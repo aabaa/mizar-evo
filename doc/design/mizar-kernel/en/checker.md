@@ -282,6 +282,13 @@ KernelCheckPolicy
   allow_legacy_certificate_audit = false for normal proof policy
 ```
 
+`check_kernel_evidence_with_schema` takes the same input and calls
+`check_kernel_evidence` once, returning its unchanged result with `Some(1_u16)`
+only for `Accepted`, otherwise `None`. This Kernel-owned normal-check rule
+schema is independent of evidence wire/profile and requested-policy versions.
+It grants no whole-body/Core association, Proof policy eligibility, E2 adoption
+or aggregate acceptance; the existing result type and APIs remain unchanged.
+
 `kernel_evidence` is the schema from `formula_evidence.md`. The parser
 validates the evidence profile before service handoff; the checker validates
 target/context binding, final-goal polarity against `check_kind`, non-imported

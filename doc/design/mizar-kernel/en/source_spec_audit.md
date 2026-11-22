@@ -140,6 +140,7 @@ Covered top-level public items:
 - `KernelCheckServiceResult`
 - `check_kernel_evidence`
 - `check_kernel_evidence_batch`
+- `check_kernel_evidence_with_schema`
 - `ObjectInhabitationCheck`
 - `check_object_inhabitation_result`
 - `check_object_inhabitation_witness`

@@ -254,6 +254,12 @@ KernelCheckPolicy
   allow_legacy_certificate_audit = false for normal proof policy
 ```
 
+`check_kernel_evidence_with_schema` は同じ入力で `check_kernel_evidence` を一度呼び、
+変更しない結果と、`Accepted` の場合だけ `Some(1_u16)`、それ以外は `None` を返す。
+この Kernel 所有の normal-check rule schema は evidence wire/profile と
+requested-policy の version から独立する。Whole-body/Core association、Proof policy
+eligibility、E2 adoption、aggregate acceptance は与えず、既存の result type と API は維持する。
+
 `kernel_evidence` は `formula_evidence.md` の schema である。Parser は service handoff
 前に evidence profile を validate する。Checker は target/context binding、final-goal
 polarity、非 import source context identity、formula provenance、imported formula identity と

@@ -1167,9 +1167,10 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
             KernelCheckStatus, KernelContextIdentityEntry, KernelContextIdentityPayload,
             KernelContextIdentitySource, KernelEvidenceCheckInput, KernelEvidenceCheckKind,
             KernelEvidenceCheckLimits, KernelFormulaProducerRef, check_kernel_evidence,
+            check_kernel_evidence_with_schema,
         },
         formula_evidence::{FormulaEvidenceParseContext, parse_formula_evidence},
-        rejection::TargetVcFingerprint,
+        rejection::{RejectionDetail, TargetVcFingerprint},
     };
     use mizar_proof::{
         policy::{
@@ -1337,14 +1338,84 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                     has_stable_kernel_representation: true,
                 }
             ));
-            let expected_result = check_kernel_evidence(KernelEvidenceCheckInput {
+            let kernel_input = KernelEvidenceCheckInput {
                 target_vc_fingerprint: &target,
                 evidence: &parsed,
                 formula_context: Some(&formula_context),
                 check_kind: KernelEvidenceCheckKind::ProofObligation,
                 policy: KernelCheckPolicy::default(),
                 limits: KernelEvidenceCheckLimits::default(),
-            });
+            };
+            let kernel_prior = (target.clone(), parsed.clone(), formula_context.clone());
+            let expected_result = check_kernel_evidence(kernel_input);
+            assert_eq!(parsed.schema_version(), 2);
+            assert_eq!(
+                check_kernel_evidence_with_schema(kernel_input),
+                (expected_result.clone(), Some(1_u16))
+            );
+            assert_eq!(
+                check_kernel_evidence_with_schema(kernel_input),
+                (expected_result.clone(), Some(1_u16))
+            );
+            if variant == 0 && snapshot == snapshot_id(0) && policy == VerifierPolicy::default() {
+                let mut other_target = target.clone();
+                other_target.digest[0] ^= 1;
+                let mut resource_input = kernel_input;
+                resource_input.limits.max_report_records = 0;
+                for (refused_input, detail, path) in [
+                    (
+                        KernelEvidenceCheckInput {
+                            target_vc_fingerprint: &other_target,
+                            ..kernel_input
+                        },
+                        RejectionDetail::ContextMismatch,
+                        "target_vc",
+                    ),
+                    (
+                        KernelEvidenceCheckInput {
+                            formula_context: None,
+                            ..kernel_input
+                        },
+                        RejectionDetail::MissingProvenance,
+                        "formula_context",
+                    ),
+                    (
+                        KernelEvidenceCheckInput {
+                            check_kind: KernelEvidenceCheckKind::ConsistencyCheck,
+                            ..kernel_input
+                        },
+                        RejectionDetail::ContextMismatch,
+                        "final_goal.polarity",
+                    ),
+                    (
+                        KernelEvidenceCheckInput {
+                            evidence: &parsed_v1,
+                            ..kernel_input
+                        },
+                        RejectionDetail::InvalidSatRefutation,
+                        "sat_checker.satisfiable",
+                    ),
+                    (
+                        resource_input,
+                        RejectionDetail::ResourceExhaustion,
+                        "checker_limits.max_report_records",
+                    ),
+                ] {
+                    let refused = check_kernel_evidence(refused_input);
+                    assert_eq!(refused.status(), KernelCheckStatus::Rejected, "{path}");
+                    assert_eq!(refused.rejections()[0].detail(), detail, "{path}");
+                    assert_eq!(refused.rejections()[0].location().field_path, Some(path));
+                    assert_eq!(
+                        check_kernel_evidence_with_schema(refused_input),
+                        (refused, None),
+                        "{path}"
+                    );
+                }
+            }
+            assert_eq!(
+                (&target, &parsed, &formula_context),
+                (&kernel_prior.0, &kernel_prior.1, &kernel_prior.2)
+            );
             let input = KernelPolicyInput::from_kernel_result(
                 &expected_result,
                 KernelEvidenceOrigin::BuiltinDischarge,
