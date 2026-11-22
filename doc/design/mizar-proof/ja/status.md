@@ -620,7 +620,8 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 `SourceUnaryCallerE1TypingAssociation::from_source(source, typed, symbols, core, request)` は変更しない [fresh VC typing checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持する。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
 `matches_source` は最初に認証済み typing request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した constructor、Kernel 再検査、schema、opaque Kernel result は追加しない。currentness は呼出側の責任。
-この passive association は identity、policy/native adoption、single-valuedness、E2、whole acceptance、status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
+`obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。一致時は同一引数で [typing canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e1-typing-canonical-inputs) を取得する。`source-unary-caller-e1-typing-candidate-anchor-v1:` に完全な小文字 VC hash を続け、通常の五文字列 obligation object が anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e1-typing/obligation` v1.0 で結ぶ。field・policy 入力・Kernel 再検査を追加せず Some(既存 ProofObligationIdentity, raw slice 全体) を返す。
+arena 間の canonical equality は association を認可しない。この passive identity は policy/native adoption、single-valuedness、E2、whole acceptance、status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
 
 ## Arena-local caller E1 inhabitation association
 
