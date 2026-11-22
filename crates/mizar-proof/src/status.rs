@@ -1274,6 +1274,76 @@ pub fn consume_source_algorithm_e1_typing(
     Ok((identity, slice, checker_schema, policy.policy_fingerprint()))
 }
 
+/// Native positive evidence for only the original E1 typing obligation.
+/// It grants no generic evidence, aggregate acceptance, status or reuse authority.
+pub struct NativeE1Typing<'core> {
+    identity: ProofObligationIdentity,
+    slice: mizar_vc::dependency_slice::DependencySlice,
+    snapshot: mizar_session::BuildSnapshotId,
+    checker_schema: u16,
+    core: &'core mizar_core::core_ir::CoreIr,
+}
+
+impl<'core> NativeE1Typing<'core> {
+    /// Checks and retains the original typing request under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (identity, slice, checker_schema, _) = consume_source_algorithm_e1_typing(
+            source, check, symbols, core, snapshot, vc_id, policy,
+        )?;
+        Ok(Self {
+            identity,
+            slice,
+            snapshot,
+            checker_schema,
+            core,
+        })
+    }
+
+    /// Adopts only the retained original typing request under current policy.
+    /// Currentness remains caller-owned; earlier policy success grants no authority.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "authenticates the complete original request"
+    )]
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        let (identity, slice) = source_algorithm_direct_return_obligation_identity(
+            source, check, symbols, snapshot, vc_id,
+        )?;
+        if identity != self.identity
+            || slice != self.slice
+            || snapshot != self.snapshot
+            || !std::ptr::eq(core, self.core)
+        {
+            return Ok(false);
+        }
+        if !policy
+            .kernel_evidence_formats()
+            .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+            || policy.checker_schema_version() != self.checker_schema
+        {
+            return Err("algorithm.proof.e1_typing_policy_rejected".to_owned());
+        }
+        Ok(true)
+    }
+}
+
 /// Associates the original E1 single-valuedness identity and whole raw slice after same-call checking.
 /// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
 pub fn check_source_algorithm_e1_single_valuedness(

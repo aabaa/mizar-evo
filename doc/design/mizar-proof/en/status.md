@@ -601,6 +601,12 @@ This associates only the checked original typing request. No native result prere
 `consume_source_algorithm_e1_typing(source, check, symbols, core, snapshot, vc_id, policy)` calls the unchanged [typing schema association](#original-e1-typing-request-identity-association) FIRST, preserving its errors. Require enabled `BuiltinKernelEvidence` and exact agreement between `policy.checker_schema_version()` and the returned Kernel schema; refusal is `algorithm.proof.e1_typing_policy_rejected`.
 Return original identity, whole raw slice, actual schema and `policy.policy_fingerprint()` atomically. Currentness remains caller-owned; Open4/Deferred and raw unknown/incomplete/cache-miss states persist. No retention/adoption, single-valuedness consumption, generic evidence/status, aggregate acceptance, symbols or reuse authority follows.
 
+## Native original-E1 typing adoption
+
+`NativeE1Typing::from_source` calls the unchanged [typing consumer](#original-e1-typing-current-policy-consumption) once and privately retains original identity, whole raw slice, exact snapshot, actual success-only checker schema and borrowed Core. There is no detached constructor or generic evidence conversion.
+`adopt_original_request` regenerates identity/slice first, preserving errors; return false unless complete equality, exact snapshot and identical Core arena hold. Then re-evaluate current enabled Builtin/schema agreement with the retained schema, using the consumer's policy refusal. Earlier fingerprints grant no authority.
+True adopts only that original typing obligation. Caller-owned currentness, Open4/Deferred, raw unknown/incomplete/cache misses persist. Single-valuedness adoption, E2/aggregate acceptance, symbols, promotion, status and reuse remain excluded.
+
 ## Original E1 single-valuedness request-identity association
 
 `check_source_algorithm_e1_single_valuedness_with_schema(source, check, symbols, core, snapshot, vc_id)` first calls the authenticated [VC single-valuedness schema checker](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor) with the fixed direct-return schemas above, preserving producer errors. Regenerate the existing original identity on identical inputs and require whole descriptor.5/raw-slice equality; mismatch uses `algorithm.proof.invalid_direct_return_request`. Return existing `(ProofObligationIdentity, DependencySlice, u16)` values atomically, forwarding the Kernel-owned schema. `check_source_algorithm_e1_single_valuedness` delegates and discards only the schema, preserving its pair API.

@@ -10032,3 +10032,429 @@ fn source_algorithm_single_valuedness_descriptor_regenerates_source_and_schema_i
         },
     );
 }
+
+#[test]
+fn source_algorithm_native_e1_typing_preserves_open_requests_and_purity() {
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{NativeE1Typing, consume_source_algorithm_e1_typing as consume},
+    };
+    use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{policy:?}");
+        let original = consume(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(1),
+            &policy,
+        )
+        .unwrap();
+        assert_eq!(original.1.status(), &VcStatus::Open);
+        assert_eq!(
+            original.1.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(!original.1.unknowns().is_empty());
+        assert!(original.1.requires_cache_miss());
+        for _ in 0..2 {
+            let native = NativeE1Typing::from_source(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                VcId::new(1),
+                &policy,
+            )
+            .unwrap();
+            for _ in 0..2 {
+                assert!(
+                    native
+                        .adopt_original_request(
+                            source,
+                            check,
+                            symbols,
+                            core,
+                            vcs.snapshot(),
+                            VcId::new(1),
+                            &policy,
+                        )
+                        .unwrap()
+                );
+            }
+        }
+        assert_eq!(vcs.vcs()[1..].len(), 4);
+        assert!(vcs.vcs()[1..].iter().all(|vc| vc.status == VcStatus::Open));
+        assert!(vcs.seed_accounting().iter().any(|seed|
+            seed.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+        ));
+        assert_eq!(
+            consume(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                VcId::new(1),
+                &policy
+            )
+            .unwrap(),
+            original
+        );
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{policy:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_native_e1_typing_refuses_other_roles_and_changed_associations() {
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            NativeE1Typing, consume_source_algorithm_e1_typing as consume,
+            source_algorithm_direct_return_obligation_identity as identity,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let denied = policy.clone().with_kernel_evidence_formats([]);
+        let native = NativeE1Typing::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(1),
+            &policy,
+        )
+        .unwrap();
+        for selected in [0, 2, 3, 4, vcs.vcs().len(), usize::MAX].map(VcId::new) {
+            let expected = consume(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                selected,
+                &policy,
+            )
+            .unwrap_err();
+            for policy in [&policy, &denied] {
+                assert_eq!(
+                    NativeE1Typing::from_source(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        selected,
+                        policy,
+                    )
+                    .err()
+                    .unwrap(),
+                    expected
+                );
+                let adopted = native.adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    selected,
+                    policy,
+                );
+                match identity(source, check, symbols, vcs.snapshot(), selected) {
+                    Ok(_) => assert!(!adopted.unwrap()),
+                    Err(error) => assert_eq!(adopted.unwrap_err(), error),
+                }
+            }
+        }
+        let baseline = identity(source, check, symbols, vcs.snapshot(), VcId::new(1)).unwrap();
+        let text = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        with_source_algorithm_identity_inputs(
+            &text.replace("ensures result = a", "ensures a = result"),
+            "owner-test",
+            "owners",
+            0,
+            |other_source, _, other_symbols, other_check| {
+                let changed = identity(
+                    other_source,
+                    other_check,
+                    other_symbols,
+                    vcs.snapshot(),
+                    VcId::new(1),
+                )
+                .unwrap();
+                assert_ne!(changed.0, baseline.0);
+                assert_ne!(changed.1, baseline.1);
+                for policy in [&policy, &denied] {
+                    assert!(
+                        !native
+                            .adopt_original_request(
+                                other_source,
+                                other_check,
+                                other_symbols,
+                                core,
+                                vcs.snapshot(),
+                                VcId::new(1),
+                                policy,
+                            )
+                            .unwrap()
+                    );
+                }
+            },
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_native_e1_typing_refuses_foreign_snapshot_and_distinct_equal_core() {
+    use mizar_proof::{policy::VerifierPolicy, status::NativeE1Typing};
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let denied = policy.clone().with_kernel_evidence_formats([]);
+        let native = NativeE1Typing::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(1),
+            &policy,
+        )
+        .unwrap();
+        let cloned = core.clone();
+        assert_eq!(&cloned, core);
+        for (candidate_core, snapshot) in [(core, snapshot_id(1)), (&cloned, vcs.snapshot())] {
+            for policy in [&policy, &denied] {
+                assert!(
+                    !native
+                        .adopt_original_request(
+                            source,
+                            check,
+                            symbols,
+                            candidate_core,
+                            snapshot,
+                            VcId::new(1),
+                            policy,
+                        )
+                        .unwrap()
+                );
+            }
+        }
+        assert!(
+            native
+                .adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(1),
+                    &policy,
+                )
+                .unwrap()
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_native_e1_typing_rechecks_current_policy_after_upstream_errors() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            NativeE1Typing, consume_source_algorithm_e1_typing as consume,
+            source_algorithm_direct_return_obligation_identity as identity,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let default = VerifierPolicy::default();
+        let native = NativeE1Typing::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(1),
+            &default,
+        )
+        .unwrap();
+        for policy in [
+            default.clone(),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+            VerifierPolicy::development(),
+            VerifierPolicy::interactive(),
+            default
+                .clone()
+                .with_profile_id("changed-native-e1-typing-policy"),
+            default.clone().with_schema_version(2),
+        ] {
+            let before = policy.clone();
+            let current = NativeE1Typing::from_source(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                VcId::new(1),
+                &policy,
+            )
+            .unwrap();
+            for capability in [&native, &current] {
+                assert!(
+                    capability
+                        .adopt_original_request(
+                            source,
+                            check,
+                            symbols,
+                            core,
+                            vcs.snapshot(),
+                            VcId::new(1),
+                            &policy,
+                        )
+                        .unwrap()
+                );
+            }
+            assert_eq!(policy, before);
+        }
+        let schema = consume(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            VcId::new(1),
+            &default,
+        )
+        .unwrap()
+        .2;
+        for policy in [
+            default.clone().with_kernel_evidence_formats([]),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            default.clone().with_checker_schema_version(schema - 1),
+            default.clone().with_checker_schema_version(schema + 1),
+        ] {
+            let before = policy.clone();
+            assert_eq!(
+                NativeE1Typing::from_source(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(1),
+                    &policy,
+                )
+                .err()
+                .unwrap(),
+                "algorithm.proof.e1_typing_policy_rejected"
+            );
+            assert_eq!(
+                native
+                    .adopt_original_request(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        VcId::new(1),
+                        &policy,
+                    )
+                    .unwrap_err(),
+                "algorithm.proof.e1_typing_policy_rejected"
+            );
+            assert_eq!(policy, before);
+        }
+        let denied = default.clone().with_kernel_evidence_formats([]);
+        let text = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        with_source_algorithm_identity_inputs(
+            &text.replace("idalgo", "foreign_algorithm"),
+            "owner-test",
+            "owners",
+            7,
+            |other_source, _, other_symbols, other_check| {
+                let other_core =
+                    mizar_core::elaborator::lower_source_algorithms(other_check).unwrap();
+                for (source, check, symbols, core) in [
+                    (other_source, check, symbols, core),
+                    (source, other_check, other_symbols, core),
+                    (source, check, symbols, &other_core),
+                ] {
+                    let before = format!("{source:?}{check:?}{symbols:?}{core:?}");
+                    for selected in [VcId::new(1), VcId::new(usize::MAX)] {
+                        let expected = consume(
+                            source,
+                            check,
+                            symbols,
+                            core,
+                            vcs.snapshot(),
+                            selected,
+                            &default,
+                        )
+                        .unwrap_err();
+                        assert_ne!(expected, "algorithm.proof.e1_typing_policy_rejected");
+                        for policy in [&default, &denied] {
+                            assert_eq!(
+                                NativeE1Typing::from_source(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    selected,
+                                    policy,
+                                )
+                                .err()
+                                .unwrap(),
+                                expected
+                            );
+                            let adopted = native.adopt_original_request(
+                                source,
+                                check,
+                                symbols,
+                                core,
+                                vcs.snapshot(),
+                                selected,
+                                policy,
+                            );
+                            match identity(source, check, symbols, vcs.snapshot(), selected) {
+                                Err(error) => assert_eq!(adopted.unwrap_err(), error),
+                                Ok(_) => assert!(!adopted.unwrap()),
+                            }
+                        }
+                    }
+                    assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
+                }
+            },
+        );
+        assert!(
+            native
+                .adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(1),
+                    &default,
+                )
+                .unwrap()
+        );
+    });
+}

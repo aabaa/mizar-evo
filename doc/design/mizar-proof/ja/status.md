@@ -569,6 +569,12 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 `consume_source_algorithm_e1_typing(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [typing schema association](#original-e1-typing-request-identity-association) を最初に呼び、エラーを保持する。`BuiltinKernelEvidence` の許可と、`policy.checker_schema_version()` と返された Kernel schema の完全一致を要求し、拒否は `algorithm.proof.e1_typing_policy_rejected`。
 元 identity、raw slice 全体、実 schema、`policy.policy_fingerprint()` を atomic に返す。currentness は呼出側責務で、Open4/Deferred と raw unknown/incomplete/cache miss を保持する。retention/adoption、single-valuedness 消費、generic evidence/status、aggregate acceptance、symbol、reuse authority は付与しない。
 
+## Native original-E1 typing adoption
+
+`NativeE1Typing::from_source` は変更しない [typing consumer](#original-e1-typing-current-policy-consumption) を一度呼び、元 identity・raw slice 全体・正確な snapshot・成功時の実際の checker schema・借用 Core を非公開に保持する。切り離した constructor や generic evidence への変換はない。
+`adopt_original_request` は最初に identity/slice を再生成し、エラーを保持する。完全一致・正確な snapshot・同一 Core arena が成立しなければ false。続いて保持した schema に対して現在の Builtin 許可/schema 一致を再評価し、consumer と同じ policy 拒否を使う。以前の fingerprint は権限を与えない。
+true が採用するのはその元 typing obligation のみ。currentness は呼出側が担い、Open4/Deferred・raw unknown/incomplete/cache miss は保つ。single-valuedness adoption・E2/aggregate acceptance・symbols・promotion・status・reuse は対象外。
+
 ## Original E1 single-valuedness request-identity association
 
 `check_source_algorithm_e1_single_valuedness_with_schema(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC single-valuedness schema checker](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。Kernel 所有の schema をそのまま渡し、既存 `(ProofObligationIdentity, DependencySlice, u16)` 値を atomic に返す。`check_source_algorithm_e1_single_valuedness` は委譲して schema だけを捨て、既存の pair API を保持する。
