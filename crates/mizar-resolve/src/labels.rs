@@ -1425,14 +1425,10 @@ fn proof_block_boundary_is_supported(proof: SurfaceNodeView<'_>) -> bool {
     let (Some(first), Some(last)) = (children.first(), children.last()) else {
         return false;
     };
-    if children.len() < 2
-        || children.iter().any(|child| child.is_recovered())
-        || !token_is(first, SurfaceTokenKind::ReservedWord, "proof")
-        || !token_is(last, SurfaceTokenKind::ReservedWord, "end")
-    {
-        return false;
-    }
-    true
+    children.len() >= 2
+        && !children.iter().any(|child| child.is_recovered())
+        && token_is(first, SurfaceTokenKind::ReservedWord, "proof")
+        && token_is(last, SurfaceTokenKind::ReservedWord, "end")
 }
 
 fn exact_compact_statement_label(statement: SurfaceNodeView<'_>) -> Option<SurfaceNodeView<'_>> {
