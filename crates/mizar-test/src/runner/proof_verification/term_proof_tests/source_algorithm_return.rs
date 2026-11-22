@@ -11647,3 +11647,383 @@ fn source_algorithm_e2_result_preserves_core_generation_and_handoff_precedence()
         );
     }
 }
+
+#[test]
+fn source_algorithm_direct_return_aggregate_preserves_native_success_and_raw_output() {
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            NativeE1Inhabitation, NativeE1SingleValuedness, NativeE1Typing,
+            NativeE2BodyCorrectness, NativeE4NormalReturn,
+            accept_source_algorithm_direct_return as accept,
+        },
+    };
+    use mizar_vc::{
+        dependency_slice::{
+            DependencySliceCompleteness,
+            try_compute_source_algorithm_direct_return_dependency_slices,
+        },
+        generator::generate_source_algorithm_postconditions,
+        vc_ir::{VcKind, VcStatus},
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{policy:?}");
+        let [typing, single, inhabitation, e4] = [
+            VcKind::AlgorithmE1Typing,
+            VcKind::AlgorithmE1SingleValuedness,
+            VcKind::AlgorithmE1ResultInhabitation,
+            VcKind::AlgorithmE4NormalReturn,
+        ]
+        .map(|kind| {
+            let mut matching = vcs.vcs().iter().filter(|vc| vc.kind == kind);
+            let id = matching.next().unwrap().id;
+            assert!(matching.next().is_none());
+            id
+        });
+        let e2_requests = generate_source_algorithm_postconditions(
+            core,
+            vcs.snapshot(),
+            &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+            &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+        )
+        .unwrap();
+        let mut matching = e2_requests
+            .vcs()
+            .iter()
+            .filter(|vc| vc.kind == VcKind::AlgorithmPostcondition);
+        let e2 = matching.next().unwrap().id;
+        assert!(matching.next().is_none());
+        let native = NativeE1Typing::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            typing,
+            &policy,
+        )
+        .unwrap();
+        assert!(
+            native
+                .adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    typing,
+                    &policy,
+                )
+                .unwrap()
+        );
+        let native = NativeE1SingleValuedness::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            single,
+            &policy,
+        )
+        .unwrap();
+        assert!(
+            native
+                .adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    single,
+                    &policy,
+                )
+                .unwrap()
+        );
+        let native = NativeE1Inhabitation::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            inhabitation,
+            &policy,
+        )
+        .unwrap();
+        assert!(
+            native
+                .adopt_original_request(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    inhabitation,
+                    &policy,
+                )
+                .unwrap()
+        );
+        let native = NativeE4NormalReturn::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            e4,
+            &policy,
+        )
+        .unwrap();
+        assert!(
+            native
+                .adopt_original_request(source, check, symbols, core, vcs.snapshot(), e4, &policy,)
+                .unwrap()
+        );
+        let native = NativeE2BodyCorrectness::from_source(
+            source,
+            check,
+            symbols,
+            core,
+            vcs.snapshot(),
+            e2,
+            &policy,
+        )
+        .unwrap();
+        assert!(
+            native
+                .adopt_original_request(source, check, symbols, core, vcs.snapshot(), e2, &policy,)
+                .unwrap()
+        );
+        for _ in 0..2 {
+            assert!(accept(source, check, symbols, core, vcs.snapshot(), &policy).unwrap());
+        }
+        assert_eq!(vcs.vcs().len(), 5);
+        assert_eq!(
+            vcs.vcs()
+                .iter()
+                .filter(|vc| vc.status == VcStatus::Open)
+                .count(),
+            5
+        );
+        assert!(vcs.seed_accounting().iter().any(|seed|
+            seed.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+        ));
+        let slices = try_compute_source_algorithm_direct_return_dependency_slices(
+            source,
+            check,
+            symbols,
+            core,
+            vcs,
+            &vcs.vcs()[0].anchor.generation_schema_version,
+        )
+        .unwrap();
+        assert!(slices.slices().iter().all(|slice| slice.completeness()
+            == DependencySliceCompleteness::IncompleteUncacheable
+            && !slice.unknowns().is_empty()
+            && slice.requires_cache_miss()));
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}{policy:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_aggregate_refuses_unsupported_source_and_core() {
+    use mizar_core::{
+        core_ir::{CoreFormulaKind, CoreIr},
+        elaborator::lower_source_algorithms,
+    };
+    use mizar_proof::{
+        policy::VerifierPolicy, status::accept_source_algorithm_direct_return as accept,
+    };
+    use mizar_vc::generator::generate_source_algorithm_direct_return_requests as generate;
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let generation = GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1");
+        let schema = VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1");
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        for (kind, text) in [
+            (
+                "missing_e2",
+                original.replace("    ensures result = a\n", ""),
+            ),
+            (
+                "unsupported",
+                original.replace("terminating algorithm", "algorithm"),
+            ),
+            (
+                "foreign_core",
+                original.replace("idalgo", "foreign_algorithm"),
+            ),
+        ] {
+            with_source_algorithm_identity_inputs(
+                &text,
+                "owner-test",
+                "owners",
+                0,
+                |other_source, _, other_symbols, other_check| {
+                    let other_core = lower_source_algorithms(other_check).unwrap();
+                    let (source, check, symbols) = if kind == "foreign_core" {
+                        (source, check, symbols)
+                    } else {
+                        (other_source, other_check, other_symbols)
+                    };
+                    let before = format!("{source:?}{check:?}{symbols:?}{other_core:?}");
+                    let expected = generate(
+                        source,
+                        check,
+                        symbols,
+                        &other_core,
+                        vcs.snapshot(),
+                        &generation,
+                        &schema,
+                    )
+                    .unwrap_err();
+                    assert_eq!(
+                        accept(source, check, symbols, &other_core, vcs.snapshot(), &policy)
+                            .unwrap_err(),
+                        expected,
+                        "{kind}"
+                    );
+                    assert_eq!(
+                        format!("{source:?}{check:?}{symbols:?}{other_core:?}"),
+                        before
+                    );
+                },
+            );
+        }
+        let (_, algorithm) = core.algorithms().iter().next().unwrap();
+        let mut parts = sole_return_core_parts(core);
+        parts
+            .formulas
+            .get_mut(algorithm.result.as_ref().unwrap().ty_guard.unwrap())
+            .unwrap()
+            .kind = CoreFormulaKind::False;
+        let changed = CoreIr::try_new(parts).unwrap();
+        let expected = generate(
+            source,
+            check,
+            symbols,
+            &changed,
+            vcs.snapshot(),
+            &generation,
+            &schema,
+        )
+        .unwrap_err();
+        assert_eq!(
+            accept(source, check, symbols, &changed, vcs.snapshot(), &policy).unwrap_err(),
+            expected
+        );
+        assert!(accept(source, check, symbols, core, vcs.snapshot(), &policy).unwrap());
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_aggregate_checks_current_format_and_checker_schema() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            NativeE1Typing, accept_source_algorithm_direct_return as accept,
+            check_source_algorithm_e2_result,
+        },
+    };
+    use mizar_vc::vc_ir::VcKind;
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let policy = VerifierPolicy::default();
+        let typing = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmE1Typing)
+            .unwrap()
+            .id;
+        let e2 = vcs
+            .vcs()
+            .iter()
+            .find(|vc| vc.kind == VcKind::AlgorithmPostcondition)
+            .unwrap()
+            .id;
+        assert_eq!(
+            check_source_algorithm_e2_result(source, check, symbols, core, vcs.snapshot(), e2)
+                .unwrap()
+                .3,
+            1
+        );
+        for refused in [
+            policy.clone().with_kernel_evidence_formats([]),
+            policy
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            policy.clone().with_checker_schema_version(0),
+            policy.clone().with_checker_schema_version(2),
+        ] {
+            let before = refused.clone();
+            let expected = NativeE1Typing::from_source(
+                source,
+                check,
+                symbols,
+                core,
+                vcs.snapshot(),
+                typing,
+                &refused,
+            )
+            .err()
+            .unwrap();
+            assert_eq!(
+                accept(source, check, symbols, core, vcs.snapshot(), &refused).unwrap_err(),
+                expected
+            );
+            assert_eq!(refused, before);
+        }
+        let changed = policy
+            .with_profile_id("aggregate-current-policy")
+            .with_schema_version(2);
+        assert!(accept(source, check, symbols, core, vcs.snapshot(), &changed).unwrap());
+    });
+}
+
+#[test]
+fn source_algorithm_direct_return_aggregate_preserves_upstream_errors() {
+    use mizar_checker::type_checker::check_source_algorithm_types;
+    use mizar_proof::{
+        policy::VerifierPolicy, status::accept_source_algorithm_direct_return as accept,
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let original = fs::read_to_string(config().workspace_root.join(
+            "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+        ))
+        .unwrap();
+        with_source_algorithm_identity_inputs(
+            &original.replace("idalgo", "foreign_algorithm"),
+            "other-package",
+            "owners",
+            7,
+            |other_source, _, other_symbols, other_check| {
+                for (source, check, symbols) in [
+                    (other_source, check, symbols),
+                    (source, other_check, other_symbols),
+                    (source, check, other_symbols),
+                ] {
+                    let before = format!("{source:?}{check:?}{symbols:?}{core:?}");
+                    let expected =
+                        check_source_algorithm_types(source, check.typed(), symbols).unwrap_err();
+                    for policy in [
+                        VerifierPolicy::default(),
+                        VerifierPolicy::default()
+                            .with_kernel_evidence_formats([])
+                            .with_checker_schema_version(0),
+                    ] {
+                        assert_eq!(
+                            accept(source, check, symbols, core, vcs.snapshot(), &policy)
+                                .unwrap_err(),
+                            expected
+                        );
+                    }
+                    assert_eq!(format!("{source:?}{check:?}{symbols:?}{core:?}"), before);
+                }
+            },
+        );
+    });
+}

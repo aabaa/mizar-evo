@@ -82,6 +82,7 @@ matching crate or module-level boundary comment:
 `check_source_algorithm_e2_result`: [API owner](./status.md#original-e2-request-identity-association).
 `consume_source_algorithm_e2_result`: [API owner](./status.md#original-e2-current-policy-consumption).
 `NativeE2BodyCorrectness`: [API owner](./status.md#native-e2-body-correctness).
+`accept_source_algorithm_direct_return`: [API owner](./status.md#bounded-aggregate-five-role-acceptance).
 `check_source_algorithm_return_reflexivity`: [sole API owner](./status.md#source-algorithm-return-reflexivity).
 `source_theorem_reflexivity_witness_file_candidate`: [API owner](./status.md#source-theorem-witness-file-candidate).
 `source_theorem_reflexivity_witness_draft_from_original`: [sole API owner](./status.md#original-source-witness-draft-acquisition).

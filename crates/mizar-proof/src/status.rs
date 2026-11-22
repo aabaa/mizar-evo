@@ -2304,6 +2304,104 @@ impl<'core> NativeE2BodyCorrectness<'core> {
     }
 }
 
+/// Accepts the five original direct-return obligations under current policy.
+/// Currentness remains caller-owned; raw request states and slices are unchanged.
+pub fn accept_source_algorithm_direct_return(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    policy: &VerifierPolicy,
+) -> Result<bool, String> {
+    use mizar_vc::{
+        generator::{
+            generate_source_algorithm_direct_return_requests,
+            generate_source_algorithm_postconditions,
+        },
+        vc_ir::{GenerationSchemaVersion, VcKind, VcSchemaVersion, VcSet},
+    };
+
+    let direct = generate_source_algorithm_direct_return_requests(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        &GenerationSchemaVersion::new("mizar-vc-generation-vc53-direct-return-v1"),
+        &VcSchemaVersion::new("mizar-vc-vcset-vc53-direct-return-v1"),
+    )?;
+    let returns = generate_source_algorithm_postconditions(
+        core,
+        snapshot,
+        &GenerationSchemaVersion::new("mizar-vc-generation-step5c14-return-v1"),
+        &VcSchemaVersion::new("mizar-vc-vcset-step5c14-return-v1"),
+    )?;
+    let select = |vcs: &VcSet, kind: VcKind| -> Result<VcId, String> {
+        let invalid = || "algorithm.proof.invalid_direct_return_request".to_owned();
+        let mut matches = vcs.vcs().iter().filter(|vc| vc.kind == kind);
+        let selected = matches.next().ok_or_else(invalid)?;
+        if matches.next().is_some() {
+            return Err(invalid());
+        }
+        Ok(selected.id)
+    };
+    let typing_id = select(&direct, VcKind::AlgorithmE1Typing)?;
+    let single_id = select(&direct, VcKind::AlgorithmE1SingleValuedness)?;
+    let inhabitation_id = select(&direct, VcKind::AlgorithmE1ResultInhabitation)?;
+    let normal_return_id = select(&direct, VcKind::AlgorithmE4NormalReturn)?;
+    let body_id = select(&returns, VcKind::AlgorithmPostcondition)?;
+
+    let typing =
+        NativeE1Typing::from_source(source, check, symbols, core, snapshot, typing_id, policy)?
+            .adopt_original_request(source, check, symbols, core, snapshot, typing_id, policy)?;
+    let single = NativeE1SingleValuedness::from_source(
+        source, check, symbols, core, snapshot, single_id, policy,
+    )?
+    .adopt_original_request(source, check, symbols, core, snapshot, single_id, policy)?;
+    let inhabitation = NativeE1Inhabitation::from_source(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        inhabitation_id,
+        policy,
+    )?
+    .adopt_original_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        inhabitation_id,
+        policy,
+    )?;
+    let normal_return = NativeE4NormalReturn::from_source(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        normal_return_id,
+        policy,
+    )?
+    .adopt_original_request(
+        source,
+        check,
+        symbols,
+        core,
+        snapshot,
+        normal_return_id,
+        policy,
+    )?;
+    let body = NativeE2BodyCorrectness::from_source(
+        source, check, symbols, core, snapshot, body_id, policy,
+    )?
+    .adopt_original_request(source, check, symbols, core, snapshot, body_id, policy)?;
+    Ok(typing && single && inhabitation && normal_return && body)
+}
+
 /// Checks one genuine source algorithm return goal with normal Kernel and policy.
 pub fn check_source_algorithm_return_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
