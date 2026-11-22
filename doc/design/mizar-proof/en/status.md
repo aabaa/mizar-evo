@@ -662,7 +662,8 @@ This passive caller identity grants no currentness, current-policy consumption/n
 ## Native caller E4 adoption
 
 `NativeUnaryCallerE4Existential::from_source` calls the unchanged [caller consumer](#caller-e4-current-policy-consumption) once, privately retaining the whole association and discarding the fingerprint. `adopt_original_request` first calls its unchanged authenticated `matches_source`; errors propagate and whole-request/descriptor or exact-arena mismatch returns false before policy checks. A match requires current Builtin eligibility and exact actual checker-schema agreement, using the caller consumer's refusal.
-True adopts only the original caller existential under the supplied current policy. Currentness remains caller-owned; no detached input, native identity, complete footprint/cache, E1/E2/whole acceptance, status, promotion/publication or owner-gated authority follows.
+True adopts only the original caller existential under the supplied current policy. Currentness remains caller-owned; no detached input, complete footprint/cache, E1/E2/whole acceptance, status, promotion/publication or owner-gated authority follows.
+`obligation_identity` takes adoption's six inputs and first calls unchanged adoption once; errors propagate and false returns None. On true it returns the retained association's unchanged [caller identity](#arena-local-caller-e4-association) on identical five source inputs, preserving caller hashes, domain, anchor and whole raw slice. Each call checks current policy; canonical equality across arenas grants no adoption or reuse authority.
 
 ## Unary child-request current-policy consumption
 

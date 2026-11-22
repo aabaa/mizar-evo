@@ -1768,7 +1768,7 @@ pub fn consume_source_unary_child_call_existential<'core>(
 }
 
 /// Native positive evidence for only the complete original caller E4 existential.
-/// It grants no native identity, generic evidence, status or reuse authority.
+/// It grants no generic evidence, status or reuse authority.
 pub struct NativeUnaryCallerE4Existential<'core> {
     association: SourceUnaryCallerE4Association<'core>,
 }
@@ -1814,6 +1814,30 @@ impl<'core> NativeUnaryCallerE4Existential<'core> {
             return Err("algorithm.proof.unary_caller_e4_policy_rejected".to_owned());
         }
         Ok(true)
+    }
+
+    /// Associates the unchanged caller identity only after adoption under current policy.
+    /// The whole raw slice grants no currentness, status or cache reuse authority.
+    pub fn obligation_identity(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<
+        Option<(
+            ProofObligationIdentity,
+            mizar_vc::dependency_slice::DependencySlice,
+        )>,
+        String,
+    > {
+        if !self.adopt_original_request(source, typed, symbols, core, request, policy)? {
+            return Ok(None);
+        }
+        self.association
+            .obligation_identity(source, typed, symbols, core, request)
     }
 }
 
