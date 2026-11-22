@@ -4,6 +4,9 @@
 
 Activation is authorized; deployed controls remain bootstrap/shadow until the
 [activation boundary](#activation-boundary) is satisfied.
+The 2026-11-22 owner decision abolishes shadow operation at activation;
+its 19:10 JST clarification authorizes production signer provisioning and live
+canary receipt-tag publication within the activation unit.
 Owner authority is the CI policy recorded by the orchestrator on 2026-11-21
 13:07 JST, supplied through the CI-RECEIPT-DESIGN dispatch and registration.
 Owner decisions `MIZAR-CI-RECEIPT-PROTOCOL-689` (2026-11-22 17:59:54 JST) and

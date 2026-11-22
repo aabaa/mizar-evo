@@ -4,7 +4,7 @@ Status: frozen scope; activation requires the live boundary below. Gate tier: fu
 Owner: orchestrator via [process priority](../../todo.md#development-process-improvement-priority).
 Test-gate owner: [mizar-test plan](../../mizar-test/en/00.crate_plan.md).
 Consumers: sealed integration, hosted CI and repository administrators.
-Authority: RESUME 2 dispatch and owner decisions `MIZAR-CI-RECEIPT-PROTOCOL-689`
+Authority: RESUME 3 dispatch and owner decisions `MIZAR-CI-RECEIPT-PROTOCOL-689`
 and `MIZAR-CI-RECEIPT-MODEL-V1-SCOPE` (2026-11-22, option 1).
 Owner requirements: [receipt model](../../ci_receipt_model.md), especially
 [custody](../../ci_receipt_model.md#local-gate-and-custody),
@@ -18,13 +18,16 @@ Classification: authorized CI policy expansion and deployment gap; no language-i
 ## Scope and order
 
 Revise the receipt model for all changes and only the protocol's every-push full-CI clause.
-Then execute live docs, trust-change, forgery and moved-head canaries before enforcement.
 Generate the production signer in `~/orchestration/ci-receipts/`, private mode 600;
 register only public key, generator/key identities and reviewed public policy pins.
+Then publish and execute live docs, trust-change, forgery and moved-head canaries
+before enforcement, under the 2026-11-22 activation/publication owner decision.
 Switch [CI](../../../../.github/workflows/ci.yml) once: enforcing `receipt-sanity`,
 remove observe-only shadow and per-push/PR full testing, retain scheduled full reconciliation.
-Configure required-check protection and verify it by readback. The orchestrator lands;
-this unit commits locally without pushing. Stop at any uncompletable step with evidence.
+Complete activation only after required-check protection is configured and read back.
+This unit may push
+the activation switch to main; other pushes follow orchestrator landing policy.
+Stop at any uncompletable step with evidence.
 Allowed implementation: existing verifier/policy, receipt tests and external custody tooling.
 Preserve non-test CI gates, exhaustive local tests, signing, exact-head binding,
 trusted independent controls, capture/inventory checks and bounded evidence verification.
