@@ -616,6 +616,10 @@ true が採用するのはその元 single-valuedness obligation のみ。curren
 `matches_source` は最初に全五入力から認証済み descriptor を再生成する。下位エラーを保持し、request と descriptor の全体一致、および保持した result の Core とポインタ一致する場合だけ true を返す。同内容の別 arena は false。private construction と不変データにより、切り離した result の constructor や Kernel 再検査なしで同一呼出しの対応を保持する。source/environment/filesystem currentness は呼出し側の責任。
 canonical identity/reuse、current-policy consumption、native adoption、caller E4 acceptance、evidence/status、promotion、publication、coverage credit は与えない。既存 unary object profile と下位 refusal は変更しない。
 
+## Unary child-request current-policy consumption
+
+`consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` は最初に既存の [association constructor](#arena-local-unary-child-request-association) を一度だけ呼び、下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_child_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出し側の責任。native adoption、canonical identity/reuse、caller E4 acceptance、evidence/status、広い credit は与えない。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。

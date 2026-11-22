@@ -648,6 +648,10 @@ True adopts only that original single-valuedness obligation. Caller-owned curren
 `matches_source` FIRST regenerates the authenticated existential descriptor on all five supplied inputs. Preserve upstream errors; return true only for whole request and descriptor equality and pointer-identical Core to the retained result. Equal cloned arenas return false. Private construction and immutable data preserve same-call checking without a detached-result constructor or another Kernel check. Source/environment/filesystem currentness remains caller-owned.
 This association grants no canonical identity/reuse, current-policy consumption, native adoption, caller E4 acceptance, evidence/status, promotion, publication or coverage credit. The existing unary object profile and lower-stage refusals remain unchanged.
 
+## Unary child-request current-policy consumption
+
+`consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` FIRST calls the unchanged [association constructor](#arena-local-unary-child-request-association) once, preserving errors. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema agreement with its actual Kernel result; otherwise return `algorithm.proof.unary_child_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically. Earlier success grants no authority; currentness remains caller-owned. No native adoption, canonical identity/reuse, caller E4 acceptance, evidence/status or broader credit follows.
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` returns original `ProofObligationIdentity`, whole raw `DependencySlice` and borrowed Kernel `AlgorithmReturnsExistentialCheck` atomically. First call the authentic VC original-existential result producer with the fixed direct-return schemas above, preserving errors. Regenerate the existing original identity on identical inputs and require equality with the whole descriptor.5 raw slice; mismatch uses `algorithm.proof.invalid_direct_return_request`.

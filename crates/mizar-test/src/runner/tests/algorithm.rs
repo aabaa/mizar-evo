@@ -13,6 +13,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         elaborator::lower_source_unary_child_call,
     };
     use mizar_session::{SourceAnchor, SourceRange};
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat as Format, VerifierPolicy as Policy},
+        status::consume_source_unary_child_call_existential as consume,
+    };
     for (callee, caller, formal, actual, flags, trivia) in [
         ("child", "caller", "a", "b", [false, false], " "),
         (
@@ -378,21 +382,57 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         let association = mizar_proof::status::SourceUnaryChildCallAssociation::from_source(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
+        let policy = Policy::default();
+        let (consumed, fingerprint) = consume(
+            &source, &typed, symbols, &core, &request, &policy,
+        ).unwrap();
+        assert_eq!(fingerprint, policy.policy_fingerprint());
         assert_eq!(checked_existential, existential);
         assert!(std::ptr::eq(retained.core(), &core));
         assert_eq!(retained.target(), (algorithm, flow, statement, (input.var, None), (*var, None)));
         assert_eq!(retained.witness(), request.actual);
         assert_eq!(retained.context(), [expected.1.1]);
-        for _ in 0..2 {
-            assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
-            assert_eq!(association.request(), &request);
-            assert_eq!(association.descriptor(), &existential);
-            let result = association.result();
-            assert!(std::ptr::eq(result.core(), &core));
-            assert_eq!(result.target(), retained.target());
-            assert_eq!(result.witness(), retained.witness());
-            assert_eq!(result.context(), retained.context());
-            assert_eq!(result.checker_schema_version(), retained.checker_schema_version());
+        let schema = retained.checker_schema_version();
+        for denied in [
+            policy.clone().with_kernel_evidence_formats([]),
+            policy.clone().with_kernel_evidence_formats([Format::FormulaSubstitution]),
+            policy.clone().with_checker_schema_version(schema - 1),
+            policy.clone().with_kernel_evidence_formats([Format::BuiltinKernelEvidence])
+                .with_checker_schema_version(schema + 1),
+        ] {
+            let denied_before = denied.clone();
+            assert_eq!(consume(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
+                "algorithm.proof.unary_child_policy_rejected");
+            assert_eq!(denied, denied_before);
+            assert_eq!(fingerprint, policy.policy_fingerprint());
+        }
+        for current_policy in [
+            policy.clone(),
+            policy.clone().with_kernel_evidence_formats([Format::BuiltinKernelEvidence]),
+            Policy::development(),
+            Policy::interactive(),
+            policy.clone().with_profile_id("unary-child-current"),
+            policy.clone().with_schema_version(policy.schema_version() + 1),
+        ] {
+            let policy_before = current_policy.clone();
+            for _ in 0..2 {
+                let (current, current_fingerprint) = consume(
+                    &source, &typed, symbols, &core, &request, &current_policy,
+                ).unwrap();
+                assert_eq!(current_fingerprint, current_policy.policy_fingerprint());
+                for product in [&association, &consumed, &current] {
+                    assert!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+                    assert_eq!(product.request(), &request);
+                    assert_eq!(product.descriptor(), &existential);
+                    let result = product.result();
+                    assert!(std::ptr::eq(result.core(), &core));
+                    assert_eq!(result.target(), retained.target());
+                    assert_eq!(result.witness(), retained.witness());
+                    assert_eq!(result.context(), retained.context());
+                    assert_eq!(result.checker_schema_version(), schema);
+                }
+            }
+            assert_eq!(current_policy, policy_before);
         }
         assert_eq!(mizar_vc::generator::generate_source_unary_child_call_existential_request(
             &source, &typed, symbols, &core, &request,
@@ -429,7 +469,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         generate_source_unary_child_call_existential_request as generate,
     };
     use mizar_kernel::checker::check_unary_child_returns_existential_result as kernel;
-    use mizar_proof::status::SourceUnaryChildCallAssociation as Association;
+    use mizar_proof::{
+        policy::VerifierPolicy as Policy,
+        status::{SourceUnaryChildCallAssociation as Association, consume_source_unary_child_call_existential as consume},
+    };
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
     let (source, nodes, collected, _) =
         source_registration_formula_inputs(text, "unary-child", "atomic", 0);
@@ -442,11 +485,23 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
     let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
     let association = Association::from_source(&source, &typed, symbols, &core, &request).unwrap();
+    let policy = Policy::default();
+    let denied = policy.clone().with_kernel_evidence_formats([]);
+    let policies_before = (policy.clone(), denied.clone());
+    let (consumed, fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let cloned_core = core.clone();
     assert_eq!(retain(&source, &typed, symbols, &cloned_core, &request).unwrap().0, genuine_existential);
     assert!(!association.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
     let cloned_association = Association::from_source(&source, &typed, symbols, &cloned_core, &request).unwrap();
     assert!(cloned_association.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
+    let (cloned_consumed, cloned_fingerprint) = consume(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
+    assert_eq!(cloned_fingerprint, policy.policy_fingerprint());
+    assert_eq!(cloned_consumed.request(), &request);
+    assert_eq!(cloned_consumed.descriptor(), &genuine_existential);
+    assert!(std::ptr::eq(cloned_consumed.result().core(), &cloned_core));
+    assert!(cloned_consumed.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
+    assert!(!cloned_consumed.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+    assert!(!consumed.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
     let target = retained.target();
     let binder = target.4.0;
     let callee = core.algorithms().get(request.callee).unwrap();
@@ -529,6 +584,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "existential request {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "association request {mutation}");
+        assert_eq!(consume(&source, &typed, symbols, &core, &changed, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer request {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert_eq!(changed, changed_before);
@@ -623,6 +679,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "existential Core {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
         assert_eq!(Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "association Core {mutation}");
+        assert_eq!(consume(&source, &typed, symbols, &changed, &request, &denied).err().unwrap(), "algorithms.unary_child.invalid_request", "consumer Core {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck Core {mutation}");
         if matches!(mutation, 0..=8 | 10 | 15..=16 | 19..=26) {
             assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
@@ -648,6 +705,14 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(other_association.descriptor(), &other_descriptor);
             assert!(other_association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
             assert!(!association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            let (other_consumed, other_fingerprint) = consume(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
+            assert_eq!(other_fingerprint, policy.policy_fingerprint());
+            assert_eq!(other_consumed.request(), &other_request);
+            assert_eq!(other_consumed.descriptor(), &other_descriptor);
+            assert!(std::ptr::eq(other_consumed.result().core(), &other_core));
+            assert!(other_consumed.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!other_consumed.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+            assert!(!consumed.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
         }
         for (s, t, e) in [
             (&other_source, &typed, symbols),
@@ -661,6 +726,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
             assert_eq!(Association::from_source(s, t, e, &core, &request).err().unwrap(), error);
+            assert_eq!(consume(s, t, e, &core, &request, &denied).err().unwrap(), error);
             assert_eq!(association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
         }
     }
@@ -679,23 +745,31 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(retain(&source, &forged, symbols, &core, &request).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
     let error = check(&source, symbols, &forged).unwrap_err();
     assert_eq!(Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
+    assert_eq!(consume(&source, &forged, symbols, &core, &request, &denied).err().unwrap(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
     let mut mismatched = request.clone();
     mismatched.caller = request.callee;
     assert_eq!(retain(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
     assert_eq!(Association::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
+    assert_eq!(consume(&source, &forged, symbols, &cloned_core, &mismatched, &denied).err().unwrap(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
-    assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
-    assert_eq!(association.request(), &request);
-    assert_eq!(association.descriptor(), &genuine_existential);
-    assert!(std::ptr::eq(association.result().core(), &core));
-    assert_eq!(association.result().target(), retained.target());
-    assert_eq!(association.result().witness(), retained.witness());
-    assert_eq!(association.result().context(), retained.context());
-    assert_eq!(association.result().checker_schema_version(), retained.checker_schema_version());
+    let (fresh, fresh_fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    assert_eq!(fresh_fingerprint, fingerprint);
+    assert_eq!(fingerprint, policy.policy_fingerprint());
+    for product in [&association, &consumed, &fresh] {
+        assert!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+        assert_eq!(product.request(), &request);
+        assert_eq!(product.descriptor(), &genuine_existential);
+        assert!(std::ptr::eq(product.result().core(), &core));
+        assert_eq!(product.result().target(), retained.target());
+        assert_eq!(product.result().witness(), retained.witness());
+        assert_eq!(product.result().context(), retained.context());
+        assert_eq!(product.result().checker_schema_version(), retained.checker_schema_version());
+    }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine_existential);
     assert_eq!(retain(&source, &typed, symbols, &core, &request).unwrap().0, genuine_existential);
+    assert_eq!((policy, denied), policies_before);
     assert_eq!((source, typed, symbols.clone(), core, request), before);
 }
 
@@ -717,6 +791,12 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let (existential, _) = mizar_vc::generator::check_source_unary_child_call_existential_result(
         &source, &typed, collected.env(), &core, &request,
     ).unwrap();
+    let policy = mizar_proof::policy::VerifierPolicy::default();
+    let (consumed, fingerprint) = mizar_proof::status::consume_source_unary_child_call_existential(
+        &source, &typed, collected.env(), &core, &request, &policy,
+    ).unwrap();
+    assert_eq!(consumed.descriptor(), &existential);
+    assert_eq!(fingerprint, policy.policy_fingerprint());
     assert_eq!(existential.2, request.actual);
     assert!(core.generated().is_empty() && core.proofs().is_empty() && core.obligation_seeds().is_empty());
     assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
@@ -748,6 +828,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     ).unwrap_err(), upstream);
     assert_eq!(mizar_vc::generator::check_source_unary_child_call_existential_result(
         &source, &typed, collected.env(), &core, &request,
+    ).err().unwrap(), upstream);
+    assert_eq!(mizar_proof::status::consume_source_unary_child_call_existential(
+        &source, &typed, collected.env(), &core, &request,
+        &policy.with_kernel_evidence_formats([]),
     ).err().unwrap(), upstream);
     assert!(
         mizar_vc::generator::generate_source_algorithm_direct_return_requests(

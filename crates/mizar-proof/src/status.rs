@@ -1583,6 +1583,28 @@ impl<'core> SourceUnaryChildCallAssociation<'core> {
     }
 }
 
+/// Consumes a freshly authenticated child association under the supplied current policy.
+/// Currentness remains caller-owned; this grants no adoption, status or reuse authority.
+pub fn consume_source_unary_child_call_existential<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    policy: &VerifierPolicy,
+) -> Result<(SourceUnaryChildCallAssociation<'core>, PolicyFingerprint), String> {
+    let association =
+        SourceUnaryChildCallAssociation::from_source(source, typed, symbols, core, request)?;
+    if !policy
+        .kernel_evidence_formats()
+        .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+        || policy.checker_schema_version() != association.result().checker_schema_version()
+    {
+        return Err("algorithm.proof.unary_child_policy_rejected".to_owned());
+    }
+    Ok((association, policy.policy_fingerprint()))
+}
+
 /// Associates the original E4 request identity and raw slice with its same-call Kernel result.
 /// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
 pub fn check_source_algorithm_e4_existential<'core>(
