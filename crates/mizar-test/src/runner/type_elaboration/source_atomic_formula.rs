@@ -1053,8 +1053,8 @@ impl ExactAtomicRoute {
                 let entry =
                     exact_symbol(symbols, &payload.predicate_symbol, SymbolKind::Predicate)?;
 
-                for ordinal in 0..2 {
-                    let head_row = generic_row(&payload.head_sites[ordinal])?;
+                for (ordinal, head_site) in payload.head_sites.iter().enumerate() {
+                    let head_row = generic_row(head_site)?;
                     predicate_heads.push(SourcePredicateHeadInput {
                         formula,
                         site: TypedSiteRef::Node(TypedNodeId::new(head_row.site().index())),

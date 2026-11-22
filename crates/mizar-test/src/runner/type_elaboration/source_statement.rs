@@ -18190,8 +18190,7 @@ fn task258b3_atomic_input(
         .collect();
     let mut edges = Vec::new();
     let mut requests = Vec::new();
-    for formula in 0..2 {
-        let first_term = extracted.atomic_term_starts[formula];
+    for (formula, &first_term) in extracted.atomic_term_starts.iter().enumerate() {
         for ordinal in 0..2 {
             let edge = SourceAtomicEdgeId::new(formula * 2 + ordinal);
             edges.push(SourceAtomicEdgeInput {

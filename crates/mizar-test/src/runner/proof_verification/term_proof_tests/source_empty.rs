@@ -551,7 +551,7 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
                         && checked.candidate_set.is_none()
                 );
                 assert_eq!(checked.terms.len(), 2);
-                for ordinal in 0..2 {
+                for (ordinal, checked_term) in checked.terms.iter().enumerate() {
                     let term_id = SourcePrimaryTermId::new(2 * id.index() + ordinal);
                     let term = primary.terms().get(term_id).unwrap();
                     let operand = ast.node(equality.children()[2 * ordinal]).unwrap().children[0];
@@ -559,7 +559,7 @@ fn source_empty_enumeration_witness_original_capture_retains_lower() -> Result<(
                         term.site().node(),
                         typed[&source.resolved_node_for(operand).unwrap()]
                     );
-                    assert_eq!(checked.terms[ordinal], *term.site());
+                    assert_eq!(checked_term, term.site());
                 }
             }
             for (index, ((_, edge), (_, request))) in atomic

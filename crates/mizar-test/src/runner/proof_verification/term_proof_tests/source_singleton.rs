@@ -590,7 +590,7 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
                     && checked.candidate_set.is_none()
             );
             assert_eq!(checked.terms.len(), 2);
-            for ordinal in 0..2 {
+            for (ordinal, checked_term) in checked.terms.iter().enumerate() {
                 let primary_id = SourcePrimaryTermId::new(if id.index() == 0 {
                     ordinal
                 } else {
@@ -602,7 +602,7 @@ fn source_singleton_enumeration_witness_original_capture_retains_lower() -> Resu
                     term.site().node(),
                     typed[&source.resolved_node_for(operand).unwrap()]
                 );
-                assert_eq!(checked.terms[ordinal], *term.site());
+                assert_eq!(checked_term, term.site());
             }
         }
         for (index, ((_, edge), (_, request))) in atomic
