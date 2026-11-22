@@ -39,7 +39,9 @@ algorithm/flow/statement/input/result、local definition のない不変 paramet
 実際の `Var(a)` witness と所有する単一 Return、role/guard とエラー等の不在を照合する。
 context は parameter guard と同一で `object(a)` に解決できなければならない。
 共有 Core CFG の再構築前に Core 全体の term/formula-reference cycle を反復検査で拒否する。
-量化子の body と binder type guard を含み、非巡回の共有 formula は許容する。汎用の
+量化子の body と binder type guard を含む。If の then/else body、While body、
+Match arm を辿る statement-containment cycle も拒否し、非巡回の共有は許容する。
+For* metadata と正当な CFG backedge は対象外とする。汎用の
 malformed-Core/cycle safety は延期する。map と flow owner を照合して boolean を返す。
 実行値は前提を供給しない。
 元の関係/context の認証は VC 所有。E4 存在導入、意味的 environment 対応、Proof
