@@ -621,13 +621,15 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` は変更しない VC caller object-inhabitation checker を一度呼び、エラーを保持する。private fields は request 全体、context/formula/witness tuple 全体、同一呼出しの借用 `ObjectInhabitationCheck` を保持し、不変の `request`、`descriptor`、`result` getter で返す。
 `matches_source` は最初に認証済み caller E1 inhabitation request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した構築や Kernel 再検査はない。currentness は呼出側の責任。
 `obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを伝播し、不一致なら None を返す。一致時は同一引数から [E1 canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e1-inhabitation-canonical-inputs) を得る。全小文字 VC hash に `source-unary-caller-e1-inhabitation-candidate-anchor-v1:` を前置し、通常の五文字列 obligation object が anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e1-inhabitation/obligation` v1.0 で結ぶ。Some(既存 ProofObligationIdentity, 保守的 slice 全体) を返し、field・policy 入力・Kernel 再検査は追加しない。
-arena 間 canonical 一致は association を認可しない。native E1 identity、typing/single-valuedness checking、E2、whole acceptance、status、complete footprints/cache、promotion/publication は与えない。既存 unary profile と child/E4/direct-return/raw unknown/incomplete/cache-miss 境界を保つ。
+arena 間 canonical 一致は association を認可しない。typing/single-valuedness checking、E2、whole acceptance、status、complete footprints/cache、promotion/publication は与えない。既存 unary profile と child/E4/direct-return/raw unknown/incomplete/cache-miss 境界を保つ。
 
 ## Native caller E1 inhabitation adoption
 
 `NativeUnaryCallerE1Inhabitation::from_source(source, typed, symbols, core, request, policy)` は変更しない [association 全体](#arena-local-caller-e1-inhabitation-association) を一度構築し、保持する実際の Kernel result を既存の [object policy evaluator](./policy.md#bounded-native-positive-result-policy) に渡す。保持するのは association のみで fingerprint は破棄する。認証・checker エラーは既存の `algorithm.proof.native_e1_policy_rejected` より先に返す。
 `adopt_original_request` は最初に既存の `matches_source` を呼ぶ。認証エラーを保持し、request/tuple 全体または Core arena 同一性が不一致なら policy 検査前に false を返す。一致時は毎回、渡された現行 policy による Builtin 有効性と実際の checker-schema の完全一致を要求する。currentness は呼出側の責任で、採用時に Kernel 再検査はない。
-許可するのは元の caller object-inhabitation obligation のみ。passive identity、typing/single-valuedness、E2、全体 acceptance、status、完全 footprint/cache、promotion/publication は含まない。child/E4/direct-return と raw unknown/incomplete/cache-miss の境界は変更しない。
+許可するのは元の caller object-inhabitation obligation のみ。typing/single-valuedness、E2、全体 acceptance、status、完全 footprint/cache、promotion/publication は含まない。child/E4/direct-return と raw unknown/incomplete/cache-miss の境界は変更しない。
+
+`obligation_identity` は採用と同じ六入力で、最初に既存の採用を一度呼ぶ。エラーを保持し、false なら None を返す。true の場合のみ、同じ五つの source 入力で保持 association の既存 [E1 identity](#arena-local-caller-e1-inhabitation-association) と raw slice 全体を返し、E1 domain・hash・anchor を保持する。毎回現行 policy を検査し、arena 間の canonical equality は採用・再利用の権限を与えない。
 
 ## Arena-local caller E4 association
 

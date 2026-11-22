@@ -140,6 +140,12 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
             native.obligation_identity(&source, &typed, symbols, &core, &request, &policy)
         }.unwrap().unwrap();
         if inhabitation_profile {
+            let native_e1 = mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(
+                &source, &typed, symbols, &core, &request, &policy,
+            ).unwrap();
+            for _ in 0..2 {
+                assert_eq!(native_e1.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), (identity.clone(), slice.clone()));
+            }
             assert_ne!(Some(&identity), child_identity.as_ref());
             assert_ne!(Some(&identity), caller_e4_identity.as_ref());
         } else if caller_profile {
@@ -229,9 +235,11 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
         let e1_identity = inhabitation.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
         assert_eq!(e1_identity.1, e1_raw.3);
         let native_caller = NativeUnaryCallerE4Existential::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+        let native_e1 = mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
         for _ in 0..2 {
             assert_eq!(canonical_caller_e1(&source, &typed, symbols, &core, &request).unwrap(), e1_raw);
             assert_eq!(inhabitation.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), e1_identity);
+            assert_eq!(native_e1.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), e1_identity);
             assert_eq!(canonical_caller_e4(&source, &typed, symbols, &core, &request).unwrap(), caller_raw);
             assert_eq!(caller.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), caller_identity);
             assert_eq!(native_caller.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), caller_identity);
@@ -681,6 +689,7 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             &source, &typed, symbols, &core, &request, &Policy::default(),
         ).unwrap();
         assert!(native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, &Policy::default()).unwrap());
+        assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &request, &Policy::default()).unwrap().unwrap(), e1_identity);
         let kernel_inhabited = mizar_kernel::checker::check_object_inhabitation_result(
             &core, (*var, *var, "object"), request.actual, expected.1.1, &[expected.1.1],
         ).unwrap();
@@ -780,6 +789,8 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 "algorithm.proof.native_e1_policy_rejected");
             assert_eq!(native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, &denied).unwrap_err(),
                 "algorithm.proof.native_e1_policy_rejected");
+            assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &request, &denied).unwrap_err(),
+                "algorithm.proof.native_e1_policy_rejected");
             assert_eq!(consume(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_child_policy_rejected");
             assert_eq!(consume_caller(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
@@ -832,6 +843,7 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 let current_native_inhabitation = NativeInhabitation::from_source(&source, &typed, symbols, &core, &request, &current_policy).unwrap();
                 for product in [&native_inhabitation, &current_native_inhabitation] {
                     assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &current_policy).unwrap());
+                    assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request, &current_policy).unwrap().unwrap(), e1_identity);
                 }
                 let current_native_caller = NativeCaller::from_source(&source, &typed, symbols, &core, &request, &current_policy).unwrap();
                 for product in [&native_caller, &current_native_caller] {
@@ -1002,6 +1014,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let native = Native::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let native_caller = NativeCaller::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let native_inhabitation = NativeInhabitation::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), genuine_e1_identity);
     let (consumed, fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let (consumed_caller, caller_fingerprint) = consume_caller(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let genuine_caller_identity = caller_association.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
@@ -1049,12 +1062,15 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(!native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &denied).unwrap());
     let cloned_native_inhabitation = NativeInhabitation::from_source(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
     assert!(cloned_native_inhabitation.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
+    assert_eq!(cloned_native_inhabitation.obligation_identity(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap().unwrap(), genuine_e1_identity);
     let cloned_native_caller = NativeCaller::from_source(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
     assert!(cloned_native_caller.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
     assert_eq!(cloned_native_caller.obligation_identity(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap().unwrap(), genuine_caller_identity);
     for current_policy in [&policy, &denied] {
         assert!(!native_inhabitation.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap());
         assert!(!cloned_native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
+        assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap(), None);
+        assert_eq!(cloned_native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &request, current_policy).unwrap(), None);
         assert!(!native_caller.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap());
         assert!(!cloned_native_caller.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
         assert_eq!(native_caller.obligation_identity(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap(), None);
@@ -1212,6 +1228,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(native_caller.adopt_original_request(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
+        assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(native_caller.obligation_identity(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(native.obligation_identity(&source, &typed, symbols, &core, &changed, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption request {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
@@ -1333,6 +1350,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(native.adopt_original_request(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(native_caller.adopt_original_request(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(native_inhabitation.adopt_original_request(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
+        assert_eq!(native_inhabitation.obligation_identity(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(native_caller.obligation_identity(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(native.obligation_identity(&source, &typed, symbols, &changed, &request, &denied).unwrap_err(), "algorithms.unary_child.invalid_request", "adoption Core {mutation}");
         assert_eq!(association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck Core {mutation}");
@@ -1378,10 +1396,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             for current_policy in [&policy, &denied] {
                 assert!(!native_inhabitation.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
                 assert!(!other_native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
+                assert_eq!(native_inhabitation.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap(), None);
+                assert_eq!(other_native_inhabitation.obligation_identity(&source, &typed, symbols, &core, &request, current_policy).unwrap(), None);
             }
             let other_inhabitation = InhabitationAssociation::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_e1_raw = canonical_caller_e1(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_e1_identity = other_inhabitation.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().unwrap();
+            assert_eq!(other_native_inhabitation.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap().unwrap(), other_e1_identity);
             assert_eq!(other_e1_identity.1, other_e1_raw.3);
             assert_ne!(other_e1_identity.0, genuine_e1_identity.0);
             assert_eq!(inhabitation_association.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), None);
@@ -1481,6 +1502,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(native.adopt_original_request(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(native_caller.adopt_original_request(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(native_inhabitation.adopt_original_request(s, t, e, &core, &request, &denied).unwrap_err(), error);
+            assert_eq!(native_inhabitation.obligation_identity(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(native_caller.obligation_identity(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(native.obligation_identity(s, t, e, &core, &request, &denied).unwrap_err(), error);
             assert_eq!(association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
@@ -1522,6 +1544,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(native.adopt_original_request(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(native_caller.adopt_original_request(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(native_inhabitation.adopt_original_request(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
+    assert_eq!(native_inhabitation.obligation_identity(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(native_caller.obligation_identity(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(native.obligation_identity(&source, &forged, symbols, &core, &request, &denied).unwrap_err(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
@@ -1547,6 +1570,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(native.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(native_caller.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(native_inhabitation.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
+    assert_eq!(native_inhabitation.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(native_caller.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(native.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched, &denied).unwrap_err(), error);
     assert_eq!(canonical_unary_child(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
@@ -1557,6 +1581,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let fresh_native_inhabitation = NativeInhabitation::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     for product in [&native_inhabitation, &fresh_native_inhabitation] {
         assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+        assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), genuine_e1_identity);
     }
     let fresh_native_caller = NativeCaller::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     for product in [&native_caller, &fresh_native_caller] {
@@ -1666,6 +1691,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         &source, &typed, collected.env(), &core, &request, &policy,
     ).unwrap();
     assert!(native_inhabitation.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+    assert_eq!(native_inhabitation.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), e1_identity);
     let native_caller = mizar_proof::status::NativeUnaryCallerE4Existential::from_source(
         &source, &typed, collected.env(), &core, &request, &policy,
     ).unwrap();
@@ -1684,6 +1710,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     ).err().unwrap(), "algorithm.proof.unary_caller_e4_policy_rejected");
     assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([])).unwrap_err(), "algorithm.proof.unary_child_policy_rejected");
     assert_eq!(native_caller.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([])).unwrap_err(), "algorithm.proof.unary_caller_e4_policy_rejected");
+    assert_eq!(native_inhabitation.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([])).unwrap_err(), "algorithm.proof.native_e1_policy_rejected");
     assert_eq!(caller_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), caller_identity);
     assert_eq!(inhabitation_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), e1_identity);
     let (consumed, fingerprint) = mizar_proof::status::consume_source_unary_child_call_existential(
@@ -1729,6 +1756,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         &source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([]),
     ).err().unwrap(), upstream);
     assert_eq!(native_inhabitation.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([])).unwrap_err(), upstream);
+    assert_eq!(native_inhabitation.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([])).unwrap_err(), upstream);
     assert_eq!(mizar_proof::status::NativeUnaryCallerE4Existential::from_source(
         &source, &typed, collected.env(), &core, &request, &policy.clone().with_kernel_evidence_formats([]),
     ).err().unwrap(), upstream);
