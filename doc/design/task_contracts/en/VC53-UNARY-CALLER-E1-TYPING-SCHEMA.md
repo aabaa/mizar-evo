@@ -1,0 +1,26 @@
+# Task VC53-UNARY-CALLER-E1-TYPING-SCHEMA: caller typing schema handoff
+Canonical language: English; [Japanese pointer](../ja/VC53-UNARY-CALLER-E1-TYPING-SCHEMA.md).
+Status: frozen bounded schema reporting. Tier: full; new public APIs fail pattern eligibility.
+Owners: [Kernel](../../mizar-kernel/en/00.crate_plan.md), [VC](../../mizar-vc/en/00.crate_plan.md). Consumer: mizar-test.
+Dependencies: [Kernel caller typing](VC53-UNARY-CALLER-E1-TYPING-KERNEL.md), [fresh VC typing check](VC53-UNARY-CALLER-E1-TYPING-CHECK.md), [passive typing identity](VC53-PROOF-CALLER-E1-TYPING-IDENTITY.md).
+Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1 E1](../../../spec/en/20.algorithm_and_verification.md).
+Invariants: [Kernel caller rule](../../mizar-kernel/en/checker.md#bounded-unary-caller-e1-typing), [authenticated VC request](../../mizar-vc/en/generator.md#bounded-unary-caller-e1-typing-request), [raw dependency ownership](../../mizar-vc/en/dependency_slice.md).
+Gap: source_drift/test_gap; local caller typing and authenticated checking exist without success-only schema reporting. Existing specification fixes typing; no language-intent change or external prerequisite.
+
+## Frozen design and boundaries
+Add Kernel `check_unary_caller_return_typing_schema` with the identical seven inputs as the unchanged boolean rule. Invoke that rule once; return Kernel-owned `Some(1_u16)` only on true, otherwise `None`. A scalar reports the checked rule schema, with no opaque result or new type, holder, field, helper or parallel representation.
+Add VC `check_source_unary_child_call_caller_e1_typing_request_with_schema(source, typed, symbols, core, request)` returning `Result<((LocalContext, [VcGeneratedFormula; 4]), u16), String>`. First invoke the unchanged authenticated typing-request producer once on those identical inputs, preserving every upstream error. Project the exact caller target, original declared fresh binder, atomic object conclusion, sole original guard and rebuilt callee flow. Invoke the Kernel schema API once; return the whole unchanged four-row tuple and its actual same-call schema only on success. Retain `algorithms.unary_child.invalid_caller_e4_request` for local refusal. Never stamp or accept an externally requested schema.
+Keep the old VC checking signature and behavior through delegation to this API, discarding only the scalar. No duplicate authentication or Kernel check. Lower-stage producers/checkers and direct-return/child/E4/inhabitation routes remain unchanged.
+The proposition remains only `forall r. returns_caller(actual,r) -> object(r)` under the original caller object-input guard. No returns/requires/ensures/equality context premise, evidence, policy eligibility, native adoption or semantic credit is added. Preserve canonical identity, explicit footprint/evidence unknowns and IncompleteUncacheable/cache-miss states.
+Exclude Proof typing-schema association, policy/native handling, single-valuedness checking, E2, whole acceptance/status/currentness, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope. No language-intent, diagnostic, spec/.miz/expectation/trace/audit-status or AGENTS/protocol edits.
+Files: existing Kernel checker.rs, VC generator.rs, runner/tests/algorithm.rs and paired owner checker/generator/plan documents, plus this contract. Audit coverage/owner/deferral unchanged.
+
+## Test matrix and exit
+Cap: four existing genuine-fixture families; confirm one successful independent four-row setup before expanding, with no new shared fixture.
+1. Existing independent typing oracle: Kernel boolean/schema success parity (`Some(1)`), VC schema handoff equals the whole unchanged tuple and actual Kernel schema; old checking parity, repeat determinism and input/product purity without external child/E4 evidence.
+2. Genuine renames/trivia/equal spellings and optional terminating flags retain success; cloned equal Core checks independently with the same schema and tuple. Passive same-arena identity rules remain unchanged.
+3. Extend existing complete request/Core and Kernel projection/binder/conclusion/context/flow drift controls with boolean/schema refusal parity. Calibrated foreign/stale/forged source/typed/environment and combined-error cases return the exact upstream producer error before local checks; authentic changed source checks only with its own inputs; original recovers.
+4. Existing direct-return/child/E4/inhabitation/native/policy and raw unknown/incomplete/cache-miss boundaries remain unchanged. Unsupported direct-return source refuses the caller schema route, and local success supplies no later authority.
+Require independent specification/test-intent/trust, sufficiency, precision/trust, removable-only volume, source/docs/EN-JA and final quality reviews.
+Run fmt, all-target/all-feature Clippy -D warnings, both lint_policy suites including links/fragments, Kernel/VC/Proof owner groups, algorithm/source_algorithm regressions and short proof-verification E2E. Changed schema/typing/authentication matrices run; unchanged heavy evidence/policy/cache/aggregate-acceptance/edit-versus-clean defer to Muse sealed integration. Full cargo test only on cadence; lane has no full/push trigger.
+Exit: success-only caller typing schema reporting and authenticated same-call tuple/schema handoff, preserving every excluded authority.
