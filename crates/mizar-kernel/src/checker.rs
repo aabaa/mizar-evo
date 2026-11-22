@@ -1942,6 +1942,40 @@ pub fn check_unary_caller_return_typing(
             .is_some_and(|flow| flow.algorithm == request.caller)
 }
 
+/// Reports the Kernel-owned caller typing schema only after checking these inputs.
+/// The scalar grants no Proof policy eligibility or adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original caller typing projections without a single-use representation"
+)]
+pub fn check_unary_caller_return_typing_schema(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: ((CoreVarId, Option<CoreAlgorithmStmtId>), &str),
+    context: &[CoreFormulaId],
+) -> Option<u16> {
+    check_unary_caller_return_typing(
+        core,
+        request,
+        callee_flow,
+        target,
+        binder,
+        conclusion,
+        context,
+    )
+    .then_some(1)
+}
+
 /// A checked `exists r.object(r)` under the retained Core context.
 /// Construction is private and performs bounded existential introduction.
 pub struct ObjectInhabitationCheck<'core> {

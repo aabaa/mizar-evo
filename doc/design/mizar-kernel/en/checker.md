@@ -117,7 +117,8 @@ Proof identity/policy/adoption, single-valuedness or broader credit follows from
 ## Bounded Unary Caller E1 Typing
 
 `check_unary_caller_return_typing(core, request, callee_flow, target, binder, conclusion, context)` returns a boolean for `forall r. returns_caller(actual,r) implies object(r)` under only the original caller object guard. It reuses unchanged unary-child validation for both exact sole bodies, guards, request/slot joins, fresh binder and global cycle checks, then matches the rebuilt caller CFG/Return and exact binder/object conclusion.
-Every child return is its immutable formal instantiated by the actual parameter; the caller returns exactly that child's result (§20.1.2, §20.2.6). This fixes the type of every returned result independently of E4 existence. No returns/requires/ensures/equality premise is installed. The callee flow is checked locally; source authentication remains VC-owned. No evidence holder, schema, Proof authority, single-valuedness or later acceptance credit follows. The direct-return rule is unchanged.
+Every child return is its immutable formal instantiated by the actual parameter; the caller returns exactly that child's result (§20.1.2, §20.2.6). This fixes the type of every returned result independently of E4 existence. No returns/requires/ensures/equality premise is installed. The callee flow is checked locally; source authentication remains VC-owned. No evidence holder, Proof authority, single-valuedness or later acceptance credit follows. The direct-return rule is unchanged.
+`check_unary_caller_return_typing_schema` takes the identical inputs and calls that unchanged boolean rule once; only success returns Kernel-owned `Some(1_u16)`, otherwise `None`. The scalar reports the checked rule schema without Proof schema association, policy eligibility or native adoption.
 
 ## Bounded Original E1 Single-Valuedness
 

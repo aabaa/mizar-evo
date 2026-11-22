@@ -128,6 +128,7 @@ Covered top-level public items:
 - `check_algorithm_returns_existential_result`
 - `check_unary_child_returns_existential_result`
 - `check_unary_caller_return_typing`
+- `check_unary_caller_return_typing_schema`
 - `check_unary_caller_returns_existential_result`
 - `KernelCheckInput`
 - `KernelEvidenceCheckInput`

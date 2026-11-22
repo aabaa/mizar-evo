@@ -13,7 +13,7 @@ Add VC `check_source_unary_child_call_caller_e1_typing_request_with_schema(sourc
 Keep the old VC checking signature and behavior through delegation to this API, discarding only the scalar. No duplicate authentication or Kernel check. Lower-stage producers/checkers and direct-return/child/E4/inhabitation routes remain unchanged.
 The proposition remains only `forall r. returns_caller(actual,r) -> object(r)` under the original caller object-input guard. No returns/requires/ensures/equality context premise, evidence, policy eligibility, native adoption or semantic credit is added. Preserve canonical identity, explicit footprint/evidence unknowns and IncompleteUncacheable/cache-miss states.
 Exclude Proof typing-schema association, policy/native handling, single-valuedness checking, E2, whole acceptance/status/currentness, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope. No language-intent, diagnostic, spec/.miz/expectation/trace/audit-status or AGENTS/protocol edits.
-Files: existing Kernel checker.rs, VC generator.rs, runner/tests/algorithm.rs and paired owner checker/generator/plan documents, plus this contract. Audit coverage/owner/deferral unchanged.
+Files: existing Kernel checker.rs, VC generator.rs, runner/tests/algorithm.rs and paired owner checker/generator/plan/source-inventory documents, plus this contract. Audit coverage/owner/deferral unchanged.
 
 ## Test matrix and exit
 Cap: four existing genuine-fixture families; confirm one successful independent four-row setup before expanding, with no new shared fixture.

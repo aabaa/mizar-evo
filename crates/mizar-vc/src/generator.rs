@@ -3140,6 +3140,21 @@ pub fn check_source_unary_child_call_caller_e1_typing_request(
     core: &mizar_core::core_ir::CoreIr,
     request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
 ) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    check_source_unary_child_call_caller_e1_typing_request_with_schema(
+        source, typed, symbols, core, request,
+    )
+    .map(|(descriptor, _)| descriptor)
+}
+
+/// Authenticates caller typing and reports the unchanged request and same-call schema.
+/// This scalar grants no Proof policy eligibility or adoption.
+pub fn check_source_unary_child_call_caller_e1_typing_request_with_schema(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<((LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), u16), String> {
     use crate::vc_ir::VcGeneratedFormulaShape as Shape;
 
     let descriptor = generate_source_unary_child_call_caller_e1_typing_request(
@@ -3168,7 +3183,7 @@ pub fn check_source_unary_child_call_caller_e1_typing_request(
     };
     let cfg = mizar_core::control_flow::build_control_flow_ir(core);
     let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
-    if !mizar_kernel::checker::check_unary_caller_return_typing(
+    let checker_schema = mizar_kernel::checker::check_unary_caller_return_typing_schema(
         core,
         request,
         callee_flow,
@@ -3182,10 +3197,9 @@ pub fn check_source_unary_child_call_caller_e1_typing_request(
         binder,
         ((subject.var, subject.definition), ty.as_str()),
         &[guard],
-    ) {
-        return Err(invalid());
-    }
-    Ok(descriptor)
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checker_schema))
 }
 
 /// Checks the freshly authenticated child existential and retains its exact request.
