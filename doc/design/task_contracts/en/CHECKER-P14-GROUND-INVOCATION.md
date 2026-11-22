@@ -1,6 +1,6 @@
 # Task CHECKER-P14-GROUND-INVOCATION: Typed ground invocation
 Canonical language: English; [Japanese pointer](../ja/CHECKER-P14-GROUND-INVOCATION.md).
-Status: frozen for implementation. Tier: full (new authenticated invocation seam).
+Status: implemented for the bounded ground profile. Tier: full (new authenticated invocation seam).
 Owner: [Checker plan](../../mizar-checker/en/00.crate_plan.md); [TODO](../../mizar-checker/en/todo.md).
 Consumer: [R4 loader join](../../mizar-vc/en/mvm_executor.md#proposed-entry-output-and-owner-boundary-no-new-public-api).
 Dependency: [P7 checked selection](CHECKER-P7-SELECTED-CALLS.md).

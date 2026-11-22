@@ -3034,6 +3034,7 @@ Known builtin set actual と実際に認証された structure parameter の via
 
 ### Selected direct-call dependencies
 `check_source_algorithm_call_targets(source, symbols, typed)` は中立ソース射影の完全な対応を認証し、通常 definiens の参照、algorithm 本体の application、元 synonym 宣言の map を別々に返す。`SymbolRef` は実際の使用位置または宣言の range を保持する。
+[Ground profile](#typed-ground-invocations) は明示的な単純 object 署名の algorithm に、順序付き数詞実引数の選択を追加する。
 名前・scope・宣言同一性・依存および group graph は Resolver が所有する。private `source_overload` 処理は既存の normalization、collection、expansion、viability、specificity、selection 段階で検査済み選択を行う。候補一つでも実引数の型 evidence を必要とする。
 初期 profile は builtin set/object signature と definition parameter の実引数を持つ同一 module の単項直接呼出しであり、locus の全単射を検査した直接 synonym chain を含む。overload、local binder、reserve/import-alias lookup、template、属性型、変換、修飾・import callee は未選択のままとし、不正な source/environment/typed 対応は原子的に拒否する。
 test consumer は参照・application の各 map と元 target link を既存 Resolver の依存・再帰 group API に渡す。本体の選択が不足すれば group は未確定のままである。map が示すのは依存同一性だけであり、以下の algorithm 型 seal、一般的な呼出し lower、証明・停止性・昇格・循環の受理とは独立する。

@@ -16,7 +16,7 @@ use mizar_resolve::{
     resolved_ast::{ModuleId, NameResolution, ReferenceSite, ResolvedNodeId, SurfaceResolvedArena},
 };
 use mizar_session::{SourceAnchor, SourceId};
-use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind as K};
+use mizar_syntax::{SurfaceNodeId, SurfaceNodeKind as K, SurfaceTokenKind};
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
@@ -165,6 +165,18 @@ pub(crate) fn select_algorithm_calls(
     for (id, _) in source
         .arena()
         .iter()
+        .filter(|(id, _)| crate::type_checker::source_ground_numeral(source, *id))
+    {
+        expressions.push(TypeExpressionInput::new(
+            site(id),
+            range(id)?,
+            "object",
+            TypeHeadInput::BuiltinObject,
+        ));
+    }
+    for (id, _) in source
+        .arena()
+        .iter()
         .filter(|(_, n)| n.kind() == &K::TypeExpression)
     {
         let tokens = leaves(id)?;
@@ -238,10 +250,10 @@ pub(crate) fn select_algorithm_calls(
         let [segment] = matching.as_slice() else {
             return None;
         };
-        let [_, _, ty] = node(*segment).ok()?.children() else {
+        let [_, .., keyword, ty] = node(*segment).ok()?.children() else {
             return None;
         };
-        Some(*ty)
+        matches!(text(*keyword), Some("be" | "being")).then_some(*ty)
     };
     let mut declarations = Vec::new();
     for entry in symbols.symbols().iter() {
@@ -313,11 +325,11 @@ pub(crate) fn select_algorithm_calls(
             .collect())
     };
     let select = |id: ResolvedNodeId,
-                  argument: ResolvedNodeId,
+                  arguments: Vec<ResolvedNodeId>,
                   entry: &SymbolEntry,
-                  parameter,
+                  parameters: Vec<_>,
                   result,
-                  actual|
+                  actuals: Vec<_>|
      -> Result<Option<SymbolRef>, String> {
         let key = OverloadSiteKey::new(format!("source-call:{}", id.index()));
         let collection = OverloadCollectionOutput::collect(
@@ -327,7 +339,7 @@ pub(crate) fn select_algorithm_calls(
                 source_range: range(id)?,
                 kind: OverloadSiteKind::FunctorApplication,
                 name: OverloadNameKey::new(entry.primary_spelling()),
-                arguments: vec![site(argument)],
+                arguments: arguments.into_iter().map(site).collect(),
                 expected: None,
                 source_qua: Vec::new(),
                 recovery: OverloadSiteRecovery::Normal,
@@ -338,7 +350,7 @@ pub(crate) fn select_algorithm_calls(
                 ordinary_root: entry.symbol().clone(),
                 // Callable engine role only; this does not lower or promote an algorithm.
                 declaration_kind: CandidateDeclarationKind::Functor,
-                parameters: vec![parameter],
+                parameters,
                 result: Some(result),
                 origin: CandidateOrigin::Ordinary,
                 template: None,
@@ -359,7 +371,10 @@ pub(crate) fn select_algorithm_calls(
             &expansion,
             vec![CandidateViabilityInput {
                 candidate: OverloadCandidateId::new(0),
-                arguments: vec![ArgumentViabilityEvidence::Exact { actual }],
+                arguments: actuals
+                    .into_iter()
+                    .map(|actual| ArgumentViabilityEvidence::Exact { actual })
+                    .collect(),
             }],
         );
         let graph = SpecificityGraphOutput::build(&viability, Vec::new());
@@ -401,15 +416,30 @@ pub(crate) fn select_algorithm_calls(
             continue;
         };
         let tokens = leaves(*pattern)?;
-        let formal = match (entry.kind(), tokens.as_slice()) {
-            (SymbolKind::Algorithm, [open, formal, close])
-            | (SymbolKind::Functor, [_, open, formal, close])
-                if text(*open) == Some("(") && text(*close) == Some(")") =>
-            {
-                *formal
-            }
-            _ => continue,
+        let tokens = if entry.kind() == SymbolKind::Functor {
+            tokens.get(1..).unwrap_or_default()
+        } else {
+            &tokens[..]
         };
+        let [open, formals @ .., close] = tokens else {
+            continue;
+        };
+        if text(*open) != Some("(") || text(*close) != Some(")") || formals.is_empty()
+            || formals.len() % 2 == 0 || formals.iter().enumerate().any(|(index, formal)| {
+                if index % 2 == 1 { text(*formal) != Some(",") } else {
+                    !node(*formal).is_ok_and(|n| matches!(n.kind(), K::Token(t) if t.kind == SurfaceTokenKind::Identifier))
+                }
+            }) { continue; }
+        let formals: Vec<_> = formals.iter().step_by(2).copied().collect();
+        if formals
+            .iter()
+            .map(|id| text(*id))
+            .collect::<BTreeSet<_>>()
+            .len()
+            != formals.len()
+        {
+            continue;
+        }
         let Some(result) = node(*id)?
             .children()
             .iter()
@@ -418,8 +448,12 @@ pub(crate) fn select_algorithm_calls(
         else {
             continue;
         };
-        if let Some(ty) = parameter(*id, formal).and_then(normalized) {
-            signatures.insert(entry.symbol().clone(), (ty, result));
+        if let Some(types) = formals
+            .iter()
+            .map(|formal| parameter(*id, *formal).and_then(normalized))
+            .collect::<Option<Vec<_>>>()
+        {
+            signatures.insert(entry.symbol().clone(), (types, result));
         }
     }
     for (id, entry, _) in &declarations {
@@ -449,15 +483,17 @@ pub(crate) fn select_algorithm_calls(
         let [target] = targets.as_slice() else {
             continue;
         };
-        let Some((ty, result)) = signatures.get(target.symbol()).copied() else {
+        let Some((types, result)) = signatures.get(target.symbol()) else {
             continue;
         };
+        let [ty] = types.as_slice() else { continue };
+        let (ty, result) = (*ty, *result);
         if parameter(*id, *formal).and_then(normalized) != Some(ty) {
             continue;
         }
-        if let Some(original) = select(*id, *actual, target, ty, result, ty)? {
+        if let Some(original) = select(*id, vec![*actual], target, vec![ty], result, vec![ty])? {
             originals.insert(surface(*id), original);
-            signatures.insert(entry.symbol().clone(), (ty, result));
+            signatures.insert(entry.symbol().clone(), (vec![ty], result));
         }
     }
     let (inventory, candidates) =
@@ -467,11 +503,22 @@ pub(crate) fn select_algorithm_calls(
         .iter()
         .filter(|(_, n)| n.kind() == &K::ApplicationTerm)
     {
-        let [reference, _, actual, _] = current.children() else {
+        let [reference, open, actuals @ .., close] = current.children() else {
             continue;
         };
-        let argument = *actual;
-        let (Some(callee), Some(actual)) = (direct(*reference), direct(argument)) else {
+        if text(*open) != Some("(")
+            || text(*close) != Some(")")
+            || actuals.is_empty()
+            || actuals.len() % 2 == 0
+            || actuals
+                .iter()
+                .enumerate()
+                .any(|(i, id)| i % 2 == 1 && text(*id) != Some(","))
+        {
+            continue;
+        }
+        let arguments: Vec<_> = actuals.iter().step_by(2).copied().collect();
+        let Some(callee) = direct(*reference) else {
             continue;
         };
         let (owner, anchor, is_body, targets) = if let Some(owner) = inventory.iter().find(|o| {
@@ -502,7 +549,15 @@ pub(crate) fn select_algorithm_calls(
         } else {
             continue;
         };
-        if !bindings(owner, callee).is_empty() {
+        if !bindings(owner, callee).is_empty()
+            || ancestor(owner, &K::DefinitionBlockItem).is_some_and(|block| {
+                node(block).is_ok_and(|block| {
+                    block.children().iter().any(|child| {
+                        node(*child).is_ok_and(|node| node.kind() == &K::TemplateParameter)
+                    })
+                })
+            })
+        {
             continue;
         }
         let owner_range = range(owner)?;
@@ -538,13 +593,44 @@ pub(crate) fn select_algorithm_calls(
         let [target] = targets.as_slice() else {
             continue;
         };
-        let Some((ty, result)) = signatures.get(target.symbol()).copied() else {
+        let Some((types, result)) = signatures.get(target.symbol()) else {
             continue;
         };
-        let Some(actual_type) = parameter(owner, actual).and_then(normalized) else {
+        let ground = is_body
+            && target.kind() == SymbolKind::Algorithm
+            && arguments
+                .iter()
+                .all(|id| crate::type_checker::source_ground_numeral(source, *id))
+            && types.iter().chain(std::iter::once(result)).all(|id| {
+                normalization
+                    .normalized_types()
+                    .get(*id)
+                    .is_some_and(|ty| ty.head == crate::type_checker::TypeHeadRef::BuiltinObject)
+            });
+        let actual_types = if ground {
+            arguments
+                .iter()
+                .map(|id| normalized(*id))
+                .collect::<Option<Vec<_>>>()
+        } else if let [argument] = arguments.as_slice() {
+            direct(*argument)
+                .and_then(|actual| parameter(owner, actual))
+                .and_then(normalized)
+                .map(|ty| vec![ty])
+        } else {
+            None
+        };
+        let Some(actual_types) = actual_types else {
             continue;
         };
-        if let Some(selected) = select(anchor, argument, target, ty, result, actual_type)? {
+        if let Some(selected) = select(
+            anchor,
+            arguments,
+            target,
+            types.clone(),
+            *result,
+            actual_types,
+        )? {
             if is_body {
                 body.insert(surface(anchor), selected);
             } else {

@@ -241,6 +241,172 @@ pub fn check_source_algorithm_call_targets(
     Ok((definiens, body, originals))
 }
 
+pub(crate) fn source_ground_numeral(source: &SurfaceResolvedArena, mut id: ResolvedNodeId) -> bool {
+    for kind in [K::TermExpression, K::NumeralTerm] {
+        let Some(node) = source.arena().node(id) else {
+            return false;
+        };
+        if node.kind() != &kind {
+            return false;
+        }
+        let [child] = node.children() else {
+            return false;
+        };
+        id = *child;
+    }
+    source.arena().node(id).is_some_and(|node| {
+        matches!(node.kind(), K::Token(token) if token.kind == SurfaceTokenKind::Numeral
+            && !token.text.is_empty() && token.text.bytes().all(|byte| byte.is_ascii_digit()))
+    })
+}
+
+/// Authenticated numeral calls and their original provenance, without execution credit.
+#[derive(Debug)]
+pub struct SourceGroundInvocationCheck<'a> {
+    source: &'a SurfaceResolvedArena,
+    typed: &'a crate::typed_ast::TypedAst,
+    inventory: Vec<mizar_resolve::symbols::SourceAlgorithmInventory<'a>>,
+    invocations: BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef>,
+    bindings: BindingEnv,
+    inference: TermFormulaInferenceOutput,
+}
+
+impl SourceGroundInvocationCheck<'_> {
+    pub const fn source(&self) -> &SurfaceResolvedArena {
+        self.source
+    }
+
+    pub const fn typed(&self) -> &crate::typed_ast::TypedAst {
+        self.typed
+    }
+
+    /// Only these applications have checked ground-call evidence.
+    pub const fn invocations(
+        &self,
+    ) -> &BTreeMap<SurfaceNodeId, mizar_resolve::resolved_ast::SymbolRef> {
+        &self.invocations
+    }
+
+    /// Full source inventory, including calls without ground-call evidence.
+    pub fn inventory(&self) -> &[mizar_resolve::symbols::SourceAlgorithmInventory<'_>] {
+        &self.inventory
+    }
+
+    pub const fn bindings(&self) -> &BindingEnv {
+        &self.bindings
+    }
+
+    pub const fn inference(&self) -> &TermFormulaInferenceOutput {
+        &self.inference
+    }
+}
+
+/// Checks the bounded direct numeral profile through the existing selection engines.
+pub fn check_source_ground_invocations<'a>(
+    source: &'a SurfaceResolvedArena,
+    symbols: &'a SymbolEnv,
+    typed: &'a crate::typed_ast::TypedAst,
+) -> Result<SourceGroundInvocationCheck<'a>, String> {
+    let (_, mut invocations, _) = check_source_algorithm_call_targets(source, symbols, typed)?;
+    let inventory = mizar_resolve::symbols::source_algorithm_call_inventory(source, symbols)?;
+    let mut contexts = BindingContextTable::new();
+    let module = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    let mut terms = Vec::new();
+    let mut ground = BTreeSet::new();
+    for owner in &inventory {
+        let mut context = None;
+        for call in owner.calls() {
+            if call.region() != owner.body()
+                || !invocations.contains_key(&call.application())
+                || call.arguments().is_empty()
+                || !call.arguments().iter().all(|argument| {
+                    source
+                        .resolved_node_for(*argument)
+                        .is_some_and(|id| source_ground_numeral(source, id))
+                })
+            {
+                continue;
+            }
+            let context = *context.get_or_insert_with(|| {
+                let body = source
+                    .resolved_node_for(owner.body())
+                    .expect("authenticated body");
+                let SourceAnchor::Range(source_range) = source
+                    .arena()
+                    .node(body)
+                    .expect("authenticated body")
+                    .origin()
+                    .anchor()
+                else {
+                    unreachable!("authenticated body range")
+                };
+                contexts.insert(BindingContextDraft {
+                    owner: BindingContextOwner::SourceStatement {
+                        source_range: *source_range,
+                    },
+                    parent: Some(module),
+                    layer: BindingContextLayer::Block,
+                    lexical_scope: None,
+                    bindings: Vec::new(),
+                    visible_bindings: Vec::new(),
+                    recovery: BindingContextRecovery::Normal,
+                })
+            });
+            ground.insert(call.application());
+            for argument in call.arguments() {
+                let id = source
+                    .resolved_node_for(*argument)
+                    .expect("authenticated actual");
+                let SourceAnchor::Range(range) = source
+                    .arena()
+                    .node(id)
+                    .expect("authenticated actual")
+                    .origin()
+                    .anchor()
+                else {
+                    unreachable!("authenticated actual range")
+                };
+                let site = TypedSiteRef::Node(TypedNodeId::new(id.index()));
+                terms.push(
+                    TermInput::new(site.clone(), context, *range, TermKind::Numeral)
+                        .with_result_type(TypeExpressionInput::new(
+                            site,
+                            *range,
+                            "object",
+                            TypeHeadInput::BuiltinObject,
+                        )),
+                );
+            }
+        }
+    }
+    invocations.retain(|id, _| ground.contains(id));
+    let bindings = BindingEnv::try_new(BindingEnvParts {
+        source_id: source.source_id(),
+        module_id: source.module().clone(),
+        contexts,
+        bindings: BindingTable::new(),
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())?;
+    let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, []);
+    Ok(SourceGroundInvocationCheck {
+        source,
+        typed,
+        inventory,
+        invocations,
+        bindings,
+        inference,
+    })
+}
+
 /// Rejects cycles in explicitly selected func definiens dependencies.
 ///
 /// Resolver authenticates all associations before graph inspection. Callers own

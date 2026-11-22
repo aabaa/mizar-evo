@@ -327,7 +327,6 @@ fn checked_definiens_references_feed_dependencies_without_body_application_leaks
 fn checked_algorithm_unsupported_calls_never_fabricate_selected_edges() {
     for text in [
         "definition let s be set; func Pick: pick(s) -> set equals s; end; definition let n be object; algorithm run(n) -> object do return pick(n); end; end;",
-        "definition let n be object; algorithm run(n) -> object do return run(0); end; end;",
         "definition let n be object; algorithm run(n) -> object do var x := n; return run(x); end; end;",
         "definition let n be object; algorithm run(n) -> object do var n := n; return run(n); end; end;",
         "definition let n be object; func Target: target(n) -> object equals n; end; definition let n be object; algorithm run(n) -> object do return Missing.target(n); end; end;",
@@ -408,11 +407,18 @@ fn checked_algorithm_unsupported_calls_never_fabricate_selected_edges() {
         &fixture,
         text,
         SurfaceNodeKind::ApplicationTerm,
-        &[(
-            text.find("return run(n)").unwrap() + 7,
-            "run(n)",
-            "algorithm run",
-        )],
+        &[
+            (
+                text.find("return run(n)").unwrap() + 7,
+                "run(n)",
+                "algorithm run",
+            ),
+            (
+                text.find("return run(0)").unwrap() + 7,
+                "run(0)",
+                "algorithm run",
+            ),
+        ],
     );
     assert_eq!(selected, (BTreeMap::new(), expected, BTreeMap::new()));
     assert_eq!(
@@ -423,7 +429,7 @@ fn checked_algorithm_unsupported_calls_never_fabricate_selected_edges() {
             &selected.2
         )
         .unwrap(),
-        None
+        Some(vec![vec![checked_symbol(&fixture, text, "algorithm run")]])
     );
 }
 

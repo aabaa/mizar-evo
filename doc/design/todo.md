@@ -354,8 +354,8 @@ Lane 1: P28, P20, P21, P22, P2 (dependencies first); either lane: P8 → P9, P14
   Add `SnapshotKind::ControlFlowIr` and real `idalgo` MT10-CFG-PV baseline.
   Scope: `C/mizar-test/src/snapshot.rs`, Core `control_flow.rs`, `tests/snapshots/`.
   Dependencies: P5; file order P8 → P9 → P10.
-- [ ] **P14 — Typed ground invocation; A; Lane 2, either-lane scheduling.**
-  Probe same-module `idalgo(0)` resolution/typing read-only, then produce
+- [x] **P14 — Typed ground invocation; A; Lane 2, either-lane scheduling.**
+  Same-module `idalgo(0)` lookup and typed numeral invocation produce
   authenticated target identity, ordered actuals and source/context provenance
   for R4's loader join. Scope: checker `type_checker.rs`, test-first
   `tests/miz/`, checker type-checker docs. Dependencies: P7; serialize P8/P14.
