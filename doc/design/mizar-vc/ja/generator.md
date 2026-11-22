@@ -618,6 +618,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_caller_e1_inhabitation_result` は同じ入力で先に request producer を呼び、上流エラーを維持する。fresh な宣言 binder、atomic object body、actual-input witness、元 guard を既存の [Kernel introduction rule](../../mizar-kernel/ja/checker.md#限定-e1-inhabitation-の存在導入) に一度渡し、元 guard を child obligation と唯一の context の両方に使う。成功時だけ変更しない tuple と同じ Core に束縛された opaque `ObjectInhabitationCheck` を返し、局所拒否は `algorithms.unary_child.invalid_existential_request` を維持する。この checking は caller object inhabitation のみを与え、上記の後続権限は別途必要である。
 
+## Bounded unary caller E1 typing request
+
+`generate_source_unary_child_call_caller_e1_typing_request(source, typed, symbols, core, request)` は既存 [caller E4 producer](#bounded-unary-caller-e4-descriptor) を一度先に呼び、新規認証全体と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 4])` は元 context、caller returns 行、fresh binder を保持する。行1は object(result)、行2は returns から object への含意、行3は元 result binder の全称量化となる。元行の metadata を保持し、追加行は空 provenance の SplitGoal とする。局所 shape 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。
+
+元 caller object-input guard のみの下で `forall r. returns_caller(actual,r) -> object(r)` を要求し、return/requires/ensures を context fact にしない。checking、single-valuedness、E2、全体受理、status、currentness、complete footprint/cache、promotion、publication は与えず、child/E4/inhabitation/direct-return は別途必要である。詳細は [英語版](../en/generator.md#bounded-unary-caller-e1-typing-request) を参照。
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` は既存 child existential を先に再生成し、source/Core/request 全体の新規認証と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 2])` を返し、caller object guard と fresh result binder を共有する。row zero は caller の元 CFG flow・Return・actual を結ぶ `AlgorithmReturns`、row one はその結果の存在量化である。不変の Core/request が Return→Apply→callee/actual、formal/result-slot/source の対応を保持する。child witness、VcSet、seed、scheduling identity は生成しない。

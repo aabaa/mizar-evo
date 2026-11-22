@@ -3084,6 +3084,54 @@ pub fn generate_source_unary_child_call_caller_e4_request(
     Ok((context, rows))
 }
 
+/// Requests caller result typing under the original typed-input guard without checking it.
+pub fn generate_source_unary_child_call_caller_e1_typing_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    use crate::vc_ir::{
+        VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+        VcGeneratedFormulaShape as Shape,
+    };
+
+    let (context, [returns, mut object]) =
+        generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let Shape::AlgorithmReturns { result, .. } = returns.shape else {
+        return Err(invalid());
+    };
+    let Shape::Quantified { binders, .. } = object.shape else {
+        return Err(invalid());
+    };
+    object.shape = Shape::ProgramTypePredicate {
+        subject: result,
+        ty: "object".into(),
+    };
+    let implication = VcGeneratedFormula {
+        id: VcGeneratedFormulaId::new(2),
+        kind: VcGeneratedFormulaKind::SplitGoal,
+        shape: Shape::Implies {
+            premise: VcFormulaRef::Generated(returns.id),
+            conclusion: VcFormulaRef::Generated(object.id),
+        },
+        provenance: Vec::new(),
+    };
+    let universal = VcGeneratedFormula {
+        id: VcGeneratedFormulaId::new(3),
+        kind: VcGeneratedFormulaKind::SplitGoal,
+        shape: Shape::Quantified {
+            kind: crate::vc_ir::QuantifierKind::Forall,
+            binders,
+            body: VcFormulaRef::Generated(implication.id),
+        },
+        provenance: Vec::new(),
+    };
+    Ok((context, [returns, object, implication, universal]))
+}
+
 /// Checks the freshly authenticated child existential and retains its exact request.
 #[expect(
     clippy::type_complexity,
