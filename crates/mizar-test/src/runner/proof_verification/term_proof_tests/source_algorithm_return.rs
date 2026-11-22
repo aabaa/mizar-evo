@@ -1178,7 +1178,7 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
             KernelPolicyInput, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
         },
         status::{
-            check_source_algorithm_e2_result as associate,
+            NativeE2BodyCorrectness, check_source_algorithm_e2_result as associate,
             check_source_algorithm_return_reflexivity as verify,
             consume_source_algorithm_e2_result as consume,
             source_algorithm_return_obligation_identity,
@@ -1475,11 +1475,34 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                 associated.3,
                 policy.policy_fingerprint(),
             );
+            let native = NativeE2BodyCorrectness::from_source(
+                &source, &check, &symbols, &core, snapshot, vc.id, &policy,
+            )
+            .unwrap();
+            let earlier = NativeE2BodyCorrectness::from_source(
+                &source,
+                &check,
+                &symbols,
+                &core,
+                snapshot,
+                vc.id,
+                &VerifierPolicy::default(),
+            )
+            .unwrap();
             for _ in 0..2 {
                 assert_eq!(
                     consume(&source, &check, &symbols, &core, snapshot, vc.id, &policy).unwrap(),
                     consumed
                 );
+                for capability in [&native, &earlier] {
+                    assert!(
+                        capability
+                            .adopt_original_request(
+                                &source, &check, &symbols, &core, snapshot, vc.id, &policy,
+                            )
+                            .unwrap()
+                    );
+                }
             }
             if policy != VerifierPolicy::default() {
                 assert_ne!(consumed.4, VerifierPolicy::default().policy_fingerprint());
@@ -1507,6 +1530,34 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                             &refused_policy
                         )
                         .unwrap_err(),
+                        "algorithm.proof.e2_policy_rejected"
+                    );
+                    assert_eq!(
+                        NativeE2BodyCorrectness::from_source(
+                            &source,
+                            &check,
+                            &symbols,
+                            &core,
+                            snapshot,
+                            vc.id,
+                            &refused_policy,
+                        )
+                        .err()
+                        .unwrap(),
+                        "algorithm.proof.e2_policy_rejected"
+                    );
+                    assert_eq!(
+                        native
+                            .adopt_original_request(
+                                &source,
+                                &check,
+                                &symbols,
+                                &core,
+                                snapshot,
+                                vc.id,
+                                &refused_policy,
+                            )
+                            .unwrap_err(),
                         "algorithm.proof.e2_policy_rejected"
                     );
                     assert_eq!(refused_policy, before);
@@ -11098,6 +11149,108 @@ fn source_algorithm_native_e1_single_valuedness_rechecks_current_policy_after_up
 }
 
 #[test]
+fn source_algorithm_native_e2_refuses_changed_identity_snapshot_and_distinct_equal_core() {
+    use mizar_core::elaborator::lower_source_algorithms;
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            NativeE2BodyCorrectness, source_algorithm_return_obligation_identity as identity,
+        },
+    };
+    let text = fs::read_to_string(config().workspace_root.join(
+        "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
+    ))
+    .unwrap();
+    with_source_algorithm_identity_inputs(
+        &text,
+        "owner-test",
+        "owners",
+        0,
+        |source, _, symbols, check| {
+            let core = lower_source_algorithms(check).unwrap();
+            let policy = VerifierPolicy::default();
+            let denied = policy.clone().with_kernel_evidence_formats([]);
+            let native = NativeE2BodyCorrectness::from_source(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                VcId::new(0),
+                &policy,
+            )
+            .unwrap();
+            let baseline = identity(source, check, symbols, snapshot_id(0), VcId::new(0)).unwrap();
+            with_source_algorithm_identity_inputs(
+                &text.replace("ensures result = a", "ensures a = result"),
+                "owner-test",
+                "owners",
+                0,
+                |other_source, _, other_symbols, other_check| {
+                    let changed = identity(
+                        other_source,
+                        other_check,
+                        other_symbols,
+                        snapshot_id(0),
+                        VcId::new(0),
+                    )
+                    .unwrap();
+                    assert_ne!(changed.0, baseline.0);
+                    assert_ne!(changed.1, baseline.1);
+                    for policy in [&policy, &denied] {
+                        assert!(
+                            !native
+                                .adopt_original_request(
+                                    other_source,
+                                    other_check,
+                                    other_symbols,
+                                    &core,
+                                    snapshot_id(0),
+                                    VcId::new(0),
+                                    policy,
+                                )
+                                .unwrap()
+                        );
+                    }
+                },
+            );
+            let cloned = core.clone();
+            assert_eq!(cloned, core);
+            for (candidate, snapshot) in [(&core, snapshot_id(1)), (&cloned, snapshot_id(0))] {
+                for policy in [&policy, &denied] {
+                    assert!(
+                        !native
+                            .adopt_original_request(
+                                source,
+                                check,
+                                symbols,
+                                candidate,
+                                snapshot,
+                                VcId::new(0),
+                                policy,
+                            )
+                            .unwrap()
+                    );
+                }
+            }
+            assert!(
+                native
+                    .adopt_original_request(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        VcId::new(0),
+                        &policy,
+                    )
+                    .unwrap()
+            );
+        },
+    );
+}
+
+#[test]
 fn source_algorithm_e2_result_refuses_foreign_mutated_and_unused_core() {
     use mizar_core::{
         core_ir::{CoreFormulaKind, CoreIr},
@@ -11209,8 +11362,9 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
     use mizar_proof::{
         policy::VerifierPolicy,
         status::{
-            check_source_algorithm_e2_result as associate,
+            NativeE2BodyCorrectness, check_source_algorithm_e2_result as associate,
             consume_source_algorithm_e2_result as consume,
+            source_algorithm_return_obligation_identity as identity,
         },
     };
     let text = fs::read_to_string(config().workspace_root.join(
@@ -11226,6 +11380,18 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
             let core = lower_source_algorithms(check).unwrap();
             let baseline =
                 associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap();
+            let policy = VerifierPolicy::default();
+            let denied = policy.clone().with_kernel_evidence_formats([]);
+            let native = NativeE2BodyCorrectness::from_source(
+                source,
+                check,
+                symbols,
+                &core,
+                snapshot_id(0),
+                VcId::new(0),
+                &policy,
+            )
+            .unwrap();
             with_source_algorithm_identity_inputs(
                 &text.replace("idalgo", "foreign_algorithm"),
                 "other-package",
@@ -11249,6 +11415,39 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
                             let policy = VerifierPolicy::default()
                                 .with_kernel_evidence_formats([])
                                 .with_checker_schema_version(0);
+                            for policy in [&VerifierPolicy::default(), &policy] {
+                                assert_eq!(
+                                    NativeE2BodyCorrectness::from_source(
+                                        source,
+                                        check,
+                                        symbols,
+                                        &core,
+                                        snapshot_id(0),
+                                        selected,
+                                        policy,
+                                    )
+                                    .err()
+                                    .unwrap(),
+                                    expected
+                                );
+                                let identity_error =
+                                    identity(source, check, symbols, snapshot_id(0), selected)
+                                        .unwrap_err();
+                                assert_eq!(
+                                    native
+                                        .adopt_original_request(
+                                            source,
+                                            check,
+                                            symbols,
+                                            &core,
+                                            snapshot_id(0),
+                                            selected,
+                                            policy,
+                                        )
+                                        .unwrap_err(),
+                                    identity_error
+                                );
+                            }
                             assert_eq!(
                                 consume(
                                     source,
@@ -11305,6 +11504,41 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
                 .unwrap_err(),
                 expected
             );
+            let missing = VcId::new(usize::MAX);
+            let constructor_error =
+                associate(source, check, symbols, &core, snapshot_id(0), missing).unwrap_err();
+            let identity_error =
+                identity(source, check, symbols, snapshot_id(0), missing).unwrap_err();
+            for policy in [&policy, &denied] {
+                assert_eq!(
+                    NativeE2BodyCorrectness::from_source(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        missing,
+                        policy,
+                    )
+                    .err()
+                    .unwrap(),
+                    constructor_error
+                );
+                assert_eq!(
+                    native
+                        .adopt_original_request(
+                            source,
+                            check,
+                            symbols,
+                            &core,
+                            snapshot_id(0),
+                            missing,
+                            policy,
+                        )
+                        .unwrap_err(),
+                    identity_error
+                );
+            }
             assert_eq!(
                 associate(source, check, symbols, &core, snapshot_id(0), VcId::new(0)).unwrap(),
                 baseline

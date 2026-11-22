@@ -548,6 +548,11 @@ projection/slice/draft 全体を一括で返し、stage・I/O は行いません
 
 `consume_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [E2 association](#original-e2-request-identity-association) を最初に一度呼び、error を保持する。BuiltinKernelEvidence の許可と、返された schema と policy checker schema の完全一致を要求し、不一致は `algorithm.proof.e2_policy_rejected`。四値を変更せず現在の PolicyFingerprint を加えて返す。currentness は caller 所有で、raw Open/Deferred/unknown/incomplete/cache miss は維持する。native retention/adoption と aggregate acceptance は別工程で、status・reuse 権限は与えない。
 
+## Native E2 body correctness
+
+`NativeE2BodyCorrectness<'core>::from_source` は [E2 consumption](#original-e2-current-policy-consumption) を最初に一度呼び、元の identity、raw slice 全体、Kernel result、checker schema と正確な snapshot、借用 Core を private に保持し、fingerprint は捨てる。opaque result は変換や getter を公開せず保持する。
+`adopt_original_request` は最初に[元 RETURN identity と slice](#source-algorithm-return-obligation-identity) を再生成し error を伝える。identity・slice 全体・snapshot・Core pointer の不一致は policy 検査前に false。完全一致時は現在の BuiltinKernelEvidence 許可と保持 checker schema の一致を要求し、拒否は `algorithm.proof.e2_policy_rejected`。過去の policy 成功に権限はない。採用は E2 のみ、currentness は caller 所有で raw 状態を維持し、aggregate acceptance・symbols・promotion・status・reuse は別工程とする。
+
 ## Source algorithm return reflexivity
 
 `check_source_algorithm_return_reflexivity(source: &SurfaceResolvedArena, nodes: &TypedArena, symbols: &SymbolEnv, snapshot: BuildSnapshotId, vc_id: VcId, policy: &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` を既存 status.rs の theorem reflexivity の完全な doccomment/function 直前へ一つ追加する。caller Core/check/VC/evidence/target/result/flag は受け取らない。

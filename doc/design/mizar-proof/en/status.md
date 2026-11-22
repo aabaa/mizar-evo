@@ -566,6 +566,11 @@ Regenerate the [original return identity](#source-algorithm-return-obligation-id
 
 `consume_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id, policy)` calls the unchanged [E2 association](#original-e2-request-identity-association) once first, propagating errors. Require enabled BuiltinKernelEvidence and exact policy checker-schema equality with its returned schema, otherwise `algorithm.proof.e2_policy_rejected`. Return its four values unchanged plus current PolicyFingerprint. Currentness stays caller-owned; raw Open/Deferred/unknown/incomplete/cache misses persist. Native retention/adoption and aggregate acceptance remain separate; no status or reuse authority follows.
 
+## Native E2 body correctness
+
+`NativeE2BodyCorrectness<'core>::from_source` calls [E2 consumption](#original-e2-current-policy-consumption) once first and privately retains its original identity, whole raw slice, Kernel result and checker schema with the exact snapshot and borrowed Core; discard the fingerprint. The opaque result is retained without exposing a conversion or getter.
+`adopt_original_request` regenerates [original RETURN identity and slice](#source-algorithm-return-obligation-identity) first, propagating errors. Identity/whole-slice/snapshot/Core-pointer mismatch returns false before policy checking; a match requires current enabled BuiltinKernelEvidence and retained checker-schema agreement, otherwise `algorithm.proof.e2_policy_rejected`. Earlier policy success grants no authority. Only E2 is adopted; currentness stays caller-owned, raw states persist, and aggregate acceptance, symbols, promotion, status and reuse remain separate.
+
 ## Source algorithm return reflexivity
 
 `check_source_algorithm_return_reflexivity(source: &SurfaceResolvedArena, nodes: &TypedArena, symbols: &SymbolEnv, snapshot: BuildSnapshotId, vc_id: VcId, policy: &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` is one inline status.rs function before the complete source-theorem reflexivity doccomment/function; accept no caller Core/check/VC/evidence/target/result/flag.

@@ -2233,6 +2233,77 @@ pub fn consume_source_algorithm_e2_result(
     ))
 }
 
+/// Native positive evidence for only the original E2 body-correctness obligation.
+/// It grants no aggregate acceptance, status, symbol, promotion or reuse authority.
+pub struct NativeE2BodyCorrectness<'core> {
+    identity: ProofObligationIdentity,
+    slice: mizar_vc::dependency_slice::DependencySlice,
+    _result: KernelCheckResult,
+    checker_schema: u16,
+    snapshot: mizar_session::BuildSnapshotId,
+    core: &'core mizar_core::core_ir::CoreIr,
+}
+
+impl<'core> NativeE2BodyCorrectness<'core> {
+    /// Checks and retains the original E2 request under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (identity, slice, result, checker_schema, _) = consume_source_algorithm_e2_result(
+            source, check, symbols, core, snapshot, vc_id, policy,
+        )?;
+        Ok(Self {
+            identity,
+            slice,
+            _result: result,
+            checker_schema,
+            snapshot,
+            core,
+        })
+    }
+
+    /// Adopts only the retained original E2 request under current policy.
+    /// Currentness remains caller-owned; earlier policy success grants no authority.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "authenticates the complete original request"
+    )]
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        snapshot: mizar_session::BuildSnapshotId,
+        vc_id: VcId,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        let (identity, slice) =
+            source_algorithm_return_obligation_identity(source, check, symbols, snapshot, vc_id)?;
+        if identity != self.identity
+            || slice != self.slice
+            || snapshot != self.snapshot
+            || !std::ptr::eq(core, self.core)
+        {
+            return Ok(false);
+        }
+        if !policy
+            .kernel_evidence_formats()
+            .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+            || policy.checker_schema_version() != self.checker_schema
+        {
+            return Err("algorithm.proof.e2_policy_rejected".to_owned());
+        }
+        Ok(true)
+    }
+}
+
 /// Checks one genuine source algorithm return goal with normal Kernel and policy.
 pub fn check_source_algorithm_return_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
