@@ -2974,6 +2974,36 @@ pub fn generate_source_unary_child_call_existential_request(
     Ok((context, rows, request.actual))
 }
 
+/// Requests caller object inhabitation on all typed inputs without checking a witness.
+pub fn generate_source_unary_child_call_caller_e1_inhabitation_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        LocalContext,
+        [crate::vc_ir::VcGeneratedFormula; 2],
+        CoreTermId,
+    ),
+    String,
+> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let (context, mut rows, witness) = generate_source_unary_child_call_existential_request(
+        source, typed, symbols, core, request,
+    )?;
+    let Shape::AlgorithmReturns { result, .. } = rows[0].shape else {
+        return Err("algorithms.unary_child.invalid_existential_request".to_owned());
+    };
+    rows[0].shape = Shape::ProgramTypePredicate {
+        subject: result,
+        ty: "object".into(),
+    };
+    Ok((context, rows, witness))
+}
+
 /// Emits an authenticated caller E4 target without a witness or checked composition.
 pub fn generate_source_unary_child_call_caller_e4_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

@@ -683,6 +683,12 @@ This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/
 
 `check_source_unary_child_call_existential_result` regenerates that request and invokes the [Kernel instantiation rule](../../mizar-kernel/en/checker.md#unary-child-existential-instantiation) in the same call, returning the unchanged request and existing opaque result atomically. Upstream authentication errors precede `algorithms.unary_child.invalid_existential_request`. Original direct-return APIs remain unchanged. Proof identity/current-policy/adoption, caller E4 acceptance, E1 discharge, generic substitution, ranges and syntax/environment generalization remain deferred; this producer supplies no evidence, status, promotion, publication or coverage credit.
 
+## Bounded unary caller E1 inhabitation request
+
+`generate_source_unary_child_call_caller_e1_inhabitation_request(source, typed, symbols, core, request)` first calls the unchanged [child existential producer](#bounded-unary-child-existential), preserving whole fresh authentication and upstream errors. It retains the exact context, fresh binder, row metadata, existential row and actual-input witness; only row zero's shape becomes `ProgramTypePredicate(object(r))`. Under the sole caller object-input guard it requests `exists r. object(r)` on all typed inputs, assuming neither normal return nor requires/ensures. Impossible local shape refusal retains `algorithms.unary_child.invalid_existential_request`.
+
+This tuple grants no checking, native adoption, identity, status, acceptance, currentness, cache, promotion or publication. E1 typing/single-valuedness, E2 and whole-algorithm credit remain separate; E4 and direct-return APIs are unchanged.
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` first regenerates the unchanged child existential, preserving whole fresh source/Core/request authentication and upstream errors. It returns existing `(LocalContext, [VcGeneratedFormula; 2])`: the same sole caller object guard and fresh result binder, with row zero targeting `AlgorithmReturns(caller, caller CFG flow, original caller Return, actual, r)` and row one existentially binding that result. Whole immutable Core/request retain the exact Return→Apply→callee/actual and formal/result-slot/source joins. It returns no child witness and creates no VcSet, seeds or scheduling identity.

@@ -610,6 +610,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_existential_result` は再生成した request を同じ呼出しの [Kernel 規則](../../mizar-kernel/ja/checker.md#unary-child-existential-instantiation) で検査し、変更しない request と既存の不透明な結果を不可分に返す。上流認証エラーが `algorithms.unary_child.invalid_existential_request` に先行する。元 direct-return API は維持する。Proof identity/current-policy/adoption、caller E4 受理、E1、一般置換、range、syntax/environment 一般化は延期し、evidence・status・promotion・publication・coverage credit は与えない。詳細は [英語版](../en/generator.md#bounded-unary-child-existential) を参照。
 
+## Bounded unary caller E1 inhabitation request
+
+`generate_source_unary_child_call_caller_e1_inhabitation_request(source, typed, symbols, core, request)` は既存の [child existential producer](#bounded-unary-child-existential) を先に呼び、新規認証全体と上流エラーを維持する。context、fresh binder、row metadata、存在量化 row、actual-input witness をそのまま保持し、row zero の shape だけを `ProgramTypePredicate(object(r))` に置換する。唯一の caller object-input guard の下で、normal return や requires/ensures を仮定せず、全 typed input に `exists r. object(r)` を要求する。局所 shape 拒否は `algorithms.unary_child.invalid_existential_request` を維持する。
+
+この tuple は checking、native adoption、identity、status、acceptance、currentness、cache、promotion、publication を与えない。E1 typing/single-valuedness、E2、algorithm 全体の credit は別であり、E4 と direct-return API は変更しない。
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` は既存 child existential を先に再生成し、source/Core/request 全体の新規認証と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 2])` を返し、caller object guard と fresh result binder を共有する。row zero は caller の元 CFG flow・Return・actual を結ぶ `AlgorithmReturns`、row one はその結果の存在量化である。不変の Core/request が Return→Apply→callee/actual、formal/result-slot/source の対応を保持する。child witness、VcSet、seed、scheduling identity は生成しない。
