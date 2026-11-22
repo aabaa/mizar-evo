@@ -623,6 +623,10 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。成功時だけ同じ引数で [caller canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e4-canonical-inputs) を得る。全小文字 VC hash に `source-unary-caller-e4-candidate-anchor-v1:` を前置し、通常の五文字列 obligation object が anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e4/obligation` v1.0 で結ぶ。Some(既存 ProofObligationIdentity, raw slice 全体) を返し、保持 field や child identity 再利用は追加しない。
 この受動的 caller identity は currentness、current-policy consumption/native adoption、E1/E2/whole acceptance、status、publication、complete footprint、cache authority を与えない。arena 間 canonical 一致は association を認可しない。既存 unary profile と raw unknown/incomplete/cache-miss 境界を保つ。
 
+## Caller E4 current-policy consumption
+
+`consume_source_unary_caller_e4_existential(source, typed, symbols, core, request, policy)` は最初に既存の [caller association constructor](#arena-local-caller-e4-association) を一度だけ呼び、policy 検査より先に下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の caller Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_caller_e4_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出側が担う。受動的 identity は policy に依存せず、native adoption、status、E1/E2/whole acceptance、publication、cache authority は与えない。
+
 ## Unary child-request current-policy consumption
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` は最初に既存の [association constructor](#arena-local-unary-child-request-association) を一度だけ呼び、下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_child_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出し側の責任。native adoption、canonical identity/reuse、caller E4 acceptance、evidence/status、広い credit は与えない。
