@@ -3129,6 +3129,21 @@ fn source_algorithm_direct_return_typing_preserves_guards_and_refusals() {
                     "Core/CFG mutation {mutation} must precede Proof schema selection {selected:?}"
                 );
                 assert_eq!(
+                    mizar_proof::status::consume_source_algorithm_e1_typing(
+                        source,
+                        check,
+                        symbols,
+                        &changed,
+                        vcs.snapshot(),
+                        selected,
+                        &mizar_proof::policy::VerifierPolicy::default()
+                            .with_kernel_evidence_formats([]),
+                    )
+                    .unwrap_err(),
+                    expected,
+                    "Core/CFG mutation {mutation} must precede denied typing policy"
+                );
+                assert_eq!(
                     mizar_proof::status::check_source_algorithm_e1_single_valuedness(
                         source,
                         check,
@@ -6070,6 +6085,20 @@ fn source_algorithm_e4_reduction_preserves_upstream_errors_before_selection() {
                                 .unwrap_err(),
                                 expected
                             );
+                            assert_eq!(
+                                mizar_proof::status::consume_source_algorithm_e1_typing(
+                                    source,
+                                    check,
+                                    symbols,
+                                    core,
+                                    vcs.snapshot(),
+                                    selected,
+                                    &mizar_proof::policy::VerifierPolicy::default()
+                                        .with_kernel_evidence_formats([]),
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
                         }
                         for selected in [VcId::new(2), VcId::new(usize::MAX)] {
                             assert_eq!(
@@ -7626,6 +7655,170 @@ fn source_algorithm_e4_proof_association_preserves_original_result_raw_slice() {
                 assert_eq!(result.context(), checked.context());
             }
         }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_e1_typing_policy_consumer_preserves_association_and_current_fingerprint() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_algorithm_e1_typing_with_schema as associate,
+            consume_source_algorithm_e1_typing as consume,
+        },
+    };
+    use mizar_vc::{dependency_slice::DependencySliceCompleteness, vc_ir::VcStatus};
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let default = VerifierPolicy::default();
+        assert_eq!(
+            vcs.vcs()
+                .iter()
+                .filter(|vc| matches!(
+                    vc.kind,
+                    mizar_vc::vc_ir::VcKind::AlgorithmE1Typing
+                        | mizar_vc::vc_ir::VcKind::AlgorithmE1SingleValuedness
+                        | mizar_vc::vc_ir::VcKind::AlgorithmE1ResultInhabitation
+                        | mizar_vc::vc_ir::VcKind::AlgorithmE4NormalReturn
+                ))
+                .count(),
+            4
+        );
+        assert!(vcs.vcs().iter().all(|vc| vc.status == VcStatus::Open));
+        assert!(vcs.seed_accounting().iter().any(|entry| {
+            entry.seed_status == mizar_core::core_ir::ObligationSeedStatus::Deferred
+        }));
+        for snapshot in [vcs.snapshot(), snapshot_id(1)] {
+            let expected = associate(source, check, symbols, core, snapshot, VcId::new(1)).unwrap();
+            let reference =
+                source_algorithm_direct_return_reference(source, check, symbols, snapshot, 0);
+            assert_eq!((&expected.0, &expected.1), (&reference.0, &reference.4));
+            assert_eq!(expected.1.status(), &VcStatus::Open);
+            assert_eq!(
+                expected.1.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            assert!(!expected.1.unknowns().is_empty());
+            assert!(expected.1.requires_cache_miss());
+            for policy in [
+                default.clone(),
+                default
+                    .clone()
+                    .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+                VerifierPolicy::development(),
+                VerifierPolicy::interactive(),
+                default.clone().with_profile_id("changed-e1-typing-policy"),
+                default.clone().with_schema_version(2),
+            ] {
+                let policy_before = policy.clone();
+                let expected = (
+                    expected.0.clone(),
+                    expected.1.clone(),
+                    expected.2,
+                    policy.policy_fingerprint(),
+                );
+                for _ in 0..2 {
+                    assert_eq!(
+                        consume(
+                            source,
+                            check,
+                            symbols,
+                            core,
+                            snapshot,
+                            VcId::new(1),
+                            &policy
+                        )
+                        .unwrap(),
+                        expected
+                    );
+                }
+                if policy != default {
+                    assert_ne!(expected.3, default.policy_fingerprint());
+                }
+                assert_eq!(policy, policy_before);
+            }
+        }
+        assert_eq!(
+            format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
+            before
+        );
+    });
+}
+
+#[test]
+fn source_algorithm_e1_typing_policy_consumer_refuses_policy_after_upstream_errors() {
+    use mizar_proof::{
+        policy::{KernelEvidenceFormat, VerifierPolicy},
+        status::{
+            check_source_algorithm_e1_typing_with_schema as associate,
+            consume_source_algorithm_e1_typing as consume,
+        },
+    };
+    with_direct_return_request_fixture(|source, check, symbols, core, vcs| {
+        let before = format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}");
+        let genuine =
+            associate(source, check, symbols, core, vcs.snapshot(), VcId::new(1)).unwrap();
+        let upstream: Vec<_> = vcs
+            .vcs()
+            .iter()
+            .filter(|vc| vc.kind != mizar_vc::vc_ir::VcKind::AlgorithmE1Typing)
+            .map(|vc| vc.id)
+            .chain([VcId::new(vcs.vcs().len()), VcId::new(usize::MAX)])
+            .map(|selected| {
+                let error =
+                    associate(source, check, symbols, core, vcs.snapshot(), selected).unwrap_err();
+                assert_ne!(error, "algorithm.proof.e1_typing_policy_rejected");
+                (selected, error)
+            })
+            .collect();
+        let default = VerifierPolicy::default();
+        for policy in [
+            default.clone().with_kernel_evidence_formats([]),
+            default
+                .clone()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+            default.clone().with_checker_schema_version(genuine.2 - 1),
+            default.with_checker_schema_version(genuine.2 + 1),
+        ] {
+            let policy_before = policy.clone();
+            assert_eq!(
+                consume(
+                    source,
+                    check,
+                    symbols,
+                    core,
+                    vcs.snapshot(),
+                    VcId::new(1),
+                    &policy
+                )
+                .unwrap_err(),
+                "algorithm.proof.e1_typing_policy_rejected"
+            );
+            for (selected, error) in &upstream {
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        core,
+                        vcs.snapshot(),
+                        *selected,
+                        &policy
+                    )
+                    .unwrap_err(),
+                    *error
+                );
+            }
+            assert_eq!(policy, policy_before);
+        }
+        assert_eq!(
+            associate(source, check, symbols, core, vcs.snapshot(), VcId::new(1)).unwrap(),
+            genuine
+        );
         assert_eq!(
             format!("{source:?}{check:?}{symbols:?}{core:?}{vcs:?}"),
             before

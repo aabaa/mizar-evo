@@ -564,6 +564,11 @@ absent id、実 zero-VC と広い profile 一つは既存 handoff error、no-ens
 `check_source_algorithm_e1_typing_with_schema(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC typing schema checker](../../mizar-vc/ja/generator.md#元の-e1-typing-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。Kernel 所有の schema をそのまま渡し、既存 `(ProofObligationIdentity, DependencySlice, u16)` 値を atomic に返す。`check_source_algorithm_e1_typing` は委譲して schema だけを捨て、既存の pair API を保持する。
 検査済みの元 typing 要求だけを関連付ける。native result 前提、新 type、detached input、policy/adoption、generic evidence 変換はない。currentness は呼出側責務。Open4/Deferred、raw unknown/incomplete/cache miss を保持する。single-valuedness、意味的 environment 解釈、opaque type、E4 converse、広い credit は対象外で、登録済み質問と formula-cycle hardening は延期する。
 
+## Original E1 typing current-policy consumption
+
+`consume_source_algorithm_e1_typing(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [typing schema association](#original-e1-typing-request-identity-association) を最初に呼び、エラーを保持する。`BuiltinKernelEvidence` の許可と、`policy.checker_schema_version()` と返された Kernel schema の完全一致を要求し、拒否は `algorithm.proof.e1_typing_policy_rejected`。
+元 identity、raw slice 全体、実 schema、`policy.policy_fingerprint()` を atomic に返す。currentness は呼出側責務で、Open4/Deferred と raw unknown/incomplete/cache miss を保持する。retention/adoption、single-valuedness 消費、generic evidence/status、aggregate acceptance、symbol、reuse authority は付与しない。
+
 ## Original E1 single-valuedness request-identity association
 
 `check_source_algorithm_e1_single_valuedness_with_schema(source, check, symbols, core, snapshot, vc_id)` は固定 direct-return schemas で真正な [VC single-valuedness schema checker](../../mizar-vc/ja/generator.md#元の-e1-single-valuedness-descriptor) を先に呼び、producer エラーを保持する。同一入力から既存の元 identity を再生成し、descriptor.5/raw slice 全体の一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。Kernel 所有の schema をそのまま渡し、既存 `(ProofObligationIdentity, DependencySlice, u16)` 値を atomic に返す。`check_source_algorithm_e1_single_valuedness` は委譲して schema だけを捨て、既存の pair API を保持する。

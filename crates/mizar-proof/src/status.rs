@@ -1242,6 +1242,38 @@ pub fn check_source_algorithm_e1_typing_with_schema(
     Ok((identity, slice, checker_schema))
 }
 
+/// Consumes the same-call E1 typing association under the current policy.
+/// Currentness remains caller-owned; this grants no adoption, status or reuse authority.
+pub fn consume_source_algorithm_e1_typing(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        u16,
+        PolicyFingerprint,
+    ),
+    String,
+> {
+    let (identity, slice, checker_schema) = check_source_algorithm_e1_typing_with_schema(
+        source, check, symbols, core, snapshot, vc_id,
+    )?;
+    if !policy
+        .kernel_evidence_formats()
+        .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+        || policy.checker_schema_version() != checker_schema
+    {
+        return Err("algorithm.proof.e1_typing_policy_rejected".to_owned());
+    }
+    Ok((identity, slice, checker_schema, policy.policy_fingerprint()))
+}
+
 /// Associates the original E1 single-valuedness identity and whole raw slice after same-call checking.
 /// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
 pub fn check_source_algorithm_e1_single_valuedness(

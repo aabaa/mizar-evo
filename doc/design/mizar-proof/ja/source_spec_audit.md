@@ -60,6 +60,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 
 ### Status
 `check_source_algorithm_e1_typing`, `check_source_algorithm_e1_typing_with_schema`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
+`consume_source_algorithm_e1_typing`: [sole API owner](./status.md#original-e1-typing-current-policy-consumption).
 `check_source_algorithm_e1_single_valuedness`, `check_source_algorithm_e1_single_valuedness_with_schema`: [sole API owner](./status.md#original-e1-single-valuedness-request-identity-association).
 `check_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-request-identity-association).
 `consume_source_algorithm_e4_existential`: [sole API owner](./status.md#original-e4-current-policy-consumption).
