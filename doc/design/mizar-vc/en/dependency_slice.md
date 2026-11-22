@@ -71,6 +71,10 @@ Raw slice entries bind the whole definition bytes, context and goal under Defini
 
 `source_unary_caller_e4_canonical_inputs(source, typed, symbols, core, request)` first regenerates the authenticated caller descriptor. VC-owned framed bytes under `mizar-vc/source-unary-caller-e4/{definition,goal,context,vc}/v1` bind the caller goal and both owners/terminating flags, original Apply/Return/formal/actual/result-slot joins, guard and fresh binder. It returns existing VC/goal/context hashes and whole conservative slice without child-identity reuse. Three normalized entries and explicit footprint/evidence unknowns retain Open/IncompleteUncacheable/cache-miss; no policy/adoption, status, VcSet/seeds, currentness or complete-footprint authority follows.
 
+## Source unary caller E1 inhabitation canonical inputs
+
+`source_unary_caller_e1_inhabitation_canonical_inputs(source, typed, symbols, core, request)` first regenerates the unchanged authenticated E1 tuple. Framed bytes under `mizar-vc/source-unary-caller-e1-inhabitation/{definition,goal,context,vc}/v1` bind ordered callee/caller owners and terminating flags, complete bounded Return/Apply/formal/actual/result-slot joins, object-inhabitation goal, actual-input witness, original object guard and fresh binder. The E1 role and domains separate this identity from child/E4; binder spelling, arena/source/range IDs and trivia are neutral. Return existing VC/goal/context hashes and whole raw slice, with local VcId(0), AlgorithmE1ResultInhabitation/Open, sorted Definition/LocalContext/GeneratedFormula entries and explicit footprint/evidence unknowns. IncompleteUncacheable/cache-miss and all deferred authority remain unchanged; no policy, Kernel, native identity, graph/status or complete-footprint authority follows.
+
 ## Inputs And Outputs
 
 Required input:
