@@ -616,6 +616,12 @@ true が採用するのはその元 single-valuedness obligation のみ。curren
 `matches_source` は最初に全五入力から認証済み descriptor を再生成する。下位エラーを保持し、request と descriptor の全体一致、および保持した result の Core とポインタ一致する場合だけ true を返す。同内容の別 arena は false。private construction と不変データにより、切り離した result の constructor や Kernel 再検査なしで同一呼出しの対応を保持する。source/environment/filesystem currentness は呼出し側の責任。
 canonical identity/reuse、current-policy consumption、native adoption、caller E4 acceptance、evidence/status、promotion、publication、coverage credit は与えない。既存 unary object profile と下位 refusal は変更しない。
 
+## Arena-local caller E4 association
+
+`SourceUnaryCallerE4Association::from_source(source, typed, symbols, core, request)` は変更しない VC child checker から一時的な真正 child evidence を取得し、同じ Core の evidence で既存 caller composition を呼ぶ。private fields は request 全体、返された caller context/formula descriptor、借用する checked caller result だけを保持し、変更不可の `request`、`descriptor`、`result` getter で元の値を返す。下位エラーを保持し、child descriptor/evidence は保持しない。
+`matches_source` は最初に全五入力から caller descriptor を新たに認証し、request/descriptor 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新しい arena での新規構築は可能。不変な全体の対応が元の caller/CFG/Return/Apply/callee/formal/actual/result-slot の結合を保持し、切り離した構築や Kernel 再検査はしない。currentness は呼出側が担う。
+この caller 専用 holder は canonical identity、child identity の再利用、current-policy consumption/native adoption、E1/E2/whole acceptance、status、publication、complete footprint、cache authority を与えない。既存 unary profile と raw unknown/incomplete/cache-miss 境界を保つ。
+
 ## Unary child-request current-policy consumption
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` は最初に既存の [association constructor](#arena-local-unary-child-request-association) を一度だけ呼び、下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_child_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出し側の責任。native adoption、canonical identity/reuse、caller E4 acceptance、evidence/status、広い credit は与えない。
