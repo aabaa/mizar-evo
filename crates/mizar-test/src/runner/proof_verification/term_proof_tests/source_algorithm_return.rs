@@ -9409,8 +9409,8 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
     use mizar_core::{
         control_flow::{ControlFlowId, build_control_flow_ir},
         core_ir::{
-            CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind, CoreFormulaKind, CoreIr,
-            CoreTermId, CoreTermKind,
+            CoreAlgorithmId, CoreAlgorithmMatchArm, CoreAlgorithmStmtId, CoreAlgorithmStmtKind,
+            CoreFormulaKind, CoreIr, CoreProvenanceKey, CoreTermId, CoreTermKind,
         },
     };
     use mizar_kernel::checker::check_instantiated_algorithm_returns as checked;
@@ -9661,6 +9661,133 @@ fn source_algorithm_e4_instantiated_kernel_refuses_wrong_child_and_resolved_guar
                 expected.then_some(1),
             );
         };
+        // Shared statement children across both branches are an acyclic containment DAG.
+        let mut parts = sole_return_core_parts(&shared);
+        let mut node = shared
+            .algorithm_statements()
+            .get(assertion_id)
+            .unwrap()
+            .clone();
+        node.kind = CoreAlgorithmStmtKind::While {
+            condition: guard,
+            invariants: vec![],
+            decreasing: vec![],
+            body: vec![assertion_id],
+        };
+        let statement_link = parts.algorithm_statements.insert(node.clone());
+        parts
+            .source_map
+            .algorithm_sources
+            .insert(statement_link, node.source.clone());
+        node.kind = CoreAlgorithmStmtKind::If {
+            condition: guard,
+            then_body: vec![statement_link, statement_link],
+            else_body: vec![statement_link],
+        };
+        let statement_root = parts.algorithm_statements.insert(node.clone());
+        parts
+            .source_map
+            .algorithm_sources
+            .insert(statement_root, node.source);
+        parts.algorithms.get_mut(other_id).unwrap().statements =
+            vec![statement_root, other_statement_id];
+        let statement_shared = CoreIr::try_new(parts).unwrap();
+        check_formula_core(&statement_shared, true);
+        for child in [assertion_id, statement_root, statement_link] {
+            for (kind, contained) in [
+                (
+                    CoreAlgorithmStmtKind::If {
+                        condition: guard,
+                        then_body: vec![assertion_id, child, child],
+                        else_body: vec![assertion_id],
+                    },
+                    true,
+                ),
+                (
+                    CoreAlgorithmStmtKind::If {
+                        condition: guard,
+                        then_body: vec![assertion_id],
+                        else_body: vec![assertion_id, child],
+                    },
+                    true,
+                ),
+                (
+                    CoreAlgorithmStmtKind::While {
+                        condition: guard,
+                        invariants: vec![],
+                        decreasing: vec![],
+                        body: vec![assertion_id, child],
+                    },
+                    true,
+                ),
+                (
+                    CoreAlgorithmStmtKind::Match {
+                        scrutinee: witness,
+                        arms: vec![CoreAlgorithmMatchArm {
+                            pattern: CoreProvenanceKey::new("first"),
+                            body: vec![assertion_id, child],
+                        }],
+                    },
+                    true,
+                ),
+                (
+                    CoreAlgorithmStmtKind::Match {
+                        scrutinee: witness,
+                        arms: vec![
+                            CoreAlgorithmMatchArm {
+                                pattern: CoreProvenanceKey::new("first"),
+                                body: vec![assertion_id],
+                            },
+                            CoreAlgorithmMatchArm {
+                                pattern: CoreProvenanceKey::new("later"),
+                                body: vec![child],
+                            },
+                        ],
+                    },
+                    true,
+                ),
+                (
+                    CoreAlgorithmStmtKind::ForRange {
+                        binder: algorithm.params[0].clone(),
+                        descending: false,
+                        start: witness,
+                        end: witness,
+                        step: None,
+                        invariants: vec![],
+                        body: vec![child],
+                    },
+                    false,
+                ),
+                (
+                    CoreAlgorithmStmtKind::ForCollection {
+                        binder: algorithm.params[0].clone(),
+                        domain: witness,
+                        invariants: vec![],
+                        body: vec![child],
+                    },
+                    false,
+                ),
+            ] {
+                let mut parts = sole_return_core_parts(&statement_shared);
+                parts
+                    .algorithm_statements
+                    .get_mut(statement_root)
+                    .unwrap()
+                    .kind = kind;
+                parts
+                    .algorithm_statements
+                    .get_mut(statement_link)
+                    .unwrap()
+                    .kind = CoreAlgorithmStmtKind::If {
+                    condition: guard,
+                    then_body: vec![statement_root],
+                    else_body: vec![],
+                };
+                // Same-owner valid indices: self/mixed cycles refuse only on bounded edges.
+                let candidate = CoreIr::try_new(parts).unwrap();
+                check_formula_core(&candidate, child == assertion_id || !contained);
+            }
+        }
         for child in [guard, formula_root, formula_link] {
             let expected = child == guard;
             let mut parts = sole_return_core_parts(&shared);

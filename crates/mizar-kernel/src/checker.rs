@@ -1392,6 +1392,47 @@ pub fn check_instantiated_algorithm_returns(
     if visited != core.formulas().len() {
         return false;
     }
+    // Only structural bodies followed by CFG rebuilding are containment edges.
+    // For* metadata is not traversed; CFG loop backedges are not Core containment.
+    let mut parents = vec![Vec::new(); core.algorithm_statements().len()];
+    let mut remaining = vec![0; core.algorithm_statements().len()];
+    for (id, statement) in core.algorithm_statements().iter() {
+        let children = match &statement.kind {
+            CoreAlgorithmStmtKind::If {
+                then_body,
+                else_body,
+                ..
+            } => then_body.iter().chain(else_body).copied().collect(),
+            CoreAlgorithmStmtKind::While { body, .. } => body.clone(),
+            CoreAlgorithmStmtKind::Match { arms, .. } => arms
+                .iter()
+                .flat_map(|arm| arm.body.iter().copied())
+                .collect(),
+            _ => Vec::new(),
+        };
+        remaining[id.index()] = children.len();
+        for child in children {
+            parents[child.index()].push(id.index());
+        }
+    }
+    let mut ready = remaining
+        .iter()
+        .enumerate()
+        .filter_map(|(id, count)| (*count == 0).then_some(id))
+        .collect::<Vec<_>>();
+    let mut visited = 0;
+    while let Some(id) = ready.pop() {
+        visited += 1;
+        for parent in &parents[id] {
+            remaining[*parent] -= 1;
+            if remaining[*parent] == 0 {
+                ready.push(*parent);
+            }
+        }
+    }
+    if visited != core.algorithm_statements().len() {
+        return false;
+    }
     let cfg = mizar_core::control_flow::build_control_flow_ir(core);
     cfg.flow_map.get(&algorithm_id) == Some(&flow_id)
         && cfg
