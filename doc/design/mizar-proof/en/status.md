@@ -648,6 +648,12 @@ True adopts only that original single-valuedness obligation. Caller-owned curren
 `matches_source` FIRST regenerates the authenticated existential descriptor on all five supplied inputs. Preserve upstream errors; return true only for whole request and descriptor equality and pointer-identical Core to the retained result. Equal cloned arenas return false. Private construction and immutable data preserve same-call checking without a detached-result constructor or another Kernel check. Source/environment/filesystem currentness remains caller-owned.
 This association grants no canonical identity/reuse, current-policy consumption, native adoption, caller E4 acceptance, evidence/status, promotion, publication or coverage credit. The existing unary object profile and lower-stage refusals remain unchanged.
 
+## Arena-local caller E1 typing association
+
+`SourceUnaryCallerE1TypingAssociation::from_source(source, typed, symbols, core, request)` calls the unchanged [fresh VC typing checker](../../mizar-vc/en/generator.md#bounded-unary-caller-e1-typing-request) once, preserving errors. Private fields retain the whole request, exact four-row context/formula tuple and same-call borrowed Core; immutable `request` and `descriptor` getters expose the existing values.
+`matches_source` first regenerates the authenticated typing request, preserving errors before whole request/tuple equality and pointer-identical Core comparison. Equal cloned arenas refuse; fresh associations on clones succeed. No detached constructor, repeated Kernel check, schema or opaque Kernel result is added. Currentness remains caller-owned.
+This passive association grants no identity, policy/native adoption, single-valuedness, E2, whole acceptance, status, complete footprints/cache or promotion/publication. Existing unary profile, child/E4/inhabitation/direct-return and raw unknown/incomplete/cache-miss boundaries remain unchanged.
+
 ## Arena-local caller E1 inhabitation association
 
 `SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` calls the unchanged VC caller object-inhabitation checker once, preserving errors. Private fields retain the whole request, exact context/formula/witness tuple and same-call borrowed `ObjectInhabitationCheck`; immutable `request`, `descriptor` and `result` getters expose those values.

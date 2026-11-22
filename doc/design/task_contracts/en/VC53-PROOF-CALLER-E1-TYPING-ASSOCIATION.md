@@ -4,7 +4,7 @@ Status: frozen association-only slice. Tier: full; new public Proof seam fails p
 Owner: [Proof](../../mizar-proof/en/00.crate_plan.md). Consumer: mizar-test.
 Dependency: [fresh caller typing check](VC53-UNARY-CALLER-E1-TYPING-CHECK.md).
 Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1 E1](../../../spec/en/20.algorithm_and_verification.md).
-Invariants: [Proof association](../../mizar-proof/en/status.md#arena-local-caller-e1-inhabitation-association), [caller typing request/check](../../mizar-vc/en/generator.md#bounded-unary-caller-e1-typing-request), [Kernel typing](../../mizar-kernel/en/checker.md#bounded-unary-caller-e1-typing).
+Invariants: [Proof association](../../mizar-proof/en/status.md#arena-local-caller-e1-typing-association), [caller typing request/check](../../mizar-vc/en/generator.md#bounded-unary-caller-e1-typing-request), [Kernel typing](../../mizar-kernel/en/checker.md#bounded-unary-caller-e1-typing).
 Gap: source_drift/test_gap; fresh authenticated caller typing checking exists without immutable Proof association/recheck. No language-intent change or external prerequisite.
 
 ## Frozen design and boundaries
