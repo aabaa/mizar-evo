@@ -610,6 +610,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_existential_result` は再生成した request を同じ呼出しの [Kernel 規則](../../mizar-kernel/ja/checker.md#unary-child-existential-instantiation) で検査し、変更しない request と既存の不透明な結果を不可分に返す。上流認証エラーが `algorithms.unary_child.invalid_existential_request` に先行する。元 direct-return API は維持する。Proof identity/current-policy/adoption、caller E4 受理、E1、一般置換、range、syntax/environment 一般化は延期し、evidence・status・promotion・publication・coverage credit は与えない。詳細は [英語版](../en/generator.md#bounded-unary-child-existential) を参照。
 
+## Bounded unary caller E4 descriptor
+
+`generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` は既存 child existential を先に再生成し、source/Core/request 全体の新規認証と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 2])` を返し、caller object guard と fresh result binder を共有する。row zero は caller の元 CFG flow・Return・actual を結ぶ `AlgorithmReturns`、row one はその結果の存在量化である。不変の Core/request が Return→Apply→callee/actual、formal/result-slot/source の対応を保持する。child witness、VcSet、seed、scheduling identity は生成しない。
+
+checked operational composition と normal-return evidence は与えない。Kernel composition、Proof caller identity/current-policy/adoption、E1/E2、全体受理は延期し、child identity は caller target の権限にならない。unknown dependency、cache miss、caller 所有の currentness は維持する。一般 evidence・status・publication・complete footprint・profile 拡大は含まない。詳細は [英語版](../en/generator.md#bounded-unary-caller-e4-descriptor) を参照。
+
 ## Bounded direct-return E1/E4 producer design
 
 `generate_source_algorithm_direct_return_requests(source, check, symbols, core, snapshot, generation_schema, vc_schema)` は、変更しない [idalgo source](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz) の要求専用経路である。immutable object parameter、object result、equality ensures、唯一の `return a` に限定する。[fixture expectation](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml) と既存 postcondition generator は維持する。call、loop、Pick、recursion、group、syntax input、premise exposure は範囲外。
