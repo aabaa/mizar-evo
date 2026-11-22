@@ -4,7 +4,7 @@ Status: frozen bounded association. Tier: full; new Proof consumer and associati
 Owner: [Proof](../../mizar-proof/en/00.crate_plan.md). Consumer: mizar-test.
 Dependency: [authenticated existential producer](VC53-UNARY-CHILD-EXISTENTIAL.md).
 Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1](../../../spec/en/20.algorithm_and_verification.md), [§16.7.3](../../../spec/en/16.theorems_and_proofs.md#1673-skeleton-encoding).
-Owner APIs/invariants: [Proof status](../../mizar-proof/en/status.md#original-e4-request-identity-association), [VC descriptor](../../mizar-vc/en/generator.md#bounded-unary-child-request-descriptor), [Kernel result](../../mizar-kernel/en/checker.md#original-algorithmreturns-existential).
+Owner APIs/invariants: [Proof status](../../mizar-proof/en/status.md#arena-local-unary-child-request-association), [VC descriptor](../../mizar-vc/en/generator.md#bounded-unary-child-request-descriptor), [Kernel result](../../mizar-kernel/en/checker.md#original-algorithmreturns-existential).
 Gap: source_drift/test_gap; Kernel checks caller/Apply/Return/result-slot joins but its opaque result retains only callee relation, witness, guard and borrowed Core. No language-intent gap is demonstrated.
 
 ## Frozen scope and design

@@ -1508,6 +1508,81 @@ impl<'core> NativeE1SingleValuedness<'core> {
     }
 }
 
+/// Arena-local association of a complete authenticated child request and same-call result.
+/// It grants no currentness, policy, adoption, identity or caller-return authority.
+pub struct SourceUnaryChildCallAssociation<'core> {
+    request: mizar_core::elaborator::SourceUnaryChildCallRequest,
+    descriptor: (
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 2],
+        mizar_core::core_ir::CoreTermId,
+    ),
+    result: mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+}
+
+impl<'core> SourceUnaryChildCallAssociation<'core> {
+    /// Authenticates the whole request and retains the producer's same-call products.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<Self, String> {
+        let (descriptor, result) =
+            mizar_vc::generator::check_source_unary_child_call_existential_result(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(Self {
+            request: request.clone(),
+            descriptor,
+            result,
+        })
+    }
+
+    /// Reauthenticates before comparing the whole retained request and descriptor.
+    /// Equal contents in a different Core arena do not match this association.
+    pub fn matches_source(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<bool, String> {
+        let descriptor = mizar_vc::generator::generate_source_unary_child_call_existential_request(
+            source, typed, symbols, core, request,
+        )?;
+        Ok(request == &self.request
+            && descriptor == self.descriptor
+            && std::ptr::eq(core, self.result.core()))
+    }
+
+    /// Complete original caller/callee request, including Apply and result-slot joins.
+    #[must_use]
+    pub const fn request(&self) -> &mizar_core::elaborator::SourceUnaryChildCallRequest {
+        &self.request
+    }
+
+    /// Complete original existential context, formula rows and witness.
+    #[must_use]
+    pub const fn descriptor(
+        &self,
+    ) -> &(
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 2],
+        mizar_core::core_ir::CoreTermId,
+    ) {
+        &self.descriptor
+    }
+
+    /// Opaque Kernel result checked on the same immutable Core as the retained request.
+    #[must_use]
+    pub const fn result(&self) -> &mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core> {
+        &self.result
+    }
+}
+
 /// Associates the original E4 request identity and raw slice with its same-call Kernel result.
 /// Currentness remains caller-owned; this grants no policy, adoption or reuse authority.
 pub fn check_source_algorithm_e4_existential<'core>(

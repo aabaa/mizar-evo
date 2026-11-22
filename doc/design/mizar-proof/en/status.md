@@ -642,6 +642,12 @@ Return original identity, whole raw slice, actual schema and `policy.policy_fing
 `adopt_original_request` regenerates identity/slice first, preserving errors; return false unless complete equality, exact snapshot and identical Core arena hold. Then re-evaluate current enabled Builtin/schema agreement with the retained schema, using the consumer's policy refusal. Earlier fingerprints grant no authority.
 True adopts only that original single-valuedness obligation. Caller-owned currentness, Open4/Deferred, raw unknown/incomplete/cache misses persist. E2/aggregate acceptance, symbols, promotion, status and reuse remain excluded.
 
+## Arena-local unary child-request association
+
+`SourceUnaryChildCallAssociation::from_source(source, typed, symbols, core, request)` invokes the authenticated VC child existential result producer once, preserving its errors. Private fields retain the whole existing request, whole existential descriptor and same-call borrowed Kernel result; immutable `request`, `descriptor` and `result` getters expose these original values. The request retains caller/Apply/Return/formal/actual/both result-slot joins omitted by the callee-only result.
+`matches_source` FIRST regenerates the authenticated existential descriptor on all five supplied inputs. Preserve upstream errors; return true only for whole request and descriptor equality and pointer-identical Core to the retained result. Equal cloned arenas return false. Private construction and immutable data preserve same-call checking without a detached-result constructor or another Kernel check. Source/environment/filesystem currentness remains caller-owned.
+This association grants no canonical identity/reuse, current-policy consumption, native adoption, caller E4 acceptance, evidence/status, promotion, publication or coverage credit. The existing unary object profile and lower-stage refusals remain unchanged.
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` returns original `ProofObligationIdentity`, whole raw `DependencySlice` and borrowed Kernel `AlgorithmReturnsExistentialCheck` atomically. First call the authentic VC original-existential result producer with the fixed direct-return schemas above, preserving errors. Regenerate the existing original identity on identical inputs and require equality with the whole descriptor.5 raw slice; mismatch uses `algorithm.proof.invalid_direct_return_request`.

@@ -610,6 +610,12 @@ true が採用するのはその元 typing obligation のみ。currentness は�
 `adopt_original_request` は最初に identity/slice を再生成し、エラーを保持する。完全一致・正確な snapshot・同一 Core arena が成立しなければ false。続いて保持した schema に対して現在の Builtin 許可/schema 一致を再評価し、consumer と同じ policy 拒否を使う。以前の fingerprint は権限を与えない。
 true が採用するのはその元 single-valuedness obligation のみ。currentness は呼出側が担い、Open4/Deferred・raw unknown/incomplete/cache miss は保つ。E2/aggregate acceptance・symbols・promotion・status・reuse は対象外。
 
+## Arena-local unary child-request association
+
+`SourceUnaryChildCallAssociation::from_source(source, typed, symbols, core, request)` は、認証済み VC child existential result producer を一度だけ呼び、下位エラーを保持する。private fields は既存 request 全体、existential descriptor 全体、同一呼出しで検査した Core を借用する Kernel result を保持する。変更不可の `request`、`descriptor`、`result` getter は元の値を返す。request は result 単独に含まれない caller/Apply/Return/formal/actual/両 result-slot の対応を保持する。
+`matches_source` は最初に全五入力から認証済み descriptor を再生成する。下位エラーを保持し、request と descriptor の全体一致、および保持した result の Core とポインタ一致する場合だけ true を返す。同内容の別 arena は false。private construction と不変データにより、切り離した result の constructor や Kernel 再検査なしで同一呼出しの対応を保持する。source/environment/filesystem currentness は呼出し側の責任。
+canonical identity/reuse、current-policy consumption、native adoption、caller E4 acceptance、evidence/status、promotion、publication、coverage credit は与えない。既存 unary object profile と下位 refusal は変更しない。
+
 ## Original E4 request-identity association
 
 `check_source_algorithm_e4_existential(source, check, symbols, core, snapshot, vc_id)` は元の `ProofObligationIdentity`、raw `DependencySlice` 全体、借用 Kernel `AlgorithmReturnsExistentialCheck` を atomic に返す。最初に固定 direct-return schemas で真正な VC original-existential result producer を呼び、エラーを保持する。同一入力で既存の元 identity を再生成し、descriptor.5 の raw slice 全体との一致を要求する。不一致は `algorithm.proof.invalid_direct_return_request`。

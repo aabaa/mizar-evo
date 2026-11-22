@@ -59,6 +59,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `VcProofSelection`、`ProofSelectionSource`、`ArtifactProofSelection`、`ArtifactProofSelectionError`、`merge_artifact_proof_selections` | `selection.md` の artifact proof selection merge section。 | merge canonical order、source/class compatibility、duplicate source、trusted precedence、same-class tie-break、non-trusted preservation tests。 | consistent |
 
 ### Status
+`SourceUnaryChildCallAssociation`: [sole API owner](./status.md#arena-local-unary-child-request-association).
 `check_source_algorithm_e1_typing`, `check_source_algorithm_e1_typing_with_schema`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
 `consume_source_algorithm_e1_typing`: [sole API owner](./status.md#original-e1-typing-current-policy-consumption).
 `NativeE1Typing`: [sole API owner](./status.md#native-original-e1-typing-adoption).

@@ -375,11 +375,25 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             mizar_vc::generator::check_source_unary_child_call_existential_result(
                 &source, &typed, symbols, &core, &request,
             ).unwrap();
+        let association = mizar_proof::status::SourceUnaryChildCallAssociation::from_source(
+            &source, &typed, symbols, &core, &request,
+        ).unwrap();
         assert_eq!(checked_existential, existential);
         assert!(std::ptr::eq(retained.core(), &core));
         assert_eq!(retained.target(), (algorithm, flow, statement, (input.var, None), (*var, None)));
         assert_eq!(retained.witness(), request.actual);
         assert_eq!(retained.context(), [expected.1.1]);
+        for _ in 0..2 {
+            assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+            assert_eq!(association.request(), &request);
+            assert_eq!(association.descriptor(), &existential);
+            let result = association.result();
+            assert!(std::ptr::eq(result.core(), &core));
+            assert_eq!(result.target(), retained.target());
+            assert_eq!(result.witness(), retained.witness());
+            assert_eq!(result.context(), retained.context());
+            assert_eq!(result.checker_schema_version(), retained.checker_schema_version());
+        }
         assert_eq!(mizar_vc::generator::generate_source_unary_child_call_existential_request(
             &source, &typed, symbols, &core, &request,
         ).unwrap(), existential);
@@ -415,6 +429,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         generate_source_unary_child_call_existential_request as generate,
     };
     use mizar_kernel::checker::check_unary_child_returns_existential_result as kernel;
+    use mizar_proof::status::SourceUnaryChildCallAssociation as Association;
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
     let (source, nodes, collected, _) =
         source_registration_formula_inputs(text, "unary-child", "atomic", 0);
@@ -426,6 +441,12 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine = describe(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
     let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
+    let association = Association::from_source(&source, &typed, symbols, &core, &request).unwrap();
+    let cloned_core = core.clone();
+    assert_eq!(retain(&source, &typed, symbols, &cloned_core, &request).unwrap().0, genuine_existential);
+    assert!(!association.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
+    let cloned_association = Association::from_source(&source, &typed, symbols, &cloned_core, &request).unwrap();
+    assert!(cloned_association.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
     let target = retained.target();
     let binder = target.4.0;
     let callee = core.algorithms().get(request.callee).unwrap();
@@ -507,10 +528,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(describe(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "request {mutation}");
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "existential request {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
+        assert_eq!(Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "association request {mutation}");
+        assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     for mutation in 0..27 {
         let mut p = CoreIrParts {
             source_id: core.source_id(), module_id: core.module_id().clone(),
@@ -598,12 +622,15 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(describe(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "existential Core {mutation}");
         assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
+        assert_eq!(Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "association Core {mutation}");
+        assert_eq!(association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck Core {mutation}");
         if matches!(mutation, 0..=8 | 10 | 15..=16 | 19..=26) {
             assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
         }
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     for (module, edited) in [
         ("foreign", text.to_owned()),
         ("atomic", text.replace("child", "edited")),
@@ -614,6 +641,14 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     ] {
         let (other_source, nodes, other_collected, _) = source_registration_formula_inputs(&edited, "unary-child", module, 0);
         let other_typed = super::super::source_registration_receiver(&other_source, nodes).unwrap();
+        if module == "atomic" && edited.contains("algorithm edited(") {
+            let (other_core, other_request) = lower(&check(&other_source, other_collected.env(), &other_typed).unwrap()).unwrap();
+            let other_descriptor = retain(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().0;
+            let other_association = Association::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            assert_eq!(other_association.descriptor(), &other_descriptor);
+            assert!(other_association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!association.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+        }
         for (s, t, e) in [
             (&other_source, &typed, symbols),
             (&source, &typed, other_collected.env()),
@@ -625,6 +660,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(error, expected.err().unwrap_or_else(|| "algorithms.unary_child.invalid_request".into()));
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
+            assert_eq!(Association::from_source(s, t, e, &core, &request).err().unwrap(), error);
+            assert_eq!(association.matches_source(s, t, e, &core, &request).unwrap_err(), error);
         }
     }
     let mut nodes: Vec<_> = typed.nodes().iter().map(|(_, node)| node.clone()).collect();
@@ -640,6 +677,22 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(describe(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(retain(&source, &forged, symbols, &core, &request).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
+    let error = check(&source, symbols, &forged).unwrap_err();
+    assert_eq!(Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), error);
+    assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), error);
+    let mut mismatched = request.clone();
+    mismatched.caller = request.callee;
+    assert_eq!(retain(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
+    assert_eq!(Association::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), error);
+    assert_eq!(association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
+    assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+    assert_eq!(association.request(), &request);
+    assert_eq!(association.descriptor(), &genuine_existential);
+    assert!(std::ptr::eq(association.result().core(), &core));
+    assert_eq!(association.result().target(), retained.target());
+    assert_eq!(association.result().witness(), retained.witness());
+    assert_eq!(association.result().context(), retained.context());
+    assert_eq!(association.result().checker_schema_version(), retained.checker_schema_version());
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine_existential);
     assert_eq!(retain(&source, &typed, symbols, &core, &request).unwrap().0, genuine_existential);
