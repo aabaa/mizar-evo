@@ -1884,6 +1884,64 @@ pub fn check_unary_caller_returns_existential_result<'core>(
     })
 }
 
+/// Checks universal caller result typing under only the original object-input guard.
+/// Every child return is its immutable formal, instantiated by the caller actual;
+/// the caller returns exactly that child's result. Hence every returned result
+/// has the actual's object type, independently of any existential witness.
+/// This boolean supplies no source authentication, Proof authority or other E1 duty.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original typing projections without a single-use representation"
+)]
+pub fn check_unary_caller_return_typing(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: ((CoreVarId, Option<CoreAlgorithmStmtId>), &str),
+    context: &[CoreFormulaId],
+) -> bool {
+    let Some(callee) = core.algorithms().get(request.callee) else {
+        return false;
+    };
+    let [returned] = callee.statements.as_slice() else {
+        return false;
+    };
+    if target.4 != (binder, None) || conclusion != (target.4, "object") {
+        return false;
+    }
+    // Reuse exact body/guard/slot validation, not the existential proposition.
+    // It also checks global cycles before the recursive CFG builder below.
+    if check_unary_child_returns_existential_result(
+        core,
+        request,
+        (request.callee, callee_flow, *returned, target.3, target.4),
+        binder,
+        request.actual,
+        context,
+    )
+    .is_none()
+    {
+        return false;
+    }
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    target.0 == request.caller
+        && target.2 == request.statement
+        && cfg.flow_map.get(&request.caller) == Some(&target.1)
+        && cfg
+            .flows
+            .get(target.1)
+            .is_some_and(|flow| flow.algorithm == request.caller)
+}
+
 /// A checked `exists r.object(r)` under the retained Core context.
 /// Construction is private and performs bounded existential introduction.
 pub struct ObjectInhabitationCheck<'core> {

@@ -135,6 +135,10 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
         ).unwrap();
         assert_eq!(caller_typing.0, caller_e4.0);
         assert_eq!(caller_typing.1[0], caller_e4.1[0]);
+        assert!(mizar_kernel::checker::check_unary_caller_return_typing(
+            &core, &request, retained.target().1, caller.result().target(), inhabitation.result().binder(),
+            ((inhabitation.result().binder(), None), "object"), retained.context(),
+        ));
         let raw = if inhabitation_profile { canonical_caller_e1(&source, &typed, symbols, &core, &request) } else if caller_profile { canonical_caller_e4(&source, &typed, symbols, &core, &request) } else { canonical_unary_child(&source, &typed, symbols, &core, &request) }.unwrap();
         assert_eq!((raw.0, raw.1, raw.2), (expected_vc, expected_goal, expected_context));
         let (identity, slice) = if inhabitation_profile {
@@ -752,6 +756,11 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             binders: vec![binder.id],
             body: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
         });
+        assert!(mizar_kernel::checker::check_unary_caller_return_typing(
+            &core, &request, flow,
+            (request.caller, mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller], caller_row.statements[0], (caller_row.params[0].var, None), (*var, None)),
+            *var, ((*var, None), "object"), &[expected.1.1],
+        ));
         let (checked_existential, retained) =
             mizar_vc::generator::check_source_unary_child_call_existential_result(
                 &source, &typed, symbols, &core, &request,
@@ -926,6 +935,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap(), caller_typing);
+                assert!(mizar_kernel::checker::check_unary_caller_return_typing(
+                    current_core, &request, flow, composed.target(), *var,
+                    ((*var, None), "object"), &[expected.1.1],
+                ));
                 assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_inhabitation_request(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap(), caller_e1);
@@ -1021,6 +1034,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         generate_source_unary_child_call_existential_request as generate,
     };
     use mizar_kernel::checker::{
+        check_unary_caller_return_typing as typing_kernel,
         check_unary_caller_returns_existential_result as compose_kernel,
         check_unary_child_returns_existential_result as kernel,
     };
@@ -1141,6 +1155,14 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         panic!("caller normal-return descriptor")
     };
     let caller_target = (algorithm, flow, statement, (input.var, input.definition), (result.var, result.definition));
+    let conclusion = ((binder, None), "object");
+    assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
+    assert!(typing_kernel(&cloned_core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
+    assert!(!typing_kernel(&core, &request, target.1, target, binder, conclusion, &[actual_guard]));
+    assert!(!mizar_kernel::checker::check_algorithm_return_typing(&core, caller_target, binder, conclusion, &[actual_guard]));
+    for wrong_flow in [caller_target.1, mizar_core::control_flow::ControlFlowId::new(usize::MAX)] {
+        assert!(!typing_kernel(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]));
+    }
     assert_eq!(composed.target(), caller_target);
     assert!(compose_kernel(&core, &request, caller_target, &retained, &[actual_guard]).is_some());
     assert!(compose_kernel(&core, &request, target, &retained, &[actual_guard]).is_none());
@@ -1152,6 +1174,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let formal_child = mizar_kernel::checker::check_algorithm_returns_existential_result(
         &core, formal_target, binder, formal_return, &[formal_guard],
     ).expect("formal-only child evidence is independently valid");
+    assert!(mizar_kernel::checker::check_algorithm_return_typing(&core, formal_target, binder, conclusion, &[formal_guard]));
+    assert!(!typing_kernel(&core, &request, target.1, formal_target, binder, conclusion, &[formal_guard]));
     assert!(compose_kernel(&core, &request, caller_target, &formal_child, &[actual_guard]).is_none());
     assert_eq!(compose(&source, &typed, symbols, &core, &request, &formal_child).err().unwrap(),
         "algorithms.unary_child.invalid_caller_e4_request");
@@ -1204,21 +1228,31 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             _ => unreachable!(),
         }
         assert!(compose_kernel(&core, &request, caller_changed, &retained, &[actual_guard]).is_none(), "caller target {mutation}");
+        assert!(!typing_kernel(&core, &request, target.1, caller_changed, binder, conclusion, &[actual_guard]), "typing target {mutation}");
     }
     for wrong in [formal_return, request.application, CoreTermId::new(usize::MAX)] {
         assert!(kernel(&core, &request, target, binder, wrong, &[actual_guard]).is_none(), "witness {wrong:?}");
     }
     for wrong in [request.formal, target.3.0, request.callee_result, request.caller_result, CoreVarId::new(usize::MAX)] {
         assert!(kernel(&core, &request, target, wrong, request.actual, &[actual_guard]).is_none(), "binder {wrong:?}");
+        assert!(!typing_kernel(&core, &request, target.1, caller_target, wrong, conclusion, &[actual_guard]), "typing binder {wrong:?}");
+        assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, ((wrong, None), "object"), &[actual_guard]), "typing subject {wrong:?}");
     }
     for captured in [request.formal, target.3.0, request.callee_result, request.caller_result] {
         let mut changed = target;
         changed.4.0 = captured;
         assert!(kernel(&core, &request, changed, captured, request.actual, &[actual_guard]).is_none(), "captured binder {captured:?}");
+        let mut caller_changed = caller_target;
+        caller_changed.4.0 = captured;
+        assert!(!typing_kernel(&core, &request, target.1, caller_changed, captured, ((captured, None), "object"), &[actual_guard]), "typing captured binder {captured:?}");
+    }
+    for wrong in [((binder, None), "set"), ((binder, Some(request.statement)), "object"), ((binder, Some(CoreAlgorithmStmtId::new(usize::MAX))), "object")] {
+        assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, wrong, &[actual_guard]), "typing conclusion {wrong:?}");
     }
     for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
         assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
         assert!(compose_kernel(&core, &request, caller_target, &retained, &context).is_none(), "caller context {context:?}");
+        assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &context), "typing context {context:?}");
     }
     for mutation in 0..17 {
         let mut changed = request.clone();
@@ -1278,6 +1312,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "recheck request {mutation}");
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert!(compose_kernel(&core, &changed, caller_target, &retained, &[actual_guard]).is_none(), "caller Kernel request {mutation}");
+        assert!(!typing_kernel(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), "typing request {mutation}");
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
@@ -1285,7 +1320,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(caller_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert_eq!(inhabitation_association.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), genuine_e1_identity);
-    for mutation in 0..27 {
+    for mutation in 0..33 {
         let mut p = CoreIrParts {
             source_id: core.source_id(), module_id: core.module_id().clone(),
             items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(),
@@ -1364,6 +1399,21 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             24 => p.formulas.get_mut(actual_guard).unwrap().kind = F::Equals { left: request.actual, right: formal_return },
             25 => p.formulas.get_mut(callee.result.as_ref().unwrap().ty_guard.unwrap()).unwrap().kind = F::True,
             26 => p.formulas.get_mut(caller.result.as_ref().unwrap().ty_guard.unwrap()).unwrap().kind = F::Equals { left: request.actual, right: request.actual },
+            27 => p.algorithms.get_mut(request.caller).unwrap().result.as_mut().unwrap().var = caller.params[0].var,
+            28 => p.algorithm_statements.get_mut(callee.statements[0]).unwrap().kind = S::Return(Some(request.actual)),
+            29 => p.algorithms.get_mut(request.caller).unwrap().statements.push(request.statement),
+            30 | 31 => {
+                let mut term = core.terms().get(request.actual).unwrap().clone();
+                term.kind = T::Var(binder);
+                let id = p.terms.insert(term.clone());
+                p.source_map.term_sources.insert(id, term.source);
+                if mutation == 31 {
+                    p.terms.get_mut(id).unwrap().kind = T::Tuple(vec![id]);
+                }
+            }
+            32 => p.algorithm_statements.get_mut(callee.statements[0]).unwrap().kind = S::If {
+                condition: formal_guard, then_body: callee.statements.clone(), else_body: vec![],
+            },
             _ => unreachable!(),
         }
         let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {mutation}: {error}"));
@@ -1402,8 +1452,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         if matches!(mutation, 0..=8 | 10 | 15..=16 | 19..=26) {
             assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
         }
+        assert_eq!(typing_kernel(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "typing Core {mutation}");
         assert_eq!(changed, changed_before);
     }
+    assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(caller_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
