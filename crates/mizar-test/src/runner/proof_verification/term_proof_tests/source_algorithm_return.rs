@@ -1174,17 +1174,20 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
     };
     use mizar_proof::{
         policy::{
-            AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceOrigin, KernelPolicyInput,
-            PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
+            AcceptedGoalPolarity, CandidatePolicyClass, KernelEvidenceFormat, KernelEvidenceOrigin,
+            KernelPolicyInput, PolicyCandidate, ProofPolicyEvaluator, VerifierPolicy,
         },
         status::{
             check_source_algorithm_e2_result as associate,
             check_source_algorithm_return_reflexivity as verify,
+            consume_source_algorithm_e2_result as consume,
             source_algorithm_return_obligation_identity,
         },
     };
     use mizar_vc::{
-        dependency_slice::{DependencySliceInput, try_compute_dependency_slices},
+        dependency_slice::{
+            DependencySliceCompleteness, DependencySliceInput, try_compute_dependency_slices,
+        },
         generator::generate_source_algorithm_postconditions,
         kernel_evidence_handoff::{
             KernelClauseTautologyPolicy, KernelContextIdentitySource as SourceContext,
@@ -1231,6 +1234,17 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                 (1, VerifierPolicy::default()),
                 (0, VerifierPolicy::development()),
                 (0, VerifierPolicy::interactive()),
+                (
+                    0,
+                    VerifierPolicy::default().with_kernel_evidence_formats([
+                        KernelEvidenceFormat::BuiltinKernelEvidence,
+                    ]),
+                ),
+                (
+                    0,
+                    VerifierPolicy::default().with_profile_id("changed-e2-policy"),
+                ),
+                (0, VerifierPolicy::default().with_schema_version(2)),
             ]
         } else {
             vec![(0, VerifierPolicy::default())]
@@ -1241,6 +1255,7 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                 generate_source_algorithm_postconditions(&core, snapshot, &generation, &schema)
                     .unwrap();
             let prior = (core.clone(), vcs.clone(), policy.clone());
+            let check_before = format!("{check:?}");
             let [vc] = vcs.vcs() else { panic!() };
             assert_eq!(vc.status, VcStatus::Open);
             assert!(matches!(
@@ -1448,6 +1463,56 @@ fn source_algorithm_return_reflexivity_checks_genuine_targets() {
                 associate(&source, &check, &symbols, &core.clone(), snapshot, vc.id).unwrap(),
                 associated
             );
+            assert_eq!(associated.1.status(), &VcStatus::Open);
+            assert_eq!(
+                associated.1.completeness(),
+                DependencySliceCompleteness::IncompleteUncacheable
+            );
+            let consumed = (
+                associated.0.clone(),
+                associated.1.clone(),
+                associated.2.clone(),
+                associated.3,
+                policy.policy_fingerprint(),
+            );
+            for _ in 0..2 {
+                assert_eq!(
+                    consume(&source, &check, &symbols, &core, snapshot, vc.id, &policy).unwrap(),
+                    consumed
+                );
+            }
+            if policy != VerifierPolicy::default() {
+                assert_ne!(consumed.4, VerifierPolicy::default().policy_fingerprint());
+            }
+            if variant == 0 && snapshot == snapshot_id(0) && policy == VerifierPolicy::default() {
+                assert_eq!(consumed.3, 1);
+                assert_ne!(consumed.3, parsed.schema_version());
+                for refused_policy in [
+                    policy.clone().with_kernel_evidence_formats([]),
+                    policy
+                        .clone()
+                        .with_kernel_evidence_formats([KernelEvidenceFormat::FormulaSubstitution]),
+                    policy.clone().with_checker_schema_version(0),
+                    policy.clone().with_checker_schema_version(2),
+                ] {
+                    let before = refused_policy.clone();
+                    assert_eq!(
+                        consume(
+                            &source,
+                            &check,
+                            &symbols,
+                            &core,
+                            snapshot,
+                            vc.id,
+                            &refused_policy
+                        )
+                        .unwrap_err(),
+                        "algorithm.proof.e2_policy_rejected"
+                    );
+                    assert_eq!(refused_policy, before);
+                }
+            }
+            assert_eq!(format!("{check:?}"), check_before);
             let actual = verify(&source, &nodes, &symbols, snapshot, vc.id, &policy).unwrap();
             assert_eq!(actual, (expected_result, expected_decision));
             assert_eq!(actual.0.status(), KernelCheckStatus::Accepted);
@@ -11038,7 +11103,13 @@ fn source_algorithm_e2_result_refuses_foreign_mutated_and_unused_core() {
         core_ir::{CoreFormulaKind, CoreIr},
         elaborator::{lower_source_algorithms, source_algorithm_formula_payloads},
     };
-    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            check_source_algorithm_e2_result as associate,
+            consume_source_algorithm_e2_result as consume,
+        },
+    };
     let text = fs::read_to_string(config().workspace_root.join(
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
     ))
@@ -11102,6 +11173,22 @@ fn source_algorithm_e2_result_refuses_foreign_mutated_and_unused_core() {
                                 .unwrap_err(),
                                 expected
                             );
+                            let policy = VerifierPolicy::default()
+                                .with_kernel_evidence_formats([])
+                                .with_checker_schema_version(0);
+                            assert_eq!(
+                                consume(
+                                    source,
+                                    check,
+                                    symbols,
+                                    &refused,
+                                    snapshot_id(0),
+                                    selected,
+                                    &policy
+                                )
+                                .unwrap_err(),
+                                expected
+                            );
                         }
                         assert_eq!(refused, before);
                     }
@@ -11119,7 +11206,13 @@ fn source_algorithm_e2_result_refuses_foreign_mutated_and_unused_core() {
 fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
     use mizar_checker::type_checker::check_source_algorithm_types;
     use mizar_core::elaborator::lower_source_algorithms;
-    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            check_source_algorithm_e2_result as associate,
+            consume_source_algorithm_e2_result as consume,
+        },
+    };
     let text = fs::read_to_string(config().workspace_root.join(
         "tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz",
     ))
@@ -11151,6 +11244,22 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
                             assert_eq!(
                                 associate(source, check, symbols, &core, snapshot_id(0), selected)
                                     .unwrap_err(),
+                                expected
+                            );
+                            let policy = VerifierPolicy::default()
+                                .with_kernel_evidence_formats([])
+                                .with_checker_schema_version(0);
+                            assert_eq!(
+                                consume(
+                                    source,
+                                    check,
+                                    symbols,
+                                    &core,
+                                    snapshot_id(0),
+                                    selected,
+                                    &policy
+                                )
+                                .unwrap_err(),
                                 expected
                             );
                         }
@@ -11207,7 +11316,13 @@ fn source_algorithm_e2_result_refuses_changed_source_check_and_symbols() {
 #[test]
 fn source_algorithm_e2_result_preserves_core_generation_and_handoff_precedence() {
     use mizar_core::elaborator::{lower_source_algorithms, source_algorithm_formula_payloads};
-    use mizar_proof::status::check_source_algorithm_e2_result as associate;
+    use mizar_proof::{
+        policy::VerifierPolicy,
+        status::{
+            check_source_algorithm_e2_result as associate,
+            consume_source_algorithm_e2_result as consume,
+        },
+    };
     use mizar_vc::{
         generator::generate_source_algorithm_postconditions,
         kernel_evidence_handoff::build_source_algorithm_return_kernel_handoff,
@@ -11273,6 +11388,23 @@ fn source_algorithm_e2_result_preserves_core_generation_and_handoff_precedence()
                 };
                 assert_eq!(
                     associate(source, check, symbols, &core, snapshot_id(0), selected).unwrap_err(),
+                    expected,
+                    "{kind}"
+                );
+                let policy = VerifierPolicy::default()
+                    .with_kernel_evidence_formats([])
+                    .with_checker_schema_version(0);
+                assert_eq!(
+                    consume(
+                        source,
+                        check,
+                        symbols,
+                        &core,
+                        snapshot_id(0),
+                        selected,
+                        &policy
+                    )
+                    .unwrap_err(),
                     expected,
                     "{kind}"
                 );

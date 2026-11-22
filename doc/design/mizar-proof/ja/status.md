@@ -544,6 +544,10 @@ projection/slice/draft 全体を一括で返し、stage・I/O は行いません
 `check_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id)` は `(ProofObligationIdentity, DependencySlice, KernelCheckResult, u16)` を返す。fresh Checker 認証と algorithm 一致確認後、Core formula payloads で supplied Core 全体を replay 認証する。同じ Core 上で元の step5c14-return graph、raw slice 全体、singleton return handoff を生成し、実 v1/name/v2 evidence を既存 private helper 経由で normal Kernel に一度だけ渡し、成功時のみの checker schema を運ぶ。既存 caller は schema のみ捨て、結果と error を保持する。
 [元 return identity](#source-algorithm-return-obligation-identity) を再生成し、raw slice 全体の一致、実 Accepted・untainted ProofObligation と schema の存在を要求して一括返却する。owner error はそのまま伝え、局所的拒否は `algorithm.proof.invalid_e2_request`。currentness は caller 所有、raw Open/Deferred/unknown/incomplete/cache miss は維持する。policy consumption、native retention/adoption、五 role の aggregate acceptance は別工程で、symbol・promotion・reuse 権限を与えない。
 
+## Original E2 current-policy consumption
+
+`consume_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id, policy)` は変更しない [E2 association](#original-e2-request-identity-association) を最初に一度呼び、error を保持する。BuiltinKernelEvidence の許可と、返された schema と policy checker schema の完全一致を要求し、不一致は `algorithm.proof.e2_policy_rejected`。四値を変更せず現在の PolicyFingerprint を加えて返す。currentness は caller 所有で、raw Open/Deferred/unknown/incomplete/cache miss は維持する。native retention/adoption と aggregate acceptance は別工程で、status・reuse 権限は与えない。
+
 ## Source algorithm return reflexivity
 
 `check_source_algorithm_return_reflexivity(source: &SurfaceResolvedArena, nodes: &TypedArena, symbols: &SymbolEnv, snapshot: BuildSnapshotId, vc_id: VcId, policy: &VerifierPolicy) -> Result<(KernelCheckResult, PolicyDecision), String>` を既存 status.rs の theorem reflexivity の完全な doccomment/function 直前へ一つ追加する。caller Core/check/VC/evidence/target/result/flag は受け取らない。

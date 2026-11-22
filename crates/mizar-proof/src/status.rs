@@ -2195,6 +2195,44 @@ pub fn check_source_algorithm_e2_result(
     Ok((identity, slice, result, schema))
 }
 
+/// Consumes the same-call E2 association under the current policy.
+/// Currentness remains caller-owned; this grants no adoption, status or reuse authority.
+pub fn consume_source_algorithm_e2_result(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    check: &mizar_checker::type_checker::SourceAlgorithmCheck<'_>,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    snapshot: mizar_session::BuildSnapshotId,
+    vc_id: VcId,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        ProofObligationIdentity,
+        mizar_vc::dependency_slice::DependencySlice,
+        KernelCheckResult,
+        u16,
+        PolicyFingerprint,
+    ),
+    String,
+> {
+    let (identity, slice, result, checker_schema) =
+        check_source_algorithm_e2_result(source, check, symbols, core, snapshot, vc_id)?;
+    if !policy
+        .kernel_evidence_formats()
+        .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+        || policy.checker_schema_version() != checker_schema
+    {
+        return Err("algorithm.proof.e2_policy_rejected".to_owned());
+    }
+    Ok((
+        identity,
+        slice,
+        result,
+        checker_schema,
+        policy.policy_fingerprint(),
+    ))
+}
+
 /// Checks one genuine source algorithm return goal with normal Kernel and policy.
 pub fn check_source_algorithm_return_reflexivity(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
