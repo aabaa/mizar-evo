@@ -20,6 +20,9 @@ Classification: authorized CI policy expansion and deployment gap; no language-i
 Revise the receipt model for all changes and only the protocol's every-push full-CI clause.
 Generate the production signer in `~/orchestration/ci-receipts/`, private mode 600;
 register only public key, generator/key identities and reviewed public policy pins.
+Land reviewed verifier, public pins and `.github/CODEOWNERS` on default main
+through normal orchestrator landing, retaining unconditional hosted full testing.
+Verify hosted reconciliation and effective base ownership before crediting canaries.
 Then publish and execute live docs, trust-change, forgery and moved-head canaries
 before enforcement, under the 2026-11-22 activation/publication owner decision.
 Switch [CI](../../../../.github/workflows/ci.yml) once: enforcing `receipt-sanity`,
@@ -28,7 +31,8 @@ Complete activation only after required-check protection is configured and read 
 This unit may push
 the activation switch to main; other pushes follow orchestrator landing policy.
 Stop at any uncompletable step with evidence.
-Allowed implementation: existing verifier/policy, receipt tests and external custody tooling.
+Allowed implementation: existing verifier/policy, `.github/CODEOWNERS`, receipt tests
+and external custody tooling.
 Preserve non-test CI gates, exhaustive local tests, signing, exact-head binding,
 trusted independent controls, capture/inventory checks and bounded evidence verification.
 Forbidden: language-spec/test-intent changes, other protocol or AGENTS edits, signer
@@ -44,7 +48,8 @@ Cap: eight groups, retaining the earlier successor's refusal subcases.
 4. Forgery/tamper, revoked signer, stale/future times and changed trust pins refuse.
 5. Noncanonical/schema/blob/log-size or hash failures refuse; evidence is never executed.
 6. All-change eligibility retains exact comparison checks and independent trust-control review.
-7. Candidate control substitution refuses; PR/fork/merge needs an exact event receipt.
+7. Candidate controls cannot authorize main admission; independently load trusted controls,
+   block unreviewed substitution despite same-App success; PR/fork/merge needs an exact receipt.
 8. Live canaries, required-check source/readback, one-switch enforcement, schedule and rollback.
 Fixtures cannot establish external controls. New cases beyond the cap name an owner requirement.
 Reviews: specification/trust, sufficiency, precision, removable volume, consistency and final quality.

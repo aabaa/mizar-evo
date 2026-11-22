@@ -84,6 +84,13 @@ workflows, governance and language/proof documentation. Path classification neve
 substitutes for successful local exhaustive tests or confers semantic credit.
 Trust-control changes require independent owner review and renewed trusted pins;
 candidate-edited policy, signer, generator or workflow cannot authorize itself.
+Main admission combines `receipt-sanity` from the expected GitHub Actions App
+with independently enforced owner review of `.github/workflows/`,
+`.github/ci-receipts/` and `.github/CODEOWNERS`, using base-branch CODEOWNERS.
+The owner-review rule dismisses stale approvals and permits custody-owned
+administrative bypass; the separate receipt requirement has no bypass.
+Candidate status alone grants no authorization. Trust-control receipts use
+prior-main/default controls; repository rules enforce independent approval.
 
 Classify the entire main push `before..S` with ancestry checked, or the entire branch
 merge-base-to-S delta against the trusted default branch; never just the latest lane slice.
