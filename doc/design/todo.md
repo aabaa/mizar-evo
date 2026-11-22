@@ -359,7 +359,7 @@ Lane 1: P28, P20, P21, P22, P2 (dependencies first); either lane: P8 → P9, P14
   authenticated target identity, ordered actuals and source/context provenance
   for R4's loader join. Scope: checker `type_checker.rs`, test-first
   `tests/miz/`, checker type-checker docs. Dependencies: P7; serialize P8/P14.
-  Unspecified numeral-to-object admissibility parks as a specification question.
+  [P14 contract](task_contracts/en/CHECKER-P14-GROUND-INVOCATION.md); P14-NUMERAL admits initially object-typed numerals to object arguments.
 
 #### Wave 3 — boundary work and independent consumers
 

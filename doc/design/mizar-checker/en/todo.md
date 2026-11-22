@@ -1,5 +1,7 @@
 # mizar-checker TODO
 
+P14: [typed ground invocation](../../task_contracts/en/CHECKER-P14-GROUND-INVOCATION.md).
+
 P19 source correspondence: [RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE](../../task_contracts/en/RESOLVE-P19-BINDER-SOURCE-CORRESPONDENCE.md).
 P19 pattern intake: [RESOLVE-P19-BINDER-PATTERN-INTAKE](../../task_contracts/en/RESOLVE-P19-BINDER-PATTERN-INTAKE.md).
 

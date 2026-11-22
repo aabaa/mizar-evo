@@ -12,6 +12,8 @@
 
 Status: docs-only audit, 2026-07-02.
 
+P14-NUMERAL has parse-only call coverage and a [bounded Checker invocation producer](./mizar-checker/en/type_checker.md#typed-ground-invocations); general numeric typing, complete algorithm typing and R4 execution remain partial/deferred.
+
 This document records whether each canonical specification chapter under
 `doc/spec/en/` has implementation-facing coverage in `doc/design/`. It does
 not change language behavior, `doc/spec`, `.miz` tests, expectation metadata,

@@ -1,0 +1,13 @@
+:: P14-NUMERAL; spec 3.4 and 20.9. Parser corpus credit only.
+definition
+  let a be object;
+  terminating algorithm idalgo(a) -> object
+    ensures result = a
+  do
+    return a;
+  end;
+  algorithm ground_caller(a) -> object
+  do
+    return idalgo(0);
+  end;
+end;

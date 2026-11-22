@@ -625,6 +625,17 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.builtin.numeral_object"
+source = "doc/spec/en/03.type_system.md"
+section = "3.4 Built-in Types"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/parser/pass_parser_typed_ground_invocation_001.expect.toml"]
+notes = "Parse-only numeral call syntax; Checker Rust tests separately authenticate object typing and ordered ground invocation provenance. General numeric typing and execution remain deferred."
+
+[[requirement]]
 id = "spec.en.03.expr_types.parser"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"

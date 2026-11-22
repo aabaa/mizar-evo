@@ -3266,3 +3266,8 @@ canonical 入口は実 TypeTable 全体をそのまま保持する。final sourc
 ## Native quantified statement inputs
 statement interpreterはnative input familyを単一の通常default-public universal-root theorem、proof内Let宣言に続く直接等式結論一つ、citationなしに限定して用いる。original node、実declaration/type application、実primary referenceからstatement shell・source ordinal・incoming/proof context・LetTypeGuard inputを導出する。header binder guardは量化式内部に保ち、proof-local identityと置き換えない。fresh joint validationもこの解釈を共有し、opaque typeの正規化やtheorem受理を行わない。
 owner認証は完全検証済みoriginal graphから既存original SurfaceAstを一時再構築し、実resolver declaration/signature collectorを再実行する。opaque symbol identityを解釈せず、得られた実sealとcontributionを比較し、並列ASTは保持しない。
+
+## Typed ground invocations
+
+`check_source_ground_invocations(source, symbols, typed)` は非空の数詞実引数と明示的な単純 object 仮引数・戻り型を持つ同一モジュールの algorithm 本体の直接呼出しに、不透明な借用 `SourceGroundInvocationCheck` を返す。既存の選択エンジンが仮引数順に全実引数を検査し、元ソース・環境・中立 typed 射影の完全な対応を認証する。元入力、対象・application・呼出し元の識別子、順序付き数詞位置、BindingEnv と推論結果は不変である。数詞は §3.4 に従って Known object と推論される。本体文脈は来歴のみを保持し、名前検索・UID・C の権限を与えない。
+未対応・曖昧・型不一致の位置は出力せず、不正な対応は全体を拒否する。数詞 payload は元 arena に保持する。物理的な現在性と R4 loader join は呼出し側の責務であり、実行・前提条件の証明・Core lowering・SourceAlgorithmCheck 拡張・受理は含まない。

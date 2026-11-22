@@ -1,0 +1,12 @@
+schema_version = 1
+id = "pass_parser_typed_ground_invocation_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser.algorithms"
+source = "pass_parser_typed_ground_invocation_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.03.builtin.numeral_object"]
+notes = "Genuine idalgo(0) source for Checker ground-invocation tests; corpus grants parse-only credit, no typing, execution or proof acceptance."
