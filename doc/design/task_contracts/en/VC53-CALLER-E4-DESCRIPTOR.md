@@ -1,0 +1,25 @@
+# Task VC53-CALLER-E4-DESCRIPTOR: authenticated caller normal-return target
+Canonical language: English; [Japanese pointer](../ja/VC53-CALLER-E4-DESCRIPTOR.md).
+Status: frozen bounded descriptor. Tier: full; new public caller-target producer.
+Owner: [VC](../../mizar-vc/en/00.crate_plan.md). Consumer: mizar-test; Kernel composition and Proof adoption are subsequent work.
+Dependencies: [child existential](VC53-UNARY-CHILD-EXISTENTIAL.md), [retained Core request](VC53-CORE46-UNARY-CHILD-REQUEST.md), [child identity boundary](VC53-PROOF-UNARY-CHILD-IDENTITY.md).
+Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1](../../../spec/en/20.algorithm_and_verification.md).
+Invariants: [whole request authentication](../../mizar-vc/en/generator.md#bounded-unary-child-request-descriptor), [existing child request](../../mizar-vc/en/generator.md#bounded-unary-child-existential), [dependency ownership](../../mizar-vc/en/dependency_slice.md).
+Gap: source_drift/test_gap. The authenticated child target refers to the callee; no caller normal-return descriptor exists. Retained request joins produce that target without changing language intent.
+
+## Frozen design and boundaries
+Add `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` in generator.rs. Accept exactly the existing genuine two-algorithm unary object profile. FIRST call the unchanged child existential producer, preserving whole fresh Checker/Core/request authentication and upstream errors before any caller projection.
+Return existing types `(LocalContext, [VcGeneratedFormula; 2])`. Reuse the original caller object CheckerFact and fresh result binder, definition-free caller input/result, generated IDs, existential binding and provenance. Replace only row zero's relation owner/flow/statement with `request.caller`, its freshly built original CFG flow, and `request.statement`. Row one is `Exists r` over `AlgorithmReturns(caller, caller flow, caller Return, actual, r)`. Whole authenticated immutable Core/request retain exact Return→Apply→callee/actual, source, formal and distinct result-slot joins. No caller witness is returned or inferred from the child's actual witness.
+Do not accept a supplied descriptor, hash, child result or detached IDs. No new type, field, helper abstraction, Core/Checker/Resolver/Kernel/Proof change or direct-return API change. Preserve optional terminating intent without evidence and caller-owned currentness; no snapshot/currentness claim is possible here.
+Excluded: checked operational composition, Kernel caller-return evidence, Proof caller identity/policy/adoption, child-identity reuse for caller, E1/E2, whole-algorithm acceptance, generic substitution/evidence/status/publication, VcSet/seeds/scheduling, complete dependency footprints or cache admission. Existing unknown dependencies and cache misses remain unchanged. Owner-gated scope, broader profiles, diagnostics, spec/.miz/expectation/trace/audit-status and AGENTS/protocol changes are forbidden.
+Files: VC generator.rs, existing runner tests/algorithm.rs, paired VC generator/plan documents and this contract. Coverage, owner and deferral status in spec_coverage_audit stay unchanged.
+
+## Test matrix and exit
+Cap: four families; reuse genuine child fixtures and matrices; establish one genuine caller target before matrix expansion.
+1. Independently inspect sole object guard, fresh binder, exact caller relation/existential, original caller CFG/Return/Apply/callee/actual and formal/result-slot joins. Compare child and caller targets to ensure different owners/flows/statements; no witness or evidence is supplied.
+2. Existing genuine rename/trivia/equal-spelling and both optional terminating variants preserve exact joins; repeated generation and cloned Core are deterministic; all source/typed/environment/Core/request inputs and child products stay unchanged.
+3. Reuse every existing request/Core mutation, calibrated stale/foreign source/typed/environment, forged typed and combined-drift case: refuse atomically with the same fresh upstream error, never a partial descriptor; authentic changed inputs produce their own caller target; original recovers.
+4. Existing unsupported/direct-return and Kernel/Proof child controls keep their boundaries. Conservative child slice remains unknown/incomplete/cache-miss, without caller identity, VcSet, status or credit.
+Independent specification/test-intent/trust, sufficiency, precision/trust, removable-only volume, source/docs/EN-JA and final quality reviews required.
+Run fmt, all-target/all-feature Clippy -D warnings, both lint_policy suites including links/fragments, VC/Kernel/Proof owner groups, algorithm/source-algorithm regressions and short proof-verification E2E. Changed descriptor/authentication matrices run immediately; unchanged heavy evidence/policy/cache/aggregate-acceptance/edit-versus-clean groups defer to orchestrator integration. Full cargo test only on cadence; lane dispatch has no full/push trigger.
+Exit: authentic caller E4 target generation only, with immutable original associations and unchanged acceptance boundaries.
