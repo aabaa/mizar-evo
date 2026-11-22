@@ -114,6 +114,11 @@ independently of E4 existence. VC authenticates the [original descriptor](../../
 The boolean API remains unchanged. `check_algorithm_return_typing_schema` takes identical inputs and invokes that check; return `Some(1_u16)` only on success, otherwise `None`. This is the Kernel-owned typing rule schema. No opaque value/environment interpretation, native evidence,
 Proof identity/policy/adoption, single-valuedness or broader credit follows from this API; Proof owns the separate [typing request association](../../mizar-proof/en/status.md#original-e1-typing-request-identity-association).
 
+## Bounded Unary Caller E1 Typing
+
+`check_unary_caller_return_typing(core, request, callee_flow, target, binder, conclusion, context)` returns a boolean for `forall r. returns_caller(actual,r) implies object(r)` under only the original caller object guard. It reuses unchanged unary-child validation for both exact sole bodies, guards, request/slot joins, fresh binder and global cycle checks, then matches the rebuilt caller CFG/Return and exact binder/object conclusion.
+Every child return is its immutable formal instantiated by the actual parameter; the caller returns exactly that child's result (§20.1.2, §20.2.6). This fixes the type of every returned result independently of E4 existence. No returns/requires/ensures/equality premise is installed. The callee flow is checked locally; source authentication remains VC-owned. No evidence holder, schema, Proof authority, single-valuedness or later acceptance credit follows. The direct-return rule is unchanged.
+
 ## Bounded Original E1 Single-Valuedness
 
 `check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`

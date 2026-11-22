@@ -60,6 +60,11 @@ VC が[元の記述子](../../mizar-vc/ja/generator.md#元の-e1-typing-descript
 boolean API は維持する。`check_algorithm_return_typing_schema` は同じ入力でこの検査を呼び、成功時だけ Kernel 所有の型付け規則スキーマ `Some(1_u16)`、それ以外は `None` を返す。opaque 値・環境解釈、native evidence、Proof identity/policy/adoption、
 single-valuedness や広範な credit はこの API から与えない。別の [typing request association](../../mizar-proof/ja/status.md#original-e1-typing-request-identity-association) は Proof が所有する。
 
+## Bounded Unary Caller E1 Typing
+
+`check_unary_caller_return_typing(core, request, callee_flow, target, binder, conclusion, context)` は、元の caller の object 入力ガードだけの下で `forall r. returns_caller(actual,r) implies object(r)` を真偽値で検査する。既存の unary-child 検証で両 body の唯一の Return、ガード、request/slot の対応、fresh binder、全体の循環を確認し、その後に再構築した caller CFG/Return と binder/object 結論を照合する。
+child の各返り値は actual で置換した不変の formal であり、caller はその child の結果だけを返す（§20.1.2、§20.2.6）。これが E4 の存在証明とは独立に全返り値の型を定める。returns/requires/ensures/等式を前提に追加しない。callee flow は局所的に検査し、source 認証は VC が所有する。新しい証拠 holder、schema、Proof 権限、一意性や後続の受理権限は与えない。direct-return 規則は変更しない。
+
 ## Bounded Original E1 Single-Valuedness
 
 `check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`
