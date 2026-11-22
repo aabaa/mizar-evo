@@ -1767,6 +1767,56 @@ pub fn consume_source_unary_child_call_existential<'core>(
     Ok((association, policy.policy_fingerprint()))
 }
 
+/// Native positive evidence for only the complete original caller E4 existential.
+/// It grants no native identity, generic evidence, status or reuse authority.
+pub struct NativeUnaryCallerE4Existential<'core> {
+    association: SourceUnaryCallerE4Association<'core>,
+}
+
+impl<'core> NativeUnaryCallerE4Existential<'core> {
+    /// Authenticates and retains the whole caller association under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (association, _) = consume_source_unary_caller_e4_existential(
+            source, typed, symbols, core, request, policy,
+        )?;
+        Ok(Self { association })
+    }
+
+    /// True adopts only this original caller existential under the current policy.
+    /// Source/environment/filesystem currentness remains caller-owned.
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        if !policy
+            .kernel_evidence_formats()
+            .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+            || policy.checker_schema_version() != self.association.result().checker_schema_version()
+        {
+            return Err("algorithm.proof.unary_caller_e4_policy_rejected".to_owned());
+        }
+        Ok(true)
+    }
+}
+
 /// Native positive evidence for only the complete original unary child existential.
 /// It grants no caller E4, generic evidence, status or reuse authority.
 pub struct NativeUnaryChildCallExistential<'core> {

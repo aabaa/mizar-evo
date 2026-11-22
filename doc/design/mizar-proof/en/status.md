@@ -659,6 +659,11 @@ This passive caller identity grants no currentness, current-policy consumption/n
 
 `consume_source_unary_caller_e4_existential(source, typed, symbols, core, request, policy)` FIRST calls the unchanged [caller association constructor](#arena-local-caller-e4-association) once, preserving upstream errors before policy checks. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema agreement with the actual caller Kernel result; otherwise return `algorithm.proof.unary_caller_e4_policy_rejected`. Return the whole association/current `policy.policy_fingerprint()` atomically. Earlier success grants no authority; currentness remains caller-owned. Passive identity stays policy-independent; no native adoption, status, E1/E2/whole acceptance, publication or cache authority follows.
 
+## Native caller E4 adoption
+
+`NativeUnaryCallerE4Existential::from_source` calls the unchanged [caller consumer](#caller-e4-current-policy-consumption) once, privately retaining the whole association and discarding the fingerprint. `adopt_original_request` first calls its unchanged authenticated `matches_source`; errors propagate and whole-request/descriptor or exact-arena mismatch returns false before policy checks. A match requires current Builtin eligibility and exact actual checker-schema agreement, using the caller consumer's refusal.
+True adopts only the original caller existential under the supplied current policy. Currentness remains caller-owned; no detached input, native identity, complete footprint/cache, E1/E2/whole acceptance, status, promotion/publication or owner-gated authority follows.
+
 ## Unary child-request current-policy consumption
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` FIRST calls the unchanged [association constructor](#arena-local-unary-child-request-association) once, preserving errors. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema agreement with its actual Kernel result; otherwise return `algorithm.proof.unary_child_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically. Earlier success grants no authority; currentness remains caller-owned. No native adoption, canonical identity/reuse, caller E4 acceptance, evidence/status or broader credit follows.

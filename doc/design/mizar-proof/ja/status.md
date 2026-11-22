@@ -627,6 +627,11 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 `consume_source_unary_caller_e4_existential(source, typed, symbols, core, request, policy)` は最初に既存の [caller association constructor](#arena-local-caller-e4-association) を一度だけ呼び、policy 検査より先に下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の caller Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_caller_e4_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出側が担う。受動的 identity は policy に依存せず、native adoption、status、E1/E2/whole acceptance、publication、cache authority は与えない。
 
+## Native caller E4 adoption
+
+`NativeUnaryCallerE4Existential::from_source` は既存の [caller consumer](#caller-e4-current-policy-consumption) を一度呼び、association 全体を非公開で保持し fingerprint を破棄する。`adopt_original_request` は最初に既存の認証付き `matches_source` を呼ぶ。エラーは保持し、request/descriptor 全体または Core arena 同一性の不一致なら policy 検査前に false を返す。一致時は現行 Builtin 有効性と実際の checker-schema の完全一致を要求し、caller consumer と同じ拒否を使う。
+true は渡された現行 policy の下で元の caller existential のみを採用する。currentness は呼出側が担う。切り離した入力、native identity、complete footprint/cache、E1/E2/whole acceptance、status、promotion/publication、owner-gated authority は与えない。
+
 ## Unary child-request current-policy consumption
 
 `consume_source_unary_child_call_existential(source, typed, symbols, core, request, policy)` は最初に既存の [association constructor](#arena-local-unary-child-request-association) を一度だけ呼び、下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_child_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出し側の責任。native adoption、canonical identity/reuse、caller E4 acceptance、evidence/status、広い credit は与えない。
