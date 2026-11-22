@@ -1721,6 +1721,119 @@ pub fn check_algorithm_returns_existential_result<'core>(
     })
 }
 
+/// Checks the original formal existential at an authenticated unary call join.
+/// Atomic object guards permit only formal-to-actual variable transport.
+#[expect(
+    clippy::type_complexity,
+    reason = "retain the existing request and relation without a parallel representation"
+)]
+pub fn check_unary_child_returns_existential_result<'core>(
+    core: &'core CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    witness: CoreTermId,
+    context: &[CoreFormulaId],
+) -> Option<AlgorithmReturnsExistentialCheck<'core>> {
+    let callee = core.algorithms().get(request.callee)?;
+    let caller = core.algorithms().get(request.caller)?;
+    let ([formal], [actual], [returned], [assumption]) = (
+        callee.params.as_slice(),
+        caller.params.as_slice(),
+        callee.statements.as_slice(),
+        context,
+    ) else {
+        return None;
+    };
+    let callee_result = callee.result.as_ref()?;
+    let caller_result = caller.result.as_ref()?;
+    let statement = core.algorithm_statements().get(request.statement)?;
+    let CoreAlgorithmStmtKind::Return(Some(formal_witness)) =
+        core.algorithm_statements().get(*returned)?.kind
+    else {
+        return None;
+    };
+    // This unchanged rule also validates the complete CFG and rejects cycles,
+    // including unrelated algorithms, before any CFG rebuilding here.
+    check_algorithm_returns_existential_result(
+        core,
+        (
+            request.callee,
+            target.1,
+            *returned,
+            (formal.var, None),
+            (binder, None),
+        ),
+        binder,
+        formal_witness,
+        &[formal.ty_guard?],
+    )?;
+    if request.callee == request.caller
+        || target
+            != (
+                request.callee,
+                target.1,
+                *returned,
+                (actual.var, None),
+                (binder, None),
+            )
+        || request.formal != formal.var
+        || request.callee_result != callee_result.var
+        || request.caller_result != caller_result.var
+        || witness != request.actual
+        || actual.ty_guard != Some(*assumption)
+        || actual.role.as_str() != "parameter"
+        || caller_result.role.as_str() != "result"
+        || !caller.diagnostics.is_empty()
+        || !caller.ghost_effects.is_empty()
+        || caller.statements.as_slice() != [request.statement]
+        || statement.owner != request.caller
+        || !statement.diagnostics.is_empty()
+        || statement.kind != CoreAlgorithmStmtKind::Return(Some(request.application))
+        || core.terms().get(witness)?.kind != CoreTermKind::Var(actual.var)
+        || !matches!(&core.terms().get(request.application)?.kind,
+            CoreTermKind::Apply { functor, args } if *functor == callee.symbol && args.as_slice() == [witness])
+    {
+        return None;
+    }
+    let variables = [formal.var, actual.var, callee_result.var, caller_result.var];
+    if variables.into_iter().collect::<BTreeSet<_>>().len() != 4
+        || core
+            .algorithms()
+            .iter()
+            .flat_map(|(_, algorithm)| algorithm.params.iter().chain(algorithm.result.iter()))
+            .any(|slot| slot.var.index() >= binder.index())
+        || core.terms().iter().any(|(_, term)| {
+            matches!(term.kind, CoreTermKind::Var(var) if var.index() >= binder.index())
+        })
+    {
+        return None;
+    }
+    for slot in [actual, callee_result, caller_result] {
+        let CoreFormulaKind::TypePred { subject, ty } = &core.formulas().get(slot.ty_guard?)?.kind
+        else {
+            return None;
+        };
+        if ty.as_str() != "object"
+            || core.terms().get(*subject)?.kind != CoreTermKind::Var(slot.var)
+        {
+            return None;
+        }
+    }
+    Some(AlgorithmReturnsExistentialCheck {
+        core,
+        target,
+        witness,
+        context: [*assumption],
+    })
+}
+
 /// A checked `exists r.object(r)` under the retained Core context.
 /// Construction is private and performs bounded existential introduction.
 pub struct ObjectInhabitationCheck<'core> {

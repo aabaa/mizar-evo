@@ -2868,6 +2868,169 @@ pub fn generate_source_unary_child_call_descriptor(
     ))
 }
 
+/// Emits only a local caller-input child existential after whole-request authentication.
+pub fn generate_source_unary_child_call_existential_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        LocalContext,
+        [crate::vc_ir::VcGeneratedFormula; 2],
+        CoreTermId,
+    ),
+    String,
+> {
+    use crate::vc_ir::{
+        QuantifierKind, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+        VcGeneratedFormulaShape as Shape, VcProgramValue,
+    };
+    use mizar_core::core_ir::CoreTermKind;
+
+    let (_, (_, guard), _) =
+        generate_source_unary_child_call_descriptor(source, typed, symbols, core, request)?;
+    let invalid = || "algorithms.unary_child.invalid_existential_request".to_owned();
+    let callee = core.algorithms().get(request.callee).ok_or_else(invalid)?;
+    let [statement] = callee.statements.as_slice() else {
+        return Err(invalid());
+    };
+    let CoreTermKind::Var(actual) = core.terms().get(request.actual).ok_or_else(invalid)?.kind
+    else {
+        return Err(invalid());
+    };
+    // The authenticated producer has only parameter/result binders and Var terms.
+    let maximum = core
+        .algorithms()
+        .iter()
+        .flat_map(|(_, algorithm)| algorithm.params.iter().chain(algorithm.result.iter()))
+        .map(|slot| slot.var.index())
+        .chain(core.terms().iter().filter_map(|(_, term)| match term.kind {
+            CoreTermKind::Var(var) => Some(var.index()),
+            _ => None,
+        }))
+        .max()
+        .ok_or_else(invalid)?;
+    let binder = CoreVarId::new(maximum.checked_add(1).ok_or_else(invalid)?);
+    let context = LocalContext::try_new(
+        vec![
+            ContextEntry {
+                id: ContextEntryId::new(0),
+                sort_key: "unary-child-guard-0000".into(),
+                kind: ContextEntryKind::CheckerFact,
+                formula: Some(VcFormulaRef::Core(guard)),
+                provenance: Vec::new(),
+            },
+            ContextEntry {
+                id: ContextEntryId::new(1),
+                sort_key: "unary-child-result-0001".into(),
+                kind: ContextEntryKind::BinderDeclaration {
+                    var: binder,
+                    role: "result".into(),
+                },
+                formula: None,
+                provenance: Vec::new(),
+            },
+        ],
+        Vec::new(),
+    )
+    .map_err(|_| invalid())?;
+    let flow = *mizar_core::control_flow::build_control_flow_ir(core)
+        .flow_map
+        .get(&request.callee)
+        .ok_or_else(invalid)?;
+    let shapes = [
+        Shape::AlgorithmReturns {
+            algorithm: request.callee,
+            flow,
+            statement: *statement,
+            input: VcProgramValue {
+                var: actual,
+                definition: None,
+            },
+            result: VcProgramValue {
+                var: binder,
+                definition: None,
+            },
+        },
+        Shape::Quantified {
+            kind: QuantifierKind::Exists,
+            binders: vec![ContextEntryId::new(1)],
+            body: VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+        },
+    ];
+    let mut next_id = 0;
+    let rows = shapes.map(|shape| {
+        let id = VcGeneratedFormulaId::new(next_id);
+        next_id += 1;
+        VcGeneratedFormula {
+            id,
+            kind: VcGeneratedFormulaKind::SplitGoal,
+            shape,
+            provenance: Vec::new(),
+        }
+    });
+    Ok((context, rows, request.actual))
+}
+
+/// Checks the freshly authenticated child existential and retains its exact request.
+#[expect(
+    clippy::type_complexity,
+    reason = "return the existing request and opaque Kernel result"
+)]
+pub fn check_source_unary_child_call_existential_result<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        (
+            LocalContext,
+            [crate::vc_ir::VcGeneratedFormula; 2],
+            CoreTermId,
+        ),
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    ),
+    String,
+> {
+    let descriptor = generate_source_unary_child_call_existential_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid = || "algorithms.unary_child.invalid_existential_request".to_owned();
+    let crate::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let checked = mizar_kernel::checker::check_unary_child_returns_existential_result(
+        core,
+        request,
+        (
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        result.var,
+        descriptor.2,
+        &[guard],
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checked))
+}
+
 /// Emits Open E1/E4 requests for the authenticated terminating sole-parameter return profile.
 pub fn generate_source_algorithm_direct_return_requests(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

@@ -123,6 +123,7 @@ Covered top-level public items:
 - `check_algorithm_returns_existential`
 - `AlgorithmReturnsExistentialCheck`
 - `check_algorithm_returns_existential_result`
+- `check_unary_child_returns_existential_result`
 - `KernelCheckInput`
 - `KernelEvidenceCheckInput`
 - `KernelCheckPolicy`

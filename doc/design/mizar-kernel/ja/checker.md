@@ -88,6 +88,10 @@ Proof が限定的な [current-policy 消費](../../mizar-proof/ja/status.md#ori
 意味的 environment 対応、別の E1 義務、広範な body 解釈は延期する。evidence・受理・status・symbol・publication・広範な credit はない。
 詳細は [英語版](../en/checker.md#original-algorithmreturns-existential) を参照。
 
+## Unary Child Existential Instantiation
+
+`check_unary_child_returns_existential_result(core, request, target, binder, witness, context)` は限定的な caller-input instance `exists r. returns_child(actual,r)` を検査する。同じ呼出しで元 formal 存在規則と CFG/cycle 検査を実行し、正確な request/caller Apply/Return、formal/actual/result-slot、atomic object guard の置換、actual witness を確認する。definition-free target は元 callee/flow/Return、actual input、fresh result binder を保持し、context は元 caller object guard だけである。成功時のみ既存 `AlgorithmReturnsExistentialCheck` を構築する。VC が [source/request 全体の再認証](../../mizar-vc/ja/generator.md#bounded-unary-child-existential) を所有する。元 formal 規則・Proof identity/policy/adoption は変更せず、caller E4 受理・一般置換・一般 malformed-Core 安全性は延期する。詳細は [英語版](../en/checker.md#unary-child-existential-instantiation) を参照。
+
 ## Closeout 後の修正
 
 task 13 から task 22 までの checker は、resolution replay を中心にした legacy

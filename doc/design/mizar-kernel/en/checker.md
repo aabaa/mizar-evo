@@ -147,6 +147,12 @@ Proof owns bounded [current-policy consumption](../../mizar-proof/en/status.md#o
 Semantic environment association, separate E1 duties and broader bodies remain deferred.
 No evidence, acceptance, status, symbol, publication or broader credit follows.
 
+## Unary Child Existential Instantiation
+
+`check_unary_child_returns_existential_result(core, request, target, binder, witness, context)` checks the bounded caller-input instance `exists r. returns_child(actual,r)`. It invokes the unchanged formal existential rule in the same call, retaining sole-Return semantics and rebuilt CFG/cycle validation, then checks the exact request/caller Apply/Return, formal/actual/result slots, atomic object guard transport and actual witness. The definition-free target uses the original callee/flow/Return, actual input and fresh result binder; its only context is the original caller object guard. Atomic guards and a fresh binder make the substitution capture-free.
+
+Only success constructs the existing `AlgorithmReturnsExistentialCheck`, borrowing Core and retaining that instantiated target, actual witness and caller guard. VC owns [fresh source and whole-request authentication](../../mizar-vc/en/generator.md#bounded-unary-child-existential). This rule changes neither the old formal rule nor Proof identity/policy/adoption; caller E4 acceptance, broader substitution and general malformed-Core safety remain deferred.
+
 ## Bounded E1-inhabitation Witness Introduction
 
 `check_object_inhabitation_witness(core, target, witness, child, context)` checks

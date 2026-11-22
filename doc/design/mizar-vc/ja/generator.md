@@ -602,7 +602,13 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_descriptor(source, typed, symbols, core, request)` は [限定 Core producer](../../mizar-core/ja/elaborator.md#static-source-algorithm-lowering) を fresh Checker 認証と Core/request 全体の再生成一致の後で消費する。上流エラーを保持し、記述子の拒否は `algorithms.unary_child.invalid_request`。既存 ID の組 `((formal, actual), (formal_guard, actual_guard), (callee_result, caller_result))` を不可分に返す。元の atomic object guard は捕獲のない入力対応を表し、結果スロットは対応情報だけを表す。immutable Core/request が元の Apply/Return/source 関係を保持する。
 
-この記述子は schedulable E4 graph、Kernel/Proof 検査、evidence/adoption と意味的 credit を除外する。caller 入力での検証済み normal-return evidence は後続の認証済み instantiation/adoption join が担当し、結果の等式や terminating 意図からは得られない。range と syntax/environment 一般化は保留する。
+この記述子は schedulable E4 graph、Kernel/Proof 検査、evidence/adoption と意味的 credit を除外する。[child 存在 producer](#bounded-unary-child-existential) が caller 入力の instantiation 検査を所有し、Proof adoption は別の責務とする。結果の等式や terminating 意図は evidence を与えない。range と syntax/environment 一般化は保留する。
+
+## Bounded unary child existential
+
+`generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` は descriptor で Core/request 全体を認証する。既存型の組 `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` は元 caller object guard のみを CheckerFact とし、fresh result binder、行0の `AlgorithmReturns(callee, flow, callee Return, actual, r)`、行1の `Exists r`、actual witness を保持する。immutable Core/request は source・Apply・Return・formal/actual/result-slot 対応を保持する。VcSet・seed・scheduling・snapshot identity は作らない。
+
+`check_source_unary_child_call_existential_result` は再生成した request を同じ呼出しの [Kernel 規則](../../mizar-kernel/ja/checker.md#unary-child-existential-instantiation) で検査し、変更しない request と既存の不透明な結果を不可分に返す。上流認証エラーが `algorithms.unary_child.invalid_existential_request` に先行する。元 direct-return API は維持する。Proof identity/current-policy/adoption、caller E4 受理、E1、一般置換、range、syntax/environment 一般化は延期し、evidence・status・promotion・publication・coverage credit は与えない。詳細は [英語版](../en/generator.md#bounded-unary-child-existential) を参照。
 
 ## Bounded direct-return E1/E4 producer design
 

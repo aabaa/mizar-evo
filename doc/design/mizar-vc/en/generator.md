@@ -675,7 +675,13 @@ Preserve every handoff row: ghost initialization retains its existing GhostErasu
 
 `generate_source_unary_child_call_descriptor(source, typed, symbols, core, request)` consumes the [bounded Core producer](../../mizar-core/en/elaborator.md#static-source-algorithm-lowering) only after fresh Checker authentication and whole regenerated Core/request equality. Upstream errors precede `algorithms.unary_child.invalid_request` refusal. It returns existing-ID pairs `((formal, actual), (formal_guard, actual_guard), (callee_result, caller_result))` atomically. Original atomic object guards describe capture-free input instantiation; result slots record association only. Immutable Core/request retain the original Apply/Return/source joins.
 
-This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/adoption and semantic credit. Verified caller-input normal-return evidence belongs to a later authenticated instantiation/adoption join; result equality or terminating intent supplies none. Ranges and syntax/environment generalization remain deferred.
+This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/adoption and semantic credit. The [child existential producer](#bounded-unary-child-existential) owns checked caller-input instantiation; Proof adoption remains separate. Result equality or terminating intent supplies no evidence. Ranges and syntax/environment generalization remain deferred.
+
+## Bounded unary child existential
+
+`generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` first authenticates the whole pair through the descriptor. Its existing-type tuple `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` retains only the original caller object guard as a CheckerFact, a fresh result binder, row zero `AlgorithmReturns(callee, flow, callee Return, actual, r)`, row one `Exists r` over row zero, and the actual witness. The complete immutable Core/request preserve source, Apply, Return and formal/actual/result-slot joins. This is a request without VcSet, seeds, scheduling or snapshot identity.
+
+`check_source_unary_child_call_existential_result` regenerates that request and invokes the [Kernel instantiation rule](../../mizar-kernel/en/checker.md#unary-child-existential-instantiation) in the same call, returning the unchanged request and existing opaque result atomically. Upstream authentication errors precede `algorithms.unary_child.invalid_existential_request`. Original direct-return APIs remain unchanged. Proof identity/current-policy/adoption, caller E4 acceptance, E1 discharge, generic substitution, ranges and syntax/environment generalization remain deferred; this producer supplies no evidence, status, promotion, publication or coverage credit.
 
 ## Bounded direct-return E1/E4 producer design
 

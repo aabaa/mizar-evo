@@ -332,6 +332,57 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 expected
             );
         }
+        let existential = mizar_vc::generator::generate_source_unary_child_call_existential_request(
+            &source, &typed, symbols, &core, &request,
+        )
+        .unwrap();
+        let (context, rows, witness) = &existential;
+        use mizar_vc::vc_ir::{
+            ContextEntryKind, QuantifierKind, VcFormulaRef, VcGeneratedFormulaId,
+            VcGeneratedFormulaShape as Shape,
+        };
+        let [guard, binder] = context.entries() else {
+            panic!("sole caller guard and fresh result binder")
+        };
+        assert_eq!(guard.kind, ContextEntryKind::CheckerFact);
+        assert_eq!(guard.formula, Some(VcFormulaRef::Core(expected.1.1)));
+        assert!(context.policy_inputs().is_empty());
+        let ContextEntryKind::BinderDeclaration { var, role } = &binder.kind else {
+            panic!("result binder")
+        };
+        assert_eq!(role.as_str(), "result");
+        assert!(binder.formula.is_none());
+        assert!(!vars.contains(var));
+        assert_eq!(*witness, request.actual);
+        let Shape::AlgorithmReturns {
+            algorithm, flow, statement, input, result,
+        } = rows[0].shape else {
+            panic!("original child return relation")
+        };
+        assert_eq!(rows[0].id, VcGeneratedFormulaId::new(0));
+        assert_eq!(algorithm, request.callee);
+        assert_eq!(flow, mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.callee]);
+        assert_eq!(statement, callee_row.statements[0]);
+        assert_eq!((input.var, input.definition), (caller_row.params[0].var, None));
+        assert_eq!((result.var, result.definition), (*var, None));
+        assert_eq!(rows[1].id, VcGeneratedFormulaId::new(1));
+        assert_eq!(rows[1].shape, Shape::Quantified {
+            kind: QuantifierKind::Exists,
+            binders: vec![binder.id],
+            body: VcFormulaRef::Generated(rows[0].id),
+        });
+        let (checked_existential, retained) =
+            mizar_vc::generator::check_source_unary_child_call_existential_result(
+                &source, &typed, symbols, &core, &request,
+            ).unwrap();
+        assert_eq!(checked_existential, existential);
+        assert!(std::ptr::eq(retained.core(), &core));
+        assert_eq!(retained.target(), (algorithm, flow, statement, (input.var, None), (*var, None)));
+        assert_eq!(retained.witness(), request.actual);
+        assert_eq!(retained.context(), [expected.1.1]);
+        assert_eq!(mizar_vc::generator::generate_source_unary_child_call_existential_request(
+            &source, &typed, symbols, &core, &request,
+        ).unwrap(), existential);
         assert_eq!((&core, &request), (&core_before.0, &core_before.1));
         assert_eq!(
             lower_source_unary_child_call(
@@ -353,11 +404,17 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     use mizar_core::{
         core_ir::{
             CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind as S,
-            CoreFormulaKind as F, CoreIr, CoreIrParts, CoreTermId, CoreTermKind as T, CoreVarId,
+            CoreFormulaId, CoreFormulaKind as F, CoreIr, CoreIrParts, CoreTermId,
+            CoreTermKind as T, CoreVarId,
         },
         elaborator::lower_source_unary_child_call as lower,
     };
-    use mizar_vc::generator::generate_source_unary_child_call_descriptor as describe;
+    use mizar_vc::generator::{
+        check_source_unary_child_call_existential_result as retain,
+        generate_source_unary_child_call_descriptor as describe,
+        generate_source_unary_child_call_existential_request as generate,
+    };
+    use mizar_kernel::checker::check_unary_child_returns_existential_result as kernel;
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
     let (source, nodes, collected, _) =
         source_registration_formula_inputs(text, "unary-child", "atomic", 0);
@@ -367,6 +424,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let (core, request) = lower(&checked).unwrap();
     let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
     let genuine = describe(&source, &typed, symbols, &core, &request).unwrap();
+    let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
+    let (_, retained) = retain(&source, &typed, symbols, &core, &request).unwrap();
+    let target = retained.target();
+    let binder = target.4.0;
     let callee = core.algorithms().get(request.callee).unwrap();
     let caller = core.algorithms().get(request.caller).unwrap();
     let formal_guard = callee.params[0].ty_guard.unwrap();
@@ -374,6 +435,49 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let S::Return(Some(formal_return)) = core.algorithm_statements().get(callee.statements[0]).unwrap().kind else {
         panic!("callee Return")
     };
+    assert!(kernel(&core, &request, target, binder, request.actual, &[actual_guard]).is_some());
+    assert!(mizar_kernel::checker::check_algorithm_returns_existential_result(
+        &core, target, binder, request.actual, &[actual_guard],
+    ).is_none(), "the unchanged formal rule does not instantiate a caller input");
+    for mutation in 0..18 {
+        let mut changed = target;
+        match mutation {
+            0 => changed.0 = request.caller,
+            1 => changed.0 = CoreAlgorithmId::new(usize::MAX),
+            2 => changed.1 = mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller],
+            3 => changed.1 = mizar_core::control_flow::ControlFlowId::new(usize::MAX),
+            4 => changed.2 = request.statement,
+            5 => changed.2 = CoreAlgorithmStmtId::new(usize::MAX),
+            6 => changed.3.0 = request.formal,
+            7 => changed.3.0 = request.caller_result,
+            8 => changed.3.0 = CoreVarId::new(usize::MAX),
+            9 => changed.4.0 = request.callee_result,
+            10 => changed.4.0 = request.caller_result,
+            11 => changed.4.0 = CoreVarId::new(usize::MAX),
+            12 => changed.3.1 = Some(request.statement),
+            13 => changed.4.1 = Some(callee.statements[0]),
+            14 => changed.3.1 = Some(CoreAlgorithmStmtId::new(usize::MAX)),
+            15 => changed.4.1 = Some(CoreAlgorithmStmtId::new(usize::MAX)),
+            16 => changed.4.0 = target.3.0,
+            17 => changed.3.0 = binder,
+            _ => unreachable!(),
+        }
+        assert!(kernel(&core, &request, changed, binder, request.actual, &[actual_guard]).is_none(), "target {mutation}");
+    }
+    for wrong in [formal_return, request.application, CoreTermId::new(usize::MAX)] {
+        assert!(kernel(&core, &request, target, binder, wrong, &[actual_guard]).is_none(), "witness {wrong:?}");
+    }
+    for wrong in [request.formal, target.3.0, request.callee_result, request.caller_result, CoreVarId::new(usize::MAX)] {
+        assert!(kernel(&core, &request, target, wrong, request.actual, &[actual_guard]).is_none(), "binder {wrong:?}");
+    }
+    for captured in [request.formal, target.3.0, request.callee_result, request.caller_result] {
+        let mut changed = target;
+        changed.4.0 = captured;
+        assert!(kernel(&core, &request, changed, captured, request.actual, &[actual_guard]).is_none(), "captured binder {captured:?}");
+    }
+    for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
+        assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
+    }
     for mutation in 0..17 {
         let mut changed = request.clone();
         match mutation {
@@ -401,10 +505,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         }
         let changed_before = changed.clone();
         assert_eq!(describe(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "request {mutation}");
+        assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "existential request {mutation}");
+        assert_eq!(retain(&source, &typed, symbols, &core, &changed).err().unwrap(), "algorithms.unary_child.invalid_request", "retained request {mutation}");
+        assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
-    for mutation in 0..19 {
+    for mutation in 0..27 {
         let mut p = CoreIrParts {
             source_id: core.source_id(), module_id: core.module_id().clone(),
             items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(),
@@ -469,12 +576,31 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
                 let id = p.formulas.insert(formula.clone());
                 p.source_map.formula_sources.insert(id, formula.source);
             }
+            19 => p.formulas.get_mut(actual_guard).unwrap().kind = F::True,
+            20 => {
+                let F::TypePred { ty, .. } = &mut p.formulas.get_mut(actual_guard).unwrap().kind else { unreachable!() };
+                *ty = "set".into();
+            }
+            21 => {
+                let F::TypePred { subject, .. } = &mut p.formulas.get_mut(formal_guard).unwrap().kind else { unreachable!() };
+                *subject = request.actual;
+            }
+            22 => p.algorithms.get_mut(request.caller).unwrap().params[0].ty_guard = None,
+            23 => p.terms.get_mut(request.actual).unwrap().kind = T::Var(request.formal),
+            24 => p.formulas.get_mut(actual_guard).unwrap().kind = F::Equals { left: request.actual, right: formal_return },
+            25 => p.formulas.get_mut(callee.result.as_ref().unwrap().ty_guard.unwrap()).unwrap().kind = F::True,
+            26 => p.formulas.get_mut(caller.result.as_ref().unwrap().ty_guard.unwrap()).unwrap().kind = F::Equals { left: request.actual, right: request.actual },
             _ => unreachable!(),
         }
         let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {mutation}: {error}"));
         assert_ne!(changed, core, "Core {mutation} must change");
         let changed_before = changed.clone();
         assert_eq!(describe(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
+        assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "existential Core {mutation}");
+        assert_eq!(retain(&source, &typed, symbols, &changed, &request).err().unwrap(), "algorithms.unary_child.invalid_request", "retained Core {mutation}");
+        if matches!(mutation, 0..=8 | 10 | 15..=16 | 19..=26) {
+            assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
+        }
         assert_eq!(changed, changed_before);
     }
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
@@ -497,6 +623,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             let expected = check(s, e, t).and_then(|checked| lower(&checked));
             let error = describe(s, t, e, &core, &request).unwrap_err();
             assert_eq!(error, expected.err().unwrap_or_else(|| "algorithms.unary_child.invalid_request".into()));
+            assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), error);
+            assert_eq!(retain(s, t, e, &core, &request).err().unwrap(), error);
         }
     }
     let mut nodes: Vec<_> = typed.nodes().iter().map(|(_, node)| node.clone()).collect();
@@ -510,7 +638,11 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     }).unwrap();
     let _ = forged.install_source_nodes(&source);
     assert_eq!(describe(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
+    assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
+    assert_eq!(retain(&source, &forged, symbols, &core, &request).err().unwrap(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine_existential);
+    assert_eq!(retain(&source, &typed, symbols, &core, &request).unwrap().0, genuine_existential);
     assert_eq!((source, typed, symbols.clone(), core, request), before);
 }
 
@@ -529,6 +661,11 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert!(mizar_vc::generator::generate_source_unary_child_call_descriptor(
         &source, &typed, collected.env(), &core, &request,
     ).is_ok());
+    let (existential, _) = mizar_vc::generator::check_source_unary_child_call_existential_result(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap();
+    assert_eq!(existential.2, request.actual);
+    assert!(core.generated().is_empty() && core.proofs().is_empty() && core.obligation_seeds().is_empty());
     assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
     assert!(lower_source_algorithms(&checked.algorithms()[1]).is_err());
     for algorithm in checked.algorithms() {
@@ -552,6 +689,13 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
     let checked = check_source_algorithm_types(&source, typed.nodes(), collected.env()).unwrap();
     let core = lower_source_algorithms(&checked).unwrap();
+    let upstream = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
+    assert_eq!(mizar_vc::generator::generate_source_unary_child_call_existential_request(
+        &source, &typed, collected.env(), &core, &request,
+    ).unwrap_err(), upstream);
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_existential_result(
+        &source, &typed, collected.env(), &core, &request,
+    ).err().unwrap(), upstream);
     assert!(
         mizar_vc::generator::generate_source_algorithm_direct_return_requests(
             &source,
