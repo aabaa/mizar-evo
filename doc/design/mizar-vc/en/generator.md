@@ -689,6 +689,8 @@ This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/
 
 This tuple grants no checking, native adoption, identity, status, acceptance, currentness, cache, promotion or publication. E1 typing/single-valuedness, E2 and whole-algorithm credit remain separate; E4 and direct-return APIs are unchanged.
 
+`check_source_unary_child_call_caller_e1_inhabitation_result` calls that request producer first on the same inputs, preserving upstream errors. It passes the fresh declared binder, atomic object body, actual-input witness and original guard to the unchanged [Kernel introduction rule](../../mizar-kernel/en/checker.md#bounded-e1-inhabitation-witness-introduction) once, using that guard as both child obligation and sole context. Success returns the unchanged tuple with an opaque same-Core `ObjectInhabitationCheck`; local refusal retains `algorithms.unary_child.invalid_existential_request`. This checking supplies only caller object inhabitation; all later authorities above remain separate.
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` first regenerates the unchanged child existential, preserving whole fresh source/Core/request authentication and upstream errors. It returns existing `(LocalContext, [VcGeneratedFormula; 2])`: the same sole caller object guard and fresh result binder, with row zero targeting `AlgorithmReturns(caller, caller CFG flow, original caller Return, actual, r)` and row one existentially binding that result. Whole immutable Core/request retain the exact Return→Apply→callee/actual and formal/result-slot/source joins. It returns no child witness and creates no VcSet, seeds or scheduling identity.

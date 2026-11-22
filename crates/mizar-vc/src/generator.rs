@@ -3004,6 +3004,55 @@ pub fn generate_source_unary_child_call_caller_e1_inhabitation_request(
     Ok((context, rows, witness))
 }
 
+/// Checks freshly authenticated caller object inhabitation and retains its exact request.
+#[expect(
+    clippy::type_complexity,
+    reason = "return the existing request and opaque Kernel result"
+)]
+pub fn check_source_unary_child_call_caller_e1_inhabitation_result<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        (
+            LocalContext,
+            [crate::vc_ir::VcGeneratedFormula; 2],
+            CoreTermId,
+        ),
+        mizar_kernel::checker::ObjectInhabitationCheck<'core>,
+    ),
+    String,
+> {
+    let descriptor = generate_source_unary_child_call_caller_e1_inhabitation_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid = || "algorithms.unary_child.invalid_existential_request".to_owned();
+    let ContextEntryKind::BinderDeclaration { var: binder, .. } = descriptor.0.entries()[1].kind
+    else {
+        return Err(invalid());
+    };
+    let crate::vc_ir::VcGeneratedFormulaShape::ProgramTypePredicate { subject, ty } =
+        &descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let checked = mizar_kernel::checker::check_object_inhabitation_result(
+        core,
+        (binder, subject.var, ty.as_str()),
+        descriptor.2,
+        guard,
+        &[guard],
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checked))
+}
+
 /// Emits an authenticated caller E4 target without a witness or checked composition.
 pub fn generate_source_unary_child_call_caller_e4_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
