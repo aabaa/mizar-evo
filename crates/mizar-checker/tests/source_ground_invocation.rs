@@ -347,9 +347,24 @@ fn unsupported_sites_preserve_variable_edges_and_only_admit_ground_inner_sites()
         nested.rfind("target(0)").unwrap()
     );
     assert_actuals(&fixture, &nested, &checked, application, &["0"]);
+    let alias = SourceFixture::parse(
+        "definition let a be object; algorithm target(a) -> object do return a; end; synonym alias(a) for target(a); algorithm caller(a) -> object do return alias(0); end; end;",
+        "ground_alias",
+    );
+    let (_, candidates) =
+        mizar_resolve::symbols::source_algorithm_call_candidates(&alias.native, &alias.symbols)
+            .unwrap();
+    assert_eq!(
+        candidates.values().map(Vec::len).collect::<Vec<_>>(),
+        [1],
+        "alias refusal must exercise an available Resolver candidate"
+    );
+    let checked =
+        check_source_ground_invocations(&alias.native, &alias.symbols, &alias.typed).unwrap();
+    assert!(checked.invocations().is_empty());
+    assert!(checked.inference().terms().is_empty());
     for text in [
         "definition let a be object; algorithm target(a) -> object do return a; end; algorithm caller(a) -> object do return Missing.target(0); end; end;",
-        "definition let a be object; algorithm target(a) -> object do return a; end; algorithm caller(a) -> object do return alias(0); end; synonym alias(a) for target(a); end;",
         "definition let T be type; let a be object; algorithm target[T](a) -> object do return a; end; algorithm caller(a) -> object do return target[object](0); end; end;",
         "definition let a be object; algorithm target(a) -> object do return a; end; end; definition let T be type; let a be object; algorithm caller[T](a) -> object do return target(0); end; end;",
         "definition let a be object; algorithm target(a) -> object do return a; end; algorithm caller(a) -> object do var target := a; return target(0); end; end;",
