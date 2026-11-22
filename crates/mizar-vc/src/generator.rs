@@ -24,9 +24,9 @@ use mizar_core::{
         ObligationSeedHandoff,
     },
     core_ir::{
-        CoreAlgorithmId, CoreFormulaId, CoreNodeRef, CoreSourceAnchor, CoreSourceRef,
-        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedKind,
-        ObligationSeedStatus,
+        CoreAlgorithmId, CoreFormulaId, CoreNodeRef, CoreSourceAnchor, CoreSourceRef, CoreTermId,
+        CoreVarId, LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed,
+        ObligationSeedKind, ObligationSeedStatus,
     },
 };
 use mizar_session::{BuildSnapshotId, SourceId, SourceRange};
@@ -2792,6 +2792,80 @@ pub fn generate_source_algorithm_postconditions(
         seed_accounting: raw.seed_accounting().to_vec(),
     })
     .map_err(|error| error.to_string())
+}
+
+/// Describes bounded unary input/guard/result associations without checking normal return.
+#[expect(
+    clippy::type_complexity,
+    reason = "retain existing Core IDs rather than add a descriptor representation"
+)]
+pub fn generate_source_unary_child_call_descriptor(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        (CoreVarId, CoreTermId),
+        (CoreFormulaId, CoreFormulaId),
+        (CoreVarId, CoreVarId),
+    ),
+    String,
+> {
+    use mizar_core::core_ir::{CoreFormulaKind, CoreTermKind};
+
+    let fresh = mizar_checker::type_checker::check_source_unary_child_call(source, symbols, typed)?;
+    let (regenerated, original) = mizar_core::elaborator::lower_source_unary_child_call(&fresh)?;
+    let invalid = || "algorithms.unary_child.invalid_request".to_owned();
+    if regenerated != *core || original != *request {
+        return Err(invalid());
+    }
+    let callee = core.algorithms().get(request.callee).ok_or_else(invalid)?;
+    let caller = core.algorithms().get(request.caller).ok_or_else(invalid)?;
+    let [formal] = callee.params.as_slice() else {
+        return Err(invalid());
+    };
+    let [actual] = caller.params.as_slice() else {
+        return Err(invalid());
+    };
+    let callee_result = callee.result.as_ref().ok_or_else(invalid)?;
+    let caller_result = caller.result.as_ref().ok_or_else(invalid)?;
+    if [formal.var, actual.var, callee_result.var, caller_result.var]
+        .into_iter()
+        .collect::<BTreeSet<_>>()
+        .len()
+        != 4
+        || core
+            .terms()
+            .get(request.actual)
+            .is_none_or(|term| term.kind != CoreTermKind::Var(actual.var))
+    {
+        return Err(invalid());
+    }
+    let formal_guard = formal.ty_guard.ok_or_else(invalid)?;
+    let actual_guard = actual.ty_guard.ok_or_else(invalid)?;
+    // Atomic object guards have no nested binder: formal -> actual cannot capture.
+    for (guard, variable) in [(formal_guard, formal.var), (actual_guard, actual.var)] {
+        let CoreFormulaKind::TypePred { subject, ty } =
+            &core.formulas().get(guard).ok_or_else(invalid)?.kind
+        else {
+            return Err(invalid());
+        };
+        if ty.as_str() != "object"
+            || core
+                .terms()
+                .get(*subject)
+                .is_none_or(|term| term.kind != CoreTermKind::Var(variable))
+        {
+            return Err(invalid());
+        }
+    }
+    Ok((
+        (request.formal, request.actual),
+        (formal_guard, actual_guard),
+        (request.callee_result, request.caller_result),
+    ))
 }
 
 /// Emits Open E1/E4 requests for the authenticated terminating sole-parameter return profile.

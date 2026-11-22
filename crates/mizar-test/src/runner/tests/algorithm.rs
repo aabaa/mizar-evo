@@ -314,6 +314,25 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 && core.proofs().is_empty()
                 && core.diagnostics().is_empty()
         );
+        let core_before = (core.clone(), request.clone());
+        let expected = (
+            (request.formal, request.actual),
+            (
+                callee_row.params[0].ty_guard.unwrap(),
+                caller_row.params[0].ty_guard.unwrap(),
+            ),
+            (request.callee_result, request.caller_result),
+        );
+        for _ in 0..2 {
+            assert_eq!(
+                mizar_vc::generator::generate_source_unary_child_call_descriptor(
+                    &source, &typed, symbols, &core, &request,
+                )
+                .unwrap(),
+                expected
+            );
+        }
+        assert_eq!((&core, &request), (&core_before.0, &core_before.1));
         assert_eq!(
             lower_source_unary_child_call(
                 &check_source_unary_child_call(&source, symbols, &typed).unwrap()
@@ -323,6 +342,176 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         );
         assert_eq!((source, typed, symbols.clone()), before);
     }
+}
+
+#[test]
+fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomically() {
+    use mizar_checker::{
+        type_checker::check_source_unary_child_call as check,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNodeKind},
+    };
+    use mizar_core::{
+        core_ir::{
+            CoreAlgorithmId, CoreAlgorithmStmtId, CoreAlgorithmStmtKind as S,
+            CoreFormulaKind as F, CoreIr, CoreIrParts, CoreTermId, CoreTermKind as T, CoreVarId,
+        },
+        elaborator::lower_source_unary_child_call as lower,
+    };
+    use mizar_vc::generator::generate_source_unary_child_call_descriptor as describe;
+    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
+    let (source, nodes, collected, _) =
+        source_registration_formula_inputs(text, "unary-child", "atomic", 0);
+    let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+    let symbols = collected.env();
+    let checked = check(&source, symbols, &typed).unwrap();
+    let (core, request) = lower(&checked).unwrap();
+    let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
+    let genuine = describe(&source, &typed, symbols, &core, &request).unwrap();
+    let callee = core.algorithms().get(request.callee).unwrap();
+    let caller = core.algorithms().get(request.caller).unwrap();
+    let formal_guard = callee.params[0].ty_guard.unwrap();
+    let actual_guard = caller.params[0].ty_guard.unwrap();
+    let S::Return(Some(formal_return)) = core.algorithm_statements().get(callee.statements[0]).unwrap().kind else {
+        panic!("callee Return")
+    };
+    for mutation in 0..17 {
+        let mut changed = request.clone();
+        match mutation {
+            0 => changed.callee = request.caller,
+            1 => changed.caller = request.callee,
+            2 => changed.application = request.actual,
+            3 => changed.statement = callee.statements[0],
+            4 => changed.actual = request.application,
+            5 => changed.formal = request.callee_result,
+            6 => changed.callee_result = request.formal,
+            7 => changed.caller_result = request.formal,
+            8 => changed.callee = CoreAlgorithmId::new(usize::MAX),
+            9 => changed.caller = CoreAlgorithmId::new(usize::MAX),
+            10 => changed.application = CoreTermId::new(usize::MAX),
+            11 => changed.statement = CoreAlgorithmStmtId::new(usize::MAX),
+            12 => changed.actual = CoreTermId::new(usize::MAX),
+            13 => changed.formal = CoreVarId::new(usize::MAX),
+            14 => changed.callee_result = CoreVarId::new(usize::MAX),
+            15 => changed.caller_result = CoreVarId::new(usize::MAX),
+            16 => {
+                std::mem::swap(&mut changed.callee, &mut changed.caller);
+                std::mem::swap(&mut changed.callee_result, &mut changed.caller_result);
+            }
+            _ => unreachable!(),
+        }
+        let changed_before = changed.clone();
+        assert_eq!(describe(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "request {mutation}");
+        assert_eq!(changed, changed_before);
+    }
+    assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    for mutation in 0..19 {
+        let mut p = CoreIrParts {
+            source_id: core.source_id(), module_id: core.module_id().clone(),
+            items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(),
+            definitions: core.definitions().clone(), proofs: core.proofs().clone(), proof_nodes: core.proof_nodes().clone(),
+            algorithms: core.algorithms().clone(), algorithm_statements: core.algorithm_statements().clone(),
+            generated: core.generated().clone(), obligation_seeds: core.obligation_seeds().clone(),
+            source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone(),
+        };
+        match mutation {
+            0 => p.formulas.get_mut(formal_guard).unwrap().kind = F::True,
+            1 => {
+                let F::TypePred { subject, .. } = &mut p.formulas.get_mut(actual_guard).unwrap().kind else { unreachable!() };
+                *subject = formal_return;
+            }
+            2 => {
+                let F::TypePred { ty, .. } = &mut p.formulas.get_mut(formal_guard).unwrap().kind else { unreachable!() };
+                *ty = "set".into();
+            }
+            3 => {
+                let T::Apply { args, .. } = &mut p.terms.get_mut(request.application).unwrap().kind else { unreachable!() };
+                args[0] = formal_return;
+            }
+            4 => {
+                let T::Apply { functor, .. } = &mut p.terms.get_mut(request.application).unwrap().kind else { unreachable!() };
+                *functor = caller.symbol.clone();
+            }
+            5 => p.algorithm_statements.get_mut(request.statement).unwrap().kind = S::Return(Some(request.actual)),
+            6 => {
+                p.algorithm_statements.get_mut(request.statement).unwrap().owner = request.callee;
+                p.algorithm_statements.get_mut(callee.statements[0]).unwrap().owner = request.caller;
+                p.algorithms.get_mut(request.callee).unwrap().statements = caller.statements.clone();
+                p.algorithms.get_mut(request.caller).unwrap().statements = callee.statements.clone();
+            }
+            7 => p.algorithms.get_mut(request.callee).unwrap().params[0].var = caller.params[0].var,
+            8 => p.algorithms.get_mut(request.callee).unwrap().params[0].ty_guard = Some(actual_guard),
+            9 => p.algorithms.get_mut(request.callee).unwrap().item = caller.item,
+            10 => p.algorithms.get_mut(request.callee).unwrap().symbol = caller.symbol.clone(),
+            11 => {
+                p.terms.get_mut(request.actual).unwrap().source = caller.params[0].source.clone();
+                p.source_map.term_sources.insert(request.actual, caller.params[0].source.clone());
+            }
+            12 => {
+                let term = p.terms.get_mut(request.application).unwrap();
+                term.source.provenance.clear();
+                p.source_map.term_sources.insert(request.application, term.source.clone());
+            }
+            13 => {
+                let item = p.items.get_mut(callee.item).unwrap();
+                item.source = caller.source.clone();
+                p.source_map.item_sources.insert(callee.item, item.source.clone());
+            }
+            14 => {
+                let term = core.terms().get(request.actual).unwrap().clone();
+                let id = p.terms.insert(term.clone());
+                p.source_map.term_sources.insert(id, term.source);
+            }
+            15 => p.algorithms.get_mut(request.callee).unwrap().result.as_mut().unwrap().var = request.formal,
+            16 => p.terms.get_mut(formal_return).unwrap().kind = T::Var(request.caller_result),
+            17 => p.algorithms.get_mut(request.caller).unwrap().declared_terminating = true,
+            18 => {
+                let formula = core.formulas().get(formal_guard).unwrap().clone();
+                let id = p.formulas.insert(formula.clone());
+                p.source_map.formula_sources.insert(id, formula.source);
+            }
+            _ => unreachable!(),
+        }
+        let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {mutation}: {error}"));
+        assert_ne!(changed, core, "Core {mutation} must change");
+        let changed_before = changed.clone();
+        assert_eq!(describe(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
+        assert_eq!(changed, changed_before);
+    }
+    assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    for (module, edited) in [
+        ("foreign", text.to_owned()),
+        ("atomic", text.replace("child", "edited")),
+        ("atomic", text.replace("let b be object", "let b be set")),
+        ("atomic", text.replace("return child(b)", "return child(b,b)")),
+        ("atomic", text.replace("return child(b)", "return caller(b)")),
+        ("atomic", text.replace("return child(b);", "var c := b; return child(c);")),
+    ] {
+        let (other_source, nodes, other_collected, _) = source_registration_formula_inputs(&edited, "unary-child", module, 0);
+        let other_typed = super::super::source_registration_receiver(&other_source, nodes).unwrap();
+        for (s, t, e) in [
+            (&other_source, &typed, symbols),
+            (&source, &typed, other_collected.env()),
+            (&source, &other_typed, symbols),
+            (&other_source, &other_typed, other_collected.env()),
+        ] {
+            let expected = check(s, e, t).and_then(|checked| lower(&checked));
+            let error = describe(s, t, e, &core, &request).unwrap_err();
+            assert_eq!(error, expected.err().unwrap_or_else(|| "algorithms.unary_child.invalid_request".into()));
+        }
+    }
+    let mut nodes: Vec<_> = typed.nodes().iter().map(|(_, node)| node.clone()).collect();
+    nodes[checked.application().index()].kind = TypedNodeKind::new("ForgedApplication");
+    let mut forged = TypedAst::try_new(TypedAstParts {
+        source_id: typed.source_id(), module_id: typed.module_id().clone(), resolved_root: typed.resolved_root(),
+        source_context: None, source_type: None, source_attribute: None,
+        nodes: TypedArena::try_new(typed.nodes().root(), nodes).unwrap(),
+        contexts: Default::default(), types: Default::default(), facts: Default::default(),
+        coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+    }).unwrap();
+    let _ = forged.install_source_nodes(&source);
+    assert_eq!(describe(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
+    assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    assert_eq!((source, typed, symbols.clone(), core, request), before);
 }
 
 #[test]
@@ -336,7 +525,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         source_registration_formula_inputs(text, "unary-child", "boundaries", 0);
     let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
     let checked = check_source_unary_child_call(&source, collected.env(), &typed).unwrap();
-    let (core, _) = lower_source_unary_child_call(&checked).unwrap();
+    let (core, request) = lower_source_unary_child_call(&checked).unwrap();
+    assert!(mizar_vc::generator::generate_source_unary_child_call_descriptor(
+        &source, &typed, collected.env(), &core, &request,
+    ).is_ok());
     assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
     assert!(lower_source_algorithms(&checked.algorithms()[1]).is_err());
     for algorithm in checked.algorithms() {

@@ -598,6 +598,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_algorithm_postconditions` は、ソース由来 Pick/Return の完全な組、範囲包含、相異なる parameter/result/Pick/logical binder、bare-set predicate、一つの ExistingCore inhabitation seed、新規 CFG/handoff を認証する。選択値を仮定せず、実際の `exists q. is_set(q)` を Open `GeneratedNonEmptiness` VC として生成し、実 Pick 文で識別する p と厳密な object(a), set(p) 文脈から Open 事後条件を生成する。result を p で置換し、型互換性から p=a、ID の違いから不等性を導かない。未解決の algorithm termination accounting を保持し、builtin 抑制、StableChoice origin、Discharged 根拠、汎用 CFG 再設計を行わない。意味上の認証は結果全体の replay が所有し、依存・再利用は保守的に扱う。
 
+## Bounded unary child-request descriptor
+
+`generate_source_unary_child_call_descriptor(source, typed, symbols, core, request)` は [限定 Core producer](../../mizar-core/ja/elaborator.md#static-source-algorithm-lowering) を fresh Checker 認証と Core/request 全体の再生成一致の後で消費する。上流エラーを保持し、記述子の拒否は `algorithms.unary_child.invalid_request`。既存 ID の組 `((formal, actual), (formal_guard, actual_guard), (callee_result, caller_result))` を不可分に返す。元の atomic object guard は捕獲のない入力対応を表し、結果スロットは対応情報だけを表す。immutable Core/request が元の Apply/Return/source 関係を保持する。
+
+この記述子は schedulable E4 graph、Kernel/Proof 検査、evidence/adoption と意味的 credit を除外する。caller 入力での検証済み normal-return evidence は後続の認証済み instantiation/adoption join が担当し、結果の等式や terminating 意図からは得られない。range と syntax/environment 一般化は保留する。
+
 ## Bounded direct-return E1/E4 producer design
 
 `generate_source_algorithm_direct_return_requests(source, check, symbols, core, snapshot, generation_schema, vc_schema)` は、変更しない [idalgo source](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz) の要求専用経路である。immutable object parameter、object result、equality ensures、唯一の `return a` に限定する。[fixture expectation](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.expect.toml) と既存 postcondition generator は維持する。call、loop、Pick、recursion、group、syntax input、premise exposure は範囲外。
