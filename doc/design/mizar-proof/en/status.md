@@ -613,7 +613,7 @@ These are untrusted request identities. Old postcondition APIs remain unchanged;
 ## Original E1 typing request-identity association
 
 `check_source_algorithm_e1_typing_with_schema(source, check, symbols, core, snapshot, vc_id)` first calls the authenticated [VC typing schema checker](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) with the fixed direct-return schemas above, preserving producer errors. Regenerate the existing original identity on identical inputs and require whole descriptor.5/raw-slice equality; mismatch uses `algorithm.proof.invalid_direct_return_request`. Return existing `(ProofObligationIdentity, DependencySlice, u16)` values atomically, forwarding the Kernel-owned schema. `check_source_algorithm_e1_typing` delegates and discards only the schema, preserving its pair API.
-This associates only the checked original typing request. No native result prerequisite, new type, detached input, policy/adoption or generic evidence conversion is supplied. Currentness remains caller-owned; Open4/Deferred, raw unknowns/incomplete/cache misses persist. Single-valuedness, environment interpretation, opaque types, E4 converse and broader credit remain excluded; registered questions and formula-cycle hardening remain deferred.
+This associates only the checked original typing request. No native result prerequisite, new type, detached input, policy/adoption or generic evidence conversion is supplied. Currentness remains caller-owned; Open4/Deferred, raw unknowns/incomplete/cache misses persist. Single-valuedness, environment interpretation, opaque types, E4 converse and broader credit remain excluded; registered questions remain deferred.
 
 ## Original E1 typing current-policy consumption
 
@@ -629,7 +629,7 @@ True adopts only that original typing obligation. Caller-owned currentness, Open
 ## Original E1 single-valuedness request-identity association
 
 `check_source_algorithm_e1_single_valuedness_with_schema(source, check, symbols, core, snapshot, vc_id)` first calls the authenticated [VC single-valuedness schema checker](../../mizar-vc/en/generator.md#original-e1-single-valuedness-descriptor) with the fixed direct-return schemas above, preserving producer errors. Regenerate the existing original identity on identical inputs and require whole descriptor.5/raw-slice equality; mismatch uses `algorithm.proof.invalid_direct_return_request`. Return existing `(ProofObligationIdentity, DependencySlice, u16)` values atomically, forwarding the Kernel-owned schema. `check_source_algorithm_e1_single_valuedness` delegates and discards only the schema, preserving its pair API.
-Only the checked original single-valuedness request is associated. No native typing prerequisite, new type, detached input, policy/adoption or generic evidence conversion is added. Currentness remains caller-owned. Preserve Open4/Deferred, raw unknown/incomplete/cache-miss states; environment interpretation, opaque types, E4 converse, symbols and broader credit remain excluded. Registered questions and formula-cycle hardening remain deferred.
+Only the checked original single-valuedness request is associated. No native typing prerequisite, new type, detached input, policy/adoption or generic evidence conversion is added. Currentness remains caller-owned. Preserve Open4/Deferred, raw unknown/incomplete/cache-miss states; environment interpretation, opaque types, E4 converse, symbols and broader credit remain excluded. Registered questions remain deferred.
 
 ## Original E1 single-valuedness current-policy consumption
 
@@ -656,7 +656,7 @@ Return original identity, whole raw slice, borrowed result and actual `policy.po
 
 `NativeE4NormalReturn::from_source` uses the unchanged current-policy consumer above and privately retains original identity, whole raw slice, snapshot and borrowed Kernel result. No generic evidence/status or selection conversion is provided.
 `adopt_original_request` regenerates complete original identity and raw slice first, preserving upstream errors. Return false unless both retained values and snapshot match and Core is the identical immutable arena. Then re-evaluate enabled Builtin and exact checker-schema agreement against the retained result under current policy, with the same policy refusal as above. Earlier policy success/fingerprints grant no authority; true adopts only that original E4 existential.
-The boolean changes no graph/status: Open4/Deferred, unknowns and incomplete/cache-miss slices persist. Currentness remains caller-owned. Semantic environment interpretation, independent E1/E2 duties, symbols, promotion, generic evidence, publication, reuse and broader acceptance/coverage remain excluded; no formula-cycle/general-cycle safety claim.
+The boolean changes no graph/status: Open4/Deferred, unknowns and incomplete/cache-miss slices persist. Currentness remains caller-owned. Semantic environment interpretation, independent E1/E2 duties, symbols, promotion, generic evidence, publication, reuse and broader acceptance/coverage remain excluded; no general-cycle safety claim.
 
 ## Bounded native E1 result consumption
 

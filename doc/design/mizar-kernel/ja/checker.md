@@ -38,8 +38,10 @@ witness 変数の object 述語であることから仮定規則・型 guard・c
 algorithm/flow/statement/input/result、local definition のない不変 parameter、
 実際の `Var(a)` witness と所有する単一 Return、role/guard とエラー等の不在を照合する。
 context は parameter guard と同一で `object(a)` に解決できなければならない。
-反復的な topological scan で term cycle を拒否してから Core CFG を再構築し、map と
-flow owner を照合して boolean を返す。実行値は前提を供給しない。
+共有 Core CFG の再構築前に Core 全体の term/formula-reference cycle を反復検査で拒否する。
+量化子の body と binder type guard を含み、非巡回の共有 formula は許容する。汎用の
+malformed-Core/cycle safety は延期する。map と flow owner を照合して boolean を返す。
+実行値は前提を供給しない。
 元の関係/context の認証は VC 所有。E4 存在導入、意味的 environment 対応、Proof
 identity/policy binding/adoption や広範な credit は与えない。
 詳細は [英語版](../en/checker.md#symbolic-instantiated-algorithmreturns-child) を参照。

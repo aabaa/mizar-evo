@@ -584,8 +584,8 @@ These arguments do not generalize to arbitrary/dependent return types, extra
 parameters or premises, mutable/local/ghost values, calls, branches, loops,
 Pick, recursion, reflection or recovered flow. Syntax-bearing inputs retain
 Adm/InputOK and the same complete environment; no environment interpretation
-is provided here. Term-cycle refusal before CFG traversal is not a claim of
-formula/general-cycle safety or total validation of arbitrary malformed Core.
+is provided here. The [bounded cycle refusal](checker.md#symbolic-instantiated-algorithmreturns-child)
+before CFG traversal does not provide general-cycle safety or total validation of arbitrary malformed Core.
 Open/Deferred obligations and unknown/incomplete, reuse-ineligible slices remain;
 R3-Q2/R5-Q2 and G/RESERVED/unassigned decisions stay with the owner.
 

@@ -92,9 +92,10 @@ projects algorithm, flow, statement and input/result `(var, definition)` pairs.
 Require both values to be the immutable parameter without a local definition,
 the actual witness `Var(a)`, its sole owned Return, valid roles/guards and no
 errors, diagnostics or ghost effects. The context must equal the parameter guard
-and resolve to `object(a)`. Refuse term cycles with an iterative topological scan
-before rebuilding Core CFG; match its algorithm-to-flow map
-and flow owner. Return a boolean; no opaque runtime value supplies a premise.
+and resolve to `object(a)`. Before rebuilding shared Core CFG, iteratively refuse
+term and formula-reference cycles across all Core, including quantifier bodies
+and binder type guards; acyclic shared formulas remain valid. General malformed-Core
+and cycle safety remain deferred. Match the algorithm-to-flow map and flow owner. Return a boolean; no opaque runtime value supplies a premise.
 VC owns [original relation/context authentication](../../mizar-vc/en/generator.md#e4-checked-instantiated-child).
 This child check supplies no original E4 existential introduction, semantic
 environment association, Proof identity/policy binding/adoption or broader credit.

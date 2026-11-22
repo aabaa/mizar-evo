@@ -554,8 +554,8 @@ E4 は normal-return の存在であり E2 の body correctness ではない。�
 任意・依存戻り型、追加 parameter/前提、mutable/local/ghost 値、call、branch、loop、
 Pick、recursion、reflection、recovered flow には一般化しない。構文を含む input は
 Adm/InputOK と同一の完全 environment を保持し、ここでは environment の解釈を与えない。
-CFG traversal 前の term-cycle 拒否は formula/general-cycle safety や任意の不正 Core に
-対する全域検査の主張ではない。Open/Deferred 義務、unknown/incomplete で再利用不可の
+CFG traversal 前の [限定 cycle 拒否](checker.md#symbolic-instantiated-algorithmreturns-child) は
+general-cycle safety や任意の不正 Core に対する全域検査の主張ではない。Open/Deferred 義務、unknown/incomplete で再利用不可の
 slice は残り、R3-Q2/R5-Q2 と G/RESERVED/unassigned の決定は owner に保留する。
 
 ### 拒否 corpus

@@ -31,7 +31,7 @@ VC [structural/authenticated collector](../../mizar-vc/en/dependency_slice.md#au
 
 ## Original E4 Proof request-identity association
 [Proof same-call association](../../mizar-proof/en/status.md#original-e4-request-identity-association) owns authenticated E4 checking, identity regeneration and whole raw-slice equality without policy authority.
-Preserve Open4/Deferred, caller currentness, raw unknowns, IncompleteUncacheable/cache misses. Formula-cycle hardening remains PRODUCER-MISSING; no formula/general-cycle safety claim. R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
+Preserve Open4/Deferred, caller currentness, raw unknowns, IncompleteUncacheable/cache misses. General-cycle safety remains deferred. R3-Q2/R5-Q2 remain G/RESERVED/unassigned.
 
 ## Original E1 typing descriptor
 [VC descriptor](../../mizar-vc/en/generator.md#original-e1-typing-descriptor) owns original typing projections and raw slice.
@@ -51,10 +51,10 @@ Proof [same-call single-valuedness association](../../mizar-proof/en/status.md#o
 Typing checker/generator and Proof association above own schema reporting; [typing consumption](../../mizar-proof/en/status.md#original-e1-typing-current-policy-consumption) owns current-policy gating.
 Single-valuedness checker/generator above own success-only Kernel schema reporting, authenticated descriptor/schema handoff and delegation. Single-valuedness [consumption](../../mizar-proof/en/status.md#original-e1-single-valuedness-current-policy-consumption) owns current-policy gating.
 ## Bounded aggregate five-role acceptance
-Authority: §§20.1.2, 20.2.6, 20.7.2, 20.13.1. Full tier: acceptance seam.
-`accept_source_algorithm_direct_return` returns `Result<bool, String>` for one source/check/symbols/Core/snapshot/current policy; currentness remains caller-owned.
-Authenticate discovery with existing generators/fixed family schemas: one each of E1 typing, single-valuedness, inhabitation, E4 normal return, and RETURN E2 by kind; missing/duplicate roles reject.
-Invoke unchanged five genuine native constructors/adopters on identical inputs; preserve each family's original identity/schema/whole slice; propagate errors and return their conjunction. No cross-family identity/schema/slice comparison, holder or receipt.
-[E2 association/consumption](../../mizar-proof/en/status.md#original-e2-request-identity-association), native paths and Kernel [schema reporting](../../mizar-kernel/en/checker.md#corrected-input-and-context) remain unchanged. Preserve Open/Deferred/unknown/incomplete/cache misses; no symbols, promotion, premises, generic status, coverage, reuse or protected-artifact changes.
-Files: status.rs, source_algorithm_return.rs, paired Proof status/API, contract. Tests (cap4): genuine all-five success first, repeatability/purity/raw states and distinct family bindings; unsupported source/foreign or changed Core refusal; current format/schema refusal; upstream-error propagation. Reuse genuine fixtures; no lower-matrix repetition/fabrication.
+Proof [acceptance](../../mizar-proof/en/status.md) owns same-call discovery and five native constructors/adopters; preserve original family identities/schemas/whole slices, conjunction and upstream errors without cross-family comparison.
+## Bounded Kernel formula-reference-cycle refusal
+Authority: §§20.2.6, 20.13.1; Kernel [symbolic child](../../mizar-kernel/en/checker.md#symbolic-instantiated-algorithmreturns-child). Full tier: new Kernel validation class, outside the repeated native-producer pattern.
+Before shared CFG reconstruction, iteratively refuse formula-reference cycles across Core formulas, including quantifier bodies and binder type guards; accept acyclic shared DAGs. Preserve term-cycle refusal and child/typing/single-valuedness/existential checks.
+Files: checker.rs, source_algorithm_return.rs, paired Kernel checker docs, contract. No producer, API, language-intent, policy/schema, raw-state or coverage change; broader child/range admission, syntax/environment generalization and general malformed-Core/cycle safety remain deferred. R3-Q2/R5-Q2 remain reserved.
+Tests (cap3 families): genuine/shared-DAG success; valid-index self/multi-node formula cycles refuse without panic; quantifier guard-only cycles refuse. Exercise an unrelated algorithm through shared CFG and dependent Kernel entry points; reuse genuine fixtures; establish shared setup first.
 Exit: independent specification/test-intent, sufficiency, precision/trust, volume, source/docs/ENJA and quality reviews; fmt, Clippy, both lint_policy suites, Proof/VC/Kernel owners, source-return, proof-verification E2E and links/fragments. Full tests on cadence; trace/audit unchanged.
