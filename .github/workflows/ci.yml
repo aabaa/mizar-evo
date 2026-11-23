@@ -4,18 +4,19 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  schedule:
+    - cron: "23 3 * * 1"
 
 permissions:
   contents: read
 
 jobs:
-  receipt-shadow:
-    name: receipt-shadow
+  receipt-sanity:
+    if: github.event_name != 'schedule'
+    name: receipt-sanity
     runs-on: ubuntu-latest
     steps:
-      # Bootstrap/shadow only. Required-check source enforcement and activation
-      # belong to the owner; this job cannot authorize skipping mizar-test.
-      - name: Observe receipts using the trusted default branch
+      - name: Enforce receipts using the trusted default branch
         shell: bash
         env:
           REPOSITORY: ${{ github.repository }}
@@ -24,12 +25,9 @@ jobs:
           SOURCE_REF: ${{ github.ref }}
           BEFORE: ${{ github.event.before }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_KIND" != push ]; then
-            echo 'full CI: pull requests and merge revisions are ineligible'
-            exit 0
-          fi
           sanity="$RUNNER_TEMP/receipt-sanity"
           mkdir -p "$sanity"
           git init --bare "$sanity/repo"
@@ -44,20 +42,29 @@ jobs:
           if [ "$trusted" = "$SOURCE" ] || \
              ! [[ "$trusted" =~ ^[0-9a-f]{40}$ ]] || \
              ! git -C "$sanity/repo" merge-base --is-ancestor "$trusted" "$default_source"; then
-            echo 'full CI: no independent prior default-branch anchor'
-            exit 0
+            echo 'receipt sanity failed: no independent prior default-branch anchor'
+            exit 1
           fi
           # Never import the candidate verifier, policy, or evidence as code.
           if ! git -C "$sanity/repo" cat-file -e "$trusted:.github/ci-receipts/verify.py"; then
-            echo 'full CI: bootstrap anchor has no verifier'
-            exit 0
+            echo 'receipt sanity failed: trusted anchor has no verifier'
+            exit 1
           fi
           git -C "$sanity/repo" show "$trusted:.github/ci-receipts/verify.py" > "$sanity/verify.py"
           git -C "$sanity/repo" show "$trusted:.github/ci-receipts/policy.json" > "$sanity/policy.json"
+          event_flags=()
           if [ "$SOURCE_REF" != "$default_ref" ]; then
             git -C "$sanity/repo" fetch --no-tags origin "$SOURCE_REF:$SOURCE_REF"
-            base=$(git -C "$sanity/repo" merge-base --all "$default_source" "$SOURCE")
-            [ "$(printf '%s\n' "$base" | wc -l)" -eq 1 ]
+            if [ "$EVENT_KIND" = pull_request ]; then
+              base="$default_source"
+              event_flags+=(--synthetic-merge)
+              if [ "${PR_HEAD_REPOSITORY:-$REPOSITORY}" != "$REPOSITORY" ]; then
+                event_flags+=(--fork)
+              fi
+            else
+              base=$(git -C "$sanity/repo" merge-base --all "$default_source" "$SOURCE")
+              [ "$(printf '%s\n' "$base" | wc -l)" -eq 1 ]
+            fi
           else
             base="$BEFORE"
           fi
@@ -65,7 +72,7 @@ jobs:
             --policy "$sanity/policy.json" --event-kind "$EVENT_KIND" \
             --repository-id "$REPOSITORY" --source "$SOURCE" --base "$base" \
             --source-ref "$SOURCE_REF" --default-ref "$default_ref" \
-            --default-source "$default_source" --remote origin
+            --default-source "$default_source" --remote origin --enforce "${event_flags[@]}"
 
   mizar-test:
     name: mizar-test
@@ -110,6 +117,7 @@ jobs:
         run: cargo fmt --check
 
       - name: Provision pinned Vampire 4.9 for exhaustive tests
+        if: github.event_name == 'schedule'
         shell: bash
         run: |
           set -euo pipefail
@@ -122,6 +130,7 @@ jobs:
           .tools/provers/vampire-4.9/vampire --version | head -1 | grep -Fx 'Vampire 4.9 (commit 5ad494e78 on 2024-06-14 14:05:27 +0100)'
 
       - name: Run tests
+        if: github.event_name == 'schedule'
         run: cargo test
 
       - name: Test receipt verifier with disposable keys

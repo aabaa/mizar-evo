@@ -421,7 +421,7 @@ class ReceiptTests(unittest.TestCase):
                 self.publish()
                 output, sanity = self.run_shadow("refs/heads/topic", trusted)
                 self.assertEqual(json.loads(output.splitlines()[-1]),
-                                 {"decision": "full", "eligible": True, "reason": "valid receipt; observation retains full CI"})
+                                 {"decision": "pass", "eligible": True, "reason": "valid exact-event full receipt"})
                 for name in ("verify.py", "policy.json"):
                     self.assertEqual((sanity / name).read_bytes(),
                                      self.git("show", trusted + ":.github/ci-receipts/" + name))
@@ -435,7 +435,7 @@ class ReceiptTests(unittest.TestCase):
     def test_08_deployment_boundary(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         controls, candidate = workflow.split("  mizar-test:\n", 1)
-        enforcing = "  receipt-sanity:\n" in controls
+        self.assertIn("  receipt-sanity:\n", controls)
         self.assertIn("permissions:\n  contents: read\n", controls)
         self.assertNotIn("actions/checkout", controls)
         self.assertNotIn("secrets.", controls)
@@ -445,16 +445,10 @@ class ReceiptTests(unittest.TestCase):
                         "cargo run -p mizar-test -- plan --tests-root tests --manifest tests/coverage/spec_trace.toml",
                         "python3 -m unittest discover -s tests/ci_receipts -p test_verifier.py -v"):
             self.assertIn("run: " + command if command != "cargo fetch --locked" else command, candidate)
-        if enforcing:
-            self.assertNotIn("receipt-shadow", workflow)
-            self.assertIn("--enforce", controls)
-            self.assertIn("schedule:", workflow)
-            self.assertIn("github.event_name == 'schedule'", candidate)
-        else:
-            self.assertIn("  receipt-shadow:\n", controls)
-            self.assertNotIn("--enforce", controls)
-            self.assertNotIn("if:", candidate)
-        self.assertIn("run: cargo test", candidate)
+        self.assertNotIn("receipt-shadow", workflow)
+        self.assertIn("--enforce", controls)
+        self.assertIn("schedule:", workflow)
+        self.assertIn("- name: Run tests\n        if: github.event_name == 'schedule'\n        run: cargo test", candidate)
         configured = self.verifier.read_policy((ROOT / ".github/ci-receipts/policy.json").read_bytes())
         self.assertTrue(configured["enabled"])
         self.assertTrue(configured["expected_inventory"])
@@ -477,39 +471,40 @@ class ReceiptTests(unittest.TestCase):
         (controls / "policy.json").write_text("untrusted candidate policy\n")
         self.git("commit", "-am", "candidate controls")
         self.source = self.oid("HEAD")
-        output, sanity = self.run_shadow("refs/heads/main", trusted)
-        self.assertEqual(json.loads(output.splitlines()[-1]),
-                         {"decision": "full", "eligible": False, "reason": "missing receipt"})
+        output, sanity = self.run_shadow("refs/heads/main", trusted, expected_failure=True)
+        self.assertIn("receipt sanity failed: missing receipt", output.decode())
         for name in ("verify.py", "policy.json"):
             self.assertEqual((sanity / name).read_bytes(),
                              self.git("show", trusted + ":.github/ci-receipts/" + name))
         for before, reason in (("0" * 40, "no independent prior default-branch anchor"),
                                (self.source, "no independent prior default-branch anchor"),
-                               (self.base, "bootstrap anchor has no verifier")):
+                               (self.base, "trusted anchor has no verifier")):
             with self.subTest(unavailable_anchor=before):
-                output, sanity = self.run_shadow("refs/heads/main", before)
-                self.assertIn("full CI: " + reason, output.decode())
+                output, sanity = self.run_shadow("refs/heads/main", before, expected_failure=True)
+                self.assertIn("receipt sanity failed: " + reason, output.decode())
                 self.assertFalse((sanity / "verify.py").exists())
-        output, sanity = self.run_shadow("refs/pull/1/merge", trusted, event_kind="pull_request")
-        self.assertIn("pull requests and merge revisions are ineligible", output.decode())
-        self.assertFalse(sanity.exists())
-
         self.git("branch", "candidate", self.source)
         self.git("reset", "--hard", trusted)
+        self.git("update-ref", "refs/pull/1/merge", self.source)
+        output, sanity = self.run_shadow("refs/pull/1/merge", trusted, event_kind="pull_request",
+                                         expected_failure=True)
+        self.assertIn("receipt sanity failed: missing receipt", output.decode())
+        for name in ("verify.py", "policy.json"):
+            self.assertEqual((sanity / name).read_bytes(),
+                             self.git("show", trusted + ":.github/ci-receipts/" + name))
         live_policy = {**self.policy, "signer_identity": "live-default"}
         with (controls / "verify.py").open("a") as verifier:
             verifier.write("\n# Live default fixture revision.\n")
         (controls / "policy.json").write_bytes(self.verifier.canonical(live_policy))
         self.git("commit", "-am", "advance live default")
         live_default = self.oid("HEAD")
-        output, sanity = self.run_shadow("refs/heads/candidate", trusted)
-        self.assertEqual(json.loads(output.splitlines()[-1]),
-                         {"decision": "full", "eligible": False, "reason": "missing receipt"})
+        output, sanity = self.run_shadow("refs/heads/candidate", trusted, expected_failure=True)
+        self.assertIn("receipt sanity failed: missing receipt", output.decode())
         for name in ("verify.py", "policy.json"):
             self.assertEqual((sanity / name).read_bytes(),
                              self.git("show", live_default + ":.github/ci-receipts/" + name))
 
-    def run_shadow(self, source_ref, before, event_kind="push"):
+    def run_shadow(self, source_ref, before, event_kind="push", expected_failure=False):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         script = textwrap.dedent(workflow.split("        run: |\n", 1)[1].split("\n  mizar-test:\n", 1)[0])
         runner = Path(tempfile.mkdtemp(dir=self.home))
@@ -518,9 +513,11 @@ class ReceiptTests(unittest.TestCase):
                "BEFORE": before, "DEFAULT_BRANCH": "main", "GIT_CONFIG_COUNT": "1",
                "GIT_CONFIG_KEY_0": "url." + str(self.repo) + ".insteadOf",
                "GIT_CONFIG_VALUE_0": "https://github.com/fixture/repo.git"}
-        result = subprocess.run(["bash", "-c", script], env=env, check=True,
+        result = subprocess.run(["bash", "-c", script], env=env, check=not expected_failure,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-        return result.stdout, runner / "receipt-sanity"
+        if expected_failure:
+            self.assertEqual(result.returncode, 1)
+        return result.stdout + (result.stderr if expected_failure else b""), runner / "receipt-sanity"
 
     def git(self, *args, data=None):
         return run("git", "-C", str(self.repo), *args, data=data)
