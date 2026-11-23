@@ -436,6 +436,136 @@ pub fn source_unary_child_call_canonical_inputs(
     Ok((vc_hash, goal_hash, context_hash, slice))
 }
 
+/// Normalizes only the freshly authenticated bounded caller E1 single-valuedness.
+/// The raw request slice remains incomplete and grants no proof or cache reuse.
+pub fn source_unary_caller_e1_single_valuedness_canonical_inputs(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(Hash, Hash, Hash, DependencySlice), String> {
+    use mizar_resolve::env::{SymbolKind, Visibility};
+
+    crate::generator::generate_source_unary_child_call_caller_e1_single_valuedness_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid =
+        || "algorithms.unary_child.caller_e1_single_valuedness.invalid_canonical_inputs".to_owned();
+    let frame = |bytes: &mut Vec<u8>, payload: &[u8]| -> Result<(), String> {
+        bytes.extend(
+            u32::try_from(payload.len())
+                .map_err(|_| invalid())?
+                .to_be_bytes(),
+        );
+        bytes.extend(payload);
+        Ok(())
+    };
+    let mut definition =
+        b"mizar-vc/source-unary-caller-e1-single-valuedness/definition/v1\0".to_vec();
+    for algorithm in [request.callee, request.caller] {
+        let algorithm = core.algorithms().get(algorithm).ok_or_else(invalid)?;
+        let mut entries = symbols.symbols().iter().filter(|entry| {
+            entry.symbol() == &algorithm.symbol && entry.kind() == SymbolKind::Algorithm
+        });
+        let entry = entries.next().ok_or_else(invalid)?;
+        if entries.next().is_some() || entry.visibility() != Visibility::Public {
+            return Err(invalid());
+        }
+        let module = entry.symbol().module();
+        for value in [
+            module.package().as_str(),
+            module.path().as_str(),
+            entry.namespace().as_str(),
+            entry.primary_spelling(),
+            "algorithm",
+            "public",
+            if algorithm.declared_terminating {
+                "true"
+            } else {
+                "false"
+            },
+        ] {
+            frame(&mut definition, value.as_bytes())?;
+        }
+    }
+    // Fresh authentication proves every join denoted by these semantic slots.
+    frame(&mut definition, b"callee.parameter=p0;callee.result=r0;callee.return=p0;caller.parameter=p1;caller.result=r1;caller.return=Apply(callee,p1)")?;
+    let mut goal = b"mizar-vc/source-unary-caller-e1-single-valuedness/goal/v1\0".to_vec();
+    frame(&mut goal, &definition)?;
+    frame(&mut goal, b"forall caller-result-1,caller-result-2.((returns(caller,caller-parameter,caller-result-1)&returns(caller,caller-parameter,caller-result-2))->caller-result-1=caller-result-2)")?;
+    frame(&mut goal, b"caller-parameter")?;
+    let mut context = b"mizar-vc/source-unary-caller-e1-single-valuedness/context/v1\0".to_vec();
+    frame(&mut context, b"object(caller-parameter)")?;
+    frame(&mut context, b"caller-result-1:result")?;
+    frame(&mut context, b"caller-result-2:result")?;
+    let goal_hash = stable_fingerprint_hash(
+        "mizar-vc/source-unary-caller-e1-single-valuedness/goal/v1",
+        &goal,
+    );
+    let context_hash = stable_fingerprint_hash(
+        "mizar-vc/source-unary-caller-e1-single-valuedness/context/v1",
+        &context,
+    );
+    let mut vc = b"mizar-vc/source-unary-caller-e1-single-valuedness/vc/v1\0".to_vec();
+    frame(&mut vc, b"unary-caller-e1-single-valuedness")?;
+    frame(&mut vc, goal_hash.as_bytes())?;
+    frame(&mut vc, context_hash.as_bytes())?;
+    let vc_hash = stable_fingerprint_hash(
+        "mizar-vc/source-unary-caller-e1-single-valuedness/vc/v1",
+        &vc,
+    );
+    let mut entries = [
+        (DependencyEntryClass::Definition, "definition", &definition),
+        (DependencyEntryClass::LocalContext, "context", &context),
+        (DependencyEntryClass::GeneratedFormula, "goal", &goal),
+    ]
+    .map(|(class, key, value)| {
+        let payload = hex(value);
+        DependencyEntry {
+            class,
+            local_key: format!("source-unary-caller-e1-single-valuedness:{key}"),
+            fingerprint_payload: payload.clone(),
+            payload,
+        }
+    })
+    .to_vec();
+    let mut unknowns = [
+        (
+            DependencyUnknownFamily::UpstreamPayload,
+            "footprint",
+            "source unary caller E1 single-valuedness dependency footprint is not collected",
+        ),
+        (
+            DependencyUnknownFamily::DischargeEvidence,
+            "evidence",
+            "raw source unary caller E1 single-valuedness identity omits policy-approved evidence",
+        ),
+    ]
+    .map(|(family, key, reason)| DependencyUnknown {
+        family,
+        local_key: format!("source-unary-caller-e1-single-valuedness:{key}"),
+        reason: reason.to_owned(),
+    })
+    .to_vec();
+    entries.sort();
+    unknowns.sort();
+    let kind = VcKind::AlgorithmE1SingleValuedness;
+    let status = VcStatus::Open;
+    let completeness = DependencySliceCompleteness::IncompleteUncacheable;
+    let fingerprint = fingerprint_for(&kind, &status, &entries, &unknowns, completeness);
+    let slice = DependencySlice {
+        vc: VcId::new(0),
+        kind,
+        status,
+        entries,
+        unknowns,
+        completeness,
+        fingerprint,
+    };
+    Ok((vc_hash, goal_hash, context_hash, slice))
+}
+
 /// Normalizes only the freshly authenticated bounded caller E1 result typing.
 /// The raw request slice remains incomplete and grants no proof or cache reuse.
 pub fn source_unary_caller_e1_typing_canonical_inputs(

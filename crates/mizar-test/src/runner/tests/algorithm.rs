@@ -10,6 +10,7 @@ use mizar_vc::dependency_slice::{
     source_unary_caller_e4_canonical_inputs as canonical_caller_e4,
     source_unary_caller_e1_inhabitation_canonical_inputs as canonical_caller_e1,
     source_unary_caller_e1_typing_canonical_inputs as canonical_caller_typing,
+    source_unary_caller_e1_single_valuedness_canonical_inputs as canonical_caller_single,
 };
 
 #[test]
@@ -42,10 +43,12 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
     let mut child_identity = None;
     let mut caller_e4_identity = None;
     let mut caller_e1_identity = None;
-    for profile in ["source-unary-child", "source-unary-caller-e4", "source-unary-caller-e1-inhabitation", "source-unary-caller-e1-typing"] {
+    let mut caller_typing_identity = None;
+    for profile in ["source-unary-child", "source-unary-caller-e4", "source-unary-caller-e1-inhabitation", "source-unary-caller-e1-typing", "source-unary-caller-e1-single-valuedness"] {
         let caller_profile = profile == "source-unary-caller-e4";
         let inhabitation_profile = profile == "source-unary-caller-e1-inhabitation";
         let typing_profile = profile == "source-unary-caller-e1-typing";
+        let single_profile = profile == "source-unary-caller-e1-single-valuedness";
         // Each oracle is fixed before its corresponding identity API is called. Owner data comes
         // directly from the source environment; all semantic relationships are literal.
         let owners = ["child", "caller"].map(|spelling| {
@@ -66,13 +69,17 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
         let definition = frame("definition", &definition_fields);
         let goal = frame("goal", &[
             &definition,
-            if typing_profile { b"forall caller-result.(returns(caller,caller-parameter,caller-result)->object(caller-result))" } else if inhabitation_profile { b"exists caller-result.object(caller-result)" } else if caller_profile { b"exists caller-result.returns(caller,caller-parameter,caller-result)" } else { b"exists child-result.returns(callee,caller-parameter,child-result)" },
+            if single_profile { b"forall caller-result-1,caller-result-2.((returns(caller,caller-parameter,caller-result-1)&returns(caller,caller-parameter,caller-result-2))->caller-result-1=caller-result-2)" } else if typing_profile { b"forall caller-result.(returns(caller,caller-parameter,caller-result)->object(caller-result))" } else if inhabitation_profile { b"exists caller-result.object(caller-result)" } else if caller_profile { b"exists caller-result.returns(caller,caller-parameter,caller-result)" } else { b"exists child-result.returns(callee,caller-parameter,child-result)" },
             b"caller-parameter",
         ]);
-        let context = frame("context", &[b"object(caller-parameter)", if caller_profile || inhabitation_profile || typing_profile { b"caller-result:result" } else { b"child-result:result" }]);
+        let context = if single_profile {
+            frame("context", &[b"object(caller-parameter)", b"caller-result-1:result", b"caller-result-2:result"])
+        } else {
+            frame("context", &[b"object(caller-parameter)", if caller_profile || inhabitation_profile || typing_profile { b"caller-result:result" } else { b"child-result:result" }])
+        };
         let expected_goal = bridge_fingerprint_hash(&format!("mizar-vc/{profile}/goal/v1"), &goal);
         let expected_context = bridge_fingerprint_hash(&format!("mizar-vc/{profile}/context/v1"), &context);
-        let vc = frame("vc", &[if typing_profile { b"unary-caller-e1-result-typing" } else if inhabitation_profile { b"unary-caller-e1-object-inhabitation" } else if caller_profile { b"unary-caller-e4-existential" } else { b"unary-child-existential" }, expected_goal.as_bytes(), expected_context.as_bytes()]);
+        let vc = frame("vc", &[if single_profile { b"unary-caller-e1-single-valuedness" } else if typing_profile { b"unary-caller-e1-result-typing" } else if inhabitation_profile { b"unary-caller-e1-object-inhabitation" } else if caller_profile { b"unary-caller-e4-existential" } else { b"unary-child-existential" }, expected_goal.as_bytes(), expected_context.as_bytes()]);
         let expected_vc = bridge_fingerprint_hash(&format!("mizar-vc/{profile}/vc/v1"), &vc);
         let entries = [
             (E::LocalContext, format!("{profile}:context"), lower_hex(&context)),
@@ -80,10 +87,10 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
             (E::Definition, format!("{profile}:definition"), lower_hex(&definition)),
         ];
         let unknowns = [
-            (U::DischargeEvidence, format!("{profile}:evidence"), if typing_profile { "raw source unary caller E1 typing identity omits policy-approved evidence" } else if inhabitation_profile { "raw source unary caller E1 inhabitation identity omits policy-approved evidence" } else if caller_profile { "raw source unary caller E4 identity omits policy-approved evidence" } else { "raw source unary child identity omits native evidence" }),
-            (U::UpstreamPayload, format!("{profile}:footprint"), if typing_profile { "source unary caller E1 typing dependency footprint is not collected" } else if inhabitation_profile { "source unary caller E1 inhabitation dependency footprint is not collected" } else if caller_profile { "source unary caller E4 dependency footprint is not collected" } else { "source unary child dependency footprint is not collected" }),
+            (U::DischargeEvidence, format!("{profile}:evidence"), if single_profile { "raw source unary caller E1 single-valuedness identity omits policy-approved evidence" } else if typing_profile { "raw source unary caller E1 typing identity omits policy-approved evidence" } else if inhabitation_profile { "raw source unary caller E1 inhabitation identity omits policy-approved evidence" } else if caller_profile { "raw source unary caller E4 identity omits policy-approved evidence" } else { "raw source unary child identity omits native evidence" }),
+            (U::UpstreamPayload, format!("{profile}:footprint"), if single_profile { "source unary caller E1 single-valuedness dependency footprint is not collected" } else if typing_profile { "source unary caller E1 typing dependency footprint is not collected" } else if inhabitation_profile { "source unary caller E1 inhabitation dependency footprint is not collected" } else if caller_profile { "source unary caller E4 dependency footprint is not collected" } else { "source unary child dependency footprint is not collected" }),
         ];
-        let kind = if typing_profile { VcKind::AlgorithmE1Typing } else if inhabitation_profile { VcKind::AlgorithmE1ResultInhabitation } else { VcKind::AlgorithmE4NormalReturn };
+        let kind = if single_profile { VcKind::AlgorithmE1SingleValuedness } else if typing_profile { VcKind::AlgorithmE1Typing } else if inhabitation_profile { VcKind::AlgorithmE1ResultInhabitation } else { VcKind::AlgorithmE4NormalReturn };
         let mut slice_payload = format!("dependency-slice-fingerprint-v1\nschema-version: mizar-vc-dependency-slice-v1\nkind: {kind:?}\nstatus: Open\ncompleteness: IncompleteUncacheable\n[entries]\n");
         for (class, _, payload) in &entries {
             slice_payload.push_str(&format!("{class:?}\t{payload}\n"));
@@ -176,9 +183,14 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
             assert!(native_typing.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
         }
         assert_eq!(caller_typing.1.len(), 4);
-        let raw = if typing_profile { canonical_caller_typing(&source, &typed, symbols, &core, &request) } else if inhabitation_profile { canonical_caller_e1(&source, &typed, symbols, &core, &request) } else if caller_profile { canonical_caller_e4(&source, &typed, symbols, &core, &request) } else { canonical_unary_child(&source, &typed, symbols, &core, &request) }.unwrap();
+        let single = SingleAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
+        let single_before = single.descriptor().clone();
+        assert_eq!(single_before.1.len(), 6);
+        let raw = if single_profile { canonical_caller_single(&source, &typed, symbols, &core, &request) } else if typing_profile { canonical_caller_typing(&source, &typed, symbols, &core, &request) } else if inhabitation_profile { canonical_caller_e1(&source, &typed, symbols, &core, &request) } else if caller_profile { canonical_caller_e4(&source, &typed, symbols, &core, &request) } else { canonical_unary_child(&source, &typed, symbols, &core, &request) }.unwrap();
         assert_eq!((raw.0, raw.1, raw.2), (expected_vc, expected_goal, expected_context));
-        let (identity, slice) = if typing_profile {
+        let (identity, slice) = if single_profile {
+            single.obligation_identity(&source, &typed, symbols, &core, &request)
+        } else if typing_profile {
             typing.obligation_identity(&source, &typed, symbols, &core, &request)
         } else if inhabitation_profile {
             inhabitation.obligation_identity(&source, &typed, symbols, &core, &request)
@@ -187,7 +199,13 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
         } else {
             native.obligation_identity(&source, &typed, symbols, &core, &request, &policy)
         }.unwrap().unwrap();
-        if typing_profile {
+        if single_profile {
+            assert_ne!(Some(&identity), child_identity.as_ref());
+            assert_ne!(Some(&identity), caller_e4_identity.as_ref());
+            assert_ne!(Some(&identity), caller_e1_identity.as_ref());
+            assert_ne!(Some(&identity), caller_typing_identity.as_ref());
+        } else if typing_profile {
+            caller_typing_identity = Some(identity.clone());
             for _ in 0..2 {
                 assert_eq!(native_typing.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), (identity.clone(), slice.clone()));
             }
@@ -226,6 +244,8 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
         ).unwrap(), caller_typing);
         assert_eq!(typing.request(), &request);
         assert_eq!(typing.descriptor(), &caller_typing);
+        assert_eq!(single.descriptor(), &single_before);
+        assert_eq!(single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), single_before);
         assert_eq!(slice, raw.3);
         assert_eq!(identity.obligation_id(), anchor);
         assert_eq!(identity.obligation_anchor().as_str(), anchor);
@@ -299,10 +319,16 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
         let typing = mizar_proof::status::SourceUnaryCallerE1TypingAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
         let typing_identity = typing.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
         assert_eq!(typing_identity.1, typing_raw.3);
+        let single_raw = canonical_caller_single(&source, &typed, symbols, &core, &request).unwrap();
+        let single = SingleAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
+        let single_identity = single.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
+        assert_eq!(single_identity.1, single_raw.3);
         let native_typing = NativeTyping::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
         let native_caller = NativeUnaryCallerE4Existential::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
         let native_e1 = mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
         for _ in 0..2 {
+            assert_eq!(canonical_caller_single(&source, &typed, symbols, &core, &request).unwrap(), single_raw);
+            assert_eq!(single.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), single_identity);
             assert_eq!(canonical_caller_typing(&source, &typed, symbols, &core, &request).unwrap(), typing_raw);
             assert_eq!(typing.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), typing_identity);
             assert_eq!(native_typing.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), typing_identity);
@@ -315,8 +341,10 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
             assert_eq!(canonical_unary_child(&source, &typed, symbols, &core, &request).unwrap(), raw);
             assert_eq!(native.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), identity);
         }
-        let (original_raw, original_identity, original_caller_raw, original_caller_identity, original_e1_raw, original_e1_identity, original_typing_raw, original_typing_identity) = baseline.get_or_insert_with(|| (raw.clone(), identity.clone(), caller_raw.clone(), caller_identity.clone(), e1_raw.clone(), e1_identity.clone(), typing_raw.clone(), typing_identity.clone()));
+        let (original_raw, original_identity, original_caller_raw, original_caller_identity, original_e1_raw, original_e1_identity, original_typing_raw, original_typing_identity, original_single_raw, original_single_identity) = baseline.get_or_insert_with(|| (raw.clone(), identity.clone(), caller_raw.clone(), caller_identity.clone(), e1_raw.clone(), e1_identity.clone(), typing_raw.clone(), typing_identity.clone(), single_raw.clone(), single_identity.clone()));
         if invariant {
+            assert_eq!(&single_raw, original_single_raw);
+            assert_eq!(&single_identity, original_single_identity);
             assert_eq!(&typing_raw, original_typing_raw);
             assert_eq!(&typing_identity, original_typing_identity);
             assert_eq!(&e1_raw, original_e1_raw);
@@ -326,6 +354,11 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
             assert_eq!(&raw, original_raw);
             assert_eq!(&identity, original_identity);
         } else {
+            assert_ne!(single_raw.0, original_single_raw.0);
+            assert_ne!(single_raw.1, original_single_raw.1);
+            assert_eq!(single_raw.2, original_single_raw.2);
+            assert_ne!(single_raw.3.fingerprint(), original_single_raw.3.fingerprint());
+            assert_ne!(&single_identity.0, &original_single_identity.0);
             assert_ne!(typing_raw.0, original_typing_raw.0);
             assert_ne!(typing_raw.1, original_typing_raw.1);
             assert_eq!(typing_raw.2, original_typing_raw.2);
@@ -352,6 +385,7 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
         assert!(caller_raw.3.requires_cache_miss());
         assert!(e1_raw.3.requires_cache_miss());
         assert!(typing_raw.3.requires_cache_miss());
+        assert!(single_raw.3.requires_cache_miss());
     }
 }
 
@@ -850,6 +884,9 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         assert_eq!(single_association.request(), &request);
         assert_eq!(single_association.descriptor(), &single);
         assert!(single_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+        let single_raw = canonical_caller_single(&source, &typed, symbols, &core, &request).unwrap();
+        let single_identity = single_association.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
+        assert_eq!(single_identity.1, single_raw.3);
         let single_targets = [first_var, second_var].map(|result| (
             request.caller,
             mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller],
@@ -1156,6 +1193,7 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             for _ in 0..2 {
                 assert_eq!(single_valuedness(&source, &typed, symbols, current_core, &request).unwrap(), single);
                 assert_eq!(check_single_valuedness(&source, &typed, symbols, current_core, &request).unwrap(), single);
+                assert_eq!(canonical_caller_single(&source, &typed, symbols, current_core, &request).unwrap(), single_raw);
                 let current_single = SingleAssociation::from_source(&source, &typed, symbols, current_core, &request).unwrap();
                 let (current_single_schema, current_scalar) = SingleAssociation::from_source_with_schema(
                     &source, &typed, symbols, current_core, &request,
@@ -1166,10 +1204,13 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                     assert_eq!(product.request(), &request);
                     assert_eq!(product.descriptor(), &single);
                     assert!(product.matches_source(&source, &typed, symbols, current_core, &request).unwrap());
+                    assert_eq!(product.obligation_identity(&source, &typed, symbols, current_core, &request).unwrap().unwrap(), single_identity);
                     assert_eq!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap(), std::ptr::eq(current_core, &core));
+                    assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request).unwrap(), std::ptr::eq(current_core, &core).then(|| single_identity.clone()));
                 }
                 for product in [&single_association, &single_schema_association] {
                     assert_eq!(product.matches_source(&source, &typed, symbols, current_core, &request).unwrap(), std::ptr::eq(current_core, &core));
+                    assert_eq!(product.obligation_identity(&source, &typed, symbols, current_core, &request).unwrap(), std::ptr::eq(current_core, &core).then(|| single_identity.clone()));
                 }
                 assert_eq!(check_single_schema(&source, &typed, symbols, current_core, &request).unwrap(), (single.clone(), single_schema.unwrap()));
                 assert!(mizar_kernel::checker::check_unary_caller_return_single_valuedness(
@@ -1359,6 +1400,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine_caller_e1 = caller_e1(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_caller_e4 = caller_e4(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_single = single_valuedness(&source, &typed, symbols, &core, &request).unwrap();
+    let genuine_single_raw = canonical_caller_single(&source, &typed, symbols, &core, &request).unwrap();
     let single_association = SingleAssociation::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let (single_schema_association, single_association_schema) = SingleAssociation::from_source_with_schema(
         &source, &typed, symbols, &core, &request,
@@ -1371,6 +1413,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     }
     assert_eq!(check_single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), genuine_single);
     assert_eq!(check_single_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_single.clone(), 1));
+    let genuine_single_identity = single_association.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap();
+    assert_eq!(genuine_single_identity.1, genuine_single_raw.3);
     let genuine_typing = caller_typing(&source, &typed, symbols, &core, &request).unwrap();
     assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     assert_eq!(check_typing_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_typing.clone(), 1));
@@ -1408,6 +1452,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let cloned_core = core.clone();
     let (_, cloned_child) = retain(&source, &typed, symbols, &cloned_core, &request).unwrap();
     assert_eq!(check_single_schema(&source, &typed, symbols, &cloned_core, &request).unwrap(), (genuine_single.clone(), 1));
+    assert_eq!(canonical_caller_single(&source, &typed, symbols, &cloned_core, &request).unwrap(), genuine_single_raw);
+    for product in [&single_association, &single_schema_association] {
+        assert_eq!(product.obligation_identity(&source, &typed, symbols, &cloned_core, &request).unwrap(), None);
+    }
+    let cloned_single = SingleAssociation::from_source(&source, &typed, symbols, &cloned_core, &request).unwrap();
+    assert_eq!(cloned_single.obligation_identity(&source, &typed, symbols, &cloned_core, &request).unwrap().unwrap(), genuine_single_identity);
+    assert_eq!(cloned_single.obligation_identity(&source, &typed, symbols, &core, &request).unwrap(), None);
     for (current_core, foreign_child) in [(&core, &cloned_child), (&cloned_core, &retained)] {
         assert_eq!(compose(&source, &typed, symbols, current_core, &request, foreign_child).err().unwrap(),
             "algorithms.unary_child.invalid_caller_e4_request");
@@ -1725,7 +1776,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(SingleAssociation::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), check_single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(SingleAssociation::from_source_with_schema(&source, &typed, symbols, &core, &changed).err().unwrap(), check_single_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(single_association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
+        assert_eq!(single_association.obligation_identity(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
+        assert_eq!(canonical_caller_single(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(single_schema_association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
+        assert_eq!(single_schema_association.obligation_identity(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing request {mutation}");
         assert_eq!(check_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing check request {mutation}");
         assert_eq!(check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing check request {mutation}");
@@ -1880,7 +1934,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(SingleAssociation::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), check_single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single association Core {mutation}");
         assert_eq!(SingleAssociation::from_source_with_schema(&source, &typed, symbols, &changed, &request).err().unwrap(), check_single_schema(&source, &typed, symbols, &changed, &request).unwrap_err(), "single association Core {mutation}");
         assert_eq!(single_association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
+        assert_eq!(single_association.obligation_identity(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
+        assert_eq!(canonical_caller_single(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
         assert_eq!(single_schema_association.matches_source(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
+        assert_eq!(single_schema_association.obligation_identity(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
         if mutation >= 33 {
             assert!(!single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), "single Core {mutation}");
             assert_eq!(single_schema(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), None);
@@ -1974,6 +2031,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             let other_caller_e4 = caller_e4(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_single = single_valuedness(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_single_association = SingleAssociation::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            let other_single_raw = canonical_caller_single(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            let other_single_identity = other_single_association.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().unwrap();
+            assert_eq!(other_single_identity.1, other_single_raw.3);
+            assert_ne!(other_single_identity.0, genuine_single_identity.0);
             let (other_single_schema, other_scalar) = SingleAssociation::from_source_with_schema(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request,
             ).unwrap();
@@ -1984,9 +2045,12 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
                 assert_eq!(product.descriptor(), &other_single);
                 assert!(product.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
                 assert!(!product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
+                assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request).unwrap(), None);
+                assert_eq!(product.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().unwrap(), other_single_identity);
             }
             for product in [&single_association, &single_schema_association] {
                 assert!(!product.matches_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+                assert_eq!(product.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), None);
             }
             assert_eq!(check_single_valuedness(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), other_single);
             assert_eq!(check_single_schema(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), (other_single.clone(), 1));
@@ -1997,14 +2061,20 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(SingleAssociation::from_source(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), check_single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(SingleAssociation::from_source_with_schema(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), check_single_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(single_association.matches_source(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+            assert_eq!(single_association.obligation_identity(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+            assert_eq!(canonical_caller_single(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(single_schema_association.matches_source(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+            assert_eq!(single_schema_association.obligation_identity(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), caller_e4(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(check_single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(SingleAssociation::from_source(&other_source, &other_typed, other_collected.env(), &core, &request).err().unwrap(), check_single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(SingleAssociation::from_source_with_schema(&other_source, &other_typed, other_collected.env(), &core, &request).err().unwrap(), check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(single_association.matches_source(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+            assert_eq!(single_association.obligation_identity(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+            assert_eq!(canonical_caller_single(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(single_schema_association.matches_source(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+            assert_eq!(single_schema_association.obligation_identity(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             let other_typing = caller_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(check_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), other_typing);
             assert_eq!(check_typing_schema(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), (other_typing.clone(), 1));
@@ -2177,7 +2247,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(SingleAssociation::from_source(s, t, e, &core, &request).err().unwrap(), check_single_valuedness(s, t, e, &core, &request).unwrap_err());
             assert_eq!(SingleAssociation::from_source_with_schema(s, t, e, &core, &request).err().unwrap(), check_single_schema(s, t, e, &core, &request).unwrap_err());
             assert_eq!(single_association.matches_source(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
+            assert_eq!(single_association.obligation_identity(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
+            assert_eq!(canonical_caller_single(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
             assert_eq!(single_schema_association.matches_source(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
+            assert_eq!(single_schema_association.obligation_identity(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
             assert_eq!(caller_typing(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(check_typing(s, t, e, &core, &request).unwrap_err(), caller_typing(s, t, e, &core, &request).unwrap_err());
             assert_eq!(check_typing_schema(s, t, e, &core, &request).unwrap_err(), caller_typing(s, t, e, &core, &request).unwrap_err());
@@ -2239,7 +2312,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(SingleAssociation::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), check_single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(SingleAssociation::from_source_with_schema(&source, &forged, symbols, &core, &request).err().unwrap(), check_single_schema(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(single_association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
+    assert_eq!(single_association.obligation_identity(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
+    assert_eq!(canonical_caller_single(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(single_schema_association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
+    assert_eq!(single_schema_association.obligation_identity(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(caller_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_e4(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(check_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_typing(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err(), caller_typing(&source, &forged, symbols, &core, &request).unwrap_err());
@@ -2286,7 +2362,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(SingleAssociation::from_source(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), check_single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(SingleAssociation::from_source_with_schema(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), check_single_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(single_association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+    assert_eq!(single_association.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+    assert_eq!(canonical_caller_single(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(single_schema_association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+    assert_eq!(single_schema_association.obligation_identity(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(check_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
@@ -2369,7 +2448,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         &source, &typed, symbols, &core, &request,
     ).unwrap();
     assert_eq!(recovered_scalar, single_association_schema);
+    assert_eq!(canonical_caller_single(&source, &typed, symbols, &core, &request).unwrap(), genuine_single_raw);
     for product in [&single_association, &single_schema_association, &recovered_single, &recovered_single_schema] {
+        assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), genuine_single_identity);
         assert_eq!(product.request(), &request);
         assert_eq!(product.descriptor(), &genuine_single);
         assert!(product.matches_source(&source, &typed, symbols, &core, &request).unwrap());
@@ -2460,6 +2541,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         assert_eq!(product.descriptor(), &single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap());
         assert!(product.matches_source(&source, &typed, collected.env(), &core, &request).unwrap());
     }
+    let single_identity = single_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap();
+    assert_eq!(single_identity.1, canonical_caller_single(&source, &typed, collected.env(), &core, &request).unwrap().3);
+    assert_eq!(single_identity.1.kind(), &mizar_vc::vc_ir::VcKind::AlgorithmE1SingleValuedness);
+    assert!(single_identity.1.requires_cache_miss());
     assert_eq!(check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap());
     assert_eq!(check_single_schema(&source, &typed, collected.env(), &core, &request).unwrap(), (single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap(), 1));
     assert!(mizar_vc::generator::generate_source_unary_child_call_descriptor(
@@ -2545,6 +2630,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(typing_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), typing_identity);
     assert_ne!(typing_identity.0, e1_identity.0);
     assert_ne!(typing_identity.0, caller_identity.0);
+    assert_ne!(single_identity.0, typing_identity.0);
+    assert_ne!(single_identity.0, e1_identity.0);
+    assert_ne!(single_identity.0, caller_identity.0);
+    assert_eq!(single_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), single_identity);
     let (consumed, fingerprint) = mizar_proof::status::consume_source_unary_child_call_existential(
         &source, &typed, collected.env(), &core, &request, &policy,
     ).unwrap();
@@ -2582,7 +2671,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(SingleAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(SingleAssociation::from_source_with_schema(&source, &typed, collected.env(), &core, &request).err().unwrap(), check_single_schema(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(single_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
+    assert_eq!(single_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
+    assert_eq!(canonical_caller_single(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(single_schema_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
+    assert_eq!(single_schema_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
         assert_eq!(consume_typing(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeTyping::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);

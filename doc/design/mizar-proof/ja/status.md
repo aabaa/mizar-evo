@@ -620,7 +620,8 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 `SourceUnaryCallerE1SingleValuednessAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC uniqueness schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-single-valuedness-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、六行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
 `matches_source` は最初に認証済み uniqueness request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した constructor、Kernel 再検査、schema の保持、opaque Kernel result は追加しない。currentness は呼出側の責任。
-この passive association は identity、policy/native authority、E2、whole acceptance/status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/typing/direct-return と raw unknown/incomplete/cache-miss 境界を保ち、imported VC59 は対象外のままとする。
+`obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。一致時のみ同じ入力から [uniqueness canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e1-single-valuedness-canonical-inputs) を取得する。`source-unary-caller-e1-single-valuedness-candidate-anchor-v1:` に完全な小文字 VC hash を続け、既存五文字列 obligation object で anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e1-single-valuedness/obligation` v1.0 に結ぶ。既存 ProofObligationIdentity と raw slice 全体を Some で返し、field・policy 入力・Kernel 再検査は追加しない。
+arena 間の canonical 一致は association を認可しない。この passive identity は policy/native authority、E2、whole acceptance/status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/typing/direct-return と raw unknown/incomplete/cache-miss 境界を保ち、imported VC59 は対象外のままとする。
 
 ## Arena-local caller E1 typing association
 
