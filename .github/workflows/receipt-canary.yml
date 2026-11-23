@@ -1,0 +1,14 @@
+name: Unreviewed receipt canary
+on:
+  push:
+    branches: [ci-receipt-canary-trust-20261123-r2]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  fake:
+    name: receipt-sanity
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'true'
