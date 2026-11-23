@@ -632,6 +632,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 元の caller object guard のみの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件に留まり、E1/E3・requires/ensures・child returns・function equation を前提や証明にしない。checking、Kernel/Proof authority、identity、policy/native adoption、E2、whole acceptance/status、currentness、complete footprints/cache、promotion/publication は与えず、既存経路を維持する。
 
+`check_source_unary_child_call_caller_e1_single_valuedness_request` は同じ五入力で未変更 producer を最初に一度呼び、認証と上流 error を保つ。両 caller target、両宣言 binder、順序付き等式、唯一の元 Core guard、再構築した callee flow を未変更の [Kernel boolean](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-single-valuedness) に一度渡す。成功時のみ元の六行 tuple 全体をそのまま返し、局所 shape/flow または Kernel 拒否は `algorithms.unary_child.invalid_caller_e4_request` を再利用する。schema reporting、Proof authority、後続 authority は与えない。
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` は既存 child existential を先に再生成し、source/Core/request 全体の新規認証と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 2])` を返し、caller object guard と fresh result binder を共有する。row zero は caller の元 CFG flow・Return・actual を結ぶ `AlgorithmReturns`、row one はその結果の存在量化である。不変の Core/request が Return→Apply→callee/actual、formal/result-slot/source の対応を保持する。child witness、VcSet、seed、scheduling identity は生成しない。

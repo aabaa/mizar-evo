@@ -3221,6 +3221,77 @@ pub fn generate_source_unary_child_call_caller_e1_single_valuedness_request(
     ))
 }
 
+/// Checks freshly authenticated caller single-valuedness and returns its unchanged request.
+pub fn check_source_unary_child_call_caller_e1_single_valuedness_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 6]), String> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let descriptor = generate_source_unary_child_call_caller_e1_single_valuedness_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let [guard, first, second] = descriptor.0.entries() else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = guard.formula else {
+        return Err(invalid());
+    };
+    let [
+        ContextEntryKind::BinderDeclaration { var: first, .. },
+        ContextEntryKind::BinderDeclaration { var: second, .. },
+    ] = [&first.kind, &second.kind]
+    else {
+        return Err(invalid());
+    };
+    let [Some(left), Some(right)] = [&descriptor.1[0], &descriptor.1[1]].map(|row| {
+        let Shape::AlgorithmReturns {
+            algorithm,
+            flow,
+            statement,
+            input,
+            result,
+        } = row.shape
+        else {
+            return None;
+        };
+        Some((
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ))
+    }) else {
+        return Err(invalid());
+    };
+    let Shape::ProgramEquals {
+        left: lhs,
+        right: rhs,
+    } = descriptor.1[3].shape
+    else {
+        return Err(invalid());
+    };
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
+    if !mizar_kernel::checker::check_unary_caller_return_single_valuedness(
+        core,
+        request,
+        callee_flow,
+        [left, right],
+        [*first, *second],
+        [(lhs.var, lhs.definition), (rhs.var, rhs.definition)],
+        &[guard],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Checks freshly authenticated caller result typing and returns its unchanged request.
 pub fn check_source_unary_child_call_caller_e1_typing_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
