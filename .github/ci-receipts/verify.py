@@ -245,7 +245,7 @@ def verify_receipt(repository, policy_bytes, event, now=None, remote=None, enfor
         # Fetch only the root tree, then each fixed blob explicitly. Do not let
         # cat-file lazily fetch an attacker-selected descendant tree graph.
         git(repository, "fetch", "--refetch", "--depth=1", "--no-tags", "--no-recurse-submodules", "--no-write-fetch-head",
-            "--filter=combine:tree:1+object:type=tree", remote, tree_oid)
+            "--filter=tree:0", remote, tree_oid)
     object_bytes(repository, tree_oid, "tree", 16384)
     entries = git(repository, "ls-tree", "-z", tree_oid).stdout.split(b"\0")
     blobs = {}
@@ -257,7 +257,7 @@ def verify_receipt(repository, policy_bytes, event, now=None, remote=None, enfor
         limit = {b"manifest.json": 1024 * 1024, b"manifest.sig": 16384, b"cargo-test.log": 128 * 1024 * 1024}[name]
         if remote:
             git(repository, "fetch", "--refetch", "--depth=1", "--no-tags", "--no-recurse-submodules", "--no-write-fetch-head",
-                "--filter=combine:tree:1+object:type=blob", remote, blob.decode())
+                "--filter=tree:0", remote, blob.decode())
         blobs[name] = object_bytes(repository, blob.decode(), "blob", limit)
     require(set(blobs) == {b"manifest.json", b"manifest.sig", b"cargo-test.log"}, "missing evidence blob")
     verify_signature(blobs[b"manifest.json"], blobs[b"manifest.sig"], policy)
