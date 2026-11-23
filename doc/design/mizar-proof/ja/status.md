@@ -627,6 +627,11 @@ arena 間の canonical 一致は association を認可しない。この passive
 
 `consume_source_unary_caller_e1_single_valuedness(source, typed, symbols, core, request, policy)` は最初に変更しない [single-valuedness schema association](#arena-local-caller-e1-single-valuedness-association) constructor を一度だけ呼び、policy 検査より先に上流エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の同一呼出しの schema と policy の checker-schema の完全一致を要求し、拒否は `algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。各呼出しは渡された policy を検査し、以前の生成物は権限を与えない。受動的 identity は policy に依存せず、currentness は呼出側が担う。native adoption、E2、whole acceptance/status、complete footprints/cache、promotion/publication は対象外。
 
+## Native caller E1 single-valuedness adoption
+
+`NativeUnaryCallerE1SingleValuedness::from_source(source, typed, symbols, core, request, policy)` は既存の [single-valuedness consumer](#caller-e1-single-valuedness-current-policy-consumption) を一度呼び、fingerprint を破棄して association 全体のみを private field に保持する。`adopt_original_request` は最初に既存の `matches_source` を呼び、認証エラーを保持する。request/tuple 全体または Core の同一性が不一致なら policy 検査前に false を返す。一致時だけ渡された現行 policy で同じ consumer を新たに呼び、エラーを保持し、元の caller uniqueness sub-obligation のみを true で採用する。追加の Kernel 検査により schema の保持を避け、currentness は呼出側が担う。
+native identity、typing/inhabitation、E2、whole acceptance/status、complete footprints/cache、promotion/publication は与えず、raw unknown/incomplete/cache-miss 境界を保つ。
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC typing schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。

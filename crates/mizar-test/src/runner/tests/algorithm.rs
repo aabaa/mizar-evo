@@ -6,6 +6,7 @@ use mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedne
 use mizar_proof::status::consume_source_unary_caller_e1_typing as consume_typing;
 use mizar_proof::status::consume_source_unary_caller_e1_single_valuedness as consume_single;
 use mizar_proof::status::NativeUnaryCallerE1Typing as NativeTyping;
+use mizar_proof::status::NativeUnaryCallerE1SingleValuedness as NativeSingle;
 use mizar_vc::dependency_slice::{
     source_unary_child_call_canonical_inputs as canonical_unary_child,
     source_unary_caller_e4_canonical_inputs as canonical_caller_e4,
@@ -201,6 +202,10 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
             native.obligation_identity(&source, &typed, symbols, &core, &request, &policy)
         }.unwrap().unwrap();
         if single_profile {
+            let native_single = NativeSingle::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+            for _ in 0..2 {
+                assert!(native_single.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+            }
             let (consumed_single, fingerprint) = consume_single(&source, &typed, symbols, &core, &request, &policy).unwrap();
             assert_eq!(fingerprint, policy.policy_fingerprint());
             assert_eq!(consumed_single.request(), &request);
@@ -924,6 +929,12 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         assert_eq!(consumed_single.request(), &request);
         assert_eq!(consumed_single.descriptor(), &single);
         assert_eq!(single_fingerprint, Policy::default().policy_fingerprint());
+        let native_single = NativeSingle::from_source(
+            &source, &typed, symbols, &core, &request, &Policy::default(),
+        ).unwrap();
+        assert!(native_single.adopt_original_request(
+            &source, &typed, symbols, &core, &request, &Policy::default(),
+        ).unwrap());
         let caller_typing = mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
@@ -1077,6 +1088,8 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             let denied_before = denied.clone();
             assert_eq!(consume_single(&source, &typed, symbols, &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected");
+            assert_eq!(NativeSingle::from_source(&source, &typed, symbols, &core, &request, &denied).err().unwrap(), "algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected");
+            assert_eq!(native_single.adopt_original_request(&source, &typed, symbols, &core, &request, &denied).unwrap_err(), "algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected");
             assert_eq!(consumed_single.request(), &request);
             assert_eq!(consumed_single.descriptor(), &single);
             assert_eq!(consumed_single.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), single_identity);
@@ -1147,6 +1160,10 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 let (current_typing, current_typing_fingerprint) = consume_typing(
                     &source, &typed, symbols, &core, &request, &current_policy,
                 ).unwrap();
+                let current_native_single = NativeSingle::from_source(&source, &typed, symbols, &core, &request, &current_policy).unwrap();
+                for product in [&native_single, &current_native_single] {
+                    assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &current_policy).unwrap());
+                }
                 let current_native_typing = NativeTyping::from_source(&source, &typed, symbols, &core, &request, &current_policy).unwrap();
                 for product in [&native_typing, &current_native_typing] {
                     assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &current_policy).unwrap());
@@ -1262,6 +1279,9 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
                 let (current_typing, current_association_schema) = mizar_proof::status::SourceUnaryCallerE1TypingAssociation::from_source_with_schema(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap();
+                let current_native_single = NativeSingle::from_source(&source, &typed, symbols, current_core, &request, &policy).unwrap();
+                assert!(current_native_single.adopt_original_request(&source, &typed, symbols, current_core, &request, &policy).unwrap());
+                assert_eq!(native_single.adopt_original_request(&source, &typed, symbols, current_core, &request, &policy).unwrap(), std::ptr::eq(current_core, &core));
                 let current_native_typing = NativeTyping::from_source(&source, &typed, symbols, current_core, &request, &policy).unwrap();
                 assert!(current_native_typing.adopt_original_request(&source, &typed, symbols, current_core, &request, &policy).unwrap());
                 assert_eq!(current_native_typing.obligation_identity(&source, &typed, symbols, current_core, &request, &policy).unwrap().unwrap(), typing_identity);
@@ -1465,6 +1485,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let policy = Policy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let policies_before = (policy.clone(), denied.clone());
+    let native_single = NativeSingle::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let native_typing = NativeTyping::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     assert_eq!(native_typing.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), genuine_typing_identity);
     let (consumed_single, single_fingerprint) = consume_single(&source, &typed, symbols, &core, &request, &policy).unwrap();
@@ -1542,6 +1563,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(!consumed.matches_source(&source, &typed, symbols, &cloned_core, &request).unwrap());
     assert!(!native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
     assert!(!native.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &denied).unwrap());
+    let cloned_native_single = NativeSingle::from_source(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
+    assert!(cloned_native_single.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
     let cloned_native_typing = NativeTyping::from_source(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap();
     assert!(cloned_native_typing.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap());
     assert_eq!(cloned_native_typing.obligation_identity(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap().unwrap(), genuine_typing_identity);
@@ -1553,8 +1576,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(cloned_native_caller.obligation_identity(&source, &typed, symbols, &cloned_core, &request, &policy).unwrap().unwrap(), genuine_caller_identity);
     for current_policy in [&policy, &denied] {
         assert!(!native_typing.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap());
+        assert!(!native_single.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap());
         assert_eq!(native_typing.obligation_identity(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap(), None);
         assert!(!cloned_native_typing.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
+        assert!(!cloned_native_single.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
         assert_eq!(cloned_native_typing.obligation_identity(&source, &typed, symbols, &core, &request, current_policy).unwrap(), None);
         assert!(!native_inhabitation.adopt_original_request(&source, &typed, symbols, &cloned_core, &request, current_policy).unwrap());
         assert!(!cloned_native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
@@ -1819,6 +1844,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(TypingAssociation::from_source_with_schema(&source, &typed, symbols, &core, &changed).err().unwrap(), check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), "typing association request {mutation}");
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_single(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
+            assert_eq!(NativeSingle::from_source(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
+            assert_eq!(native_single.adopt_original_request(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), check_single_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
             assert_eq!(consume_typing(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
             assert_eq!(NativeTyping::from_source(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
             assert_eq!(native_typing.adopt_original_request(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err());
@@ -1973,6 +2000,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(single_schema_association.obligation_identity(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), "single recheck Core {mutation}");
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_single(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &changed, &request).unwrap_err());
+            assert_eq!(NativeSingle::from_source(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &changed, &request).unwrap_err());
+            assert_eq!(native_single.adopt_original_request(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), check_single_schema(&source, &typed, symbols, &changed, &request).unwrap_err());
         }
         if mutation >= 33 {
             assert!(!single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), "single Core {mutation}");
@@ -2152,6 +2181,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(TypingAssociation::from_source_with_schema(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), check_typing_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_single(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+                assert_eq!(NativeSingle::from_source(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), check_single_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+                assert_eq!(native_single.adopt_original_request(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), check_single_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
                 assert_eq!(consume_typing(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), check_typing_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
                 assert_eq!(NativeTyping::from_source(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), check_typing_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
                 assert_eq!(native_typing.adopt_original_request(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), check_typing_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
@@ -2164,6 +2195,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(TypingAssociation::from_source_with_schema(&other_source, &other_typed, other_collected.env(), &core, &request).err().unwrap(), check_typing_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_single(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).err().unwrap(), check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+                assert_eq!(NativeSingle::from_source(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).err().unwrap(), check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+                assert_eq!(native_single.adopt_original_request(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).unwrap_err(), check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
                 assert_eq!(consume_typing(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).err().unwrap(), check_typing_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
                 assert_eq!(NativeTyping::from_source(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).err().unwrap(), check_typing_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
                 assert_eq!(native_typing.adopt_original_request(&other_source, &other_typed, other_collected.env(), &core, &request, current_policy).unwrap_err(), check_typing_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
@@ -2185,6 +2218,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(other_inhabited.binder(), result.var);
             assert_eq!(other_inhabited.context(), [other_core.algorithms().get(other_request.caller).unwrap().params[0].ty_guard.unwrap()]);
             assert_eq!(other_inhabited.checker_schema_version(), 1);
+            let other_native_single = NativeSingle::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
+            assert!(other_native_single.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
             let other_native_typing = NativeTyping::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
             assert!(other_native_typing.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
             assert_eq!(other_native_typing.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap().unwrap(), other_typing_identity);
@@ -2192,8 +2227,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert!(other_native_inhabitation.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
             for current_policy in [&policy, &denied] {
                 assert!(!native_typing.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
+                assert!(!native_single.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
                 assert_eq!(native_typing.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap(), None);
                 assert!(!other_native_typing.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
+                assert!(!other_native_single.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
                 assert_eq!(other_native_typing.obligation_identity(&source, &typed, symbols, &core, &request, current_policy).unwrap(), None);
                 assert!(!native_inhabitation.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
                 assert!(!other_native_inhabitation.adopt_original_request(&source, &typed, symbols, &core, &request, current_policy).unwrap());
@@ -2302,6 +2339,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(TypingAssociation::from_source_with_schema(s, t, e, &core, &request).err().unwrap(), check_typing_schema(s, t, e, &core, &request).unwrap_err());
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_single(s, t, e, &core, &request, current_policy).err().unwrap(), check_single_schema(s, t, e, &core, &request).unwrap_err());
+                assert_eq!(NativeSingle::from_source(s, t, e, &core, &request, current_policy).err().unwrap(), check_single_schema(s, t, e, &core, &request).unwrap_err());
+                assert_eq!(native_single.adopt_original_request(s, t, e, &core, &request, current_policy).unwrap_err(), check_single_schema(s, t, e, &core, &request).unwrap_err());
                 assert_eq!(consume_typing(s, t, e, &core, &request, current_policy).err().unwrap(), check_typing_schema(s, t, e, &core, &request).unwrap_err());
                 assert_eq!(NativeTyping::from_source(s, t, e, &core, &request, current_policy).err().unwrap(), check_typing_schema(s, t, e, &core, &request).unwrap_err());
                 assert_eq!(native_typing.adopt_original_request(s, t, e, &core, &request, current_policy).unwrap_err(), check_typing_schema(s, t, e, &core, &request).unwrap_err());
@@ -2368,6 +2407,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(TypingAssociation::from_source_with_schema(&source, &forged, symbols, &core, &request).err().unwrap(), check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err());
     for current_policy in [&policy, &denied] {
         assert_eq!(consume_single(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), check_single_schema(&source, &forged, symbols, &core, &request).unwrap_err());
+        assert_eq!(NativeSingle::from_source(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), check_single_schema(&source, &forged, symbols, &core, &request).unwrap_err());
+        assert_eq!(native_single.adopt_original_request(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), check_single_schema(&source, &forged, symbols, &core, &request).unwrap_err());
         assert_eq!(consume_typing(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err());
         assert_eq!(NativeTyping::from_source(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err());
         assert_eq!(native_typing.adopt_original_request(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err());
@@ -2419,6 +2460,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(TypingAssociation::from_source_with_schema(&source, &forged, symbols, &cloned_core, &mismatched).err().unwrap(), check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     for current_policy in [&policy, &denied] {
         assert_eq!(consume_single(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).err().unwrap(), check_single_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+        assert_eq!(NativeSingle::from_source(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).err().unwrap(), check_single_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+        assert_eq!(native_single.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).unwrap_err(), check_single_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
         assert_eq!(consume_typing(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).err().unwrap(), check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
         assert_eq!(NativeTyping::from_source(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).err().unwrap(), check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
         assert_eq!(native_typing.adopt_original_request(&source, &forged, symbols, &cloned_core, &mismatched, current_policy).unwrap_err(), check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
@@ -2454,6 +2497,10 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(canonical_caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(association.matches_source(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     let (fresh, fresh_fingerprint) = consume(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    let fresh_native_single = NativeSingle::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    for product in [&native_single, &fresh_native_single] {
+        assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+    }
     let fresh_native_typing = NativeTyping::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     for product in [&native_typing, &fresh_native_typing] {
         assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
@@ -2614,7 +2661,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let typing_identity = typing_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap();
     assert_eq!(typing_identity.1, canonical_caller_typing(&source, &typed, collected.env(), &core, &request).unwrap().3);
     let policy = Policy::default();
+    let native_single = NativeSingle::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     let native_typing = NativeTyping::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+    assert!(native_single.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     assert!(native_typing.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     assert_eq!(native_typing.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), typing_identity);
     let (consumed_single, single_fingerprint) = consume_single(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
@@ -2732,6 +2781,8 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(single_schema_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
         assert_eq!(consume_single(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
+        assert_eq!(NativeSingle::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
+        assert_eq!(native_single.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), upstream);
         assert_eq!(consume_typing(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeTyping::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(native_typing.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), upstream);
