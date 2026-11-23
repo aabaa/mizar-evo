@@ -610,7 +610,7 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)` は既存 Checker と Core lowering で新規認証し、Core/request 全体の一致を確認して caller の `ensures result = actual` を要求する。上流 error を先に返し、局所拒否は `algorithms.unary_child.invalid_caller_e2_request` とする。既存 `(LocalContext, [VcGeneratedFormula; 4])` は元 caller object guard と、全 parameter/result/Var ID より fresh な result 宣言（加算検査）だけを保持する。policy inputs と provenance は空である。
 
-行は正確な caller/flow/Return/actual の AlgorithmReturns、fresh result と actual の ProgramEquals、Implies、宣言 result の Forall である。ID は行番号、全行は SplitGoal、value の definition annotation は無い。`object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` を未証明のまま要求し、returns や ensures を前提に加えない。入力は不変。この request は checking、Proof authority、acceptance/status、currentness、complete footprints/cache、promotion/publication を除外する。旧 descriptor/E4/E1/child/direct-return/Proof 経路は contract-free のままで clause を拒否する。詳細は [英語版](../en/generator.md#bounded-unary-caller-e2-request) を参照。
+行は正確な caller/flow/Return/actual の AlgorithmReturns、fresh result と actual の ProgramEquals、Implies、宣言 result の Forall である。ID は行番号、全行は SplitGoal、value の definition annotation は無い。`object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` を未証明のまま要求し、returns や ensures を前提に加えない。入力は不変。この request は checking、Proof authority、acceptance/status、currentness、complete footprints/cache、promotion/publication を除外する。旧 descriptor/E4/E1/child/direct-return/Proof 経路は clause を持つ unary pair を引き続き拒否する。詳細は [英語版](../en/generator.md#bounded-unary-caller-e2-request) を参照。
 
 ## Bounded unary child existential
 

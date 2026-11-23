@@ -598,7 +598,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         algorithm_statements: core.algorithm_statements().clone(), generated: core.generated().clone(),
         obligation_seeds: core.obligation_seeds().clone(), source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone(),
     };
-    let mut changes = vec![];
+    let mut module_drift = parts.clone();
+    module_drift.module_id = ResolverModuleId::new(core.module_id().package().clone(), mizar_session::ModulePath::new("foreign"));
+    let mut changes = vec![module_drift];
     // Every retained slot, contract, statement and source participates in authentication.
     for (id, algorithm) in core.algorithms().iter() {
         for mutation in 0..24 {
@@ -747,18 +749,20 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(generate(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(changed, changed_before);
     }
-    for (module, edited) in [
-        ("foreign", text.to_owned()),
-        ("e2_drift", text.replace("child", "edited")),
-        ("e2_drift", text.replace("let b be object", "let b be set")),
-        ("e2_drift", text.replace("return child(b)", "return child(b,b)")),
-        ("e2_drift", text.replace("return child(b)", "return caller(b)")),
-        ("e2_drift", text.replace("return child(b);", "var c := b; return child(c);")),
+    for (module, edited, known_valid) in [
+        ("foreign", text.to_owned(), true),
+        ("e2_drift", text.replace("child", "edited"), true),
+        ("e2_drift", text.replace("let b be object", "let b be set"), false),
+        ("e2_drift", text.replace("return child(b)", "return child(b,b)"), false),
+        ("e2_drift", text.replace("return child(b)", "return caller(b)"), false),
+        ("e2_drift", text.replace("return child(b);", "var c := b; return child(c);"), false),
     ] {
         let (other_source, nodes, other_collected, _) = source_registration_formula_inputs(&edited, "unary-child", module, 0);
         let other_typed = super::super::source_registration_receiver(&other_source, nodes).unwrap();
         let other_before = (other_source.clone(), other_typed.clone(), other_collected.env().clone());
-        if let Ok((other_core, other_request)) = check(&other_source, other_collected.env(), &other_typed).and_then(|checked| lower(&checked)) {
+        if known_valid {
+            let checked = check(&other_source, other_collected.env(), &other_typed).unwrap();
+            let (other_core, other_request) = lower(&checked).unwrap();
             assert!(generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).is_ok());
             assert_eq!(generate(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
         }
