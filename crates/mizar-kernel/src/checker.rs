@@ -1942,6 +1942,69 @@ pub fn check_unary_caller_return_typing(
             .is_some_and(|flow| flow.algorithm == request.caller)
 }
 
+/// Checks caller `forall r,s. (returns(actual,r) & returns(actual,s)) implies r=s`.
+/// Both executions return the immutable actual through the exact child Return/Apply.
+/// This boolean supplies no source authentication, schema or Proof authority.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original relations and equality without a single-use representation"
+)]
+pub fn check_unary_caller_return_single_valuedness(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    targets: [(
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ); 2],
+    binders: [CoreVarId; 2],
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> bool {
+    let [left, right] = targets;
+    if (left.0, left.1, left.2, left.3) != (right.0, right.1, right.2, right.3)
+        || binders[0] == binders[1]
+        || [left.4, right.4] != binders.map(|var| (var, None))
+        || conclusion != [left.4, right.4]
+    {
+        return false;
+    }
+    let Some(callee) = core.algorithms().get(request.callee) else {
+        return false;
+    };
+    let [returned] = callee.statements.as_slice() else {
+        return false;
+    };
+    // Reuse body/guard/slot validation for each fresh binder, not the existential
+    // proposition. Global cycles are rejected before recursive CFG rebuilding.
+    for target in targets {
+        if check_unary_child_returns_existential_result(
+            core,
+            request,
+            (request.callee, callee_flow, *returned, target.3, target.4),
+            target.4.0,
+            request.actual,
+            context,
+        )
+        .is_none()
+        {
+            return false;
+        }
+    }
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    left.0 == request.caller
+        && left.2 == request.statement
+        && cfg.flow_map.get(&request.caller) == Some(&left.1)
+        && cfg
+            .flows
+            .get(left.1)
+            .is_some_and(|flow| flow.algorithm == request.caller)
+}
+
 /// Reports the Kernel-owned caller typing schema only after checking these inputs.
 /// The scalar grants no Proof policy eligibility or adoption.
 #[must_use]

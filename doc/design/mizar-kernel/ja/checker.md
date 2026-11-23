@@ -66,6 +66,11 @@ single-valuedness や広範な credit はこの API から与えない。別の 
 child の各返り値は actual で置換した不変の formal であり、caller はその child の結果だけを返す（§20.1.2、§20.2.6）。これが E4 の存在証明とは独立に全返り値の型を定める。returns/requires/ensures/等式を前提に追加しない。callee flow は局所的に検査し、source 認証は VC が所有する。新しい証拠 holder、Proof 権限、一意性や後続の受理権限は与えない。direct-return 規則は変更しない。
 `check_unary_caller_return_typing_schema` は同一入力で既存の真偽値規則を一度呼び、成功時だけ Kernel 所有の `Some(1_u16)`、失敗時は `None` を返す。この scalar は検査した規則の schema だけを報告し、Proof schema association、policy eligibility、native adoption は与えない。
 
+## Bounded Unary Caller E1 Single-Valuedness
+
+`check_unary_caller_return_single_valuedness(core, request, callee_flow, targets, binders, conclusion, context)` は、共通の caller/CFG/Return/actual 入力、異なる大域的に fresh な結果 binder、definition-free な結果と順序通りの等式を、元の caller object guard だけの下で検査する。各 binder に既存 unary-child の body/guard/slot/Apply と循環検証を適用してから caller CFG を照合する。
+両実行は child を通じて同じ不変の actual を返す（§20.1.2、§20.2.6）。typing と E4 存在は前提にしない。source 認証は VC が所有し、schema 報告、VC facade、Proof 権限や後続受理は与えない。[正本](../en/checker.md#bounded-unary-caller-e1-single-valuedness) を参照。
+
 ## Bounded Original E1 Single-Valuedness
 
 `check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`

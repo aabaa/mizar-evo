@@ -13,7 +13,7 @@ Require exact common caller/flow/Return/actual input, result projections matchin
 Every child return is its immutable formal instantiated by the actual caller parameter, and the caller returns exactly that child's result (§20.1.2, §20.2.6). Thus any two caller returns for the same input agree, independently of typing or E4 existence. Returns remain antecedents; requires, ensures, function equality and child/E4 evidence are not premises.
 No new type, holder, field, helper, fixture or parallel representation. Keep direct-return single-valuedness, caller typing and every lower-stage API unchanged.
 Exclude schema reporting, fresh-source authentication, VC checking facade, Proof authority, E2, whole acceptance/status, currentness producers, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope. No spec/.miz/expectation/trace/audit-status, diagnostic, AGENTS or protocol edits.
-Files: Kernel checker.rs, existing runner tests/algorithm.rs, paired Kernel checker/plan documents and this contract. Audit coverage/owner/deferral unchanged.
+Files: Kernel checker.rs, existing runner tests/algorithm.rs, paired Kernel checker/plan/source-inventory documents and this contract. Audit coverage/owner/deferral unchanged.
 
 ## Test matrix and exit
 Cap: four existing genuine-fixture families; confirm one successful setup before expanding.

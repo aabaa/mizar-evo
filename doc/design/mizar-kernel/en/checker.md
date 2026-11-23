@@ -120,6 +120,11 @@ Proof identity/policy/adoption, single-valuedness or broader credit follows from
 Every child return is its immutable formal instantiated by the actual parameter; the caller returns exactly that child's result (§20.1.2, §20.2.6). This fixes the type of every returned result independently of E4 existence. No returns/requires/ensures/equality premise is installed. The callee flow is checked locally; source authentication remains VC-owned. No evidence holder, Proof authority, single-valuedness or later acceptance credit follows. The direct-return rule is unchanged.
 `check_unary_caller_return_typing_schema` takes the identical inputs and calls that unchanged boolean rule once; only success returns Kernel-owned `Some(1_u16)`, otherwise `None`. The scalar reports the checked rule schema without Proof schema association, policy eligibility or native adoption.
 
+## Bounded Unary Caller E1 Single-Valuedness
+
+`check_unary_caller_return_single_valuedness(core, request, callee_flow, targets, binders, conclusion, context)` checks two exact caller relations with common caller/CFG/Return/actual input, distinct globally fresh result binders, definition-free results and ordered equality under only the original caller object guard. Each binder passes unchanged unary-child body/guard/slot/Apply and cycle validation before caller CFG matching.
+Both executions return the same immutable actual through the child (§20.1.2, §20.2.6); typing and E4 existence are not premises. Source authentication remains VC-owned. No schema reporting, VC facade, Proof authority or later acceptance follows.
+
 ## Bounded Original E1 Single-Valuedness
 
 `check_algorithm_return_single_valuedness(core, targets, binders, conclusion, context)`

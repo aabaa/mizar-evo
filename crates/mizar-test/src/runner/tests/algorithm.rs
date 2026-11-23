@@ -841,6 +841,17 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         assert_eq!(single.1[0], caller_e4.1[0]);
         assert_eq!(single.1[1].kind, caller_e4.1[1].kind);
         assert_eq!(single.1[1].provenance, caller_e4.1[1].provenance);
+        let single_targets = [first_var, second_var].map(|result| (
+            request.caller,
+            mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller],
+            caller_row.statements[0],
+            (caller_row.params[0].var, None), (result, None),
+        ));
+        assert!(mizar_kernel::checker::check_unary_caller_return_single_valuedness(
+            &core, &request, flow, single_targets,
+            [first_var, second_var], [(first_var, None), (second_var, None)],
+            &[expected.1.1],
+        ));
         let caller_typing = mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
@@ -1121,6 +1132,11 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             assert_eq!(current_fingerprint, policy.policy_fingerprint());
             for _ in 0..2 {
                 assert_eq!(single_valuedness(&source, &typed, symbols, current_core, &request).unwrap(), single);
+                assert!(mizar_kernel::checker::check_unary_caller_return_single_valuedness(
+                    current_core, &request, flow, single_targets,
+                    [first_var, second_var], [(first_var, None), (second_var, None)],
+                    &[expected.1.1],
+                ));
                 assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap(), caller_typing);
@@ -1269,6 +1285,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         generate_source_unary_child_call_existential_request as generate,
     };
     use mizar_kernel::checker::{
+        check_unary_caller_return_single_valuedness as single_kernel,
         check_unary_caller_return_typing as typing_kernel,
         check_unary_caller_return_typing_schema as typing_schema,
         check_unary_caller_returns_existential_result as compose_kernel,
@@ -1424,6 +1441,38 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     };
     let caller_target = (algorithm, flow, statement, (input.var, input.definition), (result.var, result.definition));
     let conclusion = ((binder, None), "object");
+    let binders = [binder, CoreVarId::new(binder.index() + 1)];
+    let single_targets = binders.map(|result| {
+        let mut target = caller_target;
+        target.4 = (result, None);
+        target
+    });
+    let equality = binders.map(|var| (var, None));
+    for current_core in [&core, &cloned_core] {
+        assert!(single_kernel(current_core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
+        assert!(single_kernel(current_core, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]));
+    }
+    for side in 0..2 {
+        let mut direct_targets = single_targets;
+        direct_targets[side] = target;
+        direct_targets[side].4 = equality[side];
+        assert!(!single_kernel(&core, &request, target.1, direct_targets, binders, equality, &[actual_guard]));
+        for captured in [request.formal, target.3.0, request.callee_result, request.caller_result, binders[1 - side]] {
+            let mut changed_targets = single_targets;
+            let mut changed_binders = binders;
+            let mut changed_equality = equality;
+            changed_targets[side].4 = (captured, None);
+            changed_binders[side] = captured;
+            changed_equality[side] = (captured, None);
+            assert!(!single_kernel(&core, &request, target.1, changed_targets, changed_binders, changed_equality, &[actual_guard]), "single captured binder {side}: {captured:?}");
+        }
+        for wrong in [(binders[1 - side], None), (request.formal, None), (binders[side], Some(request.statement)), (binders[side], Some(CoreAlgorithmStmtId::new(usize::MAX)))] {
+            let mut changed = equality;
+            changed[side] = wrong;
+            assert!(!single_kernel(&core, &request, target.1, single_targets, binders, changed, &[actual_guard]), "single equality {side}: {wrong:?}");
+        }
+    }
+    assert!(!single_kernel(&core, &request, target.1, single_targets, binders, [equality[1], equality[0]], &[actual_guard]));
     assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), Some(1));
     assert!(typing_kernel(&cloned_core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
@@ -1432,6 +1481,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(typing_schema(&core, &request, target.1, target, binder, conclusion, &[actual_guard]), None);
     assert!(!mizar_kernel::checker::check_algorithm_return_typing(&core, caller_target, binder, conclusion, &[actual_guard]));
     for wrong_flow in [caller_target.1, mizar_core::control_flow::ControlFlowId::new(usize::MAX)] {
+        assert!(!single_kernel(&core, &request, wrong_flow, single_targets, binders, equality, &[actual_guard]));
         assert!(!typing_kernel(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]));
         assert_eq!(typing_schema(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]), None);
     }
@@ -1446,6 +1496,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let formal_child = mizar_kernel::checker::check_algorithm_returns_existential_result(
         &core, formal_target, binder, formal_return, &[formal_guard],
     ).expect("formal-only child evidence is independently valid");
+    let formal_targets = binders.map(|var| {
+        let mut target = formal_target;
+        target.4 = (var, None);
+        target
+    });
+    assert!(mizar_kernel::checker::check_algorithm_return_single_valuedness(&core, formal_targets, binders, equality, &[formal_guard]));
+    assert!(!single_kernel(&core, &request, target.1, formal_targets, binders, equality, &[formal_guard]));
     assert!(mizar_kernel::checker::check_algorithm_return_typing(&core, formal_target, binder, conclusion, &[formal_guard]));
     assert!(!typing_kernel(&core, &request, target.1, formal_target, binder, conclusion, &[formal_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, formal_target, binder, conclusion, &[formal_guard]), None);
@@ -1503,6 +1560,24 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert!(compose_kernel(&core, &request, caller_changed, &retained, &[actual_guard]).is_none(), "caller target {mutation}");
         assert!(!typing_kernel(&core, &request, target.1, caller_changed, binder, conclusion, &[actual_guard]), "typing target {mutation}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_changed, binder, conclusion, &[actual_guard]), None);
+        for side in 0..2 {
+            let mut changed_targets = single_targets;
+            changed_targets[side] = caller_changed;
+            if matches!(mutation, 13 | 15) {
+                changed_targets[side].4.0 = binders[side];
+            } else if !matches!(mutation, 9..=11 | 16) {
+                changed_targets[side].4 = equality[side];
+            }
+            assert!(!single_kernel(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), "single target {side}: {mutation}");
+        }
+        if matches!(mutation, 0..=8 | 12 | 14 | 17) {
+            let changed_targets = equality.map(|result| {
+                let mut changed = caller_changed;
+                changed.4 = result;
+                changed
+            });
+            assert!(!single_kernel(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), "single shared target {mutation}");
+        }
     }
     for wrong in [formal_return, request.application, CoreTermId::new(usize::MAX)] {
         assert!(kernel(&core, &request, target, binder, wrong, &[actual_guard]).is_none(), "witness {wrong:?}");
@@ -1528,11 +1603,13 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, wrong, &[actual_guard]), None);
     }
     for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
+        assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &context), "single context {context:?}");
         assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
         assert!(compose_kernel(&core, &request, caller_target, &retained, &context).is_none(), "caller context {context:?}");
         assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &context), "typing context {context:?}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &context), None);
     }
+    assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &[formal_guard, actual_guard]));
     for mutation in 0..17 {
         let mut changed = request.clone();
         match mutation {
@@ -1606,6 +1683,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert!(compose_kernel(&core, &changed, caller_target, &retained, &[actual_guard]).is_none(), "caller Kernel request {mutation}");
         assert!(!typing_kernel(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), "typing request {mutation}");
+        assert!(!single_kernel(&core, &changed, target.1, single_targets, binders, equality, &[actual_guard]), "single request {mutation}");
         assert_eq!(typing_schema(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), None);
         assert_eq!(changed, changed_before);
     }
@@ -1614,7 +1692,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(caller_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert!(inhabitation_association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
     assert_eq!(inhabitation_association.obligation_identity(&source, &typed, symbols, &core, &request).unwrap().unwrap(), genuine_e1_identity);
-    for mutation in 0..33 {
+    for mutation in 0..35 {
         let mut p = CoreIrParts {
             source_id: core.source_id(), module_id: core.module_id().clone(),
             items: core.items().clone(), terms: core.terms().clone(), formulas: core.formulas().clone(),
@@ -1696,9 +1774,9 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             27 => p.algorithms.get_mut(request.caller).unwrap().result.as_mut().unwrap().var = caller.params[0].var,
             28 => p.algorithm_statements.get_mut(callee.statements[0]).unwrap().kind = S::Return(Some(request.actual)),
             29 => p.algorithms.get_mut(request.caller).unwrap().statements.push(request.statement),
-            30 | 31 => {
+            30 | 31 | 33 => {
                 let mut term = core.terms().get(request.actual).unwrap().clone();
-                term.kind = T::Var(binder);
+                term.kind = T::Var(if mutation == 33 { binders[1] } else { binder });
                 let id = p.terms.insert(term.clone());
                 p.source_map.term_sources.insert(id, term.source);
                 if mutation == 31 {
@@ -1708,11 +1786,19 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             32 => p.algorithm_statements.get_mut(callee.statements[0]).unwrap().kind = S::If {
                 condition: formal_guard, then_body: callee.statements.clone(), else_body: vec![],
             },
+            34 => p.algorithm_statements.get_mut(request.statement).unwrap().kind = S::If {
+                condition: actual_guard, then_body: caller.statements.clone(), else_body: vec![],
+            },
             _ => unreachable!(),
         }
         let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {mutation}: {error}"));
         assert_ne!(changed, core, "Core {mutation} must change");
         let changed_before = changed.clone();
+        if mutation >= 33 {
+            assert!(!single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), "single Core {mutation}");
+            assert_eq!(changed, changed_before);
+            continue;
+        }
         assert_eq!(describe(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
         assert_eq!(canonical_unary_child(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
         assert_eq!(canonical_caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "Core {mutation}");
@@ -1762,9 +1848,17 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         }
         assert_eq!(typing_kernel(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "typing Core {mutation}");
         assert_eq!(typing_schema(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18).then_some(1), "typing schema Core {mutation}");
+        assert_eq!(single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "single Core {mutation}");
+        if mutation == 30 {
+            let mut fresh_target = target;
+            fresh_target.4 = equality[1];
+            assert!(kernel(&changed, &request, fresh_target, binders[1], request.actual, &[actual_guard]).is_some());
+            assert!(!single_kernel(&changed, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]), "second binder alone fails freshness");
+        }
         assert_eq!(changed, changed_before);
     }
     assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
+    assert!(single_kernel(&core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), Some(1));
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
