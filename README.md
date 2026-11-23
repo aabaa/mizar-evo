@@ -119,3 +119,5 @@ lexer crate evidence is available from
 [`doc/design/mizar-lexer/`](./doc/design/mizar-lexer/README.md), including its
 [autonomous crate plan](./doc/design/mizar-lexer/en/00.crate_plan.md) and
 [crate exit report](./doc/design/mizar-lexer/en/crate_exit_report.md).
+
+CI receipt activation documentation canary.
