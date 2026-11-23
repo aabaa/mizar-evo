@@ -662,7 +662,7 @@ Canonical equality across arenas never authorizes association. This passive iden
 ## Native caller E1 single-valuedness adoption
 
 `NativeUnaryCallerE1SingleValuedness::from_source(source, typed, symbols, core, request, policy)` calls the unchanged [single-valuedness consumer](#caller-e1-single-valuedness-current-policy-consumption) once, discards its fingerprint and privately retains only the whole association. `adopt_original_request` first calls unchanged `matches_source`, preserving authentication errors; whole request/tuple/exact Core mismatch returns false before policy checks. A match freshly calls the same consumer under supplied current policy, preserving errors, then returns true only for the original caller uniqueness sub-obligation. The additional Kernel check avoids schema retention; currentness remains caller-owned.
-No native identity, typing/inhabitation, E2, whole acceptance/status, complete footprints/cache or promotion/publication follows; raw unknown/incomplete/cache-miss boundaries remain unchanged.
+`obligation_identity` first calls unchanged `adopt_original_request` once on the same six inputs, propagating errors and returning None on false. On true it returns the retained association's unchanged passive identity and whole raw slice on identical source inputs. Each call checks supplied current policy; single-valuedness domains/hashes and caller-owned currentness persist. No typing/inhabitation, E2, whole acceptance/status, complete footprints/cache or promotion/publication follows; raw Open/unknown/IncompleteUncacheable/cache-miss boundaries remain unchanged.
 
 ## Arena-local caller E1 typing association
 
