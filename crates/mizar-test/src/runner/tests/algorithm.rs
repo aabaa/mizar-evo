@@ -6,6 +6,7 @@ use mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedne
 use mizar_proof::status::consume_source_unary_caller_e1_typing as consume_typing;
 use mizar_proof::status::consume_source_unary_caller_e1_single_valuedness as consume_single;
 use mizar_proof::status::consume_source_unary_caller_e2 as consume_e2;
+use mizar_proof::status::NativeUnaryCallerE2 as NativeE2;
 use mizar_proof::status::NativeUnaryCallerE1Typing as NativeTyping;
 use mizar_proof::status::NativeUnaryCallerE1SingleValuedness as NativeSingle;
 use mizar_vc::dependency_slice::{
@@ -497,6 +498,8 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         let (schema_association, association_schema) = E2Association::from_source_with_schema(
             &source, &typed, collected.env(), &core, &request).unwrap();
         let policy = Policy::default();
+        let native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+        assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
         let (consumed, fingerprint) = consume_e2(
             &source, &typed, collected.env(), &core, &request, &policy).unwrap();
         assert_eq!(fingerprint, policy.policy_fingerprint());
@@ -526,6 +529,9 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
                 policy.clone().with_schema_version(policy.schema_version() + 1),
             ] {
                 let policy_before = current_policy.clone();
+                let current_native = NativeE2::from_source(&source, &typed, collected.env(), current, &request, &current_policy).unwrap();
+                assert!(current_native.adopt_original_request(&source, &typed, collected.env(), current, &request, &current_policy).unwrap());
+                assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), current, &request, &current_policy).unwrap(), std::ptr::eq(current, &core));
                 let (current_consumed, current_fingerprint) = consume_e2(
                     &source, &typed, collected.env(), current, &request, &current_policy).unwrap();
                 assert_eq!(current_fingerprint, current_policy.policy_fingerprint());
@@ -565,6 +571,15 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             let denied_before = denied.clone();
             assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_caller_e2_policy_rejected");
+            assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &denied).err().unwrap(),
+                "algorithm.proof.unary_caller_e2_policy_rejected");
+            assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &denied).unwrap_err(),
+                "algorithm.proof.unary_caller_e2_policy_rejected");
+            assert!(!native.adopt_original_request(&source, &typed, collected.env(), &cloned_core, &request, &denied).unwrap());
+            let recovered_native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+            for product in [&native, &recovered_native] {
+                assert!(product.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+            }
             let (recovered, recovered_fingerprint) = consume_e2(
                 &source, &typed, collected.env(), &core, &request, &policy).unwrap();
             assert_eq!(recovered_fingerprint, fingerprint);
@@ -614,6 +629,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         assert!(core.obligation_seeds().is_empty() && core.generated().is_empty()
             && core.proofs().is_empty() && core.diagnostics().is_empty());
         for _ in 0..2 {
+            assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
             assert_eq!(lower_source_unary_child_call(&check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap(), (core.clone(), request.clone()));
         }
         assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
@@ -658,6 +674,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let policies_before = (policy.clone(), denied.clone());
+    let native = NativeE2::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    assert!(native.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
     let (consumed, fingerprint) = consume_e2(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let association = E2Association::from_source(&source, &typed, symbols, &core, &request).unwrap();
     let (schema_association, schema) = E2Association::from_source_with_schema(&source, &typed, symbols, &core, &request).unwrap();
@@ -702,6 +720,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(E2Association::from_source_with_schema(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_e2(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
+            assert_eq!(NativeE2::from_source(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
+            assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
         }
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert!(!mizar_kernel::checker::check_unary_caller_return_postcondition(&core, &changed, callee_flow, target, result.var, conclusion, &[guard]), "E2 request {mutation}");
@@ -873,6 +893,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     assert_eq!(E2Association::from_source_with_schema(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     for current_policy in [&policy, &denied] {
         assert_eq!(consume_e2(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
+        assert_eq!(NativeE2::from_source(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
+        assert_eq!(native.adopt_original_request(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
     }
     assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     for (index, (p, structural_success)) in changes.into_iter().enumerate() {
@@ -892,7 +914,11 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(E2Association::from_source_with_schema(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_e2(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
+            assert_eq!(NativeE2::from_source(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
+            assert_eq!(native.adopt_original_request(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
             assert_eq!(consume_e2(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
+            assert_eq!(NativeE2::from_source(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
+            assert_eq!(native.adopt_original_request(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
         }
         assert_eq!(association.matches_source(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(mizar_kernel::checker::check_unary_caller_return_postcondition(&changed, &request, callee_flow, target, result.var, conclusion, &[guard]), structural_success, "E2 Core {index}");
@@ -925,6 +951,11 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             let fresh = E2Association::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let (fresh_schema_association, fresh_schema) = E2Association::from_source_with_schema(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            let fresh_native = NativeE2::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
+            assert!(fresh_native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
+            for current_policy in [&policy, &denied] {
+                assert!(!native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
+            }
             let (fresh_consumed, fresh_fingerprint) = consume_e2(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
             assert_eq!(fresh_fingerprint, policy.policy_fingerprint());
@@ -942,6 +973,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(E2Association::from_source_with_schema(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_e2(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
+                assert_eq!(NativeE2::from_source(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
+                assert_eq!(native.adopt_original_request(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
             }
             assert_eq!(association.matches_source(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
         }
@@ -962,6 +995,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             for current_policy in [&policy, &denied] {
                 for current_request in [&request, &wrong_request] {
                     assert_eq!(consume_e2(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
+                    assert_eq!(NativeE2::from_source(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
+                    assert_eq!(native.adopt_original_request(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
                 }
             }
             assert_eq!(association.matches_source(s, t, e, &core, &wrong_request).unwrap_err(), expected);
@@ -970,6 +1005,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine);
         assert_eq!(check_e2(&source, &typed, symbols, &core, &request).unwrap(), genuine);
         assert_eq!(check_e2_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine.clone(), 1));
+        let recovered_native = NativeE2::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
+        for product in [&native, &recovered_native] {
+            assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+        }
         let (recovered, recovered_fingerprint) = consume_e2(&source, &typed, symbols, &core, &request, &policy).unwrap();
         assert_eq!(recovered_fingerprint, fingerprint);
         for retained in [&association, &schema_association, &consumed, &recovered] {
@@ -996,6 +1035,8 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     let association = E2Association::from_source(&source, &typed, collected.env(), &core, &request).unwrap();
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
+    let native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+    assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     let (consumed, fingerprint) = consume_e2(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     for (label, text) in [
         ("requires", base.replace("ensures result = b", "requires b = b")),
@@ -1037,9 +1078,25 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(E2Association::from_source_with_schema(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
+                assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
+                assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
             }
             assert_eq!(association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         }
+    }
+    for text in [base.replace(" ensures result = b", ""), base.replace("return child(b)", "return b")] {
+        let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "unary-child", "clauses", 0);
+        let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+        let error = mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
+            &source, &typed, collected.env(), &core, &request).unwrap_err();
+        for current_policy in [&policy, &denied] {
+            assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
+            assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error);
+        }
+    }
+    let recovered_native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+    for product in [&native, &recovered_native] {
+        assert!(product.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     }
     let (recovered, recovered_fingerprint) = consume_e2(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     assert_eq!(recovered_fingerprint, fingerprint);
@@ -3353,6 +3410,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
             mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
                 &source, &typed, collected.env(), &core, &request).unwrap_err());
+        assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
+            mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
+                &source, &typed, collected.env(), &core, &request).unwrap_err());
     }
     let single_association = SingleAssociation::from_source(&source, &typed, collected.env(), &core, &request).unwrap();
     let (single_schema_association, single_association_schema) = SingleAssociation::from_source_with_schema(
@@ -3516,6 +3576,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(single_schema_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
         assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
+        assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(consume_single(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeSingle::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(native_single.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), upstream);

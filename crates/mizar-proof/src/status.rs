@@ -1928,6 +1928,48 @@ pub fn consume_source_unary_caller_e2<'core>(
     Ok((association, policy.policy_fingerprint()))
 }
 
+/// Native positive evidence for only the original caller E2 postcondition sub-obligation.
+/// Currentness remains caller-owned; this grants no whole-caller or reuse authority.
+pub struct NativeUnaryCallerE2<'core> {
+    association: SourceUnaryCallerE2Association<'core>,
+}
+
+impl<'core> NativeUnaryCallerE2<'core> {
+    /// Checks and retains the whole E2 postcondition association under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (association, _) =
+            consume_source_unary_caller_e2(source, typed, symbols, core, request, policy)?;
+        Ok(Self { association })
+    }
+
+    /// Adopts only the original E2 postcondition request after a fresh current-policy check.
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        consume_source_unary_caller_e2(source, typed, symbols, core, request, policy)?;
+        Ok(true)
+    }
+}
+
 /// Arena-local association of a complete freshly checked caller E1 typing request.
 /// It grants no currentness, policy, adoption or whole-E1 authority.
 pub struct SourceUnaryCallerE1TypingAssociation<'core> {
