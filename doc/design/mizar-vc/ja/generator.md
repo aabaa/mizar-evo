@@ -612,6 +612,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 行は正確な caller/flow/Return/actual の AlgorithmReturns、fresh result と actual の ProgramEquals、Implies、宣言 result の Forall である。ID は行番号、全行は SplitGoal、value の definition annotation は無い。`object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` を未証明のまま要求し、returns や ensures を前提に加えない。入力は不変。この request は checking、Proof authority、acceptance/status、currentness、complete footprints/cache、promotion/publication を除外する。旧 descriptor/E4/E1/child/direct-return/Proof 経路は clause を持つ unary pair を引き続き拒否する。詳細は [英語版](../en/generator.md#bounded-unary-caller-e2-request) を参照。
 
+`check_source_unary_child_call_caller_e2_request` は変更しない五入力 producer を最初に呼び、元 guard、宣言済み binder、caller relation、順序付き等式を、認証済み Core から再構築した callee flow とともに変更しない Kernel `check_unary_caller_return_postcondition` へ射影する。成功時だけ元 tuple 全体を変更せず返し、射影・flow・Kernel 拒否には同じ local E2 error を用いる。この fresh local check は schema reporting/storage、後続 Proof authority や他の除外 authority を与えない。
+
 ## Bounded unary child existential
 
 `generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` は descriptor で Core/request 全体を認証する。既存型の組 `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` は元 caller object guard のみを CheckerFact とし、fresh result binder、行0の `AlgorithmReturns(callee, flow, callee Return, actual, r)`、行1の `Exists r`、actual witness を保持する。immutable Core/request は source・Apply・Return・formal/actual/result-slot 対応を保持する。VcSet・seed・scheduling・snapshot identity は作らない。

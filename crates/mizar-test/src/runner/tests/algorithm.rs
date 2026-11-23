@@ -456,6 +456,8 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         let (core, request) = lower_source_unary_child_call(&checked).unwrap();
         let inputs_before = (core.clone(), request.clone());
         let e2 = generate(&source, &typed, collected.env(), &core, &request).unwrap();
+        assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
+            &source, &typed, collected.env(), &core, &request).unwrap(), e2);
         let caller = core.algorithms().get(request.caller).unwrap();
         let guard = caller.params[0].ty_guard.unwrap();
         let CoreFormulaKind::TypePred { subject, ref ty } = core.formulas().get(guard).unwrap().kind else { panic!("caller object guard") };
@@ -496,6 +498,8 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         for current in [&core, &core.clone(), &core] {
             assert!(mizar_kernel::checker::check_unary_caller_return_postcondition(
                 current, &request, callee_flow, target, result.var, equality, &[guard]));
+            assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
+                &source, &typed, collected.env(), current, &request).unwrap(), e2);
         }
         assert_eq!(generate(&source, &typed, collected.env(), &core, &request).unwrap(), e2);
         assert_eq!(generate(&source, &typed, collected.env(), &core.clone(), &request).unwrap(), e2);
@@ -561,7 +565,8 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     use mizar_checker::{type_checker::check_source_unary_child_call as check,
         typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNodeKind}};
     use mizar_core::{core_ir::*, elaborator::lower_source_unary_child_call as lower};
-    use mizar_vc::generator::generate_source_unary_child_call_caller_e2_request as generate;
+    use mizar_vc::generator::{check_source_unary_child_call_caller_e2_request as check_e2,
+        generate_source_unary_child_call_caller_e2_request as generate};
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
     let (source, nodes, collected, _) = source_registration_formula_inputs(text, "unary-child", "e2_drift", 0);
     let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
@@ -604,6 +609,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         }
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
+        assert_eq!(check_e2(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert!(!mizar_kernel::checker::check_unary_caller_return_postcondition(&core, &changed, callee_flow, target, result.var, conclusion, &[guard]), "E2 request {mutation}");
         assert_eq!(changed, changed_before);
     }
@@ -766,12 +772,15 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     let mut wrong_request = request.clone();
     wrong_request.caller = request.callee;
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
+    assert_eq!(check_e2(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     for (index, (p, structural_success)) in changes.into_iter().enumerate() {
         let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {index}: {error}"));
         assert_ne!(changed, core, "Core {index}");
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
+        assert_eq!(check_e2(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(generate(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
+        assert_eq!(check_e2(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(mizar_kernel::checker::check_unary_caller_return_postcondition(&changed, &request, callee_flow, target, result.var, conclusion, &[guard]), structural_success, "E2 Core {index}");
         assert_eq!(changed, changed_before);
     }
@@ -791,16 +800,22 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             let checked = check(&other_source, other_collected.env(), &other_typed).unwrap();
             let (other_core, other_request) = lower(&checked).unwrap();
             assert!(generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).is_ok());
+            assert_eq!(check_e2(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(),
+                generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
             assert_eq!(generate(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
+            assert_eq!(check_e2(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
         }
         for (s, t, e) in [(&other_source, &typed, symbols), (&source, &typed, other_collected.env()),
             (&source, &other_typed, symbols), (&other_source, &other_typed, other_collected.env())] {
             let expected = check(s, e, t).and_then(|checked| lower(&checked)).err().unwrap_or_else(|| invalid.into());
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), expected);
+            assert_eq!(check_e2(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(generate(s, t, e, &core, &wrong_request).unwrap_err(), expected);
+            assert_eq!(check_e2(s, t, e, &core, &wrong_request).unwrap_err(), expected);
         }
         assert_eq!((other_source, other_typed, other_collected.env().clone()), other_before);
         assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+        assert_eq!(check_e2(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     }
     assert_eq!(forged, forged_before);
     assert_eq!((source, typed, symbols.clone(), core, request), before);
@@ -845,6 +860,8 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             let typed = received.unwrap();
             let error = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
             assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
+                &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
+            assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
                 &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         }
     }
@@ -1902,6 +1919,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let (core, request) = lower(&checked).unwrap();
     let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(&source, &typed, symbols, &core, &request).unwrap_err(),
+        "algorithms.unary_child.invalid_caller_e2_request");
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(&source, &typed, symbols, &core, &request).unwrap_err(),
         "algorithms.unary_child.invalid_caller_e2_request");
     let genuine = describe(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
@@ -3263,6 +3282,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let checked = check_source_algorithm_types(&source, typed.nodes(), collected.env()).unwrap();
     let core = lower_source_algorithms(&checked).unwrap();
     let upstream = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
+    assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(check_single_schema(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());

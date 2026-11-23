@@ -2999,6 +2999,61 @@ pub fn generate_source_unary_child_call_caller_e2_request(
     Ok((context, rows))
 }
 
+/// Checks the freshly authenticated caller postcondition and returns its unchanged request.
+pub fn check_source_unary_child_call_caller_e2_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let descriptor =
+        generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e2_request".to_owned();
+    let ContextEntryKind::BinderDeclaration { var: binder, .. } = descriptor.0.entries()[1].kind
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Shape::ProgramEquals { left, right } = descriptor.1[1].shape else {
+        return Err(invalid());
+    };
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
+    if !mizar_kernel::checker::check_unary_caller_return_postcondition(
+        core,
+        request,
+        callee_flow,
+        (
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        binder,
+        [(left.var, left.definition), (right.var, right.definition)],
+        &[guard],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Emits only a local caller-input child existential after whole-request authentication.
 pub fn generate_source_unary_child_call_existential_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
