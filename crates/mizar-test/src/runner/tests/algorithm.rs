@@ -601,6 +601,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         let policy = Policy::default();
         let native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
         assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+        assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), identity);
         let (consumed, fingerprint) = consume_e2(
             &source, &typed, collected.env(), &core, &request, &policy).unwrap();
         assert_eq!(fingerprint, policy.policy_fingerprint());
@@ -635,12 +636,15 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
                 let current_native = NativeE2::from_source(&source, &typed, collected.env(), current, &request, &current_policy).unwrap();
                 assert!(current_native.adopt_original_request(&source, &typed, collected.env(), current, &request, &current_policy).unwrap());
                 assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), current, &request, &current_policy).unwrap(), std::ptr::eq(current, &core));
+                assert_eq!(current_native.obligation_identity(&source, &typed, collected.env(), current, &request, &current_policy).unwrap().unwrap(), identity);
+                assert_eq!(native.obligation_identity(&source, &typed, collected.env(), current, &request, &current_policy).unwrap(), std::ptr::eq(current, &core).then(|| identity.clone()));
                 let (current_consumed, current_fingerprint) = consume_e2(
                     &source, &typed, collected.env(), current, &request, &current_policy).unwrap();
                 assert_eq!(current_fingerprint, current_policy.policy_fingerprint());
                 assert_eq!(current_consumed.request(), &request);
                 assert_eq!(current_consumed.descriptor(), &e2);
                 assert!(current_consumed.matches_source(&source, &typed, collected.env(), current, &request).unwrap());
+                assert_eq!(current_consumed.obligation_identity(&source, &typed, collected.env(), current, &request).unwrap().unwrap(), identity);
                 assert_eq!(current_policy, policy_before);
             }
             for retained in [&fresh, &fresh_schema_association] {
@@ -680,11 +684,15 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
                 "algorithm.proof.unary_caller_e2_policy_rejected");
             assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &denied).unwrap_err(),
                 "algorithm.proof.unary_caller_e2_policy_rejected");
+            assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, &denied).unwrap_err(),
+                "algorithm.proof.unary_caller_e2_policy_rejected");
             assert!(!native.adopt_original_request(&source, &typed, collected.env(), &cloned_core, &request, &denied).unwrap());
+            assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &cloned_core, &request, &denied).unwrap(), None);
             assert_eq!(association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), identity);
             let recovered_native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
             for product in [&native, &recovered_native] {
                 assert!(product.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+                assert_eq!(product.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), identity);
             }
             let (recovered, recovered_fingerprint) = consume_e2(
                 &source, &typed, collected.env(), &core, &request, &policy).unwrap();
@@ -736,6 +744,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             && core.proofs().is_empty() && core.diagnostics().is_empty());
         for _ in 0..2 {
             assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+            assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), identity);
             assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), &core, &request).unwrap(), raw);
             assert_eq!(association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), identity);
             assert_eq!(lower_source_unary_child_call(&check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap(), (core.clone(), request.clone()));
@@ -832,6 +841,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(consume_e2(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(NativeE2::from_source(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
+            assert_eq!(native.obligation_identity(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
         }
         assert_eq!(association.matches_source(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(canonical_caller_e2(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
@@ -1007,6 +1017,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(consume_e2(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(NativeE2::from_source(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(native.adopt_original_request(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
+        assert_eq!(native.obligation_identity(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
     }
     assert_eq!(association.matches_source(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(canonical_caller_e2(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
@@ -1032,9 +1043,11 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(consume_e2(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(NativeE2::from_source(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(native.adopt_original_request(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
+            assert_eq!(native.obligation_identity(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
             assert_eq!(consume_e2(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(NativeE2::from_source(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(native.adopt_original_request(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
+            assert_eq!(native.obligation_identity(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
         }
         assert_eq!(association.matches_source(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(canonical_caller_e2(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
@@ -1073,6 +1086,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert!(fresh_native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
             for current_policy in [&policy, &denied] {
                 assert!(!native.adopt_original_request(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
+                assert_eq!(native.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap(), None);
             }
             let (fresh_consumed, fresh_fingerprint) = consume_e2(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
@@ -1086,6 +1100,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                 let own = retained.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap().unwrap();
                 let own_raw = canonical_caller_e2(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
                 assert_eq!(own.1, own_raw.3);
+                assert_eq!(fresh_native.obligation_identity(&other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap().unwrap(), own);
                 assert_ne!(own, genuine_identity);
             }
             for retained in [&association, &schema_association, &consumed] {
@@ -1098,6 +1113,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                 assert_eq!(consume_e2(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(NativeE2::from_source(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(native.adopt_original_request(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
+                assert_eq!(native.obligation_identity(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
             }
             assert_eq!(association.matches_source(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(canonical_caller_e2(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
@@ -1124,6 +1140,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                     assert_eq!(consume_e2(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(NativeE2::from_source(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(native.adopt_original_request(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
+                    assert_eq!(native.obligation_identity(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
                 }
             }
             assert_eq!(association.matches_source(s, t, e, &core, &wrong_request).unwrap_err(), expected);
@@ -1137,6 +1154,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         let recovered_native = NativeE2::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
         for product in [&native, &recovered_native] {
             assert!(product.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
+            assert_eq!(product.obligation_identity(&source, &typed, symbols, &core, &request, &policy).unwrap().unwrap(), genuine_identity);
         }
         let (recovered, recovered_fingerprint) = consume_e2(&source, &typed, symbols, &core, &request, &policy).unwrap();
         assert_eq!(recovered_fingerprint, fingerprint);
@@ -1213,27 +1231,37 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
                 assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
+                assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
             }
             assert_eq!(association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         }
     }
-    for text in [base.replace(" ensures result = b", ""), base.replace("return child(b)", "return b")] {
+    for (no_clause, text) in [(true, base.replace(" ensures result = b", "")), (false, base.replace("return child(b)", "return b"))] {
         let (source, nodes, collected, _) = source_registration_formula_inputs(&text, "unary-child", "clauses", 0);
         let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+        let fresh = no_clause.then(|| mizar_core::elaborator::lower_source_unary_child_call(
+            &check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap());
+        let (current_core, current_request) = fresh.as_ref().map_or((&core, &request), |(core, request)| (core, request));
+        if no_clause {
+            assert!(current_core.algorithms().get(current_request.caller).unwrap().contracts.ensures.is_empty());
+        }
         let error = mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
-            &source, &typed, collected.env(), &core, &request).unwrap_err();
-        assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
-        assert_eq!(association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+            &source, &typed, collected.env(), current_core, current_request).unwrap_err();
+        if no_clause { assert_eq!(error, "algorithms.unary_child.invalid_caller_e2_request"); }
+        assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
+        assert_eq!(association.obligation_identity(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
         for current_policy in [&policy, &denied] {
-            assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
-            assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error);
+            assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), current_core, current_request, current_policy).err().unwrap(), error);
+            assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
+            assert_eq!(native.obligation_identity(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
         }
     }
     let recovered_native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     for product in [&native, &recovered_native] {
         assert!(product.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+        assert_eq!(product.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), genuine_identity);
     }
     let (recovered, recovered_fingerprint) = consume_e2(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     assert_eq!(recovered_fingerprint, fingerprint);

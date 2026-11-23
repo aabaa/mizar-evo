@@ -646,7 +646,8 @@ arena 間の canonical 一致は association を認可しない。この passive
 
 ## Native caller E2 adoption
 
-`NativeUnaryCallerE2::from_source(source, typed, symbols, core, request, policy)` は変更しない [E2 consumer](#caller-e2-current-policy-consumption) を一度呼び、fingerprint を破棄して association 全体のみを private field に保持する。`adopt_original_request` は最初に変更しない `matches_source` を呼び、認証エラーを保持する。request/tuple 全体または Core の同一性が不一致なら policy 検査前に false を返す。一致時だけ渡された現行 policy で同じ consumer を新たに呼び、エラーを保持し、元の caller E2 postcondition sub-obligation のみを true で採用する。追加の Kernel 検査により schema の保持を避け、currentness は呼出側が担う。identity、whole caller acceptance/status、complete footprints/cache、promotion/publication の権限は与えない。
+`NativeUnaryCallerE2::from_source(source, typed, symbols, core, request, policy)` は変更しない [E2 consumer](#caller-e2-current-policy-consumption) を一度呼び、fingerprint を破棄して association 全体のみを private field に保持する。`adopt_original_request` は最初に変更しない `matches_source` を呼び、認証エラーを保持する。request/tuple 全体または Core の同一性が不一致なら policy 検査前に false を返す。一致時だけ渡された現行 policy で同じ consumer を新たに呼び、エラーを保持し、元の caller E2 postcondition sub-obligation のみを true で採用する。追加の Kernel 検査により schema の保持を避け、currentness は呼出側が担う。whole caller acceptance/status、complete footprints/cache、promotion/publication の権限は与えない。
+`obligation_identity` は最初に同じ6入力で変更しない `adopt_original_request` を一度呼び、エラーを伝播し、false なら None を返す。true の場合、同じ5つの source 入力で保持した association の変更しない passive E2 identity と conservative slice 全体を返す。各呼出しは渡された現行 policy を新たに検査し、identity は追加の権限を与えない。
 
 ## Arena-local caller E1 typing association
 
