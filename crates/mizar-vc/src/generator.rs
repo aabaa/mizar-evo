@@ -2999,6 +2999,27 @@ pub fn generate_source_unary_child_call_caller_e2_request(
     Ok((context, rows))
 }
 
+/// Requests clause-bearing caller normal return without checking or adopting it.
+pub fn generate_source_unary_child_call_caller_ensures_e4_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 2]), String> {
+    use crate::vc_ir::{QuantifierKind, VcGeneratedFormulaId, VcGeneratedFormulaShape as Shape};
+
+    let (context, [returns, _, _, mut existential]) =
+        generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)?;
+    let Shape::Quantified { kind, body, .. } = &mut existential.shape else {
+        return Err("algorithms.unary_child.invalid_caller_e2_request".to_owned());
+    };
+    *kind = QuantifierKind::Exists;
+    *body = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
+    existential.id = VcGeneratedFormulaId::new(1);
+    Ok((context, [returns, existential]))
+}
+
 /// Checks the freshly authenticated caller postcondition and returns its unchanged request.
 pub fn check_source_unary_child_call_caller_e2_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
