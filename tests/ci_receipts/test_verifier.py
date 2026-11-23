@@ -118,6 +118,8 @@ class ReceiptTests(unittest.TestCase):
         run("git", "init", "--bare", str(isolated))
         self.git("config", "uploadpack.allowFilter", "true")
         self.git("config", "uploadpack.allowAnySHA1InWant", "true")
+        self.git("config", "uploadpackfilter.allow", "false")
+        self.git("config", "uploadpackfilter.tree.allow", "true")
         run("git", "-C", str(isolated), "remote", "add", "origin", str(self.repo))
         run("git", "-C", str(isolated), "fetch", "--no-tags", str(self.repo),
             "refs/heads/main:refs/heads/main", "refs/heads/topic:refs/heads/topic")
