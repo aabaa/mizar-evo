@@ -2165,6 +2165,24 @@ mod vampire_extraction_refusal_tests {
         else {
             return;
         };
+        let workdir = "MIZAR_ATP_BARE_EXECUTABLE_TEST_DIR";
+        if let Some(directory) = std::env::var_os(workdir) {
+            assert_eq!(std::env::current_dir().unwrap(), PathBuf::from(directory));
+        } else {
+            let dir = TestDir::new();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    std::thread::current().name().unwrap(),
+                    "--exact",
+                    "--nocapture",
+                ])
+                .env(workdir, dir.path())
+                .current_dir(dir.path())
+                .output()
+                .expect("isolated bare-executable test");
+            assert!(output.status.success(), "isolated test failed: {output:?}");
+            return;
+        }
         let (problem, handoff) = fixture();
         let dir = TestDir::new();
         let name = format!(
