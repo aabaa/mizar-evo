@@ -1979,6 +1979,40 @@ pub fn check_unary_caller_return_postcondition(
         )
 }
 
+/// Reports the Kernel-owned caller postcondition schema only after checking these inputs.
+/// The scalar grants no Proof authority or adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original caller postcondition projections without a single-use representation"
+)]
+pub fn check_unary_caller_return_postcondition_schema(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> Option<u16> {
+    check_unary_caller_return_postcondition(
+        core,
+        request,
+        callee_flow,
+        target,
+        binder,
+        conclusion,
+        context,
+    )
+    .then_some(1)
+}
+
 /// Checks caller `forall r,s. (returns(actual,r) & returns(actual,s)) implies r=s`.
 /// Both executions return the immutable actual through the exact child Return/Apply.
 /// This boolean supplies no source authentication, schema or Proof authority.

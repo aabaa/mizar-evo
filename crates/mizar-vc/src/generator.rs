@@ -3007,6 +3007,21 @@ pub fn check_source_unary_child_call_caller_e2_request(
     core: &mizar_core::core_ir::CoreIr,
     request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
 ) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    check_source_unary_child_call_caller_e2_request_with_schema(
+        source, typed, symbols, core, request,
+    )
+    .map(|(descriptor, _)| descriptor)
+}
+
+/// Authenticates caller postcondition and reports the unchanged request and same-call schema.
+/// This scalar grants no Proof authority or adoption.
+pub fn check_source_unary_child_call_caller_e2_request_with_schema(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<((LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), u16), String> {
     use crate::vc_ir::VcGeneratedFormulaShape as Shape;
 
     let descriptor =
@@ -3034,7 +3049,7 @@ pub fn check_source_unary_child_call_caller_e2_request(
     };
     let cfg = mizar_core::control_flow::build_control_flow_ir(core);
     let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
-    if !mizar_kernel::checker::check_unary_caller_return_postcondition(
+    let checker_schema = mizar_kernel::checker::check_unary_caller_return_postcondition_schema(
         core,
         request,
         callee_flow,
@@ -3048,10 +3063,9 @@ pub fn check_source_unary_child_call_caller_e2_request(
         binder,
         [(left.var, left.definition), (right.var, right.definition)],
         &[guard],
-    ) {
-        return Err(invalid());
-    }
-    Ok(descriptor)
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checker_schema))
 }
 
 /// Emits only a local caller-input child existential after whole-request authentication.

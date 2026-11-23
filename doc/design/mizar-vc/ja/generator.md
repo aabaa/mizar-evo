@@ -612,7 +612,7 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 行は正確な caller/flow/Return/actual の AlgorithmReturns、fresh result と actual の ProgramEquals、Implies、宣言 result の Forall である。ID は行番号、全行は SplitGoal、value の definition annotation は無い。`object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` を未証明のまま要求し、returns や ensures を前提に加えない。入力は不変。この request は checking、Proof authority、acceptance/status、currentness、complete footprints/cache、promotion/publication を除外する。旧 descriptor/E4/E1/child/direct-return/Proof 経路は clause を持つ unary pair を引き続き拒否する。詳細は [英語版](../en/generator.md#bounded-unary-caller-e2-request) を参照。
 
-`check_source_unary_child_call_caller_e2_request` は変更しない五入力 producer を最初に呼び、元 guard、宣言済み binder、caller relation、順序付き等式を、認証済み Core から再構築した callee flow とともに変更しない Kernel `check_unary_caller_return_postcondition` へ射影する。成功時だけ元 tuple 全体を変更せず返し、射影・flow・Kernel 拒否には同じ local E2 error を用いる。この fresh local check は schema reporting/storage、後続 Proof authority や他の除外 authority を与えない。
+`check_source_unary_child_call_caller_e2_request_with_schema` は変更しない五入力 producer を一度呼び、元 guard、宣言済み binder、caller relation、順序付き等式と認証済み Core から再構築した callee flow を Kernel `check_unary_caller_return_postcondition_schema` へ一度渡す。成功時だけ元 tuple 全体と同じ呼び出しの実 schema を返す。射影・flow・Kernel 拒否は local E2 error、上流 error はそのまま保持する。旧 `check_source_unary_child_call_caller_e2_request` は委譲して scalar だけを捨てる。schema storage や後続 authority は追加しない。
 
 ## Bounded unary child existential
 

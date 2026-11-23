@@ -71,6 +71,8 @@ child の各返り値は actual で置換した不変の formal であり、call
 `check_unary_caller_return_postcondition(core, request, callee_flow, target, binder, conclusion, context)` は元の caller object guard だけの下で `forall r. returns_caller(actual,r) implies r=actual` を検査する。順序付き等式 `[target.result, target.input]` を要求し、変更しない caller typing 検証で exact bodies、request/slot/Apply の対応、definition-free values、fresh binder、guards、循環安全性と caller CFG/Return の対応を確認する。
 child の全 return は actual で具体化した不変 formal であり、caller はその結果を返す（§20.1.2、§20.2.6、§20.13.1 E2）。構造検証から全 return の等式を導き、typing evidence、E4 existence、ensures、function equation を前提としない。保持した contract clauses は解釈せず前提にも使わない。この boolean は source authentication、VC facade、schema reporting/storage、Proof authority、後続 acceptance credit を与えない。
 
+`check_unary_caller_return_postcondition_schema` は同一入力で変更しない boolean を一度だけ呼び、成功時だけ Kernel 所有の `Some(1_u16)`、失敗時は `None` を返す。この scalar は storage や後続 authority を与えない。
+
 ## Bounded Unary Caller E1 Single-Valuedness
 
 `check_unary_caller_return_single_valuedness(core, request, callee_flow, targets, binders, conclusion, context)` は、共通の caller/CFG/Return/actual 入力、異なる大域的に fresh な結果 binder、definition-free な結果と順序通りの等式を、元の caller object guard だけの下で検査する。各 binder に既存 unary-child の body/guard/slot/Apply と循環検証を適用してから caller CFG を照合する。

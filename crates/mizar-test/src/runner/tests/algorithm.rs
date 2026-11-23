@@ -498,6 +498,11 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         for current in [&core, &core.clone(), &core] {
             assert!(mizar_kernel::checker::check_unary_caller_return_postcondition(
                 current, &request, callee_flow, target, result.var, equality, &[guard]));
+            let schema = mizar_kernel::checker::check_unary_caller_return_postcondition_schema(
+                current, &request, callee_flow, target, result.var, equality, &[guard]);
+            assert_eq!(schema, Some(1));
+            assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
+                &source, &typed, collected.env(), current, &request).unwrap(), (e2.clone(), schema.unwrap()));
             assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
                 &source, &typed, collected.env(), current, &request).unwrap(), e2);
         }
@@ -566,6 +571,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNodeKind}};
     use mizar_core::{core_ir::*, elaborator::lower_source_unary_child_call as lower};
     use mizar_vc::generator::{check_source_unary_child_call_caller_e2_request as check_e2,
+        check_source_unary_child_call_caller_e2_request_with_schema as check_e2_schema,
         generate_source_unary_child_call_caller_e2_request as generate};
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
     let (source, nodes, collected, _) = source_registration_formula_inputs(text, "unary-child", "e2_drift", 0);
@@ -610,7 +616,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(check_e2(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
+        assert_eq!(check_e2_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert!(!mizar_kernel::checker::check_unary_caller_return_postcondition(&core, &changed, callee_flow, target, result.var, conclusion, &[guard]), "E2 request {mutation}");
+        assert_eq!(mizar_kernel::checker::check_unary_caller_return_postcondition_schema(&core, &changed, callee_flow, target, result.var, conclusion, &[guard]), None, "E2 request {mutation}");
         assert_eq!(changed, changed_before);
     }
     let parts = CoreIrParts {
@@ -773,15 +781,19 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     wrong_request.caller = request.callee;
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(check_e2(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
+    assert_eq!(check_e2_schema(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     for (index, (p, structural_success)) in changes.into_iter().enumerate() {
         let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {index}: {error}"));
         assert_ne!(changed, core, "Core {index}");
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(check_e2(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
+        assert_eq!(check_e2_schema(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(generate(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(check_e2(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
+        assert_eq!(check_e2_schema(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(mizar_kernel::checker::check_unary_caller_return_postcondition(&changed, &request, callee_flow, target, result.var, conclusion, &[guard]), structural_success, "E2 Core {index}");
+        assert_eq!(mizar_kernel::checker::check_unary_caller_return_postcondition_schema(&changed, &request, callee_flow, target, result.var, conclusion, &[guard]), structural_success.then_some(1), "E2 Core {index}");
         assert_eq!(changed, changed_before);
     }
     assert!(mizar_kernel::checker::check_unary_caller_return_postcondition(&core, &request, callee_flow, target, result.var, conclusion, &[guard]));
@@ -802,20 +814,26 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert!(generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).is_ok());
             assert_eq!(check_e2(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(),
                 generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert_eq!(check_e2_schema(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(),
+                (generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), 1));
             assert_eq!(generate(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(check_e2(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
+            assert_eq!(check_e2_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
         }
         for (s, t, e) in [(&other_source, &typed, symbols), (&source, &typed, other_collected.env()),
             (&source, &other_typed, symbols), (&other_source, &other_typed, other_collected.env())] {
             let expected = check(s, e, t).and_then(|checked| lower(&checked)).err().unwrap_or_else(|| invalid.into());
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(check_e2(s, t, e, &core, &request).unwrap_err(), expected);
+            assert_eq!(check_e2_schema(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(generate(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(check_e2(s, t, e, &core, &wrong_request).unwrap_err(), expected);
+            assert_eq!(check_e2_schema(s, t, e, &core, &wrong_request).unwrap_err(), expected);
         }
         assert_eq!((other_source, other_typed, other_collected.env().clone()), other_before);
         assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine);
         assert_eq!(check_e2(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+        assert_eq!(check_e2_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine.clone(), 1));
     }
     assert_eq!(forged, forged_before);
     assert_eq!((source, typed, symbols.clone(), core, request), before);
@@ -862,6 +880,8 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
                 &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
+                &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
+            assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
                 &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         }
     }
@@ -1902,6 +1922,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         check_unary_caller_return_single_valuedness_schema as single_schema,
         check_unary_caller_return_typing as typing_kernel,
         check_unary_caller_return_postcondition as e2_kernel,
+        check_unary_caller_return_postcondition_schema as e2_schema,
         check_unary_caller_return_typing_schema as typing_schema,
         check_unary_caller_returns_existential_result as compose_kernel,
         check_unary_child_returns_existential_result as kernel,
@@ -2104,6 +2125,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let equality = binders.map(|var| (var, None));
     for current_core in [&core, &cloned_core] {
         assert!(e2_kernel(current_core, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]));
+        assert_eq!(e2_schema(current_core, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), Some(1));
         assert!(single_kernel(current_core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
         assert_eq!(single_schema(current_core, &request, target.1, single_targets, binders, equality, &[actual_guard]), Some(1));
         assert!(single_kernel(current_core, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]));
@@ -2139,19 +2161,23 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(typing_kernel(&cloned_core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert_eq!(typing_schema(&cloned_core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), Some(1));
     assert!(!e2_kernel(&core, &request, target.1, target, binder, [target.4, target.3], &[actual_guard]), "caller E2 refuses a direct-return target");
+    assert_eq!(e2_schema(&core, &request, target.1, target, binder, [target.4, target.3], &[actual_guard]), None);
     for side in 0..2 {
         for wrong in [e2_conclusion[1 - side], (request.formal, None), (binder, Some(request.statement)), (binder, Some(CoreAlgorithmStmtId::new(usize::MAX)))] {
             let mut changed = e2_conclusion;
             changed[side] = wrong;
             assert!(!e2_kernel(&core, &request, target.1, caller_target, binder, changed, &[actual_guard]), "E2 equality {side}: {wrong:?}");
+            assert_eq!(e2_schema(&core, &request, target.1, caller_target, binder, changed, &[actual_guard]), None);
         }
     }
     assert!(!e2_kernel(&core, &request, target.1, caller_target, binder, [e2_conclusion[1], e2_conclusion[0]], &[actual_guard]));
+    assert_eq!(e2_schema(&core, &request, target.1, caller_target, binder, [e2_conclusion[1], e2_conclusion[0]], &[actual_guard]), None);
     assert!(!typing_kernel(&core, &request, target.1, target, binder, conclusion, &[actual_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, target, binder, conclusion, &[actual_guard]), None);
     assert!(!mizar_kernel::checker::check_algorithm_return_typing(&core, caller_target, binder, conclusion, &[actual_guard]));
     for wrong_flow in [caller_target.1, mizar_core::control_flow::ControlFlowId::new(usize::MAX)] {
         assert!(!e2_kernel(&core, &request, wrong_flow, caller_target, binder, e2_conclusion, &[actual_guard]));
+        assert_eq!(e2_schema(&core, &request, wrong_flow, caller_target, binder, e2_conclusion, &[actual_guard]), None);
         assert!(!single_kernel(&core, &request, wrong_flow, single_targets, binders, equality, &[actual_guard]));
         assert_eq!(single_schema(&core, &request, wrong_flow, single_targets, binders, equality, &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]));
@@ -2232,6 +2258,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         }
         assert!(compose_kernel(&core, &request, caller_changed, &retained, &[actual_guard]).is_none(), "caller target {mutation}");
         assert!(!e2_kernel(&core, &request, target.1, caller_changed, binder, [caller_changed.4, caller_changed.3], &[actual_guard]), "E2 target {mutation}");
+        assert_eq!(e2_schema(&core, &request, target.1, caller_changed, binder, [caller_changed.4, caller_changed.3], &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, target.1, caller_changed, binder, conclusion, &[actual_guard]), "typing target {mutation}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_changed, binder, conclusion, &[actual_guard]), None);
         for side in 0..2 {
@@ -2261,6 +2288,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     for wrong in [request.formal, target.3.0, request.callee_result, request.caller_result, CoreVarId::new(usize::MAX)] {
         assert!(kernel(&core, &request, target, wrong, request.actual, &[actual_guard]).is_none(), "binder {wrong:?}");
         assert!(!e2_kernel(&core, &request, target.1, caller_target, wrong, e2_conclusion, &[actual_guard]), "E2 binder {wrong:?}");
+        assert_eq!(e2_schema(&core, &request, target.1, caller_target, wrong, e2_conclusion, &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, target.1, caller_target, wrong, conclusion, &[actual_guard]), "typing binder {wrong:?}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_target, wrong, conclusion, &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, ((wrong, None), "object"), &[actual_guard]), "typing subject {wrong:?}");
@@ -2273,6 +2301,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         let mut caller_changed = caller_target;
         caller_changed.4.0 = captured;
         assert!(!e2_kernel(&core, &request, target.1, caller_changed, captured, [caller_changed.4, caller_changed.3], &[actual_guard]), "E2 captured binder {captured:?}");
+        assert_eq!(e2_schema(&core, &request, target.1, caller_changed, captured, [caller_changed.4, caller_changed.3], &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, target.1, caller_changed, captured, ((captured, None), "object"), &[actual_guard]), "typing captured binder {captured:?}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_changed, captured, ((captured, None), "object"), &[actual_guard]), None);
     }
@@ -2282,6 +2311,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     }
     for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
         assert!(!e2_kernel(&core, &request, target.1, caller_target, binder, e2_conclusion, &context), "E2 context {context:?}");
+        assert_eq!(e2_schema(&core, &request, target.1, caller_target, binder, e2_conclusion, &context), None);
         assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &context), "single context {context:?}");
         assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &context), None);
         assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
@@ -2290,6 +2320,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &context), None);
     }
     assert!(!e2_kernel(&core, &request, target.1, caller_target, binder, e2_conclusion, &[formal_guard, actual_guard]));
+    assert_eq!(e2_schema(&core, &request, target.1, caller_target, binder, e2_conclusion, &[formal_guard, actual_guard]), None);
     assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &[formal_guard, actual_guard]));
     assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &[formal_guard, actual_guard]), None);
     for mutation in 0..17 {
@@ -2378,6 +2409,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert!(kernel(&core, &changed, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel request {mutation}");
         assert!(compose_kernel(&core, &changed, caller_target, &retained, &[actual_guard]).is_none(), "caller Kernel request {mutation}");
         assert!(!e2_kernel(&core, &changed, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), "E2 request {mutation}");
+        assert_eq!(e2_schema(&core, &changed, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), None);
         assert!(!typing_kernel(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), "typing request {mutation}");
         assert!(!single_kernel(&core, &changed, target.1, single_targets, binders, equality, &[actual_guard]), "single request {mutation}");
         assert_eq!(single_schema(&core, &changed, target.1, single_targets, binders, equality, &[actual_guard]), None);
@@ -2560,6 +2592,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert!(kernel(&changed, &request, target, binder, request.actual, &[actual_guard]).is_none(), "Kernel Core {mutation}");
         }
         assert_eq!(e2_kernel(&changed, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "E2 Core {mutation}");
+        assert_eq!(e2_schema(&changed, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18).then_some(1), "E2 Core {mutation}");
         assert_eq!(typing_kernel(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "typing Core {mutation}");
         assert_eq!(typing_schema(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18).then_some(1), "typing schema Core {mutation}");
         assert_eq!(single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "single Core {mutation}");
@@ -2574,6 +2607,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(changed, changed_before);
     }
     assert!(e2_kernel(&core, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]));
+    assert_eq!(e2_schema(&core, &request, target.1, caller_target, binder, e2_conclusion, &[actual_guard]), Some(1));
     assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert!(single_kernel(&core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
     assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &[actual_guard]), Some(1));
@@ -3140,6 +3174,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
     let checked = check_source_unary_child_call(&source, collected.env(), &typed).unwrap();
     let (core, request) = lower_source_unary_child_call(&checked).unwrap();
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(),
+        mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
+            &source, &typed, collected.env(), &core, &request).unwrap_err());
     let single_association = SingleAssociation::from_source(&source, &typed, collected.env(), &core, &request).unwrap();
     let (single_schema_association, single_association_schema) = SingleAssociation::from_source_with_schema(
         &source, &typed, collected.env(), &core, &request,
@@ -3285,6 +3323,8 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
         &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
+    assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
         &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
