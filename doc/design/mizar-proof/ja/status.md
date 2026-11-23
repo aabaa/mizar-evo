@@ -632,6 +632,12 @@ arena 間の canonical 一致は association を認可しない。この passive
 `NativeUnaryCallerE1SingleValuedness::from_source(source, typed, symbols, core, request, policy)` は既存の [single-valuedness consumer](#caller-e1-single-valuedness-current-policy-consumption) を一度呼び、fingerprint を破棄して association 全体のみを private field に保持する。`adopt_original_request` は最初に既存の `matches_source` を呼び、認証エラーを保持する。request/tuple 全体または Core の同一性が不一致なら policy 検査前に false を返す。一致時だけ渡された現行 policy で同じ consumer を新たに呼び、エラーを保持し、元の caller uniqueness sub-obligation のみを true で採用する。追加の Kernel 検査により schema の保持を避け、currentness は呼出側が担う。
 `obligation_identity` は同じ六入力で最初に変更しない `adopt_original_request` を一度呼び、エラーを伝播し、false は None とする。true では同じ source 入力で保持した association の変更しない passive identity と whole raw slice を返す。毎回、渡された現行 policy を検査し、single-valuedness の domain/hash と caller 所有の currentness を保持する。typing/inhabitation、E2、whole acceptance/status、complete footprints/cache、promotion/publication は与えず、raw Open/unknown/IncompleteUncacheable/cache-miss 境界を保つ。
 
+## Arena-local caller E2 association
+
+`SourceUnaryCallerE2Association::from_source(source, typed, symbols, core, request)` は変更しない [fresh VC E2 checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e2-request) を一度呼び、上流とローカルのエラーを保持する。private fields は clone した request 全体、検査済み四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
+`matches_source` は最初に認証付き E2 request を再生成し、request/tuple 全体の等値と Core pointer identity の比較より先にエラーを保持する。等値の cloned arena は拒否し、その clone 上の新しい association は成功する。Kernel の再検査や detached construction は加えない。currentness は caller 所有のまま。
+元の guard、fresh binder、順序付き definition-free equality は bounded E2 proposition を保つ。schema reporting/storage、identity/policy/native authority、whole acceptance/status、complete footprints/cache、promotion/publication は与えない。既存 child/E4/E1/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC typing schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
