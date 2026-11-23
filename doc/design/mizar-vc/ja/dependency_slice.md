@@ -80,6 +80,10 @@ raw slice は定義 bytes・context・goal を Definition/LocalContext/Generated
 
 `source_unary_caller_e1_inhabitation_canonical_inputs(source, typed, symbols, core, request)` は最初に未変更の E1 tuple を新たに認証する。`mizar-vc/source-unary-caller-e1-inhabitation/{definition,goal,context,vc}/v1` の framed bytes は callee/caller 順の owner と terminating flag、完全な限定 Return/Apply/formal/actual/result-slot 結合、object-inhabitation goal、実入力 witness、元 object guard、fresh binder を結ぶ。E1 role/domain により child/E4 identity と分離し、binder spelling・arena/source/range ID・trivia は中立。既存 VC/goal/context hash と raw slice 全体を返す。local VcId(0)・AlgorithmE1ResultInhabitation/Open、整列した Definition/LocalContext/GeneratedFormula entry、明示 footprint/evidence unknown を保持する。IncompleteUncacheable/cache-miss と保留権限は不変で、policy・Kernel・native identity・graph/status・完全 footprint の権限は与えない。
 
+## Source unary caller E2 canonical inputs
+
+`source_unary_caller_e2_canonical_inputs(source, typed, symbols, core, request)` は最初に変更しない四行 E2 tuple を新たに認証する。`mizar-vc/source-unary-caller-e2/{definition,goal,context,vc}/v1` の framed bytes は callee/caller 順の owner と terminating flag、Return/Apply/formal/actual/result 結合、元 ensures の順序付き等式、returns から等式への全称含意、元 object guard、fresh result binder を結ぶ。binder spelling・arena/source/range ID・trivia は中立。既存 VC/goal/context hash と raw slice 全体を返す。local VcId(0)・AlgorithmPostcondition/Open、整列した Definition/LocalContext/GeneratedFormula entry、明示 footprint/evidence unknown を保持する。E2 固有 domain/role により既存 identity と分離し、IncompleteUncacheable/cache-miss は不変で、policy・Kernel・graph/status・完全 footprint の権限は与えない。
+
 ## 入力と出力
 
 必須入力:

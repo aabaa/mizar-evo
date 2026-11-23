@@ -59,7 +59,7 @@ matching crate or module-level boundary comment:
 | `VcProofSelection`, `ProofSelectionSource`, `ArtifactProofSelection`, `ArtifactProofSelectionError`, `merge_artifact_proof_selections` | Artifact proof selection merge section in `selection.md`. | Merge canonical order, source/class compatibility, duplicate source, trusted precedence, same-class tie-break, and non-trusted preservation tests. | consistent |
 
 ### Status
-`SourceUnaryCallerE2Association::from_source_with_schema`: [sole API owner](./status.md#arena-local-caller-e2-association).
+`SourceUnaryCallerE2Association::{from_source_with_schema, obligation_identity}`: [sole API owner](./status.md#arena-local-caller-e2-association).
 `consume_source_unary_caller_e2`: [sole API owner](./status.md#caller-e2-current-policy-consumption).
 `NativeUnaryCallerE2`: [sole API owner](./status.md#native-caller-e2-adoption).
 `SourceUnaryChildCallAssociation`: [sole API owner](./status.md#arena-local-unary-child-request-association).

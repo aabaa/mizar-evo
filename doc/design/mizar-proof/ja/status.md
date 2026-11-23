@@ -636,7 +636,9 @@ arena 間の canonical 一致は association を認可しない。この passive
 
 `SourceUnaryCallerE2Association::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC E2 schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e2-request) を一度呼び、上流とローカルのエラーを保持し、同一呼出しの実際の Kernel schema を含む `(Self, u16)` を返す。`from_source` は委譲して scalar のみを破棄する。private fields は clone した request 全体、検査済み四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
 `matches_source` は最初に認証付き E2 request を再生成し、request/tuple 全体の等値と Core pointer identity の比較より先にエラーを保持する。等値の cloned arena は拒否し、その clone 上の新しい association は成功する。Kernel の再検査や detached construction は加えない。currentness は caller 所有のまま。
-元の guard、fresh binder、順序付き definition-free equality は bounded E2 proposition を保つ。schema storage、identity/policy/native authority、whole acceptance/status、complete footprints/cache、promotion/publication は与えない。既存 child/E4/E1/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
+元の guard、fresh binder、順序付き definition-free equality は bounded E2 proposition を保つ。schema storage、policy/native authority、whole acceptance/status、complete footprints/cache、promotion/publication は与えない。既存 child/E4/E1/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
+
+`obligation_identity` は同じ五つの source 入力で最初に変更しない `matches_source` を呼び、エラーを保持し、不一致なら None を返す。一致時だけ [E2 canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e2-canonical-inputs) を取得し、既存 ProofObligationIdentity と raw slice 全体を返す。anchor は `source-unary-caller-e2-candidate-anchor-v1:` と VC hash 全体の小文字 hex、通常の五文字列 obligation object は Interface `mizar-proof/source-unary-caller-e2/obligation` v1.0 を使う。field・policy 入力・Kernel 再検査を追加せず、currentness は呼出側が担う。arena 間 canonical 一致は association・native identity・reuse の権限を与えない。
 
 ## Caller E2 current-policy consumption
 

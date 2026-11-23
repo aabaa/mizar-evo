@@ -1827,7 +1827,7 @@ impl<'core> NativeUnaryCallerE1SingleValuedness<'core> {
 }
 
 /// Arena-local association of a complete freshly checked caller E2 request.
-/// It grants no currentness, identity, policy, adoption or whole-acceptance authority.
+/// It grants no currentness, policy, adoption or whole-acceptance authority.
 pub struct SourceUnaryCallerE2Association<'core> {
     request: mizar_core::elaborator::SourceUnaryChildCallRequest,
     descriptor: (
@@ -1887,6 +1887,71 @@ impl<'core> SourceUnaryCallerE2Association<'core> {
         Ok(request == &self.request
             && descriptor == self.descriptor
             && std::ptr::eq(core, self.core))
+    }
+
+    /// Associates canonical identity only after whole same-arena source matching.
+    /// The returned raw slice grants no currentness, policy, adoption or cache authority.
+    pub fn obligation_identity(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<
+        Option<(
+            ProofObligationIdentity,
+            mizar_vc::dependency_slice::DependencySlice,
+        )>,
+        String,
+    > {
+        use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson, HashClass};
+
+        if !self.matches_source(source, typed, symbols, core, request)? {
+            return Ok(None);
+        }
+        let (vc, goal, context, slice) =
+            mizar_vc::dependency_slice::source_unary_caller_e2_canonical_inputs(
+                source, typed, symbols, core, request,
+            )?;
+        let anchor = ObligationAnchor::new(format!(
+            "source-unary-caller-e2-candidate-anchor-v1:{}",
+            source_discharge_hex(vc.as_bytes()),
+        ))
+        .map_err(|error| error.to_string())?;
+        let obligation = CanonicalJson::object(
+            [
+                ("obligation_anchor", anchor.as_str().to_owned()),
+                ("vc_fingerprint", source_discharge_hex(vc.as_bytes())),
+                ("canonical_goal_hash", source_discharge_hex(goal.as_bytes())),
+                (
+                    "local_context_fingerprint",
+                    source_discharge_hex(context.as_bytes()),
+                ),
+                (
+                    "vc_local_dependency_slice_fingerprint",
+                    source_discharge_hex(slice.fingerprint().hash().as_bytes()),
+                ),
+            ]
+            .map(|(key, value)| (key, CanonicalJson::string(value))),
+        )
+        .map_err(|error| error.to_string())?;
+        let fingerprint = CanonicalHashDomain::new(
+            HashClass::Interface,
+            "mizar-proof/source-unary-caller-e2/obligation",
+            SchemaVersion::new(1, 0),
+        )
+        .hash(&obligation, &[]);
+        let identity = ProofObligationIdentity::new(
+            anchor.as_str().to_owned(),
+            anchor,
+            fingerprint,
+            vc,
+            context,
+            slice.fingerprint().hash(),
+        )
+        .map_err(|error| error.to_string())?;
+        Ok(Some((identity, slice)))
     }
 
     #[must_use]

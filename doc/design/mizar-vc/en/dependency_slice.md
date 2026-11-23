@@ -83,6 +83,10 @@ Raw slice entries bind the whole definition bytes, context and goal under Defini
 
 `source_unary_caller_e1_inhabitation_canonical_inputs(source, typed, symbols, core, request)` first regenerates the unchanged authenticated E1 tuple. Framed bytes under `mizar-vc/source-unary-caller-e1-inhabitation/{definition,goal,context,vc}/v1` bind ordered callee/caller owners and terminating flags, complete bounded Return/Apply/formal/actual/result-slot joins, object-inhabitation goal, actual-input witness, original object guard and fresh binder. The E1 role and domains separate this identity from child/E4; binder spelling, arena/source/range IDs and trivia are neutral. Return existing VC/goal/context hashes and whole raw slice, with local VcId(0), AlgorithmE1ResultInhabitation/Open, sorted Definition/LocalContext/GeneratedFormula entries and explicit footprint/evidence unknowns. IncompleteUncacheable/cache-miss and all deferred authority remain unchanged; no policy, Kernel, native identity, graph/status or complete-footprint authority follows.
 
+## Source unary caller E2 canonical inputs
+
+`source_unary_caller_e2_canonical_inputs(source, typed, symbols, core, request)` first regenerates the unchanged authenticated four-row E2 tuple. Framed bytes under `mizar-vc/source-unary-caller-e2/{definition,goal,context,vc}/v1` bind ordered callee/caller owners and terminating flags, Return/Apply/formal/actual/result joins, ordered original ensures equality, universal returns-to-equality implication, original object guard and fresh result binder. Binder spelling, arena/source/range IDs and trivia are neutral. Return existing VC/goal/context hashes and whole raw slice: local VcId(0), AlgorithmPostcondition/Open, sorted Definition/LocalContext/GeneratedFormula entries and explicit footprint/evidence unknowns. E2-specific domains and role separate other identities; IncompleteUncacheable/cache-miss remain, without policy, Kernel, graph/status or complete-footprint authority.
+
 ## Inputs And Outputs
 
 Required input:
