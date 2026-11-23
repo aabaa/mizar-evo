@@ -114,6 +114,7 @@ Literal top-level public items:
 - `CoreGenerationInput`, `VcNormalizationInput`,
   `CoreGenerationCandidateSet`, `CoreGenerationCandidate`,
   `CoreGenerationNoCandidate`, `GeneratorError`, `generate_source_algorithm_postconditions`, `generate_source_void_claim`, `generate_source_existential_registration`, `generate_source_computation_request`
+- `check_source_unary_child_call_caller_e1_single_valuedness_request_with_schema`
 - `generate_source_algorithm_e1_typing_request`
 - `check_source_algorithm_e1_single_valuedness_request_with_schema`
 - `check_source_algorithm_e1_single_valuedness_request`

@@ -1,6 +1,7 @@
 use super::*;
 use mizar_vc::generator::generate_source_unary_child_call_caller_e1_single_valuedness_request as single_valuedness;
 use mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedness_request as check_single_valuedness;
+use mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedness_request_with_schema as check_single_schema;
 use mizar_proof::status::consume_source_unary_caller_e1_typing as consume_typing;
 use mizar_proof::status::NativeUnaryCallerE1Typing as NativeTyping;
 use mizar_vc::dependency_slice::{
@@ -36,6 +37,7 @@ fn unary_call_identities_match_independent_canonical_and_raw_slice_oracles() {
     ).unwrap();
     let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
     assert_eq!(check_single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), single_valuedness(&source, &typed, symbols, &core, &request).unwrap());
+    assert_eq!(check_single_schema(&source, &typed, symbols, &core, &request).unwrap(), (single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), 1));
     let mut child_identity = None;
     let mut caller_e4_identity = None;
     let mut caller_e1_identity = None;
@@ -854,6 +856,13 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             [first_var, second_var], [(first_var, None), (second_var, None)],
             &[expected.1.1],
         ));
+        let single_schema = mizar_kernel::checker::check_unary_caller_return_single_valuedness_schema(
+            &core, &request, flow, single_targets,
+            [first_var, second_var], [(first_var, None), (second_var, None)],
+            &[expected.1.1],
+        );
+        assert_eq!(single_schema, Some(1));
+        assert_eq!(check_single_schema(&source, &typed, symbols, &core, &request).unwrap(), (single.clone(), single_schema.unwrap()));
         let caller_typing = mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
             &source, &typed, symbols, &core, &request,
         ).unwrap();
@@ -1135,11 +1144,17 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
             for _ in 0..2 {
                 assert_eq!(single_valuedness(&source, &typed, symbols, current_core, &request).unwrap(), single);
                 assert_eq!(check_single_valuedness(&source, &typed, symbols, current_core, &request).unwrap(), single);
+                assert_eq!(check_single_schema(&source, &typed, symbols, current_core, &request).unwrap(), (single.clone(), single_schema.unwrap()));
                 assert!(mizar_kernel::checker::check_unary_caller_return_single_valuedness(
                     current_core, &request, flow, single_targets,
                     [first_var, second_var], [(first_var, None), (second_var, None)],
                     &[expected.1.1],
                 ));
+                assert_eq!(mizar_kernel::checker::check_unary_caller_return_single_valuedness_schema(
+                    current_core, &request, flow, single_targets,
+                    [first_var, second_var], [(first_var, None), (second_var, None)],
+                    &[expected.1.1],
+                ), single_schema);
                 assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e1_typing_request(
                     &source, &typed, symbols, current_core, &request,
                 ).unwrap(), caller_typing);
@@ -1289,6 +1304,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     };
     use mizar_kernel::checker::{
         check_unary_caller_return_single_valuedness as single_kernel,
+        check_unary_caller_return_single_valuedness_schema as single_schema,
         check_unary_caller_return_typing as typing_kernel,
         check_unary_caller_return_typing_schema as typing_schema,
         check_unary_caller_returns_existential_result as compose_kernel,
@@ -1312,6 +1328,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let genuine_caller_e4 = caller_e4(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_single = single_valuedness(&source, &typed, symbols, &core, &request).unwrap();
     assert_eq!(check_single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), genuine_single);
+    assert_eq!(check_single_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_single.clone(), 1));
     let genuine_typing = caller_typing(&source, &typed, symbols, &core, &request).unwrap();
     assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     assert_eq!(check_typing_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_typing.clone(), 1));
@@ -1348,6 +1365,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(genuine_caller_identity.1, genuine_caller_raw.3);
     let cloned_core = core.clone();
     let (_, cloned_child) = retain(&source, &typed, symbols, &cloned_core, &request).unwrap();
+    assert_eq!(check_single_schema(&source, &typed, symbols, &cloned_core, &request).unwrap(), (genuine_single.clone(), 1));
     for (current_core, foreign_child) in [(&core, &cloned_child), (&cloned_core, &retained)] {
         assert_eq!(compose(&source, &typed, symbols, current_core, &request, foreign_child).err().unwrap(),
             "algorithms.unary_child.invalid_caller_e4_request");
@@ -1454,13 +1472,16 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let equality = binders.map(|var| (var, None));
     for current_core in [&core, &cloned_core] {
         assert!(single_kernel(current_core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
+        assert_eq!(single_schema(current_core, &request, target.1, single_targets, binders, equality, &[actual_guard]), Some(1));
         assert!(single_kernel(current_core, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]));
+        assert_eq!(single_schema(current_core, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]), Some(1));
     }
     for side in 0..2 {
         let mut direct_targets = single_targets;
         direct_targets[side] = target;
         direct_targets[side].4 = equality[side];
         assert!(!single_kernel(&core, &request, target.1, direct_targets, binders, equality, &[actual_guard]));
+        assert_eq!(single_schema(&core, &request, target.1, direct_targets, binders, equality, &[actual_guard]), None);
         for captured in [request.formal, target.3.0, request.callee_result, request.caller_result, binders[1 - side]] {
             let mut changed_targets = single_targets;
             let mut changed_binders = binders;
@@ -1469,14 +1490,17 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             changed_binders[side] = captured;
             changed_equality[side] = (captured, None);
             assert!(!single_kernel(&core, &request, target.1, changed_targets, changed_binders, changed_equality, &[actual_guard]), "single captured binder {side}: {captured:?}");
+            assert_eq!(single_schema(&core, &request, target.1, changed_targets, changed_binders, changed_equality, &[actual_guard]), None);
         }
         for wrong in [(binders[1 - side], None), (request.formal, None), (binders[side], Some(request.statement)), (binders[side], Some(CoreAlgorithmStmtId::new(usize::MAX)))] {
             let mut changed = equality;
             changed[side] = wrong;
             assert!(!single_kernel(&core, &request, target.1, single_targets, binders, changed, &[actual_guard]), "single equality {side}: {wrong:?}");
+            assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, changed, &[actual_guard]), None);
         }
     }
     assert!(!single_kernel(&core, &request, target.1, single_targets, binders, [equality[1], equality[0]], &[actual_guard]));
+    assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, [equality[1], equality[0]], &[actual_guard]), None);
     assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), Some(1));
     assert!(typing_kernel(&cloned_core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
@@ -1486,6 +1510,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert!(!mizar_kernel::checker::check_algorithm_return_typing(&core, caller_target, binder, conclusion, &[actual_guard]));
     for wrong_flow in [caller_target.1, mizar_core::control_flow::ControlFlowId::new(usize::MAX)] {
         assert!(!single_kernel(&core, &request, wrong_flow, single_targets, binders, equality, &[actual_guard]));
+        assert_eq!(single_schema(&core, &request, wrong_flow, single_targets, binders, equality, &[actual_guard]), None);
         assert!(!typing_kernel(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]));
         assert_eq!(typing_schema(&core, &request, wrong_flow, caller_target, binder, conclusion, &[actual_guard]), None);
     }
@@ -1507,6 +1532,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     });
     assert!(mizar_kernel::checker::check_algorithm_return_single_valuedness(&core, formal_targets, binders, equality, &[formal_guard]));
     assert!(!single_kernel(&core, &request, target.1, formal_targets, binders, equality, &[formal_guard]));
+    assert_eq!(single_schema(&core, &request, target.1, formal_targets, binders, equality, &[formal_guard]), None);
     assert!(mizar_kernel::checker::check_algorithm_return_typing(&core, formal_target, binder, conclusion, &[formal_guard]));
     assert!(!typing_kernel(&core, &request, target.1, formal_target, binder, conclusion, &[formal_guard]));
     assert_eq!(typing_schema(&core, &request, target.1, formal_target, binder, conclusion, &[formal_guard]), None);
@@ -1573,6 +1599,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
                 changed_targets[side].4 = equality[side];
             }
             assert!(!single_kernel(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), "single target {side}: {mutation}");
+            assert_eq!(single_schema(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), None);
         }
         if matches!(mutation, 0..=8 | 12 | 14 | 17) {
             let changed_targets = equality.map(|result| {
@@ -1581,6 +1608,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
                 changed
             });
             assert!(!single_kernel(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), "single shared target {mutation}");
+            assert_eq!(single_schema(&core, &request, target.1, changed_targets, binders, equality, &[actual_guard]), None);
         }
     }
     for wrong in [formal_return, request.application, CoreTermId::new(usize::MAX)] {
@@ -1608,12 +1636,14 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     }
     for context in [vec![], vec![formal_guard], vec![actual_guard, formal_guard], vec![actual_guard, actual_guard], vec![CoreFormulaId::new(usize::MAX)]] {
         assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &context), "single context {context:?}");
+        assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &context), None);
         assert!(kernel(&core, &request, target, binder, request.actual, &context).is_none(), "context {context:?}");
         assert!(compose_kernel(&core, &request, caller_target, &retained, &context).is_none(), "caller context {context:?}");
         assert!(!typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &context), "typing context {context:?}");
         assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &context), None);
     }
     assert!(!single_kernel(&core, &request, target.1, single_targets, binders, equality, &[formal_guard, actual_guard]));
+    assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &[formal_guard, actual_guard]), None);
     for mutation in 0..17 {
         let mut changed = request.clone();
         match mutation {
@@ -1649,6 +1679,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 request {mutation}");
         assert_eq!(single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(check_single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
+        assert_eq!(check_single_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), single_valuedness(&source, &typed, symbols, &core, &changed).unwrap_err());
         assert_eq!(caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing request {mutation}");
         assert_eq!(check_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing check request {mutation}");
         assert_eq!(check_typing_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), caller_typing(&source, &typed, symbols, &core, &changed).unwrap_err(), "caller typing check request {mutation}");
@@ -1689,6 +1720,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert!(compose_kernel(&core, &changed, caller_target, &retained, &[actual_guard]).is_none(), "caller Kernel request {mutation}");
         assert!(!typing_kernel(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), "typing request {mutation}");
         assert!(!single_kernel(&core, &changed, target.1, single_targets, binders, equality, &[actual_guard]), "single request {mutation}");
+        assert_eq!(single_schema(&core, &changed, target.1, single_targets, binders, equality, &[actual_guard]), None);
         assert_eq!(typing_schema(&core, &changed, target.1, caller_target, binder, conclusion, &[actual_guard]), None);
         assert_eq!(changed, changed_before);
     }
@@ -1801,6 +1833,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         let changed_before = changed.clone();
         if mutation >= 33 {
             assert!(!single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), "single Core {mutation}");
+            assert_eq!(single_schema(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), None);
             assert_eq!(changed, changed_before);
             continue;
         }
@@ -1813,6 +1846,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "algorithms.unary_child.invalid_request", "caller E4 Core {mutation}");
         assert_eq!(single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err());
         assert_eq!(check_single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err());
+        assert_eq!(check_single_schema(&source, &typed, symbols, &changed, &request).unwrap_err(), single_valuedness(&source, &typed, symbols, &changed, &request).unwrap_err());
         assert_eq!(caller_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), "caller typing Core {mutation}");
         assert_eq!(check_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), "caller typing check Core {mutation}");
         assert_eq!(check_typing_schema(&source, &typed, symbols, &changed, &request).unwrap_err(), caller_typing(&source, &typed, symbols, &changed, &request).unwrap_err(), "caller typing check Core {mutation}");
@@ -1855,16 +1889,19 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
         assert_eq!(typing_kernel(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "typing Core {mutation}");
         assert_eq!(typing_schema(&changed, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18).then_some(1), "typing schema Core {mutation}");
         assert_eq!(single_kernel(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18), "single Core {mutation}");
+        assert_eq!(single_schema(&changed, &request, target.1, single_targets, binders, equality, &[actual_guard]), matches!(mutation, 9 | 11..=14 | 17..=18).then_some(1), "single Core schema {mutation}");
         if mutation == 30 {
             let mut fresh_target = target;
             fresh_target.4 = equality[1];
             assert!(kernel(&changed, &request, fresh_target, binders[1], request.actual, &[actual_guard]).is_some());
             assert!(!single_kernel(&changed, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]), "second binder alone fails freshness");
+            assert_eq!(single_schema(&changed, &request, target.1, [single_targets[1], single_targets[0]], [binders[1], binders[0]], [equality[1], equality[0]], &[actual_guard]), None);
         }
         assert_eq!(changed, changed_before);
     }
     assert!(typing_kernel(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]));
     assert!(single_kernel(&core, &request, target.1, single_targets, binders, equality, &[actual_guard]));
+    assert_eq!(single_schema(&core, &request, target.1, single_targets, binders, equality, &[actual_guard]), Some(1));
     assert_eq!(typing_schema(&core, &request, target.1, caller_target, binder, conclusion, &[actual_guard]), Some(1));
     assert_eq!(describe(&source, &typed, symbols, &core, &request).unwrap(), genuine);
     assert!(association.matches_source(&source, &typed, symbols, &core, &request).unwrap());
@@ -1887,11 +1924,14 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             let other_caller_e4 = caller_e4(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             let other_single = single_valuedness(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(check_single_valuedness(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), other_single);
+            assert_eq!(check_single_schema(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), (other_single.clone(), 1));
             assert_eq!(other_single.1[0], other_caller_e4.1[0]);
             assert_eq!(single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), caller_e4(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(check_single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
+            assert_eq!(check_single_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), single_valuedness(&source, &typed, symbols, &other_core, &other_request).unwrap_err());
             assert_eq!(single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), caller_e4(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             assert_eq!(check_single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
+            assert_eq!(check_single_schema(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err(), single_valuedness(&other_source, &other_typed, other_collected.env(), &core, &request).unwrap_err());
             let other_typing = caller_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(check_typing(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), other_typing);
             assert_eq!(check_typing_schema(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), (other_typing.clone(), 1));
@@ -2060,6 +2100,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
             assert_eq!(caller_e4(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(single_valuedness(s, t, e, &core, &request).unwrap_err(), caller_e4(s, t, e, &core, &request).unwrap_err());
             assert_eq!(check_single_valuedness(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
+            assert_eq!(check_single_schema(s, t, e, &core, &request).unwrap_err(), single_valuedness(s, t, e, &core, &request).unwrap_err());
             assert_eq!(caller_typing(s, t, e, &core, &request).unwrap_err(), error);
             assert_eq!(check_typing(s, t, e, &core, &request).unwrap_err(), caller_typing(s, t, e, &core, &request).unwrap_err());
             assert_eq!(check_typing_schema(s, t, e, &core, &request).unwrap_err(), caller_typing(s, t, e, &core, &request).unwrap_err());
@@ -2117,6 +2158,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(caller_e4(&source, &forged, symbols, &core, &request).unwrap_err(), check(&source, symbols, &forged).unwrap_err());
     assert_eq!(single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err(), caller_e4(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(check_single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
+    assert_eq!(check_single_schema(&source, &forged, symbols, &core, &request).unwrap_err(), single_valuedness(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(caller_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_e4(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(check_typing(&source, &forged, symbols, &core, &request).unwrap_err(), caller_typing(&source, &forged, symbols, &core, &request).unwrap_err());
     assert_eq!(check_typing_schema(&source, &forged, symbols, &core, &request).unwrap_err(), caller_typing(&source, &forged, symbols, &core, &request).unwrap_err());
@@ -2159,6 +2201,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(caller_e4(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_e4(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(check_single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
+    assert_eq!(check_single_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), single_valuedness(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), error);
     assert_eq!(check_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
     assert_eq!(check_typing_schema(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err(), caller_typing(&source, &forged, symbols, &cloned_core, &mismatched).unwrap_err());
@@ -2237,6 +2280,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     assert_eq!(caller_e4(&source, &typed, symbols, &core, &request).unwrap(), genuine_caller_e4);
     assert_eq!(single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), genuine_single);
     assert_eq!(check_single_valuedness(&source, &typed, symbols, &core, &request).unwrap(), genuine_single);
+    assert_eq!(check_single_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_single.clone(), 1));
     assert_eq!(caller_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     assert_eq!(check_typing_schema(&source, &typed, symbols, &core, &request).unwrap(), (genuine_typing.clone(), 1));
@@ -2312,6 +2356,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let checked = check_source_unary_child_call(&source, collected.env(), &typed).unwrap();
     let (core, request) = lower_source_unary_child_call(&checked).unwrap();
     assert_eq!(check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap());
+    assert_eq!(check_single_schema(&source, &typed, collected.env(), &core, &request).unwrap(), (single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap(), 1));
     assert!(mizar_vc::generator::generate_source_unary_child_call_descriptor(
         &source, &typed, collected.env(), &core, &request,
     ).is_ok());
@@ -2428,6 +2473,7 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let upstream = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
     assert_eq!(single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), mizar_vc::generator::generate_source_unary_child_call_caller_e4_request(&source, &typed, collected.env(), &core, &request).unwrap_err());
     assert_eq!(check_single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
+    assert_eq!(check_single_schema(&source, &typed, collected.env(), &core, &request).unwrap_err(), single_valuedness(&source, &typed, collected.env(), &core, &request).unwrap_err());
     for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
         assert_eq!(consume_typing(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeTyping::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);

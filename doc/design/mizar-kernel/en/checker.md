@@ -123,7 +123,8 @@ Every child return is its immutable formal instantiated by the actual parameter;
 ## Bounded Unary Caller E1 Single-Valuedness
 
 `check_unary_caller_return_single_valuedness(core, request, callee_flow, targets, binders, conclusion, context)` checks two exact caller relations with common caller/CFG/Return/actual input, distinct globally fresh result binders, definition-free results and ordered equality under only the original caller object guard. Each binder passes unchanged unary-child body/guard/slot/Apply and cycle validation before caller CFG matching.
-Both executions return the same immutable actual through the child (§20.1.2, §20.2.6); typing and E4 existence are not premises. Source authentication remains VC-owned. No schema reporting, VC facade, Proof authority or later acceptance follows.
+Both executions return the same immutable actual through the child (§20.1.2, §20.2.6); typing and E4 existence are not premises. Source authentication remains VC-owned. No Proof authority or later acceptance follows.
+`check_unary_caller_return_single_valuedness_schema` invokes the unchanged boolean rule once on identical inputs and returns Kernel-owned `Some(1_u16)` only on success, otherwise `None`. The scalar reports only this checked schema and grants no Proof association, policy eligibility or native adoption.
 
 ## Bounded Original E1 Single-Valuedness
 

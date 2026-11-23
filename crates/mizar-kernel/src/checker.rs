@@ -2005,6 +2005,40 @@ pub fn check_unary_caller_return_single_valuedness(
             .is_some_and(|flow| flow.algorithm == request.caller)
 }
 
+/// Reports the Kernel-owned caller single-valuedness schema after checking these inputs.
+/// The scalar grants no Proof policy eligibility or adoption.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original relations and equality without a single-use representation"
+)]
+pub fn check_unary_caller_return_single_valuedness_schema(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    targets: [(
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ); 2],
+    binders: [CoreVarId; 2],
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> Option<u16> {
+    check_unary_caller_return_single_valuedness(
+        core,
+        request,
+        callee_flow,
+        targets,
+        binders,
+        conclusion,
+        context,
+    )
+    .then_some(1)
+}
+
 /// Reports the Kernel-owned caller typing schema only after checking these inputs.
 /// The scalar grants no Proof policy eligibility or adoption.
 #[must_use]
