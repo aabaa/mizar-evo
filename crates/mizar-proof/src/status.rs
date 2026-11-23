@@ -1728,6 +1728,35 @@ impl<'core> SourceUnaryCallerE1TypingAssociation<'core> {
     }
 }
 
+/// Consumes a freshly checked caller E1 typing association under the current policy.
+/// Currentness remains caller-owned; this grants no adoption, status or reuse authority.
+pub fn consume_source_unary_caller_e1_typing<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    policy: &VerifierPolicy,
+) -> Result<
+    (
+        SourceUnaryCallerE1TypingAssociation<'core>,
+        PolicyFingerprint,
+    ),
+    String,
+> {
+    let (association, schema) = SourceUnaryCallerE1TypingAssociation::from_source_with_schema(
+        source, typed, symbols, core, request,
+    )?;
+    if !policy
+        .kernel_evidence_formats()
+        .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+        || policy.checker_schema_version() != schema
+    {
+        return Err("algorithm.proof.unary_caller_e1_typing_policy_rejected".to_owned());
+    }
+    Ok((association, policy.policy_fingerprint()))
+}
+
 /// Arena-local association of a complete authenticated caller E1 inhabitation request and result.
 /// It grants no currentness, policy, adoption or whole-E1 authority.
 pub struct SourceUnaryCallerE1InhabitationAssociation<'core> {

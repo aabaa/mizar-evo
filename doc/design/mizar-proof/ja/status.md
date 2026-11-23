@@ -623,6 +623,10 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。一致時は同一引数で [typing canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e1-typing-canonical-inputs) を取得する。`source-unary-caller-e1-typing-candidate-anchor-v1:` に完全な小文字 VC hash を続け、通常の五文字列 obligation object が anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e1-typing/obligation` v1.0 で結ぶ。field・policy 入力・Kernel 再検査を追加せず Some(既存 ProofObligationIdentity, raw slice 全体) を返す。
 arena 間の canonical equality は association を認可しない。この passive identity は policy/native adoption、single-valuedness、E2、whole acceptance、status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
 
+## Caller E1 typing current-policy consumption
+
+`consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)` は最初に変更しない [typing schema association](#arena-local-caller-e1-typing-association) constructor を一度だけ呼び、policy 検査より先に上流エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の同一呼出しの schema と policy の checker-schema の完全一致を要求し、拒否は `algorithm.proof.unary_caller_e1_typing_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。各呼出しは渡された policy を検査し、以前の生成物は権限を与えない。受動的 identity は policy に依存せず、currentness は呼出側が担う。native adoption、single-valuedness、E2、whole acceptance/status、complete footprints/cache、promotion/publication は対象外。
+
 ## Arena-local caller E1 inhabitation association
 
 `SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` は変更しない VC caller object-inhabitation checker を一度呼び、エラーを保持する。private fields は request 全体、context/formula/witness tuple 全体、同一呼出しの借用 `ObjectInhabitationCheck` を保持し、不変の `request`、`descriptor`、`result` getter で返す。
