@@ -627,6 +627,10 @@ arena 間の canonical equality は association を認可しない。この pass
 
 `consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)` は最初に変更しない [typing schema association](#arena-local-caller-e1-typing-association) constructor を一度だけ呼び、policy 検査より先に上流エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の同一呼出しの schema と policy の checker-schema の完全一致を要求し、拒否は `algorithm.proof.unary_caller_e1_typing_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。各呼出しは渡された policy を検査し、以前の生成物は権限を与えない。受動的 identity は policy に依存せず、currentness は呼出側が担う。native adoption、single-valuedness、E2、whole acceptance/status、complete footprints/cache、promotion/publication は対象外。
 
+## Native caller E1 typing adoption
+
+`NativeUnaryCallerE1Typing::from_source(source, typed, symbols, core, request, policy)` は変更しない [typing consumer](#caller-e1-typing-current-policy-consumption) を一度呼び、fingerprint を破棄して whole association だけを非公開で保持する。`adopt_original_request` は最初に変更しない `matches_source` を呼び、認証エラーを保持し、whole request/tuple/Core の不一致では policy 検査前に false を返す。一致時は現在の policy で同じ consumer を新たに呼び、拒否を保持し、元の typing sub-obligation だけについて true を返す。追加の Kernel 検査により schema の保持や stamping を避ける。native identity や後続の権限は与えず、currentness は caller 所有のままとする。
+
 ## Arena-local caller E1 inhabitation association
 
 `SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` は変更しない VC caller object-inhabitation checker を一度呼び、エラーを保持する。private fields は request 全体、context/formula/witness tuple 全体、同一呼出しの借用 `ObjectInhabitationCheck` を保持し、不変の `request`、`descriptor`、`result` getter で返す。

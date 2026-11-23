@@ -659,6 +659,10 @@ Canonical equality across arenas never authorizes association. This passive iden
 
 `consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)` first calls the unchanged [typing schema association](#arena-local-caller-e1-typing-association) constructor exactly once, preserving upstream errors before policy checks. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema equality with its actual same-call schema; refusal is `algorithm.proof.unary_caller_e1_typing_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically. Each invocation checks its supplied policy; prior products grant no authority. Passive identity remains policy-independent and currentness caller-owned. Native adoption, single-valuedness, E2, whole acceptance/status, complete footprints/cache and promotion/publication remain excluded.
 
+## Native caller E1 typing adoption
+
+`NativeUnaryCallerE1Typing::from_source(source, typed, symbols, core, request, policy)` calls the unchanged [typing consumer](#caller-e1-typing-current-policy-consumption) once, discards its fingerprint and privately retains only the whole association. `adopt_original_request` first calls its unchanged `matches_source`, preserving authentication errors; whole request/tuple/Core mismatch returns false before policy checks. A match freshly calls the same consumer under current policy, preserving its refusal, then returns true only for the original typing sub-obligation. The additional Kernel check avoids schema retention or stamping. No native identity or later authority follows; currentness remains caller-owned.
+
 ## Arena-local caller E1 inhabitation association
 
 `SourceUnaryCallerE1InhabitationAssociation::from_source(source, typed, symbols, core, request)` calls the unchanged VC caller object-inhabitation checker once, preserving errors. Private fields retain the whole request, exact context/formula/witness tuple and same-call borrowed `ObjectInhabitationCheck`; immutable `request`, `descriptor` and `result` getters expose those values.

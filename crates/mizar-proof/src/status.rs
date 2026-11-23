@@ -1757,6 +1757,48 @@ pub fn consume_source_unary_caller_e1_typing<'core>(
     Ok((association, policy.policy_fingerprint()))
 }
 
+/// Native positive evidence for only the original caller E1 typing sub-obligation.
+/// Currentness remains caller-owned; this grants no whole-E1 or reuse authority.
+pub struct NativeUnaryCallerE1Typing<'core> {
+    association: SourceUnaryCallerE1TypingAssociation<'core>,
+}
+
+impl<'core> NativeUnaryCallerE1Typing<'core> {
+    /// Checks and retains the whole typing association under supplied policy.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (association, _) =
+            consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)?;
+        Ok(Self { association })
+    }
+
+    /// Adopts only the original typing request after a fresh current-policy check.
+    pub fn adopt_original_request(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)?;
+        Ok(true)
+    }
+}
+
 /// Arena-local association of a complete authenticated caller E1 inhabitation request and result.
 /// It grants no currentness, policy, adoption or whole-E1 authority.
 pub struct SourceUnaryCallerE1InhabitationAssociation<'core> {
