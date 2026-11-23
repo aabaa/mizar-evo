@@ -623,6 +623,10 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 `obligation_identity` は同じ五入力で最初に `matches_source` を呼び、認証エラーを保持し、不一致なら None を返す。一致時のみ同じ入力から [uniqueness canonical inputs](../../mizar-vc/ja/dependency_slice.md#source-unary-caller-e1-single-valuedness-canonical-inputs) を取得する。`source-unary-caller-e1-single-valuedness-candidate-anchor-v1:` に完全な小文字 VC hash を続け、既存五文字列 obligation object で anchor・VC・goal・context・slice 全体の fingerprint を Interface `mizar-proof/source-unary-caller-e1-single-valuedness/obligation` v1.0 に結ぶ。既存 ProofObligationIdentity と raw slice 全体を Some で返し、field・policy 入力・Kernel 再検査は追加しない。
 arena 間の canonical 一致は association を認可しない。この passive identity は policy/native authority、E2、whole acceptance/status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/typing/direct-return と raw unknown/incomplete/cache-miss 境界を保ち、imported VC59 は対象外のままとする。
 
+## Caller E1 single-valuedness current-policy consumption
+
+`consume_source_unary_caller_e1_single_valuedness(source, typed, symbols, core, request, policy)` は最初に変更しない [single-valuedness schema association](#arena-local-caller-e1-single-valuedness-association) constructor を一度だけ呼び、policy 検査より先に上流エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の同一呼出しの schema と policy の checker-schema の完全一致を要求し、拒否は `algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。各呼出しは渡された policy を検査し、以前の生成物は権限を与えない。受動的 identity は policy に依存せず、currentness は呼出側が担う。native adoption、E2、whole acceptance/status、complete footprints/cache、promotion/publication は対象外。
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC typing schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
