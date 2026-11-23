@@ -1603,15 +1603,30 @@ impl<'core> SourceUnaryCallerE1SingleValuednessAssociation<'core> {
         core: &'core mizar_core::core_ir::CoreIr,
         request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
     ) -> Result<Self, String> {
-        let descriptor =
-            mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedness_request(
+        Self::from_source_with_schema(source, typed, symbols, core, request)
+            .map(|(association, _)| association)
+    }
+
+    /// Retains the checked tuple and reports its actual same-call Kernel schema.
+    pub fn from_source_with_schema(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<(Self, u16), String> {
+        let (descriptor, schema) =
+            mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedness_request_with_schema(
                 source, typed, symbols, core, request,
             )?;
-        Ok(Self {
-            request: request.clone(),
-            descriptor,
-            core,
-        })
+        Ok((
+            Self {
+                request: request.clone(),
+                descriptor,
+                core,
+            },
+            schema,
+        ))
     }
 
     /// Reauthenticates before whole request/tuple equality and Core pointer identity.

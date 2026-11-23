@@ -618,8 +618,8 @@ canonical identity/reuse、current-policy consumption、native adoption、caller
 
 ## Arena-local caller E1 single-valuedness association
 
-`SourceUnaryCallerE1SingleValuednessAssociation::from_source(source, typed, symbols, core, request)` は変更しない [fresh VC uniqueness checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-single-valuedness-request) を一度呼び、エラーを保持する。private fields は request 全体、六行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
-`matches_source` は最初に認証済み uniqueness request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した constructor、Kernel 再検査、schema の報告・保持、opaque Kernel result は追加しない。currentness は呼出側の責任。
+`SourceUnaryCallerE1SingleValuednessAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC uniqueness schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-single-valuedness-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、六行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
+`matches_source` は最初に認証済み uniqueness request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した constructor、Kernel 再検査、schema の保持、opaque Kernel result は追加しない。currentness は呼出側の責任。
 この passive association は identity、policy/native authority、E2、whole acceptance/status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/typing/direct-return と raw unknown/incomplete/cache-miss 境界を保ち、imported VC59 は対象外のままとする。
 
 ## Arena-local caller E1 typing association
