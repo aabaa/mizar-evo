@@ -60,6 +60,7 @@ matching crate or module-level boundary comment:
 
 ### Status
 `SourceUnaryCallerE2Association::from_source_with_schema`: [sole API owner](./status.md#arena-local-caller-e2-association).
+`consume_source_unary_caller_e2`: [sole API owner](./status.md#caller-e2-current-policy-consumption).
 `SourceUnaryChildCallAssociation`: [sole API owner](./status.md#arena-local-unary-child-request-association).
 `check_source_algorithm_e1_typing`, `check_source_algorithm_e1_typing_with_schema`: [sole API owner](./status.md#original-e1-typing-request-identity-association).
 `consume_source_algorithm_e1_typing`: [sole API owner](./status.md#original-e1-typing-current-policy-consumption).

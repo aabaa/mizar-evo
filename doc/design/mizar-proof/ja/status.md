@@ -638,6 +638,10 @@ arena 間の canonical 一致は association を認可しない。この passive
 `matches_source` は最初に認証付き E2 request を再生成し、request/tuple 全体の等値と Core pointer identity の比較より先にエラーを保持する。等値の cloned arena は拒否し、その clone 上の新しい association は成功する。Kernel の再検査や detached construction は加えない。currentness は caller 所有のまま。
 元の guard、fresh binder、順序付き definition-free equality は bounded E2 proposition を保つ。schema storage、identity/policy/native authority、whole acceptance/status、complete footprints/cache、promotion/publication は与えない。既存 child/E4/E1/direct-return と raw unknown/incomplete/cache-miss 境界を保つ。
 
+## Caller E2 current-policy consumption
+
+`consume_source_unary_caller_e2(source, typed, symbols, core, request, policy)` は最初に変更しない [E2 schema association](#arena-local-caller-e2-association) constructor を一度だけ呼び、policy 検査より先に上流エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の同一呼出しの schema と policy の checker-schema の完全一致を要求し、拒否は `algorithm.proof.unary_caller_e2_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。各呼出しは渡された policy を検査し、以前の生成物は権限を与えない。identity の前提条件や schema storage は加えない。currentness は呼出側が担い、native adoption、whole caller acceptance/status、complete footprints/cache、promotion/publication は対象外。
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC typing schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。

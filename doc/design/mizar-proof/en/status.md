@@ -670,6 +670,10 @@ Canonical equality across arenas never authorizes association. This passive iden
 `matches_source` first regenerates the authenticated E2 request, preserving errors before whole request/tuple equality and pointer-identical Core comparison. Equal cloned arenas refuse; fresh associations on clones succeed. No repeated Kernel check or detached construction. Currentness remains caller-owned.
 The original guard, fresh binder and ordered definition-free equality retain the bounded E2 proposition. No schema storage, identity/policy/native authority, whole acceptance/status, complete footprints/cache or promotion/publication follows. Existing child/E4/E1/direct-return and raw unknown/incomplete/cache-miss boundaries remain unchanged.
 
+## Caller E2 current-policy consumption
+
+`consume_source_unary_caller_e2(source, typed, symbols, core, request, policy)` first calls the unchanged [E2 schema association](#arena-local-caller-e2-association) constructor exactly once, preserving upstream errors before policy checks. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema equality with its actual same-call schema; refusal is `algorithm.proof.unary_caller_e2_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically. Each invocation checks its supplied policy; prior products grant no authority. No identity prerequisite or schema storage is added. Currentness remains caller-owned; native adoption, whole caller acceptance/status, complete footprints/cache and promotion/publication remain excluded.
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` calls the unchanged [fresh VC typing schema checker](../../mizar-vc/en/generator.md#bounded-unary-caller-e1-typing-request) once, preserving errors, and returns `(Self, u16)` with its actual same-call Kernel schema. `from_source` delegates and discards only the scalar. Private fields retain the whole request, exact four-row context/formula tuple and same-call borrowed Core; immutable `request` and `descriptor` getters expose the existing values.
