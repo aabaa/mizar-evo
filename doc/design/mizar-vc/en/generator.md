@@ -677,6 +677,12 @@ Preserve every handoff row: ghost initialization retains its existing GhostErasu
 
 This descriptor excludes schedulable E4 graphs, Kernel/Proof checking, evidence/adoption and semantic credit. The [child existential producer](#bounded-unary-child-existential) owns checked caller-input instantiation; Proof adoption remains separate. Result equality or terminating intent supplies no evidence. Ranges and syntax/environment generalization remain deferred.
 
+## Bounded unary caller E2 request
+
+`generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)` freshly authenticates through unchanged Checker unary checking and Core lowering, then compares the whole Core/request before requiring the retained caller `ensures result = actual`. Upstream errors precede local `algorithms.unary_child.invalid_caller_e2_request` refusal. The existing `(LocalContext, [VcGeneratedFormula; 4])` contains only the original caller object guard and a result declaration fresh above all authenticated parameter/result and Var IDs (checked addition). Empty policy inputs and provenance carry no evidence.
+
+Rows are caller AlgorithmReturns with the exact rebuilt flow/Return/actual association, ProgramEquals of fresh result and actual, Implies, and Forall over the declared result. IDs are row indices; all rows are SplitGoal, values have no definition annotation. This requests `object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` without installing returns or ensures as a premise. Inputs remain immutable. This request excludes checking, Proof authority, acceptance/status, currentness, complete footprints/cache and promotion/publication. Old descriptor/E4/E1/child/direct-return/Proof routes remain contract-free and refuse clause-bearing pairs.
+
 ## Bounded unary child existential
 
 `generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` first authenticates the whole pair through the descriptor. Its existing-type tuple `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` retains only the original caller object guard as a CheckerFact, a fresh result binder, row zero `AlgorithmReturns(callee, flow, callee Return, actual, r)`, row one `Exists r` over row zero, and the actual witness. The complete immutable Core/request preserve source, Apply, Return and formal/actual/result-slot joins. This is a request without VcSet, seeds, scheduling or snapshot identity.

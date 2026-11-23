@@ -411,6 +411,10 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         elaborator::{lower_source_algorithms, lower_source_unary_child_call},
     };
     use mizar_session::SourceRange;
+    use mizar_vc::{generator::generate_source_unary_child_call_caller_e2_request as generate,
+        vc_ir::{ContextEntry, ContextEntryId, ContextEntryKind, LocalContext, QuantifierKind,
+            VcFormulaRef, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+            VcGeneratedFormulaShape as Shape, VcProgramValue}};
 
     for (formal, actual, child, caller_name, flags, trivia) in [
         ("a", "b", "child", "caller", [false, false], " "),
@@ -450,7 +454,44 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         }
         assert_ne!(bindings[0], bindings[1]);
         let (core, request) = lower_source_unary_child_call(&checked).unwrap();
+        let inputs_before = (core.clone(), request.clone());
+        let e2 = generate(&source, &typed, collected.env(), &core, &request).unwrap();
         let caller = core.algorithms().get(request.caller).unwrap();
+        let guard = caller.params[0].ty_guard.unwrap();
+        let CoreFormulaKind::TypePred { subject, ref ty } = core.formulas().get(guard).unwrap().kind else { panic!("caller object guard") };
+        assert_eq!(ty.as_str(), "object");
+        assert_eq!(core.terms().get(subject).unwrap().kind, CoreTermKind::Var(caller.params[0].var));
+        let maximum = core.algorithms().iter().flat_map(|(_, a)| a.params.iter().chain(a.result.iter()))
+            .map(|b| b.var.index()).chain(core.terms().iter().filter_map(|(_, t)| {
+                if let CoreTermKind::Var(v) = t.kind { Some(v.index()) } else { None }
+            })).max().unwrap();
+        let result = VcProgramValue { var: mizar_core::core_ir::CoreVarId::new(maximum + 1), definition: None };
+        let input = VcProgramValue { var: caller.params[0].var, definition: None };
+        let expected_context = LocalContext::try_new(vec![
+            ContextEntry { id: ContextEntryId::new(0), sort_key: "unary-caller-e2-guard-0000".into(),
+                kind: ContextEntryKind::CheckerFact, formula: Some(VcFormulaRef::Core(guard)), provenance: vec![] },
+            ContextEntry { id: ContextEntryId::new(1), sort_key: "unary-caller-e2-result-0001".into(),
+                kind: ContextEntryKind::BinderDeclaration { var: result.var, role: "result".into() }, formula: None, provenance: vec![] },
+        ], vec![]).unwrap();
+        let reference = |id| VcFormulaRef::Generated(VcGeneratedFormulaId::new(id));
+        let expected_rows = [
+            Shape::AlgorithmReturns { algorithm: request.caller,
+                flow: mizar_core::control_flow::build_control_flow_ir(&core).flow_map[&request.caller],
+                statement: request.statement, input, result },
+            Shape::ProgramEquals { left: result, right: input },
+            Shape::Implies { premise: reference(0), conclusion: reference(1) },
+            Shape::Quantified { kind: QuantifierKind::Forall, binders: vec![ContextEntryId::new(1)], body: reference(2) },
+        ];
+        assert_eq!(e2.0, expected_context);
+        for (index, shape) in expected_rows.into_iter().enumerate() {
+            assert_eq!(e2.1[index], VcGeneratedFormula { id: VcGeneratedFormulaId::new(index),
+                kind: VcGeneratedFormulaKind::SplitGoal, shape, provenance: vec![] });
+        }
+        let product_before = e2.clone();
+        assert_eq!(generate(&source, &typed, collected.env(), &core, &request).unwrap(), e2);
+        assert_eq!(generate(&source, &typed, collected.env(), &core.clone(), &request).unwrap(), e2);
+        assert_eq!((core.clone(), request.clone()), inputs_before);
+        assert_eq!(e2, product_before);
         let callee = core.algorithms().get(request.callee).unwrap();
         assert_eq!((callee.declared_terminating, caller.declared_terminating), (flags[0], flags[1]));
         assert_eq!(caller.contracts.ensures.len(), 1);
@@ -507,9 +548,241 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
 }
 
 #[test]
+fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
+    use mizar_checker::{type_checker::check_source_unary_child_call as check,
+        typed_ast::{TypedArena, TypedAst, TypedAstParts, TypedNodeKind}};
+    use mizar_core::{core_ir::*, elaborator::lower_source_unary_child_call as lower};
+    use mizar_vc::generator::generate_source_unary_child_call_caller_e2_request as generate;
+    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
+    let (source, nodes, collected, _) = source_registration_formula_inputs(text, "unary-child", "e2_drift", 0);
+    let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+    let symbols = collected.env();
+    let checked = check(&source, symbols, &typed).unwrap();
+    let (core, request) = lower(&checked).unwrap();
+    let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
+    let genuine = generate(&source, &typed, symbols, &core, &request).unwrap();
+    let callee = core.algorithms().get(request.callee).unwrap();
+    let caller = core.algorithms().get(request.caller).unwrap();
+    let equality = caller.contracts.ensures[0];
+    let invalid = "algorithms.unary_child.invalid_caller_e2_request";
+    for mutation in 0..17 {
+        let mut changed = request.clone();
+        match mutation {
+            0 => changed.callee = request.caller,
+            1 => changed.caller = request.callee,
+            2 => changed.application = request.actual,
+            3 => changed.statement = callee.statements[0],
+            4 => changed.actual = request.application,
+            5 => changed.formal = request.callee_result,
+            6 => changed.callee_result = request.formal,
+            7 => changed.caller_result = request.formal,
+            8 => changed.callee = CoreAlgorithmId::new(usize::MAX),
+            9 => changed.caller = CoreAlgorithmId::new(usize::MAX),
+            10 => changed.application = CoreTermId::new(usize::MAX),
+            11 => changed.statement = CoreAlgorithmStmtId::new(usize::MAX),
+            12 => changed.actual = CoreTermId::new(usize::MAX),
+            13 => changed.formal = CoreVarId::new(usize::MAX),
+            14 => changed.callee_result = CoreVarId::new(usize::MAX),
+            15 => changed.caller_result = CoreVarId::new(usize::MAX),
+            16 => { std::mem::swap(&mut changed.callee, &mut changed.caller); std::mem::swap(&mut changed.callee_result, &mut changed.caller_result); }
+            _ => unreachable!(),
+        }
+        let changed_before = changed.clone();
+        assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
+        assert_eq!(changed, changed_before);
+    }
+    let parts = CoreIrParts {
+        source_id: core.source_id(), module_id: core.module_id().clone(), items: core.items().clone(),
+        terms: core.terms().clone(), formulas: core.formulas().clone(), definitions: core.definitions().clone(),
+        proofs: core.proofs().clone(), proof_nodes: core.proof_nodes().clone(), algorithms: core.algorithms().clone(),
+        algorithm_statements: core.algorithm_statements().clone(), generated: core.generated().clone(),
+        obligation_seeds: core.obligation_seeds().clone(), source_map: core.source_map().clone(), diagnostics: core.diagnostics().clone(),
+    };
+    let mut changes = vec![];
+    // Every retained slot, contract, statement and source participates in authentication.
+    for (id, algorithm) in core.algorithms().iter() {
+        for mutation in 0..24 {
+            let mut p = parts.clone();
+            let a = p.algorithms.get_mut(id).unwrap();
+            match mutation {
+                0 => a.declared_terminating = true,
+                1 => a.item = if id == request.caller { callee.item } else { caller.item },
+                2 => a.symbol = if id == request.caller { callee.symbol.clone() } else { caller.symbol.clone() },
+                3 => a.params.clear(),
+                4 => a.params[0].var = request.caller_result,
+                5 => a.params[0].role = CoreVarRole::new("drift"),
+                6 => a.params[0].ty_guard = None,
+                7 => a.params[0].source_name = Some("drift".into()),
+                8 => a.params[0].source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")),
+                9 => a.result = None,
+                10 => a.result.as_mut().unwrap().var = request.formal,
+                11 => a.result.as_mut().unwrap().role = CoreVarRole::new("drift"),
+                12 => a.result.as_mut().unwrap().ty_guard = None,
+                13 => a.result.as_mut().unwrap().source_name = Some("drift".into()),
+                14 => a.result.as_mut().unwrap().source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")),
+                15 => a.contracts.requires.push(equality),
+                16 => if id == request.caller { a.contracts.ensures.clear(); } else { a.contracts.ensures.push(equality); },
+                17 => a.contracts.invariants.push(equality),
+                18 => a.contracts.assertions.push(equality),
+                19 => a.contracts.decreasing.push(request.actual),
+                20 => a.statements.clear(),
+                21 => a.ghost_effects.push("drift".into()),
+                22 => a.source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")),
+                23 => { let diagnostic = p.diagnostics.insert(CoreDiagnostic::error(CoreDiagnosticClass::UnresolvedSemanticInput, "drift", algorithm.source.clone())); a.diagnostics.push(diagnostic); }
+                _ => unreachable!(),
+            }
+            changes.push(p);
+        }
+    }
+    for (id, term) in core.terms().iter() {
+        for source_only in [false, true] {
+            let mut p = parts.clone();
+            let t = p.terms.get_mut(id).unwrap();
+            if source_only { t.source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")); p.source_map.term_sources.insert(id, t.source.clone()); }
+            else { t.kind = CoreTermKind::Tuple(vec![]); }
+            assert_ne!(t, term);
+            changes.push(p);
+        }
+    }
+    for (id, _) in core.formulas().iter() {
+        for mutation in 0..3 {
+            let mut p = parts.clone();
+            let f = p.formulas.get_mut(id).unwrap();
+            match mutation {
+                0 => f.kind = CoreFormulaKind::True,
+                1 => { f.source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")); p.source_map.formula_sources.insert(id, f.source.clone()); }
+                2 => match &mut f.kind {
+                    CoreFormulaKind::Equals { left, right } => std::mem::swap(left, right),
+                    CoreFormulaKind::TypePred { ty, .. } => *ty = "set".into(),
+                    _ => unreachable!(),
+                },
+                _ => unreachable!(),
+            }
+            changes.push(p);
+        }
+    }
+    for (id, _) in core.algorithm_statements().iter() {
+        for mutation in 0..3 {
+            let mut p = parts.clone();
+            let statement = p.algorithm_statements.get_mut(id).unwrap();
+            match mutation {
+                0 => statement.kind = CoreAlgorithmStmtKind::Return(None),
+                1 => { statement.source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")); p.source_map.algorithm_sources.insert(id, statement.source.clone()); }
+                2 => statement.diagnostics.push(p.diagnostics.insert(CoreDiagnostic::error(CoreDiagnosticClass::UnresolvedSemanticInput, "drift", statement.source.clone()))),
+                _ => unreachable!(),
+            }
+            changes.push(p);
+        }
+    }
+    for (id, _) in core.items().iter() {
+        for mutation in 0..7 {
+            let mut p = parts.clone();
+            let item = p.items.get_mut(id).unwrap();
+            match mutation {
+                0 => item.symbol = if id == caller.item { callee.symbol.clone() } else { caller.symbol.clone() },
+                1 => item.kind = CoreItemKind::Theorem,
+                2 => item.status = CoreItemStatus::Partial,
+                3 => item.dependencies.push(id),
+                4 => { item.source.provenance.push(CoreProvenance::new(CoreProvenancePhase::Checker, "drift")); p.source_map.item_sources.insert(id, item.source.clone()); }
+                5 => item.diagnostics.push(p.diagnostics.insert(CoreDiagnostic::error(CoreDiagnosticClass::UnresolvedSemanticInput, "drift", item.source.clone()))),
+                6 => item.visibility = "drift".into(),
+                _ => unreachable!(),
+            }
+            changes.push(p);
+        }
+    }
+    for mutation in 0..5 {
+        let mut p = parts.clone();
+        match mutation {
+            0 | 1 => { let CoreFormulaKind::Equals { left, right } = &mut p.formulas.get_mut(equality).unwrap().kind else { unreachable!() }; if mutation == 0 { *left = request.actual; } else { *right = request.application; } }
+            2 | 3 => { let CoreTermKind::Apply { functor, args } = &mut p.terms.get_mut(request.application).unwrap().kind else { unreachable!() }; if mutation == 2 { *functor = caller.symbol.clone(); } else { args[0] = request.application; } }
+            4 => {
+                p.algorithm_statements.get_mut(request.statement).unwrap().owner = request.callee;
+                p.algorithm_statements.get_mut(callee.statements[0]).unwrap().owner = request.caller;
+                p.algorithms.get_mut(request.callee).unwrap().statements = caller.statements.clone();
+                p.algorithms.get_mut(request.caller).unwrap().statements = callee.statements.clone();
+            }
+            _ => unreachable!(),
+        }
+        changes.push(p);
+    }
+    // Otherwise empty tables are part of the whole-Core comparison as well.
+    for mutation in 0..6 {
+        let mut p = parts.clone();
+        let source_ref = caller.source.clone();
+        match mutation {
+            0 => { let id = p.definitions.insert(CoreDefinition { owner: CoreDefinitionOwner::for_item(caller.item), symbol: caller.symbol.clone(), params: vec![], body: DefinitionBody::Term(request.actual), expansion: ExpansionPolicy::Opaque, correctness: vec![], generated_dependencies: vec![], source: source_ref.clone() }); p.source_map.definition_sources.insert(id, source_ref); }
+            1 | 2 => {
+                let node = p.proof_nodes.insert(CoreProofNode { kind: CoreProofNodeKind::Sequence { children: vec![] }, source: source_ref.clone(), diagnostics: vec![] });
+                p.source_map.proof_sources.insert(node, source_ref.clone());
+                if mutation == 2 { p.proofs.insert(CoreProof { item: caller.item, proposition: equality, root: node, status: CoreProofStatus::Open, source: source_ref }); }
+            }
+            3 => { let id = p.generated.insert(GeneratedOrigin { owner: caller.item, kind: GeneratedOriginKind::TypePredicate, key: "drift".into(), functor: None, params: vec![], evidence: vec![], source: source_ref.clone() }); p.source_map.generated_sources.insert(id, source_ref); }
+            4 => { let id = p.obligation_seeds.insert(ObligationSeed { owner: caller.item, kind: ObligationSeedKind::AlgorithmContract, goal: Some(equality), context: vec![], local_path: "drift".into(), label: None, semantic_origin: "drift".into(), provenance: vec![], source: source_ref.clone(), core_refs: vec![], status: ObligationSeedStatus::Active, diagnostics: vec![] }); p.source_map.obligation_sources.insert(id, source_ref); }
+            5 => { p.diagnostics.insert(CoreDiagnostic::error(CoreDiagnosticClass::UnresolvedSemanticInput, "drift", source_ref)); }
+            _ => unreachable!(),
+        }
+        changes.push(p);
+    }
+    let mut nodes: Vec<_> = typed.nodes().iter().map(|(_, node)| node.clone()).collect();
+    nodes[checked.application().index()].kind = TypedNodeKind::new("ForgedApplication");
+    let mut forged = TypedAst::try_new(TypedAstParts {
+        source_id: typed.source_id(), module_id: typed.module_id().clone(), resolved_root: typed.resolved_root(),
+        source_context: None, source_type: None, source_attribute: None,
+        nodes: TypedArena::try_new(typed.nodes().root(), nodes).unwrap(),
+        contexts: Default::default(), types: Default::default(), facts: Default::default(),
+        coercions: Default::default(), initial_obligations: Default::default(), diagnostics: Default::default(),
+    }).unwrap();
+    let _ = forged.install_source_nodes(&source);
+    let forged_before = forged.clone();
+    let forged_error = check(&source, symbols, &forged).unwrap_err();
+    let mut wrong_request = request.clone();
+    wrong_request.caller = request.callee;
+    assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
+    for (index, p) in changes.into_iter().enumerate() {
+        let changed = CoreIr::try_new(p).unwrap_or_else(|error| panic!("Core {index}: {error}"));
+        assert_ne!(changed, core, "Core {index}");
+        let changed_before = changed.clone();
+        assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
+        assert_eq!(generate(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
+        assert_eq!(changed, changed_before);
+    }
+    for (module, edited) in [
+        ("foreign", text.to_owned()),
+        ("e2_drift", text.replace("child", "edited")),
+        ("e2_drift", text.replace("let b be object", "let b be set")),
+        ("e2_drift", text.replace("return child(b)", "return child(b,b)")),
+        ("e2_drift", text.replace("return child(b)", "return caller(b)")),
+        ("e2_drift", text.replace("return child(b);", "var c := b; return child(c);")),
+    ] {
+        let (other_source, nodes, other_collected, _) = source_registration_formula_inputs(&edited, "unary-child", module, 0);
+        let other_typed = super::super::source_registration_receiver(&other_source, nodes).unwrap();
+        let other_before = (other_source.clone(), other_typed.clone(), other_collected.env().clone());
+        if let Ok((other_core, other_request)) = check(&other_source, other_collected.env(), &other_typed).and_then(|checked| lower(&checked)) {
+            assert!(generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).is_ok());
+            assert_eq!(generate(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
+        }
+        for (s, t, e) in [(&other_source, &typed, symbols), (&source, &typed, other_collected.env()),
+            (&source, &other_typed, symbols), (&other_source, &other_typed, other_collected.env())] {
+            let expected = check(s, e, t).and_then(|checked| lower(&checked)).err().unwrap_or_else(|| invalid.into());
+            assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), expected);
+            assert_eq!(generate(s, t, e, &core, &wrong_request).unwrap_err(), expected);
+        }
+        assert_eq!((other_source, other_typed, other_collected.env().clone()), other_before);
+        assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine);
+    }
+    assert_eq!(forged, forged_before);
+    assert_eq!((source, typed, symbols.clone(), core, request), before);
+}
+
+#[test]
 fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     use mizar_checker::{type_checker::check_source_unary_child_call, typed_ast::{TypedArena, TypedNode, TypedNodeId}};
     let base = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
+    let (source, nodes, collected, _) = source_registration_formula_inputs(base, "unary-child", "clauses", 0);
+    let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+    let (core, request) = mizar_core::elaborator::lower_source_unary_child_call(
+        &check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap();
     for (label, text) in [
         ("requires", base.replace("ensures result = b", "requires b = b")),
         ("callee_clause", base.replace("child(a) -> object do", "child(a) -> object ensures result = a do")),
@@ -539,7 +812,9 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(received.err().unwrap(), "typed AST source statement handoff is inconsistent");
         } else {
             let typed = received.unwrap();
-            assert!(check_source_unary_child_call(&source, collected.env(), &typed).is_err(), "{label}");
+            let error = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
+            assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
+                &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         }
     }
 }
@@ -1594,6 +1869,8 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
     let checked = check(&source, symbols, &typed).unwrap();
     let (core, request) = lower(&checked).unwrap();
     let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
+    assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(&source, &typed, symbols, &core, &request).unwrap_err(),
+        "algorithms.unary_child.invalid_caller_e2_request");
     let genuine = describe(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_existential = generate(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_caller_e1 = caller_e1(&source, &typed, symbols, &core, &request).unwrap();

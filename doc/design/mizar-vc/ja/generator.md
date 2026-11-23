@@ -606,6 +606,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 この記述子は schedulable E4 graph、Kernel/Proof 検査、evidence/adoption と意味的 credit を除外する。[child 存在 producer](#bounded-unary-child-existential) が caller 入力の instantiation 検査を所有し、Proof adoption は別の責務とする。結果の等式や terminating 意図は evidence を与えない。range と syntax/environment 一般化は保留する。
 
+## Bounded unary caller E2 request
+
+`generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)` は既存 Checker と Core lowering で新規認証し、Core/request 全体の一致を確認して caller の `ensures result = actual` を要求する。上流 error を先に返し、局所拒否は `algorithms.unary_child.invalid_caller_e2_request` とする。既存 `(LocalContext, [VcGeneratedFormula; 4])` は元 caller object guard と、全 parameter/result/Var ID より fresh な result 宣言（加算検査）だけを保持する。policy inputs と provenance は空である。
+
+行は正確な caller/flow/Return/actual の AlgorithmReturns、fresh result と actual の ProgramEquals、Implies、宣言 result の Forall である。ID は行番号、全行は SplitGoal、value の definition annotation は無い。`object(actual) |- forall r. (returns_caller(actual,r) -> r=actual)` を未証明のまま要求し、returns や ensures を前提に加えない。入力は不変。この request は checking、Proof authority、acceptance/status、currentness、complete footprints/cache、promotion/publication を除外する。旧 descriptor/E4/E1/child/direct-return/Proof 経路は contract-free のままで clause を拒否する。詳細は [英語版](../en/generator.md#bounded-unary-caller-e2-request) を参照。
+
 ## Bounded unary child existential
 
 `generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` は descriptor で Core/request 全体を認証する。既存型の組 `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` は元 caller object guard のみを CheckerFact とし、fresh result binder、行0の `AlgorithmReturns(callee, flow, callee Return, actual, r)`、行1の `Exists r`、actual witness を保持する。immutable Core/request は source・Apply・Return・formal/actual/result-slot 対応を保持する。VcSet・seed・scheduling・snapshot identity は作らない。
