@@ -1797,6 +1797,30 @@ impl<'core> NativeUnaryCallerE1Typing<'core> {
         consume_source_unary_caller_e1_typing(source, typed, symbols, core, request, policy)?;
         Ok(true)
     }
+
+    /// Associates unchanged typing identity only after adoption under current policy.
+    /// The whole raw slice grants no currentness, status or cache reuse authority.
+    pub fn obligation_identity(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<
+        Option<(
+            ProofObligationIdentity,
+            mizar_vc::dependency_slice::DependencySlice,
+        )>,
+        String,
+    > {
+        if !self.adopt_original_request(source, typed, symbols, core, request, policy)? {
+            return Ok(None);
+        }
+        self.association
+            .obligation_identity(source, typed, symbols, core, request)
+    }
 }
 
 /// Arena-local association of a complete authenticated caller E1 inhabitation request and result.
