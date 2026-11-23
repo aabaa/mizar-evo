@@ -616,6 +616,12 @@ true が採用するのはその元 single-valuedness obligation のみ。curren
 `matches_source` は最初に全五入力から認証済み descriptor を再生成する。下位エラーを保持し、request と descriptor の全体一致、および保持した result の Core とポインタ一致する場合だけ true を返す。同内容の別 arena は false。private construction と不変データにより、切り離した result の constructor や Kernel 再検査なしで同一呼出しの対応を保持する。source/environment/filesystem currentness は呼出し側の責任。
 canonical identity/reuse、current-policy consumption、native adoption、caller E4 acceptance、evidence/status、promotion、publication、coverage credit は与えない。既存 unary object profile と下位 refusal は変更しない。
 
+## Arena-local caller E1 single-valuedness association
+
+`SourceUnaryCallerE1SingleValuednessAssociation::from_source(source, typed, symbols, core, request)` は変更しない [fresh VC uniqueness checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-single-valuedness-request) を一度呼び、エラーを保持する。private fields は request 全体、六行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。
+`matches_source` は最初に認証済み uniqueness request を再生成し、request/tuple 全体の一致と Core のポインタ一致より先にエラーを保持する。同内容の別 arena は false、新規構築は成功する。切り離した constructor、Kernel 再検査、schema の報告・保持、opaque Kernel result は追加しない。currentness は呼出側の責任。
+この passive association は identity、policy/native authority、E2、whole acceptance/status、complete footprints/cache、promotion/publication を与えない。既存 unary profile、child/E4/inhabitation/typing/direct-return と raw unknown/incomplete/cache-miss 境界を保ち、imported VC59 は対象外のままとする。
+
 ## Arena-local caller E1 typing association
 
 `SourceUnaryCallerE1TypingAssociation::from_source_with_schema(source, typed, symbols, core, request)` は変更しない [fresh VC typing schema checker](../../mizar-vc/ja/generator.md#bounded-unary-caller-e1-typing-request) を一度呼び、エラーを保持し、実際の同一呼出しの Kernel schema と `(Self, u16)` を返す。`from_source` は委譲して scalar のみ捨てる。private fields は request 全体、四行の context/formula tuple 全体、同一呼出しの借用 Core を保持し、不変の `request` と `descriptor` getter で既存値を返す。

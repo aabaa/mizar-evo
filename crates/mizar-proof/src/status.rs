@@ -1583,6 +1583,70 @@ impl<'core> SourceUnaryChildCallAssociation<'core> {
     }
 }
 
+/// Arena-local association of a complete freshly checked caller uniqueness request.
+/// It grants no currentness, policy, adoption or whole-E1 authority.
+pub struct SourceUnaryCallerE1SingleValuednessAssociation<'core> {
+    request: mizar_core::elaborator::SourceUnaryChildCallRequest,
+    descriptor: (
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 6],
+    ),
+    core: &'core mizar_core::core_ir::CoreIr,
+}
+
+impl<'core> SourceUnaryCallerE1SingleValuednessAssociation<'core> {
+    /// Authenticates and checks once, retaining the producer's entire unchanged tuple.
+    pub fn from_source(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<Self, String> {
+        let descriptor =
+            mizar_vc::generator::check_source_unary_child_call_caller_e1_single_valuedness_request(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(Self {
+            request: request.clone(),
+            descriptor,
+            core,
+        })
+    }
+
+    /// Reauthenticates before whole request/tuple equality and Core pointer identity.
+    pub fn matches_source(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<bool, String> {
+        let descriptor = mizar_vc::generator::generate_source_unary_child_call_caller_e1_single_valuedness_request(
+            source, typed, symbols, core, request,
+        )?;
+        Ok(request == &self.request
+            && descriptor == self.descriptor
+            && std::ptr::eq(core, self.core))
+    }
+
+    #[must_use]
+    pub const fn request(&self) -> &mizar_core::elaborator::SourceUnaryChildCallRequest {
+        &self.request
+    }
+
+    #[must_use]
+    pub const fn descriptor(
+        &self,
+    ) -> &(
+        mizar_vc::vc_ir::LocalContext,
+        [mizar_vc::vc_ir::VcGeneratedFormula; 6],
+    ) {
+        &self.descriptor
+    }
+}
+
 /// Arena-local association of a complete freshly checked caller E1 typing request.
 /// It grants no currentness, policy, adoption or whole-E1 authority.
 pub struct SourceUnaryCallerE1TypingAssociation<'core> {
