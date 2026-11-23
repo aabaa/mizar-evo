@@ -404,6 +404,147 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
 }
 
 #[test]
+fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
+    use mizar_checker::type_checker::{TermReference, check_source_algorithm_types, check_source_unary_child_call};
+    use mizar_core::{
+        core_ir::{CoreAlgorithmStmtKind, CoreFormulaKind, CoreProvenance, CoreProvenancePhase, CoreSourceAnchor, CoreTermKind},
+        elaborator::{lower_source_algorithms, lower_source_unary_child_call},
+    };
+    use mizar_session::SourceRange;
+
+    for (formal, actual, child, caller_name, flags, trivia) in [
+        ("a", "b", "child", "caller", [false, false], " "),
+        ("input", "arg", "renamed", "outer", [true, false], "\n:: clause trivia\n"),
+        ("same", "same", "inner", "outer", [false, true], " "),
+        ("a", "b", "child", "caller", [true, true], " "),
+    ] {
+        let flag = |yes| if yes { "terminating " } else { "" };
+        let clause = format!("result = {actual}");
+        let text = format!("definition let {formal} be object; {}algorithm {child}({formal}) -> object do return {formal}; end; end;{trivia}definition let {actual} be object; {}algorithm {caller_name}({actual}) -> object ensures {clause} do return {child}({actual}); end; end;", flag(flags[0]), flag(flags[1]));
+        let (source, nodes, collected, _) =
+            source_registration_formula_inputs(&text, "unary-child", "caller_ensures", 0);
+        let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
+        let before = (source.clone(), typed.clone(), collected.env().clone());
+        let checked = check_source_unary_child_call(&source, collected.env(), &typed).unwrap();
+        let checks = checked.algorithms();
+        let inference = checks[1].inference();
+        assert_eq!(checks[0].inference().formulas().len(), 0);
+        assert_eq!((inference.terms().len(), inference.formulas().len()), (4, 1));
+        let formula = inference.formulas().iter().next().unwrap().1;
+        let range = |start, len| SourceRange { source_id: source.source_id(), start, end: start + len };
+        assert_eq!(formula.source_range, range(text.find(&clause).unwrap(), clause.len()));
+        assert_eq!(formula.terms.len(), 2);
+        let mut bindings = Vec::new();
+        for (ordinal, site) in formula.terms.iter().enumerate() {
+            let term = inference.terms().iter().find(|(_, t)| &t.site == site).unwrap().1;
+            let Some(TermReference::Binding(binding)) = term.reference else { panic!("authenticated operand binding") };
+            bindings.push(binding);
+            let entry = inference.type_entries().get(term.type_entry).unwrap();
+            let mizar_checker::typed_ast::TypeEntryActual::Known(ty) = entry.actual else { panic!("object type") };
+            assert_eq!(inference.normalized_types().get(ty).unwrap().head,
+                mizar_checker::type_checker::TypeHeadRef::BuiltinObject);
+            assert_eq!(checks[1].bindings().bindings().get(binding).unwrap().type_site,
+                mizar_checker::binding_env::BindingTypeSite::Source(if ordinal == 0 {
+                    range(text.rfind("-> object").unwrap() + 3, 6)
+                } else { range(text.rfind("be object").unwrap() + 3, 6) }));
+        }
+        assert_ne!(bindings[0], bindings[1]);
+        let (core, request) = lower_source_unary_child_call(&checked).unwrap();
+        let caller = core.algorithms().get(request.caller).unwrap();
+        let callee = core.algorithms().get(request.callee).unwrap();
+        assert_eq!((callee.declared_terminating, caller.declared_terminating), (flags[0], flags[1]));
+        assert_eq!(caller.contracts.ensures.len(), 1);
+        let equality_id = caller.contracts.ensures[0];
+        let equality = core.formulas().get(equality_id).unwrap();
+        let CoreFormulaKind::Equals { left, right } = equality.kind else { panic!("caller equality") };
+        assert_ne!(request.caller_result, caller.params[0].var);
+        assert_ne!(request.formal, caller.params[0].var);
+        assert_eq!(equality.source.anchor, CoreSourceAnchor::SourceRange(formula.source_range));
+        assert_eq!(equality.source.provenance, vec![CoreProvenance::new(CoreProvenancePhase::Checker,
+            format!("algorithm/source-node#{}", formula.site.node().index()))]);
+        assert_eq!(core.source_map().formula_sources.get(&equality_id), Some(&equality.source));
+        for (id, var, site, spelling) in [(left, request.caller_result, &formula.terms[0], "result"), (right, caller.params[0].var, &formula.terms[1], actual)] {
+            let term = core.terms().get(id).unwrap();
+            assert_eq!(term.kind, CoreTermKind::Var(var));
+            let start = if spelling == "result" { formula.source_range.start } else { formula.source_range.end - spelling.len() };
+            assert_eq!(term.source.anchor, CoreSourceAnchor::SourceRange(range(start, spelling.len())));
+            assert_eq!(term.source.provenance, vec![CoreProvenance::new(CoreProvenancePhase::Checker,
+                format!("algorithm/source-node#{}", site.node().index()))]);
+            assert_eq!(core.source_map().term_sources.get(&id), Some(&term.source));
+        }
+        assert_eq!(core.terms().get(request.application).unwrap().kind, CoreTermKind::Apply { functor: callee.symbol.clone(), args: vec![request.actual] });
+        assert_eq!(core.terms().get(request.actual).unwrap().kind, CoreTermKind::Var(caller.params[0].var));
+        assert_eq!(core.algorithm_statements().get(request.statement).unwrap().kind, CoreAlgorithmStmtKind::Return(Some(request.application)));
+        assert_eq!(callee.contracts, Default::default());
+        assert!(caller.contracts.requires.is_empty() && caller.contracts.invariants.is_empty()
+            && caller.contracts.assertions.is_empty() && caller.contracts.decreasing.is_empty());
+        assert!(core.obligation_seeds().is_empty() && core.generated().is_empty()
+            && core.proofs().is_empty() && core.diagnostics().is_empty());
+        for _ in 0..2 {
+            assert_eq!(lower_source_unary_child_call(&check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap(), (core.clone(), request.clone()));
+        }
+        assert!(check_source_algorithm_types(&source, typed.nodes(), collected.env()).is_err());
+        assert!(lower_source_algorithms(&checks[1]).is_err());
+        for algorithm in checks {
+            assert!(mizar_vc::generator::generate_source_algorithm_direct_return_requests(&source, algorithm, collected.env(), &core,
+                super::super::shared::snapshot_id(0), &mizar_vc::vc_ir::GenerationSchemaVersion::new("caller-ensures"),
+                &mizar_vc::vc_ir::VcSchemaVersion::new("caller-ensures")).is_err());
+        }
+        let error = mizar_vc::generator::generate_source_unary_child_call_descriptor(&source, &typed, collected.env(), &core, &request).unwrap_err();
+        assert_eq!(error, "algorithms.unary_child.invalid_request");
+        assert_eq!(canonical_unary_child(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(canonical_caller_e4(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(canonical_caller_e1(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(canonical_caller_typing(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(canonical_caller_single(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(mizar_proof::status::SourceUnaryChildCallAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
+        assert_eq!(SingleAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
+        let policy = mizar_proof::policy::VerifierPolicy::default();
+        assert_eq!(consume_single(&source, &typed, collected.env(), &core, &request, &policy).err().unwrap(), error);
+        assert_eq!(consume_typing(&source, &typed, collected.env(), &core, &request, &policy).err().unwrap(), error);
+        assert_eq!((source, typed, collected.env().clone()), before);
+    }
+}
+
+#[test]
+fn unary_caller_ensures_refuses_unsupported_source_clauses() {
+    use mizar_checker::{type_checker::check_source_unary_child_call, typed_ast::{TypedArena, TypedNode, TypedNodeId}};
+    let base = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
+    for (label, text) in [
+        ("requires", base.replace("ensures result = b", "requires b = b")),
+        ("callee_clause", base.replace("child(a) -> object do", "child(a) -> object ensures result = a do")),
+        ("duplicate", base.replace("ensures result = b", "ensures result = b ensures result = b")),
+        ("reversed", base.replace("result = b", "b = result")),
+        ("other_equality", base.replace("result = b", "b = b")),
+        ("result_rhs", base.replace("result = b", "result = result")),
+        ("non_equality", base.replace("result = b", "result <> b")),
+        ("compound", base.replace("result = b", "result = b & b = b")),
+        ("grouped", base.replace("result = b", "(result = b)")),
+        ("unknown", base.replace("result = b", "result = unknown")),
+        ("foreign_formal", base.replace("result = b", "result = a")),
+        ("result_shadow", base.replace("let b ", "let result ").replace("caller(b)", "caller(result)").replace("result = b", "result = result").replace("child(b)", "child(result)")),
+    ] {
+        let (frontend, source, collected) = source_registration_owner_inputs(&text, "unary-child", "clauses", 0);
+        if label == "duplicate" {
+            assert_eq!(frontend.diagnostics.len(), 1);
+            assert_eq!(frontend.diagnostics[0].message.as_ref(), "duplicate or out-of-order algorithm verification clause");
+        } else {
+            assert!(frontend.diagnostics.is_empty(), "{label}: {:?}", frontend.diagnostics);
+        }
+        let nodes = TypedArena::try_new(Some(TypedNodeId::new(source.arena().root().index())),
+            source.arena().iter().map(|(id, node)| TypedNode::new(format!("{:?}", node.kind()), node.origin().anchor().clone())
+                .with_resolved_node(id).with_children(node.children().iter().map(|child| TypedNodeId::new(child.index())).collect())).collect()).unwrap();
+        let received = super::super::source_registration_receiver(&source, nodes);
+        if label == "duplicate" {
+            assert_eq!(received.err().unwrap(), "typed AST source statement handoff is inconsistent");
+        } else {
+            let typed = received.unwrap();
+            assert!(check_source_unary_child_call(&source, collected.env(), &typed).is_err(), "{label}");
+        }
+    }
+}
+
+#[test]
 fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
     use mizar_checker::{
         type_checker::{TermReference, TypeHeadRef, check_source_unary_child_call},

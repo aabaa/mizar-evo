@@ -721,8 +721,42 @@ pub fn check_source_unary_child_call<'a>(
         } else {
             (false, raw)
         };
-        let [keyword, name, parameters, arrow, result, body, semi] = raw else {
+        let [
+            keyword,
+            name,
+            parameters,
+            arrow,
+            result,
+            clauses @ ..,
+            body,
+            semi,
+        ] = raw
+        else {
             return Err(invalid());
+        };
+        let ensures = match clauses {
+            [] => None,
+            [clause] if ordinal == 1 && node(*clause)?.kind() == &K::AlgorithmEnsuresClause => {
+                let [keyword, expression] = parts(*clause, &K::AlgorithmEnsuresClause)? else {
+                    return Err(invalid());
+                };
+                tokens(&[(*keyword, "ensures")])?;
+                let equality = only(*expression, &K::FormulaExpression)?;
+                let [left, equals, right] = parts(equality, &K::BuiltinPredicateApplication)?
+                else {
+                    return Err(invalid());
+                };
+                tokens(&[(*equals, "=")])?;
+                let operands = [
+                    only(only(*left, &K::TermExpression)?, &K::TermReference)?,
+                    only(only(*right, &K::TermExpression)?, &K::TermReference)?,
+                ];
+                if identifier(operands[0])? != "result" || identifier(*binder)? == "result" {
+                    return Err(invalid());
+                }
+                Some((equality, operands))
+            }
+            _ => return Err(invalid()),
         };
         tokens(&[
             (*keyword, "algorithm"),
@@ -794,6 +828,28 @@ pub fn check_source_unary_child_call<'a>(
             BindingDraft::from_local_term(context, BindingKind::DefinitionParameter, &local);
         draft.type_site = BindingTypeSite::Source(range(*ty)?);
         let binding = bindings.insert(draft);
+        let result_range = range(*result)?;
+        let result_binding = ensures.map(|_| {
+            bindings.insert(BindingDraft {
+                spelling: "result".into(),
+                kind: BindingKind::Generated,
+                identity: BinderIdentity::Generated {
+                    context,
+                    counter: 0,
+                },
+                owner_context: context,
+                declaration_range: result_range,
+                visible_after_ordinal: result_range.end,
+                type_site: BindingTypeSite::Source(result_range),
+                status: BindingStatus::Active,
+                captured: CapturedFreeVariables::default(),
+                diagnostics: Vec::new(),
+                recovery: BindingRecoveryState::Normal,
+            })
+        });
+        let owned = std::iter::once(binding)
+            .chain(result_binding)
+            .collect::<Vec<_>>();
         contexts.insert(BindingContextDraft {
             owner: BindingContextOwner::SourceStatement {
                 source_range: range(block)?,
@@ -801,8 +857,8 @@ pub fn check_source_unary_child_call<'a>(
             parent: Some(module_context),
             layer: BindingContextLayer::Block,
             lexical_scope: Some(scope.clone()),
-            bindings: vec![binding],
-            visible_bindings: vec![binding],
+            bindings: owned.clone(),
+            visible_bindings: owned,
             recovery: BindingContextRecovery::Normal,
         });
         profiles.push((
@@ -817,6 +873,8 @@ pub fn check_source_unary_child_call<'a>(
             context,
             scope,
             binding,
+            ensures,
+            result_binding,
         ));
     }
     let application = application.ok_or_else(invalid)?;
@@ -852,10 +910,21 @@ pub fn check_source_unary_child_call<'a>(
         context,
         scope,
         binding,
+        ensures,
+        result_binding,
     ) in profiles
     {
         let mut terms = Vec::new();
-        for use_site in [header, argument] {
+        for use_site in [header, argument]
+            .into_iter()
+            .chain(ensures.into_iter().flat_map(|(_, operands)| operands))
+        {
+            let target = if ensures.is_some_and(|(_, operands)| operands[0] == use_site) {
+                result_binding.ok_or_else(invalid)?
+            } else {
+                binding
+            };
+            let actual_type = if target == binding { ty } else { result };
             if bindings
                 .lookup(&BindingLookupSite::new(
                     identifier(use_site)?,
@@ -864,7 +933,7 @@ pub fn check_source_unary_child_call<'a>(
                     range(use_site)?.start,
                 ))
                 .map_err(|_| invalid())?
-                != BindingLookupResult::Local(binding)
+                != BindingLookupResult::Local(target)
             {
                 return Err(invalid());
             }
@@ -875,13 +944,13 @@ pub fn check_source_unary_child_call<'a>(
                     range(use_site)?,
                     TermKind::Variable,
                 )
-                .with_reference(TermReference::Binding(binding))
+                .with_reference(TermReference::Binding(target))
                 .with_result_type(TypeExpressionInput::new(
                     TypedSiteRef::Role {
                         node: TypedNodeId::new(use_site.index()),
                         role: "algorithm.actual".into(),
                     },
-                    range(ty)?,
+                    range(actual_type)?,
                     "object",
                     TypeHeadInput::BuiltinObject,
                 ))
@@ -896,13 +965,36 @@ pub fn check_source_unary_child_call<'a>(
                 )),
             );
         }
-        let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, []);
+        let formulas = ensures
+            .map(|(equality, operands)| {
+                Ok::<_, String>(
+                    FormulaInput::new(
+                        TypedSiteRef::Node(TypedNodeId::new(equality.index())),
+                        context,
+                        range(equality)?,
+                        FormulaKind::Equality,
+                    )
+                    .with_terms(
+                        operands
+                            .map(|id| TypedSiteRef::Node(TypedNodeId::new(id.index())))
+                            .to_vec(),
+                    ),
+                )
+            })
+            .transpose()?;
+        let inference = TermFormulaChecker::default().infer(symbols, &bindings, terms, formulas);
         if !inference.diagnostics().is_empty()
-            || inference.terms().len() != 2
+            || inference.terms().len() != if ensures.is_some() { 4 } else { 2 }
             || inference.terms().iter().any(|(_, t)| {
                 t.status != TermStatus::Inferred
                     || !t.deferred.is_empty()
                     || t.candidate_set.is_some()
+            })
+            || inference.formulas().iter().any(|(_, f)| {
+                f.status != FormulaStatus::Checked
+                    || !f.deferred.is_empty()
+                    || f.candidate_set.is_some()
+                    || !f.facts.is_empty()
             })
         {
             return Err(invalid());

@@ -16849,6 +16849,7 @@ pub fn lower_source_unary_child_call(
     let mut formulas = Vec::new();
     let mut binders = Vec::new();
     let mut arguments = Vec::new();
+    let mut ensures = Vec::new();
     for (index, algorithm) in checks.iter().enumerate() {
         let (site, symbol) = algorithm.algorithm();
         input.item_seeds.push(
@@ -16964,6 +16965,31 @@ pub fn lower_source_unary_child_call(
             provenance(check.arguments()[index]),
         ));
         arguments.push(argument_id);
+        for (_, formula) in inferred.formulas().iter() {
+            let mut operands = Vec::new();
+            // The seal authenticates exactly `result = caller_parameter`.
+            for (operand, var) in formula.terms.iter().zip([pair[1].0.var, pair[0].0.var]) {
+                let id = CoreTermSeedId::new(terms.len());
+                terms.push(CoreTermSeed::new(
+                    CoreTermSeedKind::Var(var),
+                    CoreSourceRef::direct(range(operand.node())?),
+                    provenance(operand.node()),
+                ));
+                operands.push(id);
+            }
+            let [left, right] = operands.as_slice() else {
+                return Err(invalid());
+            };
+            ensures.push(CoreFormulaSeedId::new(formulas.len()));
+            formulas.push(CoreFormulaSeed::new(
+                CoreFormulaSeedKind::Equals {
+                    left: *left,
+                    right: *right,
+                },
+                CoreSourceRef::direct(range(formula.site.node())?),
+                provenance(formula.site.node()),
+            ));
+        }
         binders.push(pair);
     }
     let application = CoreTermSeedId::new(terms.len());
@@ -17011,7 +17037,14 @@ pub fn lower_source_unary_child_call(
             declared_terminating: algorithm.declared_terminating(),
             params: vec![binders[index][0].0.clone()],
             result: Some(binders[index][1].0.clone()),
-            contracts: CoreContractSet::default(),
+            contracts: CoreContractSet {
+                ensures: if index == 1 {
+                    ensures.iter().map(|id| lowered.formula_map[id]).collect()
+                } else {
+                    Vec::new()
+                },
+                ..CoreContractSet::default()
+            },
             payload: AlgorithmPayloadSeed::Statements(vec![AlgorithmStmtSeed::Return {
                 value: Some(
                     lowered.term_map[&if index == 0 {

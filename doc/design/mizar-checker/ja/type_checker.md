@@ -1,6 +1,6 @@
 # mizar-checker: Type Checker
 
-`check_source_unary_child_call(source, symbols, typed)` は別々の definition block にある同一 module の公開 unary object algorithm 二つを認証する。先行 callee は仮引数を返し、caller は自身の引数への選択済み直接適用を一度返す。不透明な借用 seal は実宣言・source・BindingEnv の scope・正規化型の対応を保持し、callee 選択は既存の型検査済み経路に委ねる。未対応構文、再帰、選択不足、foreign/recovery、neutral typed／環境の不整合は全体を拒否する。terminating は宣言意図だけであり、置換・正常復帰証拠・VC 受理・昇格・実行を与えず、既存 static seal は変えない。
+`check_source_unary_child_call(source, symbols, typed)` は別々の definition block にある同一 module の公開 unary object algorithm 二つを認証する。先行 callee は仮引数を返し、caller は自身の引数への選択済み直接適用を一度返す。不透明な借用 seal は実宣言・source・BindingEnv の scope・正規化型の対応を保持し、callee 選択は既存の型検査済み経路に委ねる。未対応構文、再帰、選択不足、foreign/recovery、neutral typed／環境の不整合は全体を拒否する。caller の任意の一節 `ensures result = <caller parameter>` は既存 binding/inference table で暗黙の結果と scope 内の引数を区別して認証する。callee contract、他の節、節がある場合の `result` という引数名は拒否する。terminating は宣言意図だけであり、置換・正常復帰証拠・VC 受理・昇格・実行を与えず、既存 static seal は変えない。
 
 `check_source_functor_definition_cycles` は明示的な definiens／元の対象の map を Resolver で認証し、正規 func ID 間の循環を `logic.circular_definition` で拒否する。不変入力と `Result<(), String>` はグラフ完全性・受理 credit を付与しない。自動選択、混合／algorithm 循環、公開診断への採用は保留する。
 

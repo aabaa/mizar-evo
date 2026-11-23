@@ -2823,6 +2823,10 @@ pub fn generate_source_unary_child_call_descriptor(
     }
     let callee = core.algorithms().get(request.callee).ok_or_else(invalid)?;
     let caller = core.algorithms().get(request.caller).ok_or_else(invalid)?;
+    // Existing unary obligation identities describe only contract-free pairs.
+    if !caller.contracts.ensures.is_empty() {
+        return Err(invalid());
+    }
     let [formal] = callee.params.as_slice() else {
         return Err(invalid());
     };

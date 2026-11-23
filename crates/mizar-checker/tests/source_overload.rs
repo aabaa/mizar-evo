@@ -154,7 +154,7 @@ fn unary_child_refuses_recursive_missing_ambiguous_and_unsupported_profiles() {
             "contract",
             base.replace(
                 "caller(b) -> object do",
-                "caller(b) -> object ensures result = b do",
+                "caller(b) -> object requires b = b do",
             ),
         ),
     ] {
@@ -207,7 +207,7 @@ fn unary_child_refuses_foreign_stale_and_forged_inputs_atomically() {
         },
     };
     use mizar_resolve::env::{SymbolEnv, SymbolEnvIndexes, SymbolIndex};
-    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object do return child(b); end; end;";
+    let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
     let fixture = SourceFixture::parse(text, "unary_child_atomic");
     let before = (
         fixture.native.clone(),
@@ -238,18 +238,50 @@ fn unary_child_refuses_foreign_stale_and_forged_inputs_atomically() {
         "child(b)".len(),
     )
     .0;
-    for mutation in 0..7 {
+    let equality = checked_site(
+        &fixture,
+        SurfaceNodeKind::BuiltinPredicateApplication,
+        text.find("result = b").unwrap(),
+        "result = b".len(),
+    )
+    .0;
+    let clause = checked_site(
+        &fixture,
+        SurfaceNodeKind::AlgorithmEnsuresClause,
+        text.find("ensures").unwrap(),
+        "ensures result = b".len(),
+    )
+    .0;
+    let operands: Vec<_> = check(&fixture.native, &fixture.symbols, &fixture.typed)
+        .unwrap()
+        .algorithms()[1]
+        .inference()
+        .formulas()
+        .iter()
+        .flat_map(|(_, formula)| formula.terms.iter().map(|site| site.node().index()))
+        .collect();
+    for (target, mutation) in [call, clause, equality]
+        .into_iter()
+        .map(|id| id.index())
+        .chain(operands)
+        .flat_map(|target| (0..7).map(move |mutation| (target, mutation)))
+    {
         let mut nodes: Vec<_> = fixture
             .typed
             .nodes()
             .iter()
             .map(|(_, node)| node.clone())
             .collect();
+        if (mutation == 3 && nodes[target].children.is_empty())
+            || (mutation == 5 && nodes[target].children.len() < 2)
+        {
+            continue;
+        }
         match mutation {
-            0 => nodes[call.index()].kind = TypedNodeKind::new("ForgedApplication"),
-            1 => nodes[call.index()].resolved_node = fixture.typed.resolved_root(),
+            0 => nodes[target].kind = TypedNodeKind::new("ForgedApplication"),
+            1 => nodes[target].resolved_node = fixture.typed.resolved_root(),
             2 => {
-                nodes[call.index()].anchor = fixture
+                nodes[target].anchor = fixture
                     .typed
                     .nodes()
                     .node(fixture.typed.nodes().root().unwrap())
@@ -257,10 +289,10 @@ fn unary_child_refuses_foreign_stale_and_forged_inputs_atomically() {
                     .anchor
                     .clone()
             }
-            3 => nodes[call.index()].children.clear(),
-            4 => nodes[call.index()].recovery = NodeRecoveryState::Recovered,
-            5 => nodes[call.index()].children.reverse(),
-            6 => nodes.push(nodes[call.index()].clone()),
+            3 => nodes[target].children.clear(),
+            4 => nodes[target].recovery = NodeRecoveryState::Recovered,
+            5 => nodes[target].children.reverse(),
+            6 => nodes.push(nodes[target].clone()),
             _ => unreachable!(),
         }
         let mut typed = TypedAst::try_new(TypedAstParts {
@@ -286,7 +318,7 @@ fn unary_child_refuses_foreign_stale_and_forged_inputs_atomically() {
         let _ = typed.install_source_nodes(&fixture.native);
         assert!(
             check(&fixture.native, &fixture.symbols, &typed).is_err(),
-            "mutation {mutation}"
+            "node {target}, mutation {mutation}"
         );
     }
     let mut symbols = SymbolIndex::new();

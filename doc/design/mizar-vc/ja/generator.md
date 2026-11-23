@@ -1,5 +1,7 @@
 # Module: generator
 
+unary descriptor は contract-free の範囲を保ち、保存された caller ensures があると後続の証明義務・既存 identity の生成前に拒否する。
+
 限定 theorem bridge は既存 Core seed handoff・seed intake・candidate 正規化を使う。
 lemma 引用の実際の終端証明義務と symbolic premise を保持し、VC を kernel 受理にしない。
 
