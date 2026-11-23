@@ -666,9 +666,9 @@ Canonical equality across arenas never authorizes association. This passive iden
 
 ## Arena-local caller E2 association
 
-`SourceUnaryCallerE2Association::from_source(source, typed, symbols, core, request)` calls the unchanged [fresh VC E2 checker](../../mizar-vc/en/generator.md#bounded-unary-caller-e2-request) once, preserving upstream/local errors. Private fields retain the whole cloned request, exact checked four-row context/formula tuple and same-call borrowed Core; immutable `request` and `descriptor` getters expose the existing values.
+`SourceUnaryCallerE2Association::from_source_with_schema(source, typed, symbols, core, request)` calls the unchanged [fresh VC E2 schema checker](../../mizar-vc/en/generator.md#bounded-unary-caller-e2-request) once, preserving upstream/local errors, and returns `(Self, u16)` with its actual same-call Kernel schema. `from_source` delegates and discards only the scalar. Private fields retain the whole cloned request, exact checked four-row context/formula tuple and same-call borrowed Core; immutable `request` and `descriptor` getters expose the existing values.
 `matches_source` first regenerates the authenticated E2 request, preserving errors before whole request/tuple equality and pointer-identical Core comparison. Equal cloned arenas refuse; fresh associations on clones succeed. No repeated Kernel check or detached construction. Currentness remains caller-owned.
-The original guard, fresh binder and ordered definition-free equality retain the bounded E2 proposition. No schema reporting/storage, identity/policy/native authority, whole acceptance/status, complete footprints/cache or promotion/publication follows. Existing child/E4/E1/direct-return and raw unknown/incomplete/cache-miss boundaries remain unchanged.
+The original guard, fresh binder and ordered definition-free equality retain the bounded E2 proposition. No schema storage, identity/policy/native authority, whole acceptance/status, complete footprints/cache or promotion/publication follows. Existing child/E4/E1/direct-return and raw unknown/incomplete/cache-miss boundaries remain unchanged.
 
 ## Arena-local caller E1 typing association
 
