@@ -3132,6 +3132,95 @@ pub fn generate_source_unary_child_call_caller_e1_typing_request(
     Ok((context, [returns, object, implication, universal]))
 }
 
+/// Requests caller single-valuedness under the original typed-input guard without checking it.
+pub fn generate_source_unary_child_call_caller_e1_single_valuedness_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 6]), String> {
+    use crate::vc_ir::{
+        QuantifierKind, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+        VcGeneratedFormulaShape as Shape, VcProgramValue,
+    };
+
+    let (context, [returns, mut second]) =
+        generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = returns.shape
+    else {
+        return Err(invalid());
+    };
+    let Shape::Quantified { mut binders, .. } = second.shape else {
+        return Err(invalid());
+    };
+    let other = VcProgramValue {
+        var: CoreVarId::new(result.var.index().checked_add(1).ok_or_else(invalid)?),
+        definition: None,
+    };
+    let mut entries = context.entries().to_vec();
+    let id = ContextEntryId::new(entries.len());
+    entries.push(ContextEntry {
+        id,
+        sort_key: "unary-child-result-0002".into(),
+        kind: ContextEntryKind::BinderDeclaration {
+            var: other.var,
+            role: "result".into(),
+        },
+        formula: None,
+        provenance: Vec::new(),
+    });
+    let context =
+        LocalContext::try_new(entries, context.policy_inputs().to_vec()).map_err(|_| invalid())?;
+    binders.push(id);
+    second.shape = Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result: other,
+    };
+    let reference = |index| VcFormulaRef::Generated(VcGeneratedFormulaId::new(index));
+    let shapes = [
+        Shape::And(vec![reference(0), reference(1)]),
+        Shape::ProgramEquals {
+            left: result,
+            right: other,
+        },
+        Shape::Implies {
+            premise: reference(2),
+            conclusion: reference(3),
+        },
+        Shape::Quantified {
+            kind: QuantifierKind::Forall,
+            binders,
+            body: reference(4),
+        },
+    ];
+    let mut next_id = 2;
+    let [and, equal, implication, universal] = shapes.map(|shape| {
+        let id = VcGeneratedFormulaId::new(next_id);
+        next_id += 1;
+        VcGeneratedFormula {
+            id,
+            kind: VcGeneratedFormulaKind::SplitGoal,
+            shape,
+            provenance: Vec::new(),
+        }
+    });
+    Ok((
+        context,
+        [returns, second, and, equal, implication, universal],
+    ))
+}
+
 /// Checks freshly authenticated caller result typing and returns its unchanged request.
 pub fn check_source_unary_child_call_caller_e1_typing_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

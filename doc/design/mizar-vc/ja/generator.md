@@ -626,6 +626,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_caller_e1_typing_request_with_schema` は同じ入力で既存 producer を先に呼び、上流エラーを維持する。正確な caller target、宣言 result binder、atomic object conclusion、唯一の元 guard、再構築した callee flow を [Kernel typing schema reporting](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-typing) に一度渡す。成功時だけ tuple 全体を変更せず実際の同一呼出しの Kernel schema と組にして返し、局所拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。旧 `check_source_unary_child_call_caller_e1_typing_request` は委譲して scalar だけを捨てる。要求された schema は受け取らず刻印しない。Proof schema association、policy/native adoption、single-valuedness、E2、全体受理、status、currentness、complete footprint/cache、promotion、publication は与えない。raw identity の unknown/incomplete/cache-miss と child/E4/inhabitation/direct-return 経路は変更しない。詳細は [英語版](../en/generator.md#bounded-unary-caller-e1-typing-request) を参照。
 
+## Bounded unary caller E1 single-valuedness request
+
+`generate_source_unary_child_call_caller_e1_single_valuedness_request(source, typed, symbols, core, request)` は未変更の [caller E4 request](#bounded-unary-caller-e4-descriptor) を同一入力で一度再生成し、認証と上流 error を保つ。既存の `(LocalContext, [VcGeneratedFormula; 6])` は元 context の prefix、policy inputs、caller returns 行を保持する。次の context ID と、元の fresh result より一つ大きい変数（加算を検査）で result 宣言を追加し、両変数を認証済み Core 変数より fresh にする。existential 行の metadata を再利用し、result だけを新変数に替えた同一 caller/flow/Return/input relation を置く。順序付き二宣言に対する And、ProgramEquals、Implies、Forall 行を追加する。ID は行番号、追加行は SplitGoal・空 provenance とし、局所 shape/overflow/context 拒否は `algorithms.unary_child.invalid_caller_e4_request` を再利用する。
+
+元の caller object guard のみの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件に留まり、E1/E3・requires/ensures・child returns・function equation を前提や証明にしない。checking、Kernel/Proof authority、identity、policy/native adoption、E2、whole acceptance/status、currentness、complete footprints/cache、promotion/publication は与えず、既存経路を維持する。
+
 ## Bounded unary caller E4 descriptor
 
 `generate_source_unary_child_call_caller_e4_request(source, typed, symbols, core, request)` は既存 child existential を先に再生成し、source/Core/request 全体の新規認証と上流エラーを維持する。既存の `(LocalContext, [VcGeneratedFormula; 2])` を返し、caller object guard と fresh result binder を共有する。row zero は caller の元 CFG flow・Return・actual を結ぶ `AlgorithmReturns`、row one はその結果の存在量化である。不変の Core/request が Return→Apply→callee/actual、formal/result-slot/source の対応を保持する。child witness、VcSet、seed、scheduling identity は生成しない。
