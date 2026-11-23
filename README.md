@@ -121,3 +121,4 @@ lexer crate evidence is available from
 [crate exit report](./doc/design/mizar-lexer/en/crate_exit_report.md).
 
 CI receipt activation documentation canary.
+Moved-head receipt refusal canary.
