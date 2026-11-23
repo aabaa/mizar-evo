@@ -7,6 +7,7 @@ exec /usr/bin/env -i PATH="$PATH" /usr/bin/python3 -I - "$(dirname "$(realpath "
 import datetime as dt
 import fcntl
 import importlib.util
+import os
 from pathlib import Path
 import shutil
 import stat
@@ -74,8 +75,19 @@ with (here / "custody.lock").open("a") as lock:
                 sandbox += ["--ro-bind", str(checkout / ".git"), str(checkout / ".git"),
                             "--ro-bind", str(work / "fixtures"), str(tools), "--chdir", str(checkout),
                             "--", config["cargo"], "test"]
-                subprocess.run(sandbox, env=env, stdout=log, stderr=subprocess.STDOUT,
-                               check=True, timeout=config["timeout_seconds"])
+                watch = g.monitor(checkout)
+                try:
+                    subprocess.run(sandbox, env=env, stdout=log, stderr=subprocess.STDOUT,
+                                   check=True, timeout=config["timeout_seconds"])
+                    try:
+                        mutation = os.read(watch, 1024 * 1024)
+                    except BlockingIOError:
+                        mutation = b""
+                    if mutation:
+                        raise ValueError("concurrent source mutation observed")
+                finally:
+                    os.close(watch)
+                g.clean(git, checkout, source, tree)
                 log.write(b"weekly full test passed\n")
         except BaseException as error:
             log.write(("weekly full test failed: " + str(error) + "\n").encode())

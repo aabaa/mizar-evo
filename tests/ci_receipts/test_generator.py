@@ -132,6 +132,75 @@ class GeneratorTests(unittest.TestCase):
         self.replace_test('panic!("fixture failure");')
         self.assertIn(b"cargo test failed", self.assert_refused().stderr)
 
+    def prepare_weekly(self):
+        scripts = Path(__file__).resolve().parents[2] / ".github/ci-receipts"
+        for name in ("admit.py", "weekly.sh"):
+            shutil.copyfile(scripts / name, self.custody / name)
+        fixture = self.home / "approved/provers/vampire-4.9/vampire"
+        fixture.parent.mkdir(parents=True)
+        fixture.write_text("#!/bin/sh\nexit 0\n")
+        fixture.chmod(0o755)
+        cache = self.home / "cache"
+        cache.mkdir()
+        self.config.update(admission_ref="refs/heads/main", publish_remote=str(self.repo),
+                           fixture_root=str(self.home / "approved"),
+                           fixture_sha256=self.generator.digest(fixture.read_bytes()),
+                           cargo_cache_path=str(cache))
+        self.save()
+
+    def execute_weekly(self):
+        result = subprocess.run(["sh", str(self.custody / "weekly.sh")], capture_output=True)
+        logs = list((self.custody / "runs/weekly").glob("*.log"))
+        self.assertEqual(len(logs), 1, result.stderr.decode())
+        return result, logs[0].read_bytes()
+
+    def test_weekly_clean_full_execution_retains_success_and_source(self):
+        self.prepare_weekly()
+        self.replace_test('assert_eq!(std::env::var("RUST_TEST_THREADS").unwrap(), "4"); '
+                          'assert!(std::process::Command::new(".tools/provers/vampire-4.9/vampire")'
+                          '.status().unwrap().success());')
+        result, log = self.execute_weekly()
+        self.assertEqual(result.returncode, 0, (result.stderr + log).decode())
+        self.assertIn(("source " + self.source + "\ncommand cargo test\n").encode(), log)
+        self.assertIn(b"complete_gate ... ok", log)
+        self.assertIn(b"weekly full test passed\n", log)
+
+    def test_weekly_failed_full_execution_has_no_success(self):
+        self.prepare_weekly()
+        self.replace_test('panic!("weekly fixture failure");')
+        result, log = self.execute_weekly()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"complete_gate ... FAILED", log)
+        self.assertIn(b"weekly full test failed:", log)
+        self.assertNotIn(b"weekly full test passed", log)
+
+    def test_weekly_build_script_replacing_failing_source_is_rejected(self):
+        self.prepare_weekly()
+        self.replace_test('panic!("tracked source must fail");')
+        (self.repo / "build.rs").write_text(
+            'fn main() { std::fs::write("src/lib.rs", '
+            '"#[test] fn replacement_gate() {}\\n").unwrap(); }\n')
+        self.git("add", "build.rs")
+        self.git("commit", "-m", "replace failing source during build")
+        self.source = self.oid()
+        result, log = self.execute_weekly()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"replacement_gate ... ok", log)
+        self.assertIn(b"test result: ok. 1 passed; 0 failed;", log)
+        self.assertIn(b"weekly full test failed: concurrent source mutation observed", log)
+        self.assertNotIn(b"weekly full test passed", log)
+
+    def test_weekly_edit_and_restore_tracked_source_is_rejected(self):
+        self.prepare_weekly()
+        self.replace_test('let before = std::fs::read("README.md").unwrap(); '
+                          'std::fs::write("README.md", b"mutation").unwrap(); '
+                          'std::fs::write("README.md", before).unwrap();')
+        result, log = self.execute_weekly()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"complete_gate ... ok", log)
+        self.assertIn(b"weekly full test failed: concurrent source mutation observed", log)
+        self.assertNotIn(b"weekly full test passed", log)
+
     def test_timeout_has_no_receipt(self):
         self.replace_test("std::thread::sleep(std::time::Duration::from_secs(30));")
         self.config["timeout_seconds"] = 1
