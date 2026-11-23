@@ -6,7 +6,7 @@ Test-gate owner: [mizar-test plan](../../mizar-test/en/00.crate_plan.md).
 Consumers: local integration and CI maintainers. Dependencies: none for design; activation prerequisites below.
 Purpose: adopt OEIS D9 / FCL D1 custody and exact sealed-full binding without duplicate ordinary CI tests.
 Authority: owner dispatch CI-RECEIPT-DESIGN, registration c513717c5, and [protocol](../../autonomous_crate_development.md#verification-cadence).
-Design owner: [receipt model](../../ci_receipt_model.md); existing behavior: [CI](../../../../.github/workflows/ci.yml), [test selector](../../../../tests/check.sh).
+Design owner: [receipt model](../../ci_receipt_model.md); existing behavior: [CI](https://github.com/aabaa/mizar-evo/blob/8f577f11ee3e6ea1ebde92d19ff0ea4639d3c1f1/.github/workflows/ci.yml), [test selector](../../../../tests/check.sh).
 Classification: design gap only; current full CI is intentional, not implementation drift.
 Current scope: adoption design, frozen separate-unit scope and roadmap link only.
 Forbidden now: CI/workflow/policy/code/tests changes, AGENTS/protocol edits, implementation work,

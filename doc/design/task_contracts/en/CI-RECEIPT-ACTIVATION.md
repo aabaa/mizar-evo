@@ -25,7 +25,7 @@ through normal orchestrator landing, retaining unconditional hosted full testing
 Verify hosted reconciliation and effective base ownership before crediting canaries.
 Then publish and execute live docs, trust-change, forgery and moved-head canaries
 before enforcement, under the 2026-11-22 activation/publication owner decision.
-Switch [CI](../../../../.github/workflows/ci.yml) once: enforcing `receipt-sanity`,
+Switch [CI](https://github.com/aabaa/mizar-evo/blob/8f577f11ee3e6ea1ebde92d19ff0ea4639d3c1f1/.github/workflows/ci.yml) once: enforcing `receipt-sanity`,
 remove observe-only shadow and per-push/PR full testing, retain scheduled full reconciliation.
 Complete activation only after required-check protection is configured and read back.
 This unit may push

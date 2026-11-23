@@ -2,19 +2,11 @@
 
 ## Status and authority
 
-Activation is authorized; deployed controls remain bootstrap/shadow until the
-[activation boundary](#activation-boundary) is satisfied.
-The 2026-11-22 owner decision abolishes shadow operation at activation;
-its 19:10 JST clarification authorizes production signer provisioning and live
-canary receipt-tag publication within the activation unit.
-Owner authority is the CI policy recorded by the orchestrator on 2026-11-21
-13:07 JST, supplied through the CI-RECEIPT-DESIGN dispatch and registration.
-Owner decisions `MIZAR-CI-RECEIPT-PROTOCOL-689` (2026-11-22 17:59:54 JST) and
-`MIZAR-CI-RECEIPT-MODEL-V1-SCOPE` (2026-11-22, option 1) authorize all-change
-receipts, including code, replacing per-push/PR hosted full tests with signed
-local-full verification and retaining scheduled full hosted reconciliation.
-These decisions supersede the earlier successor's docs-only and shadow restrictions;
-integrity requirements remain.
+Owner decisions `MIZAR-CI-ABOLISH` and `MIZAR-CI-FULLRUN-REMOVAL`
+(2026-11-23, including the weekly full-test amendment) replace all hosted CI
+with local verification. Repository Actions are disabled; no standing GitHub
+workflow remains. These decisions supersede earlier hosted routing and reconciliation.
+The signed local-full receipt remains the admission gate for every change.
 This design neither changes language intent nor settles Open Questions or G-class items.
 The orchestrator owns custody, sealed integration and activation; workers own task feedback.
 References: [OEIS D9 receipt](https://github.com/aabaa/oeis-semantic-atlas/blob/39d91933161509fbe95312efd017bdcf38f39621/docs/D9_LOCAL_TEST_RECEIPT.md),
@@ -33,14 +25,13 @@ The generator itself launches one unfiltered `cargo test`, captures complete std
 waits for its actual exit status and records test summaries, including ignored tests.
 No filters, extra arguments, skips, synthetic counts or worker-provided result files qualify.
 Failure, timeout, concurrent mutation or incomplete capture cannot produce a passing receipt.
-Existing focused task checks and full-test cadence remain; this replaces a duplicate hosted
-full execution only when eligible. A failed or invalidated gate needs a new successful gate.
+Existing focused task checks and full-test cadence remain. A failed or invalidated gate needs a new successful gate.
 
 The plan binds exact commands, Rust/Cargo versions, host/target, relevant environment,
 dependency-lock identity and generator source identity. Expected environment and test-inventory
 rules are custody-selected, versioned inputs, never learned from the candidate receipt.
 Toolchain/dependency drift or removed/ignored tests require reviewed baseline renewal
-and full hosted reconciliation before the renewed baseline can authorize receipts.
+and full local reconciliation before the renewed baseline can authorize receipts.
 Local Linux execution is a signer observation, not independent Ubuntu-host equivalence.
 
 ## Receipt and transport
@@ -52,11 +43,11 @@ environment/inventory identities, ordered steps/commands, UTC start/end, duratio
 exit statuses, pass/full scope, counts/ignored names and log SHA-256/size.
 All mandatory steps must succeed; an empty or partial test inventory cannot qualify.
 Sign exact manifest bytes with OpenSSH Ed25519 namespace `mizar-local-full-v1`.
-The private key and generator stay outside Git, worker access and Actions; CI pins the
+The private key and generator stay outside Git and worker access; custody pins the
 authorized identity/public key and generator/plan identities from trusted policy.
 Freshness is at most 24 hours from execution start, with ordered times and no future times.
 Key rotation/revocation and plan renewal are owner-controlled trust changes;
-renewed pins require successful full hosted reconciliation before authorizing receipts.
+renewed pins require successful full local reconciliation before authorizing receipts.
 
 Keep evidence outside S: create one evidence commit with fixed regular blobs
 `manifest.json`, `manifest.sig`, `cargo-test.log`, referenced by create-only tag
@@ -70,77 +61,48 @@ with no older-receipt fallback. Revoked or expired evidence cannot authorize a s
 
 ## CI routing and trust exceptions
 
-Preserve [current CI](../../.github/workflows/ci.yml) formatting, dependency fetch,
-Clippy and corpus-plan validation. Replace its per-push/PR `cargo test` with
-enforcing receipt sanity; retain scheduled unfiltered hosted `cargo test` reconciliation.
-Keep AGENTS' stronger local all-feature Clippy requirement; do not silently narrow it.
-Sanity runs a trusted default-branch verifier/policy pinned independently of candidate code,
-with read-only credentials, no signer secrets and no candidate/evidence checkout or imports.
-Existing candidate-code gates remain separate from sanity. Receipt-tag events carry evidence
-only; source branch pushes and PRs still receive their required checks.
+Formatting, all-feature Clippy, dependency and corpus-plan validation run locally.
+The installed [admission runner](../../.github/ci-receipts/admit.py) is custody-owned,
+not executed from candidate code. It loads the verifier and policy from the exact
+prior-main base into isolated storage and verifies the staged signed evidence before
+publication. Missing independent controls, invalid evidence or a changed base refuses.
+Publication checks fast-forward ancestry, uses an exact-base lease and atomically
+creates the evidence tag with the sealed source. Legacy generator publication is disabled.
 
-V1 covers all changes, including Rust, tests/fixtures, scripts, configuration,
-workflows, governance and language/proof documentation. Path classification never
-substitutes for successful local exhaustive tests or confers semantic credit.
-Trust-control changes require independent owner review and renewed trusted pins;
-candidate-edited policy, signer, generator or workflow cannot authorize itself.
-Main admission combines `receipt-sanity` from the expected GitHub Actions App
-with independently enforced owner review of `.github/workflows/`,
-`.github/ci-receipts/` and `.github/CODEOWNERS`, using base-branch CODEOWNERS.
-The owner-review rule dismisses stale approvals and permits custody-owned
-administrative bypass; the separate receipt requirement has no bypass.
-Candidate status alone grants no authorization. Trust-control receipts use
-prior-main/default controls; repository rules enforce independent approval.
+V1 covers all changes; path classification confers no semantic credit.
+Trust-control changes still require independent review; candidate policy, signer,
+generator or runner cannot authorize itself. GitHub requires no Actions status checks.
+A separate main-update restriction permits only custody-owned administration; the
+independent owner-review rule, stale-approval dismissal, force-push and deletion guards
+remain. Administrators and their credentials are trusted: GitHub does not independently
+verify receipt signatures. Administrative compromise remains outside this assurance.
 
-Classify the entire main push `before..S` with ancestry checked, or the entire branch
-merge-base-to-S delta against the trusted default branch; never just the latest lane slice.
-Treat renames as delete/add and inspect both modes using NUL-delimited raw Git records.
-Missing/ambiguous bases and unsupported comparisons fail enforcing sanity.
-PRs, forks and synthetic merge revisions require receipts bound to the exact tested
-event revision/tree; never reuse a head receipt for a merge tree. If custody cannot
-test and attest that exact revision, the required check fails. A changed live
-head/base invalidates an in-flight decision. No path or event silently falls back
-to per-push hosted full tests; scheduled reconciliation remains independent.
+Classify the entire prior-main-to-source delta with ancestry checked, never just its
+latest slice. The exact final integration commit/tree requires its own receipt;
+PR/head receipts cannot authorize a different merge tree. Moved refs invalidate admission.
+No event falls back to hosted tests. Weekly exhaustive local reconciliation is separate
+from per-publication receipts and retains its source identity, complete logs and failure.
 
 ## Activation boundary
 
-Activate in one enforcement change after the canaries; no shadow or transition period
-is required by the revised owner decision. Before activation, the owner must
-approve environment/baseline and signer pins, deploy custody, and enforce the trusted required
-check source through repository rules; fixtures cannot establish these external controls.
-Activation requires live canaries for ordinary docs, trust changes, forgery and moved heads.
-Until these pass, existing full CI remains effective. Rollback restores unconditional hosted testing
-and revokes shortcut authorization without changing local exhaustive tests or acceptance policy.
-Receipts attest a trusted signer's observation, not proof certificates or independent execution;
-host/signer compromise and unobserved inputs remain outside their assurance.
+The receipt activation canaries remain the prerequisite. The local-only transition
+requires reviewed custody admission, live protection readback and a local weekly
+registration. Fixtures cannot establish external controls. Rollback halts publication
+and repairs/reconciles locally; it does not re-enable GitHub CI.
+Receipts attest a trusted signer's observation, not proof certificates or independent
+execution; host/signer compromise and unobserved inputs remain outside their assurance.
 
 ## Bootstrap operation
 
-This section describes preparation before the enforcing workflow is landed.
-
-The orchestrator stores `generate.py` and `custody.json` at
-`~/orchestration/ci-receipts/` on dev-linux; keys and the publication ledger stay there.
+The orchestrator stores `generate.py`, `admit.py`, `weekly.sh` and `custody.json`
+at `~/orchestration/ci-receipts/`; keys and the append-only publication ledger stay there.
 Only the owner provisions custody and reviewed tool, environment and inventory pins.
-The fixed generator requires Linux namespaces, read-only Git metadata and toolchain,
-an isolated writable checkout/cache, offline dependencies, and a parent-owned bounded log pipe.
-It rejects source mutations through inotify as well as pre/postflight checks. Harness-qualified
-names and ignored names must match the reviewed baseline, including individual summary counts.
-The owner-only publication mode atomically pushes the sealed source and create-only evidence
-tag, then appends its publication observation; bootstrap never invokes publication.
-An enabled public policy records reviewed signer and baseline pins; it does not
-enable custody or replace full CI. Custody remains disabled until successful
-hosted reconciliation of the prepared default-branch controls.
-The [verifier](../../.github/ci-receipts/verify.py) consumes only exact Git blobs and
-the [trusted policy](../../.github/ci-receipts/policy.json); no candidate modules are imported.
-The `receipt-shadow` job extracts them from a fixed default-branch commit into isolated
-storage: the event's prior default head for a default-branch push, otherwise the live default
-head, always distinct from the candidate. Missing prior code stays bootstrap/full.
-It checks live refs and reports observations while `mizar-test` runs unconditionally.
-Remote evidence is fetched as commit metadata, one root tree, and three fixed blobs; reads
-have size limits and Git operations time out. Native Git cannot prebound a single object's
-wire transfer before its size is available; shadow failure always retains full execution.
-Receipt tags trigger no source workflow; branch pushes and PRs retain their checks.
-Run the disposable attack matrix with `python3 -m unittest discover -s tests/ci_receipts -v`;
-generator tests use the external custody source, or `CI_RECEIPT_CUSTODY` for a disposable copy.
-Required-check source enforcement, live canaries, baseline approval and custody
-activation remain owner work. Rollback restores unconditional hosted testing.
+The generator uses Linux namespaces, read-only Git/toolchain inputs, an isolated
+checkout/cache, offline dependencies and a bounded log pipe; inotify and pre/postflight
+checks reject source mutation. Exact test names, ignored names and counts must match
+the reviewed baseline. The admission runner checks signatures and publishes only a
+pending custody receipt; custody configuration disables the former `--publish` route.
+The weekly local timer invokes `weekly.sh` under the same exclusive custody lock,
+with a clean source checkout and retained local logs; it creates no substitute receipt.
+Run the disposable matrix with `python3 -m unittest discover -s tests/ci_receipts -v`;
+generator tests use external custody, or `CI_RECEIPT_CUSTODY` for a disposable copy.

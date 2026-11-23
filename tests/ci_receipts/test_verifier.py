@@ -7,10 +7,10 @@ import copy
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
-import textwrap
 import unittest
 from unittest import mock
 
@@ -393,62 +393,10 @@ class ReceiptTests(unittest.TestCase):
             self.git("update-ref", "refs/pull/1/merge", original_source)
             self.assert_invalid(lambda: self.verify(event=event))
         self.source, self.manifest = original_source, original_manifest
-        self.git("reset", "--hard", self.base)
-        controls = self.repo / ".github/ci-receipts"
-        controls.mkdir(parents=True)
-        (controls / "verify.py").write_bytes((ROOT / ".github/ci-receipts/verify.py").read_bytes())
-        (controls / "policy.json").write_bytes(self.verifier.canonical(self.policy))
-        self.git("add", ".")
-        self.git("commit", "-m", "trusted controls")
-        trusted = self.oid("HEAD")
-        self.git("config", "uploadpack.allowFilter", "true")
-        self.git("config", "uploadpack.allowAnySHA1InWant", "true")
-        finished = dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=1)
-        self.manifest.update(started=(finished - dt.timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                             finished=finished.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        for path in (".github/ci-receipts/verify.py", ".github/ci-receipts/policy.json", ".github/workflows/ci.yml"):
-            with self.subTest(candidate_substitution=path):
-                self.git("checkout", "--detach", trusted)
-                candidate = self.repo / path
-                candidate.parent.mkdir(parents=True, exist_ok=True)
-                candidate.write_text("raise RuntimeError('candidate must not execute')\n" if path.endswith(".py")
-                                     else "untrusted candidate controls\n")
-                self.git("add", ".")
-                self.git("commit", "-m", "candidate trust substitution")
-                self.source = self.oid("HEAD")
-                self.git("update-ref", "refs/heads/topic", self.source)
-                self.manifest.update(source=self.source, base=trusted, tree=self.oid("HEAD^{tree}"))
-                self.publish()
-                output, sanity = self.run_shadow("refs/heads/topic", trusted)
-                self.assertEqual(json.loads(output.splitlines()[-1]),
-                                 {"decision": "pass", "eligible": True, "reason": "valid exact-event full receipt"})
-                for name in ("verify.py", "policy.json"):
-                    self.assertEqual((sanity / name).read_bytes(),
-                                     self.git("show", trusted + ":.github/ci-receipts/" + name))
-        other_key = self.home / "candidate-signer"
-        run("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(other_key))
-        self.publish(signer=other_key)
-        with self.subTest(candidate_signer_cannot_authorize=True):
-            with self.assertRaises(subprocess.CalledProcessError):
-                self.run_shadow("refs/heads/topic", trusted)
 
     def test_08_deployment_boundary(self):
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-        controls, candidate = workflow.split("  mizar-test:\n", 1)
-        self.assertIn("  receipt-sanity:\n", controls)
-        self.assertIn("permissions:\n  contents: read\n", controls)
-        self.assertNotIn("actions/checkout", controls)
-        self.assertNotIn("secrets.", controls)
-        self.assertNotIn("needs:", candidate)
-        for command in ("cargo fmt --check", "cargo fetch --locked",
-                        "cargo clippy --all-targets -- -D warnings",
-                        "cargo run -p mizar-test -- plan --tests-root tests --manifest tests/coverage/spec_trace.toml",
-                        "python3 -m unittest discover -s tests/ci_receipts -p test_verifier.py -v"):
-            self.assertIn("run: " + command if command != "cargo fetch --locked" else command, candidate)
-        self.assertNotIn("receipt-shadow", workflow)
-        self.assertIn("--enforce", controls)
-        self.assertIn("schedule:", workflow)
-        self.assertIn("- name: Run tests\n        if: github.event_name == 'schedule'\n        run: cargo test", candidate)
+        workflows = ROOT / ".github/workflows"
+        self.assertFalse(list(workflows.glob("*.yml")) + list(workflows.glob("*.yaml")))
         configured = self.verifier.read_policy((ROOT / ".github/ci-receipts/policy.json").read_bytes())
         self.assertTrue(configured["enabled"])
         self.assertTrue(configured["expected_inventory"])
@@ -456,68 +404,137 @@ class ReceiptTests(unittest.TestCase):
                       "environment_sha256", "inventory_sha256"):
             self.assertIsNotNone(configured[field])
         owners = (ROOT / ".github/CODEOWNERS").read_text()
-        for path in ("/.github/workflows/", "/.github/ci-receipts/", "/.github/CODEOWNERS"):
+        for path in ("/.github/ci-receipts/", "/.github/CODEOWNERS"):
             self.assertRegex(owners, r"(?m)^" + re.escape(path) + r"\s+@\S+")
 
+    def prepare_admission(self):
+        self.custody = self.home / "custody"
+        self.custody.mkdir()
+        generator = Path(os.environ.get("CI_RECEIPT_CUSTODY", "~/orchestration/ci-receipts/generate.py")).expanduser()
+        shutil.copyfile(generator, self.custody / "generate.py")
+        shutil.copyfile(ROOT / ".github/ci-receipts/admit.py", self.custody / "admit.py")
+        self.policy["generator_sha256"] = self.digest(generator.read_bytes())
         self.git("reset", "--hard", self.base)
         controls = self.repo / ".github/ci-receipts"
         controls.mkdir(parents=True)
         (controls / "verify.py").write_bytes((ROOT / ".github/ci-receipts/verify.py").read_bytes())
-        (controls / "policy.json").write_bytes(self.verifier.canonical(self.policy))
+        policy_bytes = self.verifier.canonical(self.policy)
+        (controls / "policy.json").write_bytes(policy_bytes)
+        (self.custody / "policy.json").write_bytes(policy_bytes)
         self.git("add", ".")
-        self.git("commit", "-m", "prior default controls")
-        trusted = self.oid("HEAD")
-        (controls / "verify.py").write_text("raise RuntimeError('candidate must not execute')\n")
-        (controls / "policy.json").write_text("untrusted candidate policy\n")
-        self.git("commit", "-am", "candidate controls")
+        self.git("commit", "-m", "trusted prior-main controls")
+        self.base = self.oid("HEAD")
+        (self.repo / "README.md").write_text("local publication\n")
+        self.git("commit", "-am", "candidate")
         self.source = self.oid("HEAD")
-        output, sanity = self.run_shadow("refs/heads/main", trusted, expected_failure=True)
-        self.assertIn("receipt sanity failed: missing receipt", output.decode())
-        for name in ("verify.py", "policy.json"):
-            self.assertEqual((sanity / name).read_bytes(),
-                             self.git("show", trusted + ":.github/ci-receipts/" + name))
-        for before, reason in (("0" * 40, "no independent prior default-branch anchor"),
-                               (self.source, "no independent prior default-branch anchor"),
-                               (self.base, "trusted anchor has no verifier")):
-            with self.subTest(unavailable_anchor=before):
-                output, sanity = self.run_shadow("refs/heads/main", before, expected_failure=True)
-                self.assertIn("receipt sanity failed: " + reason, output.decode())
-                self.assertFalse((sanity / "verify.py").exists())
-        self.git("branch", "candidate", self.source)
-        self.git("reset", "--hard", trusted)
-        self.git("update-ref", "refs/pull/1/merge", self.source)
-        output, sanity = self.run_shadow("refs/pull/1/merge", trusted, event_kind="pull_request",
-                                         expected_failure=True)
-        self.assertIn("receipt sanity failed: missing receipt", output.decode())
-        for name in ("verify.py", "policy.json"):
-            self.assertEqual((sanity / name).read_bytes(),
-                             self.git("show", trusted + ":.github/ci-receipts/" + name))
-        live_policy = {**self.policy, "signer_identity": "live-default"}
-        with (controls / "verify.py").open("a") as verifier:
-            verifier.write("\n# Live default fixture revision.\n")
-        (controls / "policy.json").write_bytes(self.verifier.canonical(live_policy))
-        self.git("commit", "-am", "advance live default")
-        live_default = self.oid("HEAD")
-        output, sanity = self.run_shadow("refs/heads/candidate", trusted, expected_failure=True)
-        self.assertIn("receipt sanity failed: missing receipt", output.decode())
-        for name in ("verify.py", "policy.json"):
-            self.assertEqual((sanity / name).read_bytes(),
-                             self.git("show", live_default + ":.github/ci-receipts/" + name))
+        finished = dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=1)
+        self.manifest.update(source=self.source, base=self.base, tree=self.oid("HEAD^{tree}"),
+                             generator_sha256=self.policy["generator_sha256"],
+                             policy_sha256=self.digest(policy_bytes),
+                             started=(finished - dt.timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                             finished=finished.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        tools = {name: str(Path(shutil.which(command)).resolve())
+                 for name, command in (("git", "git"), ("ssh_keygen", "ssh-keygen"))}
+        self.admission_config = {"enabled": True, **tools,
+                                 "tool_sha256": {name: self.digest(Path(path).read_bytes()) for name, path in tools.items()},
+                                 "repository_path": str(self.repo), "repository": "fixture/repo",
+                                 "policy_path": str(self.custody / "policy.json"),
+                                 "ledger_path": str(self.custody / "ledger.jsonl"),
+                                 "admission_ref": "refs/heads/main"}
 
-    def run_shadow(self, source_ref, before, event_kind="push", expected_failure=False):
-        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-        script = textwrap.dedent(workflow.split("        run: |\n", 1)[1].split("\n  mizar-test:\n", 1)[0])
-        runner = Path(tempfile.mkdtemp(dir=self.home))
-        env = {**os.environ, "RUNNER_TEMP": str(runner), "REPOSITORY": "fixture/repo",
-               "EVENT_KIND": event_kind, "SOURCE": self.source, "SOURCE_REF": source_ref,
-               "BEFORE": before, "DEFAULT_BRANCH": "main", "GIT_CONFIG_COUNT": "1",
-               "GIT_CONFIG_KEY_0": "url." + str(self.repo) + ".insteadOf",
-               "GIT_CONFIG_VALUE_0": "https://github.com/fixture/repo.git"}
-        result = subprocess.run(["bash", "-c", script], env=env, check=not expected_failure,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-        if expected_failure:
-            self.assertEqual(result.returncode, 1)
-        return result.stdout + (result.stderr if expected_failure else b""), runner / "receipt-sanity"
+    def run_admission(self, base=None, evidence=None, remote_base=None, remote_evidence=None):
+        remote = Path(tempfile.mkdtemp(dir=self.home)) / "remote.git"
+        run("git", "init", "--bare", str(remote))
+        self.git("push", str(remote), (remote_base or self.base) + ":refs/heads/main")
+        self.admission_config["publish_remote"] = str(remote)
+        (self.custody / "custody.json").write_bytes(self.verifier.canonical(self.admission_config))
+        tag = "refs/tags/ci-receipts/" + self.source
+        evidence = evidence or self.oid(tag)
+        if remote_evidence:
+            self.git("push", str(remote), remote_evidence + ":" + tag)
+        before = run("git", "-C", str(remote), "show-ref")
+        (self.custody / "ledger.jsonl").write_bytes(self.verifier.canonical(
+            {"source": self.source, "evidence": evidence, "tag": tag, "published": False}))
+        result = subprocess.run(["python3", "-I", str(self.custody / "admit.py"), self.source, base or self.base],
+                                capture_output=True, timeout=30)
+        if result.returncode:
+            self.assertEqual(run("git", "-C", str(remote), "show-ref"), before)
+        return result, remote
+
+    def test_09_local_admission_roundtrip(self):
+        self.prepare_admission()
+        self.publish()
+        result, remote = self.run_admission()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(run("git", "-C", str(remote), "rev-parse", "refs/heads/main").decode().strip(), self.source)
+        self.assertEqual(run("git", "-C", str(remote), "rev-parse", "refs/tags/ci-receipts/" + self.source),
+                         self.git("rev-parse", "refs/tags/ci-receipts/" + self.source))
+
+    def test_10_admission_uses_prior_main_controls(self):
+        self.prepare_admission()
+        original = self.source
+        for path in (".github/ci-receipts/verify.py", ".github/ci-receipts/policy.json"):
+            with self.subTest(candidate_substitution=path):
+                self.git("checkout", "--detach", original)
+                candidate = self.repo / path
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                candidate.write_text("raise RuntimeError('candidate must not execute')\n" if path.endswith(".py")
+                                     else "untrusted candidate controls\n")
+                self.git("add", ".")
+                self.git("commit", "-m", "candidate trust substitution")
+                self.source = self.oid("HEAD")
+                self.git("update-ref", "refs/heads/main", self.source)
+                self.manifest.update(source=self.source, tree=self.oid("HEAD^{tree}"))
+                self.publish()
+                result, _ = self.run_admission()
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+        other_key = self.home / "candidate-signer"
+        run("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(other_key))
+        self.publish(signer=other_key)
+        self.assertNotEqual(self.run_admission()[0].returncode, 0)
+
+    def test_11_admission_refusals_leave_remote_unchanged(self):
+        self.prepare_admission()
+        self.publish()
+        for anchor in ("0" * 40, self.source, self.oid(self.base + "^")):
+            with self.subTest(unavailable_or_wrong_anchor=anchor):
+                self.assertNotEqual(self.run_admission(base=anchor)[0].returncode, 0)
+        for remote_base in (self.source, self.oid(self.base + "^")):
+            with self.subTest(moved_remote=remote_base):
+                result, _ = self.run_admission(remote_base=remote_base)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(b"remote prior-main base moved or evidence tag already exists", result.stderr)
+        with self.subTest(existing_remote_tag=True):
+            result, _ = self.run_admission(remote_evidence=self.base)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"remote prior-main base moved or evidence tag already exists", result.stderr)
+        with self.subTest(missing_prior_main_verifier=True):
+            anchor = self.oid(self.base + "^")
+            result, _ = self.run_admission(base=anchor, remote_base=anchor)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn((anchor + ":.github/ci-receipts/verify.py").encode(), result.stderr)
+            self.assertIn(b"exit status 128", result.stderr)
+        original = copy.deepcopy(self.manifest)
+        for changes in ({"finished": "2026-01-01T00:00:01Z", "started": "2026-01-01T00:00:00Z"},
+                        {"source": self.base}, {"base": self.source}):
+            with self.subTest(evidence_mismatch=changes):
+                self.manifest = {**original, **changes}
+                self.publish()
+                self.assertNotEqual(self.run_admission()[0].returncode, 0)
+        self.manifest = original
+        self.publish()
+        self.git("update-ref", "refs/heads/main", self.base)
+        self.assertNotEqual(self.run_admission()[0].returncode, 0)
+        self.git("update-ref", "refs/heads/main", self.source)
+        tag = "refs/tags/ci-receipts/" + self.source
+        evidence = self.oid(tag)
+        self.git("update-ref", "-d", tag)
+        self.assertNotEqual(self.run_admission(evidence=evidence)[0].returncode, 0)
+        self.git("update-ref", tag, evidence)
+        result = subprocess.run(["python3", str(self.custody / "generate.py"), "--publish",
+                                 self.source, "refs/heads/main"], capture_output=True, timeout=30)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"publication is not configured", result.stderr)
 
     def git(self, *args, data=None):
         return run("git", "-C", str(self.repo), *args, data=data)
