@@ -130,6 +130,7 @@ Covered top-level public items:
 - `check_unary_caller_return_single_valuedness_schema`
 - `check_unary_caller_return_single_valuedness`
 - `check_unary_caller_return_typing`
+- `check_unary_caller_return_postcondition`
 - `check_unary_caller_return_typing_schema`
 - `check_unary_caller_returns_existential_result`
 - `KernelCheckInput`

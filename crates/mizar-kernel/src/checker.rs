@@ -1942,6 +1942,43 @@ pub fn check_unary_caller_return_typing(
             .is_some_and(|flow| flow.algorithm == request.caller)
 }
 
+/// Checks caller `forall r. returns(actual,r) implies r=actual`.
+/// Exact child/caller bodies return the immutable actual in every execution.
+/// No ensures, existential witness or function equation is assumed; this boolean
+/// supplies no source authentication, schema reporting or Proof authority.
+#[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "reuse the original relation and equality without a single-use representation"
+)]
+pub fn check_unary_caller_return_postcondition(
+    core: &CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    callee_flow: mizar_core::control_flow::ControlFlowId,
+    target: (
+        CoreAlgorithmId,
+        mizar_core::control_flow::ControlFlowId,
+        CoreAlgorithmStmtId,
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+        (CoreVarId, Option<CoreAlgorithmStmtId>),
+    ),
+    binder: CoreVarId,
+    conclusion: [(CoreVarId, Option<CoreAlgorithmStmtId>); 2],
+    context: &[CoreFormulaId],
+) -> bool {
+    // Reuse the whole structural check, not its typing proposition as a premise.
+    conclusion == [target.4, target.3]
+        && check_unary_caller_return_typing(
+            core,
+            request,
+            callee_flow,
+            target,
+            binder,
+            (target.4, "object"),
+            context,
+        )
+}
+
 /// Checks caller `forall r,s. (returns(actual,r) & returns(actual,s)) implies r=s`.
 /// Both executions return the immutable actual through the exact child Return/Apply.
 /// This boolean supplies no source authentication, schema or Proof authority.

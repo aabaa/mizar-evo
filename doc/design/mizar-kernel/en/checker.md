@@ -120,6 +120,11 @@ Proof identity/policy/adoption, single-valuedness or broader credit follows from
 Every child return is its immutable formal instantiated by the actual parameter; the caller returns exactly that child's result (§20.1.2, §20.2.6). This fixes the type of every returned result independently of E4 existence. No returns/requires/ensures/equality premise is installed. The callee flow is checked locally; source authentication remains VC-owned. No evidence holder, Proof authority, single-valuedness or later acceptance credit follows. The direct-return rule is unchanged.
 `check_unary_caller_return_typing_schema` takes the identical inputs and calls that unchanged boolean rule once; only success returns Kernel-owned `Some(1_u16)`, otherwise `None`. The scalar reports the checked rule schema without Proof schema association, policy eligibility or native adoption.
 
+## Bounded Unary Caller E2 Postcondition
+
+`check_unary_caller_return_postcondition(core, request, callee_flow, target, binder, conclusion, context)` checks `forall r. returns_caller(actual,r) implies r=actual` under only the original caller object guard. Require the ordered equality `[target.result, target.input]` and reuse unchanged caller typing validation for exact bodies, request/slot/Apply joins, definition-free values, fresh binder, guards, cycle safety and caller CFG/Return matching.
+Every child return is its immutable formal instantiated by the actual, and the caller returns exactly that result (§20.1.2, §20.2.6, §20.13.1 E2). Structural validation establishes equality for every returned result without assuming typing evidence, E4 existence, ensures or a function equation. Retained contract clauses are not interpreted or used as premises. The boolean supplies no source authentication, VC facade, schema reporting/storage, Proof authority or later acceptance credit.
+
 ## Bounded Unary Caller E1 Single-Valuedness
 
 `check_unary_caller_return_single_valuedness(core, request, callee_flow, targets, binders, conclusion, context)` checks two exact caller relations with common caller/CFG/Return/actual input, distinct globally fresh result binders, definition-free results and ordered equality under only the original caller object guard. Each binder passes unchanged unary-child body/guard/slot/Apply and cycle validation before caller CFG matching.
