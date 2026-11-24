@@ -2523,6 +2523,43 @@ pub struct SourceUnaryCallerE4Association<'core> {
 }
 
 impl<'core> SourceUnaryCallerE4Association<'core> {
+    /// Retains the freshly authenticated clause-bearing caller descriptor and checked result.
+    pub fn from_source_with_ensures(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<Self, String> {
+        let (descriptor, result) =
+            mizar_vc::generator::check_source_unary_child_call_caller_ensures_e4_result(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(Self {
+            request: request.clone(),
+            descriptor,
+            result,
+        })
+    }
+
+    /// Reauthenticates caller ensures before whole equality and exact arena matching.
+    pub fn matches_source_with_ensures(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<bool, String> {
+        let descriptor =
+            mizar_vc::generator::generate_source_unary_child_call_caller_ensures_e4_request(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(request == &self.request
+            && descriptor == self.descriptor
+            && std::ptr::eq(core, self.result.core()))
+    }
+
     /// Obtains temporary genuine child evidence and retains the checked caller products.
     pub fn from_source(
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
