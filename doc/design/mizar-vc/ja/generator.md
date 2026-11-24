@@ -626,6 +626,12 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_caller_ensures_e4_result(source, typed, symbols, core, request)` は未変更の request producer を最初に一度呼ぶ。認証済み Core と descriptor から callee flow/Return、actual input、fresh result、元の guard を取り、未変更 Kernel child rule で同一 Core の真正な child evidence を得て caller composition rule に渡す。成功時だけ変更しない descriptor と既存 opaque caller result を一体で返す。認証エラーを優先し、局所拒否は `algorithms.unary_child.invalid_caller_e4_request`。result は actual witness と guard を保持し、等しい cloned Core も自身の arena で検査する。旧拒否と Proof identity/policy/adoption、全体 acceptance/status、currentness、footprint/cache、publication の deferral は維持する。
 
+## Clause-bearing unary caller E1 single-valuedness request
+
+`generate_source_unary_child_call_caller_ensures_e1_single_valuedness_request(source, typed, symbols, core, request)` は変更しない [ensures E4 producer](#clause-bearing-unary-caller-e4-request) を最初に一度呼び、認証・エラー、元の context prefix/policy inputs と caller relation を保持する。次の context ID、異なる sort key、検査付き後続 variable で第二 result 宣言を追加し、存在量化行の metadata を同じ caller/flow/Return/actual の第二 returns に使う。既存六行 tuple に And、順序付き ProgramEquals、Implies、両宣言の Forall を追加し、追加行は空 provenance の SplitGoal とする。局所 shape/overflow/context 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。
+
+元の object-input guard だけの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件のままで、ensures・E1/E3・child returns を前提や証明にしない。checking、identity、adoption、storage、後続権限を与えず、legacy 拒否と E4 の保留事項を維持する。
+
 ## Clause-bearing unary caller E1 inhabitation request
 
 `generate_source_unary_child_call_caller_ensures_e1_inhabitation_request(source, typed, symbols, core, request)` は変更しない [ensures E4 producer](#clause-bearing-unary-caller-e4-request) を一度先に呼び、認証と上流エラーを保持する。row zero の AlgorithmReturns shape だけを `ProgramTypePredicate(object(result))` に置換し、context、fresh binder、Exists row、metadata をそのまま保持し、既存 tuple の witness として `request.actual` を返す。局所 shape 拒否は E2 error を維持する。唯一の caller object guard の下で、returns や requires/ensures を仮定せず全 typed input に `exists r. object(r)` を要求する。checking、evidence、identity、adoption、後続権限を与えない。legacy の clause-bearing 拒否と E4 の保留事項は維持する。
