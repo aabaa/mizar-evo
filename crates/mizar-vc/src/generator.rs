@@ -2999,6 +2999,28 @@ pub fn generate_source_unary_child_call_caller_e2_request(
     Ok((context, rows))
 }
 
+/// Requests clause-bearing caller result typing without checking or adopting it.
+pub fn generate_source_unary_child_call_caller_ensures_e1_typing_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let (context, mut rows) =
+        generate_source_unary_child_call_caller_e2_request(source, typed, symbols, core, request)?;
+    let Shape::AlgorithmReturns { result, .. } = rows[0].shape else {
+        return Err("algorithms.unary_child.invalid_caller_e2_request".to_owned());
+    };
+    rows[1].shape = Shape::ProgramTypePredicate {
+        subject: result,
+        ty: "object".into(),
+    };
+    Ok((context, rows))
+}
+
 /// Requests clause-bearing caller normal return without checking or adopting it.
 pub fn generate_source_unary_child_call_caller_ensures_e4_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
