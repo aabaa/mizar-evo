@@ -697,6 +697,8 @@ arena 間 canonical 一致は association を認可しない。typing/single-val
 
 ## Native caller E4 adoption
 
+`NativeUnaryCallerE4Existential` の `from_source_with_ensures` は変更しない ensures consumer を一度呼び、既存 field に association 全体を保持し fingerprint を破棄する。`adopt_original_request_with_ensures` は最初に変更しない `matches_source_with_ensures` を呼び、上流エラーを保持する。request/descriptor 全体または Core pointer の不一致は、現行 Builtin 有効性と保持する実際の checker-schema の完全一致検査より先に false を返す。policy 拒否は変更しない。各 adoption は identity 前提・schema 保存・Kernel 再検査なしで渡された現行 policy を確認する。legacy adoption/identity は引き続き caller ensures を拒否し、後段の権限は与えない。
+
 `NativeUnaryCallerE4Existential::from_source` は既存の [caller consumer](#caller-e4-current-policy-consumption) を一度呼び、association 全体を非公開で保持し fingerprint を破棄する。`adopt_original_request` は最初に既存の認証付き `matches_source` を呼ぶ。エラーは保持し、request/descriptor 全体または Core arena 同一性の不一致なら policy 検査前に false を返す。一致時は現行 Builtin 有効性と実際の checker-schema の完全一致を要求し、caller consumer と同じ拒否を使う。
 true は渡された現行 policy の下で元の caller existential のみを採用する。currentness は呼出側が担う。切り離した入力、complete footprint/cache、E1/E2/whole acceptance、status、promotion/publication、owner-gated authority は与えない。
 `obligation_identity` は adoption と同じ六入力を取り、変更しない adoption を先に一度呼ぶ。エラーを保持し false は None を返す。true のとき同じ五つの source 入力で保持 association の変更しない [caller identity](#arena-local-caller-e4-association) を返し、caller hashes・domain・anchor・raw slice 全体を保持する。各呼出しは現行 policy を確認し、arena 間の canonical equality は adoption や reuse を認可しない。

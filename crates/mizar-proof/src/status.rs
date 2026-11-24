@@ -2762,6 +2762,48 @@ pub struct NativeUnaryCallerE4Existential<'core> {
 }
 
 impl<'core> NativeUnaryCallerE4Existential<'core> {
+    /// Retains the whole authenticated clause-bearing caller under supplied policy.
+    pub fn from_source_with_ensures(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (association, _) = consume_source_unary_caller_ensures_e4_existential(
+            source, typed, symbols, core, request, policy,
+        )?;
+        Ok(Self { association })
+    }
+
+    /// Authenticates caller ensures before arena matching and current-policy adoption.
+    /// Source/environment/filesystem currentness remains caller-owned.
+    pub fn adopt_original_request_with_ensures(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source_with_ensures(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        if !policy
+            .kernel_evidence_formats()
+            .contains(&crate::policy::KernelEvidenceFormat::BuiltinKernelEvidence)
+            || policy.checker_schema_version() != self.association.result().checker_schema_version()
+        {
+            return Err("algorithm.proof.unary_caller_e4_policy_rejected".to_owned());
+        }
+        Ok(true)
+    }
+
     /// Authenticates and retains the whole caller association under supplied policy.
     pub fn from_source(
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
