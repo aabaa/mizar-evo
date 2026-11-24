@@ -1,0 +1,25 @@
+# Task VC53-PROOF-CALLER-ENSURES-E1-SINGLE-VALUEDNESS-POLICY: ensures single-valuedness current-policy consumption
+Canonical language: English; [Japanese pointer](../ja/VC53-PROOF-CALLER-ENSURES-E1-SINGLE-VALUEDNESS-POLICY.md).
+Status: frozen bounded consumer. Tier: full; new public Proof API fails pattern eligibility.
+Owner: [Proof](../../mizar-proof/en/00.crate_plan.md). Consumer: mizar-test.
+Dependencies: [ensures schema association](VC53-PROOF-CALLER-ENSURES-E1-SINGLE-VALUEDNESS-SCHEMA-ASSOCIATION.md), [legacy single-valuedness policy](VC53-PROOF-CALLER-E1-SINGLE-VALUEDNESS-POLICY.md), [ensures E4 policy precedent](VC53-PROOF-CALLER-ENSURES-E4-POLICY.md).
+Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1 E1/E3](../../../spec/en/20.algorithm_and_verification.md).
+Invariants: [single-valuedness association](../../mizar-proof/en/status.md#arena-local-caller-e1-single-valuedness-association), [policy rule](../../mizar-proof/en/status.md#caller-e1-single-valuedness-current-policy-consumption), [runner/test design](../../mizar-test/en/harness.md#algorithm--logic).
+Gap: source_drift/test_gap; actual same-call ensures single-valuedness schema is available without explicit current-policy consumption. No language-intent gap or external prerequisite.
+
+## Frozen scope and design
+Add only `consume_source_unary_caller_ensures_e1_single_valuedness(source, typed, symbols, core, request, policy)` in Proof status.rs returning existing `(SourceUnaryCallerE1SingleValuednessAssociation, PolicyFingerprint)`.
+FIRST call unchanged `SourceUnaryCallerE1SingleValuednessAssociation::from_source_with_ensures_and_schema` exactly once on identical inputs, preserving every upstream error. Inline require enabled `BuiltinKernelEvidence` and exact policy checker-schema equality with the actual returned schema; otherwise reuse `algorithm.proof.unary_caller_e1_single_valuedness_policy_rejected`. Return the whole association and current `policy.policy_fingerprint()` atomically.
+Each invocation checks its supplied current policy; earlier products grant no authority. Preserve whole request/tuple, exact Core association and caller-owned currentness. No identity prerequisite, schema stamping/storage, detached input, new type, field, helper, fixture, parallel representation or duplicate check.
+Preserve legacy constructor/recheck/identity/policy/native refusals for clause-bearing inputs and child/E4/inhabitation/direct-return boundaries. Exclude native single-valuedness adoption, typing, E2, whole acceptance/status, currentness receipts, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope.
+Files: Proof status.rs, existing [algorithm regressions](../../../../crates/mizar-test/src/runner/tests/algorithm.rs), paired Proof status/plan documents and this contract. No lower-stage production, language intent, diagnostic, spec/.miz/expectation/trace/audit-status, AGENTS or protocol edits.
+
+## Test matrix and exit
+Cap: four existing ensures fixture families; confirm one genuine consumer success before expansion. Reuse independent tuple/Kernel-schema oracles and [ensures return fixture](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz); no new shared fixture or changed test intent.
+1. Genuine rename/trivia/equal-spelling/optional-terminating variants: whole request/tuple, actual VC/Kernel schema, same-Core recheck, repeatability and input/prior-product purity. Legacy recheck/identity refuse.
+2. Default, builtin-only, development, interactive, changed profile/policy-schema return exact current fingerprints. Empty/formula-only formats and wrong checker schema refuse; other formats cannot compensate. Prior products persist and valid policy recovers.
+3. Complete existing request/Core drift and calibrated foreign/stale/forged source/typed/environment/combined errors preserve exact constructor errors before denied policy. Equal cloned Core consumes freshly but cannot match old association; authentic changed inputs consume independently and original association recovers.
+4. Unsupported/malformed/no-clause/direct-return controls preserve exact producer refusals before policy. Legacy single-valuedness policy/native/identity and lower-stage refusals plus no-clause successes remain; no later authority follows.
+Require independent specification/test-intent/trust, sufficiency, precision/trust, removable-only volume, source/docs/EN-JA and final quality reviews.
+Run fmt, all-target/all-feature Clippy -D warnings, both lint_policy suites including links/fragments, Proof/VC/Kernel owner groups, algorithm/source_algorithm regressions and short proof-verification E2E. Changed policy/authentication/association matrices run; unchanged heavy evidence/cache/aggregate-acceptance/edit-versus-clean defer to Muse sealed integration. Full cargo test only on cadence; lane push:no has no full trigger.
+Exit: freeze committed before implementation; explicit current-policy consumption returns the whole ensures single-valuedness association while preserving excluded authority.
