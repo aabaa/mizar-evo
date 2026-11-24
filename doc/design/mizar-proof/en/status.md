@@ -723,6 +723,8 @@ This passive caller identity grants no currentness, current-policy consumption/n
 
 ## Caller E4 current-policy consumption
 
+`consume_source_unary_caller_ensures_e4_existential` takes the same six inputs and first calls `SourceUnaryCallerE4Association::from_source_with_ensures` once, preserving upstream errors. It applies the same Builtin/exact actual checker-schema rule and refusal below, returning the whole clause-bearing association/current fingerprint without an identity prerequisite. Legacy consumer, identity and native adoption continue to refuse caller ensures; no schema storage or later authority follows.
+
 `consume_source_unary_caller_e4_existential(source, typed, symbols, core, request, policy)` FIRST calls the unchanged [caller association constructor](#arena-local-caller-e4-association) once, preserving upstream errors before policy checks. Require enabled `BuiltinKernelEvidence` and exact policy checker-schema agreement with the actual caller Kernel result; otherwise return `algorithm.proof.unary_caller_e4_policy_rejected`. Return the whole association/current `policy.policy_fingerprint()` atomically. Earlier success grants no authority; currentness remains caller-owned. Passive identity stays policy-independent; no native adoption, status, E1/E2/whole acceptance, publication or cache authority follows.
 
 ## Native caller E4 adoption

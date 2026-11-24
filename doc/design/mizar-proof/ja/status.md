@@ -691,6 +691,8 @@ arena 間 canonical 一致は association を認可しない。typing/single-val
 
 ## Caller E4 current-policy consumption
 
+`consume_source_unary_caller_ensures_e4_existential` は同じ六入力で最初に `SourceUnaryCallerE4Association::from_source_with_ensures` を一度呼び、下位エラーを保持する。以下と同じ Builtin・実際の checker-schema 完全一致の規則と拒否を使い、identity を前提にせず clause-bearing association 全体と現在の fingerprint を返す。従来の consumer、identity、native adoption は caller ensures を引き続き拒否し、schema storage や後段の権限は追加しない。
+
 `consume_source_unary_caller_e4_existential(source, typed, symbols, core, request, policy)` は最初に既存の [caller association constructor](#arena-local-caller-e4-association) を一度だけ呼び、policy 検査より先に下位エラーを保持する。`BuiltinKernelEvidence` の有効化と実際の caller Kernel result の checker-schema と policy の完全一致を要求し、不一致は `algorithm.proof.unary_caller_e4_policy_rejected`。association 全体と現在の `policy.policy_fingerprint()` を atomic に返す。過去の成功は権限を与えず、currentness は呼出側が担う。受動的 identity は policy に依存せず、native adoption、status、E1/E2/whole acceptance、publication、cache authority は与えない。
 
 ## Native caller E4 adoption
