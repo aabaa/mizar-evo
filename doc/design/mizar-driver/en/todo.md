@@ -732,3 +732,7 @@ Check the task off here once tests pass.
   artifact commits never happen in completion order.
 - LSP entry points reuse the same driver API through `mizar-lsp`; this
   crate stays protocol-agnostic.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B01, PERF-C03. Pending owner-contract freeze and dependency readiness; no completion credit.

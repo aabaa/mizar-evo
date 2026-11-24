@@ -1113,3 +1113,9 @@ Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
 
 - [~] [MVM-R8-CORPUS-DESIGN](../../task_contracts/en/MVM-R8-CORPUS-DESIGN.md) — [R8-A–H stage-gated matrix](./mvm_corpus_matrix.md) drafted; independent reviews and documentation lint pending. No executable tests or new coverage.
 - [ ] [AST-CORPUS](../../task_contracts/en/AST-CORPUS.md).
+
+## Performance follow-up
+
+- Draft contract: [PERF-A01](../../task_contracts/en/PERF-A01.md).
+- Draft contract: [PERF-A02](../../task_contracts/en/PERF-A02.md).
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-A03, PERF-A04, PERF-A05, PERF-A06, PERF-C05, PERF-E04.

@@ -384,3 +384,7 @@ cargo test -p mizar-checker
 - [~] [MVM-R3-ARTIFACT-LOADER-DESIGN](../../task_contracts/ja/MVM-R3-ARTIFACT-LOADER-DESIGN.md) — [実行 Artifact / loader 設計](./mvm_runtime_export.md)草案。独立レビュー・lint 未実施。R3 実装はブロック中。
 
 - [ ] [AST-ARTIFACT](../../task_contracts/ja/AST-ARTIFACT.md).
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-E03. 契約レビューと依存条件成立後に着手。

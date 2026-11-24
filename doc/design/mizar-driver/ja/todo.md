@@ -699,3 +699,7 @@ cargo test -p mizar-frontend
   コミットは決して完了順では行われない。
 - LSP のエントリポイントは `mizar-lsp` を通じて同じ driver API を再利用
   する。この crate はプロトコル非依存に留まる。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-B01, PERF-C03. 契約レビューと依存条件成立後に着手。

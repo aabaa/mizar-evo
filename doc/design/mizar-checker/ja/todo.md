@@ -1381,3 +1381,7 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b6_native_connective_composition_preserves_installed_replay`.
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b7_native_quantifier_composition_preserves_installed_replay`.
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task258_native_let_statements_preserve_source_intent_and_installed_replay`.
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-B04, PERF-B05, PERF-D01, PERF-D02, PERF-D06 (consumer). 契約レビューと依存条件成立後に着手。

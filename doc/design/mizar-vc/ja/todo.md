@@ -643,3 +643,7 @@ task の `external_dependency_gap` / `deferred` verification item として分�
 ## Premise ranking integration
 
 - [ ] [ATPK-PREMISE-RANKING](../../task_contracts/ja/ATPK-PREMISE-RANKING.md): VC selection assembly after authentic fact/formula/budget producers.
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C04, PERF-B06 (dependency slices and VC indexes). 既存の producer と受理判定の責務境界を維持する。

@@ -468,3 +468,7 @@ task にチェックを付ける。
 - キャッシュレコードは内部用であり、opaque payload bytes を保存してよい。
   raw-IR encoding と adapter integration は `mizar-ir` の external dependency gap の
   ままであり、この crate は placeholder IR storage API を invent してはならない。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C04. 契約レビューと依存条件成立後に着手。

@@ -313,3 +313,7 @@ Check the task off here once tests pass.
 - The resident-set discipline (interfaces resident, bodies lazy, witnesses
   external) is qualitative; budgets and benchmarks live in the test
   strategy.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B02, PERF-C02. Pending owner-contract freeze and dependency readiness; no completion credit.

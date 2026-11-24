@@ -571,3 +571,7 @@ Check the task off here once tests pass.
 
 - [~] [MVM-R7-CERTIFIED-IMPORT-DESIGN](../../task_contracts/en/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) — [R7-A–E verified computation import design](./mvm_computation_import.md) drafted; independent reviews/documentation checks pending. Proof computation implementation remains blocked.
 - [ ] [AST-COMPUTE](../../task_contracts/en/AST-COMPUTE.md).
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C03, PERF-D05 (accepted-evidence reuse and selection), PERF-D06 (Template proof evidence reuse; early design, genuine producer-gated implementation). Consumer coordination; preserve existing producer and acceptance ownership.

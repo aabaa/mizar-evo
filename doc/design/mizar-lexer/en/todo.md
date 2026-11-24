@@ -291,3 +291,7 @@ This first-pass audit records common text-processing pitfalls and whether the cu
 | Huge files / long lines / memory | Benchmark covered for large `.miz`-like input | `lexer_pipeline` measures preprocessing, raw scanning, and `SourceLineIndex` construction separately. | Add specialized long-line benchmarks if later profiling shows line-length sensitivity. |
 | Panic safety under arbitrary text | Covered for lexer valid UTF-8 entry points | The `lexer_valid_utf8` cargo-fuzz target exercises `preprocess_source_for_lexing`, direct `scan_raw`, and `scan_raw` over preprocessed lexical text. | Promote minimized fuzz failures into the committed corpus when discovered. |
 | File/path text normalization | Partially covered outside lexing | `module_source_name_from_path` normalizes separators and validates identifier-shaped components. | Source-loading/path layer should own symlink, case, `.`/`..`, and platform path edge cases. |
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-E01. Pending owner-contract freeze and dependency readiness; no completion credit.

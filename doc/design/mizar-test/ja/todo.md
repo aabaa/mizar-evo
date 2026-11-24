@@ -1063,3 +1063,9 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 
 - [~] [MVM-R8-CORPUS-DESIGN](../../task_contracts/ja/MVM-R8-CORPUS-DESIGN.md) — [R8-A〜H 段階別テスト設計](./mvm_corpus_matrix.md)草案。独立レビューと文書 lint 待ち。実行・カバレッジは未達。
 - [ ] [AST-CORPUS](../../task_contracts/ja/AST-CORPUS.md).
+
+## 性能改善の後続作業
+
+- 契約草案: [PERF-A01](../../task_contracts/ja/PERF-A01.md).
+- 契約草案: [PERF-A02](../../task_contracts/ja/PERF-A02.md).
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-A03, PERF-A04, PERF-A05, PERF-A06, PERF-C05, PERF-E04.

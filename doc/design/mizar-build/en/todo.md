@@ -528,3 +528,7 @@ the next-phase handoff.
   (cache is optimization, not authority — `mizar-cache`'s contract).
 
 - [ ] [BUILD-TOOLCHAIN-PIN](../../task_contracts/en/BUILD-TOOLCHAIN-PIN.md).
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C01. Pending owner-contract freeze and dependency readiness; no completion credit.

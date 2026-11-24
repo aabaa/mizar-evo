@@ -721,3 +721,7 @@ Check off the task here once its tests pass.
     `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4`. This is historical
     evidence, not a current-HEAD claim after the documentation-closure commit.
     The implementation task is closed.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-E01, PERF-C04 (consumer of lexer/cache work). Consumer coordination; preserve existing producer and acceptance ownership.

@@ -433,6 +433,8 @@ architecture レベルで修正済みであり、以下のタスクが実装と�
       case 5。
 
 32. **solver step-budget deferral の再訪(F3)。** [ ]
+    - 状態: pending のトリガー待ち作業。active でも owner 判断待ちでもない。
+      再着手のトリガーは固定した `batsat` バージョンの変更。
     - 可用性のみのギャップ: `batsat` 0.6.0 が決定的な conflict/propagation
       budget を公開しないため、solve 中に checker `timeout` が発火できない。
       固定した依存が変わる際に再評価する: budget API を採用する(task-24
@@ -532,3 +534,7 @@ cargo test -p mizar-checker
 - 依存集合を最小かつ監査済みに保つ。健全性に関わるコードは共有された
   巧妙さより重複を選ぶ（substitution checker は再利用ではなく再検査する）。
 - この crate の近傍では fail/健全性テストが pass テストより優先される。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-D04, PERF-D06 (consumer), PERF-D07. 契約レビューと依存条件成立後に着手。

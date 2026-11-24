@@ -514,3 +514,7 @@ hard gates、deferred items、verification、human review surface、next-phase h
   ない（キャッシュは最適化であって権威ではない — `mizar-cache` の契約）。
 
 - [ ] [BUILD-TOOLCHAIN-PIN](../../task_contracts/ja/BUILD-TOOLCHAIN-PIN.md).
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C01. 契約レビューと依存条件成立後に着手。

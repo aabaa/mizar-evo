@@ -889,3 +889,7 @@ cargo test -p mizar-vc
 - [x] exact staging/cached-diff review、task-only implementation commit、post-commit proof、fresh
   successor inventoryをlanguage-local [central historical checkpoint](../../task_contracts/ja/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md#historical-immediate-post-implementation-checkpoint)
   で完了。successorはselectせず、Task 277Bはnot ready/semantic credit zeroのまま。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-B03. 契約レビューと依存条件成立後に着手。

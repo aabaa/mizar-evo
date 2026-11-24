@@ -694,3 +694,7 @@ cargo test -p mizar-proof
 - Backend proof method と log は diagnostic または extraction input のみである。
   `AtpProvenance`、kernel evidence、trusted handoff material、resolution trace
   certificate ではない。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-D03 (early design/integration), PERF-D05, PERF-D07 (consumer). 契約レビューと依存条件成立後に着手。

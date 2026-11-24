@@ -300,3 +300,7 @@ cargo test -p mizar-artifact
   artifact は含んではならない — 射影境界がこれを強制する。
 - resident-set 規律（インターフェースは常駐、本体は遅延、witness は
   外部）は定性的であり、予算とベンチマークはテスト戦略にある。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-B02, PERF-C02. 契約レビューと依存条件成立後に着手。

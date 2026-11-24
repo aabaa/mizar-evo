@@ -1186,3 +1186,7 @@ Check the task off here once tests pass.
 - [x] [AST-COMPUTATION-CONTEXTUAL-INPUTS](../../task_contracts/en/AST-COMPUTATION-CONTEXTUAL-INPUTS.md) — explicit contextual computation-input syntax and direct thesis placement.
 
 - [~] [AST-PARSE](../../task_contracts/en/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs open; lexical/match retirement implemented.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-E02. Pending owner-contract freeze and dependency readiness; no completion credit.

@@ -127,7 +127,7 @@ All crates below are workspace members. "Next work" points into the
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [~] prior milestone plus [Step 5C.1](./task_contracts/en/STEP5C1-VARIABLE-SEMANTICS.md), [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md), [Step 5C.3](./task_contracts/en/STEP5C3-ATTRIBUTE-SEMANTICS.md), [Step 5C.4](./task_contracts/en/STEP5C4-MODE-SEMANTICS.md), [Step 5C.5](./task_contracts/en/STEP5C5-PREDICATE-FUNCTOR-SEMANTICS.md), [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md), [Step 5C.8](./task_contracts/en/STEP5C8-FORMULA-SEMANTICS.md), [Step 5C.9](./task_contracts/en/STEP5C9-PROOF-ORGANIZATION.md), and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) semantics | Remaining producer tasks under existing dependencies; Task 277B remains not-ready/zero-credit | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone, tasks 27-32, plus [Step 5C.2](./task_contracts/en/STEP5C2-STRUCTURE-SEMANTICS.md) and [Step 5C.7](./task_contracts/en/STEP5C7-TERM-SEMANTICS.md) bounded normalization and [Step 5C.10](./task_contracts/en/STEP5C10-THEOREM-SKELETONS.md) theorem-skeleton lowering | Broader producer Tasks 33-53 beyond the Step 5 alpha corpus, under the Task-32 graph | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] contradiction VC milestone through task 31; bounded theorem services and direct-return E1/E4 request/checking prerequisites implemented | Broader Tasks 32-55 and Step 7 task 60; VC 40/53 and S1 dependencies remain explicit | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted evidence parsing and checking | [x] SAT-backed milestone plus bounded theorem reflexivity and E1/E4 checking implemented | Step 7 task 36; task 32 remains parked | [todo](./mizar-kernel/en/todo.md) |
+| mizar-kernel | Trusted evidence parsing and checking | [x] SAT-backed milestone plus bounded theorem reflexivity and E1/E4 checking implemented | Step 7 task 36; task 32 is pending/trigger-based; re-entry requires a pinned `batsat` version change | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone through task 29; guarded Vampire extraction and explicit sequential portfolio execution implemented | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone through task 21; bounded theorem witness and native E1-inhabitation/E4 adoption implemented | Step 7 task 23 and accepted-output reuse integration | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete through task 24 | step 7 | [todo](./mizar-cache/en/todo.md) |
@@ -146,6 +146,8 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 `mizar-test` task-20 reserve-bridge closeout. Steps 1-3 close audited
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
+
+Performance planning inventory (owner direction 2026-11-24): the [performance roadmap](./performance_optimization_roadmap.md) records 28 packages and 79 audit findings, not a second dispatch queue. This top-level TODO Sequential Execution Plan remains the ordering authority. [PERF-A01](./task_contracts/en/PERF-A01.md) and all later PERF implementation work dispatch only after the VC53-E1 chain completes. A01 measures the post-chain sealed revision; its measurement ranking selects the next package. [PERF-A02](./task_contracts/en/PERF-A02.md) remains a draft candidate, not a fixed successor. Only reviewed, dependency-ready owner contracts may dispatch; owner-gated scope remains excluded.
 
 ### Development-process improvement priority
 
@@ -529,7 +531,7 @@ corpus seeds; checker/core implementation tasks in step 4 are unblocked.
 ### Step 3 — Kernel-contract completion and audit-consumer alignment [x]
 
 Finish the remaining kernel-audit producer/consumer follow-ups so the July
-audit inventory is closed except the parked and externally paced rows. Depends
+audit inventory is closed except the trigger-based and externally paced rows. Depends
 on step 1.
 
 1. [x] [mizar-vc task 29](./mizar-vc/en/todo.md) — imported-statement
@@ -550,8 +552,8 @@ on step 1.
    source-derived kernel-corpus-through-ATP-candidate execution remains
    classified as an external/deferred extraction gap rather than mocked.
 
-Exit: every July kernel-audit finding is implemented, parked with a recorded
-trigger (kernel 32), or resolved by the Step 4 kernel re-audit (kernel 35).
+Exit: every July kernel-audit finding is implemented, pending a pinned `batsat`
+version change (kernel 32; neither active nor owner-parked), or resolved by the Step 4 kernel re-audit (kernel 35).
 
 ### Step 4 — Checker/core audit implementation [x]
 
@@ -1382,7 +1384,7 @@ Not part of the sequential flow; each row records its re-entry trigger.
 
 | Item | Trigger |
 |---|---|
-| [mizar-kernel task 32](./mizar-kernel/en/todo.md) — solver step-budget deferral (audit F3) | any pinned `batsat` version change (task-24 audit procedure) |
+| [mizar-kernel task 32](./mizar-kernel/en/todo.md) — pending, trigger-based solver step-budget revisit (audit F3); neither active nor owner-parked | any pinned `batsat` version change (task-24 audit procedure) |
 | [mizar-parser task 46](./mizar-parser/en/todo.md) — concrete operator declarations | [x] completed after fresh audit confirmed frontend Task 20 had already met the trigger |
 | [mizar-syntax task 21](./mizar-syntax/en/todo.md) — rustdoc summaries | deferred documentation pass |
 | MVM execution (spec 20) | Actual execution follows the existing reflected-syntax contracts and the [MVM readiness decomposition](#mvm-readiness-decomposition--); R1 is independently preparatory, while R2-R8 require their documented producers and reviewed owner contracts. |

@@ -746,3 +746,7 @@ Check the task off here once tests pass.
 - Backend proof methods and logs are diagnostic or extraction input only. They
   are not `AtpProvenance`, kernel evidence, trusted handoff material, or a
   resolution trace certificate.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-D03 (early design/integration), PERF-D05, PERF-D07 (consumer). Pending owner-contract freeze and dependency readiness; no completion credit.

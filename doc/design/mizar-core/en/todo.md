@@ -814,3 +814,7 @@ Check the task off here once tests pass.
 ## AST specification implementation follow-up
 
 - [ ] [AST-LOWER](../../task_contracts/en/AST-LOWER.md).
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B06. Pending owner-contract freeze and dependency readiness; no completion credit.

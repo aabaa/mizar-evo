@@ -489,3 +489,7 @@ broad verification pass.
 - Cache records are internal and may store opaque payload bytes; raw-IR
   encoding and adapter integration remain `mizar-ir` external dependency gaps,
   so this crate must not invent placeholder IR storage APIs.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C04. Pending owner-contract freeze and dependency readiness; no completion credit.

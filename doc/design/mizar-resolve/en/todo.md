@@ -952,3 +952,7 @@ Check the task off here once tests pass.
   historical checkpoint](../../task_contracts/en/RESOLVE-FRAENKEL-GENERATOR-VAR-277R2.md#historical-immediate-post-implementation-checkpoint).
   No successor is selected; Task 277B remains not ready with zero semantic
   credit.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B03. Pending owner-contract freeze and dependency readiness; no completion credit.

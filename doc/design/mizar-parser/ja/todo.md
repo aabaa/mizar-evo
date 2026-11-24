@@ -1135,3 +1135,7 @@ cargo test -p mizar-test
 
 - [x] [AST-COMPUTATION-CONTEXTUAL-INPUTS](../../task_contracts/ja/AST-COMPUTATION-CONTEXTUAL-INPUTS.md) — 明示的な計算引数の構文と直接のthesis配置。
 - [~] [AST-PARSE](../../task_contracts/ja/AST-PARSE.md) — expr types complete; Binder-root increment complete, remaining hosts/patterns/contextual inputs open; lexical/match retirement implemented.
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-E02. 契約レビューと依存条件成立後に着手。

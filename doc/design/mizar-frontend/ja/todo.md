@@ -352,3 +352,7 @@ cargo test -p mizar-lexer
     `stash@{0}=f65cf4a13752ec380710814a9ac6392ccb9d75d4` を observe した。これは historical
     evidence であり、documentation-closure commit 後の current-HEAD claim ではない。
     implementation task は closed。
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-E01, PERF-C04 (consumer of lexer/cache work). 既存の producer と受理判定の責務境界を維持する。

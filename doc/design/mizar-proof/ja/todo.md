@@ -549,3 +549,7 @@ cargo test -p mizar-cache
 
 - [~] [MVM-R7-CERTIFIED-IMPORT-DESIGN](../../task_contracts/ja/MVM-R7-CERTIFIED-IMPORT-DESIGN.md) — [R7-A〜E 計算証拠変換設計](./mvm_computation_import.md)草案。独立レビュー・文書検査待ち。実装はブロック中。
 - [ ] [AST-COMPUTE](../../task_contracts/ja/AST-COMPUTE.md).
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C03, PERF-D05 (accepted-evidence reuse and selection), PERF-D06 (Template proof evidence reuse; early design, genuine producer-gated implementation). 既存の producer と受理判定の責務境界を維持する。

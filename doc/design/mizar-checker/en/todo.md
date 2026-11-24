@@ -1459,3 +1459,7 @@ Contract: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/en/CHECKER-STACK-DEPTH-
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b6_native_connective_composition_preserves_installed_replay`.
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task257b7_native_quantifier_composition_preserves_installed_replay`.
 - `runner::proof_verification::term_proof_tests::source_theorem_scoped::task258_native_let_statements_preserve_source_intent_and_installed_replay`.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B04, PERF-B05, PERF-D01, PERF-D02, PERF-D06 (consumer). Pending owner-contract freeze and dependency readiness; no completion credit.

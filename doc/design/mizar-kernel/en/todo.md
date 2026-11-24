@@ -450,6 +450,8 @@ Every finding maps to a task or a recorded disposition:
       `formula_evidence.md`; soundness_argument.md F2, edge case 5.
 
 32. **Solver step-budget deferral revisit (F3).** [ ]
+    - Status: pending, trigger-based; neither active nor owner-parked.
+      Re-entry requires a pinned `batsat` version change.
     - Availability-only gap: checker `timeout` cannot fire during
       `batsat` solving because 0.6.0 exposes no deterministic
       conflict/propagation budget. Re-evaluate when the pinned dependency
@@ -554,3 +556,7 @@ Check the task off here once tests pass.
   favors duplication over shared cleverness (the substitution checker
   re-checks, it does not reuse).
 - Fail/soundness tests take priority over pass tests near this crate.
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-D04, PERF-D06 (consumer), PERF-D07. Pending owner-contract freeze and dependency readiness; no completion credit.
