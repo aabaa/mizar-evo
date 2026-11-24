@@ -624,6 +624,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_caller_ensures_e1_inhabitation_request(source, typed, symbols, core, request)` は変更しない [ensures E4 producer](#clause-bearing-unary-caller-e4-request) を一度先に呼び、認証と上流エラーを保持する。row zero の AlgorithmReturns shape だけを `ProgramTypePredicate(object(result))` に置換し、context、fresh binder、Exists row、metadata をそのまま保持し、既存 tuple の witness として `request.actual` を返す。局所 shape 拒否は E2 error を維持する。唯一の caller object guard の下で、returns や requires/ensures を仮定せず全 typed input に `exists r. object(r)` を要求する。checking、evidence、identity、adoption、後続権限を与えない。legacy の clause-bearing 拒否と E4 の保留事項は維持する。
 
+`check_source_unary_child_call_caller_ensures_e1_inhabitation_result` は変更しない request producer を同じ入力で最初に一度呼び、上流エラーを保持する。fresh な宣言 binder、atomic object body、保持した actual witness、唯一の元の guard を変更しない [Kernel introduction](../../mizar-kernel/en/checker.md#bounded-e1-inhabitation-witness-introduction) に一度渡し、guard を child obligation と唯一の context の両方に使う。成功時のみ元の tuple 全体と同じ呼び出しの opaque `ObjectInhabitationCheck` を返し、局所拒否は `algorithms.unary_child.invalid_existential_request` を保持する。等しい cloned Core は自身に束縛された evidence を得る。caller object inhabitation のみを検査し、除外した後続 authority は別のままとする。
+
 ## Bounded unary child existential
 
 `generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` は descriptor で Core/request 全体を認証する。既存型の組 `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` は元 caller object guard のみを CheckerFact とし、fresh result binder、行0の `AlgorithmReturns(callee, flow, callee Return, actual, r)`、行1の `Exists r`、actual witness を保持する。immutable Core/request は source・Apply・Return・formal/actual/result-slot 対応を保持する。VcSet・seed・scheduling・snapshot identity は作らない。
