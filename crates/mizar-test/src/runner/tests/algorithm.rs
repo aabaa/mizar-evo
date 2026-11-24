@@ -409,6 +409,7 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
 
 #[test]
 fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
+    use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
     use mizar_proof::status::{SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4, consume_source_unary_caller_e4_existential as consume_e4};
     use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson as J, HashClass, SchemaVersion};
@@ -490,7 +491,11 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap();
         let native_ensures_e4 = NativeE4::from_source_with_ensures(
             &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap();
+        let native_ensures_e1 = NativeE1::from_source_with_ensures(
+            &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap();
         assert!(native_ensures_e4.adopt_original_request_with_ensures(
+            &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap());
+        assert!(native_ensures_e1.adopt_original_request_with_ensures(
             &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap());
         assert_eq!(consumed_e4.request(), e4_association.request());
         assert_eq!(consumed_e4.descriptor(), e4_association.descriptor());
@@ -779,10 +784,16 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
                 assert_eq!(consumed_e4.matches_source_with_ensures(&source, &typed, collected.env(), current, &request).unwrap(), std::ptr::eq(current, &core));
                 let current_native_e4 = NativeE4::from_source_with_ensures(
                     &source, &typed, collected.env(), current, &request, &current_policy).unwrap();
+                let current_native_e1 = NativeE1::from_source_with_ensures(
+                    &source, &typed, collected.env(), current, &request, &current_policy).unwrap();
                 for _ in 0..2 {
                     assert!(current_native_e4.adopt_original_request_with_ensures(
                         &source, &typed, collected.env(), current, &request, &current_policy).unwrap());
+                    assert!(current_native_e1.adopt_original_request_with_ensures(
+                        &source, &typed, collected.env(), current, &request, &current_policy).unwrap());
                     assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(
+                        &source, &typed, collected.env(), current, &request, &current_policy).unwrap(), std::ptr::eq(current, &core));
+                    assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(
                         &source, &typed, collected.env(), current, &request, &current_policy).unwrap(), std::ptr::eq(current, &core));
                 }
                 assert_eq!(consume_e4(&source, &typed, collected.env(), current, &request, &current_policy).err().unwrap(),
@@ -832,19 +843,33 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             policy.clone().with_checker_schema_version(association_schema - 1),
             policy.clone().with_kernel_evidence_formats([Format::BuiltinKernelEvidence])
                 .with_checker_schema_version(association_schema + 1),
+            policy.clone().with_kernel_evidence_formats([Format::BuiltinKernelEvidence, Format::FormulaSubstitution])
+                .with_checker_schema_version(association_schema + 1),
         ] {
             let denied_before = denied.clone();
             assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_caller_e4_policy_rejected");
             assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &denied).err().unwrap(),
                 "algorithm.proof.unary_caller_e4_policy_rejected");
+            assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &denied).err().unwrap(),
+                "algorithm.proof.native_e1_policy_rejected");
             assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &denied).unwrap_err(),
                 "algorithm.proof.unary_caller_e4_policy_rejected");
+            assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &denied).unwrap_err(),
+                "algorithm.proof.native_e1_policy_rejected");
             assert!(!native_ensures_e4.adopt_original_request_with_ensures(
+                &source, &typed, collected.env(), &cloned_core, &request, &denied).unwrap());
+            assert!(!native_ensures_e1.adopt_original_request_with_ensures(
                 &source, &typed, collected.env(), &cloned_core, &request, &denied).unwrap());
             let recovered_native_e4 = NativeE4::from_source_with_ensures(
                 &source, &typed, collected.env(), &core, &request, &policy).unwrap();
+            let recovered_native_e1 = NativeE1::from_source_with_ensures(
+                &source, &typed, collected.env(), &core, &request, &policy).unwrap();
             for product in [&native_ensures_e4, &recovered_native_e4] {
+                assert!(product.adopt_original_request_with_ensures(
+                    &source, &typed, collected.env(), &core, &request, &policy).unwrap());
+            }
+            for product in [&native_ensures_e1, &recovered_native_e1] {
                 assert!(product.adopt_original_request_with_ensures(
                     &source, &typed, collected.env(), &core, &request, &policy).unwrap());
             }
@@ -942,6 +967,8 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             assert_eq!(e1_association.descriptor(), &e1_before);
             assert!(native_ensures_e4.adopt_original_request_with_ensures(
                 &source, &typed, collected.env(), &core, &request, &policy).unwrap());
+            assert!(native_ensures_e1.adopt_original_request_with_ensures(
+                &source, &typed, collected.env(), &core, &request, &policy).unwrap());
             assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
             assert_eq!(native.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), identity);
             assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), &core, &request).unwrap(), raw);
@@ -966,6 +993,10 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
             assert_eq!(mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(
                 &source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
+            assert_eq!(native_ensures_e1.adopt_original_request(
+                &source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error);
+            assert_eq!(native_ensures_e1.obligation_identity(
+                &source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error);
         }
         assert!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap());
         assert_eq!(native_ensures_e4.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap_err(), error);
@@ -990,6 +1021,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
 
 #[test]
 fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
+    use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
     use mizar_proof::status::{SourceUnaryCallerE1InhabitationAssociation as E1Association, SourceUnaryCallerE2Association as E2Association, SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_checker::{type_checker::check_source_unary_child_call as check,
@@ -1018,6 +1050,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let policies_before = (policy.clone(), denied.clone());
     let native_ensures_e4 = NativeE4::from_source_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap();
+    let native_ensures_e1 = NativeE1::from_source_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap();
     let native = NativeE2::from_source(&source, &typed, symbols, &core, &request, &policy).unwrap();
     assert!(native.adopt_original_request(&source, &typed, symbols, &core, &request, &policy).unwrap());
     let (consumed, fingerprint) = consume_e2(&source, &typed, symbols, &core, &request, &policy).unwrap();
@@ -1075,7 +1108,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_ensures_e4(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
+            assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
+            assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
             assert_eq!(consume_e2(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(NativeE2::from_source(&source, &typed, symbols, &core, &changed, current_policy).err().unwrap(), invalid, "request {mutation}");
             assert_eq!(native.adopt_original_request(&source, &typed, symbols, &core, &changed, current_policy).unwrap_err(), invalid, "request {mutation}");
@@ -1262,7 +1297,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     for current_policy in [&policy, &denied] {
         assert_eq!(consume_ensures_e4(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(NativeE4::from_source_with_ensures(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
+        assert_eq!(NativeE1::from_source_with_ensures(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
+        assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
         assert_eq!(consume_e2(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(NativeE2::from_source(&source, &forged, symbols, &core, &request, current_policy).err().unwrap(), forged_error);
         assert_eq!(native.adopt_original_request(&source, &forged, symbols, &core, &request, current_policy).unwrap_err(), forged_error);
@@ -1307,14 +1344,18 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_ensures_e4(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
+            assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
+            assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
             assert_eq!(consume_e2(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(NativeE2::from_source(&source, &typed, symbols, &changed, &request, current_policy).err().unwrap(), invalid, "Core {index}");
             assert_eq!(native.adopt_original_request(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
             assert_eq!(native.obligation_identity(&source, &typed, symbols, &changed, &request, current_policy).unwrap_err(), invalid, "Core {index}");
             assert_eq!(consume_ensures_e4(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(NativeE4::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
+            assert_eq!(NativeE1::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
+            assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
             assert_eq!(consume_e2(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(NativeE2::from_source(&source, &forged, symbols, &changed, &wrong_request, current_policy).err().unwrap(), forged_error, "combined {index}");
             assert_eq!(native.adopt_original_request(&source, &forged, symbols, &changed, &wrong_request, current_policy).unwrap_err(), forged_error, "combined {index}");
@@ -1379,12 +1420,20 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
             let other_native_e4 = NativeE4::from_source_with_ensures(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
+            let other_native_e1 = NativeE1::from_source_with_ensures(
+                &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap();
             assert!(other_native_e4.adopt_original_request_with_ensures(
+                &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
+            assert!(other_native_e1.adopt_original_request_with_ensures(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request, &policy).unwrap());
             for current_policy in [&policy, &denied] {
                 assert!(!native_ensures_e4.adopt_original_request_with_ensures(
                     &other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
+                assert!(!native_ensures_e1.adopt_original_request_with_ensures(
+                    &other_source, &other_typed, other_collected.env(), &other_core, &other_request, current_policy).unwrap());
                 assert!(!other_native_e4.adopt_original_request_with_ensures(
+                    &source, &typed, symbols, &core, &request, current_policy).unwrap());
+                assert!(!other_native_e1.adopt_original_request_with_ensures(
                     &source, &typed, symbols, &core, &request, current_policy).unwrap());
             }
             assert_eq!(other_fingerprint, policy.policy_fingerprint());
@@ -1465,7 +1514,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_ensures_e4(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
+                assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
+                assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
                 assert_eq!(consume_e2(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(NativeE2::from_source(&source, &typed, symbols, &other_core, &other_request, current_policy).err().unwrap(), invalid);
                 assert_eq!(native.adopt_original_request(&source, &typed, symbols, &other_core, &other_request, current_policy).unwrap_err(), invalid);
@@ -1511,7 +1562,9 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                 for current_request in [&request, &wrong_request] {
                     assert_eq!(consume_ensures_e4(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(NativeE4::from_source_with_ensures(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
+                    assert_eq!(NativeE1::from_source_with_ensures(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
+                    assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
                     assert_eq!(consume_e2(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(NativeE2::from_source(s, t, e, &core, current_request, current_policy).err().unwrap(), expected);
                     assert_eq!(native.adopt_original_request(s, t, e, &core, current_request, current_policy).unwrap_err(), expected);
@@ -1542,7 +1595,11 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         let (recovered_e4, recovered_return) = check_e4(&source, &typed, symbols, &core, &request).unwrap();
         let (recovered_consumed, recovered_fingerprint) = consume_ensures_e4(&source, &typed, symbols, &core, &request, &policy).unwrap();
         let recovered_native_e4 = NativeE4::from_source_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap();
+        let recovered_native_e1 = NativeE1::from_source_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap();
         for product in [&native_ensures_e4, &recovered_native_e4] {
+            assert!(product.adopt_original_request_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap());
+        }
+        for product in [&native_ensures_e1, &recovered_native_e1] {
             assert!(product.adopt_original_request_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap());
         }
         assert_eq!(recovered_fingerprint, policy.policy_fingerprint());
@@ -1589,6 +1646,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
 
 #[test]
 fn unary_caller_ensures_refuses_unsupported_source_clauses() {
+    use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
     use mizar_proof::status::{SourceUnaryCallerE1InhabitationAssociation as E1Association, SourceUnaryCallerE2Association as E2Association, SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_checker::{type_checker::check_source_unary_child_call, typed_ast::{TypedArena, TypedNode, TypedNodeId}};
@@ -1609,6 +1667,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let native_ensures_e4 = NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+    let native_ensures_e1 = NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     let native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     assert!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     let (consumed, fingerprint) = consume_e2(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
@@ -1647,7 +1706,9 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
+                assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
+                assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
             }
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
@@ -1673,7 +1734,9 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
+                assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
+                assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
                 assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), error, "{label}");
@@ -1709,7 +1772,9 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
         for current_policy in [&policy, &denied] {
             assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), current_core, current_request, current_policy).err().unwrap(), error);
             assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request, current_policy).err().unwrap(), error);
+            assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request, current_policy).err().unwrap(), error);
             assert_eq!(native_ensures_e4.adopt_original_request_with_ensures(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
+            assert_eq!(native_ensures_e1.adopt_original_request_with_ensures(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
             assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), current_core, current_request, current_policy).err().unwrap(), error);
             assert_eq!(native.adopt_original_request(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
             assert_eq!(native.obligation_identity(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
@@ -1726,7 +1791,11 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     assert_eq!(e4_association.request(), &request);
     assert_eq!(e4_association.descriptor(), &generate_e4(&source, &typed, collected.env(), &core, &request).unwrap());
     let recovered_native_e4 = NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
+    let recovered_native_e1 = NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
     for product in [&native_ensures_e4, &recovered_native_e4] {
+        assert!(product.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
+    }
+    for product in [&native_ensures_e1, &recovered_native_e1] {
         assert!(product.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     }
     let recovered_native = NativeE2::from_source(&source, &typed, collected.env(), &core, &request, &policy).unwrap();
@@ -4024,6 +4093,7 @@ fn unary_child_descriptor_refuses_request_core_and_authentication_drift_atomical
 
 #[test]
 fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
+    use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
     use mizar_proof::status::{SourceUnaryCallerE1InhabitationAssociation as E1Association, SourceUnaryCallerE2Association as E2Association,
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_proof::policy::VerifierPolicy as Policy;
@@ -4062,12 +4132,18 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
             &source, &typed, collected.env(), &core, &request).unwrap_err());
     let native_caller = NativeE4::from_source(
         &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap();
+    let native_inhabitation = NativeE1::from_source(
+        &source, &typed, collected.env(), &core, &request, &Policy::default()).unwrap();
     for current_policy in [Policy::default(), Policy::default().with_kernel_evidence_formats([])] {
         assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
             "algorithms.unary_child.invalid_caller_e2_request");
         assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
             "algorithms.unary_child.invalid_caller_e2_request");
+        assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
+            "algorithms.unary_child.invalid_caller_e2_request");
         assert_eq!(native_caller.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &current_policy).unwrap_err(),
+            "algorithms.unary_child.invalid_caller_e2_request");
+        assert_eq!(native_inhabitation.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, &current_policy).unwrap_err(),
             "algorithms.unary_child.invalid_caller_e2_request");
         assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, &current_policy).err().unwrap(),
             mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
@@ -4154,9 +4230,6 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     let native = mizar_proof::status::NativeUnaryChildCallExistential::from_source(
         &source, &typed, collected.env(), &core, &request, &policy,
     ).unwrap();
-    let native_inhabitation = mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(
-        &source, &typed, collected.env(), &core, &request, &policy,
-    ).unwrap();
     assert!(native_inhabitation.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
     assert_eq!(native_inhabitation.obligation_identity(&source, &typed, collected.env(), &core, &request, &policy).unwrap().unwrap(), e1_identity);
     assert!(native_caller.adopt_original_request(&source, &typed, collected.env(), &core, &request, &policy).unwrap());
@@ -4241,7 +4314,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
         assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
+        assert_eq!(NativeE1::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(native_caller.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), upstream);
+        assert_eq!(native_inhabitation.adopt_original_request_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).unwrap_err(), upstream);
         assert_eq!(consume_e2(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(NativeE2::from_source(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);
         assert_eq!(consume_single(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), upstream);

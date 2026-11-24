@@ -2484,6 +2484,44 @@ pub struct NativeUnaryCallerE1Inhabitation<'core> {
 }
 
 impl<'core> NativeUnaryCallerE1Inhabitation<'core> {
+    /// Authenticates clause-bearing caller inhabitation before consuming current policy.
+    pub fn from_source_with_ensures(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let association = SourceUnaryCallerE1InhabitationAssociation::from_source_with_ensures(
+            source, typed, symbols, core, request,
+        )?;
+        crate::policy::ProofPolicyEvaluator::new(policy.clone())
+            .consume_object_inhabitation(association.result())?;
+        Ok(Self { association })
+    }
+
+    /// Reauthenticates caller ensures before mismatch refusal and current policy.
+    pub fn adopt_original_request_with_ensures(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source_with_ensures(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        crate::policy::ProofPolicyEvaluator::new(policy.clone())
+            .consume_object_inhabitation(self.association.result())?;
+        Ok(true)
+    }
+
     /// Authenticates and checks the whole request before consuming current policy.
     pub fn from_source(
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

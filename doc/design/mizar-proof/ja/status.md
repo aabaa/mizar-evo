@@ -682,6 +682,8 @@ arena 間 canonical 一致は association を認可しない。typing/single-val
 
 `obligation_identity` は採用と同じ六入力で、最初に既存の採用を一度呼ぶ。エラーを保持し、false なら None を返す。true の場合のみ、同じ五つの source 入力で保持 association の既存 [E1 identity](#arena-local-caller-e1-inhabitation-association) と raw slice 全体を返し、E1 domain・hash・anchor を保持する。毎回現行 policy を検査し、arena 間の canonical equality は採用・再利用の権限を与えない。
 
+`from_source_with_ensures` は同じ六入力で既存の clause-bearing association を一度構築し、保持する実際の result を同じ object-policy evaluator に渡し、既存 association のみを保持する。`adopt_original_request_with_ensures` は最初に `matches_source_with_ensures` を呼び、認証エラーを保持し、request/tuple 全体または Core ポインタが不一致なら false を返す。一致時のみ毎回現行 policy を評価し、既存 E1 拒否を保持する。Kernel 再検査や schema storage は追加しない。従来の採用、passive/native identity、独立した policy consumption は変更せず、この holder の identity を含め caller ensures を拒否する。後続権限は付与しない。
+
 ## Arena-local caller E4 association
 
 `SourceUnaryCallerE4Association` の `from_source_with_ensures` は同じ五つの source 入力で既存 VC clause-bearing E4 checker を一度だけ呼び、request 全体の複製、正確な descriptor、同じ呼出しの checked result を既存 field に atomic に保持する。`matches_source_with_ensures` は最初に clause-bearing descriptor を再認証し、Kernel 再検査なしで request/descriptor 全体と Core ポインタの一致を要求する。同内容の別 arena は古い association に一致せず、新規構築は成功する。この二つは局所 association/recheck のみを与え、既存 getter が保持値を返し、currentness は呼出側が担う。従来の構築/recheck、identity、policy consumption、native adoption は変更せず、この association の identity を含め caller ensures を拒否する。schema storage や後段の権限は追加しない。
