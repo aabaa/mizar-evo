@@ -2079,15 +2079,30 @@ impl<'core> SourceUnaryCallerE1TypingAssociation<'core> {
         core: &'core mizar_core::core_ir::CoreIr,
         request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
     ) -> Result<Self, String> {
-        let descriptor =
-            mizar_vc::generator::check_source_unary_child_call_caller_ensures_e1_typing_request(
+        Self::from_source_with_ensures_and_schema(source, typed, symbols, core, request)
+            .map(|(association, _)| association)
+    }
+
+    /// Retains the clause-bearing tuple and reports its actual same-call Kernel schema.
+    pub fn from_source_with_ensures_and_schema(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<(Self, u16), String> {
+        let (descriptor, schema) =
+            mizar_vc::generator::check_source_unary_child_call_caller_ensures_e1_typing_request_with_schema(
                 source, typed, symbols, core, request,
             )?;
-        Ok(Self {
-            request: request.clone(),
-            descriptor,
-            core,
-        })
+        Ok((
+            Self {
+                request: request.clone(),
+                descriptor,
+                core,
+            },
+            schema,
+        ))
     }
 
     /// Reauthenticates clauses before whole equality and same-arena matching.
