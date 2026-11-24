@@ -3020,6 +3020,75 @@ pub fn generate_source_unary_child_call_caller_ensures_e4_request(
     Ok((context, [returns, existential]))
 }
 
+/// Authenticates caller ensures E4 before checking child and caller return in the same Core.
+pub fn check_source_unary_child_call_caller_ensures_e4_result<'core>(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &'core mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<
+    (
+        (LocalContext, [crate::vc_ir::VcGeneratedFormula; 2]),
+        mizar_kernel::checker::AlgorithmReturnsExistentialCheck<'core>,
+    ),
+    String,
+> {
+    let descriptor = generate_source_unary_child_call_caller_ensures_e4_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let crate::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
+    let callee = core.algorithms().get(request.callee).ok_or_else(invalid)?;
+    let [callee_return] = callee.statements.as_slice() else {
+        return Err(invalid());
+    };
+    let child = mizar_kernel::checker::check_unary_child_returns_existential_result(
+        core,
+        request,
+        (
+            request.callee,
+            callee_flow,
+            *callee_return,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        result.var,
+        request.actual,
+        &[guard],
+    )
+    .ok_or_else(invalid)?;
+    let checked = mizar_kernel::checker::check_unary_caller_returns_existential_result(
+        core,
+        request,
+        (
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        &child,
+        &[guard],
+    )
+    .ok_or_else(invalid)?;
+    Ok((descriptor, checked))
+}
+
 /// Checks the freshly authenticated caller postcondition and returns its unchanged request.
 pub fn check_source_unary_child_call_caller_e2_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
