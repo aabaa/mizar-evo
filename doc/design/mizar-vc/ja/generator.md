@@ -632,7 +632,7 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 元の object-input guard だけの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件のままで、ensures・E1/E3・child returns を前提や証明にしない。identity、adoption、storage、後続権限を与えず、legacy 拒否と E4 の保留事項を維持する。
 
-`check_source_unary_child_call_caller_ensures_e1_single_valuedness_request` は変更しない producer を最初に一度呼び、上流 error を保持する。唯一の元 guard、両宣言 binder、正確な caller targets と順序付き equality を射影し、認証済み Core から callee flow を再構築して、変更しない [Kernel boolean](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-single-valuedness) を一度呼ぶ。true のときだけ変更しない六行 tuple 全体を返し、局所 shape/flow/Kernel 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。schema reporting、Proof や後続 authority は与えない。
+`check_source_unary_child_call_caller_ensures_e1_single_valuedness_request_with_schema` は変更しない producer を最初に一度呼び、上流 error を保持する。唯一の元 guard、両宣言 binder、正確な caller targets と順序付き equality を射影し、認証済み Core から callee flow を再構築して、既存 [Kernel schema checker](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-single-valuedness) を一度呼ぶ。成功時だけ変更しない六行 tuple 全体と同一呼び出しの実際の schema を返し、局所 shape/flow/Kernel 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。旧 `check_source_unary_child_call_caller_ensures_e1_single_valuedness_request` は委譲して scalar だけを捨てる。要求 schema の受入れや刻印、storage、Proof や後続 authority は与えない。
 
 ## Clause-bearing unary caller E1 inhabitation request
 
