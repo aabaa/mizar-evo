@@ -630,7 +630,9 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_caller_ensures_e1_single_valuedness_request(source, typed, symbols, core, request)` は変更しない [ensures E4 producer](#clause-bearing-unary-caller-e4-request) を最初に一度呼び、認証・エラー、元の context prefix/policy inputs と caller relation を保持する。次の context ID、異なる sort key、検査付き後続 variable で第二 result 宣言を追加し、存在量化行の metadata を同じ caller/flow/Return/actual の第二 returns に使う。既存六行 tuple に And、順序付き ProgramEquals、Implies、両宣言の Forall を追加し、追加行は空 provenance の SplitGoal とする。局所 shape/overflow/context 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。
 
-元の object-input guard だけの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件のままで、ensures・E1/E3・child returns を前提や証明にしない。checking、identity、adoption、storage、後続権限を与えず、legacy 拒否と E4 の保留事項を維持する。
+元の object-input guard だけの下で `forall r,s. (returns_caller(actual,r) & returns_caller(actual,s)) -> r=s` を要求する。returns は前件のままで、ensures・E1/E3・child returns を前提や証明にしない。identity、adoption、storage、後続権限を与えず、legacy 拒否と E4 の保留事項を維持する。
+
+`check_source_unary_child_call_caller_ensures_e1_single_valuedness_request` は変更しない producer を最初に一度呼び、上流 error を保持する。唯一の元 guard、両宣言 binder、正確な caller targets と順序付き equality を射影し、認証済み Core から callee flow を再構築して、変更しない [Kernel boolean](../../mizar-kernel/ja/checker.md#bounded-unary-caller-e1-single-valuedness) を一度呼ぶ。true のときだけ変更しない六行 tuple 全体を返し、局所 shape/flow/Kernel 拒否は `algorithms.unary_child.invalid_caller_e4_request` を維持する。schema reporting、Proof や後続 authority は与えない。
 
 ## Clause-bearing unary caller E1 inhabitation request
 
