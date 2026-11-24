@@ -14,7 +14,7 @@ Recheck FIRST calls unchanged VC `generate_source_unary_child_call_caller_ensure
 Preserve the authenticated bounded unary object profile, sole original caller guard, fresh declared binder, exact target/object conclusion, metadata and links. Clauses and optional terminating intent grant no further authority.
 Keep old constructors/rechecks, canonical identity, policy consumption and native adoption unchanged: they still refuse caller ensures, including identity on the new association. No new type, field, helper, fixture, schema storage, detached constructor or parallel representation.
 Exclude single-valuedness, E2/E4 adoption, whole acceptance/status, currentness receipts, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope. No lower-stage production, language-intent, diagnostic, spec/.miz/expectation/trace/audit-status, AGENTS or protocol edits.
-Files: Proof status.rs, existing runner tests/algorithm.rs, paired Proof status/plan documents and this contract. Audit coverage/owner/deferral unchanged.
+Files: Proof status.rs, existing runner tests/algorithm.rs, paired Proof status/plan documents and this contract.
 
 ## Test matrix and exit
 Cap: four existing ensures fixture families; confirm one genuine successful association/recheck before expanding. Reuse existing independent typing/projection oracles and the [ensures return fixture](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz); no changed test intent.

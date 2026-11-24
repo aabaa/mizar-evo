@@ -410,6 +410,7 @@ fn unary_call_identities_normalize_binders_and_track_semantic_owners() {
 #[test]
 fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
     use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
+    use mizar_proof::status::SourceUnaryCallerE1TypingAssociation as TypingAssociation;
     use mizar_proof::status::{SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4, consume_source_unary_caller_e4_existential as consume_e4};
     use mizar_artifact::store::{CanonicalHashDomain, CanonicalJson as J, HashClass, SchemaVersion};
@@ -547,6 +548,12 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         projected_typing.1[1].shape = Shape::ProgramTypePredicate { subject: result, ty: "object".into() };
         assert_eq!(typing, projected_typing);
         assert_eq!(check_typing(&source, &typed, collected.env(), &core, &request).unwrap(), typing);
+        let typing_association = TypingAssociation::from_source_with_ensures(
+            &source, &typed, collected.env(), &core, &request).unwrap();
+        assert_eq!(typing_association.request(), &request);
+        assert_eq!(typing_association.descriptor(), &typing);
+        assert!(typing_association.matches_source_with_ensures(
+            &source, &typed, collected.env(), &core, &request).unwrap());
         let (checked_e1, checked_inhabitation) = check_e1(
             &source, &typed, collected.env(), &core, &request).unwrap();
         let e1_association = E1Association::from_source_with_ensures(
@@ -739,6 +746,16 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             assert_eq!(fresh_inhabitation.binder(), result.var);
             assert_eq!(fresh_inhabitation.context(), &[guard]);
             assert_eq!(fresh_inhabitation.checker_schema_version(), 1);
+            let fresh_typing = TypingAssociation::from_source_with_ensures(
+                &source, &typed, collected.env(), current, &request).unwrap();
+            for retained in [&typing_association, &fresh_typing] {
+                assert_eq!(retained.request(), &request);
+                assert_eq!(retained.descriptor(), &typing);
+            }
+            assert!(fresh_typing.matches_source_with_ensures(
+                &source, &typed, collected.env(), current, &request).unwrap());
+            assert_eq!(typing_association.matches_source_with_ensures(
+                &source, &typed, collected.env(), current, &request).unwrap(), std::ptr::eq(current, &core));
             let fresh_e1_association = E1Association::from_source_with_ensures(
                 &source, &typed, collected.env(), current, &request).unwrap();
             assert_eq!(fresh_e1_association.request(), &request);
@@ -1004,9 +1021,20 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         assert_eq!(e4_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
         assert_eq!(e4_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
         assert_eq!(E1Association::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
+        assert_eq!(TypingAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
         assert_eq!(e1_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(typing_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
         assert_eq!(e1_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(typing_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap_err(), error);
+        assert_eq!(TypingAssociation::from_source_with_schema(
+            &source, &typed, collected.env(), &core, &request).err().unwrap(),
+            mizar_vc::generator::check_source_unary_child_call_caller_e1_typing_request_with_schema(
+                &source, &typed, collected.env(), &core, &request).unwrap_err());
         for current_policy in [&policy, &policy.clone().with_kernel_evidence_formats([])] {
+            assert_eq!(NativeTyping::from_source(
+                &source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
+            assert_eq!(consume_typing(
+                &source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
             assert_eq!(mizar_proof::status::NativeUnaryCallerE1Inhabitation::from_source(
                 &source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error);
             assert_eq!(native_ensures_e1.adopt_original_request(
@@ -1032,7 +1060,6 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         assert_eq!(mizar_proof::status::SourceUnaryChildCallAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
         assert_eq!(SingleAssociation::from_source(&source, &typed, collected.env(), &core, &request).err().unwrap(), error);
         assert_eq!(consume_single(&source, &typed, collected.env(), &core, &request, &policy).err().unwrap(), error);
-        assert_eq!(consume_typing(&source, &typed, collected.env(), &core, &request, &policy).err().unwrap(), error);
         assert_eq!((source, typed, collected.env().clone()), before);
     }
 }
@@ -1040,6 +1067,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
 #[test]
 fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
+    use mizar_proof::status::SourceUnaryCallerE1TypingAssociation as TypingAssociation;
     use mizar_proof::status::{SourceUnaryCallerE1InhabitationAssociation as E1Association, SourceUnaryCallerE2Association as E2Association, SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_checker::{type_checker::check_source_unary_child_call as check,
@@ -1068,6 +1096,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     assert_eq!(check_typing(&source, &typed, symbols, &core, &request).unwrap(), genuine_typing);
     let e4_association = E4Association::from_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap();
     let e1_association = E1Association::from_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap();
+    let typing_association = TypingAssociation::from_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap();
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
     let policies_before = (policy.clone(), denied.clone());
@@ -1123,8 +1152,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(check_e4(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         assert_eq!(E1Association::from_source_with_ensures(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
+        assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
+        assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(check_e2(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(check_e2_schema(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(E2Association::from_source(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
@@ -1314,8 +1345,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     assert_eq!(check_e4(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     assert_eq!(E4Association::from_source_with_ensures(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     assert_eq!(E1Association::from_source_with_ensures(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
+    assert_eq!(TypingAssociation::from_source_with_ensures(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     assert_eq!(e4_association.matches_source_with_ensures(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(e1_association.matches_source_with_ensures(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
+    assert_eq!(typing_association.matches_source_with_ensures(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(check_e2(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(check_e2_schema(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(E2Association::from_source(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
@@ -1347,8 +1380,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(check_e4(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
         assert_eq!(E1Association::from_source_with_ensures(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
+        assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
+        assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(check_e2(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(check_e2_schema(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(E2Association::from_source(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
@@ -1365,8 +1400,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(check_e4(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         assert_eq!(E1Association::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
+        assert_eq!(TypingAssociation::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(e1_association.matches_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
+        assert_eq!(typing_association.matches_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(check_e2(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(check_e2_schema(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(E2Association::from_source(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
@@ -1429,6 +1466,16 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(other_inhabitation.binder(), result.var);
             assert_eq!(other_inhabitation.context(), &[other_core.algorithms().get(other_request.caller).unwrap().params[0].ty_guard.unwrap()]);
             assert_eq!(other_inhabitation.checker_schema_version(), 1);
+            let fresh_typing = TypingAssociation::from_source_with_ensures(
+                &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            assert_eq!(fresh_typing.request(), &other_request);
+            assert_eq!(fresh_typing.descriptor(), &other_typing);
+            assert!(fresh_typing.matches_source_with_ensures(
+                &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!typing_association.matches_source_with_ensures(
+                &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap());
+            assert!(!fresh_typing.matches_source_with_ensures(
+                &source, &typed, symbols, &core, &request).unwrap());
             let fresh_e1 = E1Association::from_source_with_ensures(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(fresh_e1.request(), &other_request);
@@ -1514,8 +1561,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(check_e4(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             assert_eq!(E1Association::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
+            assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
+            assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(check_e2(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(check_e2_schema(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             let fresh = E2Association::from_source(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
@@ -1575,8 +1624,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(check_e4(s, t, e, &core, &request).err().unwrap(), expected);
             assert_eq!(E4Association::from_source_with_ensures(s, t, e, &core, &request).err().unwrap(), expected);
             assert_eq!(E1Association::from_source_with_ensures(s, t, e, &core, &request).err().unwrap(), expected);
+            assert_eq!(TypingAssociation::from_source_with_ensures(s, t, e, &core, &request).err().unwrap(), expected);
             assert_eq!(e4_association.matches_source_with_ensures(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(e1_association.matches_source_with_ensures(s, t, e, &core, &request).unwrap_err(), expected);
+            assert_eq!(typing_association.matches_source_with_ensures(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(check_e2(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(check_e2_schema(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(E2Association::from_source(s, t, e, &core, &request).err().unwrap(), expected);
@@ -1593,8 +1644,10 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(check_e4(s, t, e, &core, &wrong_request).err().unwrap(), expected);
             assert_eq!(E4Association::from_source_with_ensures(s, t, e, &core, &wrong_request).err().unwrap(), expected);
             assert_eq!(E1Association::from_source_with_ensures(s, t, e, &core, &wrong_request).err().unwrap(), expected);
+            assert_eq!(TypingAssociation::from_source_with_ensures(s, t, e, &core, &wrong_request).err().unwrap(), expected);
             assert_eq!(e4_association.matches_source_with_ensures(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(e1_association.matches_source_with_ensures(s, t, e, &core, &wrong_request).unwrap_err(), expected);
+            assert_eq!(typing_association.matches_source_with_ensures(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(check_e2(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(check_e2_schema(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(E2Association::from_source(s, t, e, &core, &wrong_request).err().unwrap(), expected);
@@ -1632,6 +1685,13 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert!(e1_association.matches_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap());
         assert_eq!(e1_association.request(), &request);
         assert_eq!(e1_association.descriptor(), &recovered_e1);
+        let recovered_typing = TypingAssociation::from_source_with_ensures(
+            &source, &typed, symbols, &core, &request).unwrap();
+        for retained in [&typing_association, &recovered_typing] {
+            assert_eq!(retained.request(), &request);
+            assert_eq!(retained.descriptor(), &genuine_typing);
+            assert!(retained.matches_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap());
+        }
         let recovered_e1_association = E1Association::from_source_with_ensures(
             &source, &typed, symbols, &core, &request).unwrap();
         assert_eq!(recovered_e1_association.descriptor(), &genuine_e1);
@@ -1690,6 +1750,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
 #[test]
 fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     use mizar_proof::status::NativeUnaryCallerE1Inhabitation as NativeE1;
+    use mizar_proof::status::SourceUnaryCallerE1TypingAssociation as TypingAssociation;
     use mizar_proof::status::{SourceUnaryCallerE1InhabitationAssociation as E1Association, SourceUnaryCallerE2Association as E2Association, SourceUnaryCallerE4Association as E4Association,
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_checker::{type_checker::check_source_unary_child_call, typed_ast::{TypedArena, TypedNode, TypedNodeId}};
@@ -1709,6 +1770,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     let association = E2Association::from_source(&source, &typed, collected.env(), &core, &request).unwrap();
     let e4_association = E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap();
     let e1_association = E1Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap();
+    let typing_association = TypingAssociation::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap();
     let genuine_identity = association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap();
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
@@ -1751,6 +1813,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(check_e1(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(E1Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
+            assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
                 assert_eq!(NativeE4::from_source_with_ensures(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
@@ -1760,6 +1823,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             }
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
+            assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
         } else {
             let typed = received.unwrap();
             let error = check_source_unary_child_call(&source, collected.env(), &typed).unwrap_err();
@@ -1773,8 +1837,10 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(check_e4(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(E1Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
+            assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
+            assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request(
                 &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_e2_request_with_schema(
@@ -1816,8 +1882,10 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
         assert_eq!(check_e4(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
         assert_eq!(E1Association::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
+        assert_eq!(TypingAssociation::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
         assert_eq!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
+        assert_eq!(typing_association.matches_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
         if no_clause { assert_eq!(error, "algorithms.unary_child.invalid_caller_e2_request"); }
         assert_eq!(canonical_caller_e2(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
         assert_eq!(association.obligation_identity(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
@@ -1839,6 +1907,13 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
     assert!(e1_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap());
     assert_eq!(e1_association.request(), &request);
     assert_eq!(e1_association.descriptor(), &genuine_e1);
+    let recovered_typing = TypingAssociation::from_source_with_ensures(
+        &source, &typed, collected.env(), &core, &request).unwrap();
+    for retained in [&typing_association, &recovered_typing] {
+        assert_eq!(retained.request(), &request);
+        assert_eq!(retained.descriptor(), &genuine_typing);
+        assert!(retained.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap());
+    }
     assert_eq!(E1Association::from_source_with_ensures(
         &source, &typed, collected.env(), &core, &request).unwrap().descriptor(), &genuine_e1);
     assert!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap());
@@ -4177,6 +4252,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(E1Association::from_source_with_ensures(
         &source, &typed, collected.env(), &core, &request).err().unwrap(),
         "algorithms.unary_child.invalid_caller_e2_request");
+    assert_eq!(TypingAssociation::from_source_with_ensures(
+        &source, &typed, collected.env(), &core, &request).err().unwrap(),
+        "algorithms.unary_child.invalid_caller_e2_request");
     assert_eq!(mizar_vc::generator::check_source_unary_child_call_caller_ensures_e4_result(
         &source, &typed, collected.env(), &core, &request).err().unwrap(),
         "algorithms.unary_child.invalid_caller_e2_request");
@@ -4242,6 +4320,9 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
         &source, &typed, collected.env(), &core, &request,
     ).unwrap());
     assert!(typing_association.matches_source(&source, &typed, collected.env(), &core, &request).unwrap());
+    assert_eq!(typing_association.matches_source_with_ensures(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(),
+        "algorithms.unary_child.invalid_caller_e2_request");
     let typing_identity = typing_association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap();
     assert_eq!(typing_identity.1, canonical_caller_typing(&source, &typed, collected.env(), &core, &request).unwrap().3);
     let policy = Policy::default();
@@ -4353,6 +4434,10 @@ fn unary_child_request_keeps_old_lowering_and_direct_return_vc_boundaries() {
     assert_eq!(check_typing(&source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(E1Association::from_source_with_ensures(
         &source, &typed, collected.env(), &core, &request).err().unwrap(), upstream);
+    assert_eq!(TypingAssociation::from_source_with_ensures(
+        &source, &typed, collected.env(), &core, &request).err().unwrap(), upstream);
+    assert_eq!(typing_association.matches_source_with_ensures(
+        &source, &typed, collected.env(), &core, &request).unwrap_err(), upstream);
     assert_eq!(mizar_proof::status::SourceUnaryCallerE4Association::from_source_with_ensures(
         &source, &typed, collected.env(), &core, &request).err().unwrap(), upstream);
     assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(

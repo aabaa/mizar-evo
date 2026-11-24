@@ -2071,6 +2071,43 @@ pub struct SourceUnaryCallerE1TypingAssociation<'core> {
 }
 
 impl<'core> SourceUnaryCallerE1TypingAssociation<'core> {
+    /// Retains the freshly checked clause-bearing caller typing request and tuple.
+    pub fn from_source_with_ensures(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<Self, String> {
+        let descriptor =
+            mizar_vc::generator::check_source_unary_child_call_caller_ensures_e1_typing_request(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(Self {
+            request: request.clone(),
+            descriptor,
+            core,
+        })
+    }
+
+    /// Reauthenticates clauses before whole equality and same-arena matching.
+    pub fn matches_source_with_ensures(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+    ) -> Result<bool, String> {
+        let descriptor =
+            mizar_vc::generator::generate_source_unary_child_call_caller_ensures_e1_typing_request(
+                source, typed, symbols, core, request,
+            )?;
+        Ok(request == &self.request
+            && descriptor == self.descriptor
+            && std::ptr::eq(core, self.core))
+    }
+
     /// Authenticates and checks once, retaining the producer's entire unchanged tuple.
     pub fn from_source(
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
