@@ -1846,6 +1846,43 @@ pub struct NativeUnaryCallerE1SingleValuedness<'core> {
 }
 
 impl<'core> NativeUnaryCallerE1SingleValuedness<'core> {
+    /// Checks and retains the whole clause-bearing single-valuedness association under supplied policy.
+    pub fn from_source_with_ensures(
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &'core mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<Self, String> {
+        let (association, _) = consume_source_unary_caller_ensures_e1_single_valuedness(
+            source, typed, symbols, core, request, policy,
+        )?;
+        Ok(Self { association })
+    }
+
+    /// Adopts only the original clause-bearing single-valuedness request under current policy.
+    pub fn adopt_original_request_with_ensures(
+        &self,
+        source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+        typed: &mizar_checker::typed_ast::TypedAst,
+        symbols: &mizar_resolve::env::SymbolEnv,
+        core: &mizar_core::core_ir::CoreIr,
+        request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+        policy: &VerifierPolicy,
+    ) -> Result<bool, String> {
+        if !self
+            .association
+            .matches_source_with_ensures(source, typed, symbols, core, request)?
+        {
+            return Ok(false);
+        }
+        consume_source_unary_caller_ensures_e1_single_valuedness(
+            source, typed, symbols, core, request, policy,
+        )?;
+        Ok(true)
+    }
+
     /// Checks and retains the whole single-valuedness association under supplied policy.
     pub fn from_source(
         source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
