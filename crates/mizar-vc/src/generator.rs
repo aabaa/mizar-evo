@@ -3021,6 +3021,62 @@ pub fn generate_source_unary_child_call_caller_ensures_e1_typing_request(
     Ok((context, rows))
 }
 
+/// Checks fresh clause-bearing caller result typing and retains the exact request.
+pub fn check_source_unary_child_call_caller_ensures_e1_typing_request(
+    source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,
+    typed: &mizar_checker::typed_ast::TypedAst,
+    symbols: &mizar_resolve::env::SymbolEnv,
+    core: &mizar_core::core_ir::CoreIr,
+    request: &mizar_core::elaborator::SourceUnaryChildCallRequest,
+) -> Result<(LocalContext, [crate::vc_ir::VcGeneratedFormula; 4]), String> {
+    use crate::vc_ir::VcGeneratedFormulaShape as Shape;
+
+    let descriptor = generate_source_unary_child_call_caller_ensures_e1_typing_request(
+        source, typed, symbols, core, request,
+    )?;
+    let invalid = || "algorithms.unary_child.invalid_caller_e4_request".to_owned();
+    let ContextEntryKind::BinderDeclaration { var: binder, .. } = descriptor.0.entries()[1].kind
+    else {
+        return Err(invalid());
+    };
+    let Some(VcFormulaRef::Core(guard)) = descriptor.0.entries()[0].formula else {
+        return Err(invalid());
+    };
+    let Shape::AlgorithmReturns {
+        algorithm,
+        flow,
+        statement,
+        input,
+        result,
+    } = descriptor.1[0].shape
+    else {
+        return Err(invalid());
+    };
+    let Shape::ProgramTypePredicate { subject, ty } = &descriptor.1[1].shape else {
+        return Err(invalid());
+    };
+    let cfg = mizar_core::control_flow::build_control_flow_ir(core);
+    let callee_flow = *cfg.flow_map.get(&request.callee).ok_or_else(invalid)?;
+    if !mizar_kernel::checker::check_unary_caller_return_typing(
+        core,
+        request,
+        callee_flow,
+        (
+            algorithm,
+            flow,
+            statement,
+            (input.var, input.definition),
+            (result.var, result.definition),
+        ),
+        binder,
+        ((subject.var, subject.definition), ty.as_str()),
+        &[guard],
+    ) {
+        return Err(invalid());
+    }
+    Ok(descriptor)
+}
+
 /// Requests clause-bearing caller normal return without checking or adopting it.
 pub fn generate_source_unary_child_call_caller_ensures_e4_request(
     source: &mizar_resolve::resolved_ast::SurfaceResolvedArena,

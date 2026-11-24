@@ -618,6 +618,8 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `generate_source_unary_child_call_caller_ensures_e1_typing_request(source, typed, symbols, core, request)` は変更しない [E2 producer](#bounded-unary-caller-e2-request) を最初に一度呼び、認証とエラーを保持する。row zero の AlgorithmReturns から元の result を取り、row one の等式 shape だけを `ProgramTypePredicate(object(original result))` に置換する。context、四行、metadata、binder、参照をそのまま保持する。元の object-input guard だけの下で `forall r. returns_caller(actual,r) -> object(r)` を要求し、returns は前件のままとする。局所 shape 拒否は E2 error を保持する。checking、Proof、後続権限を与えず、legacy 拒否と E2 の保留事項を維持する。
 
+`check_source_unary_child_call_caller_ensures_e1_typing_request` は同じ入力で変更しない producer を最初に一度呼び、上流エラーを保持する。元の guard、fresh な宣言 binder、正確な caller target、atomic object conclusion、認証済み Core から再構築した callee flow を変更しない [Kernel boolean typing](../../mizar-kernel/en/checker.md#bounded-unary-caller-e1-typing) に一度渡す。成功時のみ元 tuple 全体を返し、局所拒否は `algorithms.unary_child.invalid_caller_e4_request` を保持する。元の object-input guard の下で caller result typing のみ検査し、schema storage、Proof、後続 authority は与えない。
+
 ## Clause-bearing unary caller E4 request
 
 `generate_source_unary_child_call_caller_ensures_e4_request(source, typed, symbols, core, request)` は未変更の [E2 producer](#bounded-unary-caller-e2-request) を最初に一度呼び、認証とエラーを保持する。元の context、fresh binder、caller AlgorithmReturns 行を保持し、第二行は同じ result を Generated(0) に対して存在量化する。ID は 1、metadata は元のままで、既存 `(LocalContext, [VcGeneratedFormula; 2])` を返す。等式・含意・全称 goal を除き、`object(actual) |- exists r. returns_caller(actual,r)` のみを要求する。局所 shape 拒否は E2 error を保持する。checking・witness・evidence・acceptance authority は与えず、旧 E1/E4 は caller ensures を拒否し、E2 と本 API は正確な clause を要求する。E2 の全 deferral を維持する。詳細は [英語版](../en/generator.md#clause-bearing-unary-caller-e4-request) を参照。
