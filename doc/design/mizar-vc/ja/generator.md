@@ -620,6 +620,10 @@ Core goal hash は保守的なままで、dependency slicing は opaque computat
 
 `check_source_unary_child_call_caller_ensures_e4_result(source, typed, symbols, core, request)` は未変更の request producer を最初に一度呼ぶ。認証済み Core と descriptor から callee flow/Return、actual input、fresh result、元の guard を取り、未変更 Kernel child rule で同一 Core の真正な child evidence を得て caller composition rule に渡す。成功時だけ変更しない descriptor と既存 opaque caller result を一体で返す。認証エラーを優先し、局所拒否は `algorithms.unary_child.invalid_caller_e4_request`。result は actual witness と guard を保持し、等しい cloned Core も自身の arena で検査する。旧拒否と Proof identity/policy/adoption、全体 acceptance/status、currentness、footprint/cache、publication の deferral は維持する。
 
+## Clause-bearing unary caller E1 inhabitation request
+
+`generate_source_unary_child_call_caller_ensures_e1_inhabitation_request(source, typed, symbols, core, request)` は変更しない [ensures E4 producer](#clause-bearing-unary-caller-e4-request) を一度先に呼び、認証と上流エラーを保持する。row zero の AlgorithmReturns shape だけを `ProgramTypePredicate(object(result))` に置換し、context、fresh binder、Exists row、metadata をそのまま保持し、既存 tuple の witness として `request.actual` を返す。局所 shape 拒否は E2 error を維持する。唯一の caller object guard の下で、returns や requires/ensures を仮定せず全 typed input に `exists r. object(r)` を要求する。checking、evidence、identity、adoption、後続権限を与えない。legacy の clause-bearing 拒否と E4 の保留事項は維持する。
+
 ## Bounded unary child existential
 
 `generate_source_unary_child_call_existential_request(source, typed, symbols, core, request)` は descriptor で Core/request 全体を認証する。既存型の組 `(LocalContext, [VcGeneratedFormula; 2], CoreTermId)` は元 caller object guard のみを CheckerFact とし、fresh result binder、行0の `AlgorithmReturns(callee, flow, callee Return, actual, r)`、行1の `Exists r`、actual witness を保持する。immutable Core/request は source・Apply・Return・formal/actual/result-slot 対応を保持する。VcSet・seed・scheduling・snapshot identity は作らない。

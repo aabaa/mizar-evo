@@ -423,6 +423,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
     use mizar_vc::dependency_slice::{DependencyEntryClass as E, DependencySliceCompleteness as C, DependencyUnknownFamily as U};
     use mizar_vc::{generator::{generate_source_unary_child_call_caller_e2_request as generate,
         generate_source_unary_child_call_caller_ensures_e4_request as generate_e4,
+        generate_source_unary_child_call_caller_ensures_e1_inhabitation_request as generate_e1,
         check_source_unary_child_call_caller_ensures_e4_result as check_e4},
         vc_ir::{ContextEntry, ContextEntryId, ContextEntryKind, LocalContext, QuantifierKind,
             VcFormulaRef, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
@@ -527,6 +528,11 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
                 if let CoreTermKind::Var(v) = t.kind { Some(v.index()) } else { None }
             })).max().unwrap();
         let result = VcProgramValue { var: mizar_core::core_ir::CoreVarId::new(maximum + 1), definition: None };
+        let prior_products = (e2.clone(), e4.clone());
+        let e1 = generate_e1(
+            &source, &typed, collected.env(), &core, &request).unwrap();
+        assert_ne!(e1.2, request.application);
+        assert_eq!((e2.clone(), e4.clone()), prior_products);
         let input = VcProgramValue { var: caller.params[0].var, definition: None };
         let expected_context = LocalContext::try_new(vec![
             ContextEntry { id: ContextEntryId::new(0), sort_key: "unary-caller-e2-guard-0000".into(),
@@ -543,6 +549,21 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             Shape::Implies { premise: reference(0), conclusion: reference(1) },
             Shape::Quantified { kind: QuantifierKind::Forall, binders: vec![ContextEntryId::new(1)], body: reference(2) },
         ];
+        assert_eq!(e1, (expected_context.clone(), [
+            VcGeneratedFormula { id: VcGeneratedFormulaId::new(0),
+                kind: VcGeneratedFormulaKind::SplitGoal,
+                shape: Shape::ProgramTypePredicate { subject: result, ty: "object".into() }, provenance: vec![] },
+            VcGeneratedFormula { id: VcGeneratedFormulaId::new(1),
+                kind: VcGeneratedFormulaKind::SplitGoal,
+                shape: Shape::Quantified { kind: QuantifierKind::Exists,
+                    binders: vec![ContextEntryId::new(1)], body: reference(0) }, provenance: vec![] },
+        ], request.actual));
+        let mut projected_e4 = e4.clone();
+        projected_e4.1[0].shape = Shape::ProgramTypePredicate { subject: result, ty: "object".into() };
+        assert_eq!((e1.0.clone(), e1.1.clone()), projected_e4);
+        assert_eq!(core.terms().get(e1.2).unwrap().kind, CoreTermKind::Var(input.var));
+        assert_ne!(input.var, request.formal);
+        assert_ne!(input.var, request.caller_result);
         assert_eq!(e2.0, expected_context);
         for (index, shape) in expected_rows.into_iter().enumerate() {
             assert_eq!(e2.1[index], VcGeneratedFormula { id: VcGeneratedFormulaId::new(index),
@@ -661,6 +682,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
             assert_eq!(retained.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap(), identity);
         }
         let product_before = e2.clone();
+        let e1_before = e1.clone();
         let Shape::AlgorithmReturns { algorithm, flow, statement, input, result } = e2.1[0].shape else { panic!("E2 caller relation") };
         let Shape::ProgramEquals { left, right } = e2.1[1].shape else { panic!("E2 equality") };
         let target = (algorithm, flow, statement, (input.var, input.definition), (result.var, result.definition));
@@ -669,6 +691,7 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         let cloned_core = core.clone();
         assert_eq!(cloned_core, core);
         for current in [&core, &cloned_core, &core] {
+            assert_eq!(generate_e1(&source, &typed, collected.env(), current, &request).unwrap(), e1);
             let (fresh_e4, fresh_return) = check_e4(
                 &source, &typed, collected.env(), current, &request).unwrap();
             assert_eq!(fresh_e4, e4);
@@ -831,6 +854,8 @@ fn unary_caller_ensures_genuine_source_preserves_result_and_parameter() {
         assert_eq!(generate_e4(&source, &typed, collected.env(), &core.clone(), &request).unwrap(), e4);
         assert_eq!((core.clone(), request.clone()), inputs_before);
         assert_eq!(e2, product_before);
+        assert_eq!(e1, e1_before);
+        assert_eq!((e2.clone(), e4.clone()), prior_products);
         assert_eq!(e4_association.request(), &request);
         assert_eq!(e4_association.descriptor(), &e4);
         for retained in [&association, &schema_association, &consumed] {
@@ -919,6 +944,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         check_source_unary_child_call_caller_e2_request_with_schema as check_e2_schema,
         generate_source_unary_child_call_caller_e2_request as generate,
         generate_source_unary_child_call_caller_ensures_e4_request as generate_e4,
+        generate_source_unary_child_call_caller_ensures_e1_inhabitation_request as generate_e1,
         check_source_unary_child_call_caller_ensures_e4_result as check_e4};
     let text = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
     let (source, nodes, collected, _) = source_registration_formula_inputs(text, "unary-child", "e2_drift", 0);
@@ -929,6 +955,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     let before = (source.clone(), typed.clone(), symbols.clone(), core.clone(), request.clone());
     let genuine = generate(&source, &typed, symbols, &core, &request).unwrap();
     let genuine_e4 = generate_e4(&source, &typed, symbols, &core, &request).unwrap();
+    let genuine_e1 = generate_e1(&source, &typed, symbols, &core, &request).unwrap();
     let e4_association = E4Association::from_source_with_ensures(&source, &typed, symbols, &core, &request).unwrap();
     let policy = mizar_proof::policy::VerifierPolicy::default();
     let denied = policy.clone().with_kernel_evidence_formats([]);
@@ -977,6 +1004,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(generate_e4(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
+        assert_eq!(generate_e1(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
         assert_eq!(check_e4(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &core, &changed).err().unwrap(), invalid, "request {mutation}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &core, &changed).unwrap_err(), invalid, "request {mutation}");
@@ -1160,6 +1188,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
     wrong_request.caller = request.callee;
     assert_eq!(generate(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(generate_e4(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
+    assert_eq!(generate_e1(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
     assert_eq!(check_e4(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     assert_eq!(E4Association::from_source_with_ensures(&source, &forged, symbols, &core, &request).err().unwrap(), forged_error);
     assert_eq!(e4_association.matches_source_with_ensures(&source, &forged, symbols, &core, &request).unwrap_err(), forged_error);
@@ -1185,6 +1214,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         let changed_before = changed.clone();
         assert_eq!(generate(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(generate_e4(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
+        assert_eq!(generate_e1(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(check_e4(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &changed, &request).err().unwrap(), invalid, "Core {index}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
@@ -1197,6 +1227,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!(association.obligation_identity(&source, &typed, symbols, &changed, &request).unwrap_err(), invalid, "Core {index}");
         assert_eq!(generate(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(generate_e4(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
+        assert_eq!(generate_e1(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
         assert_eq!(check_e4(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         assert_eq!(E4Association::from_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).err().unwrap(), forged_error, "combined {index}");
         assert_eq!(e4_association.matches_source_with_ensures(&source, &forged, symbols, &changed, &wrong_request).unwrap_err(), forged_error, "combined {index}");
@@ -1244,6 +1275,11 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             let (other_core, other_request) = lower(&checked).unwrap();
             assert!(generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).is_ok());
             let other_e4 = generate_e4(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            let other_e1 = generate_e1(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
+            let mut projected = other_e4.clone();
+            let mizar_vc::vc_ir::VcGeneratedFormulaShape::AlgorithmReturns { result, .. } = projected.1[0].shape else { panic!("caller returns") };
+            projected.1[0].shape = mizar_vc::vc_ir::VcGeneratedFormulaShape::ProgramTypePredicate { subject: result, ty: "object".into() };
+            assert_eq!(other_e1, (projected.0, projected.1, other_request.actual));
             let (checked_other_e4, other_return) = check_e4(
                 &other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap();
             assert_eq!(checked_other_e4, other_e4);
@@ -1299,6 +1335,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
                 (generate(&other_source, &other_typed, other_collected.env(), &other_core, &other_request).unwrap(), 1));
             assert_eq!(generate(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(generate_e4(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
+            assert_eq!(generate_e1(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
             assert_eq!(check_e4(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).err().unwrap(), invalid);
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, symbols, &other_core, &other_request).unwrap_err(), invalid);
@@ -1352,6 +1389,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             let expected = check(s, e, t).and_then(|checked| lower(&checked)).err().unwrap_or_else(|| invalid.into());
             assert_eq!(generate(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(generate_e4(s, t, e, &core, &request).unwrap_err(), expected);
+            assert_eq!(generate_e1(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(check_e4(s, t, e, &core, &request).err().unwrap(), expected);
             assert_eq!(E4Association::from_source_with_ensures(s, t, e, &core, &request).err().unwrap(), expected);
             assert_eq!(e4_association.matches_source_with_ensures(s, t, e, &core, &request).unwrap_err(), expected);
@@ -1364,6 +1402,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
             assert_eq!(association.obligation_identity(s, t, e, &core, &request).unwrap_err(), expected);
             assert_eq!(generate(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(generate_e4(s, t, e, &core, &wrong_request).unwrap_err(), expected);
+            assert_eq!(generate_e1(s, t, e, &core, &wrong_request).unwrap_err(), expected);
             assert_eq!(check_e4(s, t, e, &core, &wrong_request).err().unwrap(), expected);
             assert_eq!(E4Association::from_source_with_ensures(s, t, e, &core, &wrong_request).err().unwrap(), expected);
             assert_eq!(e4_association.matches_source_with_ensures(s, t, e, &core, &wrong_request).unwrap_err(), expected);
@@ -1389,6 +1428,7 @@ fn unary_caller_e2_refuses_request_core_and_authentication_drift_atomically() {
         assert_eq!((other_source, other_typed, other_collected.env().clone()), other_before);
         assert_eq!(generate(&source, &typed, symbols, &core, &request).unwrap(), genuine);
         assert_eq!(generate_e4(&source, &typed, symbols, &core, &request).unwrap(), genuine_e4);
+        assert_eq!(generate_e1(&source, &typed, symbols, &core, &request).unwrap(), genuine_e1);
         let (recovered_e4, recovered_return) = check_e4(&source, &typed, symbols, &core, &request).unwrap();
         let (recovered_consumed, recovered_fingerprint) = consume_ensures_e4(&source, &typed, symbols, &core, &request, &policy).unwrap();
         let recovered_native_e4 = NativeE4::from_source_with_ensures(&source, &typed, symbols, &core, &request, &policy).unwrap();
@@ -1443,12 +1483,14 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
         NativeUnaryCallerE4Existential as NativeE4};
     use mizar_checker::{type_checker::check_source_unary_child_call, typed_ast::{TypedArena, TypedNode, TypedNodeId}};
     use mizar_vc::generator::{generate_source_unary_child_call_caller_ensures_e4_request as generate_e4,
+        generate_source_unary_child_call_caller_ensures_e1_inhabitation_request as generate_e1,
         check_source_unary_child_call_caller_ensures_e4_result as check_e4};
     let base = "definition let a be object; algorithm child(a) -> object do return a; end; end; definition let b be object; algorithm caller(b) -> object ensures result = b do return child(b); end; end;";
     let (source, nodes, collected, _) = source_registration_formula_inputs(base, "unary-child", "clauses", 0);
     let typed = super::super::source_registration_receiver(&source, nodes).unwrap();
     let (core, request) = mizar_core::elaborator::lower_source_unary_child_call(
         &check_source_unary_child_call(&source, collected.env(), &typed).unwrap()).unwrap();
+    let genuine_e1 = generate_e1(&source, &typed, collected.env(), &core, &request).unwrap();
     let association = E2Association::from_source(&source, &typed, collected.env(), &core, &request).unwrap();
     let e4_association = E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap();
     let genuine_identity = association.obligation_identity(&source, &typed, collected.env(), &core, &request).unwrap().unwrap();
@@ -1486,6 +1528,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
         if label == "duplicate" {
             assert_eq!(received.err().unwrap(), "typed AST source statement handoff is inconsistent");
             let error = generate_e4(&source, &typed, collected.env(), &core, &request).unwrap_err();
+            assert_eq!(generate_e1(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             for current_policy in [&policy, &denied] {
                 assert_eq!(consume_ensures_e4(&source, &typed, collected.env(), &core, &request, current_policy).err().unwrap(), error, "{label}");
@@ -1499,6 +1542,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
                 &source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(generate_e4(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
+            assert_eq!(generate_e1(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
             assert_eq!(check_e4(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), &core, &request).err().unwrap(), error, "{label}");
             assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap_err(), error, "{label}");
@@ -1534,6 +1578,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
         let error = mizar_vc::generator::generate_source_unary_child_call_caller_e2_request(
             &source, &typed, collected.env(), current_core, current_request).unwrap_err();
         assert_eq!(generate_e4(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
+        assert_eq!(generate_e1(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
         assert_eq!(check_e4(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
         assert_eq!(E4Association::from_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).err().unwrap(), error);
         assert_eq!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), current_core, current_request).unwrap_err(), error);
@@ -1549,6 +1594,7 @@ fn unary_caller_ensures_refuses_unsupported_source_clauses() {
             assert_eq!(native.obligation_identity(&source, &typed, collected.env(), current_core, current_request, current_policy).unwrap_err(), error);
         }
     }
+    assert_eq!(generate_e1(&source, &typed, collected.env(), &core, &request).unwrap(), genuine_e1);
     assert!(e4_association.matches_source_with_ensures(&source, &typed, collected.env(), &core, &request).unwrap());
     assert_eq!(e4_association.request(), &request);
     assert_eq!(e4_association.descriptor(), &generate_e4(&source, &typed, collected.env(), &core, &request).unwrap());
@@ -1767,6 +1813,8 @@ fn unary_child_request_preserves_real_joins_renames_scopes_and_intent() {
         }
         let (core, request) = lower_source_unary_child_call(&checked).unwrap();
         assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_ensures_e4_request(
+            &source, &typed, symbols, &core, &request).unwrap_err(), "algorithms.unary_child.invalid_caller_e2_request");
+        assert_eq!(mizar_vc::generator::generate_source_unary_child_call_caller_ensures_e1_inhabitation_request(
             &source, &typed, symbols, &core, &request).unwrap_err(), "algorithms.unary_child.invalid_caller_e2_request");
         let callee_row = core.algorithms().get(request.callee).unwrap();
         let caller_row = core.algorithms().get(request.caller).unwrap();
