@@ -666,6 +666,8 @@ arena 間の canonical equality は association を認可しない。この pass
 
 ## Native caller E1 typing adoption
 
+`from_source_with_ensures` は同じ六入力で変更しない [ensures typing consumer](#caller-e1-typing-current-policy-consumption) を一度呼び、fingerprint だけを破棄して association 全体を既存 field に保持する。`adopt_original_request_with_ensures` は最初に変更しない `matches_source_with_ensures` を呼び、認証エラーを保持し、whole request/tuple/Core ポインタ不一致なら拒否 policy でも false を返す。一致時は渡された現行 policy で同じ ensures consumer を新たに一度呼び、エラーを保持して元の typing sub-obligation だけを採用する。schema storage や identity 前提は追加せず、currentness は呼出側が担う。従来の構築・adoption・identity はこの holder の identity を含め caller ensures を拒否し、後段の権限は与えない。
+
 `NativeUnaryCallerE1Typing::from_source(source, typed, symbols, core, request, policy)` は変更しない [typing consumer](#caller-e1-typing-current-policy-consumption) を一度呼び、fingerprint を破棄して whole association だけを非公開で保持する。`adopt_original_request` は最初に変更しない `matches_source` を呼び、認証エラーを保持し、whole request/tuple/Core の不一致では policy 検査前に false を返す。一致時は現在の policy で同じ consumer を新たに呼び、拒否を保持し、元の typing sub-obligation だけについて true を返す。追加の Kernel 検査により schema の保持や stamping を避け、currentness は caller 所有のままとする。
 `obligation_identity` は同じ六入力で最初に変更しない `adopt_original_request` を一度呼び、エラーを伝播し、不一致は None とする。一致時は同じ source 入力で保持した association の変更しない passive identity と whole raw slice を返す。毎回、渡された現在の policy を新たに検査し、typing の domain/hash と caller 所有の currentness を保持する。single-valuedness、E2、whole acceptance/status、complete footprints/cache、promotion/publication は与えず、raw unknown/incomplete/cache-miss 境界を保持する。
 
