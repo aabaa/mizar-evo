@@ -1,0 +1,28 @@
+# Task VC53-PROOF-CALLER-ENSURES-E1-INHABITATION-NATIVE: clause-bearing caller object-inhabitation native adoption
+Canonical language: English; [Japanese pointer](../ja/VC53-PROOF-CALLER-ENSURES-E1-INHABITATION-NATIVE.md).
+Status: frozen bounded native adoption. Tier: full; new public APIs fail pattern eligibility.
+Owner: [Proof](../../mizar-proof/en/00.crate_plan.md). Consumer: mizar-test.
+Dependencies: [ensures E1 association](VC53-PROOF-CALLER-ENSURES-E1-INHABITATION-ASSOCIATION.md), [existing native holder](VC53-PROOF-CALLER-E1-INHABITATION-NATIVE.md).
+Authority: [§§20.1.2, 20.2.6, 20.7.2, 20.13.1 E1](../../../spec/en/20.algorithm_and_verification.md).
+Invariants: [native adoption](../../mizar-proof/en/status.md#native-caller-e1-inhabitation-adoption), [association](../../mizar-proof/en/status.md#arena-local-caller-e1-inhabitation-association), [object policy](../../mizar-proof/en/policy.md#bounded-native-positive-result-policy).
+Gap: source_drift/test_gap; authenticated clause-bearing association and object-policy consumption exist without their bounded native composition. No language-intent gap or external prerequisite.
+
+## Frozen design and boundaries
+Add only `NativeUnaryCallerE1Inhabitation::from_source_with_ensures(source, typed, symbols, core, request, policy) -> Result<Self, String>` and `adopt_original_request_with_ensures` with the same six inputs and `Result<bool, String>`.
+Construction calls unchanged association `from_source_with_ensures` exactly once, preserving errors; consume its actual retained Kernel result through unchanged `ProofPolicyEvaluator::consume_object_inhabitation`, discard the fingerprint and retain the whole association in the existing field.
+Adoption FIRST calls unchanged association `matches_source_with_ensures`, preserving authentication errors before whole-request/tuple and pointer-identical Core mismatch returns false, even under denied policy. On a match consume the retained actual result through the same evaluator under supplied current policy; preserve `algorithm.proof.native_e1_policy_rejected`. Every adoption reevaluates policy; previous success grants no authority. No repeated Kernel check; currentness remains caller-owned.
+Preserve original guard/context/schema, fresh binder and actual-input witness; optional terminating intent grants no additional authority. Equal cloned Core refuses old holder; fresh construction adopts its own arena.
+Legacy constructors/rechecks/adoption, passive/native identity and separate policy consumption stay unchanged and refuse caller ensures, including identity on the new holder. No separate policy API, type, field, helper, fixture, copied payload, schema storage, detached construction or later authority.
+Exclude E1 typing/single-valuedness, E2/E4 adoption changes, whole acceptance/status, currentness receipts, complete footprints/cache, promotion/publication, broader profiles and owner-gated scope. No lower-stage production, language-intent, diagnostic, spec/.miz/expectation/trace/audit-status, AGENTS or protocol changes.
+Files: Proof status.rs, existing [algorithm tests](../../../../crates/mizar-test/src/runner/tests/algorithm.rs), paired Proof status/plan documents and this contract. [Runner design](../../mizar-test/en/harness.md#algorithm--logic) remains test owner; audit coverage/owner/deferral unchanged.
+
+## Test matrix and exit
+Cap: four existing ensures fixture families; confirm genuine successful native construction/adoption before expanding. No new shared fixture.
+1. Existing rename/trivia/equal-spelling/owner/optional-terminating variants construct/adopt repeatedly; preserve independent whole request/tuple/Kernel, sole guard/schema/fresh-binder/actual-witness oracles and input/product purity. Legacy identity/adoption refuse the new holder.
+2. Eligible policies construct/adopt; empty/FormulaSubstitution-only, missing Builtin, wrong actual schema and other-format compensation refuse with the existing E1 policy error. Prior success does not authorize denied policy; eligible recovery succeeds.
+3. Complete existing request/Core drift and calibrated foreign/stale/forged source/typed/environment/combined-error matrices preserve exact upstream errors before mismatch before denied policy. Authentic changed inputs construct/adopt together; old holder refuses them and equal cloned Core after authentication; fresh cloned-Core holder succeeds; original recovers.
+4. Existing unsupported/malformed/no-clause/direct-return controls preserve producer refusals; legacy clause-bearing identity/policy/native, child/E4/direct-return and raw unknown/incomplete/cache-miss boundaries remain, with no-clause successes unchanged. No later authority follows.
+Reuse existing oracles and [ensures return fixture](../../../../tests/miz/pass/algorithms/pass_proof_verification_algorithm_ensures_return_001.miz); no changed test intent.
+Require independent specification/test-intent/trust, sufficiency, precision/trust, removable-only volume, source/docs/EN-JA and final quality reviews.
+Run fmt, all-target/all-feature Clippy -D warnings, both lint_policy suites including links/fragments, Proof/VC/Kernel owner groups, algorithm/source_algorithm regressions and short proof-verification E2E. Changed adoption/authentication/policy matrices run; unchanged heavy evidence/cache/aggregate-acceptance/edit-versus-clean defer to Muse sealed integration. Full cargo test only on cadence; lane push:no has no full trigger.
+Exit: freeze committed before implementation; adopt only original arena-local caller object-inhabitation under current eligible policy, preserving all legacy and later-authority boundaries.
