@@ -538,3 +538,9 @@ cargo test -p mizar-checker
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-D04, PERF-D06 (consumer), PERF-D07. 契約レビューと依存条件成立後に着手。
+
+## 将来の SMT 統合（計画のみ）
+
+- [ ] [SMT-03 — SMT専用理論の証明証拠検査](../../task_contracts/ja/SMT-03.md)
+
+着手順序はトップレベル TODO とレビュー済み契約に従う。現行順序・完了状態は変更しない。

@@ -750,3 +750,12 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-D03 (early design/integration), PERF-D05, PERF-D07 (consumer). Pending owner-contract freeze and dependency readiness; no completion credit.
+
+## Future SMT integration (planning only)
+
+- [ ] [SMT-01 — Theory mapping design](../../task_contracts/en/SMT-01.md)
+- [ ] [SMT-02 — Native SMT theory encoding](../../task_contracts/en/SMT-02.md)
+- [ ] [SMT-04 — Structured solver model extraction](../../task_contracts/en/SMT-04.md)
+- [ ] [SMT-05 — Persistent SMT sessions and context reuse](../../task_contracts/en/SMT-05.md)
+
+Dispatch follows the top-level roadmap and reviewed owner contracts; no current sequencing or completion status changes.

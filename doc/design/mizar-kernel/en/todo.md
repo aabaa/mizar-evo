@@ -560,3 +560,9 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-D04, PERF-D06 (consumer), PERF-D07. Pending owner-contract freeze and dependency readiness; no completion credit.
+
+## Future SMT integration (planning only)
+
+- [ ] [SMT-03 — Theory evidence checking](../../task_contracts/en/SMT-03.md)
+
+Dispatch follows the top-level roadmap and reviewed owner contracts; no current sequencing or completion status changes.
