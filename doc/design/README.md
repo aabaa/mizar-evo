@@ -12,6 +12,17 @@ directory exists. For language behavior, `doc/spec/en/` and executable `.miz`
 tests remain authoritative. Design documents refine that authority into crate
 boundaries, APIs, data structures, algorithms, and task plans.
 
+## Research strategy (non-normative)
+
+The following English-canonical documents guide long-term research, not
+language semantics, proof acceptance or task dispatch:
+
+- [Grand design](grand_design.md) — mission, positioning and principles.
+- [Hybrid reasoning strategy](reasoning_strategy.md) — proof search and evidence.
+- [Mathematical library strategy](library_strategy.md) — foundations and extension.
+- [Research roadmap](research_roadmap.md) — hypotheses, evaluation and milestones.
+- [Japanese reference](strategy_ja.md).
+
 ## 1. Architecture Specifications (`architecture/`)
 
 Cross-cutting design documents that span crates or compiler subsystems. They
