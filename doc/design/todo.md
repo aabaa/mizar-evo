@@ -1378,6 +1378,21 @@ when its dependencies are complete; none blocks Steps 6-8.
 4. [ ] mizar-atp 32 — [counterexample search on open statements](./task_contracts/en/AIREV-OPEN-STATEMENT-COUNTEREXAMPLE.md);
    deps Step 7 item 1.
 
+### Future SMT theory and solver integration (Oirase investigation) [ ]
+
+Owner-approved planning inventory; not an insertion into the active execution queue.
+Preserve VC53-E1, MVM, Step 6/7 and PERF-A01 sequencing and existing early-design exceptions.
+Reconcile local/in-flight work and freeze reviewed paired owner contracts before dispatch.
+No surface-language amendment, new acceptance authority, or Oirase implementation is authorized here.
+
+- [ ] [SMT-01 — Theory mapping design](./task_contracts/en/SMT-01.md) — Core, Checker, Kernel, Proof; Define typed, resolved-symbol mappings between library definitions and solver sorts/operators, including guards, coercions, partial operations, quantifier domains and mixed-theory boundaries. Establish the direction of semantic preservation required for refutation and for countermodels separately. Specify mapping identity, dependencies, provenance and evidence/model projection interfaces. Compare a small built-in mapping table with a later library-supplied extension; do not trust arbitrary declarations or require a general plugin framework.
+- [ ] [SMT-02 — Native SMT theory encoding](./task_contracts/en/SMT-02.md) — Core, VC, Proof; Extend backend-neutral problem/profile and SMT-LIB emission in small slices: linear integer arithmetic first, then linear real arithmetic, fixed-width bit-vectors and arrays as demand and benchmarks justify. Nonlinear arithmetic, datatypes and floating point are separate later decisions. Preserve current UF path. Bind exact library semantics, sorts, widths, guards, translations and target identities. External results are candidate/diagnostic only until an existing approved policy or checked evidence authorizes the relevant status.
+- [ ] [SMT-03 — Theory evidence checking](./task_contracts/en/SMT-03.md) — ATP, Proof, VC; Compare reconstruction using verified FOL lemmas, checked arithmetic certificates, bit-blasting with justified CNF correspondence, and array theory lemmas. Reuse current SAT checking or separately approved PERF-D07 certificate path; prefer existing proof machinery before extending the trusted base. Bind evidence to the original VC, mapping and accepted context. Integer-specific reasoning requires more than rational linear combinations. External UNSAT alone is not kernel evidence; unsupported proof steps stay unaccepted.
+- [ ] [SMT-04 — Structured solver model extraction](./task_contracts/en/SMT-04.md) — Core, VC, Driver, LSP; Acquire actual models/values for SAT results, decode supported values with exact sort/width and map through resolved identities and provenance. Distinguish partial/abstract/unmapped models, concrete validated counterexamples, unknown and timeout. A model of a weakened premise set or incomplete instantiation is not a counterexample to the original obligation without validation. Preserve proof status; no default search on every statement. ATP 32 owns the existing statement-review feature; Oirase owns C/Rust execution replay.
+- [ ] [SMT-05 — Persistent SMT sessions and context reuse](./task_contracts/en/SMT-05.md) — Build, Driver, VC, Proof; Compare isolated runs against bounded persistent sessions using push/pop or assumptions, initially per function or equivalent dependency scope. Separate reusable declarations/axioms from local path conditions and solver state; ensure cancellation, reset, resource limits, changed mapping/context invalidation and no cross-VC assumption leakage. Preserve isolated fallback and deterministic acceptance identity. Do not require identical solver search behavior; measure stability.
+
+SMT-01 and SMT-03 design should coordinate before trusted theory adoption; SMT-04 supports existing ATP 32, not a replacement. Initial experiments may report external solver results separately, never as Kernel-verified evidence. SMT-05 is measurement-gated. Existing PERF packages absorb the Oirase performance observations in the [roadmap](./performance_optimization_roadmap.md).
+
 ### Parked and trigger-based work
 
 Not part of the sequential flow; each row records its re-entry trigger.
