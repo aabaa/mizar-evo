@@ -43,3 +43,7 @@ for bare fail only, retaining message/reflection and semantic/runtime deferrals.
 Require specification, test-sufficiency, implementation, volume/scope and
 consistency reviews; cargo fmt --check; cargo clippy --all-targets --all-features
 -- -D warnings; cargo test; exact local-link and paired-pointer validation.
+
+## Formal-project feedback (O1, 2026-11-29)
+
+[INIT-02 owner finding O1](https://github.com/aabaa/mizar-evo-formal/blob/e78cbda6ca18de711907b00712e5254e275abd54/docs/parser-boundary.md#owner-handoff) independently identifies the existing lexical specification conflict for `fail "message";` by source inspection. No new runtime defect is claimed. Owner prerequisite: reconcile Chapter 2 §2.7, Chapter 20 §20.2.6 and Appendix A A.2/A.20 in canonical English and Japanese companion; explicitly specify message/report string recognition positions. Only after owner approval, implement the bounded lexer/frontend/parser increment and existing positive/negative message tests. This prerequisite does not authorize changes to protected specification in the existing bare-parser implementation scope. Retain AST-PARSE dependency for reflected reports and all existing semantic/runtime boundaries. No new task ID or scheduling priority change.
