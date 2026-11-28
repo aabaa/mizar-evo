@@ -532,3 +532,4 @@ the next-phase handoff.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C01. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Persistent storage/retrieval follow-up: PERF-B07, PERF-E03, PERF-C06 (publication/load and invalidation coordination).

@@ -354,3 +354,8 @@ Check the task off here once tests pass.
   artifact hashes.
 - Outputs may be deleted and regenerated at any time; nothing downstream
   may treat them as authoritative.
+
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C06 (validated partial publication queries; presentation only).

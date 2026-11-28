@@ -348,3 +348,8 @@ cargo test -p mizar-artifact
   なければならない。
 - 出力はいつでも削除・再生成できる。下流の何ものもそれを権威として
   扱ってはならない。
+
+
+## 性能改善の後続作業
+
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C06 (validated partial publication queries; presentation only).

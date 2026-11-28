@@ -518,3 +518,4 @@ hard gates、deferred items、verification、human review surface、next-phase h
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C01. 契約レビューと依存条件成立後に着手。
+- 永続保存・項検索の後続作業: PERF-B07, PERF-E03, PERF-C06 (publication/load and invalidation coordination).

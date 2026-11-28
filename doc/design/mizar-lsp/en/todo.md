@@ -351,3 +351,8 @@ Check the task off here once tests pass.
   compiler IR; stale data is marked, not hidden.
 - LSP workflows may prioritize latency, but batch verification remains the
   semantic baseline.
+
+
+## Performance follow-up
+
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C06 (published prefix/label/source queries; no raw IR or proof authority).

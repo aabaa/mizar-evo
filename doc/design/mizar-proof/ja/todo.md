@@ -553,3 +553,4 @@ cargo test -p mizar-cache
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C03, PERF-D05 (accepted-evidence reuse and selection), PERF-D06 (Template proof evidence reuse; early design, genuine producer-gated implementation). 既存の producer と受理判定の責務境界を維持する。
+- 永続保存・項検索の後続作業: PERF-E03, PERF-E05 (consumer; preserve witness identity and acceptance).
