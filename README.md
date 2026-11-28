@@ -119,3 +119,14 @@ lexer crate evidence is available from
 [`doc/design/mizar-lexer/`](./doc/design/mizar-lexer/README.md), including its
 [autonomous crate plan](./doc/design/mizar-lexer/en/00.crate_plan.md) and
 [crate exit report](./doc/design/mizar-lexer/en/crate_exit_report.md).
+
+## License
+
+Original Mizar Evolution software and associated documentation are licensed
+under the [MIT License](LICENSE), unless otherwise noted.
+
+Third-party materials, including excerpts from the Mizar Mathematical Library
+(MML), remain subject to their respective licenses and attribution requirements.
+External theorem provers and other dependencies retain their own licenses.
+This change does not revoke permissions granted for earlier releases under
+the GNU General Public License.
