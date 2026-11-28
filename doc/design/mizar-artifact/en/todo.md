@@ -395,4 +395,6 @@ Check the task off here once tests pass.
 
 ## Performance follow-up
 
-- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-E03. Pending owner-contract freeze and dependency readiness; no completion credit.
+- [Performance roadmap](../../performance_optimization_roadmap.md): PERF-E03, PERF-E05. Pending owner-contract freeze and dependency readiness; no completion credit.
+
+- Draft design contract: [PERF-B07](../../task_contracts/en/PERF-B07.md).

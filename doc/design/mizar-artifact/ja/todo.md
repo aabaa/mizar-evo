@@ -387,4 +387,6 @@ cargo test -p mizar-checker
 
 ## 性能改善の後続作業
 
-- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-E03. 契約レビューと依存条件成立後に着手。
+- [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-E03, PERF-E05. 契約レビューと依存条件成立後に着手。
+
+- 設計契約草案: [PERF-B07](../../task_contracts/ja/PERF-B07.md).
