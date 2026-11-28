@@ -1219,7 +1219,7 @@ listed dependencies are complete.
    blocked-reserved on the transferable accepted-status authority shared with
    checker Task 274 and VC 53.
 
-8. [~] [ALGDEF-PARSER-FAIL](./task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare syntax complete; message/report forms remain lexical-spec-gap blocked, reflected reports also await AST-PARSE.
+8. [~] [ALGDEF-PARSER-FAIL](./task_contracts/en/ALGDEF-PARSER-FAIL.md) — bare syntax complete; message/report forms remain lexical-spec-gap blocked, reflected reports also await AST-PARSE. Formal-project O1 independently confirms the documented gap ([PR #28, owner findings](https://github.com/aabaa/mizar-evo-formal/blob/e78cbda6ca18de711907b00712e5254e275abd54/docs/parser-boundary.md#owner-handoff)); owner specification reconciliation of §2.7, §20.2.6 and Appendix A (EN/JA) is the next prerequisite, before lexer/frontend/parser message-form changes. Retain existing AST-PARSE gate for reflected reports.
 9. [~] [ALGDEF-VC53-NORMAL-RETURN](./task_contracts/en/ALGDEF-VC53-NORMAL-RETURN.md) — bounded direct-return E1/E4 requests/checking, native inhabitation/E4 adoption and typing/single-valuedness schema association implemented; broader call/CFG/termination proof and algorithm acceptance remain open.
 
 [ALGDEF-RESOLVE-CALL-EDGES](./task_contracts/en/ALGDEF-RESOLVE-CALL-EDGES.md) has implemented source inventory/candidates, selected definiens dependencies and complete explicitly selected local recursive groups. Remaining slices concern external imported/builtin identities, typed target selection and consumer adoption; cycle/termination/promotion acceptance remains separate. See the [source-edge owner](./mizar-resolve/en/symbols.md#planned-algorithm-call-dependencies).
