@@ -1119,3 +1119,4 @@ Details archived: [test_todo_sections.md](../../archive/test_todo_sections.md).
 - Draft contract: [PERF-A01](../../task_contracts/en/PERF-A01.md).
 - Draft contract: [PERF-A02](../../task_contracts/en/PERF-A02.md).
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-A03, PERF-A04, PERF-A05, PERF-A06, PERF-C05, PERF-E04.
+- Persistent storage/retrieval follow-up: PERF-A07 (storage and retrieval benchmark).

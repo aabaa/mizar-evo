@@ -493,3 +493,4 @@ broad verification pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C04. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Persistent storage/retrieval follow-up: PERF-C06 (persistent indexes; coordinate C04).

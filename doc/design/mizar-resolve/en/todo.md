@@ -956,3 +956,4 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B03. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Persistent storage/retrieval follow-up: PERF-B08, PERF-C06 (consumer; B03 retains name/scope semantics).

@@ -472,3 +472,4 @@ task にチェックを付ける。
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-C04. 契約レビューと依存条件成立後に着手。
+- 永続保存・項検索の後続作業: PERF-C06 (persistent indexes; coordinate C04).

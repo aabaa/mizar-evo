@@ -1069,3 +1069,4 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 - 契約草案: [PERF-A01](../../task_contracts/ja/PERF-A01.md).
 - 契約草案: [PERF-A02](../../task_contracts/ja/PERF-A02.md).
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-A03, PERF-A04, PERF-A05, PERF-A06, PERF-C05, PERF-E04.
+- 永続保存・項検索の後続作業: PERF-A07 (storage and retrieval benchmark).
