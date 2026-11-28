@@ -532,4 +532,5 @@ the next-phase handoff.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C01. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Declarative inference follow-up: PERF-D08/D10 (consumer; scheduling and resource isolation). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-B07, PERF-E03, PERF-C06 (publication/load and invalidation coordination).

@@ -538,6 +538,7 @@ cargo test -p mizar-checker
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-D04, PERF-D06 (consumer), PERF-D07. 契約レビューと依存条件成立後に着手。
+- 宣言型推論の後続作業: PERF-D08/D09/D11/D12 (consumer; independent checking and D04/D07 ownership unchanged). A08 baseline and D08 review precede candidate implementation.
 - 永続保存・項検索の後続作業: PERF-B07, PERF-E03 (consumer; independent evidence checking unchanged).
 
 ## 将来の SMT 統合（計画のみ）

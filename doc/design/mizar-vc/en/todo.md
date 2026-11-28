@@ -685,4 +685,5 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C04, PERF-B06 (dependency slices and VC indexes). Consumer coordination; preserve existing producer and acceptance ownership.
+- Declarative inference follow-up: PERF-D09 (local discharge / lightweight inference); PERF-D08 (consumer). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-B08, PERF-C06 (consumer; VC identity and dependency ownership unchanged).

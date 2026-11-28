@@ -493,4 +493,5 @@ broad verification pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-C04. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Declarative inference follow-up: PERF-D12 (consumer; C03/C04 reuse and identity contracts). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-C06 (persistent indexes; coordinate C04).

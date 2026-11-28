@@ -818,4 +818,5 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B06. Pending owner-contract freeze and dependency readiness; no completion credit.
+- Declarative inference follow-up: PERF-D08/D09/D11 (consumer; B08 retrieval and Algorithm/reflection ownership unchanged). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-B08 (retrieval primitives; coordinate B06).

@@ -750,6 +750,7 @@ Check the task off here once tests pass.
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-D03 (early design/integration), PERF-D05, PERF-D07 (consumer). Pending owner-contract freeze and dependency readiness; no completion credit.
+- Declarative inference follow-up: PERF-D10 (ATP transport and residency; SMT-05 retains SMT sessions); PERF-D08/D09 (search interface). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-B08, PERF-C06 (consumer; D03/D05 retain search/ranking).
 
 ## Future SMT integration (planning only)

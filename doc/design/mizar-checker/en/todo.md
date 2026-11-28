@@ -1463,4 +1463,5 @@ Contract: [CHECKER-STACK-DEPTH-FIX](../../task_contracts/en/CHECKER-STACK-DEPTH-
 ## Performance follow-up
 
 - [Performance roadmap](../../performance_optimization_roadmap.md): PERF-B04, PERF-B05, PERF-D01, PERF-D02, PERF-D06 (consumer). Pending owner-contract freeze and dependency readiness; no completion credit.
+- Declarative inference follow-up: PERF-D09/D11 (consumer; existing guard/type/rewrite ownership). A08 baseline and D08 review precede candidate implementation.
 - Persistent storage/retrieval follow-up: PERF-B07, PERF-B08, PERF-C06 (consumer; D01/D02 retain semantic ownership).

@@ -1385,4 +1385,5 @@ Completion evidence: [central Task-269SDC historical contract](../../task_contra
 ## 性能改善の後続作業
 
 - [性能改善ロードマップ](../../performance_optimization_roadmap.md): PERF-B04, PERF-B05, PERF-D01, PERF-D02, PERF-D06 (consumer). 契約レビューと依存条件成立後に着手。
+- 宣言型推論の後続作業: PERF-D09/D11 (consumer; existing guard/type/rewrite ownership). A08 baseline and D08 review precede candidate implementation.
 - 永続保存・項検索の後続作業: PERF-B07, PERF-B08, PERF-C06 (consumer; D01/D02 retain semantic ownership).
